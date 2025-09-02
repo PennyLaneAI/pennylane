@@ -25,6 +25,8 @@ pytest.importorskip("catalyst")
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
+import jax
+
 import pennylane as qml
 from pennylane.compiler.python_compiler.visualization import draw
 
@@ -336,65 +338,67 @@ class Testdraw:
         )
 
     @pytest.mark.jax
-    def test_qubit_unitary(self):
-        """Test the visualization of qubit unitary operations."""
-
-        # pylint:disable=import-outside-toplevel
-        import jax
-
-        array_1_wire = jax.numpy.array([[0, 1], [1, 0]])
-        array_2_wire = jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]])
-        array_3_wire = jax.numpy.array(
-            [
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-            ]
-        )
+    @pytest.mark.parametrize(
+        "ops, expected",
+        [
+            (
+                [
+                    (qml.QubitUnitary, jax.numpy.array([[0, 1], [1, 0]]), [0]),
+                    (
+                        qml.QubitUnitary,
+                        jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]]),
+                        [0, 1],
+                    ),
+                    (qml.QubitUnitary, jax.numpy.zeros((8, 8)), [0, 1, 2]),
+                    (
+                        qml.QubitUnitary,
+                        jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]]),
+                        [0, 1],
+                    ),
+                    (qml.QubitUnitary, jax.numpy.array([[0, 1], [1, 0]]), [0]),
+                ],
+                "0: ──U(M0)─╭U(M1)─╭U(M2)─╭U(M1)──U(M0)─┤  State\n"
+                "1: ────────╰U(M1)─├U(M2)─╰U(M1)────────┤  State\n"
+                "2: ───────────────╰U(M2)───────────────┤  State",
+            ),
+            (
+                [
+                    (qml.StatePrep, jax.numpy.array([1, 0]), [0]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0]), [0, 1]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0, 1, 0, 0, 0]), [0, 1, 2]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0]), [0, 1]),
+                    (qml.StatePrep, jax.numpy.array([1, 0]), [0]),
+                ],
+                "0: ──|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩──|Ψ⟩─┤  State\n"
+                "1: ──────╰|Ψ⟩─├|Ψ⟩─╰|Ψ⟩──────┤  State\n"
+                "2: ───────────╰|Ψ⟩───────────┤  State",
+            ),
+            (
+                [
+                    (qml.MultiRZ, 0.1, [0]),
+                    (qml.MultiRZ, 0.1, [0, 1]),
+                    (qml.MultiRZ, 0.1, [0, 1, 2]),
+                    (qml.MultiRZ, 0.1, [0, 1]),
+                    (qml.MultiRZ, 0.1, [0]),
+                ],
+                "0: ──MultiRZ─╭MultiRZ─╭MultiRZ─╭MultiRZ──MultiRZ─┤  State\n"
+                "1: ──────────╰MultiRZ─├MultiRZ─╰MultiRZ──────────┤  State\n"
+                "2: ───────────────────╰MultiRZ───────────────────┤  State",
+            ),
+        ],
+    )
+    def test_visualization_cases(self, ops, expected):
+        """
+        Test the visualization of various quantum operations.
+        """
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def _():
-            qml.QubitUnitary(array_1_wire, wires=0)
-            qml.QubitUnitary(array_2_wire, wires=[0, 1])
-            qml.QubitUnitary(array_3_wire, wires=[0, 1, 2])
-            qml.QubitUnitary(array_2_wire, wires=[0, 1])
-            qml.QubitUnitary(array_1_wire, wires=0)
+        def circuit():
+            for op, param, wires in ops:
+                op(param, wires=wires)
             return qml.state()
 
-        assert (
-            draw(_)()
-            == "0: ──U(M0)─╭U(M1)─╭U(M2)─╭U(M1)──U(M0)─┤  State\n1: ────────╰U(M1)─├U(M2)─╰U(M1)────────┤  State\n2: ───────────────╰U(M2)───────────────┤  State"
-        )
-
-    @pytest.mark.jax
-    def test_state_prep(self):
-        """Test the visualization of state preparation operations."""
-
-        # pylint:disable=import-outside-toplevel
-        import jax
-
-        state_1_wire = jax.numpy.array([1, 0])
-        state_2_wire = jax.numpy.array([1, 0, 0, 0])
-        state_3_wire = jax.numpy.array([1, 0, 0, 0, 1, 0, 0, 0])
-
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def _():
-            qml.StatePrep(state_1_wire, wires=0)
-            qml.StatePrep(state_2_wire, wires=[0, 1])
-            qml.StatePrep(state_3_wire, wires=[0, 1, 2])
-            qml.StatePrep(state_2_wire, wires=[0, 1])
-            qml.StatePrep(state_1_wire, wires=0)
-            return qml.state()
-
-        assert (
-            draw(_)()
-            == "0: ──|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩──|Ψ⟩─┤  State\n1: ──────╰|Ψ⟩─├|Ψ⟩─╰|Ψ⟩──────┤  State\n2: ───────────╰|Ψ⟩───────────┤  State"
-        )
+        assert draw(circuit)() == expected
 
 
 if __name__ == "__main__":

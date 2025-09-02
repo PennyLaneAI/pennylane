@@ -31,6 +31,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
     HamiltonianOp,
     MeasureOp,
+    MultiRZOp,
     NamedObsOp,
     QubitUnitaryOp,
     SetStateOp,
@@ -145,7 +146,7 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
         return resolve_constant_wire(op.operands[0])
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
-    if isinstance(op, (CustomOp, GlobalPhaseOp, QubitUnitaryOp, SetStateOp)):
+    if isinstance(op, (CustomOp, GlobalPhaseOp, QubitUnitaryOp, SetStateOp, MultiRZOp)):
         return resolve_constant_wire(op.in_qubits[ssa.index])
     if isinstance(op, ExtractOpPL):
         return dispatch_wires_extract(op)
@@ -195,15 +196,33 @@ def ssa_to_qml_wires_named(op: NamedObsOp) -> int:
 ############################################################
 
 
-def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
+def xdsl_to_qml_op(
+    op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp,
+) -> Operator:
     """Convert an xDSL op to a PennyLane operator."""
 
-    if op.name == "quantum.gphase":
-        gate = qml.GlobalPhase(ssa_to_qml_params(op, single=True), wires=ssa_to_qml_wires(op))
+    match op.name:
 
-    else:  # custom.op
-        gate_cls = resolve_gate(op.properties.get("gate_name").data)
-        gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
+        case "quantum.gphase":
+            gate = qml.GlobalPhase(ssa_to_qml_params(op, single=True), wires=ssa_to_qml_wires(op))
+
+        case "quantum.unitary":
+            tensor_abstr_shape = op.matrix.owner.operand._type.shape.data
+            tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
+            gate = qml.QubitUnitary(U=jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
+
+        case "quantum.set_state":
+            tensor_abstr_shape = op.in_state.owner.operand._type.shape.data
+            tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
+            gate = qml.StatePrep(state=jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
+
+        case "quantum.multirz":
+            theta = _extract(op, "theta", resolve_constant_params, single=True)
+            gate = qml.MultiRZ(theta=theta, wires=ssa_to_qml_wires(op))
+
+        case _:
+            gate_cls = resolve_gate(op.properties.get("gate_name").data)
+            gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
 
     if op.properties.get("adjoint"):
         gate = qml.adjoint(gate)
@@ -213,23 +232,6 @@ def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
         cvals = ssa_to_qml_params(op, control=True)
         gate = qml.ctrl(gate, control=ctrls, control_values=cvals)
 
-    return gate
-
-
-def xdsl_to_qml_qubit_unitary_op(op: QubitUnitaryOp) -> Operator:
-    """Convert a ``quantum.unitary`` xDSL op to a PennyLane operator."""
-    tensor_abstr_shape = op.matrix.owner.operand._type.shape.data
-    tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
-    gate = qml.QubitUnitary(U=jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
-    # TODO: handle ctrl and adjoint
-    return gate
-
-
-def xdsl_to_qml_set_state_op(op: SetStateOp) -> Operator:
-    """Convert a ``quantum.set_state`` xDSL op to a PennyLane operator."""
-    tensor_abstr_shape = op.in_state.owner.operand._type.shape.data
-    tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
-    gate = qml.StatePrep(state=jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
     return gate
 
 
