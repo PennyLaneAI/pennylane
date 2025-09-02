@@ -82,12 +82,12 @@ def _adj_matrix_generation_helper(
     Return:
       An adjacent matrix represents the connectivities of vertices.
     """
-    adj_matrix_length = (num_vertices * (num_vertices - 1)) >> 1
+    adj_matrix_length = (num_vertices * (num_vertices - 1)) // 2
     adj_matrix = [0] * adj_matrix_length
     for n, _ in enumerate(adj_matrix):
-        N = (1 + math.isqrt(1 + 8 * n)) >> 1
+        N = (1 + math.isqrt(1 + 8 * n)) // 2
         i = N
-        j = n - ((N - 1) * N >> 1)
+        j = n - (N - 1) * N // 2
         if (i, j) in edges_in_adj_matrix:
             adj_matrix[n] = 1
     return adj_matrix
@@ -112,8 +112,8 @@ def _generate_cnot_adj_matrix() -> list:
        (4, 3),
        (5, 4),
        (6, 2),
-       (9, 6),
        (8, 7),
+       (9, 6),
        (9, 8),
        (10, 9),
        (11, 10),
@@ -140,8 +140,8 @@ def _generate_cnot_adj_matrix() -> list:
         (4, 3),
         (5, 4),
         (6, 2),
-        (9, 6),
         (8, 7),
+        (9, 6),
         (9, 8),
         (10, 9),
         (11, 10),
