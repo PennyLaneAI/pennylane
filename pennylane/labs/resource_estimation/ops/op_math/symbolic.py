@@ -826,7 +826,9 @@ class ResourceProd(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(cls, cmpr_factors_and_counts, num_wires, **kwargs):
+    def default_resource_decomp(
+        cls, cmpr_factors_and_counts, num_wires, **kwargs
+    ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -1050,7 +1052,7 @@ class ResourceChangeBasisOp(ResourceOperator):
     @classmethod
     def default_resource_decomp(
         cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, num_wires, **kwargs
-    ):
+    ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 

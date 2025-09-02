@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 # pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
 
-class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors
+class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian operator.
 
@@ -189,7 +189,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
     @classmethod
     def default_resource_decomp(
         cls, first_order_expansion, num_steps, order, num_wires, **kwargs
-    ) -> list[GateCount]:
+    ) -> list[GateCount]:  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
