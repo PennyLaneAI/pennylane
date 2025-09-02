@@ -3,6 +3,23 @@
 
 <h3>New features since last release</h3>
 
+* Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
+  [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
+
+  ```python
+  @qml.qnode(qml.device('default.qubit'))
+  def c():
+      with qml.allocation.allocate(1) as wires:
+          qml.H(wires)
+          qml.CNOT((wires[0], 0))
+      return qml.probs(wires=0)
+
+  c()
+  ```
+  ```
+  array([0.5, 0.5])
+  ```
+
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
   A corresponding decomposition rule has been added to support efficiently controlling the pattern,
@@ -523,6 +540,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
+  and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
+
 * The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
   no longer queue any operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
@@ -662,6 +683,7 @@
   ```
 
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
@@ -764,6 +786,7 @@
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
+  [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
 * The `autograph` keyword argument has been removed from the `QNode` constructor. 
