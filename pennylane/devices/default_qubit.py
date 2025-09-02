@@ -628,9 +628,12 @@ class DefaultQubit(Device):
                 transform_program.add_transform(
                     defer_measurements,
                     num_wires=len(self.wires),
-                    stopping_condition=stopping_condition,
                 )
-            transform_program.add_transform(transforms_decompose, gate_set=ALL_DQ_GATE_SET)
+            transform_program.add_transform(
+                transforms_decompose,
+                gate_set=ALL_DQ_GATE_SET,
+                stopping_condition=stopping_condition,
+            )
 
             return transform_program
 
