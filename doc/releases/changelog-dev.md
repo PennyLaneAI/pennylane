@@ -928,8 +928,7 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
-* Updated the documentation around the mid-circuit measurement method to correctly reflect
-  that the default method is device-dependent.
+* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
