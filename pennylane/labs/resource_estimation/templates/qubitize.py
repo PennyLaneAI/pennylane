@@ -24,7 +24,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments, arguments-differ
 
