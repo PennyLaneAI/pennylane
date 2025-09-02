@@ -208,20 +208,17 @@ class ConvertToMBQCFormalismPattern(
 ):  # pylint: disable=too-few-public-methods, no-self-use, unpacking-non-sequence
     """RewritePattern for converting to the MBQC formalism."""
 
-    def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
-        adj_matrix = _generate_adj_matrix(op.gate_name.data)
+    def _prep_graph_state(
+        self,
+        adj_matrix_op: arith.ConstantOp,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
         num_aux_wres = (
             _NumAuxWires.CNOT.value
             if op.gate_name.data == "CNOT"
             else _NumAuxWires.ONE_WIRE_GATE.value
         )
-        adj_matrix_op = arith.ConstantOp(
-            builtin.DenseIntOrFPElementsAttr.from_list(
-                type=builtin.TensorType(builtin.IntegerType(1), shape=(len(adj_matrix),)),
-                data=adj_matrix,
-            )
-        )
-        rewriter.insert_op(adj_matrix_op, InsertPoint.before(op))
 
         graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
         rewriter.insert_op(graph_state_prep_op, InsertPoint.before(op))
@@ -684,6 +681,8 @@ class ConvertToMBQCFormalismPattern(
         """Match and rewrite for converting to the MBQC formalism."""
 
         for region in root.regions:
+            one_wire_adj_matrix_op = None
+            two_wire_adj_matrix_op = None
             for op in region.ops:
                 # TODOs: Migrate the if/else body to functions
                 if isinstance(op, CustomOp) and op.gate_name.data in [
@@ -693,7 +692,19 @@ class ConvertToMBQCFormalismPattern(
                     "RotXZX",
                 ]:
                     # Allocate auxiliary qubits and entangle them
-                    graph_qubits_dict = self._prep_graph_state(op, rewriter)
+                    if one_wire_adj_matrix_op is None:
+                        adj_matrix = _generate_adj_matrix(op.gate_name.data)
+                        one_wire_adj_matrix_op = arith.ConstantOp(
+                            builtin.DenseIntOrFPElementsAttr.from_list(
+                                type=builtin.TensorType(
+                                    builtin.IntegerType(1), shape=(len(adj_matrix),)
+                                ),
+                                data=adj_matrix,
+                            )
+                        )
+                        rewriter.insert_op(one_wire_adj_matrix_op, InsertPoint.before(op))
+
+                    graph_qubits_dict = self._prep_graph_state(one_wire_adj_matrix_op, op, rewriter)
 
                     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
                     cz_op = CustomOp(
@@ -726,7 +737,18 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.erase_op(op)
                 elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
                     # Allocate auxiliary qubits and entangle them
-                    graph_qubits_dict = self._prep_graph_state(op, rewriter)
+                    if two_wire_adj_matrix_op is None:
+                        adj_matrix = _generate_adj_matrix(op.gate_name.data)
+                        two_wire_adj_matrix_op = arith.ConstantOp(
+                            builtin.DenseIntOrFPElementsAttr.from_list(
+                                type=builtin.TensorType(
+                                    builtin.IntegerType(1), shape=(len(adj_matrix),)
+                                ),
+                                data=adj_matrix,
+                            )
+                        )
+                        rewriter.insert_op(two_wire_adj_matrix_op, InsertPoint.before(op))
+                    graph_qubits_dict = self._prep_graph_state(two_wire_adj_matrix_op, op, rewriter)
 
                     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
                     cz_op = CustomOp(
