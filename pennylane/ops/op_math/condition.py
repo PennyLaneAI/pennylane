@@ -99,7 +99,7 @@ class Conditional(SymbolicOp, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: type[Operation], id=None):
+    def __init__(self, expr, then_op: Operation, id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
@@ -253,12 +253,18 @@ class CondCallable:
         return list(zip(self.preds[1:], self.branch_fns[1:]))
 
     def __call_capture_disabled(self, *args, **kwargs):
+
+        # dequeue operators passed to args
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        for l in leaves:
+            if isinstance(l, Operator):
+                qml.QueuingManager.remove(l)
+
         # python fallback
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=not-callable
+
         return self.false_fn(*args, **kwargs)
 
     def __call_capture_enabled(self, *args, **kwargs):
