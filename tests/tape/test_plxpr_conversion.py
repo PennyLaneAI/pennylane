@@ -508,7 +508,6 @@ class TestPlxprToTape:
             with qml.allocation.allocate(2, state="zero", restored=True) as wires:
                 qml.CNOT(wires)
 
-
         jaxpr = jax.make_jaxpr(circuit)()
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
         assert len(tape.operations) == 4
