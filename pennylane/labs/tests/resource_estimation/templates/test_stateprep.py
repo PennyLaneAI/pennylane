@@ -243,7 +243,7 @@ class TestPrepTHC:
         op = plre.ResourcePrepTHC(compact_ham, coeff_prec, selswap_depth)
         assert op.resource_params == {
             "compact_ham": compact_ham,
-            "coeff_precision_bits": coeff_prec,
+            "coeff_precision": coeff_prec,
             "select_swap_depth": selswap_depth,
         }
 
@@ -261,7 +261,7 @@ class TestPrepTHC:
             plre.ResourcePrepTHC,
             {
                 "compact_ham": compact_ham,
-                "coeff_precision_bits": coeff_prec,
+                "coeff_precision": coeff_prec,
                 "select_swap_depth": selswap_depth,
             },
         )
@@ -298,7 +298,7 @@ class TestPrepTHC:
 
         prep_cost = plre.estimate_resources(
             plre.ResourcePrepTHC(
-                compact_ham, coeff_precision_bits=coeff_prec, select_swap_depth=selswap_depth
+                compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth
             )
         )
         assert prep_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
@@ -314,6 +314,25 @@ class TestPrepTHC:
             TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
         ):
             plre.ResourcePrepTHC(plre.CompactHamiltonian.cdf(58, 160))
+
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
+        ):
+            plre.ResourcePrepTHC.resource_rep(plre.CompactHamiltonian.cdf(58, 160))
+
+    def test_typeerror_precision(self):
+        "Test that an error is raised when wrong type is provided for precision."
+        with pytest.raises(
+            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+        ):
+            plre.ResourcePrepTHC(plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
+
+        with pytest.raises(
+            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+        ):
+            plre.ResourcePrepTHC.resource_rep(
+                plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5
+            )
 
 
 class TestMPSPrep:

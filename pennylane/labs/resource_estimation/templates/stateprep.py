@@ -865,17 +865,23 @@ class ResourcePrepTHC(ResourceOperator):
 
     """
 
-    resource_keys = {"compact_ham", "coeff_precision_bits", "select_swap_depth"}
+    resource_keys = {"compact_ham", "coeff_precision", "select_swap_depth"}
 
-    def __init__(self, compact_ham, coeff_precision_bits=None, select_swap_depth=None, wires=None):
+    def __init__(self, compact_ham, coeff_precision=None, select_swap_depth=None, wires=None):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
                 f"Unsupported Hamiltonian representation for ResourcePrepTHC."
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
+
+        if not (isinstance(coeff_precision, int) or coeff_precision is None):
+            raise TypeError(
+                f"`coeff_precision` must be an integer, provided {type(coeff_precision)}."
+            )
+
         self.compact_ham = compact_ham
-        self.coeff_precision_bits = coeff_precision_bits
+        self.coeff_precision = coeff_precision
         self.select_swap_depth = select_swap_depth
         tensor_rank = compact_ham.params["tensor_rank"]
         self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
@@ -889,7 +895,7 @@ class ResourcePrepTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * compact_ham (CompactHamiltonian): a tensor hypercontracted
                   Hamiltonian for which the state is being prepared
-                * coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                * coeff_precision (int, optional): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
                   :code:`resource_config` is used.
                 * select_swap_depth (int, optional): A natural number that determines if data
@@ -898,13 +904,13 @@ class ResourcePrepTHC(ResourceOperator):
         """
         return {
             "compact_ham": self.compact_ham,
-            "coeff_precision_bits": self.coeff_precision_bits,
+            "coeff_precision": self.coeff_precision,
             "select_swap_depth": self.select_swap_depth,
         }
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, coeff_precision_bits=None, select_swap_depth=None
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -912,7 +918,7 @@ class ResourcePrepTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the state is being prepared
-            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+            coeff_precision (int, optional): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
@@ -922,16 +928,27 @@ class ResourcePrepTHC(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourcePrepTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
+
+        if not (isinstance(coeff_precision, int) or coeff_precision is None):
+            raise TypeError(
+                f"`coeff_precision` must be an integer, provided {type(coeff_precision)}."
+            )
+
         params = {
             "compact_ham": compact_ham,
-            "coeff_precision_bits": coeff_precision_bits,
+            "coeff_precision": coeff_precision,
             "select_swap_depth": select_swap_depth,
         }
         return CompressedResourceOp(cls, params)
 
     @classmethod
     def default_resource_decomp(
-        cls, compact_ham, coeff_precision_bits=None, select_swap_depth=None, **kwargs
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -939,7 +956,7 @@ class ResourcePrepTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+            coeff_precision (int, optional): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
@@ -959,7 +976,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
+        coeff_precision = coeff_precision or kwargs["config"]["qubitization_coeff_precision"]
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
@@ -969,7 +986,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
-        gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision_bits + 6))
+        gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
         hadamard = resource_rep(plre.ResourceHadamard)
 
@@ -997,9 +1014,9 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
         # Rotate and invert the rotation of ancilla to obtain amplitude of success
-        gate_list.append(AllocWires(coeff_precision_bits))
-        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision_bits - 3)))
-        gate_list.append(FreeWires(coeff_precision_bits))
+        gate_list.append(AllocWires(coeff_precision))
+        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(FreeWires(coeff_precision))
 
         # Reflecting about the success amplitude
         gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
@@ -1020,7 +1037,7 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(x, 2))
 
         # Figure- 4(Subprepare Circuit)
-        gate_list.append(plre.GateCount(hadamard, coeff_precision_bits + 1))
+        gate_list.append(plre.GateCount(hadamard, coeff_precision + 1))
 
         # Contiguous register cost Eq.29 in arXiv:2011.03494
         gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
@@ -1030,7 +1047,7 @@ class ResourcePrepTHC(ResourceOperator):
             plre.ResourceQROM,
             {
                 "num_bitstrings": num_coeff,
-                "size_bitstring": 2 * m_register + 2 + coeff_precision_bits,
+                "size_bitstring": 2 * m_register + 2 + coeff_precision,
                 "clean": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -1041,8 +1058,8 @@ class ResourcePrepTHC(ResourceOperator):
         comparator = resource_rep(
             plre.ResourceRegisterComparator,
             {
-                "first_register": coeff_precision_bits,
-                "second_register": coeff_precision_bits,
+                "first_register": coeff_precision,
+                "second_register": coeff_precision,
                 "geq": False,
             },
         )
@@ -1064,7 +1081,7 @@ class ResourcePrepTHC(ResourceOperator):
 
     @classmethod
     def default_adjoint_resource_decomp(
-        cls, compact_ham, coeff_precision_bits=None, select_swap_depth=None, **kwargs
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1072,7 +1089,7 @@ class ResourcePrepTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+            coeff_precision (int, optional): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
@@ -1091,7 +1108,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
+        coeff_precision = coeff_precision or kwargs["config"]["qubitization_coeff_precision"]
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
@@ -1123,9 +1140,9 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
         # Rotate and invert the rotation of ancilla to obtain amplitude of success
-        gate_list.append(AllocWires(coeff_precision_bits))
-        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision_bits - 3)))
-        gate_list.append(FreeWires(coeff_precision_bits))
+        gate_list.append(AllocWires(coeff_precision))
+        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(FreeWires(coeff_precision))
 
         # Reflecting about the success amplitude
         gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
@@ -1146,7 +1163,7 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(x, 2))
 
         # Figure- 4 (Subprepare Circuit)
-        gate_list.append(plre.GateCount(hadamard, coeff_precision_bits + 1))
+        gate_list.append(plre.GateCount(hadamard, coeff_precision + 1))
 
         # Contiguous register cost
         gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
@@ -1159,7 +1176,7 @@ class ResourcePrepTHC(ResourceOperator):
                     plre.ResourceQROM,
                     {
                         "num_bitstrings": num_coeff,
-                        "size_bitstring": 2 * m_register + 2 + coeff_precision_bits,
+                        "size_bitstring": 2 * m_register + 2 + coeff_precision,
                         "clean": False,
                         "select_swap_depth": select_swap_depth,
                     },
@@ -1183,6 +1200,6 @@ class ResourcePrepTHC(ResourceOperator):
         # Free Prepare Wires
         # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
-        gate_list.append(FreeWires(coeff_register + 2 * m_register + 2 * coeff_precision_bits + 6))
+        gate_list.append(FreeWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
         return gate_list

@@ -72,8 +72,8 @@ resource_config = {
     "precision_qrom_state_prep": 1e-9,
     "precision_mps_prep": 1e-9,
     "precision_alias_sampling": 1e-9,
-    "qubitization_rotation_bits": 15,
-    "qubitization_coeff_bits": 15,
+    "qubitization_rotation_precision": 15,
+    "qubitization_coeff_precision": 15,
 }
 
 
@@ -311,6 +311,9 @@ def _counts_from_compressed_res_op(
         gate_counts_dict[cp_rep] += scalar
         return
 
+    print(f"--- {cp_rep.name} ---\n")
+    if cp_rep.name == "Adjoint(PrepTHC)":
+        print("in tracking, prepTHC kwargs: ", config)
     ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
     resource_decomp = cp_rep.op_type.resource_decomp(config=config, **cp_rep.params)
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)

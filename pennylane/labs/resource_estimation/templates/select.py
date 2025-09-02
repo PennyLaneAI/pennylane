@@ -42,7 +42,7 @@ class ResourceSelectTHC(ResourceOperator):
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian on which the select operator is being applied
-        rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+        rotation_precision (int, optional): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
             :code:`resource_config` is used.
         select_swap_depth (int, optional): A natural number that determines if data
@@ -69,19 +69,23 @@ class ResourceSelectTHC(ResourceOperator):
       {'Toffoli': 2.219E+3, 'CNOT': 1.058E+4, 'X': 268, 'Hadamard': 6.406E+3, 'S': 80, 'Z': 41}
     """
 
-    resource_keys = {"compact_ham", "rotation_precision_bits", "select_swap_depth"}
+    resource_keys = {"compact_ham", "rotation_precision", "select_swap_depth"}
 
-    def __init__(
-        self, compact_ham, rotation_precision_bits=None, select_swap_depth=None, wires=None
-    ):
+    def __init__(self, compact_ham, rotation_precision=None, select_swap_depth=None, wires=None):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
                 f"Unsupported Hamiltonian representation for ResourceSelectTHC."
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
+
+        if not (isinstance(rotation_precision, int) or rotation_precision is None):
+            raise TypeError(
+                f"`rotation_precision` must be an integer, provided {type(rotation_precision)}."
+            )
+
         self.compact_ham = compact_ham
-        self.rotation_precision_bits = rotation_precision_bits
+        self.rotation_precision = rotation_precision
         self.select_swap_depth = select_swap_depth
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
@@ -101,7 +105,7 @@ class ResourceSelectTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * compact_ham (CompactHamiltonian): a tensor hypercontracted
                   Hamiltonian on which the select operator is being applied
-                * rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                * rotation_precision (int, optional): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                   :code:`resource_config` is used.
                 * select_swap_depth (int, optional): A natural number that determines if data
@@ -110,13 +114,13 @@ class ResourceSelectTHC(ResourceOperator):
         """
         return {
             "compact_ham": self.compact_ham,
-            "rotation_precision_bits": self.rotation_precision_bits,
+            "rotation_precision": self.rotation_precision,
             "select_swap_depth": self.select_swap_depth,
         }
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, rotation_precision_bits=None, select_swap_depth=None
+        cls, compact_ham, rotation_precision=None, select_swap_depth=None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -124,7 +128,7 @@ class ResourceSelectTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
-            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+            rotation_precision (int, optional): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
@@ -134,16 +138,28 @@ class ResourceSelectTHC(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceSelectTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
+
+        if not (isinstance(rotation_precision, int) or rotation_precision is None):
+            raise TypeError(
+                f"`rotation_precision` must be an integer, provided {type(rotation_precision)}."
+            )
+
         params = {
             "compact_ham": compact_ham,
-            "rotation_precision_bits": rotation_precision_bits,
+            "rotation_precision": rotation_precision,
             "select_swap_depth": select_swap_depth,
         }
         return CompressedResourceOp(cls, params)
 
     @classmethod
     def default_resource_decomp(
-        cls, compact_ham, rotation_precision_bits=None, select_swap_depth=None, **kwargs
+        cls, compact_ham, rotation_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -157,7 +173,7 @@ class ResourceSelectTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
-            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+            rotation_precision (int, optional): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provide, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
@@ -178,8 +194,8 @@ class ResourceSelectTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        rotation_precision_bits = (
-            rotation_precision_bits or kwargs["config"]["qubitization_rotation_bits"]
+        rotation_precision = (
+            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
         )
 
         gate_list = []
@@ -190,14 +206,14 @@ class ResourceSelectTHC(ResourceOperator):
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
         # Data output for rotations
-        gate_list.append(AllocWires(rotation_precision_bits * (num_orb - 1)))
+        gate_list.append(AllocWires(rotation_precision * (num_orb - 1)))
 
         # QROM to load rotation angles for 2-body integrals
         qrom_twobody = resource_rep(
             plre.ResourceQROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rotation_precision_bits,
+                "size_bitstring": rotation_precision,
                 "clean": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -210,7 +226,7 @@ class ResourceSelectTHC(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(
                     plre.ResourceSemiAdder,
-                    {"max_register_size": rotation_precision_bits - 1},
+                    {"max_register_size": rotation_precision - 1},
                 ),
                 "num_ctrl_wires": 1,
                 "num_ctrl_values": 0,
@@ -232,7 +248,7 @@ class ResourceSelectTHC(ResourceOperator):
             plre.ResourceQROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rotation_precision_bits,
+                "size_bitstring": rotation_precision,
                 "clean": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -269,7 +285,7 @@ class ResourceSelectTHC(ResourceOperator):
 
         # 1 cswap between the spin registers
         gate_list.append(plre.GateCount(cswap, 1))
-        gate_list.append(FreeWires(rotation_precision_bits * (num_orb - 1)))
+        gate_list.append(FreeWires(rotation_precision * (num_orb - 1)))
 
         return gate_list
 
@@ -279,7 +295,7 @@ class ResourceSelectTHC(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         compact_ham,
-        rotation_precision_bits=None,
+        rotation_precision=None,
         select_swap_depth=None,
         **kwargs,
     ) -> list[GateCount]:
@@ -296,7 +312,7 @@ class ResourceSelectTHC(ResourceOperator):
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
-            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+            rotation_precision (int, optional): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
@@ -316,8 +332,8 @@ class ResourceSelectTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        rotation_precision_bits = (
-            rotation_precision_bits or kwargs["config"]["qubitization_rotation_bits"]
+        rotation_precision = (
+            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
         )
 
         gate_list = []
@@ -338,12 +354,12 @@ class ResourceSelectTHC(ResourceOperator):
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
         # QROM for loading rotation angles for 2-body integrals
-        gate_list.append(AllocWires(rotation_precision_bits * (num_orb - 1)))
+        gate_list.append(AllocWires(rotation_precision * (num_orb - 1)))
         qrom_twobody = resource_rep(
             plre.ResourceQROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rotation_precision_bits,
+                "size_bitstring": rotation_precision,
                 "clean": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -356,7 +372,7 @@ class ResourceSelectTHC(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(
                     plre.ResourceSemiAdder,
-                    {"max_register_size": rotation_precision_bits},
+                    {"max_register_size": rotation_precision},
                 ),
                 "num_ctrl_wires": 1,
                 "num_ctrl_values": 0,
@@ -378,7 +394,7 @@ class ResourceSelectTHC(ResourceOperator):
             plre.ResourceQROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rotation_precision_bits,
+                "size_bitstring": rotation_precision,
                 "clean": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -423,7 +439,7 @@ class ResourceSelectTHC(ResourceOperator):
         # 1 cswap between the spin registers
         gate_list.append(plre.GateCount(cswap, 1))
 
-        gate_list.append(FreeWires(rotation_precision_bits * (num_orb - 1)))
+        gate_list.append(FreeWires(rotation_precision * (num_orb - 1)))
 
         if ctrl_num_ctrl_wires > 1:
             gate_list.append(FreeWires(1))

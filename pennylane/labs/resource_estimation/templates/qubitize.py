@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 
 
 class ResourceQubitizeTHC(ResourceOperator):
-    r"""Resource class for Qubitization of THC Hamiltonian.
+    r"""Resource class for qubitization of a Hamiltonian.
 
     .. note::
 
@@ -41,16 +41,12 @@ class ResourceQubitizeTHC(ResourceOperator):
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian for which the walk operator is being created
-        coeff_precision_bits (int, optional): Number of bits used to represent the precision for loading
-            the coefficients of the Hamiltonian. If :code:`None` is provided, the default value from the
-            :code:`resource_config` is used.
-        rotation_precision_bits (int, optional): Number of bits used to represent the precision for loading
-            the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-            :code:`resource_config` is used.
-        select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
-            used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-            ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
-            respectively.
+        prep_op (Union[~pennylane.labs.resource_estimation.ResourceOperator, None]): An optional
+            resource operator, corresponding to the prepare routine. If :code:`None`, the
+            default :class:`~.pennylane.labs.resource_estimation.ResourcePrepTHC` will be used.
+        select_op (Union[~pennylane.labs.resource_estimation.ResourceOperator, None]): An optional
+            resource operator, corresponding to the select routine. If :code:`None`, the
+            default :class:`~.pennylane.labs.resource_estimation.ResourceSelectTHC` will be used.
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
@@ -73,19 +69,13 @@ class ResourceQubitizeTHC(ResourceOperator):
 
     """
 
-    resource_keys = {
-        "compact_ham",
-        "coeff_precision_bits",
-        "rotation_precision_bits",
-        "select_swap_depths",
-    }
+    resource_keys = {"compact_ham", "prep_op", "select_op"}
 
     def __init__(
         self,
         compact_ham,
-        coeff_precision_bits=None,
-        rotation_precision_bits=None,
-        select_swap_depths=None,
+        prep_op=None,
+        select_op=None,
         wires=None,
     ):
         if compact_ham.method_name != "thc":
@@ -94,29 +84,18 @@ class ResourceQubitizeTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
 
-        if isinstance(select_swap_depths, (list, tuple, np.ndarray)):
-            if len(select_swap_depths) != 2:
-                raise ValueError(
-                    f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
-                )
-        elif not (isinstance(select_swap_depths, int) or select_swap_depths is None):
-            raise TypeError("`select_swap_depths` must be an integer, None or iterable")
-
         self.compact_ham = compact_ham
-        self.coeff_precision_bits = coeff_precision_bits
-        self.rotation_precision_bits = rotation_precision_bits
-        self.select_swap_depths = select_swap_depths
+        self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
+        self.select_op = select_op.resource_rep_from_op() if select_op else None
 
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
         if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
             num_orb = compact_ham.params["num_orbitals"]
             tensor_rank = compact_ham.params["tensor_rank"]
+            num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+            coeff_register = int(math.ceil(math.log2(num_coeff)))
 
             # Based on section III D, Eq. 43 in arXiv:2011.03494
             # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
@@ -132,74 +111,54 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+                * compact_ham (CompactHamiltonian): a tensor hypercontracted
                   Hamiltonian for which the walk operator is being created
-                * coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                  the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                  :code:`resource_config` is used.
-                * rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                  the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                  :code:`resource_config` is used.
-                * select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
-                  used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                  ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
-                  respectively.
+                * prep_op (Union[CompressedResourceOp, None]): An optional compressed
+                  resource operator, corresponding to the prepare routine. If :code:`None`, the
+                  default :class:`~.pennylane.labs.resource_estimation.ResourcePrepTHC` will be used.
+                * select_op (Union[CompressedResourceOp, None]): An optional compressed
+                  resource operator, corresponding to the select routine. If :code:`None`, the
+                  default :class:`~.pennylane.labs.resource_estimation.ResourceSelectTHC` will be used.
         """
         return {
             "compact_ham": self.compact_ham,
-            "coeff_precision_bits": self.coeff_precision_bits,
-            "rotation_precision_bits": self.rotation_precision_bits,
-            "select_swap_depths": self.select_swap_depths,
+            "prep_op": self.prep_op,
+            "select_op": self.select_op,
         }
 
     @classmethod
-    def resource_rep(
-        cls, compact_ham, coeff_precision_bits, rotation_precision_bits, select_swap_depths
-    ) -> CompressedResourceOp:
+    def resource_rep(cls, compact_ham, prep_op=None, select_op=None) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
-                used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
-                respectively.
+            prep_op (Union[~pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the prepare routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourcePrepTHC` will be used.
+            select_op (Union[~pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the select routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourceSelectTHC` will be used.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceQubitizeTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
 
-        if isinstance(select_swap_depths, (list, tuple, np.ndarray)):
-            if len(select_swap_depths) != 2:
-                raise ValueError(
-                    f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
-                )
-        elif not (isinstance(select_swap_depths, int) or select_swap_depths is None):
-            raise TypeError("`select_swap_depths` must be an integer, None or iterable")
-
-        params = {
-            "compact_ham": compact_ham,
-            "coeff_precision_bits": coeff_precision_bits,
-            "rotation_precision_bits": rotation_precision_bits,
-            "select_swap_depths": select_swap_depths,
-        }
+        params = {"compact_ham": compact_ham, "prep_op": prep_op, "select_op": select_op}
         return CompressedResourceOp(cls, params)
 
     @classmethod
     def default_resource_decomp(
         cls,
         compact_ham,
-        coeff_precision_bits=None,
-        rotation_precision_bits=None,
-        select_swap_depths=None,
+        prep_op=None,
+        select_op=None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -214,16 +173,12 @@ class ResourceQubitizeTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
-                used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
-                respectively.
+            prep_op (Union[~pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the prepare routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourcePrepTHC` will be used.
+            select_op (Union[~pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the select routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourceSelectTHC` will be used.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -235,37 +190,39 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         tensor_rank = compact_ham.params["tensor_rank"]
         m_register = int(np.ceil(np.log2(tensor_rank)))
-        coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
 
-        if isinstance(select_swap_depths, int) or select_swap_depths is None:
-            select_swap_depths = [select_swap_depths] * 2
+        if not select_op:
+            # Select cost from Figure 5 in arXiv:2011.03494
+            select_op = resource_rep(
+                plre.ResourceSelectTHC,
+                {
+                    "compact_ham": compact_ham,
+                },
+            )
+        gate_list.append(GateCount(select_op))
 
-        # Select cost from Figure 5 in arXiv:2011.03494
-        select = resource_rep(
-            plre.ResourceSelectTHC,
-            {
-                "compact_ham": compact_ham,
-                "rotation_precision_bits": rotation_precision_bits,
-                "select_swap_depth": select_swap_depths[1],
-            },
-        )
-        gate_list.append(GateCount(select))
-
-        # Prep cost from Figure 3 and 4 in arXiv:2011.03494
-        prep = resource_rep(
-            plre.ResourcePrepTHC,
-            {
-                "compact_ham": compact_ham,
-                "coeff_precision_bits": coeff_precision_bits,
-                "select_swap_depth": select_swap_depths[0],
-            },
-        )
-        gate_list.append(GateCount(prep))
-        gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
+        if not prep_op:
+            # Prep cost from Figure 3 and 4 in arXiv:2011.03494
+            prep_op = resource_rep(
+                plre.ResourcePrepTHC,
+                {
+                    "compact_ham": compact_ham,
+                },
+            )
+        gate_list.append(GateCount(prep_op))
+        gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
+        # print("kwargs: ", kwargs["config"]["qubitization_coeff_precision"])
+        # coeff_precision = 15 # kwargs["config"]["qubitization_coeff_precision"]
+        # print("coeff_precision: ", coeff_precision)
+        print("HELLOOOO: ", kwargs)
+        coeff_precision = (
+            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
+        )  # kwargs.get("config", {}).get("qubitization_coeff_precision")
+
         toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision_bits + 4))
+        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
 
         return gate_list
 
@@ -275,9 +232,8 @@ class ResourceQubitizeTHC(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         compact_ham,
-        coeff_precision_bits=None,
-        rotation_precision_bits=None,
-        select_swap_depths=None,
+        prep_op=None,
+        select_op=None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
@@ -293,16 +249,12 @@ class ResourceQubitizeTHC(ResourceOperator):
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
-                used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
-                respectively.
+            prep_op (Union[~pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the prepare routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourcePrepTHC` will be used.
+            select_op (Union[~pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the select routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourceSelectTHC` will be used.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -314,10 +266,6 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         tensor_rank = compact_ham.params["tensor_rank"]
         m_register = int(np.ceil(np.log2(tensor_rank)))
-        coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
-
-        if isinstance(select_swap_depths, int) or select_swap_depths is None:
-            select_swap_depths = [select_swap_depths] * 2
 
         if ctrl_num_ctrl_wires > 1:
             mcx = resource_rep(
@@ -330,39 +278,40 @@ class ResourceQubitizeTHC(ResourceOperator):
             gate_list.append(AllocWires(1))
             gate_list.append(GateCount(mcx, 2))
 
-        # Controlled Select cost from Fig 5 in arXiv:2011.03494
-        select = resource_rep(
-            plre.ResourceSelectTHC,
-            {
-                "compact_ham": compact_ham,
-                "rotation_precision": rotation_precision_bits,
-                "select_swap_depth": select_swap_depths[1],
-            },
-        )
+        if not select_op:
+            # Controlled Select cost from Fig 5 in arXiv:2011.03494
+            select_op = resource_rep(
+                plre.ResourceSelectTHC,
+                {
+                    "compact_ham": compact_ham,
+                },
+            )
         gate_list.append(
             GateCount(
                 resource_rep(
                     plre.ResourceControlled,
-                    {"base_cmpr_op": select, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                    {"base_cmpr_op": select_op, "num_ctrl_wires": 1, "num_ctrl_values": 0},
                 )
             )
         )
 
-        # Prep cost from Fig 3 and 4 in arXiv:2011.03494
-        prep = resource_rep(
-            plre.ResourcePrepTHC,
-            {
-                "compact_ham": compact_ham,
-                "coeff_precision": coeff_precision_bits,
-                "select_swap_depth": select_swap_depths[0],
-            },
-        )
-        gate_list.append(GateCount(prep))
-        gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
+        if not prep_op:
+            # Prep cost from Fig 3 and 4 in arXiv:2011.03494
+            prep_op = resource_rep(
+                plre.ResourcePrepTHC,
+                {
+                    "compact_ham": compact_ham,
+                },
+            )
+        gate_list.append(GateCount(prep_op))
+        gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494s
+        coeff_precision = (
+            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
+        )
         toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision_bits + 4))
+        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
 
         if ctrl_num_ctrl_wires > 1:
             gate_list.append(FreeWires(1))

@@ -37,7 +37,7 @@ class TestSelectTHC:
         op = plre.ResourceSelectTHC(compact_ham, rotation_prec, selswap_depth)
         assert op.resource_params == {
             "compact_ham": compact_ham,
-            "rotation_precision_bits": rotation_prec,
+            "rotation_precision": rotation_prec,
             "select_swap_depth": selswap_depth,
         }
 
@@ -55,7 +55,7 @@ class TestSelectTHC:
             plre.ResourceSelectTHC,
             {
                 "compact_ham": compact_ham,
-                "rotation_precision_bits": rotation_prec,
+                "rotation_precision": rotation_prec,
                 "select_swap_depth": selswap_depth,
             },
         )
@@ -95,7 +95,7 @@ class TestSelectTHC:
 
         select_cost = plre.estimate_resources(
             plre.ResourceSelectTHC(
-                compact_ham, rotation_precision_bits=rotation_prec, select_swap_depth=selswap_depth
+                compact_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
             )
         )
         assert select_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
@@ -111,3 +111,22 @@ class TestSelectTHC:
             TypeError, match="Unsupported Hamiltonian representation for ResourceSelectTHC."
         ):
             plre.ResourceSelectTHC(plre.CompactHamiltonian.cdf(58, 160))
+
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for ResourceSelectTHC."
+        ):
+            plre.ResourceSelectTHC.resource_rep(plre.CompactHamiltonian.cdf(58, 160))
+
+    def test_typeerror_precision(self):
+        "Test that an error is raised when wrong type is provided for precision."
+        with pytest.raises(
+            TypeError, match=f"`rotation_precision` must be an integer, provided {type(2.5)}."
+        ):
+            plre.ResourceSelectTHC(plre.CompactHamiltonian.thc(58, 160), rotation_precision=2.5)
+
+        with pytest.raises(
+            TypeError, match=f"`rotation_precision` must be an integer, provided {type(2.5)}."
+        ):
+            plre.ResourceSelectTHC.resource_rep(
+                plre.CompactHamiltonian.thc(58, 160), rotation_precision=2.5
+            )
