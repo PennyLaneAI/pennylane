@@ -489,15 +489,13 @@
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
 
-* With :func:`~.decomposition.enable_graph()`, if the decomposition graph is 
-  unable to find a solution for some operators in the circuit, it no longer
-  raises an error. Instead, a warning is raised, and `op.decomposition()` is
+* With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a decomposition cannot be found for an operator in the circuit, it no longer
+  raises an error. Instead, a warning is raised, and `op.decomposition()` (the current default method for decomposing gates) is
   used as a fall back, while the rest of the circuit is still decomposed with
   the new graph-based system. Additionally, a special warning message is
   raised if the circuit contains a `GlobalPhase`, reminding the user that
   `GlobalPhase` is not assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
-
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the

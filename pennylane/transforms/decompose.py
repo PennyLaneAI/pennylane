@@ -836,8 +836,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
 
     else:
         warnings.warn(
-            f"Operator {op.name} does not define a decomposition and was not found in the "
-            f"target gate set. To remove this warning, add the operator name({op.name}) or "
+            f"Operator {op.name} does not define a decomposition to the target gate set and was not found in the "
+            f"target gate set. To remove this warning, add the operator name ({op.name}) or "
             f"type ({type(op)}) to the gate set.",
             UserWarning,
         )
