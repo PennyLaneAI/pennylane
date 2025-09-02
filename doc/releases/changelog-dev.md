@@ -14,9 +14,9 @@
   wires are handled:
 
   * `num_wires`: the number of wires to dynamically allocate. 
-  * `state = "zero"/"arb"`: the initial state that the dynamically allocated wires are requested to 
-    be in. Currently, supported values are `"zero"` (initialize in the all-zero state) or `"arb"` 
-    (an arbitrary state).
+  * `state = "zero"/"any"`: the initial state that the dynamically allocated wires are requested to 
+    be in. Currently, supported values are `"zero"` (initialize in the all-zero state) or `"any"` 
+    (any arbitrary state).
   * `restored = True/False`: a user-guarantee that the allocated wires will be restored to their 
     original state (`True`) or not (`False`) when those wires are deallocated. 
 
@@ -68,7 +68,7 @@
 
       for i in range(2):
           with qml.allocate(1, state="zero", restored=True) as new_qubit1:
-              with qml.allocate(1, state="arb", restored=False) as new_qubit2:
+              with qml.allocate(1, state="any", restored=False) as new_qubit2:
                   m0 = qml.measure(new_qubit1[0], reset=True)
                   qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
                   qml.CNOT((0, new_qubit2))
