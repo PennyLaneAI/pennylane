@@ -376,7 +376,7 @@ class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
-    # TODO: We really shouldn't be hardcoding the expected derivative here
+    # TODO: We really shouldn't be hardcoding the expected derivative here [sc-98529]
     exp_grad = [-0.57485039, 0.31253535, -0.717947, 0.48489061]
 
     @pytest.mark.torch
