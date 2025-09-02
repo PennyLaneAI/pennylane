@@ -509,7 +509,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             count = 0
             final_results = []
 
-            for f, s in zip(batch_fns, tape_counts):
+            for f, s in zip(batch_fns, tape_counts, strict=True):
                 # apply any batch transform post-processing
                 new_res = f(res[count : count + s])
                 final_results.append(new_res)

@@ -789,6 +789,7 @@
 
 * Start using `strict=True` to `zip` usage in source code.
   [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
+  [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
@@ -905,6 +906,13 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
+* Two new xDSL passes have been added to the Python compiler: `decompose-graph-state`, which
+  decomposes `mbqc.graph_state_prep` operations to their corresponding set of quantum operations for
+  execution on state simulators, and `null-decompose-graph-state`, which replaces
+  `mbqc.graph_state_prep` operations with single quantum-register allocation operations for
+  execution on null devices.
+  [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
@@ -948,6 +956,15 @@
 * Operators queued with :func:`pennylane.apply` no longer get dequeued by subsequent dequeuing operations
   (e.g. :func:`pennylane.adjoint`).
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
+* `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
+  more robustly. In particular, the generator is simplified prior to decomposition. Now more
+  time evolution ops can be supported on devices that do not natively support them.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
+
+* A scalar product of a norm one scalar and an operator now decomposes into a `GlobalPhase` and the operator.
+  For example, `-1 * qml.X(0)` now decomposes into `[qml.GlobalPhase(-np.pi), qml.X(0)]`.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
 * Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
   :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
@@ -1017,6 +1034,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
+Astral Cai,
 Joey Carter,
 Yushao Chen,
 Isaac De Vlugt,
