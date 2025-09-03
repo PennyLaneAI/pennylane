@@ -371,6 +371,9 @@
 
 <h4>Other improvements</h4>
 
+* The Python `Quantum` dialect now has more strict constraints for operands and results.
+  [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
+
 * Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
   [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
 
