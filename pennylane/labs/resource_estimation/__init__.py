@@ -208,3 +208,4 @@ from .templates import (
 )
 
 from .wrappers import qcow
+from thc_decomp import *
