@@ -527,9 +527,7 @@ def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
     n_temporary_ccx_pairs = 2 * (1 - is_small_mcx)
     # To do: Can we actually use the TemporaryAND here?
     return {
-        ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
-        qml.TemporaryAND: n_temporary_ccx_pairs,
-        adjoint_resource_rep(qml.TemporaryAND): n_temporary_ccx_pairs,
+        ops.Toffoli: n_ccx,
         ops.X: n_ccx - 4 if is_small_mcx else n_ccx - 8,
     }
 
@@ -548,42 +546,49 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
+    # Unpack work wires for readability. There might just be one of them if it is a "small" MCX
+    # (less than 6 controls)
+    work0, *work1 = work_wires
     # First use the work wire to prepare the first two control wires as conditionally clean.
-    if work_wire_type == "borrowed":
-        ops.Toffoli([wires[0], wires[1], work_wires[0]])
-    else:
-        qml.TemporaryAND([wires[0], wires[1], work_wires[0]])
+    left_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.TemporaryAND
+    left_elbow([wires[0], wires[1], work0])
 
     middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
 
-    # Apply the MCX in the middle
-    if (
-        len(middle_ctrl_indices) == 1
-    ):  # This clause is activated for "small" MCX (less than 6 controls)
-        ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
+    # Apply the MCX in the middle. This is just a single Toffoli without work wires for "small" MCX
+    if len(middle_ctrl_indices) == 1:
+        ops.Toffoli([work0, wires[middle_ctrl_indices[0]], wires[-1]])
     else:
         middle_wires = [wires[i] for i in middle_ctrl_indices]
-        # To do: Can we actually use the TemporaryAND indirectly in _one_worker here?
-        _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
+        # No toggle detection needed for the inner MCX decomposition, even for borrowed work wires
+        _mcx_one_worker(
+            [work0] + middle_wires + wires[-1:],
+            work1,
+            work_wire_type=work_wire_type,
+            _skip_toggle_detection=True,
+        )
 
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
-    if work_wire_type == "borrowed":
-        ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.adjoint(qml.TemporaryAND)
+    right_elbow([wires[0], wires[1], work0])
 
+    if work_wire_type == "borrowed":
         # Perform toggle-detection if the work wire is borrowed
         middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
         if len(middle_ctrl_indices) == 1:
-            ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
+            ops.Toffoli([work0, wires[middle_ctrl_indices[0]], wires[-1]])
         else:
             middle_wires = [wires[i] for i in middle_ctrl_indices]
-            # To do: Can we actually use the TemporaryAND indirectly in _one_worker here?
-            _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
-        ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
+            _mcx_one_worker(
+                [work0] + middle_wires + wires[-1:],
+                work1,
+                work_wire_type=work_wire_type,
+                _skip_toggle_detection=True,
+            )
 
-    else:
-        ops.adjoint(qml.TemporaryAND([wires[0], wires[1], work_wires[0]]))
+        ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
 decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
@@ -641,12 +646,19 @@ def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
 
 @register_condition(_mcx_one_worker_condition)
 @register_resources(_mcx_one_worker_resource)
-def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", **__):
+def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_detection=False, **__):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
     produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
     and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is borrowed as described in
     Sec. 5.1 of [1].
+
+    .. note::
+
+        The keyword argument ``_skip_toggle_detection`` is only supposed to be used when utilizing
+        ``_mcx_one_worker`` as a subroutine within a decomposition rule, but not when using
+        it as a decomposition rule itself. This is because ``_mcx_one_worker_resource`` does not
+        support/take into account this keyword argument.
 
     References:
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
@@ -656,6 +668,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", **__):
     if work_wire_type == "borrowed":
         ops.Toffoli([wires[0], wires[1], work_wires[0]])
     else:
+        _skip_toggle_detection = True
         qml.TemporaryAND([wires[0], wires[1], work_wires[0]])
 
     final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
@@ -664,13 +677,14 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", **__):
 
     if work_wire_type == "borrowed":
         ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    else:
+        ops.adjoint(qml.TemporaryAND([wires[0], wires[1], work_wires[0]]))
 
-        # Perform toggle-detection of the work wire is borrowed
+    if not _skip_toggle_detection:
+        # Perform toggle-detection if the work wire is borrowed
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
-    else:
-        ops.adjoint(qml.TemporaryAND([wires[0], wires[1], work_wires[0]]))
 
 
 decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)

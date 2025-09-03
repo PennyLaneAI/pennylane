@@ -828,9 +828,11 @@ class TestMultiControlledX:
         self, num_work_wires, num_control_wires, work_wire_type
     ):
         """Tests the decomposition rules of MCX when work wires are specified."""
+        work_wires = range(num_control_wires + 1, num_work_wires + num_control_wires + 1)
+        print(work_wires)
         op = qml.MultiControlledX(
             range(num_control_wires + 1),
-            work_wires=range(num_control_wires + 1, num_work_wires + num_control_wires + 1),
+            work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
         for rule in qml.list_decomps(qml.MultiControlledX):
