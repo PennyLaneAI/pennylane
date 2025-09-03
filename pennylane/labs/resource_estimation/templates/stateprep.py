@@ -947,12 +947,15 @@ class ResourcePrepTHC(ResourceOperator):
                 f"`coeff_precision` must be an integer, provided {type(coeff_precision)}."
             )
 
+        tensor_rank = compact_ham.params["tensor_rank"]
+        num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+
         params = {
             "compact_ham": compact_ham,
             "coeff_precision": coeff_precision,
             "select_swap_depth": select_swap_depth,
         }
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(

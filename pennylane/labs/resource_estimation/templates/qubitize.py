@@ -151,9 +151,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # Based on section III D, Eq. 43 in arXiv:2011.03494
         # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
-        num_wires = (
-            num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
-        )
+        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
         params = {"compact_ham": compact_ham, "prep_op": prep_op, "select_op": select_op}
         return CompressedResourceOp(cls, num_wires, params)
 

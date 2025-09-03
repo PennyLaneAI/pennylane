@@ -253,17 +253,18 @@ class TestPrepTHC:
         }
 
     @pytest.mark.parametrize(
-        "compact_ham, coeff_prec, selswap_depth",
+        "compact_ham, coeff_prec, selswap_depth, num_wires",
         (
-            (plre.CompactHamiltonian.thc(58, 160), 13, 1),
-            (plre.CompactHamiltonian.thc(10, 50), None, None),
-            (plre.CompactHamiltonian.thc(4, 20), None, 2),
+            (plre.CompactHamiltonian.thc(58, 160), 13, 1, 16),
+            (plre.CompactHamiltonian.thc(10, 50), None, None, 12),
+            (plre.CompactHamiltonian.thc(4, 20), None, 2, 10),
         ),
     )
-    def test_resource_rep(self, compact_ham, coeff_prec, selswap_depth):
+    def test_resource_rep(self, compact_ham, coeff_prec, selswap_depth, num_wires):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourcePrepTHC,
+            num_wires,
             {
                 "compact_ham": compact_ham,
                 "coeff_precision": coeff_prec,
