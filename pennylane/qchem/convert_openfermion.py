@@ -91,7 +91,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
         if len(fermi_words) == 1 and fermi_coeffs[0] == 1.0:
             return fermi_words[0]
 
-        pl_op = FermiSentence(dict(zip(fermi_words, fermi_coeffs)))
+        pl_op = FermiSentence(dict(zip(fermi_words, fermi_coeffs, strict=True)))
         pl_op.simplify(tol=tol)
 
         return pl_op

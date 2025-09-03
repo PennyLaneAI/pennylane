@@ -530,6 +530,11 @@ class ReturnWires(_WireAction):
     def __repr__(self) -> str:
         return f"ReturnWires({self.num_wires}, clean={self.clean})"
 
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return self.__class__(self.num_wires * other)
+        raise NotImplementedError
+
 
 class AllocWires(_WireAction):
     r"""Allows users to allocate clean work wires.
