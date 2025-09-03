@@ -26,8 +26,8 @@ from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     ConvertToMBQCFormalismPass,
-    decompose_graph_state_pass,
     convert_to_mbqc_formalism_pass,
+    decompose_graph_state_pass,
     measurements_from_samples_pass,
 )
 from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import (
