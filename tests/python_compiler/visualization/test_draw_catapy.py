@@ -254,6 +254,22 @@ class Testdraw:
 
         assert draw(_)(**kwargs) == expected
 
+    def test_ctrl_before_custom_op(self):
+        """
+        Test the visualization of control operations before custom ops.
+        """
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _():
+            qml.ctrl(qml.X(3), control=[0, 1, 2], control_values=[1, 0, 1])
+            qml.RX(0.1, 2)
+            return qml.state()
+
+        assert (
+            draw(_)()
+            == "0: ─╭●─────┤  State\n1: ─├○─────┤  State\n2: ─├●──RX─┤  State\n3: ─╰X─────┤  State"
+        )
+
     @pytest.mark.parametrize(
         "measurement, expected",
         [
