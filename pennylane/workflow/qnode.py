@@ -803,26 +803,27 @@ class QNode:
 
     def _get_shots(self, kwargs: dict):
         """
-
         Note that this mutates kwargs to remove shots from it.
         """
+        if self._qfunc_uses_shots_arg:
+            return self.shots
         if "shots" in kwargs:
+            # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
                 "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
                 PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
+            if self._shots_override_device:
+                _kwargs_shots = kwargs.pop("shots")
+                warnings.warn(
+                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                    f"The transform will take precedence over 'shots={_kwargs_shots}.'",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
-        if "shots" in kwargs and self._shots_override_device:  # pylint: disable=protected-access
-            warnings.warn(
-                "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                f"The transform will take precedence over 'shots={kwargs['shots']}.'",
-                UserWarning,
-                stacklevel=2,
-            )
-        if (
-            "shots" in inspect.signature(self.func).parameters or self._shots_override_device
-        ):  # pylint: disable=protected-access
+        if self._shots_override_device:  # QNode.shots precedency:
             return self.shots
         return kwargs.pop("shots", self.shots)
 

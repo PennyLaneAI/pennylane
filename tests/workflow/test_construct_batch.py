@@ -475,14 +475,7 @@ class TestConstructBatch:
                     qml.S(0)
                 return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="specified on call to a QNode is deprecated",
-        ):
-            with pytest.warns(
-                UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
-            ):
-                batch, fn = construct_batch(circuit, level="device")(shots=2)
+        batch, fn = construct_batch(circuit, level="device")(shots=2)
 
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(
