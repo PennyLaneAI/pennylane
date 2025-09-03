@@ -37,7 +37,13 @@ from .api import compiler_transform
 
 
 class _NumAuxWires(Enum):
-    ONE_WIRE_GATE = 4
+    """
+    Specify the number of auxiliary wires required for gates from the MBQC gate set.
+    The number of auxiliary qubits for a single qubit gate is 4, while it is 13 for a
+    CNOT gate.
+    """
+
+    SINGLE_QUBIT = 4
     CNOT = 13
 
 
@@ -170,7 +176,7 @@ def _generate_one_wire_op_adj_matrix() -> list:
     Returns:
         An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a one-wire gate.
     """
-    num_vertices = _NumAuxWires.ONE_WIRE_GATE.value
+    num_vertices = _NumAuxWires.SINGLE_QUBIT.value
     edges_in_adj_matrix = [
         (1, 0),
         (2, 1),
@@ -229,7 +235,7 @@ class ConvertToMBQCFormalismPattern(
         num_aux_wres = (
             _NumAuxWires.CNOT.value
             if op.gate_name.data == "CNOT"
-            else _NumAuxWires.ONE_WIRE_GATE.value
+            else _NumAuxWires.SINGLE_QUBIT.value
         )
 
         graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
@@ -242,10 +248,11 @@ class ConvertToMBQCFormalismPattern(
             extract_op = ExtractOp(graph_state_reg, i)
             rewriter.insert_op(extract_op, InsertPoint.before(op))
 
-            # Note the following convert the aux qubit index in the register to the
-            # standard context book MBQC representation. The if branch works for
-            # both one and two qubit gates, while the else branch only validates for
-            # the CNOT gate.
+            # Note the following line maps the aux qubit index in the register to the
+            # standard context book MBQC representation. Note that auxiliary qubits in
+            # the graph state for one qubit gates only hit the `if` branch as `i` is
+            # always less than `4`, while the auxiliary qubits in graph state for a `CNOT`
+            # gate with an index >= 7 would hit the `else` branch.
             key = i + 2 if i < 7 else i + 3
 
             graph_qubit_dict[key] = extract_op.results[0]
