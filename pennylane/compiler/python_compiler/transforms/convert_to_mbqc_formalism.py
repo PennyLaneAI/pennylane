@@ -42,10 +42,10 @@ class _NumAuxWires(Enum):
 
 
 def _generate_adj_matrix(op_name: str) -> list:
-    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits of
-    a gate.
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in a 
+    graph state for a gate operation.
     Args:
-        op_name (str): Gate name.
+        op_name (str): The gate name. Note that only a gate in the MBQC gate set is supported.
     Returns:
         An adjacent matrix represents the connectivity of auxiliary qubits.
     """
@@ -53,14 +53,15 @@ def _generate_adj_matrix(op_name: str) -> list:
         return _generate_one_wire_op_adj_matrix()
     if op_name == "CNOT":
         return _generate_cnot_adj_matrix()
-    raise NotImplementedError(f"{op_name} is not supported in the MBQC formalism.")
+    raise NotImplementedError(f"{op_name} is not supported in the MBQC gate set.")
 
 
 def _adj_matrix_generation_helper(
     num_vertices: int, edges_in_adj_matrix: list[tuple[int, int]]
 ) -> list:
-    """Generate an adjacent matrix with the number of vertice and edges information.
-    Note that adjcent matrix means the lower triangular part of the full adjact matrix.
+    """Helper function to generate an adjacent matrix to represent the connectivity of auxiliary qubits in 
+    a graph state for a gate operation with the number of vertices and edges information.
+    Note that adjacent matrix here means the lower triangular part of the full adjacent matrix.
     It can be represented as below and `x` marks here are diagonalized elements.
     x
     + x
@@ -75,7 +76,7 @@ def _adj_matrix_generation_helper(
       edges_in_adj_matrix (list[tuple[int, int]]): List of edges in the adjacent matrix.
 
     Return:
-      An adjacent matrix represents the connectivities of vertices.
+      An adjacent matrix represents the connectivity of vertices.
     """
     adj_matrix_length = num_vertices * (num_vertices - 1) // 2
     adj_matrix = [0] * adj_matrix_length
@@ -88,9 +89,9 @@ def _adj_matrix_generation_helper(
 
 
 def _generate_cnot_adj_matrix() -> list:
-    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits of
-    a CNOT gate based on the textbook MBQC formalism. The connectivity of the qubits in
-    the register is:
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in 
+    the graph state for a CNOT gate operation based on the textbook MBQC formalism. The 
+    connectivity of the ctrl/target qubits in the register and auxiliary qubits is:
 
     ctl --  0  --  1  --  2  --  3  --  4  -- 5
                           |
@@ -98,7 +99,8 @@ def _generate_cnot_adj_matrix() -> list:
                           |
     tgt --  7  --  8  --  9  -- 10  -- 11  -- 12
 
-    Note that both ctrl and target qubits are not in the adjacent matrix and
+    Note that both ctrl and target qubits are not in the adjacent matrix and the connectivity
+    of the auxiliary qubits is:
     edges_in_adj_matrix = [
        (1, 0),
        (2, 1),
@@ -124,7 +126,7 @@ def _generate_cnot_adj_matrix() -> list:
     9  -- 10  --  11 -- 12  -- 13  -- 14  -- 15
 
     Returns:
-        An adjacent matrix represents the connectivity of auxiliary qubits of a CNOT gate.
+        An adjacent matrix represents the connectivity of auxiliary qubits in the graph state for a CNOT gate operation.
     """
     num_vertices = _NumAuxWires.CNOT.value
     edges_in_adj_matrix = [
@@ -146,13 +148,14 @@ def _generate_cnot_adj_matrix() -> list:
 
 
 def _generate_one_wire_op_adj_matrix() -> list:
-    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits of
-    a one-wire gate based on the textbook MBQC formalism. The connectivity of the qubits in
-    the register is:
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in the graph state for
+    an one-wire gate based on the textbook MBQC formalism. The connectivity of the target qubits in the register
+    and auxiliary qubits is:
 
     tgt --  0  --  1  --  2  --  3
 
-    Note that both ctrl and target qubits are not in the adjacent matrix and
+    Note that the target qubit is not in the adjacent matrix and the connectivity
+    of the auxiliary qubits is:
     edges_in_adj_matrix = [
        (1, 0),
        (2, 1),
@@ -165,7 +168,7 @@ def _generate_one_wire_op_adj_matrix() -> list:
     1  --  2  --  3  --  4  --  5
 
     Returns:
-        An adjacent matrix represents the connectivity of auxiliary qubits of a one-wire gate.
+        An adjacent matrix represents the connectivity of auxiliary qubits in the graph state for a one-wire gate.
     """
     num_vertices = _NumAuxWires.ONE_WIRE_GATE.value
     edges_in_adj_matrix = [
@@ -209,12 +212,12 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Allocate a graph state prep operation and auxiliary qubits are extracted
-        and stored them into a dict for later use.
+        """Insert a graph state prep operation into the IR for each gate and extract and return auxiliary qubits
+        in the graph state.
 
         Args:
-            adj_matrix_op (arith.ConstantOp) : A `arith.ConstantOp` object stores the connectitivity
-            information of auxiliary qubits.
+            adj_matrix_op (arith.ConstantOp) : A `arith.ConstantOp` object stores the connectivity
+            of auxiliary qubits in the graph state.
             op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
                  instead of a qml.ops.
             rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
@@ -240,7 +243,9 @@ class ConvertToMBQCFormalismPattern(
             rewriter.insert_op(extract_op, InsertPoint.before(op))
 
             # Note the following convert the aux qubit index in the register to the
-            # standard context book MBQC representation
+            # standard context book MBQC representation. The if branch works for
+            # both one and two qubit gates, while the else branch only validates for
+            # the CNOT gate.
             key = i + 2 if i < 7 else i + 3
 
             graph_qubit_dict[key] = extract_op.results[0]
