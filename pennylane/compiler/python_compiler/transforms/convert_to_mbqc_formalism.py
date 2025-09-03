@@ -126,7 +126,7 @@ def _generate_cnot_adj_matrix() -> list:
     9  -- 10  --  11 -- 12  -- 13  -- 14  -- 15
 
     Returns:
-        An adjacent matrix represents the connectivity of auxiliary qubits in the graph state for a CNOT gate operation.
+        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a CNOT gate operation.
     """
     num_vertices = _NumAuxWires.CNOT.value
     edges_in_adj_matrix = [
