@@ -15,8 +15,332 @@ r"""This module contains the base class for qubit management"""
 
 
 import pennylane as qml
+from decimal import Decimal
 
 # pylint: disable= too-few-public-methods
+
+class NQMStack:
+
+    __nqm_stack = []
+
+    def __init__(self):
+        return
+    
+    @classmethod
+    def append(cls, new_qm: "NewQubitManager") -> None:
+        cls.__nqm_stack.append(new_qm)
+        return None
+    
+    @classmethod
+    def pop(cls) -> "NewQubitManager":
+        return cls.__nqm_stack.pop()
+
+    @classmethod
+    def peak(cls):
+        return cls.__nqm_stack[-1]
+
+    @classmethod
+    def clear(cls):
+        cls.__nqm_stack = []
+        return
+
+
+class NewQubitManager:
+
+    def __init__(self):
+
+        # Idle: 
+        self.clean_idle_aux = 0
+        self.dirty_idle_aux = 0
+
+        self.clean_idle_algo = 0
+        self.dirty_idle_algo = 0
+
+        # Active:
+        self.clean_active_algo = 0  # Only set at the "Top-level"
+
+        # -> dirty auxiliary:
+        self.dirty_active_aux = 0
+        self.return_aux_cleaned = 0
+        self.return_aux_dirty = 0
+
+        # -> dirty algorithmic:
+        self.dirty_active_algo = 0
+        self.return_algo_cleaned = 0
+        self.return_algo_dirty = 0
+
+        NQMStack.append(self)
+
+    @property
+    def borrowable_clean(self):
+        return self.clean_idle_aux + self.clean_idle_algo
+    
+    @property
+    def borrowable_dirty(self):
+        return self.dirty_idle_aux + self.dirty_idle_algo
+
+    def allocate_fresh(self, n):
+        self.clean_idle_aux += n
+
+    def borrow_clean(self, n_requested=1):
+        """Borrow clean qubits in the context of decomposition"""
+        # Borrow existing clean auxiliary qubits first:
+        n_available = min(n_requested, self.clean_idle_aux)
+        
+        self.clean_idle_aux -= n_available
+        self.dirty_active_aux += n_available
+        self.return_aux_cleaned += n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        # Borrow idle clean algorithmic qubits next:
+        n_available = min(n_requested, self.clean_idle_algo)
+        
+        self.clean_idle_algo -= n_available
+        self.dirty_active_algo += n_available
+        self.return_algo_cleaned += n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        # Finally, if we still need more, allocate fresh qubits
+        self.allocate_fresh(n_requested)  # allocate clean auxiliary qubits
+        
+        self.clean_idle_aux -= n_requested
+        self.dirty_active_aux += n_requested
+        self.return_aux_cleaned += n_requested
+
+    def borrow_dirty(self, n_requested=1):
+        """Borrow dirty qubits in the context of decomposition"""
+        # First borrow from any idle dirty auxiliary qubits:
+        n_available = min(n_requested, self.dirty_idle_aux)
+
+        self.dirty_idle_aux -= n_available
+        self.dirty_active_aux += n_available
+        self.return_aux_dirty += n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        # Borrow idle dirty algorithmic qubits next:
+        n_available = min(n_requested, self.dirty_idle_algo)
+
+        self.dirty_idle_algo -= n_available
+        self.dirty_active_algo += n_available
+        self.return_algo_dirty += n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        # Finally, if we still need more, borrow clean qubits:
+        self.borrow_clean(n_requested)
+
+    def return_clean(self, n_requested=1):
+        """Return borrowed qubits to the clean state in the context of the decomposition"""
+        # Return any borrowed idle algorithmic qubits first
+        n_available = min(n_requested, self.return_algo_cleaned)
+
+        if n_available > self.dirty_active_algo:
+            raise ValueError
+        
+        self.clean_idle_algo += n_available
+        self.dirty_active_algo -= n_available
+        self.return_algo_cleaned -= n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+        
+        # Return the remaining auxiliary qubits:
+        n_available = min(n_requested, self.return_aux_cleaned)
+
+        if n_available > self.dirty_active_aux:
+            raise ValueError
+        
+        self.clean_idle_aux += n_available
+        self.dirty_active_aux -= n_available
+        self.return_aux_cleaned -= n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        # There shouldn't be anymore qubits to return:
+        raise ValueError("Don't have anymore qubits to clean and return")
+
+    def return_dirty(self, n_requested=1):
+        """Return borrowed qubits to the dirty state in the context of the decomposition"""
+        # Return any borrowed idle algorithmic qubits first
+        n_available = min(n_requested, self.return_algo_dirty)
+
+        if n_available > self.dirty_active_algo:
+            raise ValueError
+        
+        self.dirty_idle_algo += n_available
+        self.dirty_active_algo -= n_available
+        self.return_algo_dirty -= n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+        
+        # Return the remaining auxiliary qubits:
+        n_available = min(n_requested, self.return_aux_dirty)
+
+        if n_available > self.dirty_active_aux:
+            raise ValueError
+        
+        self.dirty_idle_aux += n_available
+        self.dirty_active_aux -= n_available
+        self.return_aux_dirty -= n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        # If there are more qubits to be returned, we must have 
+        # allocated fresh qubits to aquire them. Thus we have to
+        # return_clean the rest:
+        self.return_clean(n_requested)
+
+    def take(self, n_requested=1):
+        """Use clean qubits in a manner that is not return-able"""
+        n_available = min(n_requested, self.clean_idle_aux)
+
+        self.clean_idle_aux -= n_available
+        self.dirty_active_aux += n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        # Finally, if we still need more, allocate fresh qubits
+        self.allocate_fresh(n_requested)  # allocate clean auxiliary qubits
+        
+        self.clean_idle_aux -= n_requested
+        self.dirty_active_aux += n_requested
+
+    def release(self, n_requested=1):
+        """Restore dirty auxiliary qubits to the |0> state"""
+        if n_requested > self.dirty_idle_aux + self.dirty_active_aux:
+            raise ValueError
+
+        n_available = min(n_requested, self.dirty_active_aux)  # release active qubits first 
+
+        self.clean_idle_aux += n_available
+        self.dirty_active_aux -= n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        self.clean_idle_aux += n_requested
+        self.dirty_idle_aux -= n_requested
+
+    def step_into_decomp_simple(self, num_active_qubits) -> "NewQubitManager":
+        QM = self.__class__()
+
+        # Copy over all idle qubit counts
+        QM.clean_idle_aux = self.clean_idle_aux
+        QM.dirty_idle_aux = self.dirty_idle_aux
+        QM.clean_idle_algo = self.clean_idle_algo
+        QM.dirty_idle_algo = self.dirty_idle_algo
+
+        # Map all active qubit counts to idle in the new scope:
+        QM.dirty_idle_aux += self.dirty_active_aux
+        QM.clean_idle_algo += self.clean_active_algo
+        QM.dirty_idle_algo += self.dirty_active_algo
+
+        # Set the new active qubits:
+        if (QM.clean_idle_aux + QM.clean_idle_algo + QM.dirty_idle_aux + QM.dirty_idle_algo) <  num_active_qubits:
+            raise ValueError("Not enough idle qubits to make active")
+        
+        # Use any dirty algorithmic qubits first:
+        n_available = min(num_active_qubits, QM.dirty_idle_algo)
+        QM.dirty_idle_algo -= n_available
+        QM.dirty_active_algo += n_available
+
+        num_active_qubits -= n_available
+        if num_active_qubits == 0: return QM
+        
+        # Use any clean algorithmic qubits next:
+        n_available = min(num_active_qubits, QM.clean_idle_algo)
+        QM.clean_idle_algo -= n_available
+        QM.dirty_active_algo += n_available
+
+        num_active_qubits -= n_available
+        if num_active_qubits == 0: return QM
+
+        # Use any dirty auxiliary qubits next:
+        n_available = min(num_active_qubits, QM.dirty_idle_aux)
+        QM.dirty_idle_aux -= n_available
+        QM.dirty_active_aux += n_available
+
+        num_active_qubits -= n_available
+        if num_active_qubits == 0: return QM
+
+        # Finally any clean auxiliary qubits last:
+        n_available = min(num_active_qubits, QM.clean_idle_aux)
+        QM.clean_idle_aux -= n_available
+        QM.dirty_active_aux += n_available
+
+        return QM
+
+    def step_out_decomp_simple(self, SubQM: "NewQubitManager"):
+
+        # Copy over all idle qubit counts
+        self.clean_idle_aux = SubQM.clean_idle_aux
+        self.dirty_idle_aux = SubQM.dirty_idle_aux
+        self.clean_idle_algo = SubQM.clean_idle_algo
+        self.dirty_idle_algo = SubQM.dirty_idle_algo
+
+        # Map all active qubit counts to idle in the new scope:
+        self.dirty_idle_aux += SubQM.dirty_active_aux
+        self.clean_idle_algo += SubQM.clean_active_algo
+        self.dirty_idle_algo += SubQM.dirty_active_algo
+ 
+        # Reset the old active qubits:
+        num_old_aux_active_qubits = self.dirty_active_aux
+        num_old_algo_active_qubits = self.clean_active_algo + self.dirty_active_algo
+
+        self.dirty_active_aux = 0
+        self.dirty_active_algo = 0
+        self.clean_active_algo = 0
+
+        # Set any dirty algorithmic qubits to active first:
+        n_available = min(num_old_algo_active_qubits, self.dirty_idle_algo)
+        self.dirty_idle_algo -= n_available
+        self.dirty_active_algo += n_available
+        
+        num_old_algo_active_qubits -= n_available
+
+        # Set any clean algorithmic qubits to active next:
+        if num_old_algo_active_qubits > 0:
+
+            n_available = min(num_old_algo_active_qubits, self.clean_idle_algo)
+            self.clean_idle_algo -= n_available
+            self.clean_active_algo += n_available
+            
+            n_available -= num_old_algo_active_qubits
+        
+        # Finally set the dirty auxiliary qubits to active:
+        self.dirty_idle_aux -= num_old_aux_active_qubits
+        self.dirty_active_aux += num_old_aux_active_qubits
+
+    def __str__(self):
+        total_algo_qubits = (
+            self.clean_idle_algo + self.clean_active_algo + self.dirty_active_algo + self.dirty_idle_algo
+        )
+        total_aux_qubits = (
+            self.clean_idle_aux + self.dirty_active_aux + self.dirty_idle_aux
+        )
+
+        str_rep = f"Algo: {total_algo_qubits}\n"
+        str_rep += f"  | C , D |\n"
+        str_rep += f"I | {self.clean_idle_algo} , {self.dirty_idle_algo} |\n"
+        str_rep += f"A | {self.clean_active_algo} , {self.dirty_active_algo} |\n"
+
+        str_rep += f"\nAuxi: {total_aux_qubits}\n"
+        str_rep += f"  | C , D |\n"
+        str_rep += f"I | {self.clean_idle_aux} , {self.dirty_idle_aux} |\n"
+        str_rep += f"A | x , {self.dirty_active_aux} |\n"
+
+        return str_rep
 
 
 class QubitManager:
@@ -160,8 +484,6 @@ class QubitManager:
 class _WireAction:
     """Base class for operations that manage qubit resources."""
 
-    _queue_category = "_resource_qubit_action"
-
     def __init__(self, num_wires):
         self.num_wires = num_wires
         if qml.QueuingManager.recording():
@@ -173,7 +495,40 @@ class _WireAction:
         return self
 
     def __eq__(self, other: "_WireAction") -> bool:
-        return self.num_wires == other.num_wires
+        return (self.num_wires == other.num_wires) and (self.__class__.__name__ == other.__class__.__name__)
+
+
+class BorrowWires(_WireAction):
+    r"""Allows users to borrow work wires.
+
+    Args:
+        num_wires (int): number of work wires to be allocated.
+        clean (bool): borrowing qubits in the zeroed state (default is True)
+    """
+
+    def __init__(self, num_wires, clean=True):
+        self.clean = clean
+        super().__init__(num_wires)
+
+    def __repr__(self) -> str:
+        return f"BorrowWires({self.num_wires}, clean={self.clean})"
+
+
+class ReturnWires(_WireAction):
+    r"""Allows users to return work wires.
+
+    Args:
+        num_wires (int): number of work wires to be allocated.
+        clean (bool): returing qubits in the zeroed state (default is True)
+
+    """
+
+    def __init__(self, num_wires, clean=True):
+        self.clean = clean
+        super().__init__(num_wires)
+
+    def __repr__(self) -> str:
+        return f"ReturnWires({self.num_wires}, clean={self.clean})"
 
     def __mul__(self, other):
         if isinstance(other, int):

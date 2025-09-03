@@ -196,7 +196,6 @@ class ResourceOperator(ABC):
     """
 
     num_wires = 0
-    _queue_category = "_resource_op"
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
