@@ -140,8 +140,8 @@ class ReferenceQubit(Device):
 
         # Here we convert an arbitrary tape into one natively supported by the device
         program = qml.transforms.core.TransformProgram()
-        program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
         program.add_transform(qml.defer_measurements, allow_postselect=False)
+        program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
         program.add_transform(qml.transforms.split_non_commuting)
         program.add_transform(qml.transforms.diagonalize_measurements)
         program.add_transform(qml.devices.preprocess.measurements_from_samples)

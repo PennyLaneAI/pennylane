@@ -94,6 +94,9 @@ class TestDefaultMixedInit:
         with pytest.raises(ValueError, match="This device does not currently support"):
             DefaultMixed(wires=24)
 
+
+class TestSetupExecutionConfig:
+
     def test_execute_no_diff_method(self):
         """Test that the execute method is defined"""
         dev = DefaultMixed(wires=[0, 1])
@@ -104,6 +107,24 @@ class TestDefaultMixedInit:
         assert (
             processed_config.interface is Interface.NUMPY
         ), "The interface should be set to numpy for an invalid gradient method"
+
+    def test_default_mcm_method_deferred(self):
+        """Test that default clifford's preferred mcm_method is deferred."""
+
+        config = qml.device("default.mixed").setup_execution_config()
+        assert config.mcm_config.mcm_method == "deferred"
+
+    @pytest.mark.parametrize("mcm_method", ("one-shot", "tree-traversal", "device"))
+    def test_only_deferred_supported(self, mcm_method):
+        """Test an error is raised for other mcm methods."""
+
+        dev = qml.device("default.mixed")
+        initial = qml.devices.ExecutionConfig(
+            mcm_config=qml.devices.MCMConfig(mcm_method=mcm_method)
+        )
+
+        with pytest.raises(qml.exceptions.DeviceError, match="only supports mcm_method='deferred'"):
+            dev.setup_execution_config(initial)
 
 
 # pylint: disable=too-few-public-methods

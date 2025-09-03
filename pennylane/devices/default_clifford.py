@@ -52,7 +52,6 @@ from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     null_postprocessing,
-    validate_adjoint_trainable_params,
     validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
@@ -472,13 +471,12 @@ class DefaultClifford(Device):
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
+            execution_config (ExecutionConfig | None): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
-            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
-            unset specifications filled in.
+            TransformProgram : A transform program that when called returns QuantumTapes that the device
+            can natively execute as well as a postprocessing function to be called after execution.
 
         This device currently does not intrinsically support parameter broadcasting.
 
@@ -487,8 +485,8 @@ class DefaultClifford(Device):
             execution_config = ExecutionConfig()
         transform_program = TransformProgram()
 
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
@@ -508,8 +506,6 @@ class DefaultClifford(Device):
         if max_workers:
             transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
-        # Validate derivatives
-        transform_program.add_transform(validate_adjoint_trainable_params)
         return transform_program
 
     def execute(

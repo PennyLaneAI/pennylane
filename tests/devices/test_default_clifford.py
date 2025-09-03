@@ -66,6 +66,27 @@ def circuit_2():
     qml.DepolarizingChannel(0.2, wires=[0])
 
 
+class TestSetupExecutionConfig:
+
+    def test_default_mcm_method_deferred(self):
+        """Test that default clifford's preferred mcm_method is deferred."""
+
+        config = qml.device("default.clifford").setup_execution_config()
+        assert config.mcm_config.mcm_method == "deferred"
+
+    @pytest.mark.parametrize("mcm_method", ("one-shot", "tree-traversal", "device"))
+    def test_only_deferred_supported(self, mcm_method):
+        """Test an error is raised for other mcm methods."""
+
+        dev = qml.device("default.clifford")
+        initial = qml.devices.ExecutionConfig(
+            mcm_config=qml.devices.MCMConfig(mcm_method=mcm_method)
+        )
+
+        with pytest.raises(DeviceError, match="only supports mcm_method='deferred'"):
+            dev.setup_execution_config(initial)
+
+
 @pytest.mark.parametrize("circuit", [circuit_1])
 @pytest.mark.parametrize(
     "expec_op",
