@@ -26,6 +26,7 @@ from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     ConvertToMBQCFormalismPass,
+    decompose_graph_state_pass,
     convert_to_mbqc_formalism_pass,
     measurements_from_samples_pass,
 )
@@ -349,6 +350,48 @@ class TestConvertToMBQCFormalismPass:
             # CHECK-NOT: quantum.custom "Hadamard"()
             # CHECK: scf.for
             # CHECK: mbqc.graph_state_prep
+            # CHECK: quantum.custom "CZ"()
+            # CHECK: mbqc.measure_in_basis
+            # CHECK: scf.if
+            # CHECK: quantum.custom "PauliX"()
+            # CHECK: quantum.custom "PauliZ"()
+            # CHECK: quantum.dealloc_qb
+            loop_for()
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(wires=0))
+
+        run_filecheck_qjit(circuit)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_gates_in_mbqc_gate_set_lowering_graph_state_decomp(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and for-loop structure."""
+        dev = qml.device("null.qubit", wires=1000)
+
+        @qml.for_loop(1, 1000, 1)
+        def loop_for(i):
+            qml.H(i)
+            qml.S(i)
+            RotXZX(0.1, 0.2, 0.3, wires=[i])
+            qml.RZ(phi=0.1, wires=[i])
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            pipelines=mbqc_pipeline(),
+            autograph=True,
+        )
+        @convert_to_mbqc_formalism_pass
+        @decompose_graph_state_pass
+        @qml.set_shots(1000)
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK-NOT: quantum.custom "CNOT"()
+            # CHECK-NOT: quantum.custom "S"()
+            # CHECK-NOT: quantum.custom "RZ"()
+            # CHECK-NOT: quantum.custom "RotXZX"()
+            # CHECK-NOT: mbqc.graph_state_prep
+            # CHECK: scf.for
+            # CHECK: quantum.custom "Hadamard"()
             # CHECK: quantum.custom "CZ"()
             # CHECK: mbqc.measure_in_basis
             # CHECK: scf.if
