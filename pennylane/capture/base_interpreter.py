@@ -119,7 +119,7 @@ class PlxprInterpreter:
             def interpret_operation(self, op):
                 new_op = qml.simplify(op)
                 if new_op is op:
-                    # simplify didnt create a new operator, so it didnt get captured
+                    # simplify didn't create a new operator, so it didn't get captured
                     data, struct = jax.tree_util.tree_flatten(new_op)
                     new_op = jax.tree_util.tree_unflatten(struct, data)
                 return new_op

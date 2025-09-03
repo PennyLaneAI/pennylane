@@ -238,7 +238,7 @@ def for_stmt(
     # (for example because the user forgot to use a list instead of an array)
     # The PennyLane autograph implementation does not currently fall back to a Python loop in this case,
     # but this has been implemented in Catalyst and could be extended to this. It does, however, require an
-    # active qeueing context.
+    # active queuing context.
 
     exception_raised = None
     init_state = get_state()
