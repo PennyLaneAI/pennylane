@@ -52,15 +52,17 @@ def decomposition_mode(request):
     use_graph = request.param
 
     # Setup: Configure graph decomposition based on parameter
-    if use_graph:
-        qml.decomposition.enable_graph()
-    else:
+    try:
+        if use_graph:
+            qml.decomposition.enable_graph()
+        else:
+            qml.decomposition.disable_graph()
+
+        yield use_graph
+
+    finally:
+        # Teardown: Always clean up
         qml.decomposition.disable_graph()
-
-    yield use_graph
-
-    # Teardown: Always clean up
-    qml.decomposition.disable_graph()
 
 
 class NoMatOp(Operation):
