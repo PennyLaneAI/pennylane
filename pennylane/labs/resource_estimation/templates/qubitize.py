@@ -81,7 +81,11 @@ class ResourceQubitizeTHC(ResourceOperator):
         else:
             num_orb = compact_ham.params["num_orbitals"]
             tensor_rank = compact_ham.params["tensor_rank"]
-            self.num_wires = num_orb*2 +  2 * int(np.ceil(math.log2(tensor_rank+1))) + 6
+            num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+            coeff_register = int(math.ceil(math.log2(num_coeff)))
+
+
+            self.num_wires = num_orb*2 +  2 * int(np.ceil(math.log2(tensor_rank+1))) +coeff_register+ 6
             self.wires = None
         super().__init__(wires=wires)
 

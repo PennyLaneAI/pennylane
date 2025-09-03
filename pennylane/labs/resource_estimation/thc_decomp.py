@@ -11,9 +11,10 @@ import pybtas
 def _get_BLISS_sizes(num_ob_syms, Norbs):
     avec_len = num_ob_syms
     bvec_len = int(num_ob_syms * (num_ob_syms+1)/2)
-    ob_mat_num_params = int(Norbs*(Norbs+1)/2) 
+    ob_mat_num_params = int(Norbs*(Norbs+1)/2)
+    dvec_len = int(num_ob_syms * (num_ob_syms-1)/2)
 
-    return avec_len, bvec_len, ob_mat_num_params
+    return avec_len, bvec_len, ob_mat_num_params, dvec_len
 
 @jit
 def _unfold_thc(MPQ, etaPp):
@@ -32,6 +33,17 @@ def _ob_params_to_mat(ob_mat_params, Norbs):
 
 _ob_params_to_mat = jit(_ob_params_to_mat, static_argnums=(1,))
 
+@jit
+def _renormalize_thc(MPQ, etaPp):
+    P_factors = jnp.einsum("Pp,Pp->P", etaPp, etaPp)
+    P_sqrts = 1 / jnp.sqrt(P_factors)
+
+    new_MPQ = jnp.einsum("PQ,P,Q->PQ", MPQ, P_factors, P_factors)
+    new_etaPp = jnp.einsum("Pp,P->Pp", etaPp, P_sqrts)
+
+    return new_MPQ, new_etaPp
+
+
 def _extract_vecs(x_vec, Norbs, Nthc, num_ob_syms, include_bliss):
         eta_fin = Nthc*Norbs
         etaPp = x_vec[:eta_fin].reshape((Nthc, Norbs))
@@ -39,24 +51,28 @@ def _extract_vecs(x_vec, Norbs, Nthc, num_ob_syms, include_bliss):
         M_fin = eta_fin + Nthc**2
         MPQ = x_vec[eta_fin:M_fin].reshape((Nthc, Nthc))
 
+        MPQ, etaPp = _renormalize_thc(MPQ, etaPp)
+
         if include_bliss:
-            avec_len, bvec_len, ob_mat_num_params = _get_BLISS_sizes(num_ob_syms, Norbs)
+            avec_len, bvec_len, ob_mat_num_params, dvec_len = _get_BLISS_sizes(num_ob_syms, Norbs)
             a_fin = M_fin + avec_len
             avec = x_vec[M_fin:a_fin]
 
             b_fin = a_fin + bvec_len
             bvec = x_vec[a_fin:b_fin]
 
-            beta_mats_params = x_vec[b_fin:].reshape((num_ob_syms, ob_mat_num_params))
+            beta_mats_fin = b_fin + ob_mat_num_params*num_ob_syms
+            beta_mats_params = x_vec[b_fin:beta_mats_fin].reshape((num_ob_syms, ob_mat_num_params))
 
-            return etaPp, MPQ, avec, bvec, beta_mats_params
-
+            dvec = x_vec[beta_mats_fin:]
         else:
-            return etaPp, MPQ, None, None, None
+            avec, bvec, beta_mats_params, dvec = None, None, None, None
+
+        return etaPp, MPQ, avec, bvec, beta_mats_params, dvec
 
 _extract_vecs = jit(_extract_vecs, static_argnums=(1,2,3,4))
 
-def _BLISS_corrections(avec, bvec, beta_mats_params, Norbs, ob_sym_mats, ob_sym_vals, num_ob_syms):
+def _BLISS_corrections(avec, bvec, beta_mats_params, dvec, Norbs, ob_sym_mats, ob_sym_vals, num_ob_syms):
     beta_mats = jnp.zeros((num_ob_syms,Norbs,Norbs))
     for i1 in range(num_ob_syms):
         beta_mats = beta_mats.at[i1].set(_ob_params_to_mat(beta_mats_params[i1,:], Norbs))
@@ -74,6 +90,14 @@ def _BLISS_corrections(avec, bvec, beta_mats_params, Norbs, ob_sym_mats, ob_sym_
         killer_eri += jnp.einsum("pq,rs->pqrs", beta_mats[i1], ob_sym_mats[i1])
         killer_eri += jnp.einsum("pq,rs->pqrs", ob_sym_mats[i1], beta_mats[i1])
 
+    idx = 0
+    for i1 in range(num_ob_syms):
+        for i2 in range(i1):
+            dvec_val = dvec[idx]
+            killer_eri += dvec_val * jnp.einsum("pq,rs->pqrs", beta_mats[i1], ob_sym_mats[i2])
+            killer_eri += dvec_val * jnp.einsum("pq,rs->pqrs", ob_sym_mats[i1], beta_mats[i2])
+            idx += 1
+
     killer_obt = jnp.zeros((Norbs,Norbs))
     idx = 0
     for i1 in range(num_ob_syms):
@@ -85,9 +109,16 @@ def _BLISS_corrections(avec, bvec, beta_mats_params, Norbs, ob_sym_mats, ob_sym_
 
             idx += 1
 
+    idx = 0
+    for i1 in range(num_ob_syms):
+        for i2 in range(i1):
+            dvec_val = dvec[idx]
+            killer_obt -= 0.5 * dvec_val * (ob_sym_vals[i2]*beta_mats[i1] + ob_sym_vals[i1]*beta_mats[i2]) 
+            idx += 1
+
     return killer_obt, killer_eri
 
-_BLISS_corrections = jit(_BLISS_corrections, static_argnums=(3,6))
+_BLISS_corrections = jit(_BLISS_corrections, static_argnums=(4,7))
 
 
 def _thc_one_norm(kappa, MPQ, kappa_is_none):
@@ -108,11 +139,11 @@ _thc_one_norm = jit(_thc_one_norm, static_argnums=(2))
 
 
 def _vec_to_one_norm(x_vec, obt_full, eri_full, ob_sym_mats, ob_sym_vals, Nthc, Norbs, num_ob_syms, include_bliss, obt_is_none):
-    etaPp, MPQ, avec, bvec, beta_mats_params = _extract_vecs(x_vec, Norbs, Nthc, num_ob_syms, include_bliss)
+    etaPp, MPQ, avec, bvec, beta_mats_params, dvec = _extract_vecs(x_vec, Norbs, Nthc, num_ob_syms, include_bliss)
     eri_thc = _unfold_thc(MPQ, etaPp)
 
     if include_bliss:
-        obt_killer, eri_killer = _BLISS_corrections(avec, bvec, beta_mats_params, Norbs, ob_sym_mats, ob_sym_vals, num_ob_syms)
+        obt_killer, eri_killer = _BLISS_corrections(avec, bvec, beta_mats_params, dvec, Norbs, ob_sym_mats, ob_sym_vals, num_ob_syms)
         eri_BI = eri_full - eri_killer
         if obt_is_none:
             obt_BI = None
@@ -133,11 +164,11 @@ _vec_to_one_norm = jit(_vec_to_one_norm, static_argnums=(5,6,7,8,9))
 
 
 def _cost(x_vec, obt_full, eri_full, ob_sym_mats, ob_sym_vals, Nthc, Norbs, num_ob_syms, include_bliss, obt_is_none, rho, regularize=True):
-    etaPp, MPQ, avec, bvec, beta_mats_params = _extract_vecs(x_vec, Norbs, Nthc, num_ob_syms, include_bliss)
+    etaPp, MPQ, avec, bvec, beta_mats_params, dvec = _extract_vecs(x_vec, Norbs, Nthc, num_ob_syms, include_bliss)
     eri_thc = _unfold_thc(MPQ, etaPp)
 
     if include_bliss:
-        obt_killer, eri_killer = _BLISS_corrections(avec, bvec, beta_mats_params, Norbs, ob_sym_mats, ob_sym_vals, num_ob_syms)
+        obt_killer, eri_killer = _BLISS_corrections(avec, bvec, beta_mats_params, dvec, Norbs, ob_sym_mats, ob_sym_vals, num_ob_syms)
         eri_BI = eri_full - eri_killer
         if obt_is_none:
             kappa_BI = None
@@ -164,7 +195,7 @@ _cost = jit(_cost, static_argnums=(5,6,7,8,9,11))
 def _initialize_params(initial_guess, eri, Nthc, Norbs, include_bliss, num_ob_syms, do_cp3=True, random_seed=42, norm_factor=0.01, iters=1000):
     """Initialize optimization parameters."""
     if include_bliss:
-        avec_len, bvec_len, ob_mat_num_params = _get_BLISS_sizes(num_ob_syms, Norbs)
+        avec_len, bvec_len, ob_mat_num_params, dvec_len = _get_BLISS_sizes(num_ob_syms, Norbs)
 
     key = jax.random.PRNGKey(random_seed if random_seed is not None else 0)
     key1, key2, key5 = jax.random.split(key, 3)
@@ -174,16 +205,19 @@ def _initialize_params(initial_guess, eri, Nthc, Norbs, include_bliss, num_ob_sy
             MPQ, etaPp = _get_cp3(eri, Nthc)
             params = {'etaPp':etaPp, 'MPQ':MPQ}
         else:
-            
+            etaPp_rand = 10*norm_factor * jax.random.normal(key1, (Nthc, Norbs))
+            MPQ_rand = 10*norm_factor * jax.random.normal(key2, (Nthc, Nthc))
+            MPQ, etaPp = _renormalize_thc(MPQ_rand, etaPp_rand)
             params = {
-                'etaPp': 10*norm_factor * jax.random.normal(key1, (Nthc, Norbs)),
-                'MPQ': 10*norm_factor * jax.random.normal(key2, (Nthc, Nthc)),
+                'etaPp': etaPp,
+                'MPQ': MPQ,
             }
         
         if include_bliss:
             params["avec"] = jnp.zeros(avec_len)
             params["bvec"] = jnp.zeros(bvec_len)
             params["beta_mats_params"] = norm_factor * jax.random.normal(key5, (num_ob_syms, ob_mat_num_params))
+            params["dvec"] = jnp.zeros(dvec_len)
 
     else:
         params = {k: jnp.array(v) for k, v in initial_guess.items()}
@@ -192,6 +226,7 @@ def _initialize_params(initial_guess, eri, Nthc, Norbs, include_bliss, num_ob_sy
             params.setdefault('avec', jnp.zeros(avec_len))
             params.setdefault('bvec', jnp.zeros(bvec_len))
             params.setdefault('beta_mats_params', jnp.zeros((num_ob_syms, ob_mat_num_params)))
+            params.setdefault('dvec', jnp.zeros(dvec_len))
 
     return params
 
@@ -229,9 +264,7 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
             print(f"Using default THC rank of ceil(3*num_orbs) = {Nthc}")
 
     num_ob_syms = len(ob_sym_list)
-    avec_len = num_ob_syms
-    bvec_len = int(num_ob_syms * (num_ob_syms+1)/2)
-    ob_mat_num_params = int(Norbs*(Norbs+1)/2)
+    avec_len, bvec_len, ob_mat_num_params, dvec_len = _get_BLISS_sizes(num_ob_syms, Norbs)
     beta_params_len = num_ob_syms * ob_mat_num_params
 
     if obt is None:
@@ -253,6 +286,7 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
         print(f"    - {avec_len} one-body scalars")
         print(f"    - {bvec_len} two-body scalars")
         print(f"    - {num_ob_syms} one-body matrices, each with {ob_mat_num_params} free variables")
+        print(f"    - {dvec_len} two-body scalars mixing beta matrices with symmetries")
 
     params = _initialize_params(initial_guess, eri, Nthc, Norbs, include_bliss, num_ob_syms)
     if regularize is True:
@@ -274,10 +308,12 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
 
     def pack_dict(x_vec):
         eta_fin = Nthc*Norbs
-        my_dict = {"etaPp" : x_vec[:eta_fin].reshape((Nthc, Norbs))}
-
+        etaPp_unormalized = x_vec[:eta_fin].reshape((Nthc, Norbs))
         M_fin = eta_fin + Nthc**2
-        my_dict["MPQ"] = x_vec[eta_fin:M_fin].reshape((Nthc, Nthc))
+        MPQ_unormalized = x_vec[eta_fin:M_fin].reshape((Nthc, Nthc))
+        MPQ, etaPp = _renormalize_thc(MPQ_unormalized, etaPp_unormalized)
+
+        my_dict = {"etaPp" : etaPp, "MPQ" : MPQ}
 
         if include_bliss:
             a_fin = M_fin + avec_len
@@ -286,14 +322,17 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
             b_fin = a_fin + bvec_len
             my_dict["bvec"] = x_vec[a_fin:b_fin]
 
-            my_dict["beta_mats_params"] = x_vec[b_fin:].reshape((num_ob_syms, ob_mat_num_params))
+            beta_fin = b_fin + num_ob_syms*ob_mat_num_params
+            my_dict["beta_mats_params"] = x_vec[b_fin:beta_fin].reshape((num_ob_syms, ob_mat_num_params))
+
+            my_dict["dvec"] = x_vec[beta_fin:]
 
         return my_dict
 
     def unpack_dict(my_dict):
         num_vars = Nthc * Norbs + (Nthc**2)
         if include_bliss:
-            num_vars += avec_len + bvec_len + beta_params_len
+            num_vars += avec_len + bvec_len + beta_params_len + dvec_len
 
         x_vec = np.zeros(num_vars)
 
@@ -310,7 +349,10 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
             b_fin = a_fin + bvec_len
             x_vec[a_fin:b_fin] = my_dict["bvec"]
 
-            x_vec[b_fin:] = my_dict["beta_mats_params"].flatten()
+            beta_fin = b_fin + num_ob_syms*ob_mat_num_params
+            x_vec[b_fin:beta_fin] = my_dict["beta_mats_params"].flatten()
+
+            x_vec[beta_fin:] = my_dict["dvec"]
 
         return jnp.array(x_vec)
 
@@ -385,7 +427,7 @@ def _get_cp3(eri, Nthc, verify=False, first_factor_thresh=1.0e-14, random_start_
     u_chol = u[:, non_zero_sv] @ np.diag(np.sqrt(sigma[non_zero_sv]))
 
     # CP3 decomposition
-    
+
     start_time = time.time()
     beta, gamma, scale = pybtas.cp3_from_cholesky(u_chol.copy(), Nthc, random_start=random_start_thc, conv_eps=conv_eps)
     cp3_calc_time = time.time() - start_time
