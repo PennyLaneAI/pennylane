@@ -906,7 +906,9 @@ class ResourceIterativeQPE(ResourceOperator):
         ]
 
         # Here we want to use this particular decomposition, not any random one the user might override
-        gate_counts += ResourceControlledSequence.default_resource_decomp(base_cmpr_op, num_iter)
+        gate_counts += ResourceControlledSequence.default_resource_decomp(
+            base_cmpr_op, num_iter, **kwargs
+        )
 
         num_phase_gates = num_iter * (num_iter - 1) // 2
         gate_counts.append(

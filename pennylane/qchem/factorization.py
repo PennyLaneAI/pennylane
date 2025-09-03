@@ -248,7 +248,7 @@ def factorize(
 
         # compute the core tensors and leaf tensors from the factors' eigendecomposition
         core_tensors, leaf_tensors = [], []
-        for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs):
+        for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs, strict=True):
             fidx = qml.math.where(qml.math.abs(f_eigval) > tol_eigval)[0]
             core_tensors.append(qml.math.einsum("i,j->ij", f_eigval[fidx], f_eigval[fidx]))
             leaf_tensors.append(f_eigvec[:, fidx])
