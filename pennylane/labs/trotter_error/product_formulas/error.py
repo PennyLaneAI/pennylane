@@ -103,7 +103,7 @@ def effective_hamiltonian(
             ],
         )
 
-    return sum(partial_sum)
+    return sum(partial_sum, start=_AdditiveIdentity())
 
 
 def _eval_commutator(commutator, coeff, fragments):
