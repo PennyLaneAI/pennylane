@@ -423,7 +423,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
             and positive
         select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth
-        wires (Sequence[int], optional): The wires to prepare the target state on. Excluding any
+        wires (Sequence[int], optional): The wires to prepare the target state on. This excludes any
             additional qubits allocated during the decomposition (via select-swap).
 
     Resources:
