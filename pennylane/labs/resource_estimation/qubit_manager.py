@@ -273,7 +273,7 @@ class _WireResourceManager:
         """Creates a new instance of _WireResourceManager which is modified to 
         set idle qubits as active according to which qubits are required by the lower
         decomposition scope."""
-        qm = self.__class__()
+        qm = self.__class__(work_wires=0, algo_wires=0)
 
         # Copy over all idle qubit counts
         qm.clean_idle_aux = self.clean_idle_aux
@@ -403,12 +403,12 @@ class _WireResourceManager:
         total_aux_qubits = self.clean_idle_aux + self.dirty_active_aux + self.dirty_idle_aux
 
         str_rep = f"Algo: {total_algo_qubits}\n"
-        str_rep += f"  | C , D |\n"
+        str_rep += "  | C , D |\n"
         str_rep += f"I | {self.clean_idle_algo} , {self.dirty_idle_algo} |\n"
         str_rep += f"A | {self.clean_active_algo} , {self.dirty_active_algo} |\n"
 
         str_rep += f"\nAuxi: {total_aux_qubits}\n"
-        str_rep += f"  | C , D |\n"
+        str_rep += "  | C , D |\n"
         str_rep += f"I | {self.clean_idle_aux} , {self.dirty_idle_aux} |\n"
         str_rep += f"A | x , {self.dirty_active_aux} |\n"
 
