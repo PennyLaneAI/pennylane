@@ -490,7 +490,7 @@ def molecular_dipole(
         )
         if wires:
             wires_new = qml.qchem.convert._process_wires(wires)
-            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
+            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
             dip = [qml.map_wires(op, wires_map) for op in dip]
 
         return dip

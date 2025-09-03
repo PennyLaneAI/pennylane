@@ -475,7 +475,6 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         basis_rot = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
 
         if order == 1:
-            print("Basis rot: ", num_frags * num_steps)
             gate_list.append(plre.GateCount(basis_rot, 2 * num_frags * num_steps))
 
             gate_list.append(plre.GateCount(op_onebody, num_steps))
@@ -1502,7 +1501,6 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         phase_grad_wires = abs(np.floor(np.log2(phase_grad_precision)))
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
-        print("coeff_wires:", coeff_wires, "phase_grad_wires:", phase_grad_wires)
 
         x = plre.ResourceX.resource_rep()
 
