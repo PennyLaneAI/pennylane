@@ -82,7 +82,6 @@ if TYPE_CHECKING:
 
 # Hardcoded gate_set from default_qubit.toml
 ALL_DQ_GATE_SET = {
-    "BasisState",
     "CNOT",
     "CRX",
     "CRY",
@@ -101,6 +100,7 @@ ALL_DQ_GATE_SET = {
     "IsingYY",
     "IsingZZ",
     "MultiControlledX",
+    "MultiRZ",
     "PSWAP",
     "PauliX",
     "PauliY",
@@ -112,7 +112,6 @@ ALL_DQ_GATE_SET = {
     "S",
     "SWAP",
     "SX",
-    "StatePrep",
     "T",
     "Toffoli",
 }

@@ -429,42 +429,58 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     # pylint: disable=import-outside-toplevel
     from pennylane.decomposition import enabled_graph
 
-    if enabled_graph():
-        # Use the main decompose transform which supports graph decomposition
-        from pennylane.transforms.decompose import decompose as graph_decompose
-
-        # Pass the gate_set from the device to the graph decompose transform.
-        # If gate_set is None, the main decompose transform defaults to set(ops.__all__)
-        # which includes all PennyLane operations, filtered by stopping_condition.
-        return graph_decompose(
-            tape,
-            gate_set=gate_set,
-            stopping_condition=stopping_condition,
-        )
-
-    # Fallback to original implementation for non-graph decomposition
     try:
+        if enabled_graph():
+            # Use graph decomposition
+            from pennylane.transforms.decompose import decompose as graph_decompose
 
-        new_ops = [
-            final_op
-            for op in tape.operations[len(prep_op) :]
-            for final_op in _operator_decomposition_gen(
-                op,
-                stopping_condition,
-                decomposer=decomposer,
-                name=name,
-                error=error,
-            )
-        ]
+            if gate_set is None:
+                try:
+                    from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
+
+                    gate_set = list(ALL_DQ_GATE_SET)
+                except ImportError:
+                    pass
+
+            # Only decompose operations after prep_op (if any)
+            ops_to_decompose = tape.operations[len(prep_op) :]
+            if ops_to_decompose:
+                decomp_tape = tape.copy(operations=ops_to_decompose)
+                decomposed_tapes, _ = graph_decompose(decomp_tape, gate_set=gate_set)
+                new_ops = prep_op + decomposed_tapes[0].operations
+            else:
+                new_ops = prep_op
+
+            # Check for unsupported operations
+            unsupported_ops = [op for op in new_ops[len(prep_op) :] if not stopping_condition(op)]
+            if unsupported_ops:
+                op_name = unsupported_ops[0].name
+                raise error(
+                    f"Operator {op_name}(wires={unsupported_ops[0].wires.tolist()}) not supported on {name} "
+                    "and does not provide a decomposition."
+                )
+
+            return (tape.copy(operations=new_ops),), null_postprocessing
+        else:
+            # Use fallback implementation
+            new_ops = [
+                final_op
+                for op in tape.operations[len(prep_op) :]
+                for final_op in _operator_decomposition_gen(
+                    op,
+                    stopping_condition,
+                    decomposer=decomposer,
+                    name=name,
+                    error=error,
+                )
+            ]
+            return (tape.copy(operations=prep_op + new_ops),), null_postprocessing
+
     except RecursionError as e:
         raise error(
             "Reached recursion limit trying to decompose operations. "
             "Operator decomposition may have entered an infinite loop."
         ) from e
-
-    tape = tape.copy(operations=prep_op + new_ops)
-
-    return (tape,), null_postprocessing
 
 
 @transform
