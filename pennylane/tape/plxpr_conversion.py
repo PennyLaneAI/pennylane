@@ -32,6 +32,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
 )
 from pennylane.measurements import MeasurementValue, get_mcm_predicates, measure
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.operation import Operator
 from pennylane.wires import DynamicWire
 
@@ -266,7 +267,27 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
     collector.eval(plxpr, consts, *args)
     assert collector.state
     wire_map = collector.state["dynamic_wire_map"]
+    mcm_map = {}
     with pause():
-        operations = [op.map_wires(wire_map) for op in collector.state["ops"]]
-        measurements = [m.map_wires(wire_map) for m in collector.state["measurements"]]
+        operations = [_map_op_wires(op, wire_map, mcm_map) for op in collector.state["ops"]]
+        measurements = [
+            _map_meas_wires(m, wire_map, mcm_map) for m in collector.state["measurements"]
+        ]
     return QuantumScript(operations, measurements, shots=shots)
+
+
+def _map_op_wires(op, wire_map, mcm_map):
+    new_op = op.map_wires(wire_map)
+    if isinstance(op, MidMeasureMP):
+        mcm_map[op] = new_op
+    return new_op
+
+
+def _map_meas_wires(m, wire_map, mcm_map):
+    new_meas = m.map_wires(wire_map)
+    if m.mv is None:
+        return new_meas
+    for i in range(len(m.mv.measurements)):
+        if new_meas.mv.measurements[i] in mcm_map:
+            new_meas.mv.measurements[i] = mcm_map[m.mv.measurements[i]]
+    return new_meas
