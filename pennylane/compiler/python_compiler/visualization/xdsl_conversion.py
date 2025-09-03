@@ -137,7 +137,10 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
     if isinstance(op, CustomOp):
-        return resolve_constant_wire(op.in_qubits[ssa.index])
+        all_qubits = list(getattr(op, "in_qubits", []))
+        if hasattr(op, "in_ctrl_qubits"):
+            all_qubits += list(getattr(op, "in_ctrl_qubits", []))
+        return resolve_constant_wire(all_qubits[ssa.index])
     if isinstance(op, ExtractOpPL):
         return dispatch_wires_extract(op)
     if isinstance(op, MeasureOp):
