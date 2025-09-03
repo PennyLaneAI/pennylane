@@ -18,8 +18,10 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
+import operator
 from collections.abc import Callable, Iterator
-from typing import Any, SupportsIndex
+from numbers import Number
+from typing import Any, SupportsIndex, Union
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
@@ -34,6 +36,7 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
+    from jax.interpreters.partial_eval import DynamicJaxprTracer
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -47,17 +50,52 @@ __all__ = [
     "or_",
     "not_",
     "set_item",
+    "update_item_with_op",
 ]
 
 
-def set_item(target, i, x):
+def set_item(
+    target: Union["DynamicJaxprTracer", list],
+    index: Union[int, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
+):
     """An implementation of the AutoGraph 'set_item' function."""
 
     if qml.math.is_abstract(target):
-        target = target.at[i].set(x)
+        target = target.at[index].set(x)
     else:
-        target[i] = x
+        target[index] = x
 
+    return target
+
+
+def update_item_with_op(
+    target: Union["DynamicJaxprTracer", list],
+    index: Union[int, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
+    op: str,
+):
+    """An implementation of the AutoGraph 'update_item_with_op' function."""
+
+    gast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
+    inplace_operation_map = {
+        "mult": "mul",
+        "div": "truediv",
+        "add": "add",
+        "sub": "add",
+        "pow": "pow",
+    }
+    if op == "sub":
+        x = -x
+
+    if qml.math.is_abstract(target):
+        if isinstance(index, slice):
+            target = getattr(target.at[index.start : index.stop : index.step], gast_op_map[op])(x)
+        else:
+            target = getattr(target.at[index], gast_op_map[op])(x)
+    else:
+        # Use Python's in-place operator
+        target[index] = getattr(operator, f"__i{inplace_operation_map[op]}__")(target[index], x)
     return target
 
 
