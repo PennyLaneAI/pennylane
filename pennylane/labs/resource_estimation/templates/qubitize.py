@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 
 
 class ResourceQubitizeTHC(ResourceOperator):
-    r"""Resource class for qubitization of a Hamiltonian.
+    r"""Resource class for qubitization of tensor hypercontracted Hamiltonian.
 
     .. note::
 
@@ -57,16 +57,16 @@ class ResourceQubitizeTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = plre.estimate_resources(plre.ResourceQubitizeTHC(compact_ham))
+    >>> prep = plre.ResourcePrepTHC(compact_ham, coeff_precision=20, select_swap_depth=2)
+    >>> res = plre.estimate_resources(plre.ResourceQubitizeTHC(compact_ham, prep_op=prep))
     >>> print(res)
     --- Resources: ---
      Total qubits: 381
-     Total gates : 4.885E+4
+     Total gates : 5.628E+4
      Qubit breakdown:
       clean qubits: 313, dirty qubits: 0, algorithmic qubits: 68
      Gate breakdown:
-      {'Toffoli': 3.155E+3, 'CNOT': 3.646E+4, 'X': 1.201E+3, 'Hadamard': 7.913E+3, 'S': 80, 'Z': 41}
-
+      {'Toffoli': 3.504E+3, 'CNOT': 4.138E+4, 'X': 2.071E+3, 'Hadamard': 9.213E+3, 'S': 80, 'Z': 41}
     """
 
     resource_keys = {"compact_ham", "prep_op", "select_op"}
