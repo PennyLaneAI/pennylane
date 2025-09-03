@@ -1203,6 +1203,29 @@ class TestPauliSentenceMatrix:
         assert qml.math.allclose(gx, pw1_mat)
         assert qml.math.allclose(gy, pw2_mat)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_tracer_coefficients_jax(self, use_jit):
+        """Tests that functions with abstract coefficients can be jitted."""
+        import jax
+
+        def f(c1, c2):
+            op = c1 * qml.X(0) + c2 * qml.X(0)
+            return op.simplify()
+
+        if use_jit:
+            f = jax.jit(f)
+            # Need for assert_equal to recognize they are the same.
+            # Complains about mismatching interfaces (numpy vs jax).
+            coeffs = jax.numpy.array(1.0)
+        else:
+            coeffs = 1.0
+
+        qml.assert_equal(
+            f(1.0, 1.0),
+            (coeffs * qml.X(0) + coeffs * qml.X(0)).simplify(),
+        )
+
 
 class TestPaulicomms:
     """Test 'native' commutator in PauliWord and PauliSentence"""
