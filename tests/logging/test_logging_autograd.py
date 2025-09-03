@@ -163,8 +163,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 9
-
+        assert len(caplog.records) == 8
         log_records_expected = [
             (
                 "pennylane.devices.default_qutrit_mixed",
