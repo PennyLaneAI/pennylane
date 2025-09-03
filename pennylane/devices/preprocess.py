@@ -426,6 +426,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
 
+    ops_to_decompose = tape.operations[len(prep_op) :]
+
     # pylint: disable=import-outside-toplevel
     from pennylane.decomposition import enabled_graph
 
@@ -435,37 +437,30 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             from pennylane.transforms.decompose import decompose as graph_decompose
 
             if gate_set is None:
-                try:
-                    from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
+                from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
 
-                    gate_set = list(ALL_DQ_GATE_SET)
-                except ImportError:
-                    pass
+                gate_set = list(ALL_DQ_GATE_SET)
 
             # Only decompose operations after prep_op (if any)
-            ops_to_decompose = tape.operations[len(prep_op) :]
-            if ops_to_decompose:
-                decomp_tape = tape.copy(operations=ops_to_decompose)
-                decomposed_tapes, _ = graph_decompose(decomp_tape, gate_set=gate_set)
-                new_ops = prep_op + decomposed_tapes[0].operations
-            else:
-                new_ops = prep_op
+            decomp_tape = tape.copy(operations=ops_to_decompose)
+            decomposed_tapes, _ = graph_decompose(
+                decomp_tape, gate_set=gate_set, stopping_condition=stopping_condition
+            )
+            new_ops = decomposed_tapes[0].operations
 
-            # Check for unsupported operations
-            unsupported_ops = [op for op in new_ops[len(prep_op) :] if not stopping_condition(op)]
-            if unsupported_ops:
-                op_name = unsupported_ops[0].name
-                raise error(
-                    f"Operator {op_name}(wires={unsupported_ops[0].wires.tolist()}) not supported on {name} "
-                    "and does not provide a decomposition."
-                )
+            # Check for unsupported operations; don't know why this is necessary
+            for op in new_ops:
+                if not stopping_condition(op):
+                    raise error(
+                        f"Operator {op} not supported with {name} and does not provide a decomposition."
+                    )
 
-            return (tape.copy(operations=new_ops),), null_postprocessing
+            return (tape.copy(operations=prep_op + new_ops),), null_postprocessing
         else:
             # Use fallback implementation
             new_ops = [
                 final_op
-                for op in tape.operations[len(prep_op) :]
+                for op in ops_to_decompose
                 for final_op in _operator_decomposition_gen(
                     op,
                     stopping_condition,
