@@ -329,6 +329,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     ) = None,
     name: str = "device",
     error: type[Exception] | None = None,
+    gate_set: None | set | dict | list = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -352,6 +353,9 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
             fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
+        gate_set (None, set, dict, list): The gate set to be used for decomposition when graph
+            decomposition is enabled. If ``None``, defaults to all operations filtered by the
+            stopping condition. Only used with graph decomposition.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -421,19 +425,48 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
-    try:
+    ops_to_decompose = tape.operations[len(prep_op) :]
 
-        new_ops = [
-            final_op
-            for op in tape.operations[len(prep_op) :]
-            for final_op in _operator_decomposition_gen(
-                op,
-                stopping_condition,
-                decomposer=decomposer,
-                name=name,
-                error=error,
+    # pylint: disable=import-outside-toplevel
+    from pennylane.decomposition import enabled_graph
+
+    try:
+        if enabled_graph():
+            # Use graph decomposition
+            from pennylane.transforms.decompose import decompose as graph_decompose
+
+            if gate_set is None:
+                from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
+
+                gate_set = list(ALL_DQ_GATE_SET)
+
+            # Only decompose operations after prep_op (if any)
+            decomp_tape = tape.copy(operations=ops_to_decompose)
+            decomposed_tapes, _ = graph_decompose(
+                decomp_tape, gate_set=gate_set, stopping_condition=stopping_condition
             )
-        ]
+            new_ops = decomposed_tapes[0].operations
+
+            # Check for unsupported operations; don't know why this is necessary
+            for op in new_ops:
+                if not stopping_condition(op):
+                    raise error(
+                        f"Operator {op} not supported with {name} and does not provide a decomposition."
+                    )
+
+        else:  # Old decomposition system
+            new_ops = [
+                final_op
+                for op in ops_to_decompose
+                for final_op in _operator_decomposition_gen(
+                    op,
+                    stopping_condition,
+                    decomposer=decomposer,
+                    name=name,
+                    error=error,
+                )
+            ]
+
     except RecursionError as e:
         raise error(
             "Reached recursion limit trying to decompose operations. "

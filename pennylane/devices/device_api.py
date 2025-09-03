@@ -544,6 +544,7 @@ class Device(abc.ABC):
                 stopping_condition=capabilities_analytic.supports_operation,
                 stopping_condition_shots=capabilities_shots.supports_operation,
                 name=self.name,
+                gate_set=self.capabilities.gate_set,
             )
 
         if not self.capabilities.overlapping_observables:
@@ -562,6 +563,7 @@ class Device(abc.ABC):
                 stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
                 stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
                 name=self.name,
+                gate_set=self.capabilities.gate_set,
             )
 
         program.add_transform(qml.transforms.broadcast_expand)
