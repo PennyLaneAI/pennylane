@@ -3,6 +3,23 @@
 
 <h3>New features since last release</h3>
 
+* Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
+  [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
+
+  ```python
+  @qml.qnode(qml.device('default.qubit'))
+  def c():
+      with qml.allocation.allocate(1) as wires:
+          qml.H(wires)
+          qml.CNOT((wires[0], 0))
+      return qml.probs(wires=0)
+
+  c()
+  ```
+  ```
+  array([0.5, 0.5])
+  ```
+
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
   A corresponding decomposition rule has been added to support efficiently controlling the pattern,
@@ -88,7 +105,16 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
+* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
+  [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
+
 <h3>Improvements 🛠</h3>
+
+* `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
+  [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
+
+* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
 
 * A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
   This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
@@ -411,8 +437,15 @@
 * Added a `QuantumParser` class to the `qml.compiler.python_compiler` submodule that automatically loads relevant dialects.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
 
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass` has been added for the experimental xDSL Python compiler integration. This pass converts all gates in the MBQC gate set (`Hadamard`, `S`, `RZ`, `RotXZX` and `CNOT`) to the textbook MBQC formalism.
+  [(#7870)](https://github.com/PennyLaneAI/pennylane/pull/7870)
+
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
+
+* Users can now specify a relative threshold value for the permissible operator norm error (`epsilon`) that
+  triggers rebuilding of the cache in the `qml.clifford_t_transform`, via new `cache_eps_rtol` keyword argument.
+  [(#8056)](https://github.com/PennyLaneAI/pennylane/pull/8056)
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
@@ -468,6 +501,15 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
+  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
+  may have changed.
+  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
+  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
+  - Instead of `qml.labs.zxopt.todd`, use :func:`.transforms.zx.todd`
+  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`.transforms.zx.push_hadamards`
+  [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
+
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
@@ -509,7 +551,14 @@
 * Added state of the art resources for the `ResourceTrotterProduct` template.
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
+* Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
+  [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
+
 <h3>Breaking changes 💔</h3>
+
+* `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
+  and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
   no longer queue any operators.
@@ -650,6 +699,7 @@
   ```
 
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
@@ -750,6 +800,26 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update links in `README.md`.
+  [(#8165)](https://github.com/PennyLaneAI/pennylane/pull/8165)
+
+* Update `autograph` guide to reflect new capabilities.
+  [(#8132)](https://github.com/PennyLaneAI/pennylane/pull/8132)
+
+* Start using `strict=True` to `zip` usage in source code.
+  [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
+  [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
+  [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
+
+* Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
+  [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
+  [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
+  [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
+
+* The `autograph` keyword argument has been removed from the `QNode` constructor. 
+  To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
+  [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
+  
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
@@ -856,6 +926,13 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
+* Two new xDSL passes have been added to the Python compiler: `decompose-graph-state`, which
+  decomposes `mbqc.graph_state_prep` operations to their corresponding set of quantum operations for
+  execution on state simulators, and `null-decompose-graph-state`, which replaces
+  `mbqc.graph_state_prep` operations with single quantum-register allocation operations for
+  execution on null devices.
+  [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
@@ -891,7 +968,19 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
+* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
+  [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
+
 <h3>Bug fixes 🐛</h3>
+
+* `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
+  more robustly. In particular, the generator is simplified prior to decomposition. Now more
+  time evolution ops can be supported on devices that do not natively support them.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
+
+* A scalar product of a norm one scalar and an operator now decomposes into a `GlobalPhase` and the operator.
+  For example, `-1 * qml.X(0)` now decomposes into `[qml.GlobalPhase(-np.pi), qml.X(0)]`.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
 * Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
   :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
