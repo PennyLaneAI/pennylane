@@ -100,7 +100,7 @@ class TestDefaultMixedInit:
         execution_config = qml.devices.execution_config.ExecutionConfig(
             gradient_method="finite-diff"
         )  # in-valid one for this device
-        processed_config = dev._setup_execution_config(execution_config)
+        processed_config = dev.setup_execution_config(execution_config)
         assert (
             processed_config.interface is Interface.NUMPY
         ), "The interface should be set to numpy for an invalid gradient method"

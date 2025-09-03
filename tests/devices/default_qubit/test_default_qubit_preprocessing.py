@@ -201,6 +201,19 @@ class TestConfigSetup:
         processed = dev.setup_execution_config(config)
         assert processed.mcm_config.mcm_method == "tree-traversal"
 
+    @pytest.mark.parametrize("shots, expected", [(None, "deferred"), (10, "one-shot")])
+    def test_default_mcm_method_circuit(self, shots, expected):
+        config = ExecutionConfig()
+        dev = qml.device("default.qubit")
+        processed = dev.setup_execution_config(config, circuit=qml.tape.QuantumScript(shots=shots))
+        assert processed.mcm_config.mcm_method == expected
+
+    def test_default_mcm_method_no_circuit(self):
+        config = ExecutionConfig()
+        dev = qml.device("default.qubit")
+        processed = dev.setup_execution_config(config)
+        assert processed.mcm_config.mcm_method == "deferred"
+
 
 # pylint: disable=too-few-public-methods
 class TestPreprocessing:
@@ -800,6 +813,23 @@ class TestPreprocessingIntegration:
 
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
+
+    def test_decompose_conditionals(self):
+        """Test that conditional templates are properly decomposed."""
+
+        m0 = qml.measure(0)
+        tape = qml.tape.QuantumScript(
+            [m0.measurements[0], qml.ops.Conditional(m0, NoMatOp(wires=0))], [qml.probs(wires=0)]
+        )
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
+
+        prog = qml.device("default.qubit").preprocess_transforms(config)
+        [new_tape], _ = prog((tape,))
+
+        expected = qml.tape.QuantumScript(
+            [qml.CNOT((0, 1)), qml.CNOT((1, 0)), qml.CY((1, 0))], [qml.probs(wires=0)]
+        )
+        qml.assert_equal(new_tape, expected)
 
 
 class TestAdjointDiffTapeValidation:
