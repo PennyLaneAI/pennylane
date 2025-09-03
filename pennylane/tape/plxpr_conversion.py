@@ -210,7 +210,7 @@ def _(self, *, num_wires, state, restored):
     wires = [DynamicWire() for _ in range(num_wires)]
     num_dynamic_wires = len(self.state["dynamic_wire_map"])
     int_wires = [np.iinfo(np.int32).max - i - num_dynamic_wires for i in range(num_wires)]
-    self.state["dynamic_wire_map"].update({k: v for k, v in zip(int_wires, wires, strict=True)})
+    self.state["dynamic_wire_map"].update(dict(zip(int_wires, wires, strict=True)))
     self.state["ops"].append(Allocate(int_wires, state=state, restored=restored))
     return int_wires
 
@@ -267,6 +267,6 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
     assert collector.state
     wire_map = collector.state["dynamic_wire_map"]
     with pause():
-        ops = [op.map_wires(wire_map) for op in collector.state["ops"]]
+        operations = [op.map_wires(wire_map) for op in collector.state["ops"]]
         measurements = [m.map_wires(wire_map) for m in collector.state["measurements"]]
-    return QuantumScript(ops, measurements, shots=shots)
+    return QuantumScript(operations, measurements, shots=shots)
