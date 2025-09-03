@@ -25,6 +25,8 @@ pytest.importorskip("catalyst")
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
+import jax
+
 import pennylane as qml
 from pennylane.compiler.python_compiler.visualization import draw
 
@@ -350,6 +352,81 @@ class Testdraw:
             draw(_)()
             == "0: ──H─╭GlobalPhase─┤  State\n1: ──H─├GlobalPhase─┤  State\n2: ──H─╰GlobalPhase─┤  State"
         )
+
+    def test_visualization_mcm(self):
+        """Test the visualization of mid-circuit measurements."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def _():
+            qml.measure(0)
+            qml.RX(0.1, 1)
+            qml.measure(1)
+            return qml.state()
+
+        assert draw(_)() == "0: ──┤↗├──────┤  State\n1: ──RX───┤↗├─┤  State"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "ops, expected",
+        [
+            (
+                [
+                    (qml.QubitUnitary, jax.numpy.array([[0, 1], [1, 0]]), [0]),
+                    (
+                        qml.QubitUnitary,
+                        jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]]),
+                        [0, 1],
+                    ),
+                    (qml.QubitUnitary, jax.numpy.zeros((8, 8)), [0, 1, 2]),
+                    (
+                        qml.QubitUnitary,
+                        jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]]),
+                        [0, 1],
+                    ),
+                    (qml.QubitUnitary, jax.numpy.array([[0, 1], [1, 0]]), [0]),
+                ],
+                "0: ──U(M0)─╭U(M1)─╭U(M2)─╭U(M1)──U(M0)─┤  State\n"
+                "1: ────────╰U(M1)─├U(M2)─╰U(M1)────────┤  State\n"
+                "2: ───────────────╰U(M2)───────────────┤  State",
+            ),
+            (
+                [
+                    (qml.StatePrep, jax.numpy.array([1, 0]), [0]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0]), [0, 1]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0, 1, 0, 0, 0]), [0, 1, 2]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0]), [0, 1]),
+                    (qml.StatePrep, jax.numpy.array([1, 0]), [0]),
+                ],
+                "0: ──|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩──|Ψ⟩─┤  State\n"
+                "1: ──────╰|Ψ⟩─├|Ψ⟩─╰|Ψ⟩──────┤  State\n"
+                "2: ───────────╰|Ψ⟩───────────┤  State",
+            ),
+            (
+                [
+                    (qml.MultiRZ, 0.1, [0]),
+                    (qml.MultiRZ, 0.1, [0, 1]),
+                    (qml.MultiRZ, 0.1, [0, 1, 2]),
+                    (qml.MultiRZ, 0.1, [0, 1]),
+                    (qml.MultiRZ, 0.1, [0]),
+                ],
+                "0: ──MultiRZ─╭MultiRZ─╭MultiRZ─╭MultiRZ──MultiRZ─┤  State\n"
+                "1: ──────────╰MultiRZ─├MultiRZ─╰MultiRZ──────────┤  State\n"
+                "2: ───────────────────╰MultiRZ───────────────────┤  State",
+            ),
+        ],
+    )
+    def test_visualization_cases(self, ops, expected):
+        """
+        Test the visualization of various quantum operations.
+        """
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circuit():
+            for op, param, wires in ops:
+                op(param, wires=wires)
+            return qml.state()
+
+        assert draw(circuit)() == expected
 
 
 if __name__ == "__main__":

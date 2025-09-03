@@ -30,12 +30,15 @@ from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as Ext
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
     MeasureOp,
+    MultiRZOp,
     ProbsOp,
+    QubitUnitaryOp,
     SampleOp,
+    SetStateOp,
     StateOp,
     VarianceOp,
 )
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.operation import Operator
 
 from .xdsl_conversion import (
@@ -95,7 +98,9 @@ class QMLCollector:
     ############################################################
 
     @handle.register
-    def _(self, xdsl_op: CustomOp | GlobalPhaseOp) -> Operator:
+    def _(
+        self, xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp
+    ) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
         if not self.wire_to_ssa_qubits:
@@ -150,10 +155,10 @@ class QMLCollector:
                 self._process_qubit_mapping(op)
                 result = self.handle(op)
 
-                if isinstance(result, MeasurementProcess):
-                    collected_meas.append(result)
-
-                if isinstance(result, Operator):
+                if isinstance(result, (Operator, MidMeasureMP)):
                     collected_ops.append(result)
+
+                elif isinstance(result, MeasurementProcess):
+                    collected_meas.append(result)
 
         return collected_ops, collected_meas
