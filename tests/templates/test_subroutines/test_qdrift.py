@@ -31,7 +31,7 @@ test_hamiltonians = (
         [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)],
     ),
     (
-        [1.23, -0.45j],
+        [1.23, -0.45],
         [
             qml.s_prod(0.1, qml.PauliX(0)),
             qml.prod(qml.PauliZ(0), qml.PauliX(1)),
@@ -188,7 +188,7 @@ class TestIntegration:
         """Test that the circuit executes as expected"""
         hamiltonian = qml.dot(coeffs, ops)
         wires = hamiltonian.wires
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("reference.qubit", wires=wires)
 
         @qml.qnode(dev)
         def circ():
@@ -219,7 +219,7 @@ class TestIntegration:
         time = qnp.array(0.5)
         coeffs = qnp.array(coeffs, requires_grad=False)
 
-        dev = qml.device("default.qubit", wires=[0, 1])
+        dev = qml.device("reference.qubit", wires=[0, 1])
 
         @qml.qnode(dev)
         def circ(time):
@@ -309,7 +309,7 @@ class TestIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.5)
-        dev = qml.device("default.qubit", wires=[0, 1])
+        dev = qml.device("reference.qubit", wires=[0, 1])
 
         @qml.qnode(dev)
         def circ(time):
@@ -340,7 +340,7 @@ class TestIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.5)
-        dev = qml.device("default.qubit", wires=[0, 1])
+        dev = qml.device("reference.qubit", wires=[0, 1])
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -441,7 +441,7 @@ class TestIntegration:
         coeffs = jnp.array([1.23, -0.45])
 
         terms = [qml.PauliX(0), qml.PauliZ(0)]
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("reference.qubit", wires=1)
 
         @qml.qnode(dev)
         def circ(time, coeffs):

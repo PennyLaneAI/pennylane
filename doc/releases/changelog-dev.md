@@ -437,6 +437,9 @@
 * Added a `QuantumParser` class to the `qml.compiler.python_compiler` submodule that automatically loads relevant dialects.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
 
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass` has been added for the experimental xDSL Python compiler integration. This pass converts all gates in the MBQC gate set (`Hadamard`, `S`, `RZ`, `RotXZX` and `CNOT`) to the textbook MBQC formalism.
+  [(#7870)](https://github.com/PennyLaneAI/pennylane/pull/7870)
+
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
 
@@ -541,6 +544,9 @@
 
 * Added state of the art resources for the `ResourceTrotterProduct` template.
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
+
+* Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
+  [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
 <h3>Breaking changes 💔</h3>
 
@@ -796,6 +802,7 @@
 
 * Start using `strict=True` to `zip` usage in source code.
   [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
+  [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
@@ -912,6 +919,13 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
+* Two new xDSL passes have been added to the Python compiler: `decompose-graph-state`, which
+  decomposes `mbqc.graph_state_prep` operations to their corresponding set of quantum operations for
+  execution on state simulators, and `null-decompose-graph-state`, which replaces
+  `mbqc.graph_state_prep` operations with single quantum-register allocation operations for
+  execution on null devices.
+  [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
@@ -947,7 +961,19 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
+* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
+  [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
+
 <h3>Bug fixes 🐛</h3>
+
+* `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
+  more robustly. In particular, the generator is simplified prior to decomposition. Now more
+  time evolution ops can be supported on devices that do not natively support them.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
+
+* A scalar product of a norm one scalar and an operator now decomposes into a `GlobalPhase` and the operator.
+  For example, `-1 * qml.X(0)` now decomposes into `[qml.GlobalPhase(-np.pi), qml.X(0)]`.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
 * Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
   :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
