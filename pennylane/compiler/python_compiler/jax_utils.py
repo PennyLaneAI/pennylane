@@ -95,7 +95,7 @@ def module(func: JaxJittedFunction) -> Callable[..., jModule]:
 
 
 def _generic_inline(func: JaxJittedFunction, *args, **kwargs) -> str:  # pragma: no cover
-    """Create the generic textual representation for the jax.jit'ed function"""
+    """Create the generic textual representation for the jax.jitted function"""
     lowered = func.lower(*args, **kwargs)
     mod = lowered.compiler_ir()
     return mod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
