@@ -536,8 +536,7 @@ def apply(op, context=QueuingManager):
     # Always make a copy since we don't want the provided op to be dequeued by a subsequent
     # PennyLane Operator/Function.
     # Note that queuing contexts can only contain unique objects.
-    if getattr(op, "_queue_category", "") == "_ops":
-        op = copy.copy(op)
+    op = copy.copy(op)
 
     if hasattr(op, "queue"):
         # operator provides its own logic for queuing
