@@ -18,7 +18,7 @@ import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.wires import Wires
 
-# pylint: disable= too-few-public-methods
+# pylint: disable= too-few-public-methods, too-many-instance-attributes
 
 
 class _WireResourceManager:
@@ -76,6 +76,7 @@ class _WireResourceManager:
 
     @property
     def algo_wires(self):
+        """The number of algorithmic wires in the circuit."""
         return (
             self.clean_active_algo
             + self.clean_idle_algo
@@ -85,22 +86,23 @@ class _WireResourceManager:
 
     @property
     def dirty_wires(self):
-        """Auxiliary wires in the dirty state"""
+        """The number of auxiliary wires, in the dirty state, in the circuit."""
         return self.dirty_idle_aux + self.dirty_active_aux
 
     @property
     def clean_wires(self):
-        """Auxiliary wires in the clean state"""
+        """The number of auxiliary wires, in the clean state, in the circuit."""
         return (
             self.clean_idle_aux
-        )  # no clean_active_aux because any active aux wire is marked dirty
+        )  # no clean_active_aux because any active aux wire is autmatically marked dirty
 
     @property
     def total_wires(self):
-        """All of the wires defined & used so far."""
+        """All of the wires defined & used in the circuit."""
         return self.clean_wires + self.dirty_wires + self.algo_wires
 
     def allocate_fresh(self, n):
+        """Allocate additional clean, idle, auxiliary qubits."""
         if self.tight_budget:
             raise QuantumFunctionError(
                 "Requesting more qubits than availble within the budget. Set `tight_budget` to False."
@@ -234,7 +236,7 @@ class _WireResourceManager:
         self.return_clean(n_requested)
 
     def take(self, n_requested=1):
-        """Use clean qubits in a manner that is not return-able"""
+        """Use clean qubits in a manner that is not returnable"""
         n_available = min(n_requested, self.clean_idle_aux)
 
         self.clean_idle_aux -= n_available
@@ -268,6 +270,9 @@ class _WireResourceManager:
         self.dirty_idle_aux -= n_requested
 
     def step_into_decomp(self, num_active_qubits) -> "_WireResourceManager":
+        """Creates a new instance of _WireResourceManager which is modified to 
+        set idle qubits as active according to which qubits are required by the lower
+        decomposition scope."""
         qm = self.__class__()
 
         # Copy over all idle qubit counts
@@ -322,6 +327,8 @@ class _WireResourceManager:
         return qm
 
     def step_out_decomp(self, subqm: "_WireResourceManager") -> None:
+        """Resolves the state of all qubits by merging the current state of the qubits
+        with the updates captured by the :code:`subqm` resource manager."""
 
         # Copy over all idle qubit counts
         self.clean_idle_aux = subqm.clean_idle_aux
