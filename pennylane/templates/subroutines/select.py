@@ -637,9 +637,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     first_half = (
         [TemporaryAND(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
-        + [X(controls[0])]
-        + [CNOT([controls[0], controls[2]])]
-        + [X(controls[0])]
+        + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
         + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
     )
 
@@ -767,8 +765,14 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
 
     resources[resource_rep(TemporaryAND)] += num_elbows
     resources[adjoint_resource_rep(TemporaryAND)] += num_elbows
-    resources[resource_rep(CNOT)] += K - 1 + int(K > 2 ** (c - 1))
-    resources[resource_rep(X)] += 2 * int(K > 2 ** (c - 2))
+    more_than_a_quarter = int(K > 2 ** (c - 2))
+    more_than_a_half = int(K > 2 ** (c - 1))
+    resources[resource_rep(CNOT)] += K - 1 + more_than_a_half - more_than_a_quarter
+    resources[
+        controlled_resource_rep(
+            base_class=X, base_params={}, num_control_wires=1, num_zero_control_values=1
+        )
+    ] += more_than_a_quarter
     for op_rep in op_reps:
         resources[
             controlled_resource_rep(
@@ -807,8 +811,8 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
             {
                 resource_rep(TemporaryAND): num_ops - 3,
                 adjoint_resource_rep(TemporaryAND): num_ops - 3,
-                CNOT: num_ops,
-                X: 2,
+                CNOT: num_ops - 1,
+                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
             }
         )
     else:
@@ -816,8 +820,8 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
             {
                 resource_rep(TemporaryAND): num_ops - 2,
                 adjoint_resource_rep(TemporaryAND): num_ops - 2,
-                CNOT: num_ops - 2,
-                X: 2,
+                CNOT: num_ops - 3,
+                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
             }
         )
 
@@ -838,6 +842,14 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     not use the same recursive structure as for ``_select_decomp_unary`` but a simple ``for`` loop
     instead.
 
+    Args:
+        ops (Sequence[Operator]): Operators applied by the Select unary iterator.
+        control (Sequence[hashable]): Control wires. Should be at least ``ceil(log2(len(ops)))`` many.
+        work_wires (Sequence[hashable]): Work wires. Should be at least ``len(control)-1`` many.
+
+    Returns:
+        Sequence[Operator]: Decomposition of a non-partial ``Select`` using unary iteration.
+
     Denote the number of control qubits as ``c`` and the number of operators as ``K``.
     Arrange the control wires and ``c-1`` work wires as ``["c0", "c1", "w0", "c2", "w1", ...]``.
 
@@ -857,6 +869,8 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     tn: ─────────────
     ```
 
+    Here, the ``p`` in ``wp`` is the number of work wires, and ``n`` is the number of target
+    wires.
     Then we iterate over the target operators and perform the following steps for each, except
     for the last operator.
 
@@ -968,7 +982,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
             if first_bit_has_flipped:
                 inter_ops = [CNOT([c0, c2])]
             else:
-                inter_ops = [X(c0), CNOT([c0, c2]), X(c0)]
+                inter_ops = [ctrl(X(c2), control=c0, control_values=[0])]
         elif first_flip_bit == 0:
             c0, c1, c2 = unary_triples[0]
             inter_ops = [CNOT([c0, c2]), CNOT([c1, c2])]
