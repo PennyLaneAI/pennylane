@@ -377,11 +377,11 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
             break
     if not found:
         raise LookupError("MCM not found")
-    meas = qml.math.squeeze(meas)
+
     if isinstance(measurement, (CountsMP, ProbabilityMP)):
         interface = qml.math.get_interface(is_valid)
         sum_valid = qml.math.sum(is_valid)
-        count_1 = qml.math.sum(meas * is_valid)
+        count_1 = qml.math.sum(qml.math.squeeze(meas) * is_valid)
         if isinstance(measurement, CountsMP):
             return qml.math.array([0, 1], like=interface), qml.math.array(
                 [sum_valid - count_1, count_1], like=interface
@@ -549,6 +549,4 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
     if isinstance(measurement, CountsMP):
         mcm_samples = [{float(s): 1} for s in mcm_samples]
     results = gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
-    if isinstance(measurement, SampleMP):
-        results = qml.math.squeeze(results)
     return results
