@@ -34,12 +34,13 @@ class _WireResourceManager:
 
     **Example**
 
-    >>> q = QubitManager(
-    ...             work_wires={"clean": 2, "dirty": 2},
-    ...             tight_budget=False,
-    ...     )
-    >>> print(q)
-    QubitManager(clean=2, dirty=2, logic=0, tight_budget=False)
+    >>> qm = plre._WireResourceManager(
+    ...     work_wires = {"clean": 2, "dirty": 2},
+    ...     algo_wires = 10,
+    ...     tight_budget = False,
+    ... )
+    >>> print(qm)
+    _WireResourceManager(clean_wires=2, dirty_wires=2, algorithmic_wires=10, tight_budget=False)
 
     """
 
@@ -380,8 +381,8 @@ class _WireResourceManager:
 
     def __str__(self):
         return (
-            f"_WireResourceManager(clean wires={self.clean_wires}, dirty wires={self.dirty_wires}, "
-            f"algorithmic wires={self.algo_wires}, tight budget={self.tight_budget})"
+            f"_WireResourceManager(clean_wires={self.clean_wires}, dirty_wires={self.dirty_wires}, "
+            f"algorithmic_wires={self.algo_wires}, tight_budget={self.tight_budget})"
         )
 
     def _box_plot(self):

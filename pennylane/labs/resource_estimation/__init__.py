@@ -56,6 +56,8 @@ Qubit Management Classes:
     ~QubitManager
     ~AllocWires
     ~FreeWires
+    ~BorrowWires
+    ~ReturnWires
 
 Arithmetic Operators:
 ~~~~~~~~~~~~~~~~~~~~~
@@ -164,7 +166,14 @@ Compact Hamiltonian Class:
 
 """
 
-from .qubit_manager import AllocWires, FreeWires, QubitManager
+from .qubit_manager import (
+    AllocWires,
+    FreeWires,
+    BorrowWires,
+    ReturnWires,
+    QubitManager,
+    _WireResourceManager,
+)
 from .resources_base import Resources
 from .resource_operator import (
     CompressedResourceOp,
