@@ -1500,7 +1500,7 @@ class ResourceSelect(ResourceOperator):
                 representation, to be applied according to the selected qubits.
             num_wires (int): An optional parameter representing the number of wires the operation
                 acts on. This is a sum of the control wires (:math:`\lceil(log_{2}(N))\rceil`)
-                required and the number wires targeted by the :code:`select_ops`.
+                required and the number of wires targeted by the :code:`select_ops`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
