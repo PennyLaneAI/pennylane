@@ -76,7 +76,7 @@ def _adj_matrix_generation_helper(
       edges_in_adj_matrix (list[tuple[int, int]]): List of edges in the adjacent matrix.
 
     Return:
-      An adjacent matrix represents the connectivity of vertices.
+      An adjacency matrix represents the connectivity of vertices.
     """
     adj_matrix_length = num_vertices * (num_vertices - 1) // 2
     adj_matrix = [0] * adj_matrix_length
