@@ -99,7 +99,7 @@ def _generate_cnot_adj_matrix() -> list:
                           |
     tgt --  7  --  8  --  9  -- 10  -- 11  -- 12
 
-    Note that both ctrl and target qubits are not in the adjacent matrix and the connectivity
+    Note that both ctrl and target qubits are not in the adjacency matrix and the connectivity
     of the auxiliary qubits is:
     edges_in_adj_matrix = [
        (1, 0),
