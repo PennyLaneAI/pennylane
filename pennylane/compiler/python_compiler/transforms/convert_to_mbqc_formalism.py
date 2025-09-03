@@ -42,7 +42,7 @@ class _NumAuxWires(Enum):
 
 
 def _generate_adj_matrix(op_name: str) -> list:
-    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in a
+    """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in a
     graph state for a gate operation.
     Args:
         op_name (str): The gate name. Note that only a gate in the MBQC gate set is supported.
