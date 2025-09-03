@@ -30,16 +30,47 @@ from pennylane.transforms import transform
 
 @transform
 def split_at_non_clifford_gates(tape):
-    """The most basic implementation to ensure that we flush the buffer before
-    each non-Clifford gate. Pays no attention to wires/commutation, and splits
-    the tapes up more than necessary, but the logic is very simple."""
-    all_operations = [[]]
+    """Split the tape into multiple tapes, stored in order. The sequence represents the same
+    circuit if the tapes included in it are executed in sequence (without resetting the device
+    state), but only contains a single non-Clifford gate in each tape. This allows the
+    Pauli tracker to flush its buffer before each non-Clifford gate.
 
-    for op in tape.operations:
-        # if its a non-Clifford gate, and there are already ops in the list, add a new list
-        if isinstance(op, (RotXZX, RZ)) and all_operations[-1]:
-            all_operations.append([])
-        all_operations[-1].append(op)
+    ..note ::
+        This implementation pays no attention to wires/commutation, and therefore splits the tapes
+        up more than necessary.
+
+    Args:
+        tape (QNode or QuantumScript or Callable): The quantum circuit to modify the mid-circuit measurements of.
+
+    Returns:
+        tuple[List[QuantumScriptSequence], function]: A new representation of the tape that contains multiple segments to be executed in order without resetting the device.
+
+    We split the list of operations at each non-Clifford gate, while maintaining the
+    operation order. The result is a list of lists, where a new sub-list begins each
+    time a non-Clifford gate is encountered. Flattening this list of lists should result
+    in the original list of operations.
+
+    **Example**
+
+    >>> tape = QuantumScript([RZ(1.2, 0), X(1), S(2), RotXZX(0.1, 0.2, 0.3, 1), RZ(1.2, 2)])
+    >>> (seq,), null_postprocessing_fn = split_at_non_clifford_gates(tape)
+    >>> seq.operations
+    [[RZ(1.2, wires=[0]), X(1), S(2)],
+    [RotXZX(0.1, 0.2, 0.3, wires=[1])],
+    [RZ(1.2, wires=[2])]]
+
+
+    """
+    all_operations = []
+    current_ops = [tape.operations[0]]
+
+    for op in tape.operations[1:]:
+        # if its a non-Clifford gate, start a new list
+        if isinstance(op, (RotXZX, RZ)):
+            all_operations.append(current_ops)
+            current_ops = []
+        current_ops.append(op)
+    all_operations.append(current_ops)
 
     tapes = []
     for ops_list in all_operations[:-1]:
