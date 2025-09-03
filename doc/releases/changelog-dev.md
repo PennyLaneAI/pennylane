@@ -443,6 +443,10 @@
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
 
+* Users can now specify a relative threshold value for the permissible operator norm error (`epsilon`) that
+  triggers rebuilding of the cache in the `qml.clifford_t_transform`, via new `cache_eps_rtol` keyword argument.
+  [(#8056)](https://github.com/PennyLaneAI/pennylane/pull/8056)
+
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
@@ -503,6 +507,15 @@
   `GlobalPhase` is not assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
+  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
+  may have changed.
+  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
+  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
+  - Instead of `qml.labs.zxopt.todd`, use :func:`.transforms.zx.todd`
+  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`.transforms.zx.push_hadamards`
+  [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
   `ResourceQubitUnitary` templates.
@@ -803,6 +816,7 @@
 * Start using `strict=True` to `zip` usage in source code.
   [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
   [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
+  [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
