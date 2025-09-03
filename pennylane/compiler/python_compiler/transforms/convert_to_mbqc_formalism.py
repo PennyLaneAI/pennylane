@@ -148,7 +148,7 @@ def _generate_cnot_adj_matrix() -> list:
 
 
 def _generate_one_wire_op_adj_matrix() -> list:
-    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in the graph state for
+    """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in the graph state for
     an one-wire gate based on the textbook MBQC formalism. The connectivity of the target qubits in the register
     and auxiliary qubits is:
 
