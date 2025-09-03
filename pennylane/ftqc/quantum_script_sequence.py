@@ -194,7 +194,7 @@ class QuantumScriptSequence:
         return as_tape._get_standard_wire_map()  # pylint: disable=protected-access
 
     def copy(self, copy_operations: bool = False, **update):
-        """Make it copy-able as if it were a tape where possible. This allows transforms
+        """Make it copyable as if it were a tape where possible. This allows transforms
         that only affect measurements or shots to be applied directly to a QuantumScriptSequnce
         as if it were a normal QuantumScript. Does not allow modifications to operations or
         trainable parameters like tape.copy does, because transforms or functions modifying

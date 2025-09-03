@@ -366,8 +366,6 @@ class TestQuantumScriptSequence:
         tape = qml.workflow.construct_tape(circ)()
         sequence, fn = split_at_non_clifford_gates(tape)
         sequence = fn(sequence)
-        sequence, fn = split_at_non_clifford_gates(tape)
-        sequence = fn(sequence)
 
         assert isinstance(sequence, QuantumScriptSequence)
         assert tape.measurements == sequence.measurements
@@ -407,7 +405,6 @@ class TestQuantumScriptSequence:
 
         shots_circ = qml.set_shots(circ, 5000)
         tape = qml.workflow.construct_tape(shots_circ)()
-        sequence, _ = split_at_non_clifford_gates(tape)
         sequence, _ = split_at_non_clifford_gates(tape)
 
         raw_samples = backend.execute(
