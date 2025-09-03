@@ -148,6 +148,9 @@ class Evolution(Exp):
             return Evolution(new_base.base, self.param * new_base.scalar)
         return Evolution(new_base, self.param)
 
+    def pow(self, z):
+        return Evolution(self.base, self.param * z)
+
     @property
     def has_generator(self):
         return not qml.math.real(self.coeff)

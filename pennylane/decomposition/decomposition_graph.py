@@ -492,7 +492,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             warnings.warn(
                 f"The graph-based decomposition system is unable to find a decomposition for "
                 f"{op_names} to the target gate set {set(self._gate_set_weights)}. The default "
-                "decomposition will be used.",
+                "decomposition for these operators will be used instead.",
                 UserWarning,
             )
         return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
