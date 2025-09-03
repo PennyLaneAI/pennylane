@@ -21,7 +21,7 @@ from pathlib import Path
 import pennylane as qml
 from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
 from pennylane.devices.device_api import Device, _default_mcm_method
-from pennylane.devices.execution_config import DefaultExecutionConfig, ExecutionConfig, MCMConfig
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.devices.preprocess import (
     measurements_from_samples,
     no_analytic,
@@ -63,7 +63,10 @@ class FTQCQubit(Device):
         self._backend = backend
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
-    def preprocess_transforms(self, execution_config=DefaultExecutionConfig):
+    def preprocess_transforms(self, execution_config=None):
+
+        if execution_config is None:
+            execution_config = ExecutionConfig()
 
         program = qml.transforms.core.TransformProgram()
 
@@ -151,7 +154,7 @@ class FTQCQubit(Device):
 
         return config
 
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config=None):
         """Execute a circuit or a batch of circuits and turn it into results. For this
         device, each circuit is expected to the expressed as QuantumScriptSequence. This
         is ensured by the transform program in device preprocessing.
@@ -164,6 +167,9 @@ class FTQCQubit(Device):
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         return self.backend.execute(circuits, execution_config)
 
 
@@ -180,7 +186,7 @@ class LightningQubitBackend:
         self.device = qml.device("lightning.qubit")
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
-    def execute(self, sequences, execution_config=DefaultExecutionConfig):
+    def execute(self, sequences, execution_config=None):
         """Execute a sequence or a batch of sequences and turn it into results.
 
         Args:
@@ -190,6 +196,9 @@ class LightningQubitBackend:
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         results = []
         for sequence in sequences:
             assert isinstance(
