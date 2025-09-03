@@ -233,14 +233,30 @@ class TestRegisterComparator:
                 10,
                 True,
                 [
-                    GateCount(resource_rep(plre.ResourceTwoQubitComparator), 9),
+                    AllocWires(18),
+                    GateCount(resource_rep(plre.ResourceTempAND), 18),
+                    GateCount(resource_rep(plre.ResourceCNOT), 72),
+                    GateCount(resource_rep(plre.ResourceX), 27),
                     GateCount(resource_rep(plre.ResourceSingleQubitComparator), 1),
+                    FreeWires(18),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitComparator)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceTempAND)},
                         ),
-                        9,
+                        18,
+                    ),
+                    GateCount(
+                        resource_rep(
+                            plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceCNOT)}
+                        ),
+                        72,
+                    ),
+                    GateCount(
+                        resource_rep(
+                            plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceX)}
+                        ),
+                        27,
                     ),
                     GateCount(
                         resource_rep(
@@ -258,14 +274,30 @@ class TestRegisterComparator:
                 4,
                 False,
                 [
-                    GateCount(resource_rep(plre.ResourceTwoQubitComparator), 3),
+                    AllocWires(6),
+                    GateCount(resource_rep(plre.ResourceTempAND), 6),
+                    GateCount(resource_rep(plre.ResourceCNOT), 24),
+                    GateCount(resource_rep(plre.ResourceX), 9),
                     GateCount(resource_rep(plre.ResourceSingleQubitComparator), 1),
+                    FreeWires(6),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitComparator)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceTempAND)},
                         ),
-                        3,
+                        6,
+                    ),
+                    GateCount(
+                        resource_rep(
+                            plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceCNOT)}
+                        ),
+                        24,
+                    ),
+                    GateCount(
+                        resource_rep(
+                            plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceX)}
+                        ),
+                        9,
                     ),
                     GateCount(
                         resource_rep(
@@ -295,14 +327,30 @@ class TestRegisterComparator:
                 6,
                 True,
                 [
-                    GateCount(resource_rep(plre.ResourceTwoQubitComparator), 3),
+                    AllocWires(6),
+                    GateCount(resource_rep(plre.ResourceTempAND), 6),
+                    GateCount(resource_rep(plre.ResourceCNOT), 24),
+                    GateCount(resource_rep(plre.ResourceX), 9),
                     GateCount(resource_rep(plre.ResourceSingleQubitComparator), 1),
+                    FreeWires(6),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitComparator)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceTempAND)},
                         ),
-                        3,
+                        6,
+                    ),
+                    GateCount(
+                        resource_rep(
+                            plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceCNOT)}
+                        ),
+                        24,
+                    ),
+                    GateCount(
+                        resource_rep(
+                            plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceX)}
+                        ),
+                        9,
                     ),
                     GateCount(
                         resource_rep(

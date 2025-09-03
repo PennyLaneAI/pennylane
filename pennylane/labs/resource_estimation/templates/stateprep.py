@@ -840,3 +840,369 @@ class ResourceQROMStatePreparation(ResourceOperator):
             selswap_depths=selswap_depths,
             **kwargs,
         )
+
+
+class ResourcePrepTHC(ResourceOperator):
+    r"""Resource class for preparing the state for tensor hypercontracted Hamiltonian. This operator customizes
+    the Prepare circuit based on the structure of THC Hamiltonian.
+
+    Args:
+        compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            Hamiltonian for which the state is being prepared
+        coeff_precision (int, optional): The number of bits used to represent the precision for loading
+            the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+            :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+        select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+            used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+        wires (list[int] or optional): the wires on which the operator acts
+
+    Resources:
+        The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
+    >>> res = plre.estimate_resources(plre.ResourcePrepTHC(compact_ham, coeff_precision=15))
+    >>> print(res)
+    --- Resources: ---
+     Total qubits: 185
+     Total gates : 1.485E+4
+     Qubit breakdown:
+      clean qubits: 28, dirty qubits: 145, algorithmic qubits: 12
+     Gate breakdown:
+      {'Hadamard': 797, 'Toffoli': 467, 'CNOT': 1.307E+4, 'X': 512}
+
+    """
+
+    resource_keys = {"compact_ham", "coeff_precision", "select_swap_depth"}
+
+    def __init__(self, compact_ham, coeff_precision=None, select_swap_depth=None, wires=None):
+
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourcePrepTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
+
+        if not (isinstance(coeff_precision, int) or coeff_precision is None):
+            raise TypeError(
+                f"`coeff_precision` must be an integer, provided {type(coeff_precision)}."
+            )
+
+        self.compact_ham = compact_ham
+        self.coeff_precision = coeff_precision
+        self.select_swap_depth = select_swap_depth
+        tensor_rank = compact_ham.params["tensor_rank"]
+        self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * compact_ham (CompactHamiltonian): a tensor hypercontracted
+                  Hamiltonian for which the state is being prepared
+                * coeff_precision (int, optional): The number of bits used to represent the precision for loading
+                  the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+                  :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+                * select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                  used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+        """
+        return {
+            "compact_ham": self.compact_ham,
+            "coeff_precision": self.coeff_precision,
+            "select_swap_depth": self.select_swap_depth,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None
+    ) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+                Hamiltonian for which the state is being prepared
+            coeff_precision (int, optional): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourcePrepTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
+
+        if not (isinstance(coeff_precision, int) or coeff_precision is None):
+            raise TypeError(
+                f"`coeff_precision` must be an integer, provided {type(coeff_precision)}."
+            )
+
+        params = {
+            "compact_ham": compact_ham,
+            "coeff_precision": coeff_precision,
+            "select_swap_depth": select_swap_depth,
+        }
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def default_resource_decomp(
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Args:
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+                Hamiltonian for which the walk operator is being created
+            coeff_precision (int, optional): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+
+        Resources:
+            The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        """
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+
+        coeff_precision = coeff_precision or kwargs["config"]["qubitization_coeff_precision"]
+
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
+
+        gate_list = []
+
+        # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
+
+        hadamard = resource_rep(plre.ResourceHadamard)
+
+        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+
+        # Figure - 3
+
+        # Inquality tests
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Reflection on 5 registers
+        ccz = resource_rep(plre.ResourceCCZ)
+        gate_list.append(
+            plre.GateCount(
+                resource_rep(
+                    plre.ResourceControlled,
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                ),
+                1,
+            )
+        )
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+
+        # Rotate and invert the rotation of ancilla to obtain amplitude of success
+        gate_list.append(AllocWires(coeff_precision))
+        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(FreeWires(coeff_precision))
+
+        # Reflecting about the success amplitude
+        gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
+
+        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+
+        # Inequality tests
+        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Checking that inequality is satisfied
+        mcx = resource_rep(
+            plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
+        )
+        gate_list.append(plre.GateCount(mcx, 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        x = resource_rep(plre.ResourceX)
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Figure- 4(Subprepare Circuit)
+        gate_list.append(plre.GateCount(hadamard, coeff_precision + 1))
+
+        # Contiguous register cost Eq.29 in arXiv:2011.03494
+        gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
+
+        # QROM for keep values Eq.31 in arXiv:2011.03494
+        qrom_coeff = resource_rep(
+            plre.ResourceQROM,
+            {
+                "num_bitstrings": num_coeff,
+                "size_bitstring": 2 * m_register + 2 + coeff_precision,
+                "clean": False,
+                "select_swap_depth": select_swap_depth,
+            },
+        )
+        gate_list.append(plre.GateCount(qrom_coeff, 1))
+
+        # Inequality test between alt and keep registers
+        comparator = resource_rep(
+            plre.ResourceRegisterComparator,
+            {
+                "first_register": coeff_precision,
+                "second_register": coeff_precision,
+                "geq": False,
+            },
+        )
+        gate_list.append(plre.GateCount(comparator))
+
+        cz = resource_rep(plre.ResourceCZ)
+        gate_list.append(plre.GateCount(cz, 2))
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Swap \mu and \nu registers with alt registers
+        cswap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(plre.GateCount(cswap, 2 * m_register))
+
+        # Swap \mu and \nu registers controlled on |+> state and success of inequality
+        gate_list.append(plre.GateCount(cswap, m_register))
+        gate_list.append(plre.GateCount(toffoli, 1))
+
+        return gate_list
+
+    @classmethod
+    def default_adjoint_resource_decomp(
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Args:
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+                Hamiltonian for which the walk operator is being created
+            coeff_precision (int, optional): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+        Resources:
+            The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+
+        coeff_precision = coeff_precision or kwargs["config"]["qubitization_coeff_precision"]
+
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
+        gate_list = []
+
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+
+        # Figure - 3
+
+        # Inquality tests from arXiv:2011.03494
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Reflection on 5 registers
+        ccz = resource_rep(plre.ResourceCCZ)
+        gate_list.append(
+            plre.GateCount(
+                resource_rep(
+                    plre.ResourceControlled,
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                ),
+                1,
+            )
+        )
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+
+        # Rotate and invert the rotation of ancilla to obtain amplitude of success
+        gate_list.append(AllocWires(coeff_precision))
+        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(FreeWires(coeff_precision))
+
+        # Reflecting about the success amplitude
+        gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
+
+        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+
+        # Inequality tests
+        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Checking that inequality is satisfied
+        mcx = resource_rep(
+            plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
+        )
+        gate_list.append(plre.GateCount(mcx, 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        x = resource_rep(plre.ResourceX)
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Figure- 4 (Subprepare Circuit)
+        gate_list.append(plre.GateCount(hadamard, coeff_precision + 1))
+
+        # Contiguous register cost
+        gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
+
+        # Adjoint of QROM for keep values Eq.32 in arXiv:2011.03494
+        qrom_adj = resource_rep(
+            plre.ResourceAdjoint,
+            {
+                "base_cmpr_op": resource_rep(
+                    plre.ResourceQROM,
+                    {
+                        "num_bitstrings": num_coeff,
+                        "size_bitstring": 2 * m_register + 2 + coeff_precision,
+                        "clean": False,
+                        "select_swap_depth": select_swap_depth,
+                    },
+                )
+            },
+        )
+        gate_list.append(plre.GateCount(qrom_adj, 1))
+
+        cz = resource_rep(plre.ResourceCZ)
+        gate_list.append(plre.GateCount(cz, 2))
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Swap \mu and \nu registers with alt registers
+        cswap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(plre.GateCount(cswap, 2 * m_register))
+
+        # Swap \mu and \nu registers controlled on |+> state and success of inequality
+        gate_list.append(plre.GateCount(cswap, m_register))
+        gate_list.append(plre.GateCount(toffoli, 1))
+
+        # Free Prepare Wires
+        # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        gate_list.append(FreeWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
+
+        return gate_list
