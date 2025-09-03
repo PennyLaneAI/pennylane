@@ -56,13 +56,10 @@ from_str_to_PL_gate = {
 }
 
 from_str_to_PL_measurement = {
-    "quantum.state": qml.state,
-    "quantum.probs": qml.probs,
-    "quantum.sample": qml.sample,
-    "quantum.expval": qml.expval,
-    "quantum.var": qml.var,
-    "quantum.measure": qml.measure,
+    f"quantum.{name}": getattr(qml, name)
+    for name in ("state", "probs", "sample", "expval", "var", "measure")
 }
+
 
 # pylint: disable=too-many-return-statements, protected-access
 
@@ -104,18 +101,26 @@ def _extract_dense_constant_value(op) -> float | int:
 
 def resolve_constant_params(ssa: SSAValue) -> float | int:
     """Resolve a constant parameter SSA value to a Python float or int."""
+
     op = ssa.owner
+
     if isinstance(op, TensorExtractOp):
         return resolve_constant_params(op.tensor)
+
     match op.name:
+
         case "stablehlo.constant":
             return _extract_dense_constant_value(op)
+
         case "arith.addf":
             return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
+
         case "arith.constant":
             return op.value.value.data  # Catalyst
+
         case "stablehlo.convert":
             return resolve_constant_params(op.operands[0])
+
         case "builtin.unregistered":
             if hasattr(op, "attributes"):
                 if op.attributes["op_name__"].data == "stablehlo.concatenate":
@@ -124,6 +129,7 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
                     ]
                 if op.attributes["op_name__"].data == "stablehlo.broadcast_in_dim":
                     return resolve_constant_params(op.operands[0])
+
         case _:
             raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 
@@ -137,25 +143,36 @@ def dispatch_wires_extract(op: ExtractOpPL):
 
 def resolve_constant_wire(ssa: SSAValue) -> int:
     """Resolve the wire for the given SSA qubit."""
+
     if isinstance(ssa, IntegerAttr):  # used by Catalyst
         return ssa.value.data
     op = ssa.owner
-    if isinstance(op, TensorExtractOp):
-        return resolve_constant_wire(op.tensor)
-    if op.name == "stablehlo.convert":
-        return resolve_constant_wire(op.operands[0])
-    if op.name == "stablehlo.constant":
-        return _extract_dense_constant_value(op)
-    if isinstance(op, (CustomOp, GlobalPhaseOp, QubitUnitaryOp, SetStateOp, MultiRZOp)):
-        all_qubits = list(getattr(op, "in_qubits", []))
-        if hasattr(op, "in_ctrl_qubits"):
-            all_qubits += list(getattr(op, "in_ctrl_qubits", []))
-        return resolve_constant_wire(all_qubits[ssa.index])
-    if isinstance(op, ExtractOpPL):
-        return dispatch_wires_extract(op)
-    if isinstance(op, MeasureOp):
-        return resolve_constant_wire(op.in_qubit)
-    raise NotImplementedError(f"Cannot resolve wire for op: {op}")
+
+    match op:
+
+        case TensorExtractOp(tensor=tensor):
+            return resolve_constant_wire(tensor)
+
+        case _ if op.name == "stablehlo.convert":
+            return resolve_constant_wire(op.operands[0])
+
+        case _ if op.name == "stablehlo.constant":
+            return _extract_dense_constant_value(op)
+
+        case CustomOp() | GlobalPhaseOp() | QubitUnitaryOp() | SetStateOp() | MultiRZOp():
+            all_qubits = list(getattr(op, "in_qubits", []))
+            if hasattr(op, "in_ctrl_qubits"):
+                all_qubits += list(getattr(op, "in_ctrl_qubits", []))
+            return resolve_constant_wire(all_qubits[ssa.index])
+
+        case ExtractOpPL():
+            return dispatch_wires_extract(op)
+
+        case MeasureOp(in_qubit=in_qubit):
+            return resolve_constant_wire(in_qubit)
+
+        case _:
+            raise NotImplementedError(f"Cannot resolve wire for op: {op}")
 
 
 ######################################################
@@ -241,26 +258,30 @@ def xdsl_to_qml_op(
 def xdsl_to_qml_measure_op(op: MeasureOp) -> MeasurementProcess:
     """Convert a ``quantum.measure`` xDSL op to a PennyLane measurement."""
     wire = resolve_constant_wire(op.in_qubit)
-    postselect = op.postselect
+    postselect = op.postselect.value.data if op.postselect else None
     return MidMeasureMP([wire], postselect=postselect)
 
 
 def xdsl_to_qml_obs_op(op: NamedObsOp | TensorOp | HamiltonianOp) -> Operator:
     """Convert an xDSL observable operation to a PennyLane operator."""
 
-    if op.name == "quantum.namedobs":
-        return resolve_gate(op.type.data.value)(wires=ssa_to_qml_wires_named(op))
+    match op.name:
 
-    if op.name == "quantum.tensor":
-        ops_list = [xdsl_to_qml_obs_op(operand.owner) for operand in op.operands]
-        return qml.prod(*ops_list)
+        case "quantum.namedobs":
 
-    if op.name == "quantum.hamiltonian":
-        coeffs = _extract(op, "coeffs", resolve_constant_params, single=True)
-        ops_list = [xdsl_to_qml_obs_op(term.owner) for term in op.terms]
-        return qml.Hamiltonian(coeffs, ops_list)
+            return resolve_gate(op.type.data.value)(wires=ssa_to_qml_wires_named(op))
 
-    raise NotImplementedError(f"Cannot resolve named op: {op}")
+        case "quantum.tensor":
+            ops_list = [xdsl_to_qml_obs_op(operand.owner) for operand in op.operands]
+            return qml.prod(*ops_list)
+
+        case "quantum.hamiltonian":
+            coeffs = _extract(op, "coeffs", resolve_constant_params, single=True)
+            ops_list = [xdsl_to_qml_obs_op(term.owner) for term in op.terms]
+            return qml.Hamiltonian(coeffs, ops_list)
+
+        case _:
+            raise NotImplementedError(f"Cannot resolve named op: {op}")
 
 
 def xdsl_to_qml_compbasis_op(op: ComputationalBasisOp) -> list[int] | None:
