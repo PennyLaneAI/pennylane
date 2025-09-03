@@ -435,10 +435,10 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             # Use graph decomposition
             from pennylane.transforms.decompose import decompose as graph_decompose
 
-            if gate_set is None:
-                from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
+            # if gate_set is None:
+            #     from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
 
-                gate_set = list(ALL_DQ_GATE_SET)
+            #     gate_set = list(ALL_DQ_GATE_SET)
 
             # Only decompose operations after prep_op (if any)
             decomp_tape = tape.copy(operations=ops_to_decompose)
@@ -447,12 +447,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             )
             new_ops = decomposed_tapes[0].operations
 
-            # Check for unsupported operations; don't know why this is necessary
-            for op in new_ops:
-                if not stopping_condition(op):
-                    raise error(
-                        f"Operator {op} not supported with {name} and does not provide a decomposition."
-                    )
+                        # Convert to list if new_ops is a generator
+            new_ops = list(new_ops)
 
         else:  # Old decomposition system
             new_ops = [
