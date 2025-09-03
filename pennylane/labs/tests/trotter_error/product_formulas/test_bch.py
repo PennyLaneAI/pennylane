@@ -303,13 +303,19 @@ def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
 
     r, delta = 1, 0.5
 
-    fragments = {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))}
-
+    fragments = {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))}
     n_frags = len(fragments)
 
     first_order = ProductFormula(list(range(n_frags)), coeffs=[delta / r] * n_frags) ** r
-    ham = effective_hamiltonian(
+    actual = effective_hamiltonian(
         first_order, fragments, order=2, num_workers=num_workers, backend=backend
     )
 
-    assert isinstance(ham, np.ndarray)
+    ham = sum(fragments.values(), np.zeros(shape=(3, 3)))
+    expected = np.zeros(shape=(3, 3), dtype=np.complex128)
+    for j in range(n_frags - 1):
+        for k in range(j + 1, n_frags):
+            expected += (1 / 2) * nested_commutator([fragments[j], fragments[k]])
+    expected *= 1j / r * delta
+
+    assert np.allclose(1j * delta * (expected + ham), actual)
