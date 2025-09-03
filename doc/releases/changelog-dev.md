@@ -494,7 +494,7 @@
 
 * With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a decomposition cannot be found for an operator in the circuit, it no longer
   raises an error. Instead, a warning is raised, and `op.decomposition()` (the current default method for decomposing gates) is
-  used as a fall back, while the rest of the circuit is still decomposed with
+  used as a fallback, while the rest of the circuit is still decomposed with
   the new graph-based system. Additionally, a special warning message is
   raised if the circuit contains a `GlobalPhase`, reminding the user that
   `GlobalPhase` is not assumed to have a decomposition under the new system.
