@@ -168,7 +168,7 @@ def _generate_one_wire_op_adj_matrix() -> list:
     1  --  2  --  3  --  4  --  5
 
     Returns:
-        An adjacent matrix represents the connectivity of auxiliary qubits in the graph state for a one-wire gate.
+        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a one-wire gate.
     """
     num_vertices = _NumAuxWires.ONE_WIRE_GATE.value
     edges_in_adj_matrix = [
