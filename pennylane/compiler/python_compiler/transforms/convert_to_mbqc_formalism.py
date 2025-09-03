@@ -42,7 +42,7 @@ class _NumAuxWires(Enum):
 
 
 def _generate_adj_matrix(op_name: str) -> list:
-    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in a 
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in a
     graph state for a gate operation.
     Args:
         op_name (str): The gate name. Note that only a gate in the MBQC gate set is supported.
@@ -59,7 +59,7 @@ def _generate_adj_matrix(op_name: str) -> list:
 def _adj_matrix_generation_helper(
     num_vertices: int, edges_in_adj_matrix: list[tuple[int, int]]
 ) -> list:
-    """Helper function to generate an adjacent matrix to represent the connectivity of auxiliary qubits in 
+    """Helper function to generate an adjacent matrix to represent the connectivity of auxiliary qubits in
     a graph state for a gate operation with the number of vertices and edges information.
     Note that adjacent matrix here means the lower triangular part of the full adjacent matrix.
     It can be represented as below and `x` marks here are diagonalized elements.
@@ -89,8 +89,8 @@ def _adj_matrix_generation_helper(
 
 
 def _generate_cnot_adj_matrix() -> list:
-    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in 
-    the graph state for a CNOT gate operation based on the textbook MBQC formalism. The 
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits in
+    the graph state for a CNOT gate operation based on the textbook MBQC formalism. The
     connectivity of the ctrl/target qubits in the register and auxiliary qubits is:
 
     ctl --  0  --  1  --  2  --  3  --  4  -- 5
