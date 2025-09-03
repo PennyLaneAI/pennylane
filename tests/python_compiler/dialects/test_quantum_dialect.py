@@ -177,19 +177,109 @@ class TestAssemblyFormat:
 
         # Tests for CustomOp, GlobalPhaseOp, MeasureOp, MultiRZOp, QubitUnitaryOp
         program = """
-        ////////////////////////////////////////////
-        ////////////////// Qubits //////////////////
-        ////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////// Qubits, params, and control values //////////////////
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////// **Qubits** //////////////////
         // CHECK: [[Q0:%.+]] = "test.op"() : () -> !quantum.bit
         // CHECK: [[Q1:%.+]] = "test.op"() : () -> !quantum.bit
+        // CHECK: [[Q2:%.+]] = "test.op"() : () -> !quantum.bit
+        // CHECK: [[Q3:%.+]] = "test.op"() : () -> !quantum.bit
         %q0 = "test.op"() : () -> !quantum.bit
         %q1 = "test.op"() : () -> !quantum.bit
+        %q2 = "test.op"() : () -> !quantum.bit
+        %q3 = "test.op"() : () -> !quantum.bit
+
+        ////////////////// **Params** //////////////////
+        // CHECK: [[PARAM1:%.+]] = "test.op"() : () -> f64
+        // CHECK: [[PARAM2:%.+]] = "test.op"() : () -> f64
+        // CHECK: [[MAT_TENSOR:%.+]] = "test.op"() : () -> tensor<4x4xcomplex<f64>>
+        // CHECK: [[MAT_MEMREF:%.+]] = "test.op"() : () -> memref<4x4xcomplex<f64>>
+        %param1 = "test.op"() : () -> f64
+        %param2 = "test.op"() : () -> f64
+        %mat_tensor = "test.op"() : () -> tensor<4x4xcomplex<f64>>
+        %mat_memref = "test.op"() : () -> memref<4x4xcomplex<f64>>
+
+        ////////////////// **Control values** //////////////////
+        // CHECK: [[TRUE_CST:%.+]] = "test.op"() : () -> i1
+        // CHECK: [[FALSE_CST:%.+]] = "test.op"() : () -> i1
+        %true_cst = "test.op"() : () -> i1
+        %false_cst = "test.op"() : () -> i1
+
+        ///////////////////////////////////////////////////////////////////////
+        ///////////////////////// **Operation tests** /////////////////////////
+        ///////////////////////////////////////////////////////////////////////
 
         ////////////////// **CustomOp tests** //////////////////
+        // No params, no control wires
+        // CHECK: {{%.+}}, {{%.+}} = quantum.custom "Gate"() [[Q0]], [[Q1]] : !quantum.bit, !quantum.bit
+        %qc1, %qc2 = quantum.custom "Gate"() %q0, %q1 : !quantum.bit, !quantum.bit
+
+        // Params, no control wires
+        // CHECK: {{%.+}}, {{%.+}} = quantum.custom "ParamGate"([[PARAM1]], [[PARAM2]]) [[Q0]], [[Q1]] : !quantum.bit, !quantum.bit
+        %qc3, %qc4 = quantum.custom "ParamGate"(%param1, %param2) %q0, %q1 : !quantum.bit, !quantum.bit
+
+        // Control wires and values
+        // CHECK: {{%.+}}, {{%.+}} = quantum.custom "ControlledGate"() [[Q0]] ctrls([[Q1]]) ctrlvals([[TRUE_CST]]) : !quantum.bit ctrls !quantum.bit
+        %qc5, %qc6 = quantum.custom "ControlledGate"() %q0 ctrls(%q1) ctrlvals(%true_cst) : !quantum.bit ctrls !quantum.bit
+
+        // Adjoint
+        // CHECK: {{%.+}} = quantum.custom "AdjGate"() [[Q0]] adj : !quantum.bit
+        %qc8 = quantum.custom "AdjGate"() %q0 adj : !quantum.bit
+
         ////////////////// **GlobalPhaseOp tests** //////////////////
+        // No control wires
+        // CHECK: quantum.gphase([[PARAM1]]) :
+        quantum.gphase(%param1) :
+
+        // Control wires and values
+        // CHECK: {{%.+}}, {{%.+}} = quantum.gphase([[PARAM1]]) ctrls([[Q0]], [[Q1]]) ctrlvals([[FALSE_CST]], [[TRUE_CST]]) : !quantum.bit, !quantum.bit
+        %qg1, %qg2 = quantum.gphase(%param1) ctrls(%q0, %q1) ctrlvals(%false_cst, %true_cst) : !quantum.bit, !quantum.bit
+
+        // Adjoint
+        // CHECK: {{%.+}} = quantum.gphase([[PARAM1]]) {adjoint} ctrls([[Q0]]) ctrlvals([[TRUE_CST]]) : !quantum.bit
+        %qg3 = quantum.gphase(%param1) {adjoint} ctrls(%q0) ctrlvals(%true_cst) : !quantum.bit
+
         ////////////////// **MultiRZOp tests** //////////////////
+        // No control wires
+        // CHECK: {{%.+}}, {{%.+}} = quantum.multirz([[PARAM1]]) [[Q0]], [[Q1]] : !quantum.bit, !quantum.bit
+        %qm1, %qm2 = quantum.multirz(%param1) %q0, %q1 : !quantum.bit, !quantum.bit
+
+        // Control wires and values
+        // CHECK: {{%.+}}, {{%.+}}, {{%.+}} = quantum.multirz([[PARAM1]]) [[Q0]], [[Q1]] ctrls([[Q2]]) ctrlvals([[TRUE_CST]]) : !quantum.bit, !quantum.bit
+        %qm3, %qm4, %qm5 = quantum.multirz(%param1) %q0, %q1 ctrls(%q2) ctrlvals(%true_cst) : !quantum.bit, !quantum.bit ctrls !quantum.bit
+
+        // Adjoint
+        // CHECK: {{%.+}}, {{%.+}} = quantum.multirz([[PARAM1]]) [[Q0]], [[Q1]] adj : !quantum.bit, !quantum.bit
+        %qm6, %qm7 = quantum.multirz(%param1) %q0, %q1 adj : !quantum.bit, !quantum.bit
+
         ////////////////// **QubitUnitaryOp tests** //////////////////
+        // No control wires
+        // CHECK: {{%.+}}, {{%.+}} = quantum.unitary([[MAT_TENSOR]] : tensor<4x4xcomplex<f64>>) [[Q0]], [[Q1]] : !quantum.bit, !quantum.bit
+        %qb1, %qb2 = quantum.unitary(%mat_tensor : tensor<4x4xcomplex<f64>>) %q0, %q1 : !quantum.bit, !quantum.bit
+
+        // Control wires and values
+        // CHECK: {{%.+}}, {{%.+}} {{%.+}} = quantum.unitary([[MAT_TENSOR]] : tensor<4x4xcomplex<f64>>) [[Q0]], [[Q1]] ctrls([[Q2]]) ctrlvals([[FALSE_CST]]) : !quantum.bit, !quantum.bit ctrls !quantum.bit
+        %qb3, %qb4, %qb5 = quantum.unitary(%mat_tensor : tensor<4x4xcomplex<f64>>) %q0, %q1 ctrls(%q2) ctrlvals(%false_cst) : !quantum.bit, !quantum.bit ctrls !quantum.bit
+
+        // Adjoint
+        // CHECK: {{%.+}}, {{%.+}} = quantum.unitary([[MAT_TENSOR]] : tensor<4x4xcomplex<f64>>) [[Q0]], [[Q1]] adj : !quantum.bit, !quantum.bit
+        %qb6, %qb7 = quantum.unitary(%mat_tensor : tensor<4x4xcomplex<f64>>) %q0, %q1 adj : !quantum.bit, !quantum.bit
+
+        // MemRef
+        // CHECK: {{%.+}}, {{%.+}} = quantum.unitary([[MAT_MEMREF]] : memref<4x4xcomplex<f64>>) [[Q0]], [[Q1]] : !quantum.bit, !quantum.bit
+        %qb8, %qb9 = quantum.unitary(%mat_memref : memref<4x4xcomplex<f64>>) %q0, %q1 : !quantum.bit, !quantum.bit
+
         ////////////////// **MeasureOp tests** //////////////////
+        // No postselection
+        // CHECK: {{%.+}}, {{%.+}} = quantum.measure [[Q0]] : i1, !quantum.bit
+        %mres1, %mqubit1 = quantum.measure %q0 : i1, !quantum.bit
+
+        // Postselection
+        // CHECK: {{%.+}}, {{%.+}} = quantum.measure [[Q1]] postselect 0 : i1, !quantum.bit
+        // CHECK: {{%.+}}, {{%.+}} = quantum.measure [[Q2]] postselect 1 : i1, !quantum.bit
+        %mres2, %mqubit2 = quantum.measure %q1 postselect 0 : i1, !quantum.bit
+        %mres3, %mqubit3 = quantum.measure %q2 postselect 1 : i1, !quantum.bit
         """
 
         run_filecheck(program, roundtrip=True, verify=True)
