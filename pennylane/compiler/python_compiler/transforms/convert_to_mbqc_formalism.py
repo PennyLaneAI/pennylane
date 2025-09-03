@@ -62,7 +62,7 @@ def _adj_matrix_generation_helper(
     """Helper function to generate an adjacency matrix to represent the connectivity of auxiliary qubits in
     a graph state for a gate operation with the number of vertices and edges information.
     Note that the adjacency matrix here means the lower triangular part of the full adjacency matrix.
-    It can be represented as below and `x` marks here are diagonalized elements.
+    It can be represented as below and `x` marks here denotes the matrix diagonal.
     x
     + x
     + + x
