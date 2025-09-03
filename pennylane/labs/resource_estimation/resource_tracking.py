@@ -199,9 +199,6 @@ def new_resources_from_qfunc(
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
-            if isinstance(op, (BorrowWires, ReturnWires)):
-                raise ValueError("BorrowWires and ReturnWires is currently not supported in the circuit")
-            
             if isinstance(op, (ResourceOperator, Operation)):
                 if op.wires:
                     circuit_wires.append(op.wires)
