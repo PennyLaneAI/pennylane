@@ -37,6 +37,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementValue,
     ProbabilityMP,
+    Shots,
     StateMP,
 )
 from pennylane.ops.op_math import Adjoint, Controlled, ControlledOp
@@ -45,7 +46,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
@@ -346,8 +347,11 @@ class NullQubit(Device):
 
     # pylint: disable=cell-var-from-loop
     def preprocess(
-        self, execution_config=DefaultExecutionConfig
+        self, execution_config: ExecutionConfig | None = None
     ) -> tuple[TransformProgram, ExecutionConfig]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
@@ -387,8 +391,10 @@ class NullQubit(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -423,15 +429,19 @@ class NullQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
@@ -441,16 +451,20 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
@@ -460,16 +474,20 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
@@ -477,17 +495,21 @@ class NullQubit(Device):
     # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def eval_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
+        self,
+        jaxpr: "jax.extend.core.Jaxpr",
+        consts: list,
+        *args,
+        execution_config=None,
+        shots=Shots(None),
     ) -> list:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             AbstractMeasurement,
         )
 
-        def zeros_like(var):
+        def zeros_like(var, shots):
             if isinstance(var.aval, AbstractMeasurement):
-                shots = self.shots.total_shots
                 s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
                 return math.zeros(s, dtype=dtype, like="jax")
             return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
 
-        return [zeros_like(var) for var in jaxpr.outvars]
+        return [zeros_like(var, Shots(shots).total_shots) for var in jaxpr.outvars]

@@ -22,14 +22,16 @@ from collections.abc import Callable, Generator, Sequence
 from copy import copy
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
+from pennylane.exceptions import AllocationError, DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import resolve_dynamic_wires
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+from pennylane.wires import Wires
 
 from .execution_config import MCMConfig
 
@@ -112,19 +114,16 @@ def no_analytic(
     tape: QuantumScript, name: str = "device"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Raises an error if the tape does not have finite shots.
-
     Args:
         tape (QuantumTape or .QNode or Callable): a quantum circuit
         name (str): name to use in error message.
-
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
-
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
 
     This transform can be added to forbid analytic results. This is relevant for devices
-    that can only return samples/counts based results.
+    that can only return samples and/or counts based results.
     """
     if not tape.shots:
         raise DeviceError(f"Analytic execution is not supported with {name}")
@@ -160,46 +159,47 @@ def validate_device_wires(
             f"Abstract wires are not yet supported."
         )
 
-    if wires:
+    if not wires:
+        return (tape,), null_postprocessing
 
-        if any(qml.math.is_abstract(w) for w in wires):
-            raise WireError(
-                f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
-                f"Abstract wires are not yet supported."
-            )
+    if any(qml.math.is_abstract(w) for w in wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
+            f"Abstract wires are not yet supported."
+        )
 
-        if extra_wires := set(tape.wires) - set(wires):
-            raise WireError(
-                f"Cannot run circuit(s) on {name} as they contain wires "
-                f"not found on the device: {extra_wires}"
-            )
+    if extra_wires := set(tape.wires) - set(wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as they contain wires "
+            f"not found on the device: {extra_wires}"
+        )
 
-        modified = False
-        new_ops = None
-        for i, op in enumerate(tape.operations):
-            if isinstance(op, qml.Snapshot):
-                mp = op.hyperparameters["measurement"]
-                if not mp.wires:
-                    if not new_ops:
-                        new_ops = list(tape.operations)
-                    modified = True
-                    new_mp = copy(mp)
-                    new_mp._wires = wires  # pylint:disable=protected-access
-                    new_ops[i] = qml.Snapshot(
-                        measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
-                    )
-        if not new_ops:
-            new_ops = tape.operations  # no copy in this case
-
-        measurements = tape.measurements.copy()
-        for m_idx, mp in enumerate(measurements):
-            if not mp.obs and not mp.wires:
+    modified = False
+    new_ops = None
+    for i, op in enumerate(tape.operations):
+        if isinstance(op, qml.Snapshot):
+            mp = op.hyperparameters["measurement"]
+            if not mp.wires:
+                if not new_ops:
+                    new_ops = list(tape.operations)
                 modified = True
                 new_mp = copy(mp)
                 new_mp._wires = wires  # pylint:disable=protected-access
-                measurements[m_idx] = new_mp
-        if modified:
-            tape = tape.copy(ops=new_ops, measurements=measurements)
+                new_ops[i] = qml.Snapshot(
+                    measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
+                )
+    if not new_ops:
+        new_ops = tape.operations  # no copy in this case
+
+    measurements = tape.measurements.copy()
+    for m_idx, mp in enumerate(measurements):
+        if not mp.obs and not mp.wires:
+            modified = True
+            new_mp = copy(mp)
+            new_mp._wires = wires  # pylint:disable=protected-access
+            measurements[m_idx] = new_mp
+    if modified:
+        tape = tape.copy(ops=new_ops, measurements=measurements)
 
     return (tape,), null_postprocessing
 
@@ -642,30 +642,19 @@ def measurements_from_samples(tape):
     diagonalized_tape, measured_wires = _get_diagonalized_tape_and_wires(tape)
     new_tape = diagonalized_tape.copy(measurements=[qml.sample(wires=measured_wires)])
 
-    def unsqueezed(samples):
-        """If the samples have been squeezed to remove the 'extra' dimension in the case where
-        shots=1 or wires=1, unsqueeze to restore the raw samples format expected by mp.process_samples
-        """
-
-        # if we stop squeezing out the extra dimension for shots=1 or wires=1 when sampling (as is
-        # already the case in Catalyst), this problem goes away
-        if len(samples.shape) == 1:
-            samples = qml.math.array([[s] for s in samples], like=samples)
-        return samples
-
     def postprocessing_fn(results):
         """A processing function to get measurement values from samples."""
         samples = results[0]
         if tape.shots.has_partitioned_shots:
             results_processed = []
             for s in samples:
-                res = [m.process_samples(unsqueezed(s), measured_wires) for m in tape.measurements]
+                res = [m.process_samples(s, measured_wires) for m in tape.measurements]
                 if len(tape.measurements) == 1:
                     res = res[0]
                 results_processed.append(res)
         else:
             results_processed = [
-                m.process_samples(unsqueezed(samples), measured_wires) for m in tape.measurements
+                m.process_samples(samples, measured_wires) for m in tape.measurements
             ]
             if len(tape.measurements) == 1:
                 results_processed = results_processed[0]
@@ -780,3 +769,55 @@ def _get_diagonalized_tape_and_wires(tape):
     measured_wires = list(measured_wires)
 
     return diagonalized_tape, measured_wires
+
+
+@transform
+def device_resolve_dynamic_wires(
+    tape: QuantumScript, wires: None | Wires
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Allocate dynamic wires in a manner consistent with the provided device wires.
+
+    Args:
+        tape (QuantumScript): a circuit that may contain dynamic wire allocation
+        wires (None| Wires): the device wires
+
+    If device wires are provided, possible values for dynamic wires are determined from
+    device wires not present in the tape.
+
+    >>> from pennylane.devices.preprocess import device_resolve_dynamic_wires
+    >>> def f():
+    ...     qml.H(0)
+    ...     with qml.allocation.allocate(1) as wires:
+    ...         qml.X(wires)
+    ...     with qml.allocation.allocate(1) as wires:
+    ...         qml.X(wires)
+
+    >>> transformed = device_resolve_dynamic_wires(f, wires=qml.wires.Wires((0, "a", "b")))
+    >>> print(qml.draw(transformed)())
+    0: ──H─┤
+    b: ──X─┤
+    a: ──X─┤
+
+    If the device has no wires, then wires are allocated starting at the smallest
+    integer that is larger than all integer wires present in the ``tape``.
+
+    >>> transformed_None = device_resolve_dynamic_wires(f, wires=None)
+    >>> print(qml.draw(transformed_None)())
+    0: ──H──────────────┤
+    1: ──X──┤↗│  │0⟩──X─┤
+
+    See :func:`~.resolve_dynamic_wires` for a more detailed description.
+
+    """
+    if wires:
+        zeroed = reversed(list(set(wires) - set(tape.wires)))
+        min_int = None
+    else:
+        zeroed = ()
+        min_int = max((i for i in tape.wires if isinstance(i, int)), default=-1) + 1
+    try:
+        return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
+    except AllocationError as e:
+        raise AllocationError(
+            f"Not enough available wires on device with wires {wires} for requested dynamic wires."
+        ) from e

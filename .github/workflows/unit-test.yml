@@ -41,7 +41,7 @@ on:
         description: The version of Python to use in order to run unit tests
         required: false
         type: string
-        default: '3.10'
+        default: '3.11'
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false

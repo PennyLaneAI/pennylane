@@ -40,11 +40,12 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
         list[Operator]: decomposition that make up the controlled evolution
     """
     active_wires, active_gates = zip(
-        *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
+        strict=True,
     )
 
     ops = []
-    for wire, gate in zip(active_wires, active_gates):
+    for wire, gate in zip(active_wires, active_gates, strict=True):
         if gate in ("X", "Y"):
             ops.append(
                 qml.Hadamard(wires=[wire]) if gate == "X" else qml.RX(-np.pi / 2, wires=[wire])
@@ -54,7 +55,7 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
     ops.append(qml.ctrl(op=qml.MultiRZ(theta, wires=list(active_wires)), control=controls[0]))
     ops.append(qml.CNOT(wires=[controls[1], wires[0]]))
 
-    for wire, gate in zip(active_wires, active_gates):
+    for wire, gate in zip(active_wires, active_gates, strict=True):
         if gate in ("X", "Y"):
             ops.append(
                 qml.Hadamard(wires=[wire]) if gate == "X" else qml.RX(-np.pi / 2, wires=[wire])
@@ -73,7 +74,7 @@ def evolve_under(ops, coeffs, time, controls):
         time (float): At what time to evaluate these Pauliwords
     """
     ops_temp = []
-    for op, coeff in zip(ops, coeffs):
+    for op, coeff in zip(ops, coeffs, strict=True):
         pauli_word = qml.pauli.pauli_word_to_string(op)
         ops_temp.append(
             controlled_pauli_evolution(
@@ -170,9 +171,9 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
     """
     coeffs = hamiltonian.data
     tapes = []
-    for mu, time in zip(mus, times):
+    for mu, time in zip(mus, times, strict=True):
         added_operations = []
-        # Put QSP and Hadamard test on the two ancillas Target and Control
+        # Put QSP and Hadamard test on the two auxiliarys Target and Control
         added_operations.append(qml.Hadamard(controls[0]))
         for i, phi in enumerate(phis):
             added_operations.append(qml.CRX(phi, wires=controls))
@@ -265,7 +266,7 @@ def sign_expand(
 
     >>> tapes, fn = qml.transforms.sign_expand(tape)
 
-    We can evaluate these tapes on a device, it needs two additional ancilla gates labeled 'Hadamard' and 'Target' if
+    We can evaluate these tapes on a device, it needs two additional auxiliary gates labeled 'Hadamard' and 'Target' if
     one wants to make the circuit approximation of the decomposition:
 
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
@@ -332,13 +333,13 @@ def sign_expand(
         if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
 
             def processing_fn(res):
-                products = [a * b for a, b in zip(res, dEs)]
+                products = [a * b for a, b in zip(res, dEs, strict=True)]
                 return qml.math.sum(products)
 
         else:
 
             def processing_fn(res):
-                products = [a * b for a, b in zip(res, dEs)]
+                products = [a * b for a, b in zip(res, dEs, strict=True)]
                 return qml.math.sum(products) * len(products)
 
         return tapes, processing_fn

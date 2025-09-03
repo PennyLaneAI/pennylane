@@ -89,6 +89,14 @@ def test_expectation_clifford(circuit, expec_op):
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
+def test_execution_with_no_execution_config():
+    """Test execution of a tape with no execution config."""
+    dev = qml.device("default.clifford")
+    qs = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.PauliZ(0))])
+    result = dev.execute(qs)
+    assert qml.math.allclose(result, -1.0)
+
+
 @pytest.mark.parametrize("circuit", [circuit_1])
 @pytest.mark.parametrize("tableau", [True, False])
 def test_state_clifford(circuit, tableau):
@@ -174,7 +182,7 @@ def test_meas_qinfo_clifford(meas_op):
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
-@pytest.mark.parametrize("shots", [None, int(1e6)])
+@pytest.mark.parametrize("shots", [None, 1_000_000])
 @pytest.mark.parametrize(
     "ops",
     [
@@ -194,14 +202,14 @@ def test_meas_qinfo_clifford(meas_op):
 def test_meas_expval(shots, ops, seed):
     """Test that expectation value measurements with `default.clifford` is possible
     and agrees with `default.qubit`."""
-    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
+    dev_c = qml.device("default.clifford", seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
         circuit_1()
         return qml.expval(ops)
 
-    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
     assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
@@ -222,14 +230,14 @@ def test_meas_expval(shots, ops, seed):
 def test_meas_var(shots, ops, seed):
     """Test that variance measurements with `default.clifford` is possible
     and agrees with `default.qubit`."""
-    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
+    dev_c = qml.device("default.clifford", seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
         circuit_1()
         return qml.var(ops)
 
-    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
     assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
@@ -240,7 +248,7 @@ def test_meas_var(shots, ops, seed):
 def test_meas_samples(circuit, shots):
     """Test if samples are returned with shots given in the clifford device."""
 
-    @qml.qnode(qml.device("default.clifford", shots=shots))
+    @qml.qnode(qml.device("default.clifford"), shots=shots)
     def circuit_fn():
         qml.BasisState(np.array([1, 1]), wires=range(2))
         circuit()
@@ -272,7 +280,7 @@ def test_meas_samples(circuit, shots):
 def test_meas_probs(tableau, shots, ops, seed):
     """Test if probabilities are returned in the clifford device."""
 
-    dev_c = qml.device("default.clifford", tableau=tableau, shots=shots, seed=seed)
+    dev_c = qml.device("default.clifford", tableau=tableau, seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
@@ -282,7 +290,7 @@ def test_meas_probs(tableau, shots, ops, seed):
             qml.PauliZ(wire)
         return qml.probs(op=ops) if ops else qml.probs(wires=[0, 1])
 
-    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
     gotten_probs, target_probs = qnode_clfrd(), qnode_qubit()
@@ -322,16 +330,16 @@ def test_meas_probs_large(seed):
 def test_meas_counts(shots, ops, seed):
     """Test if counts are returned with shots given in the clifford device."""
 
-    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
-    dev_q = qml.device("default.qubit", shots=shots, seed=seed)
+    dev_c = qml.device("default.clifford", seed=seed)
+    dev_q = qml.device("default.qubit", seed=seed)
 
     def circuit_fn():
         qml.PauliX(0)
         qml.PauliX(1)
         return qml.counts(op=ops) if ops else qml.counts(wires=[0, 1])
 
-    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
-    qnode_qubit = qml.QNode(circuit_fn, dev_q)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
+    qnode_qubit = qml.set_shots(qml.QNode(circuit_fn, dev_q), shots=shots)
 
     counts_clfrd = qnode_clfrd()
     counts_qubit = qnode_qubit()
@@ -360,15 +368,15 @@ def test_meas_classical_shadows(shots, ops, seed):
         qml.Hadamard(0)
         qml.CNOT((0, 1))
 
-    dev_c = qml.device("default.clifford", shots=shots)
-    dev_q = qml.device("default.qubit", shots=shots)
+    dev_c = qml.device("default.clifford")
+    dev_q = qml.device("default.qubit")
 
     def circuit_shadow():
         circuit()
         return qml.classical_shadow(wires=[0, 1], seed=seed)
 
-    qnode_clfrd_shadow = qml.QNode(circuit_shadow, dev_c)
-    qnode_qubit_shadow = qml.QNode(circuit_shadow, dev_q)
+    qnode_clfrd_shadow = qml.set_shots(qml.QNode(circuit_shadow, dev_c), shots=shots)
+    qnode_qubit_shadow = qml.set_shots(qml.QNode(circuit_shadow, dev_q), shots=shots)
 
     bits1, recipes1 = qnode_clfrd_shadow()
     bits2, recipes2 = qnode_qubit_shadow()
@@ -381,7 +389,7 @@ def test_meas_classical_shadows(shots, ops, seed):
         circuit()
         return qml.shadow_expval(ops, seed=seed)
 
-    qnode_clfrd_expval = qml.QNode(circuit_expval, dev_c)
+    qnode_clfrd_expval = qml.set_shots(qml.QNode(circuit_expval, dev_c), shots=shots)
     expval = qnode_clfrd_expval()
 
     assert -1.0 <= expval <= 1.0
@@ -631,7 +639,7 @@ def test_meas_error():
     ):
         circuit_exp()
 
-    @qml.qnode(qml.device("default.clifford", wires=3, shots=10))
+    @qml.qnode(qml.device("default.clifford", wires=3), shots=10)
     def circuit_herm():
         qml.Hadamard(wires=[0])
         qml.CNOT(wires=[0, 1])
@@ -709,8 +717,8 @@ def test_meas_error_noisy():
 def test_meas_noisy_distribution(channel_op):
     """Test error distribution of samples matches with that from `default.mixed` device."""
 
-    dev_c = qml.device("default.clifford", shots=10000, wires=4)
-    dev_q = qml.device("default.mixed", shots=10000, wires=4)
+    dev_c = qml.device("default.clifford", wires=4)
+    dev_q = qml.device("default.mixed", wires=4)
 
     def circuit():
         qml.Hadamard(wires=[0])
@@ -719,8 +727,8 @@ def test_meas_noisy_distribution(channel_op):
         qml.apply(channel_op)
         return qml.probs()
 
-    qnode_clfrd = qml.QNode(circuit, dev_c)
-    qnode_qubit = qml.QNode(circuit, dev_q)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit, dev_c), shots=10000)
+    qnode_qubit = qml.set_shots(qml.QNode(circuit, dev_q), shots=10000)
 
     kl_d = np.ma.masked_invalid(sp.special.rel_entr(qnode_clfrd(), qnode_qubit()))
     assert qml.math.allclose(np.abs(kl_d.sum()), 0.0, atol=1e-1)

@@ -121,7 +121,7 @@ class TestTransformProgramGetter:
         ):
             p_none = get_transform_program(circuit, None)
         assert p_none == p_dev
-        assert len(p_dev) == 9
+        assert len(p_dev) == 10
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
         assert p_dev == p_grad + dev.preprocess_transforms(config)
 
@@ -129,8 +129,8 @@ class TestTransformProgramGetter:
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
         assert p_sliced[0].transform == qml.compile.transform
-        assert p_sliced[1].transform == qml.devices.preprocess.mid_circuit_measurements.transform
-        assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
+        assert p_sliced[2].transform == qml.devices.preprocess.mid_circuit_measurements.transform
+        assert p_sliced[1].transform == qml.devices.preprocess.decompose.transform
 
     def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
@@ -156,7 +156,7 @@ class TestTransformProgramGetter:
             return qml.expval(qml.PauliZ(0))
 
         full_prog = get_transform_program(circuit)
-        assert len(full_prog) == 13
+        assert len(full_prog) == 14
 
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
@@ -251,7 +251,7 @@ class TestConstructBatch:
 
         order = [2, 1, 0]
         weights = np.array([[1.0, 20]])
-        batch, fn = construct_batch(circuit1, level=0)(weights, order, shots=10)
+        batch, fn = construct_batch(qml.set_shots(circuit1, shots=10), level=0)(weights, order)
 
         assert len(batch) == 1
         expected_ops = [
@@ -276,7 +276,9 @@ class TestConstructBatch:
         weights = np.array([[1.0, 2.0]])
         order = [2, 1, 0]
 
-        batch, fn = construct_batch(circuit1, level=1)(weights, order=order, shots=50)
+        batch, fn = construct_batch(qml.set_shots(circuit1, shots=50), level=1)(
+            weights, order=order
+        )
         assert len(batch) == 1
 
         expected_ops = [
@@ -298,7 +300,9 @@ class TestConstructBatch:
         weights = np.array([[1.0, 2.0]])
         order = [2, 1, 0]
 
-        batch, fn = construct_batch(circuit1, level=level)(weights, order=order, shots=50)
+        batch, fn = construct_batch(qml.set_shots(circuit1, shots=50), level=level)(
+            weights, order=order
+        )
         assert len(batch) == 1
 
         expected_ops = [
@@ -350,7 +354,8 @@ class TestConstructBatch:
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
-        @qml.qnode(DefaultQubitLegacy(wires=2, shots=50))
+        @qml.set_shots(50)
+        @qml.qnode(DefaultQubitLegacy(wires=2))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
             qml.X(0)
@@ -471,9 +476,13 @@ class TestConstructBatch:
                 return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
-            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
+            PennyLaneDeprecationWarning,
+            match="specified on call to a QNode is deprecated",
         ):
-            batch, fn = construct_batch(circuit, level="device")(shots=2)
+            with pytest.warns(
+                UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
+            ):
+                batch, fn = construct_batch(circuit, level="device")(shots=2)
 
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(

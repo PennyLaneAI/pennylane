@@ -55,7 +55,7 @@ def _tape2pyzx(tape):
     """
     if not has_zx:  # pragma: no cover
         raise ImportError(
-            "_tape2pyzx requires the package pyzx. " "You can install it with pip install pyzx"
+            "_tape2pyzx requires the package pyzx. You can install it with pip install pyzx"
         )  # pragma: no cover
 
     g = Circuit.from_qasm(_remove_measurement_patterns(tape.to_openqasm()))

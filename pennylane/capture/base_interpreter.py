@@ -15,12 +15,14 @@
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
 from collections.abc import Callable, Sequence
-
-# pylint: disable=no-self-use
 from copy import copy
 from functools import partial, wraps
 
+# pylint: disable=no-self-use, wrong-import-position
+from importlib.metadata import version
+
 import jax
+from packaging.version import Version
 
 import pennylane as qml
 from pennylane import math
@@ -531,15 +533,11 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
     for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
         consts = invals[const_slice]
-        if jaxpr is None:
-            new_jaxprs.append(None)
-            new_consts_slices.append(slice(0, 0))
-        else:
-            new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-            new_jaxprs.append(new_jaxpr.jaxpr)
-            new_consts.extend(new_jaxpr.consts)
-            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
-            end_const_ind += len(new_jaxpr.consts)
+        new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+        new_jaxprs.append(new_jaxpr.jaxpr)
+        new_consts.extend(new_jaxpr.consts)
+        new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+        end_const_ind += len(new_jaxpr.consts)
 
     new_args_slice = slice(end_const_ind, None)
     return cond_prim.bind(
@@ -588,17 +586,21 @@ def handle_while_loop(
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
+def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
+    shots, invals = invals[:shots_len], invals[shots_len:]
+
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
+    f = partial(copy(self).eval, qfunc_jaxpr, consts)
+    new_qfunc_jaxpr = jax.make_jaxpr(f)(*args)
 
     return qnode_prim.bind(
+        *shots,
         *new_qfunc_jaxpr.consts,
         *args,
-        shots=shots,
+        shots_len=shots_len,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
@@ -636,15 +638,22 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
+jax_version = version("jax")
+if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
+    from jax._src.pjit import jit_p as pjit_p
+else:  # pragma: no cover
+    from jax._src.pjit import pjit_p
+
+
 # pylint: disable=protected-access
-@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+@FlattenedInterpreter.register_primitive(pjit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
-    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
-    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+    subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return pjit_p.bind(*subfuns, *invals, **params)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
@@ -685,7 +694,7 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
             raise NotImplementedError(
                 f"{self} does not yet support jitting cond with abstract conditions."
             )
-        if pred and jaxpr is not None:
+        if pred:
             return copy(self).eval(jaxpr, consts, *args)
     return ()
 

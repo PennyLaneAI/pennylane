@@ -23,7 +23,7 @@ filecheck = pytest.importorskip("filecheck")
 
 pytestmark = pytest.mark.external
 
-from xdsl.dialects import builtin, test
+from xdsl.dialects import arith, builtin, test
 from xdsl.utils.exceptions import VerifyException
 
 from pennylane.compiler.python_compiler.dialects import Quantum, mbqc
@@ -33,6 +33,7 @@ all_attrs = list(mbqc.MBQC.attributes)
 
 expected_ops_names = {
     "MeasureInBasisOp": "mbqc.measure_in_basis",
+    "GraphStatePrepOp": "mbqc.graph_state_prep",
 }
 
 expected_attrs_names = {
@@ -90,9 +91,14 @@ def test_assembly_format(run_filecheck):
     // COM: Check generic format
     // CHECK: {{%.+}}, {{%.+}} = mbqc.measure_in_basis[XY, [[angle]]] [[qubit]] postselect 0 : i1, !quantum.bit
     %res:2 = "mbqc.measure_in_basis"(%qubit, %angle) <{plane = #mbqc<measurement_plane XY>, postselect = 0 : i32}> : (!quantum.bit, f64) -> (i1, !quantum.bit)
+
+    // CHECK: [[adj_matrix:%.+]] = arith.constant {{.*}} : tensor<6xi1>
+    // CHECK: [[graph_reg:%.+]] = mbqc.graph_state_prep{{\s*}}([[adj_matrix]] : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+    %adj_matrix = arith.constant dense<[1, 0, 1, 0, 0, 1]> : tensor<6xi1>
+    %graph_reg = mbqc.graph_state_prep (%adj_matrix : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
     """
 
-    run_filecheck(program)
+    run_filecheck(program, roundtrip=True)
 
 
 class TestMeasureInBasisOp:
@@ -154,3 +160,19 @@ class TestMeasureInBasisOp:
 
         with pytest.raises(VerifyException, match="'postselect' must be 0 or 1"):
             measure_in_basis_op.verify_()
+
+    @pytest.mark.parametrize("init_op", ["Hadamard", builtin.StringAttr(data="Hadamard")])
+    @pytest.mark.parametrize("entangle_op", ["CZ", builtin.StringAttr(data="CZ")])
+    def test_graph_state_prep_instantiation(self, init_op, entangle_op):
+        """Test the instantiation of a mbqc.graph_state_prep op."""
+        adj_matrix = [1, 0, 1, 0, 0, 1]
+        adj_matrix_op = arith.ConstantOp(
+            builtin.DenseIntOrFPElementsAttr.from_list(
+                type=builtin.TensorType(builtin.IntegerType(1), shape=(6,)), data=adj_matrix
+            )
+        )
+        graph_state_prep_op = mbqc.GraphStatePrepOp(adj_matrix_op.result, init_op, entangle_op)
+
+        assert graph_state_prep_op.adj_matrix == adj_matrix_op.result
+        assert graph_state_prep_op.init_op == builtin.StringAttr(data="Hadamard")
+        assert graph_state_prep_op.entangle_op == builtin.StringAttr(data="CZ")

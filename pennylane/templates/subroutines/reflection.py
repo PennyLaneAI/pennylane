@@ -154,7 +154,7 @@ class Reflection(Operation):
         return {
             "base_class": self.hyperparameters["base"].__class__,
             "base_params": self.hyperparameters["base"].resource_params,
-            "num_wires": None,
+            "num_wires": len(self.wires),
             "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
         }
 

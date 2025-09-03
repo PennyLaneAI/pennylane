@@ -19,6 +19,7 @@ from __future__ import annotations
 import numpy as np
 
 import pennylane as qml
+from pennylane import allocation
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
@@ -37,8 +38,9 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
+    # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
+    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
     def _impl(*params, wires, base, **__):
         # pylint: disable=protected-access
         qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
@@ -183,7 +185,7 @@ def decompose_to_base(*params, wires, base, **__):
 self_adjoint: DecompositionRule = decompose_to_base
 
 
-def make_controlled_decomp(base_decomposition):
+def make_controlled_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the control of a decomposition rule."""
 
     def _condition_fn(base_params, **_):
@@ -209,8 +211,9 @@ def make_controlled_decomp(base_decomposition):
         gate_counts[resource_rep(qml.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
+    # pylint: disable=protected-access,too-many-arguments
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
+    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
@@ -248,8 +251,9 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         gate_counts[resource_rep(qml.X)] = gate_counts.get(resource_rep(qml.X), 0) + num_x * 2
         return gate_counts
 
+    # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
+    @register_resources(_resource_fn, work_wires=inner_decomp._work_wire_spec)
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
@@ -288,6 +292,7 @@ def _flip_control_adjoint_resource(
     return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
 
 
+# pylint: disable=too-many-arguments
 @register_resources(_flip_control_adjoint_resource)
 def flip_control_adjoint(
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
@@ -306,53 +311,26 @@ def flip_control_adjoint(
     )
 
 
-def _controlled_decomp_with_work_wire_condition(
-    num_control_wires, num_work_wires, work_wire_type, **__
-):
-    return num_work_wires > 1 and num_control_wires > 1 and work_wire_type == "clean"
-
-
-def _controlled_decomp_with_work_wire_resource(
-    base_class, base_params, num_control_wires, num_work_wires, work_wire_type, **__
-):
+def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
     return {
-        controlled_resource_rep(
-            qml.X,
-            {},
-            num_control_wires,
-            num_work_wires=num_work_wires - 1,
-            work_wire_type=work_wire_type,
-        ): 2,
-        controlled_resource_rep(base_class, base_params, 1, 0): 1,
+        controlled_resource_rep(qml.X, {}, num_control_wires): 2,
+        controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
 
-# pylint: disable=protected-access,unused-argument
-@register_condition(_controlled_decomp_with_work_wire_condition)
-@register_resources(_controlled_decomp_with_work_wire_resource)
-def _controlled_decomp_with_work_wire(
-    *params, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
-):
+# pylint: disable=protected-access,unused-argument,too-many-arguments
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
+def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     base_op = base._unflatten(*base._flatten())
-    qml.ctrl(
-        qml.X(work_wires[0]),
-        control=wires[: len(control_wires)],
-        control_values=control_values,
-        work_wires=work_wires[1:],
-        work_wire_type=work_wire_type,
-    )
-    qml.ctrl(base_op, control=work_wires[0])
-    qml.ctrl(
-        qml.X(work_wires[0]),
-        control=wires[: len(control_wires)],
-        control_values=control_values,
-        work_wires=work_wires[1:],
-        work_wire_type=work_wire_type,
-    )
+    with allocation.allocate(1, state="zero", restored=True) as work_wires:
+        qml.ctrl(qml.X(work_wires[0]), control=control_wires)
+        qml.ctrl(base_op, control=work_wires[0])
+        qml.ctrl(qml.X(work_wires[0]), control=control_wires)
 
 
-controlled_decomp_with_work_wire = flip_zero_control(_controlled_decomp_with_work_wire)
+ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
 
 
 def _to_controlled_qu_condition(base_class, **__):

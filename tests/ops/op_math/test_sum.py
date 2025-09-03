@@ -1251,9 +1251,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Sum class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1266,9 +1267,10 @@ class TestIntegration:
 
     def test_measurement_process_count(self):
         """Test Sum class instance in counts measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1421,21 +1423,21 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
-        assert set(op1.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op1.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op2.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op2.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op3.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op3.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(method="lf")
-        assert set(op4.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op4.grouping_indices) == {(0, 1), (2,)}
 
     @pytest.mark.parametrize(
         "grouping_type, grouping_indices",
@@ -1472,8 +1474,9 @@ class TestGrouping:
     @pytest.mark.parametrize("shots", [None, 1000])
     def test_grouping_integration(self, shots):
         """Test that grouping does not impact the results of a circuit."""
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def qnode(grouping_type):
             H = qml.dot(

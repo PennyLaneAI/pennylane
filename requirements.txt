@@ -9,11 +9,10 @@ autograd~=1.4
 tomlkit~=0.13
 appdirs~=1.4
 packaging
-autoray>=0.6.11
+autoray>=0.8.0
 matplotlib~=3.5
 opt_einsum~=3.3
 requests~=2.31.0
 typing_extensions>=4.6.0
-tomli~=2.0.0 # Drop once minimum Python version is 3.11
 tach~=0.28.5
 diastatic-malt

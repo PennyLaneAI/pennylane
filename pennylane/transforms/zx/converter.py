@@ -28,6 +28,8 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
+from .helper import _needs_pyzx
+
 
 def _toffoli_clifford_t_decomp(wires):
     """Return the explicit Clifford+T decomposition of the Toffoli gate,
@@ -99,6 +101,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
+@_needs_pyzx
 def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
@@ -113,6 +116,9 @@ def to_zx(tape, expand_measurements=False):
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will provide the ZX graph in the form of a PyZX graph.
+
+    Raises:
+        ModuleNotFoundError: if the required ``pyzx`` package is not installed.
 
     **Example**
 
@@ -297,8 +303,8 @@ def to_zx(tape, expand_measurements=False):
 
     .. note::
 
-        It is a PennyLane adapted and reworked `circuit_to_graph <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
-        function.
+        This function is a PennyLane adaptation to `circuit_to_graph <https://github.com/zxcalc/pyzx/blob/master/pyzx/circuit/graphparser.py#L89>`_.
+        It requires the `pyzx <https://pyzx.readthedocs.io/en/latest/>`_ external package to be installed.
 
     .. note::
 
@@ -323,17 +329,10 @@ def _to_zx_transform(
     tape: QuantumScript, expand_measurements=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
-    # Avoid to make PyZX a requirement for PennyLane.
-    try:
-        # pylint: disable=import-outside-toplevel
-        import pyzx
-        from pyzx.circuit.gates import TargetMapper
-        from pyzx.graph import Graph
-
-    except ImportError as Error:
-        raise ImportError(
-            "This feature requires PyZX. It can be installed with: pip install pyzx"
-        ) from Error
+    # pylint: disable=import-outside-toplevel
+    import pyzx
+    from pyzx.circuit.gates import TargetMapper
+    from pyzx.graph import Graph
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     gate_types = {
@@ -368,7 +367,7 @@ def _to_zx_transform(
         # Map the wires to consecutive wires
 
         consecutive_wires = Wires(range(len(res[0].wires)))
-        consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires))
+        consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires, strict=True))
         mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
         mapped_tape = fn(mapped_tapes)
 
@@ -457,7 +456,6 @@ def from_zx(graph, decompose_phases=True):
 
     .. code-block:: python
 
-        import pyzx
         dev = qml.device('default.qubit', wires=2)
 
         @qml.transforms.to_zx

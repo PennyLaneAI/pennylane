@@ -21,7 +21,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.mottonen import _get_alpha_y, compute_theta, gray_code
+from pennylane.templates.state_preparations.mottonen import (
+    _get_alpha_y,
+    compute_theta,
+    gray_code,
+    mottonen_decomp,
+)
 
 
 def test_standard_validity():
@@ -32,7 +37,7 @@ def test_standard_validity():
 
     op = qml.MottonenStatePreparation(state_vector=state, wires=range(3))
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, heuristic_resources=True)
 
 
 def compute_theta_reference(alpha):
@@ -281,6 +286,80 @@ class TestDecomposition:
         assert isinstance(gphase, qml.GlobalPhase)
         assert qml.math.allclose(gphase.data[0], qml.math.mean(-1 * qml.math.angle(state)))
 
+    def test_mottonen_resources(self):
+        """Test the resources for MottonenStatePreparataion."""
+
+        assert qml.MottonenStatePreparation.resource_keys == frozenset({"num_wires"})
+
+        op = qml.MottonenStatePreparation([0, 0, 0, 1], wires=(0, 1))
+        assert op.resource_params == {"num_wires": 2}
+
+    def test_decomposition_rule(self):
+        """Test that MottonenStatePreparation has a correct decomposition rule registered."""
+
+        decomp = qml.list_decomps(qml.MottonenStatePreparation)[0]
+
+        resource_obj = decomp.compute_resources(num_wires=3)
+
+        n = 1 + 2 + 4  # 7
+
+        assert resource_obj.num_gates == 1 + 2 * n + 2 * (n - 1)
+        assert resource_obj.gate_counts == {
+            qml.resource_rep(qml.GlobalPhase): 1,
+            qml.resource_rep(qml.RY): n,
+            qml.resource_rep(qml.RZ): n,
+            qml.resource_rep(qml.CNOT): 2 * (n - 1),
+        }
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1))
+
+        q = q.queue
+
+        qml.assert_equal(q[0], qml.RY(np.pi, 0))
+        qml.assert_equal(q[1], qml.RY(np.pi / 2, 1))
+        qml.assert_equal(q[2], qml.CNOT((0, 1)))
+        qml.assert_equal(q[3], qml.RY(-np.pi / 2, 1))
+        qml.assert_equal(q[4], qml.CNOT((0, 1)))
+        qml.assert_equal(q[5], qml.RZ(np.pi / 4, 0))
+        qml.assert_equal(q[6], qml.RZ(np.pi / 4, 1))
+        qml.assert_equal(q[7], qml.CNOT((0, 1)))
+        qml.assert_equal(q[8], qml.RZ(-np.pi / 4, 1))
+        qml.assert_equal(q[9], qml.CNOT((0, 1)))
+        qml.assert_equal(q[10], qml.GlobalPhase(-np.pi / 8, wires=(0, 1)))
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_capture(self):
+        """Tests that the new decomposition works with capture."""
+        from jax import numpy as jnp
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        state = jnp.array([0, 0, 0, 1j])
+
+        def circuit(state):
+            mottonen_decomp(state, (0, 1))
+
+        plxpr = qml.capture.make_plxpr(circuit)(state)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, state)
+        q = collector.state["ops"]
+        assert len(q) == 11
+
+        pi = jnp.array(jnp.pi)
+        qml.assert_equal(q[0], qml.RY(pi, 0))
+        qml.assert_equal(q[1], qml.RY(pi / 2, 1))
+        qml.assert_equal(q[2], qml.CNOT((0, 1)))
+        qml.assert_equal(q[3], qml.RY(-pi / 2, 1))
+        qml.assert_equal(q[4], qml.CNOT((0, 1)))
+        qml.assert_equal(q[5], qml.RZ(pi / 4, 0))
+        qml.assert_equal(q[6], qml.RZ(pi / 4, 1))
+        qml.assert_equal(q[7], qml.CNOT((0, 1)))
+        qml.assert_equal(q[8], qml.RZ(-pi / 4, 1))
+        qml.assert_equal(q[9], qml.CNOT((0, 1)))
+        qml.assert_equal(q[10], qml.GlobalPhase(-pi / 8, wires=(0, 1)))
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
@@ -470,16 +549,18 @@ def test_jacobians_with_and_without_jit_match(seed):
     shots = None
     atol = 0.005
 
-    dev = qml.device("default.qubit", shots=shots, seed=seed)
-    dev_no_shots = qml.device("default.qubit", shots=None)
+    dev = qml.device("default.qubit", seed=seed)
+    dev_no_shots = qml.device("default.qubit")
 
     def circuit(coeffs):
         qml.MottonenStatePreparation(coeffs, wires=[0, 1])
         return qml.probs(wires=[0, 1])
 
-    circuit_fd = qml.QNode(circuit, dev, diff_method="finite-diff", gradient_kwargs={"h": 0.05})
-    circuit_ps = qml.QNode(circuit, dev, diff_method="parameter-shift")
-    circuit_exact = qml.QNode(circuit, dev_no_shots)
+    circuit_fd = qml.set_shots(
+        qml.QNode(circuit, dev, diff_method="finite-diff", gradient_kwargs={"h": 0.05}), shots=shots
+    )
+    circuit_ps = qml.set_shots(qml.QNode(circuit, dev, diff_method="parameter-shift"), shots=shots)
+    circuit_exact = qml.set_shots(qml.QNode(circuit, dev_no_shots), shots=None)
 
     params = jax.numpy.array([0.5, 0.5, 0.5, 0.5], dtype=jax.numpy.float64)
     jac_exact_fn = jax.jacobian(circuit_exact)

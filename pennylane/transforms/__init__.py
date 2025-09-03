@@ -51,17 +51,23 @@ A set of transforms to perform basic circuit compilation tasks.
 
     ~compile
     ~transforms.cancel_inverses
-    ~transforms.commute_controlled
-    ~transforms.merge_rotations
-    ~transforms.single_qubit_fusion
-    ~transforms.unitary_to_rot
-    ~transforms.merge_amplitude_embedding
-    ~transforms.remove_barrier
-    ~transforms.undo_swaps
-    ~transforms.pattern_matching_optimization
-    ~transforms.transpile
-    ~transforms.decompose
     ~transforms.combine_global_phases
+    ~transforms.commute_controlled
+    ~transforms.decompose
+    ~transforms.merge_amplitude_embedding
+    ~transforms.merge_rotations
+    ~transforms.pattern_matching_optimization
+    ~transforms.remove_barrier
+    ~transforms.match_relative_phase_toffoli
+    ~transforms.match_controlled_iX_gate
+    ~transforms.single_qubit_fusion
+    ~transforms.transpile
+    ~transforms.undo_swaps
+    ~transforms.unitary_to_rot
+    ~transforms.zx.optimize_t_count
+    ~transforms.zx.push_hadamards
+    ~transforms.zx.reduce_non_clifford
+    ~transforms.zx.todd
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -311,6 +317,8 @@ from .optimization import (
     undo_swaps,
     pattern_matching,
     pattern_matching_optimization,
+    match_controlled_iX_gate,
+    match_relative_phase_toffoli,
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
@@ -330,7 +338,14 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx
+from .zx import (
+    to_zx,
+    from_zx,
+    optimize_t_count,
+    push_hadamards,
+    reduce_non_clifford,
+    todd,
+)
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 

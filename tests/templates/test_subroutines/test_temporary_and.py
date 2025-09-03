@@ -24,6 +24,14 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestTemporaryAND:
     """Tests specific to the TemporaryAND operation"""
 
+    def test_repr(self):
+        """Test the repr of TemporaryAND."""
+        assert repr(qml.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=Wires([0, 'a', 2]))"
+        assert (
+            repr(qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
+            == "TemporaryAND(wires=Wires([0, 'a', 2]), control_values=(0, 1))"
+        )
+
     def test_alias(self):
         """Test that Elbow is an alias of TemporaryAND"""
         op1 = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
