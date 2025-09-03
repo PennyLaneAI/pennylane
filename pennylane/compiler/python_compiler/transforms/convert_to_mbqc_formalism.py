@@ -36,7 +36,6 @@ from ..dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
 from .api import compiler_transform
 
 
-
 class _NumAuxWires(Enum):
     ONE_WIRE_GATE = 4
     CNOT = 13
