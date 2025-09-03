@@ -501,6 +501,15 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
+  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
+  may have changed.
+  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
+  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
+  - Instead of `qml.labs.zxopt.todd`, use :func:`.transforms.zx.todd`
+  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`.transforms.zx.push_hadamards`
+  [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
+
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
