@@ -16,8 +16,11 @@ Defines a function for converting plxpr to a tape.
 """
 from copy import copy
 
-import pennylane as qml
+import numpy as np
+
+from pennylane import ops
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
+from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
@@ -28,7 +31,8 @@ from pennylane.capture.primitives import (
     measure_prim,
     qnode_prim,
 )
-from pennylane.measurements import MeasurementValue, get_mcm_predicates
+from pennylane.measurements import MeasurementValue, get_mcm_predicates, measure
+from pennylane.operation import Operator
 from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
@@ -88,9 +92,9 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
     def setup(self):
         if self.state is None:
-            self.state = {"ops": [], "measurements": []}
+            self.state = {"ops": [], "measurements": [], "dynamic_wire_map": {}}
 
-    def interpret_operation(self, op: "pennylane.operation.Operator"):
+    def interpret_operation(self, op: Operator):
         self.state["ops"].append(op)
 
     def interpret_measurement(self, measurement):
@@ -109,7 +113,7 @@ def _(self, *invals, jaxpr, lazy, n_consts):
     assert child.state
 
     for op in reversed(child.state["ops"]):
-        self.state["ops"].append(qml.adjoint(op, lazy=lazy))
+        self.state["ops"].append(ops.adjoint(op, lazy=lazy))
 
     return []
 
@@ -128,7 +132,7 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
     assert child.state
 
     for op in child.state["ops"]:
-        self.state["ops"].append(qml.ctrl(op, control=control, **params))
+        self.state["ops"].append(ops.ctrl(op, control=control, **params))
 
     return []
 
@@ -152,7 +156,7 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = all_args[const_slice]
-        if isinstance(pred, qml.measurements.MeasurementValue):
+        if isinstance(pred, MeasurementValue):
             if jaxpr.outvars:
                 outvals = [v.aval for v in jaxpr.outvars]
                 raise ValueError(
@@ -162,7 +166,7 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
             child = CollectOpsandMeas()
             child.eval(jaxpr, consts, *args)
             assert child.state
-            self.state["ops"].extend(qml.ops.Conditional(pred, op) for op in child.state["ops"])
+            self.state["ops"].extend(ops.Conditional(pred, op) for op in child.state["ops"])
         elif pred:
             return copy(self).eval(jaxpr, consts, *args)
     return ()
@@ -170,7 +174,7 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
 
 @CollectOpsandMeas.register_primitive(measure_prim)
 def _(self, wires, reset, postselect):
-    m0 = qml.measure(wires, reset=reset, postselect=postselect)
+    m0 = measure(wires, reset=reset, postselect=postselect)
     self.state["ops"].extend(m0.measurements)
     return m0
 
@@ -204,8 +208,11 @@ def _(
 @CollectOpsandMeas.register_primitive(allocate_prim)
 def _(self, *, num_wires, state, restored):
     wires = [DynamicWire() for _ in range(num_wires)]
-    self.state["ops"].append(Allocate(wires, state=state, restored=restored))
-    return wires
+    num_dynamic_wires = len(self.state["dynamic_wire_map"])
+    int_wires = [np.iinfo(np.int32).max - i - num_dynamic_wires for i in range(num_wires)]
+    self.state["dynamic_wire_map"].update({k: v for k, v in zip(int_wires, wires, strict=True)})
+    self.state["ops"].append(Allocate(int_wires, state=state, restored=restored))
+    return int_wires
 
 
 @CollectOpsandMeas.register_primitive(deallocate_prim)
@@ -258,4 +265,8 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
     collector = CollectOpsandMeas()
     collector.eval(plxpr, consts, *args)
     assert collector.state
-    return QuantumScript(collector.state["ops"], collector.state["measurements"], shots=shots)
+    wire_map = collector.state["dynamic_wire_map"]
+    with pause():
+        ops = [op.map_wires(wire_map) for op in collector.state["ops"]]
+        measurements = [m.map_wires(wire_map) for m in collector.state["measurements"]]
+    return QuantumScript(ops, measurements, shots=shots)

@@ -207,7 +207,7 @@ from pennylane.exceptions import (
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import DynamicWire, Wires, WiresLike
+from pennylane.wires import Wires, WiresLike
 
 from .pytrees import register_pytree
 
@@ -351,9 +351,7 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(
-            w if is_abstract(w) or isinstance(w, DynamicWire) else int(w) for w in wire_args
-        )
+        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
