@@ -80,7 +80,6 @@ if TYPE_CHECKING:
     from pennylane.operation import Operator
 
 
-# Hardcoded gate_set from default_qubit.toml
 ALL_DQ_GATE_SET = {
     "CNOT",
     "CRX",
