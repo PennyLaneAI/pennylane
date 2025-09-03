@@ -437,6 +437,9 @@
 * Added a `QuantumParser` class to the `qml.compiler.python_compiler` submodule that automatically loads relevant dialects.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
 
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass` has been added for the experimental xDSL Python compiler integration. This pass converts all gates in the MBQC gate set (`Hadamard`, `S`, `RZ`, `RotXZX` and `CNOT`) to the textbook MBQC formalism.
+  [(#7870)](https://github.com/PennyLaneAI/pennylane/pull/7870)
+
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
 
@@ -793,6 +796,7 @@
 * Start using `strict=True` to `zip` usage in source code.
   [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
   [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
+  [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
