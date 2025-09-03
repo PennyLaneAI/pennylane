@@ -59,7 +59,7 @@ def _generate_adj_matrix(op_name: str) -> list:
 def _adj_matrix_generation_helper(
     num_vertices: int, edges_in_adj_matrix: list[tuple[int, int]]
 ) -> list:
-    """Helper function to generate an adjacent matrix to represent the connectivity of auxiliary qubits in
+    """Helper function to generate an adjacency matrix to represent the connectivity of auxiliary qubits in
     a graph state for a gate operation with the number of vertices and edges information.
     Note that adjacent matrix here means the lower triangular part of the full adjacent matrix.
     It can be represented as below and `x` marks here are diagonalized elements.
