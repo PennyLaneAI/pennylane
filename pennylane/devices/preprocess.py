@@ -18,7 +18,7 @@ that they are supported for execution by a device."""
 
 import os
 import warnings
-from collections.abc import Callable, Generator, Sequence
+from collections.abc import Callable, Sequence
 from copy import copy
 
 import pennylane as qml
@@ -37,10 +37,7 @@ from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import resolve_dynamic_wires
 from pennylane.transforms.core import transform
-from pennylane.transforms.decompose import (
-    _construct_and_solve_decomp_graph,
-    _operator_decomposition_gen,
-)
+from pennylane.transforms.decompose import _operator_decomposition_gen
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
