@@ -22,14 +22,25 @@ from collections.abc import Callable, Generator, Sequence
 from copy import copy
 
 import pennylane as qml
-from pennylane.exceptions import AllocationError, DeviceError, QuantumFunctionError, WireError
+from pennylane.decomposition.decomposition_graph import DecompGraphSolution
+from pennylane.exceptions import (
+    AllocationError,
+    DecompositionUndefinedError,
+    DeviceError,
+    QuantumFunctionError,
+    WireError,
+)
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
-from pennylane.operation import StatePrepBase
+from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import resolve_dynamic_wires
 from pennylane.transforms.core import transform
+from pennylane.transforms.decompose import (
+    _construct_and_solve_decomp_graph,
+    _operator_decomposition_gen,
+)
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -41,45 +52,6 @@ def null_postprocessing(results):
     into a result for a single ``QuantumTape``.
     """
     return results[0]
-
-
-def _operator_decomposition_gen(  # pylint: disable = too-many-positional-arguments
-    op: qml.operation.Operator,
-    acceptance_function: Callable[[qml.operation.Operator], bool],
-    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    max_expansion: int | None = None,
-    current_depth=0,
-    name: str = "device",
-    error: type[Exception] | None = None,
-) -> Generator[qml.operation.Operator, None, None]:
-    """A generator that yields the next operation that is accepted."""
-    if error is None:
-        error = DeviceError
-
-    max_depth_reached = False
-    if max_expansion is not None and max_expansion <= current_depth:
-        max_depth_reached = True
-    if acceptance_function(op) or max_depth_reached:
-        yield op
-    else:
-        try:
-            decomp = decomposer(op)
-            current_depth += 1
-        except qml.operation.DecompositionUndefinedError as e:
-            raise error(
-                f"Operator {op} not supported with {name} and does not provide a decomposition."
-            ) from e
-
-        for sub_op in decomp:
-            yield from _operator_decomposition_gen(
-                sub_op,
-                acceptance_function,
-                decomposer=decomposer,
-                max_expansion=max_expansion,
-                current_depth=current_depth,
-                name=name,
-                error=error,
-            )
 
 
 #######################
@@ -132,7 +104,7 @@ def no_analytic(
 
 @transform
 def validate_device_wires(
-    tape: QuantumScript, wires: qml.wires.Wires | None = None, name: str = "device"
+    tape: QuantumScript, wires: Wires | None = None, name: str = "device"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
@@ -321,12 +293,12 @@ def validate_adjoint_trainable_params(
 @transform
 def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
-    stopping_condition: Callable[[qml.operation.Operator], bool],
-    stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
+    stopping_condition: Callable[[Operator], bool],
+    stopping_condition_shots: Callable[[Operator], bool] | None = None,
     skip_initial_state_prep: bool = True,
-    decomposer: None | (
-        Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
-    ) = None,
+    decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
+    graph_solution: DecompGraphSolution | None = None,
+    num_available_work_wires: int | None = 0,
     name: str = "device",
     error: type[Exception] | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -403,13 +375,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     """
 
-    if error is None:
-        error = DeviceError
-
-    if decomposer is None:
-
-        def decomposer(op):
-            return op.decomposition()
+    error = error or DeviceError
 
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
@@ -421,17 +387,18 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
-    try:
 
+    try:
         new_ops = [
             final_op
             for op in tape.operations[len(prep_op) :]
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                decomposer=decomposer,
-                name=name,
-                error=error,
+                num_available_work_wires=num_available_work_wires,
+                graph_solution=graph_solution,
+                custom_decomposer=decomposer,
+                strict=True,
             )
         ]
     except RecursionError as e:
@@ -439,6 +406,10 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             "Reached recursion limit trying to decompose operations. "
             "Operator decomposition may have entered an infinite loop."
         ) from e
+
+    except DecompositionUndefinedError as e:
+        message = str(e).replace("not supported", f"not supported with {name}")
+        raise error(message)
 
     tape = tape.copy(operations=prep_op + new_ops)
 
@@ -448,8 +419,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 @transform
 def validate_observables(
     tape: QuantumScript,
-    stopping_condition: Callable[[qml.operation.Operator], bool],
-    stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
+    stopping_condition: Callable[[Operator], bool],
+    stopping_condition_shots: Callable[[Operator], bool] | None = None,
     name: str = "device",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates the observables and measurements for a circuit.

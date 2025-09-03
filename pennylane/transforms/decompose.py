@@ -28,6 +28,7 @@ from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.transforms.core import transform
@@ -783,8 +784,27 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     current_depth=0,
     num_available_work_wires: int | None = 0,
     graph_solution: DecompGraphSolution | None = None,
+    custom_decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
+    strict: bool = False,
 ) -> Generator[Operator]:
-    """A generator that yields the next operation that is accepted."""
+    """A generator that yields the next operation that is accepted.
+
+    Args:
+        op: The operator to decompose
+        acceptance_function: Returns True if the operator does not need further decomposition.
+        max_expansion: The maximum level of expansion.
+        current_depth: The current depth of expansion.
+        num_available_work_wires: The number of available work wires at the top level.
+        graph_solution: The solution to the decomposition graph.
+        custom_decomposer: A custom function that decomposes an operator. This is only relevant
+            with the graph enabled, and only used by ``preprocess.decompose``.
+        strict: If True, an error will be raised when an operator does not provide a decomposition
+            and does not meet the stopping criteria.
+
+    Returns:
+        A generator of Operators
+
+    """
 
     max_depth_reached = False
     decomp = []
@@ -831,8 +851,21 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
         )
         yield op
 
+    elif custom_decomposer is not None:
+        try:
+            decomp = custom_decomposer(op)
+        except DecompositionUndefinedError as e:
+            raise DecompositionUndefinedError(
+                f"Operator {op.name} not supported and does not provide a decomposition."
+            ) from e
+
     elif op.has_decomposition:
         decomp = op.decomposition()
+
+    elif strict:
+        raise DecompositionUndefinedError(
+            f"Operator {op.name} not supported and does not provide a decomposition."
+        )
 
     else:
         warnings.warn(
