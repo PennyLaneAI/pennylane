@@ -455,9 +455,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
                         f"Operator {op} not supported with {name} and does not provide a decomposition."
                     )
 
-            return (tape.copy(operations=prep_op + new_ops),), null_postprocessing
-        else:
-            # Use fallback implementation
+        else:  # Old decomposition system
             new_ops = [
                 final_op
                 for op in ops_to_decompose
@@ -469,13 +467,15 @@ def decompose(  # pylint: disable = too-many-positional-arguments
                     error=error,
                 )
             ]
-            return (tape.copy(operations=prep_op + new_ops),), null_postprocessing
-
     except RecursionError as e:
         raise error(
             "Reached recursion limit trying to decompose operations. "
             "Operator decomposition may have entered an infinite loop."
         ) from e
+
+    tape = tape.copy(operations=prep_op + new_ops)
+
+    return (tape,), null_postprocessing
 
 
 @transform
