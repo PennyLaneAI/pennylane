@@ -437,9 +437,42 @@ class TestSample:
         angle = jax.numpy.array(0.1)
         _ = jax.jacobian(circuit)(angle)
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize("precision", ["int8", "int16", "int32", "int64"])
+    def test_sample_precision(self, interface, precision):
+        """Test that the precision argument changes the dtype of the returned samples."""
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
+        def _():
+            qml.Hadamard(wires=0)
+            return qml.sample(precision=precision)
+
+        samples = _()
+        assert qml.math.get_interface(samples) == interface
+        assert qml.math.get_dtype_name(samples) == precision
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize("precision", ["float16", "float32", "float64"])
+    def test_sample_precision_obs(self, interface, precision):
+        """Test that the precision argument changes the dtype of the returned samples when an observable is provided."""
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
+        def _():
+            qml.Hadamard(wires=0)
+            return qml.sample(qml.Z(0), precision=precision)
+
+        samples = _()
+        assert qml.math.get_interface(samples) == interface
+        assert qml.math.get_dtype_name(samples) == precision
+
 
 @pytest.mark.jax
 class TestJAXCompatibility:
+    """Tests for JAX compatibility"""
 
     @pytest.mark.parametrize("samples", (1, 10))
     def test_jitting_with_sampling_on_subset_of_wires(self, samples):
