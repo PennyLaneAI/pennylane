@@ -602,7 +602,7 @@ def has_decomp(op_type: type[Operator] | str) -> bool:
 
 @register_resources({})
 def null_decomp(*_, **__):
-    """A decomposition rule that does nothing.
+    """A decomposition rule that can be assigned to an operator so that the operator decomposes to nothing.
 
     **Example**
 
