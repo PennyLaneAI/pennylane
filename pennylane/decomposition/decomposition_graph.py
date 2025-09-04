@@ -492,14 +492,43 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             warnings.warn(
                 f"The graph-based decomposition system is unable to find a decomposition for "
                 f"{op_names} to the target gate set {set(self._gate_set_weights)}. The default "
-                "decomposition for these operators will be used instead.",
+                "decomposition (op.decomposition()) for these operators will be used instead.",
                 UserWarning,
             )
         return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
 
 
 class DecompGraphSolution:
-    """A solution to a decomposition graph."""
+    """A solution to a decomposition graph.
+
+    An instance of this class is returned from :meth:`DecompositionGraph.solve`
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.decomposition import DecompositionGraph
+
+        op = qml.CRX(0.5, wires=[0, 1])
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        )
+        solution = graph.solve()
+
+    >>> with qml.queuing.AnnotatedQueue() as q:
+    ...     solution.decomposition(op)(0.5, wires=[0, 1])
+    >>> q.queue
+    [RZ(1.5707963267948966, wires=[1]),
+     RY(0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(-0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RZ(-1.5707963267948966, wires=[1])]
+    >>> solution.resource_estimate(op)
+    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
+
+    """
 
     def __init__(
         self,
