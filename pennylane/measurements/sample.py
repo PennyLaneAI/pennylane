@@ -47,6 +47,7 @@ class SampleMP(SampleMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        precision (str or None): The precision of the samples returned by this measurement process.
     """
 
     _shortname = "sample"
@@ -135,14 +136,16 @@ class SampleMP(SampleMeasurement):
         wire_order: WiresLike,
         shot_range: None | tuple[int, ...] = None,
         bin_size: None | int = None,
+        precision: None | str = None,
     ) -> TensorLike:
+
         return process_raw_samples(
             self,
             samples,
             wire_order,
             shot_range=shot_range,
             bin_size=bin_size,
-            precision=self.precision,
+            precision=self.precision if precision is None else precision,
         )
 
     def process_counts(self, counts: dict, wire_order: WiresLike) -> np.ndarray:
@@ -342,6 +345,9 @@ def sample(
             and as integers if no observable is provided. The ``precision`` argument can be used to override this default behavior,
             and set the precision to any valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
 
+            We show two examples below using the JAX and PyTorch interfaces.
+            This argument is compatible with all interfaces currently supported by PennyLane.
+
             **Example:**
 
             .. code-block:: python3
@@ -352,7 +358,7 @@ def sample(
                     qml.Hadamard(0)
                     return qml.sample(precision="int8")
 
-            Executing this QNode:
+            Executing this QNode, we get:
 
             >>> samples = circuit()
             >>> samples.dtype
@@ -360,7 +366,7 @@ def sample(
             >>> type(samples)
             jaxlib._jax.ArrayImpl
 
-            Let's see another example, this time with the PyTorch interface.
+            If an observable is provided, the samples will be floating point numbers:
 
             .. code-block:: python3
 
@@ -370,7 +376,7 @@ def sample(
                     qml.Hadamard(0)
                     return qml.sample(qml.Z(0), precision="float32")
 
-            Executing this QNode:
+            Executing this QNode, we get:
 
             >>> samples = circuit()
             >>> samples.dtype

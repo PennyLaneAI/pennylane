@@ -401,10 +401,18 @@ class TestSample:
         """Test that calling process with an operator that has no eigvals defined raises an error."""
 
         class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+            """Dummy operator with no eigenvalues defined."""
+
             num_wires = 1
 
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
+
+    def test_process_samples_precision(self):
+        """Test that the precision argument changes the dtype of the returned samples."""
+        samples = np.zeros(10, dtype="int64")
+        processed_samples = qml.sample().process_samples(samples, wire_order=[0], precision="int8")
+        assert processed_samples.dtype == np.dtype("int8")
 
     def test_sample_allowed_with_parameter_shift(self):
         """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
