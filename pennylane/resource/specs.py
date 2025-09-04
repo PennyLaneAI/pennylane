@@ -317,7 +317,6 @@ def specs(
 
     def specs_qjit(*args, **kwargs) -> SpecsDict:
         # TODO: Determine if its possible to have batched QJIT code / how to handle it
-        import catalyst  # We'll need Catalyst for this part
 
         if not isinstance(qnode.original_function, qml.QNode):
             raise NotImplementedError("qml.specs can only be used on QNodes or qjit'd QNodes")
@@ -351,7 +350,7 @@ def specs(
             # Execute on null.qubit with resource tracking
             new_qnode(*args, **kwargs)
 
-            with open(_RESOURCE_TRACKING_FILEPATH, "r") as f:
+            with open(_RESOURCE_TRACKING_FILEPATH, "r", encoding="utf-8") as f:
                 resource_data = json.load(f)
 
             info["resources"] = Resources(
@@ -393,5 +392,4 @@ def specs(
 
     if isinstance(qnode, qml.QNode):
         return specs_qnode
-    else:
-        return specs_qjit
+    return specs_qjit
