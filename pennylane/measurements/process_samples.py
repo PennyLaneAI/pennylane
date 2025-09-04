@@ -24,6 +24,7 @@ from .measurement_value import MeasurementValue
 from .measurements import MeasurementProcess
 
 
+# pylint: disable=too-many-arguments
 def process_raw_samples(
     mp: MeasurementProcess,
     samples: TensorLike,

@@ -51,6 +51,7 @@ class SampleMP(SampleMeasurement):
 
     _shortname = "sample"
 
+    # pylint: disable=too-many-arguments
     def __init__(self, obs=None, wires=None, eigvals=None, id=None, precision=None):
 
         self._precision = precision
@@ -338,11 +339,44 @@ def sample(
             The ``precision`` argument can be used to set the precision of the samples returned by this measurement process.
 
             By default, the samples will be returned as floating point numbers if an observable is provided,
-            and as integers if no observable is provided. The ``precision`` argument can be used to override this default behavior.
-            The argument should be a string representing a valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
+            and as integers if no observable is provided. The ``precision`` argument can be used to override this default behavior,
+            and set the precision to any valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
 
-            TODO: continue after testing rendering
+            **Example:**
 
+            .. code-block:: python3
+
+                @qml.set_shots(1000000)
+                @qml.qnode(qml.device("default.qubit", wires=1), interface="jax")
+                def circuit():
+                    qml.Hadamard(0)
+                    return qml.sample(precision="int8")
+
+            Executing this QNode:
+
+            >>> samples = circuit()
+            >>> samples.dtype
+            dtype('int8')
+            >>> type(samples)
+            jaxlib._jax.ArrayImpl
+
+            Let's see another example, this time with the PyTorch interface.
+
+            .. code-block:: python3
+
+                @qml.set_shots(1000000)
+                @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
+                def circuit():
+                    qml.Hadamard(0)
+                    return qml.sample(qml.Z(0), precision="float32")
+
+            Executing this QNode:
+
+            >>> samples = circuit()
+            >>> samples.dtype
+            torch.float32
+            >>> type(samples)
+            torch.Tensor
 
     """
     return SampleMP(obs=op, wires=None if wires is None else Wires(wires), precision=precision)
