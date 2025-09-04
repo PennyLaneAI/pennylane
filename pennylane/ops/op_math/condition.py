@@ -99,7 +99,7 @@ class Conditional(SymbolicOp, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: type[Operation], id=None):
+    def __init__(self, expr, then_op: Operation, id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)

@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
+from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
@@ -209,10 +210,13 @@ class TestDecomposition:
 
     def test_resource_keys(self):
         """Test that the resource keys of `ChangeOpBasis` are op_reps."""
-        assert ChangeOpBasis.resource_keys == frozenset({"resources"})
+        assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qml.X(0), qml.Y(1), qml.X(2))
-        resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
-        assert change_op_basis_op.resource_params == {"resources": resources}
+        assert change_op_basis_op.resource_params == {
+            "compute_op": resource_rep(qml.X),
+            "target_op": resource_rep(qml.Y),
+            "uncompute_op": resource_rep(qml.X),
+        }
 
     def test_registered_decomp(self):
         """Test that the decomposition of change_op_basis is registered."""
@@ -223,7 +227,11 @@ class TestDecomposition:
         _ops = [qml.X(0), qml.MultiRZ(0.5, wires=(0, 1)), qml.X(0)]
         resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.MultiRZ, num_wires=2): 1}
 
-        resource_obj = default_decomp.compute_resources(resources=resources)
+        resource_obj = default_decomp.compute_resources(
+            compute_op=resource_rep(qml.X),
+            target_op=resource_rep(qml.MultiRZ, num_wires=2),
+            uncompute_op=resource_rep(qml.X),
+        )
 
         assert resource_obj.num_gates == 3
         assert resource_obj.gate_counts == resources
