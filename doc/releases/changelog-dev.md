@@ -936,6 +936,8 @@
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
+* Adding nightly RC builds [(8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
@@ -1055,6 +1057,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
