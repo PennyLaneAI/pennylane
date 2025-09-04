@@ -262,13 +262,12 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def resource_decomp(cls, *args, **kwargs) -> list:
+    def resource_decomp(cls, config, *args, **kwargs) -> list: # gets config and params
         r"""Returns a list of actions that define the resources of the operator."""
 
-        config = kwargs["config"]
         decomp_func = config._decomp_tracker.get(cls, cls.default_resource_decomp)
 
-        return decomp_func(*args, **kwargs)
+        return decomp_func(config, *args, **kwargs)
 
     @classmethod
     def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
