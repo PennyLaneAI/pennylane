@@ -20,13 +20,8 @@ from pennylane.labs.resource_estimation.resource_operator import ResourceOperato
 
 
 class ResourceConfig:
-    r"""
-
-    Args:
-
-    **Example**
-
-
+    r"""A container to track the configuration for errors, precisions, and custom decompositions for the
+    resource estimation pipeline.
     """
 
     def __init__(self) -> None:
@@ -41,12 +36,24 @@ class ResourceConfig:
             "precision_alias_sampling": 1e-9,
         }
         self._decomp_tracker = {}
+        self._adj_decomp_tracker = {}
+        self._ctrl_decomp_tracker = {}
+        self._pow_decomp_tracker = {}
 
     def __str__(self):
-        pass
+        return f"ResourceConfig(conf = {self.conf}, decomps = {self._decomp_tracker}, {self._adj_decomp_tracker}, {self._ctrl_decomp_tracker}, {self._pow_decomp_tracker})"
 
     def __repr__(self) -> str:
-        pass
+        return f"ResourceConfig(conf = {self.conf}), decomps = {self._decomp_tracker}, {self._adj_decomp_tracker}, {self._ctrl_decomp_tracker}, {self._pow_decomp_tracker}"
 
-    def set_decomp(cls: type[ResourceOperator], decomp_func: Callable, type: str) -> None:
-        pass
+    def set_decomp(
+        self, op_type: type[ResourceOperator], decomp_func: Callable, type: str = None
+    ) -> None:
+        if type == "adj":
+            self._adj_decomp_tracker[op_type] = decomp_func
+        elif type == "ctrl":
+            self._ctrl_decomp_tracker[op_type] = decomp_func
+        elif type == "pow":
+            self._pow_decomp_tracker[op_type] = decomp_func
+        else:
+            self._decomp_tracker[op_type] = decomp_func

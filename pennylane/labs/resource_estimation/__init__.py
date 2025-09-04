@@ -181,7 +181,7 @@ from .resource_mapping import map_to_resource_op
 from .resource_tracking import (
     StandardGateSet,
     DefaultGateSet,
-    resource_config,
+    ResourceConfig,
     estimate_resources,
 )
 from .ops import (

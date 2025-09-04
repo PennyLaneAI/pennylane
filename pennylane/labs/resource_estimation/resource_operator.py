@@ -266,10 +266,9 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
         config = kwargs["config"]
-        if config._decomp_tracker:
-            return config._decomp_tracker(*args, **kwargs)
+        decomp_func = config._decomp_tracker.get(cls, cls.default_resource_decomp)
 
-        return cls.default_resource_decomp(*args, **kwargs)
+        return decomp_func(*args, **kwargs)
 
     @classmethod
     def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
@@ -281,10 +280,9 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
         config = kwargs["config"]
-        if config._decomp_tracker:
-            return config._decomp_tracker(*args, **kwargs)
-        
-        return cls.default_adjoint_resource_decomp(*args, **kwargs)
+        decomp_func = config._adj_decomp_tracker.get(cls, cls.default_adjoint_resource_decomp)
+
+        return decomp_func(*args, **kwargs)
 
     @classmethod
     def default_controlled_resource_decomp(
@@ -314,12 +312,9 @@ class ResourceOperator(ABC):
         """
 
         config = kwargs["config"]
-        if config._decomp_tracker:
-            return config._decomp_tracker(*args, **kwargs)
-        
-        return cls.default_controlled_resource_decomp(
-            ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
-        )
+        decomp_func = config._ctrl_decomp_tracker.get(cls, cls.default_controlled_resource_decomp)
+
+        return decomp_func(ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs)
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
@@ -341,10 +336,9 @@ class ResourceOperator(ABC):
         """
 
         config = kwargs["config"]
-        if config._decomp_tracker:
-            return config._decomp_tracker(*args, **kwargs)
-        
-        return cls.default_pow_resource_decomp(pow_z, *args, **kwargs)
+        decomp_func = config._pow_decomp_tracker.get(cls, cls.default_pow_resource_decomp)
+
+        return decomp_func(pow_z, *args, **kwargs)
 
     @classmethod
     def set_resources(cls, new_func: Callable, override_type: str = "base"):

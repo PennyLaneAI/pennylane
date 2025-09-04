@@ -63,6 +63,7 @@ DefaultGateSet = {
     "Toffoli",
 }
 
+
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set = DefaultGateSet,
