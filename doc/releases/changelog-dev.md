@@ -9,7 +9,7 @@
   ```python
   @qml.qnode(qml.device('default.qubit'))
   def c():
-      with qml.allocation.allocate(1) as wires:
+      with qml.allocate(1) as wires:
           qml.H(wires)
           qml.CNOT((wires[0], 0))
       return qml.probs(wires=0)
@@ -109,6 +109,9 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
@@ -502,6 +505,13 @@
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
 
+* With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a decomposition cannot be found for an operator in the circuit, it no longer
+  raises an error. Instead, a warning is raised, and `op.decomposition()` (the current default method for decomposing gates) is
+  used as a fallback, while the rest of the circuit is still decomposed with
+  the new graph-based system. Additionally, a special warning message is
+  raised if the circuit contains a `GlobalPhase`, reminding the user that
+  `GlobalPhase` is not assumed to have a decomposition under the new system.
+  [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
