@@ -428,6 +428,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         @wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
 
+            # removes the argument to the qfuncs from the active queuing context.
             leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
             for l in leaves:
                 if isinstance(l, Operator):

@@ -320,7 +320,7 @@ class TestOtherTransforms:
         assert len(tape.measurements) == 1
         assert tape.measurements[0] == terminal_measurement
 
-    def test_cond_operationss_with_ctrl(self, terminal_measurement):
+    def test_cond_operations_with_ctrl(self, terminal_measurement):
         """Test that qml.cond operations Conditional operations as expected with
         qml.ctrl."""
         r = 1.234
