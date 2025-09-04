@@ -305,7 +305,6 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         assert np.allclose(
             expected_res(angle), circuit_ref(angle)
         ), "Sanity check failed, is expected_res correct?"
-
         circuit_compiled = qml.qjit(
             diagonalize_final_measurements_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -339,7 +338,6 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         assert np.allclose(
             expected_res(phi, theta), circuit_ref(phi, theta)
         ), "Sanity check failed, is expected_res correct?"
-
         circuit_compiled = qml.qjit(
             diagonalize_final_measurements_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -400,9 +398,11 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
 
         phi = 0.7316
 
+        qml.capture.disable()
         assert np.allclose(
             expected_res(phi), circuit_ref(phi)
         ), "Sanity check failed, is expected_res correct?"
+        qml.capture.enable()
 
         circuit_compiled = qml.qjit(
             diagonalize_final_measurements_pass(circuit_ref),
