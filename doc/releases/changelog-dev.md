@@ -829,6 +829,9 @@
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
+* Add `diagonalize_mcms` option to the `ftqc.decomposition.convert_to_mbqc_formalism` module. The arbitrary basis mid-measurement is diagonalized if `diagonalize_mcms` is set as `True`.
+  [(#8105)](https://github.com/PennyLaneAI/pennylane/pull/8105)
+
 * The `autograph` keyword argument has been removed from the `QNode` constructor. 
   To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
   [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
