@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for resource estimation"""
+import copy
 import inspect
 import json
 import os
@@ -278,6 +279,10 @@ def specs(
         infos = []
         batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
+        # These values don't depend on the tape, so we can just get them once
+        config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
+        gradient_fn = config.gradient_method
+
         for tape in batch:
 
             info = specs_from_tape(tape, compute_depth)
@@ -293,8 +298,6 @@ def specs(
                 else qnode.diff_method
             )
 
-            config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
-            gradient_fn = config.gradient_method
             if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
                 info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 
@@ -334,7 +337,8 @@ def specs(
                 shots=original_device.shots,
             )
 
-            new_qnode = qnode.original_function
+            # Only need a shallow copy here, to prevent replacing the device in the original QNode
+            new_qnode = copy.copy(qnode.original_function)
             new_qnode.device = spoofed_dev
 
             # TODO: Inherit correct qjit args from input
@@ -354,12 +358,12 @@ def specs(
                 num_wires=resource_data["num_wires"],
                 num_gates=resource_data["num_gates"],
                 gate_types=defaultdict(int, resource_data["gate_types"]),
-                gate_sizes=defaultdict(int, resource_data["gate_sizes"]),
+                gate_sizes=defaultdict(
+                    int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
+                ),
                 depth=resource_data["depth"],
                 shots=qnode.original_function.shots,  # TODO: Can this ever be overriden during compilation?
             )
-
-            info["interface"] = qnode.original_function.interface
 
             # print(resource_data)
             os.remove(_RESOURCE_TRACKING_FILEPATH)
@@ -370,11 +374,20 @@ def specs(
         info["device_name"] = original_device.name
         info["level"] = level
         info["gradient_options"] = qnode.gradient_kwargs
+        info["interface"] = qnode.original_function.interface
         info["diff_method"] = (
             _get_absolute_import_path(qnode.diff_method)
             if callable(qnode.diff_method)
             else qnode.diff_method
         )
+
+        # TODO: Determine if any of this information is possibly incorrect after QJIT'ing
+        config = qml.workflow.construct_execution_config(qnode.original_function)(*args, **kwargs)
+        gradient_fn = config.gradient_method
+        if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
+            info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
+        else:
+            info["gradient_fn"] = gradient_fn
 
         return info
 
