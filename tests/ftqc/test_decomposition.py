@@ -339,9 +339,9 @@ class TestMBQCFormalismConversion:
             qml.expval(qml.Y(wire_map[w]))
             qml.expval(qml.Z(wire_map[w]))
 
-        diagonalized_tape = qml.tape.QuantumScript.from_queue(q, shots=500)
+        diagonalized_tape = qml.tape.QuantumScript.from_queue(q, shots=1000)
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
-        assert np.allclose(res, res_ref, atol=0.07)
+        assert np.allclose(res, res_ref, atol=0.05)
 
     def test_queue_cnot(self):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
