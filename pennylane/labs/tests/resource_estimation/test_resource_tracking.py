@@ -27,7 +27,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.resource_tracking import estimate_resources, resource_config
+from pennylane.labs.resource_estimation.resource_tracking import estimate_resources, ResourceConfig
 from pennylane.labs.resource_estimation.resources_base import Resources
 
 # pylint: disable= no-self-use, arguments-differ
@@ -129,9 +129,9 @@ class ResourceTestRZ(ResourceOperator):
         return {"epsilon": self.epsilon}
 
     @classmethod
-    def default_resource_decomp(cls, epsilon, **kwargs):
+    def default_resource_decomp(cls, config, epsilon):
         if epsilon is None:
-            epsilon = kwargs["config"]["error_rz"]
+            epsilon = config.conf["error_rz"]
 
         t = resource_rep(ResourceTestT)
         t_counts = round(1 / epsilon)
@@ -157,7 +157,7 @@ class ResourceTestAlg1(ResourceOperator):
         return {"num_iter": self.num_iter}
 
     @classmethod
-    def default_resource_decomp(cls, num_iter, **kwargs):
+    def default_resource_decomp(cls, config, num_iter):
         cnot = resource_rep(ResourceTestCNOT)
         h = resource_rep(ResourceTestHadamard)
 
@@ -187,7 +187,7 @@ class ResourceTestAlg2(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def default_resource_decomp(cls, num_wires, **kwargs):
+    def default_resource_decomp(cls, config, num_wires):
         rz = resource_rep(ResourceTestRZ, {"epsilon": 1e-2})
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
@@ -327,8 +327,8 @@ class TestEstimateResources:
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
-        custom_config = copy.copy(resource_config)
-        custom_config["error_rz"] = error_val
+        custom_config = ResourceConfig()
+        custom_config.conf["error_rz"] = error_val
 
         op = ResourceTestRZ()  # don't specify epsilon
         computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)

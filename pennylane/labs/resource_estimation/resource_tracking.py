@@ -133,7 +133,7 @@ def estimate_resources(
     """
 
     if single_qubit_rotation_error is not None:
-        config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
+        config = _config_for_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     return _estimate_resources(obj, gate_set, config, work_wires, tight_budget)
 
@@ -339,7 +339,7 @@ def _sum_allocated_wires(decomp):
     return s
 
 
-def _update_config_single_qubit_rot_error(config, error):
+def _config_for_single_qubit_rot_error(config, error):
     r"""Create a new config dictionary with the new single qubit
     error threshold.
 
@@ -348,11 +348,11 @@ def _update_config_single_qubit_rot_error(config, error):
         error (float): the new error threshold to be set
 
     """
-    new_config = copy.copy(config)
-    new_config["error_rx"] = error
-    new_config["error_ry"] = error
-    new_config["error_rz"] = error
-    return new_config
+
+    config.conf["error_rx"] = error
+    config.conf["error_ry"] = error
+    config.conf["error_rz"] = error
+    return config
 
 
 @QueuingManager.stop_recording()
