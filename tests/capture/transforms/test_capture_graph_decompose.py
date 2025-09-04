@@ -414,6 +414,7 @@ class TestDecomposeInterpreterGraphEnabled:
         [
             (
                 None,
+                # Use the most efficient decomposition for both.
                 {
                     qml.Toffoli: 2 + 2 * 2 + 2,
                     qml.RZ: 2 * 3 + 3,
@@ -423,6 +424,7 @@ class TestDecomposeInterpreterGraphEnabled:
             ),
             (
                 0,
+                # Use the versions that don't use work wires for both.
                 {
                     qml.Toffoli: 4 + 2 * 4 + 4,
                     qml.RZ: 2 * 3 * 3 + 3 * 3,
@@ -432,6 +434,7 @@ class TestDecomposeInterpreterGraphEnabled:
             ),
             (
                 1,
+                # When there's only one available, use it to decompose the larger op
                 {
                     qml.Toffoli: 2 + 2 * 4 + 4,
                     qml.RZ: 2 * 3 * 3 + 3 * 3,
@@ -441,6 +444,7 @@ class TestDecomposeInterpreterGraphEnabled:
             ),
             (
                 2,
+                # When there are only 2 available, use 1 to decompose the larger op
                 {
                     qml.Toffoli: 4 + 2 * 2 + 2,
                     qml.RZ: 2 * 3 + 3,
@@ -450,6 +454,7 @@ class TestDecomposeInterpreterGraphEnabled:
             ),
             (
                 3,
+                # Enough wires to choose the most efficient decomposition for both.
                 {
                     qml.Toffoli: 2 + 2 * 2 + 2,
                     qml.RZ: 2 * 3 + 3,
