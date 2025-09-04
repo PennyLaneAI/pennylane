@@ -992,6 +992,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Operators queued with :func:`pennylane.apply` no longer get dequeued by subsequent dequeuing operations
+  (e.g. :func:`pennylane.adjoint`).
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
 * Fixed a bug in the decomposition rules of :class:`~.Select` with the new decomposition system
   that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
   This enables the new decomposition system with ``Select`` of parametrized target ``ops``.
@@ -1066,6 +1070,10 @@
 * Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
   [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
+* Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
 <h3>Contributors ✍️</h3>
 
@@ -1074,6 +1082,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
+Astral Cai,
 Joey Carter,
 Yushao Chen,
 Isaac De Vlugt,
