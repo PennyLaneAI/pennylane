@@ -110,6 +110,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Various decompositions of :class:`~.MultiControlledX` now utilize :class:`~.TemporaryAND` in
+  place of :class:`~.Toffoli` gates, leading to cheaper decompositions.
+  [(#8172)](https://github.com/PennyLaneAI/pennylane/pull/8172)
+  
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
 

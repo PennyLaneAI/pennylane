@@ -168,15 +168,15 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
             non_zero_gate_counts == actual_gate_counts
         ), f"{non_zero_gate_counts} != {actual_gate_counts}"
 
-    # Add projector to the additional wires (work wires) on the tape
-    work_wires = tape.wires - op.wires
-    all_wires = op.wires + work_wires
-    if work_wires:
-        op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
-        tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
-
     # Tests that the decomposition produces the same matrix
     if op.has_matrix:
+        # Add projector to the additional wires (work wires) on the tape
+        work_wires = tape.wires - op.wires
+        all_wires = op.wires + work_wires
+        if work_wires:
+            op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
+            tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+
         op_matrix = op.matrix(wire_order=all_wires)
         decomp_matrix = qml.matrix(tape, wire_order=all_wires)
         assert qml.math.allclose(
