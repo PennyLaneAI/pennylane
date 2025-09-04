@@ -24,7 +24,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments, arguments-differ
 
@@ -88,21 +87,16 @@ class ResourceQubitizeTHC(ResourceOperator):
         self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
         self.select_op = select_op.resource_rep_from_op() if select_op else None
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            num_orb = compact_ham.params["num_orbitals"]
-            tensor_rank = compact_ham.params["tensor_rank"]
-            num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-            coeff_register = int(math.ceil(math.log2(num_coeff)))
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
 
-            # Based on section III D, Eq. 43 in arXiv:2011.03494
-            # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
-            self.num_wires = (
-                num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
-            )
-            self.wires = None
+        # Based on section III D, Eq. 43 in arXiv:2011.03494
+        # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
+        self.num_wires = (
+            num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
+        )
         super().__init__(wires=wires)
 
     @property
@@ -150,8 +144,16 @@ class ResourceQubitizeTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
 
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+
+        # Based on section III D, Eq. 43 in arXiv:2011.03494
+        # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
+        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
         params = {"compact_ham": compact_ham, "prep_op": prep_op, "select_op": select_op}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(
