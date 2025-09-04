@@ -5,11 +5,12 @@
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
   ```python
   @qml.qnode(qml.device('default.qubit'))
   def c():
-      with qml.allocation.allocate(1) as wires:
+      with qml.allocate(1) as wires:
           qml.H(wires)
           qml.CNOT((wires[0], 0))
       return qml.probs(wires=0)
