@@ -107,6 +107,8 @@ def resolve_dynamic_wires(
         any_state (Sequence[Hashable]): a register of wires with any state
         min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
+        use_resets (boo): Whether or not mid circuit measurements with ``reset=True`` can be added
+            to turn any state wires into zeroed wires.
 
     Returns:
         tuple[QuantumScript], Callable[[ResultBatch], Result]: A batch of tapes and a postprocessing function
@@ -122,7 +124,7 @@ def resolve_dynamic_wires(
     For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before erroring:
 
       #. If wires exist in the ``zeroed`` register, we take one from that register
-      #. If no ``zeroed`` wires exist, we pull one from ``any_state`` and apply a reset operation
+      #. If no ``zeroed`` wires exist and we are allowed to use resets, we pull one from ``any_state`` and apply a reset operation
       #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
          we increment ``min_int`` and add a new wire.
 
@@ -170,12 +172,19 @@ def resolve_dynamic_wires(
     >>> print(qml.draw(assigned_one_zeroed)())
     a: ──X──┤↗│  │0⟩──Y─┤
 
+    This reset behavior can be turned off with ``use_resets=False``.
+
+    >>> no_resets = resolve_dynamic_wires(circuit, zeroed=("a",), use_resets=False)
+    >>> print(qml.draw(no_resets)())
+    AllocationError: no wires left to allocate.
+
     If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
     >>> assigned_any_state = resolve_dynamic_wires(circuit, any_state=("a", "b"))
     >>> print(qml.draw(assigned_any_state)())
     b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─|
+
 
     Note that the last provided wire with label ``"b"`` is used first.
     If the wire allocations had ``state="any"``, no reset operations would occur:

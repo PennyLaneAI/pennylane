@@ -870,3 +870,35 @@ class TestDeviceResolveDynamicWires:
 
         [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
         qml.assert_equal(new_tape[-1], qml.X(12))
+
+    def test_error_if_no_zeroed_wires_left_no_reset(self):
+        """Test that an error is raised if all zeroed wires have been used and cant reset."""
+
+        alloc1 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
+
+        tape = qml.tape.QuantumScript(
+            [qml.Z(0), alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
+        )
+
+        with pytest.raises(qml.exceptions.AllocationError, match="no wires left to allocate."):
+            device_resolve_dynamic_wires(tape, wires=(0, 1), use_resets=False)
+
+    def test_no_resets_min_int(self):
+        """Test that if a min_int is specified along with use_resets=False, then fresh wires keep getting added."""
+
+        alloc1 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
+
+        tape = qml.tape.QuantumScript(
+            [qml.Z(0), alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
+        )
+
+        [new_tape], _ = device_resolve_dynamic_wires(tape, use_resets=False)
+
+        expected = qml.tape.QuantumScript([qml.Z(0), qml.X(1), qml.Y(2)])
+        qml.assert_equal(expected, new_tape)

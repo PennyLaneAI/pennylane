@@ -144,6 +144,17 @@ class TestFirstExtraction:
         assert new_tape[0].wires == qml.wires.Wires(("a",))
         assert new_tape[0].reset
 
+    def test_no_reset_if_forbidden(self):
+        """Test that no reset operations occur if resets are forbidden."""
+
+        alloc_op = qml.allocation.Allocate.from_num_wires(1, state=AllocateState.ZERO)
+        tape = qml.tape.QuantumScript(
+            [alloc_op, qml.X(alloc_op.wires), qml.allocation.Deallocate(alloc_op.wires)]
+        )
+
+        with pytest.raises(qml.exceptions.AllocationError, match="no wires left to allocate"):
+            qml.transforms.resolve_dynamic_wires(tape, any_state=("a",), use_resets=False)
+
 
 class TestReuse:
 
@@ -204,3 +215,35 @@ class TestReuse:
         assert isinstance(new_tape[1], qml.measurements.MidMeasureMP)
         assert new_tape[1].wires == qml.wires.Wires(("a",))
         assert new_tape[1].reset
+
+    def test_error_if_no_zeroed_wires_left_no_reset(self):
+        """Test that an error is raised if all zeroed wires have been used and cant reset."""
+
+        alloc1 = qml.allocation.Allocate.from_num_wires(1, state=AllocateState.ANY, restored=False)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1, state=AllocateState.ZERO, restored=False)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
+
+        tape = qml.tape.QuantumScript(
+            [alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
+        )
+
+        with pytest.raises(qml.exceptions.AllocationError, match="no wires left to allocate."):
+            qml.transforms.resolve_dynamic_wires(tape, zeroed=("a",), use_resets=False)
+
+    def test_no_resets_min_int(self):
+        """Test that if a min_int is specified along with use_resets=False, then fresh wires keep getting added."""
+
+        alloc1 = qml.allocation.Allocate.from_num_wires(1, state=AllocateState.ANY, restored=False)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1, state=AllocateState.ZERO, restored=False)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
+
+        tape = qml.tape.QuantumScript(
+            [alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
+        )
+
+        [new_tape], _ = qml.transforms.resolve_dynamic_wires(tape, use_resets=False, min_int=2)
+
+        expected = qml.tape.QuantumScript([qml.X(2), qml.Y(3)])
+        qml.assert_equal(expected, new_tape)

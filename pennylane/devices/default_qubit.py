@@ -78,32 +78,41 @@ if TYPE_CHECKING:
     from pennylane.operation import Operator
 
 
-def stopping_condition(op: Operator) -> bool:
+_special_operator_support = {
+    "QFT": lambda op: len(op.wires) < 6,
+    "GroverOperator": lambda op: len(op.wires) < 13,
+    "FromBloq": lambda op: len(op.wires) < 4,
+    "Snapshot": lambda op: True,
+    "Allocate": lambda op: True,
+    "Deallocate": lambda op: True,
+}
+"""Map from gates with a special support condition."""
+
+
+def stopping_condition(op: Operator, allow_mcms=True) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
-    if op.name == "QFT" and len(op.wires) >= 6:
-        return False
-    if op.name == "GroverOperator" and len(op.wires) >= 13:
-        return False
-    if op.name in {"Snapshot", "Allocate", "Deallocate"}:
-        return True
+    if constraint := _special_operator_support.get(op.name):
+        return constraint(op)
+
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
-    if op.name == "FromBloq" and len(op.wires) > 3:
-        return False
-    return (
-        (isinstance(op, Conditional) and stopping_condition(op.base))
+    if (
+        allow_mcms
+        and (isinstance(op, Conditional) and stopping_condition(op.base))
         or isinstance(op, MidMeasureMP)
-        or op.has_matrix
-        or op.has_sparse_matrix
-    )
+    ):
+        # no more mcms when using deferred measurements
+        return True
+
+    return op.has_matrix or op.has_sparse_matrix
 
 
-def stopping_condition_shots(op: Operator) -> bool:
+def stopping_condition_shots(op: Operator, allow_mcms=True) -> bool:
     """Specify whether or not an Operator object is supported by the device with shots."""
     return (
-        (isinstance(op, Conditional) and stopping_condition_shots(op.base))
+        (isinstance(op, Conditional) and stopping_condition_shots(op.base, allow_mcms=allow_mcms))
         or isinstance(op, MidMeasureMP)
-        or stopping_condition(op)
+        or stopping_condition(op, allow_mcms=allow_mcms)
     )
 
 
@@ -586,8 +595,12 @@ class DefaultQubit(Device):
             transform_program.add_transform(defer_measurements, allow_postselect=True)
         transform_program.add_transform(
             decompose,
-            stopping_condition=stopping_condition,
-            stopping_condition_shots=stopping_condition_shots,
+            stopping_condition=partial(
+                stopping_condition, allow_mcms=config.mcm_config.mcm_method != "deferred"
+            ),
+            stopping_condition_shots=partial(
+                stopping_condition_shots, allow_mcms=config.mcm_config.mcm_method != "deferred"
+            ),
             name=self.name,
         )
         _use_resets = config.mcm_config.mcm_method != "deferred"
