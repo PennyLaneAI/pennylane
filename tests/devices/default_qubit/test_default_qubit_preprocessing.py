@@ -831,6 +831,29 @@ class TestPreprocessingIntegration:
         )
         qml.assert_equal(new_tape, expected)
 
+    @pytest.mark.parametrize("version", ("mcm", "cond"))
+    def test_no_mcms_conditionals_defer_measurements(self, version):
+        """Test that an error is raised if an mcm occurs in a decomposition after defer measurements has been applied."""
+
+        m0 = qml.measure(0)
+
+        class MyOp(qml.operation.Operator):
+
+            def decomposition(self):
+                if version == "mcm":
+                    return m0.measurements
+                return [qml.ops.Conditional(m0, qml.X(0))]
+
+        tape = qml.tape.QuantumScript([MyOp(0)])
+        config = qml.devices.ExecutionConfig(
+            mcm_config=qml.devices.MCMConfig(mcm_method="deferred")
+        )
+
+        prog = DefaultQubit().preprocess_transforms(config)
+
+        with pytest.raises(DeviceError, match="not supported with default.qubit"):
+            prog((tape,))
+
 
 class TestAdjointDiffTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""

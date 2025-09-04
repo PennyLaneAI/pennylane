@@ -23,6 +23,7 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
+from pennylane.devices.preprocess import validate_multiprocessing_workers
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 stim = pytest.importorskip("stim")
@@ -498,6 +499,16 @@ def test_snapshot_supported(measurement, tag):
     for key1, key2 in zip(snaps_qubit, snaps_clifford):
         assert key1 == key2
         assert qml.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
+
+
+def test_validate_multiprocessing_workers_in_program():
+    """Test that validate_multiprocessing_workers is in the program if workers are present."""
+
+    prog1 = qml.device("default.clifford").preprocess_transforms()
+    assert validate_multiprocessing_workers not in prog1
+
+    prog2 = qml.device("default.clifford", max_workers=2).preprocess_transforms()
+    assert validate_multiprocessing_workers in prog2
 
 
 def test_max_worker_clifford():
