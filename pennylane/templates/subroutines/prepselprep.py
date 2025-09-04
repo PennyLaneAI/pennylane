@@ -186,6 +186,16 @@ class PrepSelPrep(Operation):
         return self.hyperparameters["lcu"]
 
     @property
+    def coeffs(self):
+        """The coefficients of the LCU to be block-encoded."""
+        return self.lcu.terms()[0]
+
+    @property
+    def ops(self):
+        """The operators of the LCU to be block-encoded."""
+        return self.lcu.terms()[1]
+
+    @property
     def control(self):
         """The control wires."""
         return self.hyperparameters["control"]
