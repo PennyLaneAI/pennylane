@@ -5,7 +5,6 @@
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
-  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
   ```python
   @qml.qnode(qml.device('default.qubit'))
@@ -110,6 +109,9 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
