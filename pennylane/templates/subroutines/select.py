@@ -568,7 +568,7 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial):
 
 # pylint: disable=unused-argument
 @register_resources(_select_resources_multi_control)
-def _select_decomp_multi_control(ops, control, work_wires, partial, **_):
+def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
 
     if partial:
         if len(ops) == 1:
@@ -758,7 +758,7 @@ def _select_resources_partial_unary(op_reps, num_control_wires, partial):
 
 
 @register_resources(_select_resources_partial_unary)
-def _select_decomp_partial_unary(ops, control, work_wires, partial, **_):
+def _select_decomp_partial_unary(*_, ops, control, work_wires, partial, **__):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
