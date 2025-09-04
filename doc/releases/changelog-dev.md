@@ -3,6 +3,10 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.sample` function can now receive an optional `precision` parameter 
+  which sets the precision of the samples returned by this measurement process.
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
+
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
 
