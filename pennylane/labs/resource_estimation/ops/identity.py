@@ -62,7 +62,7 @@ class ResourceIdentity(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -168,7 +168,7 @@ class ResourceGlobalPhase(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 

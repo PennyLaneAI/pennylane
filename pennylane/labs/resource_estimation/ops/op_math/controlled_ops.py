@@ -74,7 +74,7 @@ class ResourceCH(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
@@ -210,7 +210,7 @@ class ResourceCY(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
@@ -342,7 +342,7 @@ class ResourceCZ(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
@@ -477,7 +477,7 @@ class ResourceCSWAP(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
@@ -608,7 +608,7 @@ class ResourceCCZ(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
@@ -728,7 +728,7 @@ class ResourceCNOT(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
@@ -848,7 +848,7 @@ class ResourceTempAND(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 

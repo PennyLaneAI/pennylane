@@ -40,7 +40,7 @@ class ResourceHadamard(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -187,7 +187,7 @@ class ResourceS(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -386,7 +386,7 @@ class ResourceSWAP(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -520,7 +520,7 @@ class ResourceT(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -687,7 +687,7 @@ class ResourceX(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -839,7 +839,7 @@ class ResourceY(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -987,7 +987,7 @@ class ResourceZ(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 

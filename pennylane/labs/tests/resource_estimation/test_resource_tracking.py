@@ -48,7 +48,7 @@ class ResourceTestCNOT(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def default_resource_decomp(cls, config):
         raise ResourcesNotDefined
 
 
@@ -67,7 +67,7 @@ class ResourceTestHadamard(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def default_resource_decomp(cls, config):
         raise ResourcesNotDefined
 
 
@@ -86,7 +86,7 @@ class ResourceTestT(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def default_resource_decomp(cls, config):
         raise ResourcesNotDefined
 
 
@@ -105,7 +105,7 @@ class ResourceTestZ(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def default_resource_decomp(cls, config):
         t = resource_rep(ResourceTestT)
         return [GateCount(t, count=4)]
 

@@ -681,7 +681,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, {})
 
         @classmethod
-        def default_resource_decomp(cls, **kwargs):
+        def default_resource_decomp(cls, config):
             """dummy default resource decomp method"""
             raise NotImplementedError
 
