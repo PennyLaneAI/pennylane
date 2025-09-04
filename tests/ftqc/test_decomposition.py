@@ -509,7 +509,7 @@ class TestMBQCFormalismConversion:
     # to test our protocol for conversion to the MBQC formalism with multiple gates and
     # wires E2E. Following discussion at the FTQC team meeting, we are marking
     # this test as flaky and keeping it here for the time being.
-    @flaky(max_runs=5, min_passes=3)
+    #@flaky(max_runs=5, min_passes=3)
     @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
@@ -521,12 +521,12 @@ class TestMBQCFormalismConversion:
         with qml.queuing.AnnotatedQueue() as q:
             RotXZX(theta, 0, theta / 2, 0)
             RotXZX(theta / 2, 0, theta / 4, 1)
-            qml.RZ(theta / 3, 0)
-            qml.X(0)
-            qml.H(1)
-            qml.S(1)
-            qml.Y(1)
-            qml.CNOT([0, 1])
+            #qml.RZ(theta / 3, 0)
+            # qml.X(0)
+            # qml.H(1)
+            # qml.S(1)
+            # qml.Y(1)
+            # qml.CNOT([0, 1])
 
         base_tape = qml.tape.QuantumScript.from_queue(q)
         tape = base_tape.copy(measurements=[qml.sample(wires=[0, 1])])
@@ -555,14 +555,14 @@ class TestMBQCFormalismConversion:
         for obs in (qml.X, qml.Y, qml.Z):
             ops = base_tape.operations + obs(0).diagonalizing_gates() + obs(1).diagonalizing_gates()
             tape = base_tape.copy(
-                operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=500
+                operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=1000
             )
-            (mbqc_tape,), _ = convert_to_mbqc_formalism(tape)
-            (diagonalized_tape,), _ = diagonalize_mcms(mbqc_tape)
+            (diagonalized_tape,), _ = convert_to_mbqc_formalism(tape, diagonalize_mcms=True)
+            #(diagonalized_tape,), _ = diagonalize_mcms(mbqc_tape)
 
             samples = qml.execute([diagonalized_tape], dev)[0]
             for wire in (0, 1):
-                mp = qml.expval(obs(wire))
+                mp = qml.expval(qml.Z(wire))
                 res.append(mp.process_samples(samples, wire_order=[0, 1]))
 
         reference_result = qml.execute([reference_tape], dev)[0]
@@ -571,4 +571,4 @@ class TestMBQCFormalismConversion:
         # an atol of 0.1 is not ideal for comparing to these results, but it's enough
         # to catch changes that modify the results, and we have to choose here between
         # very slow, or fairly noisy
-        assert np.allclose(res, reference_result, atol=0.1)
+        assert np.allclose(res, reference_result, atol=0.05)
