@@ -499,6 +499,9 @@
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
 
+* Decomposition rules that contains mid-circuit measurements are supported by the decomposition system.
+  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
