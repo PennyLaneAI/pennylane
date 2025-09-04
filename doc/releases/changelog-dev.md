@@ -807,6 +807,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
+  [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
+
 * Update links in `README.md`.
   [(#8165)](https://github.com/PennyLaneAI/pennylane/pull/8165)
 
@@ -980,6 +983,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in the decomposition rules of :class:`~.Select` with the new decomposition system
+  that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
+  This enables the new decomposition system with ``Select`` of parametrized target ``ops``.
+  [(#8186)](https://github.com/PennyLaneAI/pennylane/pull/8186)
+  
 * `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
   more robustly. In particular, the generator is simplified prior to decomposition. Now more
   time evolution ops can be supported on devices that do not natively support them.
