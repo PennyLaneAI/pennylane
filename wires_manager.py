@@ -19,7 +19,7 @@ import pennylane as qml
 # pylint: disable= too-few-public-methods
 
 
-class QubitManager:
+class WiresResourceManager:
     r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.
 
     Args:
@@ -32,12 +32,12 @@ class QubitManager:
 
     **Example**
 
-    >>> q = QubitManager(
+    >>> q = WiresResourceManager(
     ...             work_wires={"clean": 2, "dirty": 2},
     ...             tight_budget=False,
     ...     )
     >>> print(q)
-    QubitManager(clean=2, dirty=2, logic=0, tight_budget=False)
+    WiresResourceManager(clean=2, dirty=2, logic=0, tight_budget=False)
 
     """
 
@@ -57,7 +57,7 @@ class QubitManager:
 
     def __str__(self):
         return (
-            f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "
+            f"WiresResourceManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "
             f"algorithmic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
         )
 
@@ -66,7 +66,7 @@ class QubitManager:
             {"clean": self._clean_qubit_counts, "dirty": self._dirty_qubit_counts}
         )
         return (
-            f"QubitManager(work_wires={work_wires_str}, algo_wires={self._logic_qubit_counts}, "
+            f"WiresResourceManager(work_wires={work_wires_str}, algo_wires={self._logic_qubit_counts}, "
             f"tight_budget={self.tight_budget})"
         )
 
