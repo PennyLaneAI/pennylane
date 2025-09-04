@@ -18,7 +18,7 @@ jobs:
 
     - name: Bump dev version
       run: |
-        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py --versiontype="__version__ =" --pattern="(\d+)\.(\d+)\.(\d+)-dev(\d+)"
+        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py  --versiontype="__version__ =" --pattern="(\d+)\.(\d+)\.(\d+)-dev(\d+)"
 
     - name: Push new version
       run: |

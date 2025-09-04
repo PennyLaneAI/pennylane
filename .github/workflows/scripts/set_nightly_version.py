@@ -18,7 +18,6 @@ This module bumps the PennyLane development version by one unit.
 
 import os
 import re
-import argparse
 
 version_file_path = os.path.join(os.path.dirname(__file__), "../../../pennylane/_version.py")
 
@@ -27,31 +26,17 @@ assert os.path.isfile(version_file_path)
 with open(version_file_path, "r+", encoding="UTF-8") as f:
     lines = f.readlines()
 
-    parser = argparse.ArgumentParser(description="Bump the PennyLane development version.")
-    parser.add_argument("--versiontype", type=str, required=True, help="The current version string to validate.")
-    parser.add_argument("--pattern", type=str, default=r"(\d+).(\d+).(\d+)-dev(\d+)", help="The regex pattern to extract version components.")
-    args = parser.parse_args()
+    version_line = lines[-1]
+    assert "__version__ = " in version_line
 
-    if "dev" in args.pattern:
-        line_number = -2
-        name = "dev"
-    elif "rc" in args.pattern:
-        line_number = -1
-        name = "rc"
-    
-    version_line = lines[line_number]
-    version = args.versiontype
-    print("version: ",version)
-    assert version in version_line 
-
-    pattern = args.pattern
+    pattern = r"(\d+).(\d+).(\d+)-dev(\d+)"
     match = re.search(pattern, version_line)
     assert match
 
     major, minor, bug, dev = match.groups()
 
-    replacement = f'{version} "{major}.{minor}.{bug}-{name}{int(dev)+1}"\n'
-    lines[line_number] = replacement
+    replacement = f'__version__ = "{major}.{minor}.{bug}-dev{int(dev)+1}"\n'
+    lines[-1] = replacement
 
     f.seek(0)
     f.writelines(lines)

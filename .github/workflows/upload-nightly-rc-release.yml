@@ -12,41 +12,48 @@ jobs:
     name: Setup the release
     runs-on: ubuntu-24.04
     steps:
-    - name: Checkout PennyLane repo
-      uses: actions/checkout@v4
-
-    - name: Get latest RC branch
-      id: get-latest-branch
+    - name: Check for rc branch
       run: |
-        git fetch --all -q
-        latest_branch=$(git branch -r --sort=-committerdate | grep -Eo 'origin/v[0-9]+\.[0-9]+\.[0-9]+-rc0' | head -n 1 | sed 's|origin/||')
-        echo "LATEST_BRANCH=$latest_branch" >> $GITHUB_ENV
+        VERSION=$(python setup.py --version)
+        IFS=. read MAJ MIN PAT <<< "${VERSION%-dev[0-9]*}"
+        RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
+        if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
+          echo "branch_exists=true" >> $GITHUB_ENV
+          echo "rc_branch=$RC_BRANCH" >> $GITHUB_ENV
+        else
+          echo "branch_exists=false" >> $GITHUB_ENV
+        fi
 
     - name: Checkout PennyLane repo
+      if: ${{ env.branch_exists == 'true' }}
       uses: actions/checkout@v4
       with:
         ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
         ref: sc-98284-rc-test
 
     - name: Bump rc version
+      if: ${{ env.branch_exists == 'true' }}
       run: |
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py --versiontype="versionrc =" --pattern="(\d+)\.(\d+)\.(\d+).rc(\d+)"
         git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
         git config --global user.name "ringo-but-quantum"
         git add $GITHUB_WORKSPACE/pennylane/_version.py
         git commit -m "[no ci] bump nightly version"
-        git push
+        # git push
 
     - name: Update version
+      if: ${{ env.branch_exists == 'true' }}
       run: |
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
 
     - name: Build wheels
+      if: ${{ env.branch_exists == 'true' }}
       run: |
         python -m pip install build
         python -m build --wheel --outdir dist
   
     - uses: actions/upload-artifact@v4
+      if: ${{ env.branch_exists == 'true' }}
       with:
         name: nightly-wheels
         path: ./dist/*.whl
@@ -63,3 +70,9 @@ jobs:
       with:
         name: nightly-wheels
         path: dist
+
+    - name: Upload wheels
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        packages-dir: dist
