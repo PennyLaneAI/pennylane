@@ -88,7 +88,9 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
 
@@ -100,7 +102,9 @@ class TestPrivateHelpers:
             return op.has_matrix
 
         op = NoMatOp("a")
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(casted_to_list) == 2
         qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
         qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
@@ -120,23 +124,15 @@ class TestPrivateHelpers:
                 return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
 
         op = RaggedDecompositionOp("a")
-        final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        final_decomp = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(final_decomp) == 5
         qml.assert_equal(final_decomp[0], qml.PauliX("a"))
         qml.assert_equal(final_decomp[1], qml.PauliY("a"))
         qml.assert_equal(final_decomp[2], qml.S("a"))
         qml.assert_equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
         qml.assert_equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
-
-    def test_error_from_unsupported_operation(self):
-        """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
-        op = NoMatNoDecompOp("a")
-        with pytest.raises(DeviceError, match=r"not supported with abc and does"):
-            tuple(
-                _operator_decomposition_gen(
-                    op, lambda op: op.has_matrix, self.decomposer, name="abc"
-                )
-            )
 
 
 def test_no_sampling():

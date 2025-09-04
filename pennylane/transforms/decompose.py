@@ -858,7 +858,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             decomp = custom_decomposer(op)
         except DecompositionUndefinedError as e:
             raise DecompositionUndefinedError(
-                f"Operator {op.name} not supported and does not provide a decomposition."
+                f"Operator {op} not supported and does not provide a decomposition."
             ) from e
 
     elif op.has_decomposition:
@@ -866,7 +866,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     elif strict:
         raise DecompositionUndefinedError(
-            f"Operator {op.name} not supported and does not provide a decomposition."
+            f"Operator {op} not supported and does not provide a decomposition."
         )
 
     else:
