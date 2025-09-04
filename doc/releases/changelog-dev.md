@@ -31,7 +31,7 @@
       qml.H(0)
       qml.H(1)
 
-      with qml.allocate(2, state="zero", restored=True) as new_wires:
+      with qml.allocate(2, state="zero", restored=False) as new_wires:
           qml.H(new_wires[0])
           qml.H(new_wires[1])
           
@@ -51,7 +51,7 @@
   in-line along with :func:`~.deallocate` for manual handling: 
 
   ```python
-  new_wires = qml.allocate(2, state="zero", restored=True)
+  new_wires = qml.allocate(2, state="zero", restored=False)
   qml.H(new_wires[0])
   qml.H(new_wires[1])
   qml.deallocate(new_wires)
