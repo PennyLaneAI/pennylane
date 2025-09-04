@@ -17,31 +17,39 @@ import numpy as np
 
 from pennylane import math
 from pennylane.operation import EigvalsUndefinedError
-from pennylane.typing import TensorLike
+from pennylane.typing import Sequence, TensorLike
+from pennylane.wires import WiresLike
 
 from .measurement_value import MeasurementValue
 from .measurements import MeasurementProcess
 
 
 def process_raw_samples(
-    mp: MeasurementProcess, samples: TensorLike, wire_order, shot_range, bin_size
-):
+    mp: MeasurementProcess,
+    samples: TensorLike,
+    wire_order: WiresLike,
+    shot_range: Sequence[int],
+    bin_size: int,
+    precision: str | None = None,
+) -> TensorLike:
     """Slice the samples for a measurement process.
 
     Args:
         mp (MeasurementProcess): the measurement process containing the wires, observable, and mcms for the processing
         samples (TensorLike): the raw samples
-        wire_order: the wire order for the raw samples
+        wire_order (WiresLike): the wire order for the raw samples
         shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
             to use. If not specified, all samples are used.
         bin_size (int): Divides the shot range into bins of size ``bin_size``, and
             returns the measurement statistic separately over each bin. If not
             provided, the entire shot range is treated as a single bin.
+        precision (str or None): The precision of the samples returned by this measurement process.
 
     This function matches `SampleMP.process_samples`, but does not have a dependence on the measurement process.
 
     """
 
+    samples = samples.astype(precision) if precision is not None else samples
     wire_map = dict(zip(wire_order, range(len(wire_order))))
     mapped_wires = [wire_map[w] for w in mp.wires]
     # Select the samples from samples that correspond to ``shot_range`` if provided

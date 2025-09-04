@@ -22,7 +22,8 @@ from pennylane import math
 from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .counts import CountsMP
 from .measurements import SampleMeasurement
@@ -50,7 +51,9 @@ class SampleMP(SampleMeasurement):
 
     _shortname = "sample"
 
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None):
+    def __init__(self, obs=None, wires=None, eigvals=None, id=None, precision=None):
+
+        self._precision = precision
 
         if isinstance(obs, MeasurementValue):
             super().__init__(obs=obs)
@@ -86,7 +89,7 @@ class SampleMP(SampleMeasurement):
         has_eigvals=False,
         shots: int | None = None,
         num_device_wires: int = 0,
-    ):
+    ) -> tuple[tuple[int, ...], type]:
         if shots is None:
             raise ValueError("finite shots are required to use SampleMP")
         sample_eigvals = n_wires is None or has_eigvals
@@ -98,11 +101,16 @@ class SampleMP(SampleMeasurement):
         return (shots, dim), dtype
 
     @property
-    def numeric_type(self):
+    def numeric_type(self) -> type:
         if self.obs is None:
             # Computational basis samples
             return int
         return float
+
+    @property
+    def precision(self) -> str | None:
+        """The precision of the samples returned by this measurement process."""
+        return self._precision
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         if not shots:
@@ -123,15 +131,20 @@ class SampleMP(SampleMeasurement):
     def process_samples(
         self,
         samples: Sequence[complex],
-        wire_order: Wires,
+        wire_order: WiresLike,
         shot_range: None | tuple[int, ...] = None,
         bin_size: None | int = None,
-    ):
+    ) -> TensorLike:
         return process_raw_samples(
-            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+            self,
+            samples,
+            wire_order,
+            shot_range=shot_range,
+            bin_size=bin_size,
+            precision=self.precision,
         )
 
-    def process_counts(self, counts: dict, wire_order: Wires):
+    def process_counts(self, counts: dict, wire_order: WiresLike) -> np.ndarray:
         samples = []
         mapped_counts = self._map_counts(counts, wire_order)
         for outcome, count in mapped_counts.items():
@@ -143,11 +156,11 @@ class SampleMP(SampleMeasurement):
 
         return np.array(samples)
 
-    def _map_counts(self, counts_to_map, wire_order) -> dict:
+    def _map_counts(self, counts_to_map: dict, wire_order: WiresLike) -> dict:
         """
         Args:
-            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
-            wire_order: Order of wires to which counts_to_map should be ordered in
+            counts_to_map (dict): Dictionary where key is binary representation of the outcome and value is its count
+            wire_order (WiresLike): Order of wires to which counts_to_map should be ordered in
 
         Returns:
             Dictionary where counts_to_map has been reordered according to wire_order
@@ -156,7 +169,7 @@ class SampleMP(SampleMeasurement):
             helper_counts = CountsMP(wires=self.wires, all_outcomes=False)
         return helper_counts.process_counts(counts_to_map, wire_order)
 
-    def _compute_outcome_sample(self, outcome) -> list:
+    def _compute_outcome_sample(self, outcome: str) -> list:
         """
         Args:
             outcome (str): The binary string representation of the measurement outcome.
@@ -174,11 +187,12 @@ class SampleMP(SampleMeasurement):
 
 def sample(
     op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
-    wires=None,
+    wires: WiresLike = None,
+    precision: str | None = None,
 ) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
     determined from QNode,
-    returning raw samples. If no observable is provided then basis state samples are returned
+    returning raw samples. If no observable is provided, then basis state samples are returned
     directly from the device.
 
     Note that the output shape of this measurement process depends on the shots
@@ -189,6 +203,7 @@ def sample(
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
+        precision (str or None): The precision of the samples returned by this measurement process.
 
     Returns:
         SampleMP: Measurement process instance
@@ -292,8 +307,8 @@ def sample(
     array([ 1.,  1.,  1., -1.])
 
     If no observable is provided, then the raw basis state samples obtained
-    from device are returned (e.g., for a qubit device, samples from the
-    computational device are returned). In this case, ``wires`` can be specified
+    from the device are returned (e.g., for a qubit device, samples from the
+    computational basis are returned). In this case, ``wires`` can be specified
     so that sample results only include measurement results of the qubits of interest.
 
     .. code-block:: python3
@@ -317,5 +332,17 @@ def sample(
            [1, 1],
            [0, 0]])
 
+    .. details::
+            :title: Setting the precision of the samples
+
+            The ``precision`` argument can be used to set the precision of the samples returned by this measurement process.
+
+            By default, the samples will be returned as floating point numbers if an observable is provided,
+            and as integers if no observable is provided. The ``precision`` argument can be used to override this default behavior.
+            The argument should be a string representing a valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
+
+            TODO: continue after testing rendering
+
+
     """
-    return SampleMP(obs=op, wires=None if wires is None else Wires(wires))
+    return SampleMP(obs=op, wires=None if wires is None else Wires(wires), precision=precision)
