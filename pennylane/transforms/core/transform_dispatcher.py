@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane import capture, math
 from pennylane.capture.autograph import wraps
 from pennylane.exceptions import TransformError
+from pennylane.operation import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import ResultBatch
 
@@ -426,6 +427,12 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         @wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
+
+            leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+            for l in leaves:
+                if isinstance(l, Operator):
+                    qml.QueuingManager.remove(l)
+
             with AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)
 
