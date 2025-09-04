@@ -777,7 +777,7 @@ def decompose(
     return (tape,), null_postprocessing
 
 
-def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
+def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,
@@ -827,6 +827,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
                     max_expansion=max_expansion,
                     current_depth=current_depth,
                     graph_solution=graph_solution,
+                    custom_decomposer=custom_decomposer,
+                    strict=strict,
                 )
             )
 
@@ -885,6 +887,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
             current_depth=current_depth,
             num_available_work_wires=num_available_work_wires,
             graph_solution=graph_solution,
+            custom_decomposer=custom_decomposer,
+            strict=strict,
         )
 
 

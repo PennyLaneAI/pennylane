@@ -406,7 +406,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     except DecompositionUndefinedError as e:
         message = str(e).replace("not supported", f"not supported with {name}")
-        raise error(message)
+        raise error(message) from e
 
     tape = tape.copy(operations=prep_op + new_ops)
 
