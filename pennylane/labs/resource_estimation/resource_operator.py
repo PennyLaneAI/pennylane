@@ -270,11 +270,11 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def default_resource_decomp(cls, *args, **kwargs) -> list:
+    def default_resource_decomp(cls, config, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def resource_decomp(cls, config, *args, **kwargs) -> list: # gets config and params
+    def resource_decomp(cls, config, *args, **kwargs) -> list:  # gets config and params
         r"""Returns a list of actions that define the resources of the operator."""
 
         decomp_func = config._decomp_tracker.get(cls, cls.default_resource_decomp)
@@ -282,22 +282,21 @@ class ResourceOperator(ABC):
         return decomp_func(config, *args, **kwargs)
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
+    def default_adjoint_resource_decomp(cls, config, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for the adjoint of the operator."""
         raise ResourcesNotDefined
 
     @classmethod
-    def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
+    def adjoint_resource_decomp(cls, config, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
 
-        config = kwargs["config"]
         decomp_func = config._adj_decomp_tracker.get(cls, cls.default_adjoint_resource_decomp)
 
-        return decomp_func(*args, **kwargs)
+        return decomp_func(config, *args, **kwargs)
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
+        cls, config, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
     ) -> list:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -311,7 +310,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
+        cls, config, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
     ) -> list:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -322,13 +321,12 @@ class ResourceOperator(ABC):
                 controlled when in the :math:`|0\rangle` state
         """
 
-        config = kwargs["config"]
         decomp_func = config._ctrl_decomp_tracker.get(cls, cls.default_controlled_resource_decomp)
 
-        return decomp_func(ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs)
+        return decomp_func(config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs)
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
+    def default_pow_resource_decomp(cls, config, pow_z: int, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
@@ -338,7 +336,7 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> list:
+    def pow_resource_decomp(cls, config, pow_z, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
@@ -346,10 +344,9 @@ class ResourceOperator(ABC):
             pow_z (int): exponent that the operator is being raised to
         """
 
-        config = kwargs["config"]
         decomp_func = config._pow_decomp_tracker.get(cls, cls.default_pow_resource_decomp)
 
-        return decomp_func(pow_z, *args, **kwargs)
+        return decomp_func(config, pow_z, *args, **kwargs)
 
     @classmethod
     def set_resources(cls, new_func: Callable, override_type: str = "base"):
