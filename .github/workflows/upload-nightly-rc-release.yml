@@ -1,0 +1,61 @@
+name: Build nightly PennyLane RC releases for TestPyPI
+
+on:
+  push:
+    # schedule:
+    #   # Run every weekday at 5:50 EDT (cron is in UTC)
+    #   - cron: "50 9 * * 1-5"
+    workflow_dispatch:
+
+jobs:
+  setup:
+    name: Setup the release
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout PennyLane repo
+      uses: actions/checkout@v4
+
+    - name: Get latest branch matching pattern
+      id: get-latest-branch
+      run: |
+        git fetch --all -q
+        latest_branch=$(git branch -r --sort=-committerdate | grep -Eo 'origin/v[0-9]+\.[0-9]+\.[0-9]+-rc0' | head -n 1 | sed 's|origin/||')
+        echo "LATEST_BRANCH=$latest_branch" >> $GITHUB_ENV
+
+    - name: Checkout PennyLane repo
+      uses: actions/checkout@v4
+      with:
+        ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
+        ref: sc-98284-rc-test
+
+    - name: Bump rc version
+      run: |
+        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py --versiontype="versionrc =" --pattern="(\d+)\.(\d+)\.(\d+)-rc(\d+)"
+        # git commit
+
+    - name: Update version
+      run: |
+        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
+
+    - name: Build wheels
+      run: |
+        python -m pip install build
+        python -m build --wheel --outdir dist
+  
+    - uses: actions/upload-artifact@v4
+      with:
+        name: nightly-wheels
+        path: ./dist/*.whl
+
+  upload:
+    name: Upload wheels to TestPyPI
+    needs: [setup]
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: nightly-wheels
+        path: dist
