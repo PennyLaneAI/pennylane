@@ -218,7 +218,9 @@ def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
     return _apply_adjoint_and_ctrls(gate, op)
 
 
-def xdsl_to_qml_obs_op(op: NamedObsOp | TensorOp | HamiltonianOp) -> Operator:
+def xdsl_to_qml_obs_op(
+    op: NamedObsOp | TensorOp | HamiltonianOp | ComputationalBasisOp,
+) -> Operator | list[int] | None:
     """Convert an xDSL observable operation to a PennyLane operator."""
 
     match op.name:
@@ -231,13 +233,10 @@ def xdsl_to_qml_obs_op(op: NamedObsOp | TensorOp | HamiltonianOp) -> Operator:
             coeffs = _extract(op, "coeffs", resolve_constant_params, single=True)
             ops_list = [xdsl_to_qml_obs_op(term.owner) for term in op.terms]
             return qml.Hamiltonian(coeffs, ops_list)
+        case "quantum.compbasis":
+            return _extract(op, "qubits", resolve_constant_wire)
         case _:
             raise NotImplementedError(f"Cannot resolve named op: {op}")
-
-
-def xdsl_to_qml_compbasis_op(op: ComputationalBasisOp) -> list[int] | None:
-    """Convert a ``quantum.compbasis`` xDSL op to a PennyLane operator."""
-    return _extract(op, "qubits", resolve_constant_wire)
 
 
 def xdsl_to_qml_meas(meas, *args, **kwargs) -> MeasurementProcess:

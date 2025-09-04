@@ -53,8 +53,6 @@ class TransformFunctionsExt(TransformFunctions):
     then it will try to run this pass in Catalyst.
     """
 
-    visual_callbacks: list[str] = ["_draw_callback", "_mlir_graph_callback"]
-
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         # The signature of the callback function is assumed to be
@@ -68,7 +66,7 @@ class TransformFunctionsExt(TransformFunctions):
         """Run callback if defined."""
         if not self.callback:
             return
-        if self.level == 0 and self.callback.__name__ in self.visual_callbacks:
+        if self.level == 0 and self.callback.__name__ == "_draw_callback":
             self.callback(previous_pass, module, self.level)
 
     def _post_pass_callback(self, previous_pass, module):
