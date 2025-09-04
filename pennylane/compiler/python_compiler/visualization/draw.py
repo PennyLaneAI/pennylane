@@ -26,7 +26,7 @@ from pennylane.typing import Callable
 from ..compiler import Compiler
 from .collector import QMLCollector
 
-# This caching mechanism should be improved,
+# TODO: This caching mechanism should be improved,
 # because now it relies on a mutable global state
 _cache_store: dict[Callable, dict[int, tuple[str, str]]] = {}
 

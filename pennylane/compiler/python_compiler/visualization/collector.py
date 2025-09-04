@@ -18,7 +18,6 @@ from functools import singledispatchmethod
 from typing import Any, Union
 
 from xdsl.dialects import builtin, func
-from xdsl.dialects.builtin import FloatAttr, IntegerAttr
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
@@ -29,7 +28,6 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
-    MeasureOp,
     ProbsOp,
     SampleOp,
     StateOp,
@@ -42,7 +40,6 @@ from .xdsl_conversion import (
     dispatch_wires_extract,
     xdsl_to_qml_compbasis_op,
     xdsl_to_qml_meas,
-    xdsl_to_qml_measure_op,
     xdsl_to_qml_obs_op,
     xdsl_to_qml_op,
 )
@@ -58,8 +55,6 @@ class QMLCollector:
     def __init__(self, module: builtin.ModuleOp):
         self.module = module
         self.wire_to_ssa_qubits: dict[int, SSAValue] = {}
-        self.ssa_qubits_to_wires: dict[SSAValue, int] = {}
-        self.params_to_ssa_params: dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
         self.quantum_register: SSAValue | None = None
 
     # pylint: disable=unused-argument
@@ -85,10 +80,6 @@ class QMLCollector:
     def _(self, xdsl_meas_op: ExpvalOp | VarianceOp) -> MeasurementProcess:
         obs_op = xdsl_meas_op.obs.owner
         return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_obs_op(obs_op))
-
-    @handle.register
-    def _(self, xdsl_measure: MeasureOp) -> MeasurementProcess:
-        return xdsl_to_qml_measure_op(xdsl_measure)
 
     ############################################################
     ### Operators
@@ -119,16 +110,11 @@ class QMLCollector:
             wire = dispatch_wires_extract(op)
             if wire not in self.wire_to_ssa_qubits:
                 self.wire_to_ssa_qubits[wire] = op.qubit
-                # We update the reverse mapping as well for completeness,
-                # but this should not be used in practice for visualization.
-                self.ssa_qubits_to_wires[op.qubit] = wire
 
     def clear_mappings(self):
         """Clear all wire and parameter mappings."""
 
         self.wire_to_ssa_qubits.clear()
-        self.ssa_qubits_to_wires.clear()
-        self.params_to_ssa_params.clear()
         self.quantum_register = None
 
     def collect(self, reset: bool = True) -> tuple[list[Operator], list[MeasurementProcess]]:

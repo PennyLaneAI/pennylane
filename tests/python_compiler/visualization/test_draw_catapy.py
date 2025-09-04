@@ -216,31 +216,27 @@ class Testdraw:
         assert draw(transforms_circuit, level=level)() == expected
 
     @pytest.mark.parametrize(
-        "op, kwargs, expected",
+        "op, expected",
         [
             (
                 lambda: qml.ctrl(qml.RX(0.1, 0), control=(1, 2, 3)),
-                {},
                 "1: ─╭●──┤  State\n2: ─├●──┤  State\n3: ─├●──┤  State\n0: ─╰RX─┤  State",
             ),
             (
                 lambda: qml.ctrl(qml.RX(0.1, 0), control=(1, 2, 3), control_values=(0, 1, 0)),
-                {},
                 "1: ─╭○──┤  State\n2: ─├●──┤  State\n3: ─├○──┤  State\n0: ─╰RX─┤  State",
             ),
             (
                 lambda: qml.adjoint(qml.ctrl(qml.RX(0.1, 0), (1, 2, 3), control_values=(0, 1, 0))),
-                {},
                 "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State",
             ),
             (
                 lambda: qml.ctrl(qml.adjoint(qml.RX(0.1, 0)), (1, 2, 3), control_values=(0, 1, 0)),
-                {},
                 "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State",
             ),
         ],
     )
-    def test_ctrl_adjoint_variants(self, op, kwargs, expected):
+    def test_ctrl_adjoint_variants(self, op, expected):
         """
         Test the visualization of control and adjoint variants.
         """
@@ -250,7 +246,7 @@ class Testdraw:
             op()
             return qml.state()
 
-        assert draw(_)(**kwargs) == expected
+        assert draw(_)() == expected
 
     def test_ctrl_before_custom_op(self):
         """
