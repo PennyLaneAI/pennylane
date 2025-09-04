@@ -15,7 +15,7 @@ jobs:
     - name: Checkout PennyLane repo
       uses: actions/checkout@v4
 
-    - name: Get latest branch matching pattern
+    - name: Get latest RC branch
       id: get-latest-branch
       run: |
         git fetch --all -q

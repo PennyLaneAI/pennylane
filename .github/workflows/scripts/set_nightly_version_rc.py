@@ -29,7 +29,7 @@ with open(version_file_path, "r+", encoding="UTF-8") as f:
     versionrc_line = lines[-1]
     assert "versionrc = " in versionrc_line
 
-    pattern = r"(\d+).(\d+).(\d+)-rc(\d+)"
+    pattern = r"(\d+).(\d+).(\d+).rc(\d+)"
     match = re.search(pattern, versionrc_line)
     assert match
 
@@ -38,7 +38,7 @@ with open(version_file_path, "r+", encoding="UTF-8") as f:
 
     major, minor, bug, dev = match.groups()
 
-    replacement = f'__version__ = "{major}.{minor}.{bug}-rc{int(dev)}"\n'
+    replacement = f'__version__ = "{major}.{minor}.{bug}.rc{int(dev)}"\n'
     lines[-2] = replacement
 
     f.seek(0)
