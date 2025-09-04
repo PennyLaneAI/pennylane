@@ -973,6 +973,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
+  [(#8190)](https://github.com/PennyLaneAI/pennylane/pull/8190)
+
 * `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
   more robustly. In particular, the generator is simplified prior to decomposition. Now more
   time evolution ops can be supported on devices that do not natively support them.
