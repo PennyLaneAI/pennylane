@@ -264,6 +264,11 @@ class ResourceOperator(ABC):
     @classmethod
     def resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
+
+        config = kwargs["config"]
+        if config._decomp_tracker:
+            return config._decomp_tracker(*args, **kwargs)
+
         return cls.default_resource_decomp(*args, **kwargs)
 
     @classmethod
@@ -274,6 +279,11 @@ class ResourceOperator(ABC):
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
+
+        config = kwargs["config"]
+        if config._decomp_tracker:
+            return config._decomp_tracker(*args, **kwargs)
+        
         return cls.default_adjoint_resource_decomp(*args, **kwargs)
 
     @classmethod
@@ -302,6 +312,11 @@ class ResourceOperator(ABC):
             ctrl_num_ctrl_values (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
         """
+
+        config = kwargs["config"]
+        if config._decomp_tracker:
+            return config._decomp_tracker(*args, **kwargs)
+        
         return cls.default_controlled_resource_decomp(
             ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
         )
@@ -324,6 +339,11 @@ class ResourceOperator(ABC):
         Args:
             pow_z (int): exponent that the operator is being raised to
         """
+
+        config = kwargs["config"]
+        if config._decomp_tracker:
+            return config._decomp_tracker(*args, **kwargs)
+        
         return cls.default_pow_resource_decomp(pow_z, *args, **kwargs)
 
     @classmethod
