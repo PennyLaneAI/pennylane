@@ -12,6 +12,9 @@ jobs:
     name: Setup the release
     runs-on: ubuntu-24.04
     steps:
+    - name: Checkout PennyLane repo
+      uses: actions/checkout@v4
+          
     - name: Check for rc branch
       run: |
         VERSION=$(python setup.py --version)
@@ -34,17 +37,12 @@ jobs:
     - name: Bump rc version
       if: ${{ env.branch_exists == 'true' }}
       run: |
-        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py --versiontype="versionrc =" --pattern="(\d+)\.(\d+)\.(\d+).rc(\d+)"
+        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
         git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
         git config --global user.name "ringo-but-quantum"
         git add $GITHUB_WORKSPACE/pennylane/_version.py
         git commit -m "[no ci] bump nightly version"
         # git push
-
-    - name: Update version
-      if: ${{ env.branch_exists == 'true' }}
-      run: |
-        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
 
     - name: Build wheels
       if: ${{ env.branch_exists == 'true' }}
