@@ -17,4 +17,4 @@ Version number (major.minor.patch[-label])
 """
 
 __version__ = "0.43.0-dev48"
-versionrc = "0.42.0.rc0"
+versionrc = "0.42.0-rc3"

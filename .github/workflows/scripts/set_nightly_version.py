@@ -35,11 +35,9 @@ with open(version_file_path, "r+", encoding="UTF-8") as f:
     if "dev" in args.pattern:
         line_number = -2
         name = "dev"
-        extension = "-"
     elif "rc" in args.pattern:
         line_number = -1
         name = "rc"
-        extension = "."
     
     version_line = lines[line_number]
     version = args.versiontype
@@ -52,7 +50,7 @@ with open(version_file_path, "r+", encoding="UTF-8") as f:
 
     major, minor, bug, dev = match.groups()
 
-    replacement = f'{version} "{major}.{minor}.{bug}{extension}{name}{int(dev)+1}"\n'
+    replacement = f'{version} "{major}.{minor}.{bug}-{name}{int(dev)+1}"\n'
     lines[line_number] = replacement
 
     f.seek(0)
