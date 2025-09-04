@@ -162,7 +162,7 @@ class ResourceSelectTHC(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(
-        cls, compact_ham, rotation_precision=None, select_swap_depth=None, **kwargs
+        cls, config, compact_ham, rotation_precision=None, select_swap_depth=None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -195,9 +195,7 @@ class ResourceSelectTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        rotation_precision = (
-            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
-        )
+        rotation_precision = rotation_precision or config.conf["qubitization_rotation_precision"]
 
         gate_list = []
         # Total select cost from Eq. 43 in arXiv:2011.03494
@@ -293,12 +291,12 @@ class ResourceSelectTHC(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls,
+        config,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         compact_ham,
         rotation_precision=None,
         select_swap_depth=None,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
 
@@ -331,9 +329,7 @@ class ResourceSelectTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        rotation_precision = (
-            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
-        )
+        rotation_precision = rotation_precision or config.conf["qubitization_rotation_precision"]
 
         gate_list = []
 

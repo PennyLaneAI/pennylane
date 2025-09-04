@@ -73,7 +73,7 @@ class ResourceSingleExcitation(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs):
+    def default_resource_decomp(cls, config, eps=None):
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:

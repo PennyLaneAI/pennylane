@@ -49,6 +49,52 @@ class ResourceConfig:
     def set_decomp(
         self, op_type: type[ResourceOperator], decomp_func: Callable, type: str = None
     ) -> None:
+        """Set a custom function to override the default resource decomposition. This
+        function will be set globally for every instance of the class.
+
+        Args:
+            cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
+            decomp_func (Callable): the new resource decomposition function to be set as default.
+            type (str): the decomposition type to override e.g. "adj" or "ctrl"
+
+        .. note::
+
+            The new decomposition function should have the same signature as the one it replaces.
+            Specifically, the signature should match the :code:`resource_keys` of the base resource
+            operator class being overriden.
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.labs import resource_estimation as plre
+
+            def custom_res_decomp(**kwargs):
+                h = plre.resource_rep(plre.ResourceHadamard)
+                s = plre.resource_rep(plre.ResourceS)
+                return [plre.GateCount(h, 2), plre.GateCount(s, 2)]
+
+        .. code-block:: pycon
+
+            >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
+            --- Resources: ---
+            Total qubits: 1
+            Total gates : 3
+            Qubit breakdown:
+            clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+            Gate breakdown:
+            {'Z': 1, 'Hadamard': 2}
+            >>> plre.set_decomp(plre.ResourceX, custom_res_decomp)
+            >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
+            --- Resources: ---
+            Total qubits: 1
+            Total gates : 4
+            Qubit breakdown:
+            clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+            Gate breakdown:
+            {'S': 2, 'Hadamard': 2}
+
+        """
         if type == "adj":
             self._adj_decomp_tracker[op_type] = decomp_func
         elif type == "ctrl":

@@ -158,10 +158,10 @@ class ResourceQubitizeTHC(ResourceOperator):
     @classmethod
     def default_resource_decomp(
         cls,
+        config,
         compact_ham,
         prep_op=None,
         select_op=None,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -216,7 +216,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
         coeff_precision = (
-            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
+            prep_op.params["coeff_precision"] or config.conf["qubitization_coeff_precision"]
         )
 
         toffoli = resource_rep(plre.ResourceToffoli)
@@ -227,12 +227,12 @@ class ResourceQubitizeTHC(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls,
+        config,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         compact_ham,
         prep_op=None,
         select_op=None,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
 
@@ -306,7 +306,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # reflection cost from Eq. 44 in arXiv:2011.03494s
         coeff_precision = (
-            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
+            prep_op.params["coeff_precision"] or config.conf["qubitization_coeff_precision"]
         )
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))

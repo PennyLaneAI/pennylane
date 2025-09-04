@@ -89,7 +89,6 @@ class ResourceHadamard(ResourceOperator):
         config,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -748,7 +747,6 @@ class ResourceX(ResourceOperator):
         config,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        **kwargs,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
         Args:

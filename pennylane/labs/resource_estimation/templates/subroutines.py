@@ -92,7 +92,7 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"register_size": register_size})
 
     @classmethod
-    def default_resource_decomp(cls, register_size, **kwargs):
+    def default_resource_decomp(cls, config, register_size):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -179,7 +179,7 @@ class ResourcePhaseGradient(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
-    def default_resource_decomp(cls, num_wires, **kwargs):
+    def default_resource_decomp(cls, config, num_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -280,7 +280,7 @@ class ResourceOutMultiplier(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(cls, a_num_qubits, b_num_qubits, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config, a_num_qubits, b_num_qubits) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -379,7 +379,7 @@ class ResourceSemiAdder(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
 
     @classmethod
-    def default_resource_decomp(cls, max_register_size, **kwargs):
+    def default_resource_decomp(cls, config, max_register_size):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -419,7 +419,7 @@ class ResourceSemiAdder(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, max_register_size, **kwargs
+        cls, config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, max_register_size
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -574,7 +574,7 @@ class ResourceControlledSequence(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, num_ctrl_wires, **kwargs):
+    def default_resource_decomp(cls, config, base_cmpr_op, num_ctrl_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -768,7 +768,7 @@ class ResourceQPE(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, num_estimation_wires, adj_qft_cmpr_op, **kwargs):
+    def default_resource_decomp(cls, config, base_cmpr_op, num_estimation_wires, adj_qft_cmpr_op):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -882,7 +882,7 @@ class ResourceIterativeQPE(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, num_iter, **kwargs):
+    def default_resource_decomp(cls, config, base_cmpr_op, num_iter):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -907,7 +907,7 @@ class ResourceIterativeQPE(ResourceOperator):
 
         # Here we want to use this particular decomposition, not any random one the user might override
         gate_counts += ResourceControlledSequence.default_resource_decomp(
-            base_cmpr_op, num_iter, **kwargs
+            config, base_cmpr_op, num_iter
         )
 
         num_phase_gates = num_iter * (num_iter - 1) // 2
@@ -980,7 +980,7 @@ class ResourceQFT(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(cls, num_wires, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config, num_wires) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -1013,7 +1013,7 @@ class ResourceQFT(ResourceOperator):
         ]
 
     @classmethod
-    def phase_grad_resource_decomp(cls, num_wires, **kwargs) -> list[GateCount]:
+    def phase_grad_resource_decomp(cls, config, num_wires) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -1139,7 +1139,7 @@ class ResourceAQFT(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(cls, order, num_wires, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config, order, num_wires) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -1259,7 +1259,7 @@ class ResourceBasisRotation(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def default_resource_decomp(cls, dim_N, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config, dim_N) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -1388,7 +1388,7 @@ class ResourceSelect(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(
-        cls, cmpr_ops, num_wires, **kwargs
+        cls, config, cmpr_ops, num_wires
     ):  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
@@ -1435,7 +1435,7 @@ class ResourceSelect(ResourceOperator):
         return gate_types
 
     @staticmethod
-    def textbook_resources(cmpr_ops, num_wires, **kwargs) -> list[GateCount]:
+    def textbook_resources(config, cmpr_ops, num_wires) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -1617,12 +1617,12 @@ class ResourceQROM(ResourceOperator):
     @classmethod
     def default_resource_decomp(
         cls,
+        config,
         num_bitstrings,
         size_bitstring,
         num_bit_flips,
         select_swap_depth=None,
         clean=True,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the operator's resources.
 
@@ -1798,6 +1798,7 @@ class ResourceQROM(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls,
+        config,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
         num_bitstrings,
@@ -1805,7 +1806,6 @@ class ResourceQROM(ResourceOperator):
         num_bit_flips=None,
         select_swap_depth=None,
         clean=True,
-        **kwargs,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -2029,7 +2029,7 @@ class ResourceQubitUnitary(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(cls, num_wires, precision=None, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, config, num_wires, precision=None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -2057,7 +2057,7 @@ class ResourceQubitUnitary(ResourceOperator):
             in the decomposition.
         """
         gate_lst = []
-        precision = precision or kwargs["config"]["precision_qubit_unitary"]
+        precision = precision or config.conf["precision_qubit_unitary"]
 
         one_qubit_decomp_cost = [GateCount(resource_rep(re.ResourceRZ, {"eps": precision}))]
         two_qubit_decomp_cost = [
@@ -2189,7 +2189,7 @@ class ResourceSelectPauliRot(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(cls, num_ctrl_wires, rotation_axis, precision, **kwargs):
+    def default_resource_decomp(cls, config, num_ctrl_wires, rotation_axis, precision):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -2216,7 +2216,7 @@ class ResourceSelectPauliRot(ResourceOperator):
             "Y": re.ResourceRY,
             "Z": re.ResourceRZ,
         }
-        precision = precision or kwargs["config"]["precision_select_pauli_rot"]
+        precision = precision or config.conf["precision_select_pauli_rot"]
 
         gate = resource_rep(rotation_gate_map[rotation_axis], {"eps": precision})
         cnot = resource_rep(re.ResourceCNOT)
@@ -2229,7 +2229,7 @@ class ResourceSelectPauliRot(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def phase_grad_resource_decomp(cls, num_ctrl_wires, rotation_axis, precision, **kwargs):
+    def phase_grad_resource_decomp(cls, config, num_ctrl_wires, rotation_axis, precision):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -2255,7 +2255,7 @@ class ResourceSelectPauliRot(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        precision = precision or kwargs["config"]["precision_select_pauli_rot"]
+        precision = precision or config.conf["precision_select_pauli_rot"]
         num_prec_wires = math.ceil(math.log2(math.pi / precision)) + 1
         gate_lst = []
 

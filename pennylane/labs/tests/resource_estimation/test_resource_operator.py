@@ -27,10 +27,6 @@ from pennylane.labs.resource_estimation import (
     QubitManager,
     ResourceOperator,
     Resources,
-    set_adj_decomp,
-    set_ctrl_decomp,
-    set_decomp,
-    set_pow_decomp,
 )
 from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_operator import (
@@ -512,12 +508,6 @@ def test_set_decomp():
 
     assert DummyOp.resource_decomp(config=rc, **op1.resource_params) == [6]
 
-    def custom_res_decomp_error(config, y):  # must match signature of default_resource_decomp
-        return [y + 1]
-
-    with pytest.raises(ValueError):
-        set_decomp(DummyOp, custom_res_decomp_error)
-
 
 def test_set_adj_decomp():
     """Test that the set_decomp function works as expected."""
@@ -541,12 +531,6 @@ def test_set_adj_decomp():
 
     assert DummyAdjOp.adjoint_resource_decomp(config=rc, **op1.resource_params) == [6]
 
-    def custom_res_decomp_error(config, y):  # must match signature of default_adjoint_resource_decomp
-        return [y + 1]
-
-    with pytest.raises(ValueError):
-        rc.set_decomp(DummyAdjOp, custom_res_decomp_error, type="adj")
-
 
 def test_set_ctrl_decomp():
     """Test that the set_decomp function works as expected."""
@@ -555,25 +539,23 @@ def test_set_ctrl_decomp():
         """Dummy Controlled Op class"""
 
         @classmethod
-        def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
+        def default_controlled_resource_decomp(
+            cls, config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x
+        ):
             """dummy control resource decomp method"""
-            return cls.default_resource_decomp(x=x + ctrl_num_ctrl_values)
+            return cls.default_resource_decomp(config, x=x + ctrl_num_ctrl_values)
 
     op1 = DummyCtrlOp(x=5)
-    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [5]
+    rc = ResourceConfig()
 
-    def custom_res_decomp(ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x, **kwargs):
+    assert DummyCtrlOp.controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [5]
+
+    def custom_res_decomp(config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
         return [x + ctrl_num_ctrl_wires]
 
-    set_ctrl_decomp(DummyCtrlOp, custom_res_decomp)
+    rc.set_decomp(DummyCtrlOp, custom_res_decomp, type="ctrl")
 
-    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [6]
-
-    def custom_res_decomp_error(x):  # must match signature of default_controlled_resource_decomp
-        return [x + 1]
-
-    with pytest.raises(ValueError):
-        set_ctrl_decomp(DummyCtrlOp, custom_res_decomp_error)
+    assert DummyCtrlOp.controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [6]
 
 
 def test_set_pow_decomp():
@@ -583,25 +565,21 @@ def test_set_pow_decomp():
         """Dummy Pow Op class"""
 
         @classmethod
-        def default_pow_resource_decomp(cls, pow_z, x):
+        def default_pow_resource_decomp(cls, config, pow_z, x):
             """dummy adjoint resource decomp method"""
-            return cls.default_resource_decomp(x=x)
+            return cls.default_resource_decomp(config, x=x)
 
     op1 = DummyPowOp(x=5)
-    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [5]
+    rc = ResourceConfig()
 
-    def custom_res_decomp(pow_z, x, **kwargs):
+    assert DummyPowOp.pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [5]
+
+    def custom_res_decomp(config, pow_z, x):
         return [x * pow_z]
 
-    set_pow_decomp(DummyPowOp, custom_res_decomp)
+    rc.set_decomp(DummyPowOp, custom_res_decomp, type="pow")
 
-    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [15]
-
-    def custom_res_decomp_error(x):  # must match signature of default_pow_resource_decomp
-        return [x + 1]
-
-    with pytest.raises(ValueError):
-        set_pow_decomp(DummyPowOp, custom_res_decomp_error)
+    assert DummyPowOp.pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [15]
 
 
 class TestGateCount:
