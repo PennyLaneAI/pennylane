@@ -96,14 +96,17 @@ def effective_hamiltonian(
     with executor(max_workers=num_workers) as ex:
         partial_sum = ex.starmap(
             _eval_commutator,
-            [
+            (
                 (commutator, coeff, fragments)
                 for ith_order in bch
                 for commutator, coeff in ith_order.items()
-            ],
+            ),
         )
 
-    return sum(partial_sum, start=_AdditiveIdentity())
+    eff = _AdditiveIdentity()
+    for term in partial_sum:
+        eff += term
+    return eff
 
 
 def _eval_commutator(commutator, coeff, fragments):
