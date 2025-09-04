@@ -259,6 +259,15 @@ class TestDecomposeValidation:
         with pytest.raises(DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
 
+    def test_error_if_invalid_op_decomposer(self):
+        """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
+
+        tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
+        with pytest.raises(DeviceError, match="not supported with abc"):
+            decompose(
+                tape, lambda op: op.has_matrix, decomposer=lambda op: op.decomposition(), name="abc"
+            )
+
     def test_decompose(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
         tape = QuantumScript(
