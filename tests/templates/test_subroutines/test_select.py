@@ -35,9 +35,13 @@ from pennylane.templates.subroutines.select import (
 )
 @pytest.mark.parametrize("partial", [True, False])
 @pytest.mark.parametrize("work_wires", [None, [5, 6, 7]])
-def test_standard_checks(num_ops, num_controls, partial, work_wires):
+@pytest.mark.parametrize("parametrized", [False, True])
+def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrized):
     """Run standard validity tests."""
-    ops = [qml.PauliX(0) for _ in range(num_ops)]
+    if parametrized:
+        ops = [qml.RX(0.2, 0) for _ in range(num_ops)]
+    else:
+        ops = [qml.PauliX(0) for _ in range(num_ops)]
     control = list(range(1, num_controls + 1))
 
     op = qml.Select(ops, control, work_wires, partial=partial)
@@ -720,7 +724,9 @@ class TestUnaryIterator:
         ][:K]
         control = [f"c{i}" for i in range(c)]
         work_wires = [f"w{i}" for i in range(c - 1)]
-        decomp = _select_decomp_unary(ops, control, work_wires, partial=partial)
+        decomp = _select_decomp_unary(
+            ops=ops, control=control, work_wires=work_wires, partial=partial
+        )
 
         if partial and expected_ops_partial is not None:
             expected = expected_ops_partial
@@ -737,7 +743,7 @@ class TestUnaryIterator:
         control = list(range(num_controls))
         work = list(range(num_controls, 2 * num_controls - 1))
 
-        decomp = _select_decomp_unary([], control=control, work_wires=work, partial=partial)
+        decomp = _select_decomp_unary(ops=[], control=control, work_wires=work, partial=partial)
         assert decomp == []
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
@@ -762,7 +768,7 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qml.RX(angle, w)
-            _select_decomp_unary(ops, control=control, work_wires=work, partial=partial)
+            _select_decomp_unary(ops=ops, control=control, work_wires=work, partial=partial)
             return qml.probs(target)
 
         probs = circuit()
@@ -782,7 +788,7 @@ class TestUnaryIterator:
 
         with pytest.raises(ValueError, match=msg_match):
             _select_decomp_unary(
-                ops, control=wires["control"], work_wires=wires["work"], partial=partial
+                ops=ops, control=wires["control"], work_wires=wires["work"], partial=partial
             )
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
@@ -807,7 +813,7 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qml.RX(angle, w)
-            _select_decomp_unary(ops, control=control, work_wires=work, partial=partial)
+            _select_decomp_unary(ops=ops, control=control, work_wires=work, partial=partial)
             qml.Select(adj_ops, control=control, work_wires=None, partial=partial)
             return qml.probs(target)
 
