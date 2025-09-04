@@ -943,6 +943,9 @@
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
+* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
+  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
