@@ -264,9 +264,6 @@ def _matrix_transform(
         params = res[0].get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
 
-        for op in res[0].operations:
-            QueuingManager.remove(op)
-
         # initialize the unitary matrix
         if len(res[0].operations) == 0:
             result = qml.math.eye(2 ** len(wire_order), like=interface)

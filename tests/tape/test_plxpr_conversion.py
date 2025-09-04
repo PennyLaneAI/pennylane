@@ -22,10 +22,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-
-from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
-    CollectOpsandMeas,
-)
+# pylint: disable=wrong-import-position
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestCollectOpsandMeas:
@@ -501,3 +499,21 @@ class TestPlxprToTape:
         jaxpr = jax.make_jaxpr(f)(0.5, False)
         with pytest.raises(ValueError, match="Cannot use qml.cond with a combination"):
             qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, False)
+
+    def test_dynamic_allocation(self):
+        """Tests that circuits containing dynamic wire allocation can be converted."""
+
+        def circuit():
+            qml.H(0)
+            with qml.allocation.allocate(2, state="zero", restored=True) as wires:
+                qml.CNOT(wires)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert len(tape.operations) == 4
+        qml.assert_equal(tape.operations[0], qml.H(0))
+        assert isinstance(tape.operations[1], qml.allocation.Allocate)
+        assert isinstance(tape.operations[2], qml.CNOT)
+        assert tape.operations[2].wires == tape.operations[1].wires
+        assert isinstance(tape.operations[3], qml.allocation.Deallocate)
+        assert tape.operations[3].wires == tape.operations[1].wires

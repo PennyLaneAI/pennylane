@@ -580,6 +580,11 @@ class _WireAction:
             return f"{cls_name}({self.num_wires}, wire_labels={self.wires})"
         return f"{cls_name}({self.num_wires})"
 
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return self.__class__(self.num_wires * other)
+        raise NotImplementedError
+
 
 class AllocWires(_WireAction):
     r"""Allows users to allocate clean work wires.

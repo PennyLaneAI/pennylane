@@ -118,7 +118,7 @@ class ResourceMultiRZ(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires, "eps": eps})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, num_wires, eps=None) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, num_wires, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -143,6 +143,7 @@ class ResourceMultiRZ(ResourceOperator):
         ctrl_num_ctrl_values,
         num_wires,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -181,7 +182,7 @@ class ResourceMultiRZ(ResourceOperator):
         return [GateCount(cnot, 2 * (num_wires - 1)), GateCount(ctrl_rz)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, num_wires, eps=None) -> list[GateCount]:
+    def default_pow_resource_decomp(cls, pow_z, num_wires, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -366,7 +367,7 @@ class ResourcePauliRot(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"pauli_string": pauli_string, "eps": eps})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, pauli_string, eps=None) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, pauli_string, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -391,6 +392,7 @@ class ResourcePauliRot(ResourceOperator):
         ctrl_num_ctrl_values,
         pauli_string,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -501,7 +503,9 @@ class ResourcePauliRot(ResourceOperator):
         return gate_types
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, pauli_string, eps=None) -> list[GateCount]:
+    def default_pow_resource_decomp(
+        cls, pow_z, pauli_string, eps=None, **kwargs
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -630,7 +634,7 @@ class ResourceIsingXX(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -653,6 +657,7 @@ class ResourceIsingXX(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -691,6 +696,7 @@ class ResourceIsingXX(ResourceOperator):
         cls,
         pow_z,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -819,7 +825,7 @@ class ResourceIsingYY(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -842,6 +848,7 @@ class ResourceIsingYY(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -875,7 +882,7 @@ class ResourceIsingYY(ResourceOperator):
         return [GateCount(cy, 2), GateCount(ctrl_ry)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
+    def default_pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1006,7 +1013,7 @@ class ResourceIsingXY(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -1029,6 +1036,7 @@ class ResourceIsingXY(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1068,7 +1076,7 @@ class ResourceIsingXY(ResourceOperator):
         return [GateCount(h, 2), GateCount(cy, 2), GateCount(ctrl_ry), GateCount(ctrl_rx)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
+    def default_pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1201,7 +1209,7 @@ class ResourceIsingZZ(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -1224,6 +1232,7 @@ class ResourceIsingZZ(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1256,7 +1265,7 @@ class ResourceIsingZZ(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(ctrl_rz)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
+    def default_pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1384,7 +1393,7 @@ class ResourcePSWAP(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -1408,6 +1417,7 @@ class ResourcePSWAP(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 

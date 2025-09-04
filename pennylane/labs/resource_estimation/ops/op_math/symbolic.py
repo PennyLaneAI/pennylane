@@ -190,7 +190,7 @@ class ResourceAdjoint(ResourceOperator):
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         try:
-            return base_class.adjoint_resource_decomp(**base_params)
+            return base_class.adjoint_resource_decomp(**base_params, **kwargs)
         except ResourcesNotDefined:
             gate_lst = []
             decomp = base_class.resource_decomp(**base_params, **kwargs)
@@ -200,7 +200,7 @@ class ResourceAdjoint(ResourceOperator):
             return gate_lst
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp):
+    def default_adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -426,6 +426,7 @@ class ResourceControlled(ResourceOperator):
                 ctrl_num_ctrl_wires=num_ctrl_wires,
                 ctrl_num_ctrl_values=num_ctrl_values,
                 **base_params,
+                **kwargs,
             )
         except re.ResourcesNotDefined:
             pass
@@ -459,6 +460,7 @@ class ResourceControlled(ResourceOperator):
         base_cmpr_op,
         num_ctrl_wires,
         num_ctrl_values,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -658,12 +660,12 @@ class ResourcePow(ResourceOperator):
             return [GateCount(base_cmpr_op)]
 
         try:
-            return base_class.pow_resource_decomp(pow_z=z, **base_params)
+            return base_class.pow_resource_decomp(pow_z=z, **base_params, **kwargs)
         except re.ResourcesNotDefined:
             return [GateCount(base_cmpr_op, z)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, base_cmpr_op, z):
+    def default_pow_resource_decomp(cls, pow_z, base_cmpr_op, z, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
