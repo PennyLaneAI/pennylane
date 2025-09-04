@@ -64,6 +64,12 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
+
+There is also a set of transforms that use zx calculus to edit circuit.
+
+.. autosummary::
+    :toctree: api
+
     ~transforms.zx.optimize_t_count
     ~transforms.zx.push_hadamards
     ~transforms.zx.reduce_non_clifford
