@@ -37,7 +37,7 @@ class TestResourceSingleExcitation:
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resource_rep(self, eps):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceSingleExcitation, {"eps": eps})
+        expected = plre.CompressedResourceOp(plre.ResourceSingleExcitation, 2, {"eps": eps})
         assert plre.ResourceSingleExcitation.resource_rep(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))

@@ -38,7 +38,9 @@ class TestMultiRZ:
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_resource_rep(self, num_wires, eps):
         """Test that the compressed representation is correct."""
-        expected = re.CompressedResourceOp(re.ResourceMultiRZ, {"num_wires": num_wires, "eps": eps})
+        expected = re.CompressedResourceOp(
+            re.ResourceMultiRZ, num_wires, {"num_wires": num_wires, "eps": eps}
+        )
         assert re.ResourceMultiRZ.resource_rep(num_wires, eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
@@ -160,7 +162,7 @@ class TestPauliRot:
     def test_resource_rep(self, pauli_string, eps):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(
-            re.ResourcePauliRot, {"pauli_string": pauli_string, "eps": eps}
+            re.ResourcePauliRot, len(pauli_string), {"pauli_string": pauli_string, "eps": eps}
         )
         assert re.ResourcePauliRot.resource_rep(pauli_string, eps) == expected
 
@@ -405,7 +407,7 @@ class TestIsingXX:
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resource_rep(self, eps):
         """Test that the compressed representation is correct."""
-        expected = re.CompressedResourceOp(re.ResourceIsingXX, {"eps": eps})
+        expected = re.CompressedResourceOp(re.ResourceIsingXX, 2, {"eps": eps})
         assert re.ResourceIsingXX.resource_rep(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
@@ -462,7 +464,7 @@ class TestIsingXY:
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resource_rep(self, eps):
         """Test that the compressed representation is correct."""
-        expected = re.CompressedResourceOp(re.ResourceIsingXY, {"eps": eps})
+        expected = re.CompressedResourceOp(re.ResourceIsingXY, 2, {"eps": eps})
         assert re.ResourceIsingXY.resource_rep(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
@@ -529,7 +531,7 @@ class TestIsingYY:
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resource_rep(self, eps):
         """Test that the compressed representation is correct."""
-        expected = re.CompressedResourceOp(re.ResourceIsingYY, {"eps": eps})
+        expected = re.CompressedResourceOp(re.ResourceIsingYY, 2, {"eps": eps})
         assert re.ResourceIsingYY.resource_rep(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
@@ -586,7 +588,7 @@ class TestIsingZZ:
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resource_rep(self, eps):
         """Test that the compressed representation is correct."""
-        expected = re.CompressedResourceOp(re.ResourceIsingZZ, {"eps": eps})
+        expected = re.CompressedResourceOp(re.ResourceIsingZZ, 2, {"eps": eps})
         assert re.ResourceIsingZZ.resource_rep(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
@@ -643,7 +645,7 @@ class TestPSWAP:
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resource_rep(self, eps):
         """Test that the compressed representation is correct."""
-        expected = re.CompressedResourceOp(re.ResourcePSWAP, {"eps": eps})
+        expected = re.CompressedResourceOp(re.ResourcePSWAP, 2, {"eps": eps})
         assert re.ResourcePSWAP.resource_rep(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
