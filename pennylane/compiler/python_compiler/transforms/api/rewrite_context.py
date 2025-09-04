@@ -15,6 +15,7 @@
 hybrid workflows."""
 
 from collections.abc import Sequence
+from functools import singledispatchmethod
 from uuid import UUID, uuid4
 
 from xdsl.dialects import arith
@@ -28,46 +29,9 @@ from pennylane.exceptions import CompileError
 
 from ...dialects import mbqc, quantum
 
-# Tuple of all operations that return qubits
-_ops_returning_qubits = (
-    quantum.CustomOp,
-    quantum.AllocQubitOp,
-    quantum.ExtractOp,
-    quantum.GlobalPhaseOp,
-    quantum.MeasureOp,
-    quantum.MultiRZOp,
-    quantum.QubitUnitaryOp,
-    quantum.SetBasisStateOp,
-    quantum.SetStateOp,
-    mbqc.MeasureInBasisOp,
-)
-
-# Tuple of all operations that return "out_qubits"
-_out_qubits_ops = (
-    quantum.CustomOp,
-    quantum.MultiRZOp,
-    quantum.QubitUnitaryOp,
-    quantum.SetBasisStateOp,
-    quantum.SetStateOp,
-)
-
-# Tuple of all operations that return "out_ctrl_qubits"
-_out_ctrl_qubits_ops = (
-    quantum.CustomOp,
-    quantum.GlobalPhaseOp,
-    quantum.MultiRZOp,
-    quantum.QubitUnitaryOp,
-)
-
-# Tuple of all operations that return "out_qubit"
-_out_qubit_ops = (quantum.MeasureOp, mbqc.MeasureInBasisOp)
-
-# Tuple of all operations that return "qubit"
-_qubit_ops = (quantum.AllocQubitOp, quantum.ExtractOp)
-
 
 class AbstractWire:
-    """A class representing an abstract wire."""
+    """An abstract wire."""
 
     id: UUID
 
@@ -83,7 +47,7 @@ class AbstractWire:
 
 
 class RewriteContext:
-    """Rewrite state manager class.
+    """Rewrite context data class.
 
     This class provides several abstractions for keep track of useful information
     during pattern rewriting.
@@ -188,7 +152,7 @@ class RewriteContext:
 
             elif (
                 isinstance(extract_owner, tensor.ExtractOp)
-                and len(extract_owner.operand[0].shape) == 0
+                and len(extract_owner.operand[0].type.shape) == 0
                 and isinstance(extract_owner.operands[0].owner, xstablehlo.ConstantOp)
             ):
                 wire = extract_owner.operands[0].owner.properties["value"].get_values()[0]
@@ -201,53 +165,103 @@ class RewriteContext:
 
     # TODO: Use singledispatchmethod
 
+    @singledispatchmethod
     def update_from_op(self, op: xOperation):
         """Update the wire mapping from an operation's outputs"""
         # pylint: disable=too-many-branches
-        if isinstance(op, quantum.DeviceInitOp):
-            shots = getattr(op, "shots", None)
-            if shots:
-                shots_owner = shots.owner
-                if isinstance(shots_owner, arith.ConstantOp):
-                    self.shots = shots_owner.value.data
-                else:
-                    assert isinstance(shots_owner, tensor.ExtractOp)
-                    assert isinstance(shots_owner.operands[0], BlockArgument)
-                    self.shots = shots
-            shots = 0
+
+        # If any operations, including operations NOT part of the Quantum dialect,
+        # return quantum registers, we should update it.
+        in_qubits = []
+        out_qubits = []
+
+        for result in op.results:
+            if isinstance(result.type, quantum.QuregType):
+                # We assume that _only one_ of the results is a QuregType
+                self.qreg = result
+            elif isinstance(result.type, quantum.QubitType):
+                out_qubits.append(result)
+
+        if type(op) not in quantum.Quantum.operations:
+            # Qubits are only updated if they are returned by operations in
+            # the Quantum dialect.
             return
 
-        for r in op.results:
-            if isinstance(r, quantum.QuregType):
-                if isinstance(op, quantum.AllocOp):
-                    nqubits = getattr(op, "nqubits_attr", None)
-                    if nqubits:
-                        self.nqubits = nqubits.data
-                    else:
-                        assert isinstance(op.nqubits.owner, tensor.ExtractOp)
-                        assert isinstance(op.nqubits.owner.operands[0], BlockArgument)
-                        self.nqubits = op.nqubits
+        for operand in op.operands:
+            if isinstance(operand.type, quantum.QubitType):
+                in_qubits.append(operand)
 
-                self.qreg = r
-                # We assume that only one of the results is a QuregType
-                break
+        assert len(in_qubits) == len(out_qubits)
+        for iq, oq in zip(in_qubits, out_qubits, strict=True):
+            self.update_qubit(iq, oq)
 
-        if isinstance(op, quantum.ExtractOp):
-            _ = self.get_wire_from_extract_op(op, update=True)
-            return
+    @update_from_op.register
+    def _update_from_device_init(self, op: quantum.DeviceInitOp):
+        """Update the context from a DeviceInitOp."""
+        shots = getattr(op, "shots", None)
+        if shots:
+            shots_owner = shots.owner
+            if isinstance(shots_owner, arith.ConstantOp):
+                self.shots = shots_owner.value.data
+            else:
+                assert (
+                    isinstance(shots_owner, tensor.ExtractOp)
+                    and len(shots_owner.operands[0].type.shape) == 0
+                )
+                assert isinstance(shots_owner.operands[0], BlockArgument)
+                self.shots = shots
 
-        if isinstance(op, _out_qubit_ops):
-            self.update_qubit(op.in_qubit, op.out_qubit)
+    @update_from_op.register
+    def _update_from_extract(self, op: quantum.ExtractOp):
+        """Update the context from an ExtractOp."""
+        # Update wires and qubits
+        _ = self.get_wire_from_extract_op(op, update=True)
 
-        if isinstance(op, _out_qubits_ops):
-            for iq, oq in zip(op.in_qubits, op.out_qubits, strict=True):
-                self.update_qubit(iq, oq)
+    @update_from_op.register
+    def _update_from_insert(self, op: quantum.InsertOp):
+        """Update the context from an InsertOp."""
+        # Remove the input qubit and its corresponding wire label from the maps. We're
+        # inserting a qubit into the quantum register, so it is no longer valid.
+        qubit = op.qubit
+        wire = self.qubit_to_wire_map.pop(qubit, None)
+        _ = self.wire_to_qubit_map.pop(wire, None)
 
-        if isinstance(op, _out_ctrl_qubits_ops):
-            for iq, oq in zip(op.in_ctrl_qubits, op.out_ctrl_qubits, strict=True):
-                self.update_qubit(iq, oq)
+        # InsertOp returns a new quantum register
+        self.qreg = op.results[0]
 
-        if isinstance(op, (quantum.InsertOp, quantum.DeallocQubitOp)):
-            qubit = op.qubit
-            wire = self.qubit_to_wire_map.pop(qubit, None)
+    @update_from_op.register
+    def _update_from_alloc(self, op: quantum.AllocOp | quantum.AllocQubitOp):
+        """Update the context from an AllocOp or quantum.AllocQubitOp."""
+        if isinstance(op, quantum.AllocOp):
+            # Update number of qubits
+            if (nqubits_attr := getattr(op, "nqubits_attr", None)) is not None:
+                self.nqubits = nqubits_attr.data
+            else:
+                assert isinstance(op.nqubits.owner, tensor.ExtractOp)
+                assert isinstance(op.nqubits.owner.operands[0], BlockArgument)
+                self.nqubits = op.nqubits
+
+            # Update quantum register
+            self.qreg = op.results[0]
+
+        else:
+            qubit = op.results[0]
+            self[qubit] = AbstractWire()
+
+    @update_from_op.register
+    def _update_from_dealloc(self, op: quantum.DeallocOp | quantum.DeallocQubitOp):
+        """Update the context from a DeallocOp or quantum.DeallocQubitOp."""
+        if isinstance(op, quantum.DeallocOp):
+            assert self.qreg == op.operands[0]
+            self.qreg = None
+
+        else:
+            qubit = op.operands[0]
+            assert qubit in self.qubit_to_wire_map
+            wire = self.qubit_to_wire_map.pop(qubit)
             _ = self.wire_to_qubit_map.pop(wire, None)
+
+    @update_from_op.register
+    def _update_from_measure(self, op: quantum.MeasureOp | mbqc.MeasureInBasisOp):
+        """Update the context from a MeasureOp."""
+        self.update_qubit(op.in_qubit, op.out_qubit)
