@@ -1,6 +1,16 @@
-> SURVEY CLOSES OCTOBER 3, 2025
+<p align="center">
+<img width="200" height="46" alt="UFoundation_logosmall" src="https://github.com/user-attachments/assets/643e69cd-3d41-42f9-a9e8-ac113e8b6de3" />
+</p>
 
-### The Unitary Foundation _2025 Quantum Open Source Software Survey_ is now open. Share your voice to help build a better quantum computing ecosystem! This should take approximately 10 minutes. [Take the survey!](https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_UnitaryFundSurvey.png) 👈
+<p align="center">
+Take 10 minutes to share your voice and help build a better quantum computing ecosystem!
+</p>
+
+## [_The 2025 Quantum Open Source Software Survey_](https://unitary.foundation/posts/2025_qoss_survey/) is now open. 👉 [Take the survey!](https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_UnitaryFundSurvey.png) 👈
+
+<p align="center">
+SURVEY CLOSES OCTOBER 3, 2025
+</p>
 
 <br>
 <br>
