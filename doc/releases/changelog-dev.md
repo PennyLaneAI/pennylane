@@ -1064,6 +1064,10 @@
 * Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
   [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
+* Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
 <h3>Contributors ✍️</h3>
 
