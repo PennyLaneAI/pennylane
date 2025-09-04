@@ -289,5 +289,5 @@ def _map_meas_wires(m, wire_map, mcm_map):
         return new_meas
     for i, meas in enumerate(m.mv.measurements):
         if meas in mcm_map:
-            new_meas.mv.measurements[i] = mcm_map[m.mv.measurements[i]]
+            new_meas.mv.measurements[i] = mcm_map[meas]
     return new_meas
