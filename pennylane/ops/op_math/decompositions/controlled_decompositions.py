@@ -524,12 +524,7 @@ def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
         }
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
-    n_temporary_ccx_pairs = 2 * (1 - is_small_mcx)
-    # To do: Can we actually use the TemporaryAND here?
-    return {
-        ops.Toffoli: n_ccx,
-        ops.X: n_ccx - 4 if is_small_mcx else n_ccx - 8,
-    }
+    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 if is_small_mcx else n_ccx - 8}
 
 
 @register_condition(_mcx_two_workers_condition)
@@ -598,7 +593,7 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
-    work_wires=lambda num_control_wires, **_: {"zeroed": 1 + (num_control_wires > 5)},
+    work_wires=lambda num_control_wires, **_: {"zeroed": 1 + (num_control_wires >= 6)},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
     is_small_mcx = (len(wires) - 1) < 6
@@ -681,7 +676,8 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         ops.adjoint(qml.TemporaryAND([wires[0], wires[1], work_wires[0]]))
 
     if not _skip_toggle_detection:
-        # Perform toggle-detection if the work wire is borrowed
+        # Perform toggle-detection unless skipped explicitly. By default, toggle detection
+        # is skipped for `work_wire_type="zeroed"` but not for `work_wire_type="borrowed"`.
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])

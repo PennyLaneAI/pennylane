@@ -16,7 +16,6 @@ Subroutines are the most basic template, consisting of a collection of quantum o
 any of the characteristics of other templates (i.e. to prepare a specific state, to be repeated or to encode features).
 """
 
-from .temporary_and import TemporaryAND, Elbow
 from .arbitrary_unitary import ArbitraryUnitary
 from .approx_time_evolution import ApproxTimeEvolution
 from .commuting_evolution import CommutingEvolution
@@ -54,5 +53,6 @@ from .mod_exp import ModExp
 from .out_poly import OutPoly
 from .gqsp import GQSP
 from .select_pauli_rot import SelectPauliRot
+from .temporary_and import TemporaryAND, Elbow
 from .semi_adder import SemiAdder
 from .qsvt import poly_to_angles, QSVT, qsvt, transform_angles
