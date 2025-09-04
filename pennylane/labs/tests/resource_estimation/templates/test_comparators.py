@@ -18,6 +18,9 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
+
+rc = ResourceConfig()
 
 # pylint: disable=no-self-use,too-many-arguments,use-implicit-booleaness-not-comparison
 
@@ -42,7 +45,7 @@ class TestSingleQubitComparator:
             GateCount(resource_rep(plre.ResourceCNOT), 4),
             GateCount(resource_rep(plre.ResourceX), 3),
         ]
-        assert plre.ResourceSingleQubitComparator.resource_decomp() == expected
+        assert plre.ResourceSingleQubitComparator.resource_decomp(rc) == expected
 
 
 class TestTwoQubitComparator:
@@ -67,7 +70,7 @@ class TestTwoQubitComparator:
             GateCount(resource_rep(plre.ResourceX), 1),
             FreeWires(1),
         ]
-        assert plre.ResourceTwoQubitComparator.resource_decomp() == expected
+        assert plre.ResourceTwoQubitComparator.resource_decomp(rc) == expected
 
 
 class TestIntegerComparator:
@@ -180,7 +183,7 @@ class TestIntegerComparator:
     def test_resources(self, value, register_size, geq, expected_res):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceIntegerComparator.resource_decomp(value, register_size, geq)
+            plre.ResourceIntegerComparator.resource_decomp(rc, value, register_size, geq)
             == expected_res
         )
 
@@ -381,6 +384,6 @@ class TestRegisterComparator:
     def test_resources(self, first_register, second_register, geq, expected_res):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceRegisterComparator.resource_decomp(first_register, second_register, geq)
+            plre.ResourceRegisterComparator.resource_decomp(rc, first_register, second_register, geq)
             == expected_res
         )

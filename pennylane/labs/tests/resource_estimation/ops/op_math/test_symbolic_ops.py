@@ -18,11 +18,13 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation.resource_operator import GateCount
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,
 
+rc = ResourceConfig()
 
 class TestResourceAdjoint:
     """Tests for the Adjoint resource Op"""
@@ -49,7 +51,7 @@ class TestResourceAdjoint:
         """Test that we can obtain the resources as expected"""
         op = plre.ResourceS()  # has default_adjoint_decomp defined
         adj_op = plre.ResourceAdjoint(op)
-        assert adj_op.resource_decomp(**adj_op.resource_params) == op.adjoint_resource_decomp(
+        assert adj_op.resource_decomp(rc, **adj_op.resource_params) == op.adjoint_resource_decomp(rc, 
             **op.resource_params
         )
 
@@ -57,7 +59,7 @@ class TestResourceAdjoint:
             """Dummy class with no default adjoint decomp"""
 
             @classmethod
-            def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+            def default_adjoint_resource_decomp(rc, cls, **kwargs) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined
 
@@ -72,7 +74,7 @@ class TestResourceAdjoint:
                 2,
             )
         ]
-        assert adj_op.resource_decomp(**adj_op.resource_params) == expected_res
+        assert adj_op.resource_decomp(rc, **adj_op.resource_params) == expected_res
 
     @pytest.mark.parametrize(
         "base_op",
@@ -88,7 +90,7 @@ class TestResourceAdjoint:
         adj_adj_op = plre.ResourceAdjoint(adj_op)
 
         expected_res = [GateCount(base_op.resource_rep_from_op())]
-        assert adj_adj_op.resource_decomp(**adj_adj_op.resource_params) == expected_res
+        assert adj_adj_op.resource_decomp(rc, **adj_adj_op.resource_params) == expected_res
 
 
 class TestResourcePow:
@@ -119,26 +121,26 @@ class TestResourcePow:
         z_and_expected_res = (
             (0, [GateCount(plre.resource_rep(plre.ResourceIdentity()))]),
             (1, [GateCount(op.resource_rep_from_op())]),
-            (2, op.pow_resource_decomp(2, **op.resource_params)),
-            (3, op.pow_resource_decomp(3, **op.resource_params)),
+            (2, op.pow_resource_decomp(rc, 2, **op.resource_params)),
+            (3, op.pow_resource_decomp(rc, 3, **op.resource_params)),
         )
 
         for z, res in z_and_expected_res:
             pow_op = plre.ResourcePow(op, z)
-            assert pow_op.resource_decomp(**pow_op.resource_params) == res
+            assert pow_op.resource_decomp(rc, **pow_op.resource_params) == res
 
         class ResourceDummyX(plre.ResourceX):
             """Dummy class with no default pow decomp"""
 
             @classmethod
-            def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+            def default_pow_resource_decomp(rc, cls, pow_z, **kwargs) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined
 
         op = ResourceDummyX()  # no default_pow_decomp defined
         pow_op = plre.ResourcePow(op, 7)
         expected_res = [GateCount(op.resource_rep_from_op(), 7)]
-        assert pow_op.resource_decomp(**pow_op.resource_params) == expected_res
+        assert pow_op.resource_decomp(rc, **pow_op.resource_params) == expected_res
 
     @pytest.mark.parametrize("z", (0, 1, 2, 3))
     @pytest.mark.parametrize(
@@ -162,7 +164,7 @@ class TestResourcePow:
                 )
             )
         ]
-        assert pow_pow_op.resource_decomp(**pow_pow_op.resource_params) == expected_res
+        assert pow_pow_op.resource_decomp(rc, **pow_pow_op.resource_params) == expected_res
 
 
 class TestResourceControlled:
@@ -197,20 +199,20 @@ class TestResourceControlled:
         """Test that we can obtain the resources as expected"""
         op = plre.ResourceZ()  # has default_ctrl_decomp defined
         ctrl_params_and_expected_res = (
-            ((1, 0), op.controlled_resource_decomp(1, 0, **op.resource_params)),
-            ((2, 0), op.controlled_resource_decomp(2, 0, **op.resource_params)),
-            ((3, 2), op.controlled_resource_decomp(3, 2, **op.resource_params)),
+            ((1, 0), op.controlled_resource_decomp(rc, 1, 0, **op.resource_params)),
+            ((2, 0), op.controlled_resource_decomp(rc, 2, 0, **op.resource_params)),
+            ((3, 2), op.controlled_resource_decomp(rc, 3, 2, **op.resource_params)),
         )
 
         for (ctrl_wires, ctrl_values), res in ctrl_params_and_expected_res:
             ctrl_op = plre.ResourceControlled(op, ctrl_wires, ctrl_values)
-            assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == res
+            assert ctrl_op.resource_decomp(rc, **ctrl_op.resource_params) == res
 
         class ResourceDummyZ(plre.ResourceZ):
             """Dummy class with no default ctrl decomp"""
 
             @classmethod
-            def default_controlled_resource_decomp(
+            def default_controlled_resource_decomp(rc, 
                 cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
@@ -229,7 +231,7 @@ class TestResourceControlled:
                 2,
             ),
         ]
-        assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
+        assert ctrl_op.resource_decomp(rc, **ctrl_op.resource_params) == expected_res
 
     @pytest.mark.parametrize(
         "ctrl_wires, ctrl_values",
@@ -261,7 +263,7 @@ class TestResourceControlled:
                 )
             )
         ]
-        assert ctrl_ctrl_op.resource_decomp(**ctrl_ctrl_op.resource_params) == expected_res
+        assert ctrl_ctrl_op.resource_decomp(rc, **ctrl_ctrl_op.resource_params) == expected_res
 
 
 class TestResourceProd:
@@ -305,7 +307,7 @@ class TestResourceProd:
             GateCount(plre.resource_rep(plre.ResourceRX, {"eps": 1e-4})),
             GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
         ]
-        assert prod_op.resource_decomp(**prod_op.resource_params) == expected_res
+        assert prod_op.resource_decomp(rc, **prod_op.resource_params) == expected_res
 
 
 class TestResourceChangeBasisOp:
@@ -355,4 +357,4 @@ class TestResourceChangeBasisOp:
             ),
         ]
 
-        assert cb_op.resource_decomp(**cb_op.resource_params) == expected_res
+        assert cb_op.resource_decomp(rc, **cb_op.resource_params) == expected_res

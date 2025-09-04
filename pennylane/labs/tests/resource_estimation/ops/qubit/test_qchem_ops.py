@@ -17,6 +17,9 @@ Tests for qchem resource operators.
 import pytest
 
 import pennylane.labs.resource_estimation as plre
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
+
+rc = ResourceConfig()
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -56,4 +59,4 @@ class TestResourceSingleExcitation:
             plre.GateCount(plre.resource_rep(plre.ResourceRY, {"eps": eps})),
             plre.GateCount(plre.resource_rep(plre.ResourceT), 2),
         ]
-        assert plre.ResourceSingleExcitation.resource_decomp(eps=eps) == expected
+        assert plre.ResourceSingleExcitation.resource_decomp(config=rc, eps=eps) == expected
