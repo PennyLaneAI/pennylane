@@ -14,7 +14,7 @@ jobs:
     steps:
     - name: Checkout PennyLane repo
       uses: actions/checkout@v4
-          
+
     - name: Get latest branch matching pattern
       id: get-latest-branch
       run: |
@@ -27,11 +27,15 @@ jobs:
       uses: actions/checkout@v4
       with:
         ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
-        ref: ${{ env.LATEST_BRANCH }}
+        # ref: ${{ env.LATEST_BRANCH }}
 
-    - name: Bump dev version
+    - name: Bump rc version
       run: |
-        echo "Latest branch is ${{ env.LATEST_BRANCH }}"
+        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py --versiontype="versionrc =" --pattern="(\d+)\.(\d+)\.(\d+)-rc(\d+)"
+        # git commit
+
+    - name: Update version
+      run: |
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
 
     - name: Build wheels

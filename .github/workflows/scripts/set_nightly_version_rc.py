@@ -26,17 +26,20 @@ assert os.path.isfile(version_file_path)
 with open(version_file_path, "r+", encoding="UTF-8") as f:
     lines = f.readlines()
 
-    version_line = lines[-1]
-    assert "__versionrc__ = " in version_line
+    versionrc_line = lines[-1]
+    assert "versionrc = " in versionrc_line
 
-    pattern = r"(\d+).(\d+).(\d+)-dev(\d+)"
-    match = re.search(pattern, version_line)
+    pattern = r"(\d+).(\d+).(\d+)-rc(\d+)"
+    match = re.search(pattern, versionrc_line)
     assert match
+
+    version_line = lines[-2]
+    assert "__version__ = " in version_line
 
     major, minor, bug, dev = match.groups()
 
-    replacement = f'__versionrc__ = "{major}.{minor}.{bug}-dev{int(dev)+1}"\n'
-    lines[-1] = replacement
+    replacement = f'__version__ = "{major}.{minor}.{bug}-rc{int(dev)}"\n'
+    lines[-2] = replacement
 
     f.seek(0)
     f.writelines(lines)
