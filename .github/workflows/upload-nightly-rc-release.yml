@@ -31,6 +31,9 @@ jobs:
     - name: Bump rc version
       run: |
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py --versiontype="versionrc =" --pattern="(\d+)\.(\d+)\.(\d+)-rc(\d+)"
+        git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
+        git config --global user.name "ringo-but-quantum"
+        git add $GITHUB_WORKSPACE/pennylane/_version.py
         git commit -m "[no ci] bump nightly version"
         git push
 
