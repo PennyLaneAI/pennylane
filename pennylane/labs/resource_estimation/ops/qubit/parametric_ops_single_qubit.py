@@ -494,6 +494,7 @@ class ResourceRY(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls,
+        config,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
