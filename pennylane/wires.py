@@ -740,7 +740,7 @@ class DynamicWire:
     deallocated.
 
     Args:
-        key (Optional[str]): a ``uuid4`` string to uniquely identify the dynamic wire.
+        key (uuid.UUID or None): An optional UUID key to identify the dynamic wire. If None, a random UUID will be generated.
     """
 
     def __init__(self, key: uuid.UUID | None = None):

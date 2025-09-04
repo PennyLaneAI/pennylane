@@ -932,7 +932,7 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
-* Moved `allocation.DynamicWire` to the `wires` module to avoid circular dependencies.
+* Moved `allocation.DynamicWire` from the `allocation` to the `wires` module to avoid circular dependencies.
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
 
 * Two new xDSL passes have been added to the Python compiler: `decompose-graph-state`, which
