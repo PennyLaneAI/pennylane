@@ -14,6 +14,7 @@
 r"""Resource operators for PennyLane subroutine templates."""
 
 from pennylane.labs import resource_estimation as plre
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import _apply_adj
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -64,8 +65,9 @@ class ResourceSingleQubitComparator(ResourceOperator):
       {'Toffoli': 1, 'CNOT': 4, 'X': 3}
     """
 
+    num_wires = 4
+
     def __init__(self, wires=None):
-        self.num_wires = 4
         super().__init__(wires=wires)
 
     @property
@@ -85,7 +87,7 @@ class ResourceSingleQubitComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
     def default_resource_decomp(cls, config):
@@ -164,8 +166,9 @@ class ResourceTwoQubitComparator(ResourceOperator):
       {'Toffoli': 2, 'CNOT': 7, 'X': 1}
     """
 
+    num_wires = 4
+
     def __init__(self, wires=None):
-        self.num_wires = 4
         super().__init__(wires=wires)
 
     @property
@@ -185,7 +188,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
     def default_resource_decomp(cls, config):
@@ -222,6 +225,35 @@ class ResourceTwoQubitComparator(ResourceOperator):
         gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 3))
         gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
         gate_list.append(FreeWires(1))
+
+        return gate_list
+
+    @classmethod
+    def tempand_based_decomp(cls, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Resources:
+            The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
+            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            the resources are given as :math:`2` ``CSWAP`` gates,
+            :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
+            is modified to use TempAND gates for building blocks of CSWAP gates.
+
+            .. code-block:: bash
+
+                 x1 : ─╭X─╭●────╭●───────┤
+                 y1 : ─╰●─│─────├SWAP────┤
+                 x0 : ─╭X─├SWAP─│─────╭X─┤
+                 y0 : ─╰●─│─────╰SWAP─╰●─┤
+                |1> : ────╰SWAP──────────┤
+        """
+        gate_list = []
+
+        gate_list.append(AllocWires(2))
+        gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 2))
+        gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 8))
+        gate_list.append(GateCount(resource_rep(plre.ResourceX), 3))
 
         return gate_list
 
@@ -324,8 +356,9 @@ class ResourceIntegerComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_wires = register_size + 1
         return CompressedResourceOp(
-            cls, {"value": value, "register_size": register_size, "geq": geq}
+            cls, num_wires, {"value": value, "register_size": register_size, "geq": geq}
         )
 
     @classmethod
@@ -533,8 +566,11 @@ class ResourceRegisterComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_wires = first_register + second_register + 1
         return CompressedResourceOp(
-            cls, {"first_register": first_register, "second_register": second_register, "geq": geq}
+            cls,
+            num_wires,
+            {"first_register": first_register, "second_register": second_register, "geq": geq},
         )
 
     @classmethod
@@ -565,26 +601,23 @@ class ResourceRegisterComparator(ResourceOperator):
         compare_register = min(first_register, second_register)
 
         one_qubit_compare = resource_rep(plre.ResourceSingleQubitComparator)
-        two_qubit_compare = resource_rep(plre.ResourceTwoQubitComparator)
+        two_qubit_compare = plre.ResourceTwoQubitComparator.tempand_based_decomp(**kwargs)
 
         if first_register == second_register:
 
-            gate_list.append(GateCount(two_qubit_compare, first_register - 1))
+            for op in two_qubit_compare:
+                gate_list.append(op * (first_register - 1))
             gate_list.append(GateCount(one_qubit_compare, 1))
 
-            gate_list.append(
-                GateCount(
-                    resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare}),
-                    first_register - 1,
-                )
-            )
+            for op in two_qubit_compare:
+                gate_list.append(_apply_adj(op) * (first_register - 1))
+
             gate_list.append(
                 GateCount(
                     resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}),
                     1,
                 )
             )
-
             gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
             gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 1))
 
@@ -592,15 +625,13 @@ class ResourceRegisterComparator(ResourceOperator):
 
         diff = abs(first_register - second_register)
 
-        gate_list.append(GateCount(two_qubit_compare, compare_register - 1))
+        for op in two_qubit_compare:
+            gate_list.append(op * (compare_register - 1))
         gate_list.append(GateCount(one_qubit_compare, 1))
 
-        gate_list.append(
-            GateCount(
-                resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare}),
-                compare_register - 1,
-            )
-        )
+        for op in two_qubit_compare:
+            gate_list.append(_apply_adj(op) * (compare_register - 1))
+
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}), 1)
         )
