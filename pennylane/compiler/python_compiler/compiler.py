@@ -37,7 +37,9 @@ class Compiler:
 
     @staticmethod
     def run(
-        jmod: jaxModule, callback: Callable[[ModulePass, ModuleOp, ModulePass], None] | None = None
+        jmod: jaxModule,
+        callback: Callable[[ModulePass, ModuleOp, ModulePass], None] | None = None,
+        callback_first: bool = False,
     ) -> jaxModule:
         """Runs the apply-transform-sequence pass.
 
@@ -51,10 +53,12 @@ class Compiler:
         ctx = xContext(allow_unregistered=True)
         parser = QuantumParser(ctx, gentxtmod)
         xmod = parser.parse_module()
-        pipeline = PassPipeline((ApplyTransformSequence(callback=callback),))
+        pipeline = PassPipeline(
+            (ApplyTransformSequence(callback=callback, callback_first=callback_first),)
+        )
         # xmod is modified in place
-        if callback and callback.__name__ == "_draw_callback":
-            callback(None, xmod, 0)
+        if callback_first and callback is not None:
+            callback(None, xmod, None)
         pipeline.apply(ctx, xmod)
         buffer = io.StringIO()
         Printer(stream=buffer, print_generic_format=True).print_op(xmod)

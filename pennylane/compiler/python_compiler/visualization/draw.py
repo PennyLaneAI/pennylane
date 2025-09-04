@@ -64,7 +64,7 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     """
     cache: dict[int, tuple[str, str]] = _cache_store.setdefault(qnode, {})
 
-    def _draw_callback(pass_instance, module, pass_level):
+    def _draw_callback(pass_instance, module, _, pass_level=0):
         collector = QMLCollector(module)
         ops, meas = collector.collect()
         tape = QuantumScript(ops, meas)
@@ -74,7 +74,7 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         mlir_module = _get_mlir_module(qnode, args, kwargs)
-        Compiler.run(mlir_module, callback=_draw_callback)
+        Compiler.run(mlir_module, callback=_draw_callback, callback_first=True)
 
         if not cache:
             return None

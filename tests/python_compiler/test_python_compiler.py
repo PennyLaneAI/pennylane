@@ -55,6 +55,8 @@ from pennylane.compiler.python_compiler.transforms.api import (
 
 @dataclass(frozen=True)
 class HelloWorldPass(passes.ModulePass):
+    """A simple pass that prints 'hello world' when run."""
+
     name = "hello-world"
 
     def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
@@ -334,7 +336,7 @@ class TestCallbackIntegration:
 
             def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None: ...
 
-        def print_between_passes(*_):
+        def print_between_passes(*args, **kwargs):
             print("hello world")
 
         @xdsl_from_docstring
@@ -363,7 +365,7 @@ class TestCallbackIntegration:
         """Test that the callback prints the module after each pass"""
 
         # pylint: disable=redefined-outer-name
-        def print_between_passes(_, module, __):
+        def print_between_passes(_, module, __, **kwargs):
             print("=== Between Pass ===")
             print(module)
 
@@ -430,7 +432,7 @@ class TestCallbackIntegration:
         """Test that the callback is integrated into the pass pipeline with the Compiler.run() method"""
 
         # pylint: disable=redefined-outer-name
-        def print_between_passes(_, module, __):
+        def print_between_passes(_, module, __, **kwargs):
             print("=== Between Pass ===")
             print(module)
 
