@@ -9,7 +9,7 @@
   ```python
   @qml.qnode(qml.device('default.qubit'))
   def c():
-      with qml.allocation.allocate(1) as wires:
+      with qml.allocate(1) as wires:
           qml.H(wires)
           qml.CNOT((wires[0], 0))
       return qml.probs(wires=0)
@@ -109,6 +109,9 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
@@ -357,6 +360,9 @@
 * With program capture, an error is now raised if the conditional predicate is not a scalar.
   [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
 
+* :func:`~.tape.plxpr_to_tape` now supports converting circuits containing dynamic wire allocation.
+  [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -499,6 +505,13 @@
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
 
+* With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a decomposition cannot be found for an operator in the circuit, it no longer
+  raises an error. Instead, a warning is raised, and `op.decomposition()` (the current default method for decomposing gates) is
+  used as a fallback, while the rest of the circuit is still decomposed with
+  the new graph-based system. Additionally, a special warning message is
+  raised if the circuit contains a `GlobalPhase`, reminding the user that
+  `GlobalPhase` is not assumed to have a decomposition under the new system.
+  [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
@@ -929,6 +942,9 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
+* Moved `allocation.DynamicWire` from the `allocation` to the `wires` module to avoid circular dependencies.
+  [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
+
 * Two new xDSL passes have been added to the Python compiler: `decompose-graph-state`, which
   decomposes `mbqc.graph_state_prep` operations to their corresponding set of quantum operations for
   execution on state simulators, and `null-decompose-graph-state`, which replaces
@@ -977,6 +993,10 @@
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* Operators queued with :func:`pennylane.apply` no longer get dequeued by subsequent dequeuing operations
+  (e.g. :func:`pennylane.adjoint`).
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
 * Fixed a bug in the decomposition rules of :class:`~.Select` with the new decomposition system
   that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
@@ -1052,6 +1072,10 @@
 * Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
   [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
+* Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
 <h3>Contributors ✍️</h3>
 
@@ -1061,6 +1085,7 @@ Runor Agbaire
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
+Astral Cai,
 Joey Carter,
 Yushao Chen,
 Isaac De Vlugt,
