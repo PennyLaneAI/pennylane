@@ -37,7 +37,7 @@ class TestHadamard:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = plre.CompressedResourceOp(plre.ResourceHadamard, {})
+        expected = plre.CompressedResourceOp(plre.ResourceHadamard, 1, {})
         assert plre.ResourceHadamard.resource_rep() == expected
 
     def test_adjoint_decomp(self):
@@ -131,7 +131,7 @@ class TestSWAP:
 
     def test_resource_rep(self):
         """Test the compact representation"""
-        expected = plre.CompressedResourceOp(plre.ResourceSWAP, {})
+        expected = plre.CompressedResourceOp(plre.ResourceSWAP, 2, {})
         assert plre.ResourceSWAP.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -229,7 +229,7 @@ class TestS:
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct"""
-        expected = plre.CompressedResourceOp(plre.ResourceS, {})
+        expected = plre.CompressedResourceOp(plre.ResourceS, 1, {})
         assert plre.ResourceS.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -379,7 +379,7 @@ class TestT:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = plre.CompressedResourceOp(plre.ResourceT, {})
+        expected = plre.CompressedResourceOp(plre.ResourceT, 1, {})
         assert plre.ResourceT.resource_rep() == expected
 
     def test_adjoint_decomposition(self):
@@ -502,7 +502,7 @@ class TestX:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = plre.CompressedResourceOp(plre.ResourceX, {})
+        expected = plre.CompressedResourceOp(plre.ResourceX, 1, {})
         assert plre.ResourceX.resource_rep() == expected
 
     def test_adjoint_decomposition(self):
@@ -606,7 +606,7 @@ class TestY:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = plre.CompressedResourceOp(plre.ResourceY, {})
+        expected = plre.CompressedResourceOp(plre.ResourceY, 1, {})
         assert plre.ResourceY.resource_rep() == expected
 
     def test_adjoint_decomposition(self):
@@ -718,7 +718,7 @@ class TestZ:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = plre.CompressedResourceOp(plre.ResourceZ, {})
+        expected = plre.CompressedResourceOp(plre.ResourceZ, 1, {})
         assert plre.ResourceZ.resource_rep() == expected
 
     def test_adjoint_decomposition(self):
