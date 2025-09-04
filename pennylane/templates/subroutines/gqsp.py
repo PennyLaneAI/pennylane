@@ -105,17 +105,19 @@ class GQSP(Operation):
         }
 
     def _flatten(self):
-        data = (self.parameters[0], self.hyperparameters["unitary"])
-        return data, (self.hyperparameters["control"],)
+        return self.parameters, (
+            self.hyperparameters["unitary"],
+            self.hyperparameters["control"],
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(unitary=data[1], angles=data[0], control=metadata[0])
+        return cls(unitary=metadata[0], angles=data[0], control=metadata[1])
 
     # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, unitary, angles, control, **kwargs):
-        return super()._primitive_bind_call(unitary, angles, wires=control, **kwargs)
+    def _primitive_bind_call(cls, unitary, angles, control, id=None):
+        return super()._primitive_bind_call(angles, unitary=unitary, wires=control, id=id)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -232,5 +234,5 @@ if GQSP._primitive is not None:
 
     @GQSP._primitive.def_impl
     def _(*args, n_wires, **kwargs):
-        args, control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(GQSP, *args, control, **kwargs)
+        (angles,), control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(GQSP, angles=angles, control=control, **kwargs)

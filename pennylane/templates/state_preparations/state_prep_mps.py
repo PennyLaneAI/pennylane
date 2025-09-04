@@ -404,15 +404,22 @@ class MPSPrep(Operation):
             self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
         )
 
+    # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
-    def _primitive_bind_call(cls, mps, wires, work_wires=None, **kwargs):
-        # pylint: disable=arguments-differ
+    def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None, right_canonicalize=False):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(
-                cls, mps=mps, wires=wires, id=id, work_wires=work_wires
+                cls,
+                mps=mps,
+                wires=wires,
+                work_wires=work_wires,
+                id=id,
+                right_canonicalize=right_canonicalize,
             )  # pragma: no cover
-        return cls._primitive.bind(*mps, wires=wires, id=id, work_wires=work_wires)
+        return cls._primitive.bind(
+            *mps, wires=wires, work_wires=work_wires, id=id, right_canonicalize=right_canonicalize
+        )
 
     def decomposition(self):
         filtered_hyperparameters = {

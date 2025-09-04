@@ -654,7 +654,12 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.MPSPrep._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"id": None, "wires": wires, "work_wires": None}
+        assert eqn.params == {
+            "id": None,
+            "wires": wires,
+            "work_wires": None,
+            "right_canonicalize": False,
+        }
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1129,32 +1134,33 @@ class TestModifiedTemplates:
         kwargs = {
             "unitary": qml.RX(1, wires=1),
             "control": 0,
-            "angles": np.ones([3, 3]),
         }
 
-        def qfunc():
-            qml.GQSP(**kwargs)
+        def qfunc(angles):
+            qml.GQSP(angles=angles, **kwargs)
 
+        angles = np.ones([3, 3])
         # Validate inputs
-        qfunc()
+        qfunc(angles)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(angles)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.GQSP._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert eqn.invars[0] == jaxpr.jaxpr.invars[0]
+        assert eqn.invars[1].val == kwargs["control"]
+        assert eqn.params == {"unitary": qml.RX(1, wires=1), "n_wires": 1, "id": None}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, angles)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.GQSP(**kwargs))
+        qml.assert_equal(q.queue[0], qml.GQSP(angles=angles, **kwargs))
 
     @pytest.mark.parametrize(
         "template, kwargs",
