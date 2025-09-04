@@ -146,7 +146,7 @@ def dispatch_wires_extract(op: ExtractOpPL):
     return resolve_constant_wire(op.idx)  # used by xDSL
 
 
-def resolve_constant_wire(ssa: SSAValue) -> int:
+def resolve_constant_wire(ssa: SSAValue) -> float | int:
     """Resolve the wire for the given SSA qubit."""
     if isinstance(ssa, IntegerAttr):  # Catalyst
         return ssa.value.data
