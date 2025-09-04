@@ -101,10 +101,10 @@ class TestDecomposeInterpreterGraphEnabled:
         """Tests specifying the target gate set."""
 
         interpreter = DecomposeInterpreter(gate_set={qml.RX, "RZ", "CNOT"})
-        assert interpreter._stopping_condition(qml.RX(1.5, 0))
-        assert interpreter._stopping_condition(qml.RZ(1.5, 0))
-        assert interpreter._stopping_condition(qml.CNOT(wires=[0, 1]))
-        assert not interpreter._stopping_condition(qml.Hadamard(0))
+        assert interpreter.stopping_condition(qml.RX(1.5, 0))
+        assert interpreter.stopping_condition(qml.RZ(1.5, 0))
+        assert interpreter.stopping_condition(qml.CNOT(wires=[0, 1]))
+        assert not interpreter.stopping_condition(qml.Hadamard(0))
 
     @pytest.mark.unit
     def test_callable_gate_set_not_supported(self):
