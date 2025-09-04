@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
@@ -77,6 +78,42 @@ if TYPE_CHECKING:
     from jax.extend.core import Jaxpr
 
     from pennylane.operation import Operator
+
+
+ALL_DQ_GATE_SET = {
+    "CNOT",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "CSWAP",
+    "CY",
+    "CZ",
+    "ControlledPhaseShift",
+    "GlobalPhase",
+    "Hadamard",
+    "ISWAP",
+    "Identity",
+    "IsingXX",
+    "IsingXY",
+    "IsingYY",
+    "IsingZZ",
+    "MultiControlledX",
+    "MultiRZ",
+    "PSWAP",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "PhaseShift",
+    "RX",
+    "RY",
+    "RZ",
+    "S",
+    "SWAP",
+    "SX",
+    "T",
+    "Toffoli",
+}
 
 
 def stopping_condition(op: Operator) -> bool:
@@ -253,13 +290,13 @@ def adjoint_observables(obs: Operator) -> bool:
     return obs.has_matrix
 
 
-def _supports_adjoint(circuit, device_wires, device_name):
+def _supports_adjoint(circuit, device_wires, device_name, gate_set=None):
     if circuit is None:
         return True
 
     prog = TransformProgram()
     prog.add_transform(validate_device_wires, device_wires, name=device_name)
-    _add_adjoint_transforms(prog)
+    _add_adjoint_transforms(prog, gate_set=gate_set)
 
     try:
         prog((circuit,))
@@ -272,12 +309,14 @@ def _supports_adjoint(circuit, device_wires, device_name):
     return True
 
 
-def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
+def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_set=None) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
     Args:
         program (TransformProgram): where we will add the adjoint differentiation transforms
+        device_vjp (bool): whether or not to use the device-provided Vector Jacobian Product (VJP).
+        gate_set (set): the set of gates supported by the device
 
     Side Effects:
         Adds transforms to the input program.
@@ -287,7 +326,11 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
-        decompose, stopping_condition=adjoint_ops, name=name, skip_initial_state_prep=False
+        decompose,
+        stopping_condition=adjoint_ops,
+        name=name,
+        skip_initial_state_prep=False,
+        gate_set=gate_set,
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
@@ -548,7 +591,12 @@ class DefaultQubit(Device):
             )
 
         if execution_config.gradient_method in {"adjoint", "best"}:
-            return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
+            return _supports_adjoint(
+                circuit,
+                device_wires=self.wires,
+                device_name=self.name,
+                gate_set=ALL_DQ_GATE_SET,
+            )
         return False
 
     @debug_logger
@@ -572,7 +620,14 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
+            if enabled_graph():
+                transform_program.add_transform(
+                    transforms_decompose,
+                    gate_set=ALL_DQ_GATE_SET,
+                    stopping_condition=stopping_condition,
+                )
+            else:
+                transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
 
             return transform_program
 
@@ -583,6 +638,7 @@ class DefaultQubit(Device):
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
+            gate_set=ALL_DQ_GATE_SET,
         )
         transform_program.add_transform(device_resolve_dynamic_wires, wires=self.wires)
         transform_program.add_transform(
@@ -608,7 +664,9 @@ class DefaultQubit(Device):
 
         if config.gradient_method == "adjoint":
             _add_adjoint_transforms(
-                transform_program, device_vjp=config.use_device_jacobian_product
+                transform_program,
+                device_vjp=config.use_device_jacobian_product,
+                gate_set=ALL_DQ_GATE_SET,
             )
 
         return transform_program

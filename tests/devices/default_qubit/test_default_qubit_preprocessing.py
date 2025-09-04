@@ -26,6 +26,28 @@ from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
 
+@pytest.fixture(params=[False, True], ids=["no_graph", "with_graph"], autouse=True)
+def decomposition_mode(request):
+    """Fixture that runs tests with both graph and non-graph decomposition modes.
+
+    Automatically sets up and tears down the graph decomposition mode for each test.
+    """
+    use_graph = request.param
+
+    # Setup: Configure graph decomposition based on parameter
+    try:
+        if use_graph:
+            qml.decomposition.enable_graph()
+        else:
+            qml.decomposition.disable_graph()
+
+        yield use_graph
+
+    finally:
+        # Teardown: Always clean up
+        qml.decomposition.disable_graph()
+
+
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit."""
 

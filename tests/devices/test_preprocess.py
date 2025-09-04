@@ -43,6 +43,28 @@ from pennylane.tape import QuantumScript
 # pylint: disable=too-few-public-methods
 
 
+@pytest.fixture(params=[False, True], ids=["no_graph", "with_graph"], autouse=True)
+def decomposition_mode(request):
+    """Fixture that runs tests with both graph and non-graph decomposition modes.
+
+    Automatically sets up and tears down the graph decomposition mode for each test.
+    """
+    use_graph = request.param
+
+    # Setup: Configure graph decomposition based on parameter
+    try:
+        if use_graph:
+            qml.decomposition.enable_graph()
+        else:
+            qml.decomposition.disable_graph()
+
+        yield use_graph
+
+    finally:
+        # Teardown: Always clean up
+        qml.decomposition.disable_graph()
+
+
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
@@ -88,7 +110,9 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
 
@@ -100,7 +124,9 @@ class TestPrivateHelpers:
             return op.has_matrix
 
         op = NoMatOp("a")
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(casted_to_list) == 2
         qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
         qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
@@ -120,23 +146,15 @@ class TestPrivateHelpers:
                 return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
 
         op = RaggedDecompositionOp("a")
-        final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        final_decomp = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(final_decomp) == 5
         qml.assert_equal(final_decomp[0], qml.PauliX("a"))
         qml.assert_equal(final_decomp[1], qml.PauliY("a"))
         qml.assert_equal(final_decomp[2], qml.S("a"))
         qml.assert_equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
         qml.assert_equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
-
-    def test_error_from_unsupported_operation(self):
-        """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
-        op = NoMatNoDecompOp("a")
-        with pytest.raises(DeviceError, match=r"not supported with abc and does"):
-            tuple(
-                _operator_decomposition_gen(
-                    op, lambda op: op.has_matrix, self.decomposer, name="abc"
-                )
-            )
 
 
 def test_no_sampling():
@@ -262,6 +280,15 @@ class TestDecomposeValidation:
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
         with pytest.raises(DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
+
+    def test_error_if_invalid_op_decomposer(self):
+        """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
+
+        tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
+        with pytest.raises(DeviceError, match="not supported with abc"):
+            decompose(
+                tape, lambda op: op.has_matrix, decomposer=lambda op: op.decomposition(), name="abc"
+            )
 
     def test_decompose(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
