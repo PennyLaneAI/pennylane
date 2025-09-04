@@ -17,14 +17,15 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.labs.resource_estimation as plre
-from pennylane.labs.resource_estimation.resource_operator import GateCount
 from pennylane.labs.resource_estimation.resource_config import ResourceConfig
+from pennylane.labs.resource_estimation.resource_operator import GateCount
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,
 
 rc = ResourceConfig()
+
 
 class TestResourceAdjoint:
     """Tests for the Adjoint resource Op"""
@@ -51,8 +52,8 @@ class TestResourceAdjoint:
         """Test that we can obtain the resources as expected"""
         op = plre.ResourceS()  # has default_adjoint_decomp defined
         adj_op = plre.ResourceAdjoint(op)
-        assert adj_op.resource_decomp(rc, **adj_op.resource_params) == op.adjoint_resource_decomp(rc, 
-            **op.resource_params
+        assert adj_op.resource_decomp(rc, **adj_op.resource_params) == op.adjoint_resource_decomp(
+            rc, **op.resource_params
         )
 
         class ResourceDummyS(plre.ResourceS):
@@ -212,8 +213,8 @@ class TestResourceControlled:
             """Dummy class with no default ctrl decomp"""
 
             @classmethod
-            def default_controlled_resource_decomp(rc, 
-                cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
+            def default_controlled_resource_decomp(
+                rc, cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined

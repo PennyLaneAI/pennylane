@@ -384,6 +384,8 @@ class TestRegisterComparator:
     def test_resources(self, first_register, second_register, geq, expected_res):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceRegisterComparator.resource_decomp(rc, first_register, second_register, geq)
+            plre.ResourceRegisterComparator.resource_decomp(
+                rc, first_register, second_register, geq
+            )
             == expected_res
         )

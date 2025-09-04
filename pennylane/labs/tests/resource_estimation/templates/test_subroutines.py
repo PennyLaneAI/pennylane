@@ -20,7 +20,9 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
+rc = ResourceConfig()
 # pylint: disable=no-self-use,too-many-arguments
 
 
@@ -49,7 +51,8 @@ class TestResourceOutOfPlaceSquare:
             GateCount(resource_rep(plre.ResourceCNOT), register_size),
         ]
         assert (
-            plre.ResourceOutOfPlaceSquare.resource_decomp(register_size=register_size) == expected
+            plre.ResourceOutOfPlaceSquare.resource_decomp(rc, register_size=register_size)
+            == expected
         )
 
 
@@ -111,7 +114,7 @@ class TestResourcePhaseGradient:
     )
     def test_resources(self, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourcePhaseGradient.resource_decomp(num_wires=num_wires) == expected_res
+        assert plre.ResourcePhaseGradient.resource_decomp(rc, num_wires=num_wires) == expected_res
 
 
 class TestResourceOutMultiplier:
@@ -157,7 +160,8 @@ class TestResourceOutMultiplier:
             GateCount(toff, num_toff),
         ]
         assert (
-            plre.ResourceOutMultiplier.resource_decomp(a_register_size, b_register_size) == expected
+            plre.ResourceOutMultiplier.resource_decomp(rc, a_register_size, b_register_size)
+            == expected
         )
 
 
@@ -213,7 +217,7 @@ class TestResourceSemiAdder:
     )
     def test_resources(self, register_size, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceSemiAdder.resource_decomp(register_size) == expected_res
+        assert plre.ResourceSemiAdder.resource_decomp(rc, register_size) == expected_res
 
     def test_resources_controlled(self):
         """Test that the special case controlled resources are correct."""
@@ -235,7 +239,7 @@ class TestResourceSemiAdder:
             ),
             plre.FreeWires(4),
         ]
-        assert op.resource_decomp(**op.resource_params) == expected_res
+        assert op.resource_decomp(rc, **op.resource_params) == expected_res
 
 
 class TestResourceControlledSequence:
@@ -438,7 +442,7 @@ class TestResourceControlledSequence:
     def test_resources(self, base_op, num_ctrl_wires, expected_res):
         """Test resources"""
         op = plre.ResourceControlledSequence(base_op, num_ctrl_wires)
-        assert op.default_resource_decomp(**op.resource_params) == expected_res
+        assert op.default_resource_decomp(rc, **op.resource_params) == expected_res
 
 
 class TestResourceQPE:
@@ -561,7 +565,7 @@ class TestResourceQPE:
             if adj_qft_op is None
             else plre.ResourceQPE(base_op, num_est_wires, adj_qft_op)
         )
-        assert op.default_resource_decomp(**op.resource_params) == expected_res
+        assert op.default_resource_decomp(rc, **op.resource_params) == expected_res
 
 
 class TestResourceIterativeQPE:
@@ -779,7 +783,7 @@ class TestResourceIterativeQPE:
     def test_resources(self, base_op, num_iter, expected_res):
         """Test the resources method"""
         op = plre.ResourceIterativeQPE(base_op, num_iter)
-        assert op.default_resource_decomp(**op.resource_params) == expected_res
+        assert op.default_resource_decomp(rc, **op.resource_params) == expected_res
 
 
 class TestResourceQFT:
@@ -824,7 +828,7 @@ class TestResourceQFT:
     )
     def test_resources(self, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceQFT.resource_decomp(num_wires) == expected_res
+        assert plre.ResourceQFT.resource_decomp(rc, num_wires) == expected_res
 
     @pytest.mark.parametrize(
         "num_wires, expected_res",
@@ -872,7 +876,7 @@ class TestResourceQFT:
     )
     def test_resources_phasegrad(self, num_wires, expected_res):
         """Test that the resources are correct for phase gradient method."""
-        assert plre.ResourceQFT.phase_grad_resource_decomp(num_wires) == expected_res
+        assert plre.ResourceQFT.phase_grad_resource_decomp(rc, num_wires) == expected_res
 
 
 class TestResourceAQFT:
@@ -1001,7 +1005,7 @@ class TestResourceAQFT:
     )
     def test_resources(self, order, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceAQFT.resource_decomp(order, num_wires) == expected_res
+        assert plre.ResourceAQFT.resource_decomp(rc, order, num_wires) == expected_res
 
 
 class TestResourceBasisRotation:
@@ -1026,7 +1030,7 @@ class TestResourceBasisRotation:
             GateCount(resource_rep(plre.ResourcePhaseShift), dim_n + (dim_n * (dim_n - 1) // 2)),
             GateCount(resource_rep(plre.ResourceSingleExcitation), dim_n * (dim_n - 1) // 2),
         ]
-        assert plre.ResourceBasisRotation.resource_decomp(dim_n) == expected
+        assert plre.ResourceBasisRotation.resource_decomp(rc, dim_n) == expected
 
 
 class TestResourceSelect:
@@ -1096,7 +1100,7 @@ class TestResourceSelect:
             ),
             plre.FreeWires(1),
         ]
-        assert plre.ResourceSelect.resource_decomp(cmpr_ops, num_wires=4) == expected
+        assert plre.ResourceSelect.resource_decomp(rc, cmpr_ops, num_wires=4) == expected
 
 
 class TestResourceQROM:
@@ -1284,6 +1288,7 @@ class TestResourceQROM:
         """Test that the resources are correct."""
         assert (
             plre.ResourceQROM.resource_decomp(
+                rc,
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
@@ -1429,16 +1434,17 @@ class TestResourceQubitUnitary:
     def test_default_resources(self, num_wires, eps, expected_res):
         """Test that the resources are correct."""
         if eps is None:
-            config = {"precision_qubit_unitary": 1e-9}
+            config = ResourceConfig()
+            config.conf["precision_select_pauli_rot"] = 1e-9
             assert (
                 plre.ResourceQubitUnitary.resource_decomp(
-                    num_wires=num_wires, precision=eps, config=config
+                    config=config, num_wires=num_wires, precision=eps
                 )
                 == expected_res
             )
         else:
             assert (
-                plre.ResourceQubitUnitary.resource_decomp(num_wires=num_wires, precision=eps)
+                plre.ResourceQubitUnitary.resource_decomp(rc, num_wires=num_wires, precision=eps)
                 == expected_res
             )
 
@@ -1516,19 +1522,22 @@ class TestResourceSelectPauliRot:
     def test_default_resources(self, num_ctrl_wires, rotation_axis, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
-            config = {"precision_select_pauli_rot": 1e-9}
+            config = ResourceConfig()
+            config.conf["precision_select_pauli_rot"] = 1e-9
+
             assert (
                 plre.ResourceSelectPauliRot.resource_decomp(
+                    config=config,
                     num_ctrl_wires=num_ctrl_wires,
                     rotation_axis=rotation_axis,
                     precision=precision,
-                    config=config,
                 )
                 == expected_res
             )
         else:
             assert (
                 plre.ResourceSelectPauliRot.resource_decomp(
+                    rc,
                     num_ctrl_wires=num_ctrl_wires,
                     rotation_axis=rotation_axis,
                     precision=precision,
@@ -1636,19 +1645,22 @@ class TestResourceSelectPauliRot:
     def test_phase_gradient_resources(self, num_ctrl_wires, rotation_axis, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
-            config = {"precision_select_pauli_rot": 1e-9}
+            config = ResourceConfig()
+            config.conf["precision_select_pauli_rot"] = 1e-9
+
             assert (
                 plre.ResourceSelectPauliRot.phase_grad_resource_decomp(
+                    config=config,
                     num_ctrl_wires=num_ctrl_wires,
                     rotation_axis=rotation_axis,
                     precision=precision,
-                    config=config,
                 )
                 == expected_res
             )
         else:
             assert (
                 plre.ResourceSelectPauliRot.phase_grad_resource_decomp(
+                    rc,
                     num_ctrl_wires=num_ctrl_wires,
                     rotation_axis=rotation_axis,
                     precision=precision,

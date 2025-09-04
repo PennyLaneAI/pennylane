@@ -27,7 +27,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.resource_tracking import estimate_resources, ResourceConfig
+from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate_resources
 from pennylane.labs.resource_estimation.resources_base import Resources
 
 # pylint: disable= no-self-use, arguments-differ

@@ -25,6 +25,7 @@ from pennylane.labs.resource_estimation.resource_operator import GateCount
 
 rc = ResourceConfig()
 
+
 class TestResourceCH:
     """Test the ResourceCH operation"""
 
@@ -67,7 +68,9 @@ class TestResourceCH:
         )
         expected_res = [GateCount(expected_op.resource_rep_from_op())]
 
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_res
+        )
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -137,7 +140,9 @@ class TestResourceCY:
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
 
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -206,7 +211,9 @@ class TestResourceCZ:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = [
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -273,7 +280,9 @@ class TestResourceCSWAP:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -340,7 +349,9 @@ class TestResourceCCZ:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -406,7 +417,9 @@ class TestResourceCNOT:
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_res
+        )
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -484,7 +497,9 @@ class TestResourceToffoli:
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_res
+        )
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -712,7 +727,9 @@ class TestResourceCRX:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -784,7 +801,9 @@ class TestResourceCRY:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -855,7 +874,9 @@ class TestResourceCRZ:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -926,7 +947,9 @@ class TestResourceCRot:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),

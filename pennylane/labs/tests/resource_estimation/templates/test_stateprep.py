@@ -232,7 +232,10 @@ class TestAliasSampling:
                 == expected_res
             )
         else:
-            assert plre.ResourceAliasSampling.resource_decomp(rc, num_coeffs, precision) == expected_res
+            assert (
+                plre.ResourceAliasSampling.resource_decomp(rc, num_coeffs, precision)
+                == expected_res
+            )
 
 
 class TestPrepTHC:
@@ -342,6 +345,7 @@ class TestPrepTHC:
             plre.ResourcePrepTHC.resource_rep(
                 plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5
             )
+
 
 class TestMPSPrep:
     """Tests for the ResourceMPSPrep template"""
@@ -455,14 +459,16 @@ class TestMPSPrep:
         if precision is None:
             config = ResourceConfig()
             config.conf["precision_mps_prep"] = 1e-9
-            actual = plre.ResourceMPSPrep.resource_decomp(config=config, 
+            actual = plre.ResourceMPSPrep.resource_decomp(
+                config=config,
                 num_mps_matrices=num_mps,
                 max_bond_dim=bond_dim,
             )
             assert actual == expected_res
 
         else:
-            actual = plre.ResourceMPSPrep.resource_decomp(rc, 
+            actual = plre.ResourceMPSPrep.resource_decomp(
+                rc,
                 num_mps_matrices=num_mps,
                 max_bond_dim=bond_dim,
                 precision=precision,
@@ -1196,7 +1202,8 @@ class TestQROMStatePrep:
         """Test that the resources are as expected for the default decomposition"""
         config = ResourceConfig()
         config.conf["precision_qrom_state_prep"] = 1e-9
-        actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(config=config, 
+        actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
+            config=config,
             num_state_qubits=num_state_qubits,
             precision=precision,
             positive_and_real=positive_and_real,
@@ -1742,7 +1749,8 @@ class TestQROMStatePrep:
         """Test that the resources are as expected for the controlled-RY decomposition"""
         config = ResourceConfig()
         config.conf["precision_qrom_state_prep"] = 1e-9
-        actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(config=config, 
+        actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
+            config=config,
             num_state_qubits=num_state_qubits,
             precision=precision,
             positive_and_real=positive_and_real,

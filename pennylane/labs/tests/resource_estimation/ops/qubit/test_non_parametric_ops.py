@@ -23,6 +23,7 @@ from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
 rc = ResourceConfig()
 
+
 class TestHadamard:
     """Tests for ResourceHadamard"""
 

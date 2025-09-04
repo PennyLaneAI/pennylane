@@ -22,6 +22,7 @@ from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
 rc = ResourceConfig()
 
+
 class TestMultiRZ:
     """Test the ResourceMultiRZ class."""
 
@@ -75,7 +76,9 @@ class TestMultiRZ:
     def test_adjoint_decomp(self, num_wires, eps):
         """Test that the adjoint decomposition is correct."""
         expected = [re.GateCount(re.ResourceMultiRZ.resource_rep(num_wires=num_wires, eps=eps))]
-        assert re.ResourceMultiRZ.adjoint_resource_decomp(rc, num_wires=num_wires, eps=eps) == expected
+        assert (
+            re.ResourceMultiRZ.adjoint_resource_decomp(rc, num_wires=num_wires, eps=eps) == expected
+        )
 
     ctrl_data = (
         (

@@ -16,6 +16,7 @@ r"""This module contains the base class for qubit management"""
 from __future__ import annotations
 
 from collections.abc import Callable
+
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 
 
@@ -34,6 +35,8 @@ class ResourceConfig:
             "precision_qrom_state_prep": 1e-9,
             "precision_mps_prep": 1e-9,
             "precision_alias_sampling": 1e-9,
+            "qubitization_rotation_precision": 15,
+            "qubitization_coeff_precision": 15,
         }
         self._decomp_tracker = {}
         self._adj_decomp_tracker = {}

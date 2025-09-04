@@ -62,7 +62,6 @@ class TestPauliRotation:
     def test_resources(self, resource_class, epsilon):
         """Test the resources method"""
 
-    
         label = "error_" + resource_class.__name__.replace("Resource", "").lower()
         config = ResourceConfig()
         config.conf[label] = epsilon
@@ -192,7 +191,9 @@ class TestPauliRotation:
         expected_resources = copy.copy(local_res)
         expected_resources.extend(general_res)
 
-        assert op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_resources
+        assert (
+            op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values) == expected_resources
+        )
         assert op2.resource_decomp(rc, **op2.resource_params) == expected_resources
 
 
