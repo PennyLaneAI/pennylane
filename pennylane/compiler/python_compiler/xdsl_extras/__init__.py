@@ -19,6 +19,7 @@ from .traits import Elementwise, SameOperandsAndResultShape, SameOperandsElement
 
 __all__ = [
     # Constraints
+    "NestedTupleOfConstraint",
     "MemRefConstraint",
     "TensorConstraint",
     # Traits
