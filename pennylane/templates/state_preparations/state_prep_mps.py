@@ -405,7 +405,7 @@ class MPSPrep(Operation):
         )
 
     @classmethod
-    def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None):
+    def _primitive_bind_call(cls, mps, wires, work_wires=None, **kwargs):
         # pylint: disable=arguments-differ
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.

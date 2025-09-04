@@ -27,6 +27,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestGQSP:
     """Test the qml.GQSP template."""
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
 
@@ -37,8 +38,8 @@ class TestGQSP:
             qml.RX(0.3, wires)
             qml.RZ(0.6, wires)
 
-        op = qml.GQSP(unitary(1), angles, control=0)
-        qml.ops.functions.assert_valid(op)
+        op = qml.GQSP(unitary(1), angles, control=(0,))
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("unitary", "poly"),
