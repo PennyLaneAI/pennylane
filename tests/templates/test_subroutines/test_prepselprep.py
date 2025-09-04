@@ -380,19 +380,20 @@ class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
-    exp_grad = [0.41177732, -0.21262349, 1.6437038, -0.74256516]
+    # TODO: We really shouldn't be hardcoding the expected derivative here [sc-98529]
+    exp_grad = [-0.57485039, 0.31253535, -0.717947, 0.48489061]
 
     @pytest.mark.torch
     def test_torch(self):
         """Test the torch interface"""
         import torch
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -406,12 +407,12 @@ class TestInterfaces:
     def test_autograd(self):
         """Test the autograd interface"""
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -427,12 +428,12 @@ class TestInterfaces:
         """Test the jax interface"""
         import jax
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -447,13 +448,13 @@ class TestInterfaces:
         """Test that jax jit works"""
         import jax
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @jax.jit
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
