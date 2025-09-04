@@ -31,7 +31,8 @@ jobs:
     - name: Bump rc version
       run: |
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py --versiontype="versionrc =" --pattern="(\d+)\.(\d+)\.(\d+)-rc(\d+)"
-        # git commit
+        git commit -m "[no ci] bump nightly version"
+        git push
 
     - name: Update version
       run: |
