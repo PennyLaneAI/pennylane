@@ -128,10 +128,9 @@ class PrepSelPrep(Operation):
         if cache is None or not isinstance(cache.get("matrices", None), list):
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
-        coeffs = math.array(self.lcu.terms()[0])
-        shape = math.shape(coeffs)
+        coeffs = math.array(self.coeffs)
         for i, mat in enumerate(cache["matrices"]):
-            if shape == math.shape(mat) and math.allclose(coeffs, mat):
+            if math.shape(coeffs) == math.shape(mat) and math.allclose(coeffs, mat):
                 str_wo_id = f"{op_label}(M{i})"
                 break
         else:
