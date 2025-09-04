@@ -19,15 +19,14 @@ import uuid
 import pytest
 
 import pennylane as qml
+from pennylane import allocate, deallocate
 from pennylane.allocation import (
     Allocate,
     AllocateState,
     Deallocate,
     DynamicRegister,
     DynamicWire,
-    allocate,
     allocate_prim,
-    deallocate,
     deallocate_prim,
 )
 
