@@ -374,17 +374,18 @@ class ParametricMidMeasureMP(MidMeasureMP):
     ):
         self.batch_size = None
         super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
-        self.plane = plane
-        self.angle = angle
+        self.hyperparameters["plane"] = plane
+        self.hyperparameters["angle"] = angle
 
-    def _flatten(self):
-        metadata = (
-            ("angle", self.angle),
-            ("plane", self.plane),
-            ("reset", self.reset),
-            ("id", self.id),
-        )
-        return (), (self.wires, metadata)
+    @property
+    def plane(self) -> str | None:
+        """The plane the measurement basis lies in. Options are "XY", "ZX" and "YZ"""
+        return self.hyperparameters["plane"]
+
+    @property
+    def angle(self):
+        """The angle in radians"""
+        return self.hyperparameters["angle"]
 
     @property
     def hash(self):
@@ -422,11 +423,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
     def __repr__(self):
         """Representation of this class."""
         return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
-
-    @property
-    def has_diagonalizing_gates(self):
-        """Whether there are gates that need to be applied to diagonalize the measurement"""
-        return True
 
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
@@ -478,6 +474,10 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_x"
 
+    def _flatten(self):
+        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        return (), (self.wires, metadata)
+
     def __init__(
         self,
         wires: Wires | None,
@@ -488,13 +488,6 @@ class XMidMeasureMP(ParametricMidMeasureMP):
         super().__init__(
             wires=Wires(wires), angle=0, plane="XY", reset=reset, postselect=postselect, id=id
         )
-
-    def _flatten(self):
-        metadata = (
-            ("reset", self.reset),
-            ("id", self.id),
-        )
-        return (), (self.wires, metadata)
 
     def __repr__(self):
         """Representation of this class."""
@@ -535,6 +528,10 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_y"
 
+    def _flatten(self):
+        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        return (), (self.wires, metadata)
+
     def __init__(
         self,
         wires: Wires | None,
@@ -550,13 +547,6 @@ class YMidMeasureMP(ParametricMidMeasureMP):
             postselect=postselect,
             id=id,
         )
-
-    def _flatten(self):
-        metadata = (
-            ("reset", self.reset),
-            ("id", self.id),
-        )
-        return (), (self.wires, metadata)
 
     def __repr__(self):
         """Representation of this class."""
@@ -636,8 +626,9 @@ def diagonalize_mcms(tape):
 
     .. code-block:: python3
 
-        from pennylane.ftqc import diagonalize_mcms, ParametricMidMeasureMP
         from functools import partial
+
+        from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
 
         dev = qml.device("default.qubit")
 
