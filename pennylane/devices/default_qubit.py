@@ -337,9 +337,9 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_se
         # Use graph decomposition for adjoint mode
         # No circuit available at transform-program construction time, so pass empty ops and 0 work wires
         decompose_kwargs["graph_solution"] = _construct_and_solve_decomp_graph(
-            [],
-            gate_set,
-            0,
+            operations=[],
+            target_gates=gate_set,
+            num_work_wires=0,
             fixed_decomps=None,
             alt_decomps=None,
         )
@@ -654,9 +654,9 @@ class DefaultQubit(Device):
             # Use graph decomposition: build graph_solution and num_available_work_wires
             # No circuit available at transform-program construction time, so pass empty ops and 0 work wires
             decompose_kwargs["graph_solution"] = _construct_and_solve_decomp_graph(
-                [],  # No operations at transform-program construction time
-                ALL_DQ_GATE_SET,
-                0,  # No work wires known at this stage
+                operations=[],
+                target_gates=ALL_DQ_GATE_SET,
+                num_work_wires=0,
                 fixed_decomps=None,
                 alt_decomps=None,
             )
