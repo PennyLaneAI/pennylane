@@ -44,11 +44,9 @@ from pennylane.measurements import (
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
-from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
-from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import defer_measurements
+from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters, defer_measurements
 from pennylane.transforms.core import TransformProgram, transform
-from pennylane.transforms.decompose import _construct_and_solve_decomp_graph
+from pennylane.transforms.decompose import _construct_and_solve_decomp_graph, _get_plxpr_decompose
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .device_api import Device
@@ -72,8 +70,52 @@ from .qubit.simulate import get_final_state, measure_final_state, simulate
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+# Extract plxpr transform for capture mode compatibility
+_, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
-@transform
+
+def device_decompose_plxpr_to_plxpr(
+    jaxpr, consts, targs, tkwargs, *args
+):  # pylint: disable=unused-argument
+    """Custom plxpr transform adapter for decompose_with_device_wires.
+
+    This function adapts the parameters from decompose_with_device_wires to
+    the parameters expected by the original decompose_plxpr_to_plxpr function.
+    """
+    # Extract parameters specific to decompose_with_device_wires
+    device_wires = tkwargs.get("device_wires")
+    stopping_condition_fn = tkwargs.get("stopping_condition_fn")
+
+    # Calculate num_available_work_wires from device_wires (if provided)
+    # Note: In plxpr mode we can't access the tape directly, so we need to
+    # estimate this or get it from kwargs if provided
+    num_available_work_wires = tkwargs.get("num_available_work_wires", 0)
+    if device_wires is not None and "num_available_work_wires" not in tkwargs:
+        # This is a rough estimate - in plxpr mode we might not have perfect wire count
+        num_available_work_wires = len(device_wires)
+
+    # Create parameters that the original decompose_plxpr_to_plxpr expects
+    # In non-graph mode, we can't specify both gate_set and stopping_condition
+    # so we prioritize stopping_condition since that's what the device uses
+    adapted_targs = []
+    adapted_tkwargs = {
+        "stopping_condition": stopping_condition_fn,
+        "max_expansion": tkwargs.get("max_expansion"),
+        "num_available_work_wires": num_available_work_wires,
+        "fixed_decomps": tkwargs.get("fixed_decomps"),
+        "alt_decomps": tkwargs.get("alt_decomps"),
+    }
+
+    if enabled_graph():
+        adapted_tkwargs["gate_set"] = ALL_DQ_GATE_SET
+
+    # Remove None values
+    adapted_tkwargs = {k: v for k, v in adapted_tkwargs.items() if v is not None}
+
+    return decompose_plxpr_to_plxpr(jaxpr, consts, adapted_targs, adapted_tkwargs, *args)
+
+
+@partial(transform, plxpr_transform=device_decompose_plxpr_to_plxpr)
 def decompose_with_device_wires(tape: QuantumScript, device_wires, stopping_condition_fn, **kwargs):
     """Wrapper for preprocess.decompose that calculates num_available_work_wires correctly.
 
@@ -690,15 +732,12 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            if enabled_graph():
-                transform_program.add_transform(
-                    decompose_with_device_wires,
-                    device_wires=self.wires,
-                    stopping_condition_fn=stopping_condition,
-                    stopping_condition_shots=stopping_condition_shots,
-                )
-            else:
-                transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
+            transform_program.add_transform(
+                decompose_with_device_wires,
+                device_wires=self.wires,
+                stopping_condition_fn=stopping_condition,
+                stopping_condition_shots=stopping_condition_shots,
+            )
 
             return transform_program
 
