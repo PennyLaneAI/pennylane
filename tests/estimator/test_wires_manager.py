@@ -131,7 +131,7 @@ class TestWireResourceManager:
         ("wires", "clean_wires", "dirty_wires"), [(2, 2, 4), (4, 0, 6), (6, 0, 8)]
     )
     def test_grab_clean_qubits(self, wires, clean_wires, dirty_wires):
-        """Test that the clean qubits are grabbed properly."""
+        """Test that the clean qubits are grabbed and converted to dirty wires."""
 
         qm = WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=False)
         qm.grab_clean_qubits(wires)
