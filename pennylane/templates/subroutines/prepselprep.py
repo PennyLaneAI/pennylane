@@ -113,6 +113,10 @@ class PrepSelPrep(Operation):
         return (self.lcu,), (self.control,)
 
     @classmethod
+    def _primitive_bind_call(cls, lcu, control, **kwargs):
+        return super()._primitive_bind_call(lcu, wires=control, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "PrepSelPrep":
         return cls(data[0], metadata[0])
 
@@ -238,3 +242,11 @@ def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
 
 
 add_decomps(PrepSelPrep, _prepselprep_decomp)
+
+# pylint: disable=protected-access
+if PrepSelPrep._primitive is not None:
+
+    @PrepSelPrep._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        (lcu,), control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(PrepSelPrep, lcu, control, **kwargs)
