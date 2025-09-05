@@ -509,7 +509,7 @@ class TestMBQCFormalismConversion:
     # to test our protocol for conversion to the MBQC formalism with multiple gates and
     # wires E2E. Following discussion at the FTQC team meeting, we are marking
     # this test as flaky and keeping it here for the time being.
-    @flaky(max_runs=5)
+    @flaky(max_runs=5, min_passes=3)
     @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
@@ -555,7 +555,7 @@ class TestMBQCFormalismConversion:
         for obs in (qml.X, qml.Y, qml.Z):
             ops = base_tape.operations + obs(0).diagonalizing_gates() + obs(1).diagonalizing_gates()
             tape = base_tape.copy(
-                operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=1000
+                operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=500
             )
             (diagonalized_tape,), _ = convert_to_mbqc_formalism(tape, diagonalize_mcms=True)
 
@@ -567,4 +567,7 @@ class TestMBQCFormalismConversion:
         reference_result = qml.execute([reference_tape], dev)[0]
 
         # analytic results, to 2 s.f., are (-0.40, 0.95, -0.37, -0.25, 0.82, 6.2e-17)
-        assert np.allclose(res, reference_result, atol=0.05)
+        # an atol of 0.1 is not ideal for comparing to these results, but it's enough
+        # to catch changes that modify the results, and we have to choose here between
+        # very slow, or fairly noisy
+        assert np.allclose(res, reference_result, atol=0.1)
