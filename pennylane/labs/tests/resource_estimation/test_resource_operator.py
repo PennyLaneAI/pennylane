@@ -27,8 +27,11 @@ from pennylane.labs.resource_estimation import (
     QubitManager,
     ResourceOperator,
     Resources,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
 )
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     _make_hashable,
@@ -209,7 +212,7 @@ class DummyOp(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, config, x) -> list:
+    def default_resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -227,7 +230,7 @@ class DummyOp_no_resource_rep(ResourceOperator):
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
-    def default_resource_decomp(cls, config, x) -> list:
+    def default_resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -245,7 +248,7 @@ class DummyOp_no_resource_params(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, config, x) -> list:
+    def default_resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -498,15 +501,20 @@ def test_make_hashable(input_obj, expected_hashable):
 def test_set_decomp():
     """Test that the set_decomp function works as expected."""
     op1 = DummyOp(x=5)
-    rc = ResourceConfig()
-    assert DummyOp.resource_decomp(config=rc, **op1.resource_params) == [5]
+    assert DummyOp.resource_decomp(**op1.resource_params) == [5]
 
-    def custom_res_decomp(config, x, **kwargs):
+    def custom_res_decomp(x, **kwargs):
         return [x + 1]
 
-    rc.set_decomp(DummyOp, custom_res_decomp)
+    set_decomp(DummyOp, custom_res_decomp)
 
-    assert DummyOp.resource_decomp(config=rc, **op1.resource_params) == [6]
+    assert DummyOp.resource_decomp(**op1.resource_params) == [6]
+
+    def custom_res_decomp_error(y):  # must match signature of default_resource_decomp
+        return [y + 1]
+
+    with pytest.raises(ValueError):
+        set_decomp(DummyOp, custom_res_decomp_error)
 
 
 def test_set_adj_decomp():
@@ -516,20 +524,25 @@ def test_set_adj_decomp():
         """Dummy Adjoint Op class"""
 
         @classmethod
-        def default_adjoint_resource_decomp(cls, config, x):
+        def default_adjoint_resource_decomp(cls, x):
             """dummy adjoint resource decomp method"""
-            return cls.default_resource_decomp(config=config, x=x)
+            return cls.default_resource_decomp(x=x)
 
     op1 = DummyAdjOp(x=5)
-    rc = ResourceConfig()
-    assert DummyAdjOp.adjoint_resource_decomp(config=rc, **op1.resource_params) == [5]
+    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [5]
 
-    def custom_res_decomp(config, x, **kwargs):
+    def custom_res_decomp(x, **kwargs):
         return [x + 1]
 
-    rc.set_decomp(DummyAdjOp, custom_res_decomp, type="adj")
+    set_adj_decomp(DummyAdjOp, custom_res_decomp)
 
-    assert DummyAdjOp.adjoint_resource_decomp(config=rc, **op1.resource_params) == [6]
+    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [6]
+
+    def custom_res_decomp_error(y):  # must match signature of default_adjoint_resource_decomp
+        return [y + 1]
+
+    with pytest.raises(ValueError):
+        set_adj_decomp(DummyAdjOp, custom_res_decomp_error)
 
 
 def test_set_ctrl_decomp():
@@ -539,23 +552,25 @@ def test_set_ctrl_decomp():
         """Dummy Controlled Op class"""
 
         @classmethod
-        def default_controlled_resource_decomp(
-            cls, config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x
-        ):
+        def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
             """dummy control resource decomp method"""
-            return cls.default_resource_decomp(config, x=x + ctrl_num_ctrl_values)
+            return cls.default_resource_decomp(x=x + ctrl_num_ctrl_values)
 
     op1 = DummyCtrlOp(x=5)
-    rc = ResourceConfig()
+    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [5]
 
-    assert DummyCtrlOp.controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [5]
-
-    def custom_res_decomp(config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
+    def custom_res_decomp(ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x, **kwargs):
         return [x + ctrl_num_ctrl_wires]
 
-    rc.set_decomp(DummyCtrlOp, custom_res_decomp, type="ctrl")
+    set_ctrl_decomp(DummyCtrlOp, custom_res_decomp)
 
-    assert DummyCtrlOp.controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [6]
+    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [6]
+
+    def custom_res_decomp_error(x):  # must match signature of default_controlled_resource_decomp
+        return [x + 1]
+
+    with pytest.raises(ValueError):
+        set_ctrl_decomp(DummyCtrlOp, custom_res_decomp_error)
 
 
 def test_set_pow_decomp():
@@ -565,21 +580,25 @@ def test_set_pow_decomp():
         """Dummy Pow Op class"""
 
         @classmethod
-        def default_pow_resource_decomp(cls, config, pow_z, x):
+        def default_pow_resource_decomp(cls, pow_z, x):
             """dummy adjoint resource decomp method"""
-            return cls.default_resource_decomp(config, x=x)
+            return cls.default_resource_decomp(x=x)
 
     op1 = DummyPowOp(x=5)
-    rc = ResourceConfig()
+    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [5]
 
-    assert DummyPowOp.pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [5]
-
-    def custom_res_decomp(config, pow_z, x):
+    def custom_res_decomp(pow_z, x, **kwargs):
         return [x * pow_z]
 
-    rc.set_decomp(DummyPowOp, custom_res_decomp, type="pow")
+    set_pow_decomp(DummyPowOp, custom_res_decomp)
 
-    assert DummyPowOp.pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [15]
+    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [15]
+
+    def custom_res_decomp_error(x):  # must match signature of default_pow_resource_decomp
+        return [x + 1]
+
+    with pytest.raises(ValueError):
+        set_pow_decomp(DummyPowOp, custom_res_decomp_error)
 
 
 class TestGateCount:
@@ -661,7 +680,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, params)
 
         @classmethod
-        def default_resource_decomp(cls, config, num_wires, continuous_param, bool_param):
+        def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
             """dummy default resource decomp method"""
             raise NotImplementedError
 
@@ -681,7 +700,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, {})
 
         @classmethod
-        def default_resource_decomp(cls, config):
+        def default_resource_decomp(cls, **kwargs):
             """dummy default resource decomp method"""
             raise NotImplementedError
 

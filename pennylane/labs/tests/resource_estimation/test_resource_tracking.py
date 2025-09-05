@@ -14,6 +14,7 @@
 """
 Test the core resource tracking functionality.
 """
+import copy
 from collections import defaultdict
 
 import pytest
@@ -26,10 +27,10 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate_resources
+from pennylane.labs.resource_estimation.resource_tracking import estimate_resources, resource_config
 from pennylane.labs.resource_estimation.resources_base import Resources
 
-# pylint: disable= no-self-use, arguments-differ, unused-argument
+# pylint: disable= no-self-use, arguments-differ
 
 
 class ResourceTestCNOT(ResourceOperator):
@@ -40,18 +41,14 @@ class ResourceTestCNOT(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        """Dummy resource_rep for testing"""
-
         return CompressedResourceOp(cls, 2, {})
 
     @property
     def resource_params(self):
-        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, config):
-        """Dummy default_resource_decomp for testing"""
+    def default_resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -63,18 +60,14 @@ class ResourceTestHadamard(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        """Dummy resource_rep for testing"""
-
         return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
-        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, config):
-        """Dummy default_resource_decomp for testing"""
+    def default_resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -86,17 +79,14 @@ class ResourceTestT(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
-        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, config):
-        """Dummy default_resource_decomp for testing"""
+    def default_resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -108,17 +98,14 @@ class ResourceTestZ(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
-        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, config):
-        """Dummy default_resource_decomp for testing"""
+    def default_resource_decomp(cls, **kwargs):
         t = resource_rep(ResourceTestT)
         return [GateCount(t, count=4)]
 
@@ -135,19 +122,16 @@ class ResourceTestRZ(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, epsilon=None):
-        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 1, {"epsilon": epsilon})
 
     @property
     def resource_params(self):
-        """Dummy resource_params for testing"""
         return {"epsilon": self.epsilon}
 
     @classmethod
-    def default_resource_decomp(cls, config, epsilon):
-        """Dummy default_resource_decomp for testing"""
+    def default_resource_decomp(cls, epsilon, **kwargs):
         if epsilon is None:
-            epsilon = config.conf["error_rz"]
+            epsilon = kwargs["config"]["error_rz"]
 
         t = resource_rep(ResourceTestT)
         t_counts = round(1 / epsilon)
@@ -166,17 +150,14 @@ class ResourceTestAlg1(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, num_iter):
-        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 2, {"num_iter": num_iter})
 
     @property
     def resource_params(self):
-        """Dummy resource_params for testing"""
         return {"num_iter": self.num_iter}
 
     @classmethod
-    def default_resource_decomp(cls, config, num_iter):
-        """Dummy default_resource_decomp for testing"""
+    def default_resource_decomp(cls, num_iter, **kwargs):
         cnot = resource_rep(ResourceTestCNOT)
         h = resource_rep(ResourceTestHadamard)
 
@@ -199,17 +180,14 @@ class ResourceTestAlg2(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, num_wires):
-        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @property
     def resource_params(self):
-        """Dummy resource_params for testing"""
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def default_resource_decomp(cls, config, num_wires):
-        """Dummy default_resource_decomp for testing"""
+    def default_resource_decomp(cls, num_wires, **kwargs):
         rz = resource_rep(ResourceTestRZ, {"epsilon": 1e-2})
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
@@ -349,8 +327,8 @@ class TestEstimateResources:
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
-        custom_config = ResourceConfig()
-        custom_config.conf["error_rz"] = error_val
+        custom_config = copy.copy(resource_config)
+        custom_config["error_rz"] = error_val
 
         op = ResourceTestRZ()  # don't specify epsilon
         computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)

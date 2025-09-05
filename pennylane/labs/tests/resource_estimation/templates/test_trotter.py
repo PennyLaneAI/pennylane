@@ -20,9 +20,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import GateCount, QubitManager, resource_rep
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
-rc = ResourceConfig()
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
 
 
@@ -100,7 +98,7 @@ class TestResourceTrotterProduct:
         """Test the resources method returns the correct dictionary"""
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
         computed_res = plre.ResourceTrotterProduct.resource_decomp(
-            rc, cmpr_ops, num_steps, order, num_wires
+            cmpr_ops, num_steps, order, num_wires
         )
         assert computed_res == expected_res
 

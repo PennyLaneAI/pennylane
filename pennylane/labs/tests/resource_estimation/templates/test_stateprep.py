@@ -18,9 +18,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
-rc = ResourceConfig()
 # pylint: disable=no-self-use,too-many-arguments
 
 
@@ -112,7 +110,7 @@ class TestUniformStatePrep:
     )
     def test_resources(self, num_states, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceUniformStatePrep.resource_decomp(rc, num_states) == expected_res
+        assert plre.ResourceUniformStatePrep.resource_decomp(num_states) == expected_res
 
 
 class TestAliasSampling:
@@ -225,17 +223,13 @@ class TestAliasSampling:
     def test_resources(self, num_coeffs, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
-            config = ResourceConfig()
-            config.conf["precision_alias_sampling"] = 1e-9
+            config = {"precision_alias_sampling": 1e-9}
             assert (
-                plre.ResourceAliasSampling.resource_decomp(config, num_coeffs, precision)
+                plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision, config=config)
                 == expected_res
             )
         else:
-            assert (
-                plre.ResourceAliasSampling.resource_decomp(rc, num_coeffs, precision)
-                == expected_res
-            )
+            assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision) == expected_res
 
 
 class TestPrepTHC:
@@ -457,18 +451,16 @@ class TestMPSPrep:
     def test_resources(self, num_mps, bond_dim, precision, expected_res):
         "Test that the resources are correct."
         if precision is None:
-            config = ResourceConfig()
-            config.conf["precision_mps_prep"] = 1e-9
+            config = {"precision_mps_prep": 1e-9}
             actual = plre.ResourceMPSPrep.resource_decomp(
-                config=config,
                 num_mps_matrices=num_mps,
                 max_bond_dim=bond_dim,
+                config=config,
             )
             assert actual == expected_res
 
         else:
             actual = plre.ResourceMPSPrep.resource_decomp(
-                rc,
                 num_mps_matrices=num_mps,
                 max_bond_dim=bond_dim,
                 precision=precision,
@@ -1200,14 +1192,13 @@ class TestQROMStatePrep:
         self, num_state_qubits, precision, positive_and_real, selswap_depths, expected_res
     ):
         """Test that the resources are as expected for the default decomposition"""
-        config = ResourceConfig()
-        config.conf["precision_qrom_state_prep"] = 1e-9
+        config = {"precision_qrom_state_prep": 1e-9}
         actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
-            config=config,
             num_state_qubits=num_state_qubits,
             precision=precision,
             positive_and_real=positive_and_real,
             selswap_depths=selswap_depths,
+            config=config,
         )
 
         assert actual_resources == expected_res
@@ -1747,14 +1738,13 @@ class TestQROMStatePrep:
         self, num_state_qubits, precision, positive_and_real, selswap_depths, expected_res
     ):
         """Test that the resources are as expected for the controlled-RY decomposition"""
-        config = ResourceConfig()
-        config.conf["precision_qrom_state_prep"] = 1e-9
+        config = {"precision_qrom_state_prep": 1e-9}
         actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
-            config=config,
             num_state_qubits=num_state_qubits,
             precision=precision,
             positive_and_real=positive_and_real,
             selswap_depths=selswap_depths,
+            config=config,
         )
 
         assert actual_resources == expected_res
