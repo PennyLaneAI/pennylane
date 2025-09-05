@@ -121,7 +121,32 @@ if TYPE_CHECKING:
     from pennylane.operation import Operator
 
 
-ALL_DQ_GATE_SET = {
+def _generate_controlled_gate_names(base_gates: set[str]) -> set[str]:
+    """Generate controlled gate names from base gate names.
+
+    Args:
+        base_gates: Set of base gate names
+
+    Returns:
+        Set of controlled gate names in the format C(gate_name)
+    """
+    return {f"C({gate})" for gate in base_gates}
+
+
+def _generate_adjoint_gate_names(base_gates: set[str]) -> set[str]:
+    """Generate adjoint gate names from base gate names.
+
+    Args:
+        base_gates: Set of base gate names
+
+    Returns:
+        Set of adjoint gate names in the format Adjoint(gate_name)
+    """
+    return {f"Adjoint({gate})" for gate in base_gates}
+
+
+# Base gate set for DefaultQubit
+_BASE_DQ_GATE_SET = {
     "CNOT",
     "CRX",
     "CRY",
@@ -155,6 +180,13 @@ ALL_DQ_GATE_SET = {
     "T",
     "Toffoli",
 }
+
+# Complete gate set including controlled and adjoint variants
+ALL_DQ_GATE_SET = (
+    _BASE_DQ_GATE_SET
+    | _generate_controlled_gate_names(_BASE_DQ_GATE_SET)
+    | _generate_adjoint_gate_names(_BASE_DQ_GATE_SET)
+)
 
 
 def stopping_condition(op: Operator) -> bool:
