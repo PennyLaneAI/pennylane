@@ -985,7 +985,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_precision = coeff_precision or kwargs["qubitization_coeff_precision"]
+        coeff_precision = coeff_precision or kwargs["coefficient_precision"]
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
@@ -1114,7 +1114,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_precision = coeff_precision or kwargs["qubitization_coeff_precision"]
+        coeff_precision = coeff_precision or kwargs["coefficient_precision"]
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
         coeff_register = int(math.ceil(math.log2(num_coeff)))

@@ -50,9 +50,9 @@ class ResourceConfig:
             ResourceQROMStatePreparation: {"precision": 1e-9},
             ResourceMPSPrep: {"precision": 1e-9},
             ResourceAliasSampling: {"precision": 1e-9},
-            ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
-            ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
-            ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourceQubitizeTHC: {"rot_precision": 15, "coefficient_precision": 15},
+            ResourceSelectTHC: {"rot_precision": 15, "coefficient_precision": 15},
+            ResourcePrepTHC: {"rot_precision": 15, "coefficient_precision": 15},
         }
         self._decomp_tracker = {}
         self._adj_decomp_tracker = {}
