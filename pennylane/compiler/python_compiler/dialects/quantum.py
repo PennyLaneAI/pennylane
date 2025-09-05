@@ -252,7 +252,6 @@ class CountsOp(IRDLOperation):
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
-        AttrSizedResultSegments(as_property=True),
         SameVariadicResultSize(),
     ]
 
