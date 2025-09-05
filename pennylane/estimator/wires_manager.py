@@ -23,6 +23,16 @@ from pennylane.queuing import QueuingManager
 class WireResourceManager:
     r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.
 
+    This class provides a high-level abstraction for managing qubit resources within a quantum
+    circuit.
+    The manager tracks the state of three distinct types of qubits:
+
+    * Algorithmic Qubits: The core qubits used by the quantum algorithm.
+    * Clean Qubits: Auxiliary qubits that are in the :math:`|0\rangle state. They are converted
+      to dirty qubits upon allocation.
+    * Dirty Qubits: Auxiliary qubits that are in an unknown state. They are converted to
+      clean qubits when they are freed.
+
     Args:
         work_wires (int or dict[str, int]): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
@@ -159,7 +169,7 @@ class _WireAction:
 
 
 class AllocWires(_WireAction):
-    r"""Allows users to allocate clean work wires.
+    r"""Allows users to allocate clean work wires through WireResourceManager.
 
     Args:
         num_wires (int): number of work wires to be allocated.
@@ -170,7 +180,7 @@ class AllocWires(_WireAction):
 
 
 class FreeWires(_WireAction):
-    r"""Allows users to free dirty work wires.
+    r"""Allows users to free dirty work wires through WireResourceManager.
 
     Args:
         num_wires (int): number of dirty work wires to be freed.
