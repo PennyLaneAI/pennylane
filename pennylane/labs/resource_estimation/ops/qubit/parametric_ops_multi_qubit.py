@@ -20,7 +20,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
 )
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ, too-many-arguments
 
 
 class ResourceMultiRZ(ResourceOperator):

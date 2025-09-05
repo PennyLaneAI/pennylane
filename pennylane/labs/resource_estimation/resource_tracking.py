@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource tracking logic."""
-import copy
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps

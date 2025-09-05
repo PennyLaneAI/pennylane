@@ -60,7 +60,7 @@ class TestResourceAdjoint:
             """Dummy class with no default adjoint decomp"""
 
             @classmethod
-            def default_adjoint_resource_decomp(rc, cls, **kwargs) -> list[GateCount]:
+            def default_adjoint_resource_decomp(cls, config, **kwargs) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined
 
@@ -134,7 +134,7 @@ class TestResourcePow:
             """Dummy class with no default pow decomp"""
 
             @classmethod
-            def default_pow_resource_decomp(rc, cls, pow_z, **kwargs) -> list[GateCount]:
+            def default_pow_resource_decomp(cls, config, pow_z, **kwargs) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined
 
@@ -214,7 +214,7 @@ class TestResourceControlled:
 
             @classmethod
             def default_controlled_resource_decomp(
-                rc, cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
+                cls, config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined

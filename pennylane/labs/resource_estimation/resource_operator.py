@@ -28,7 +28,7 @@ from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=unused-argument, no-member
+# pylint: disable=unused-argument, no-member, protected-access
 
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
