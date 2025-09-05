@@ -658,18 +658,12 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            transform_program.add_transform(
-                decompose_with_device_wires,
-                device_wires=self.wires,
-                stopping_condition_fn=stopping_condition,
-                stopping_condition_shots=stopping_condition_shots,
-                name=self.name,
-            )
             if enabled_graph():
                 transform_program.add_transform(
-                    transforms_decompose,
-                    gate_set=ALL_DQ_GATE_SET,
-                    stopping_condition=stopping_condition,
+                    decompose_with_device_wires,
+                    device_wires=self.wires,
+                    stopping_condition_fn=stopping_condition,
+                    stopping_condition_shots=stopping_condition_shots,
                 )
             else:
                 transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
