@@ -19,7 +19,7 @@ import pennylane as qml
 # pylint: disable= too-few-public-methods
 
 
-class WiresResourceManager:
+class _WireResourceManager:
     r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.
 
     Args:
@@ -32,12 +32,12 @@ class WiresResourceManager:
 
     **Example**
 
-    >>> q = WiresResourceManager(
+    >>> q = _WireResourceManager(
     ...             work_wires={"clean": 2, "dirty": 2},
     ...             tight_budget=False,
     ...     )
     >>> print(q)
-    WiresResourceManager(clean=2, dirty=2, logic=0, tight_budget=False)
+    _WireResourceManager(clean=2, dirty=2, logic=0, tight_budget=False)
 
     """
 
@@ -57,7 +57,7 @@ class WiresResourceManager:
 
     def __str__(self):
         return (
-            f"WiresResourceManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "
+            f"_WireResourceManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "
             f"algorithmic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
         )
 
@@ -66,7 +66,7 @@ class WiresResourceManager:
             {"clean": self._clean_qubit_counts, "dirty": self._dirty_qubit_counts}
         )
         return (
-            f"WiresResourceManager(work_wires={work_wires_str}, algo_wires={self._logic_qubit_counts}, "
+            f"_WireResourceManager(work_wires={work_wires_str}, algo_wires={self._logic_qubit_counts}, "
             f"tight_budget={self.tight_budget})"
         )
 
@@ -171,7 +171,7 @@ class _WireAction:
         return self
 
     def __eq__(self, other: "_WireAction") -> bool:
-        return self.num_wires == other.num_wires
+        return isinstance(other, self.__class__) and self.num_wires == other.num_wires
 
     def __mul__(self, other):
         if isinstance(other, int):
