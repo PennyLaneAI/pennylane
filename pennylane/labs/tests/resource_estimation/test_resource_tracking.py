@@ -228,7 +228,9 @@ class TestEstimateResources:
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
         custom_config.conf[ResourceTestRZ] = {"error_rz": 1e-9}
-        computed_resources = estimate_resources(my_circuit, gate_set=gate_set, config=custom_config)()
+        computed_resources = estimate_resources(
+            my_circuit, gate_set=gate_set, config=custom_config
+        )()
         assert computed_resources == expected_resources
 
     def test_estimate_resources_from_resource_operator(self):

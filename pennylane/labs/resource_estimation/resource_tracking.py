@@ -24,7 +24,11 @@ from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     ResourceOperator,
 )
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import ResourceRX, ResourceRY, ResourceRZ
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
 from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager

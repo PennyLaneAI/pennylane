@@ -494,6 +494,7 @@ def test_make_hashable(input_obj, expected_hashable):
     assert isinstance(result, Hashable)
     assert hash(result) is not None
 
+
 class TestGateCount:
     """Tests for the GateCount class."""
 

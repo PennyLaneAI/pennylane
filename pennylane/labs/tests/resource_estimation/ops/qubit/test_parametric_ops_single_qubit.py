@@ -86,10 +86,7 @@ class TestPauliRotation:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert (
-            op_resource_type.default_resource_decomp(**op_resource_params, **config)
-            == expected
-        )
+        assert op_resource_type.default_resource_decomp(**op_resource_params, **config) == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
