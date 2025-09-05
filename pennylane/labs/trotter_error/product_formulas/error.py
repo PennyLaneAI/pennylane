@@ -130,9 +130,10 @@ def perturbation_error(
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
         parallel_mode (str): the mode of parallelization to use.
-            Options are "state" or "commutator".
+            Options are "state", "commutator", or "nested_commutator".
             "state" parallelizes the computation of expectation values per state,
-            while "commutator" parallelizes the application of commutators to each state.
+            "commutator" parallelizes the application of commutators to each state,
+            "nested_commutator" parallelizes the application of individual operator terms within each commutator.
             Default value is set to "state".
         topk (int, optional): the number of most important commutators to evaluate for each order.
             Commutators are ranked by importance using the formula: 2^(length-1) * product of fragment norms.
@@ -317,7 +318,97 @@ def perturbation_error(
 
         return expectations, convergence_info
 
-    raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
+    if parallel_mode == "nested_commutator":
+        expectations = []
+        convergence_info = {}
+        
+        for state_idx, state in enumerate(states):
+            state_convergence = {}
+            state_expectations = {}
+            
+            for order, commutators_dict in sorted_commutators_by_order.items():
+                if len(commutators_dict) == 0:
+                    continue
+                    
+                # Reset expectation accumulator for each order
+                current_expectation = 0.0
+                partial_sums = []
+                mean_history = []
+                median_history = []
+                std_history = []
+                
+                # Process commutators in order of importance
+                for commutator in commutators_dict.keys():
+                    # Use parallel evaluation for each commutator
+                    commutator_expectation = _evaluate_expected_value_parallel(
+                        commutator, fragments, state, timestep, order, backend, num_workers
+                    )
+                    current_expectation += commutator_expectation
+                    partial_sums.append(current_expectation)
+                    
+                    # Compute convergence statistics incrementally
+                    mean_history, median_history, std_history = _update_convergence_histories(
+                        partial_sums, mean_history, median_history, std_history
+                    )
+                
+                state_expectations[order] = current_expectation
+                state_convergence[order] = {
+                    "mean_history": mean_history,
+                    "median_history": median_history,
+                    "std_history": std_history,
+                }
+            
+            expectations.append(state_expectations)
+            convergence_info[state_idx] = state_convergence
+        
+        return expectations, convergence_info
+
+    if parallel_mode == "nested_commutator":
+        expectations = []
+        convergence_info = {}
+        
+        for state_idx, state in enumerate(states):
+            state_convergence = {}
+            state_expectations = {}
+            
+            for order, commutators_dict in sorted_commutators_by_order.items():
+                if len(commutators_dict) == 0:
+                    continue
+                    
+                # Reset expectation accumulator for each order
+                current_expectation = 0.0
+                partial_sums = []
+                mean_history = []
+                median_history = []
+                std_history = []
+                
+                # Process commutators in order of importance
+                for commutator in commutators_dict.keys():
+                    # Use parallel evaluation for each commutator
+                    commutator_expectation = _evaluate_expected_value_parallel(
+                        commutator, fragments, state, timestep, order, backend, num_workers
+                    )
+                    current_expectation += commutator_expectation
+                    partial_sums.append(current_expectation)
+                    
+                    # Compute convergence statistics
+                    mean_history, median_history, std_history = _update_convergence_histories(
+                        partial_sums, mean_history, median_history, std_history
+                    )
+                
+                state_expectations[order] = current_expectation
+                state_convergence[order] = {
+                    "mean_history": mean_history,
+                    "median_history": median_history,
+                    "std_history": std_history,
+                }
+            
+            expectations.append(state_expectations)
+            convergence_info[state_idx] = state_convergence
+        
+        return expectations, convergence_info
+
+    raise ValueError("Invalid parallel mode. Choose 'state', 'commutator', or 'nested_commutator'.")
 
 
 def _get_expval_state(
@@ -364,6 +455,44 @@ def _get_expval_state(
     return expectations, convergence
 
 
+def _evaluate_expected_value_parallel(
+    commutator: tuple[Hashable], 
+    fragments: dict[Hashable, Fragment], 
+    state: AbstractState,
+    timestep: float,
+    order: int,
+    backend: str,
+    num_workers: int,
+) -> complex:
+    """Parallel version of _evaluate_expected_value.
+    
+    Parallelizes the application of individual terms within a commutator.
+    
+    Args:
+        commutator: The commutator tuple
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        state: Quantum state to apply commutator to
+        timestep: Time step for simulation
+        order: Order of the commutator (used for phase factor)
+        backend: Parallel execution backend
+        num_workers: Number of parallel workers
+        
+    Returns:
+        complex: The expectation value (1j * timestep)^order * <state | commutator | state>
+    """
+    op_terms = _op_list(commutator)
+    
+    executor = concurrency.backends.get_executor(backend)
+    with executor(max_workers=num_workers) as ex:
+        expected_values = ex.starmap(
+            _apply_single_term,
+            [(term, coeff, state, fragments) for term, coeff in op_terms.items()],
+        )
+    
+    total_expectation = sum(expected_values)
+    return (1j * timestep) ** order * total_expectation
+
+
 def _evaluate_expected_value(
     commutator: tuple[Hashable], 
     fragments: dict[Hashable, Fragment], 
@@ -394,6 +523,72 @@ def _evaluate_expected_value(
     return (1j * timestep) ** order * expected_value
 
 
+def _apply_single_term(
+    term: tuple[Hashable], 
+    coeff: complex, 
+    state: AbstractState, 
+    fragments: dict[Hashable, Fragment]
+) -> complex:
+    """Apply a single operator term to a state and compute the expectation value.
+    
+    This function applies a sequence of fragment operations to a state and computes
+    the expectation value with the original state. It's essentially the inner loop
+    of _evaluate_expected_value, extracted for parallelization.
+    
+    Args:
+        term: Sequence of fragment keys to apply (in reverse order)
+        coeff: Coefficient for this term
+        state: Initial quantum state
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        
+    Returns:
+        complex: coeff * <state | (applied fragments) | state>
+    """
+    tmp_state = copy.copy(state)
+    for frag in reversed(term):
+        if isinstance(frag, frozenset):
+            frag = sum(
+                (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
+            )
+        else:
+            frag = fragments[frag]
+        tmp_state = frag.apply(tmp_state)
+    
+    return coeff * state.dot(tmp_state)
+
+
+def _apply_single_term(
+    term: tuple[Hashable], 
+    coeff: complex, 
+    state: AbstractState, 
+    fragments: dict[Hashable, Fragment]
+) -> complex:
+    """Apply a single operator term to a state and compute the expectation value.
+    
+    This is essentially the inner loop of _evaluate_expected_value, extracted for parallelization.
+    
+    Args:
+        term: Sequence of fragment keys to apply (in reverse order)
+        coeff: Coefficient for this term
+        state: Initial quantum state
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        
+    Returns:
+        complex: coeff * <state | (applied fragments) | state>
+    """
+    tmp_state = copy.copy(state)
+    for frag in reversed(term):
+        if isinstance(frag, frozenset):
+            frag = sum(
+                (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
+            )
+        else:
+            frag = fragments[frag]
+        tmp_state = frag.apply(tmp_state)
+    
+    return coeff * state.dot(tmp_state)
+
+
 def _op_list(commutator) -> dict[tuple[Hashable], complex]:
     """Returns the operations needed to apply the commutator to a state."""
 
@@ -413,6 +608,45 @@ def _op_list(commutator) -> dict[tuple[Hashable], complex]:
     ops1.update(ops2)
 
     return ops1
+
+
+def _evaluate_expected_value_parallel(
+    commutator: tuple[Hashable], 
+    fragments: dict[Hashable, Fragment], 
+    state: AbstractState,
+    timestep: float,
+    order: int,
+    backend: str,
+    num_workers: int,
+) -> complex:
+    """Parallel version of _evaluate_expected_value.
+    
+    Parallelizes the application of individual terms within a commutator by
+    distributing the computation of each operator term across multiple workers.
+    
+    Args:
+        commutator: The commutator tuple
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        state: Quantum state to apply commutator to
+        timestep: Time step for simulation
+        order: Order of the commutator (used for phase factor)
+        backend: Parallel execution backend
+        num_workers: Number of parallel workers
+        
+    Returns:
+        complex: (1j * timestep)^order * <state | commutator | state>
+    """
+    op_terms = _op_list(commutator)
+    
+    executor = concurrency.backends.get_executor(backend)
+    with executor(max_workers=num_workers) as ex:
+        expected_values = ex.starmap(
+            _apply_single_term,
+            [(term, coeff, state, fragments) for term, coeff in op_terms.items()],
+        )
+    
+    total_expectation = sum(expected_values)
+    return (1j * timestep) ** order * total_expectation
 
 
 def _calculate_commutator_importance(
