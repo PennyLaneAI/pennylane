@@ -42,7 +42,6 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         self.conf = {
-<<<<<<< HEAD
             ResourceRX: {"eps": 1e-9},
             ResourceRY: {"eps": 1e-9},
             ResourceRZ: {"eps": 1e-9},
@@ -51,19 +50,9 @@ class ResourceConfig:
             ResourceQROMStatePreparation: {"precision": 1e-9},
             ResourceMPSPrep: {"precision": 1e-9},
             ResourceAliasSampling: {"precision": 1e-9},
-=======
-            ResourceRX: {"error_rx": 1e-9},
-            ResourceRY: {"error_ry": 1e-9},
-            ResourceRZ: {"error_rz": 1e-9},
-            ResourceSelectPauliRot: {"precision_select_pauli_rot": 1e-9},
-            ResourceQubitUnitary: {"precision_qubit_unitary": 1e-9},
-            ResourceQROMStatePreparation: {"precision_qrom_state_prep": 1e-9},
-            ResourceMPSPrep: {"precision_mps_prep": 1e-9},
-            ResourceAliasSampling: {"precision_alias_sampling": 1e-9},
->>>>>>> 9ae8bf803b (fixes)
-            ResourceQubitizeTHC: {"rot_precision": 15, "coefficient_precision": 15},
-            ResourceSelectTHC: {"rot_precision": 15, "coefficient_precision": 15},
-            ResourcePrepTHC: {"rot_precision": 15, "coefficient_precision": 15},
+            ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
         }
         self._decomp_tracker = {}
         self._adj_decomp_tracker = {}

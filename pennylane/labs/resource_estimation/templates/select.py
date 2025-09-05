@@ -195,8 +195,6 @@ class ResourceSelectTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        rotation_precision = rotation_precision or kwargs["rot_precision"]
-
         gate_list = []
         # Total select cost from Eq. 43 in arXiv:2011.03494
 
