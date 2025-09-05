@@ -404,9 +404,4 @@ def _combine_dict(dict1: defaultdict, dict2: defaultdict) -> defaultdict:
 
 def _scale_dict(dict1: defaultdict, scalar: int) -> defaultdict:
     r"""Private function which scales the values in a dictionary."""
-    scaled_dict = copy.copy(dict1)
-
-    for k in scaled_dict:
-        scaled_dict[k] *= scalar
-
-    return scaled_dict
+    return {k: v * scalar for k, v in dict1.values}
