@@ -173,6 +173,12 @@ class TestRowCol:
         assert "CNOTs from column elimination (0): [(0, 1)]" in captured.out
         assert "CNOTs from row elimination (0): []" in captured.out
 
+    def test_connectivity_default(self):
+        """Test the connectivity default is used correctly"""
+        m1 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=None)
+        m2 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=nx.complete_graph(2))
+        assert np.allclose(m1, m2)
+
     @pytest.mark.parametrize("n", list(range(2, 13)))
     @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
     def test_identity(self, n, connectivity_fn):
