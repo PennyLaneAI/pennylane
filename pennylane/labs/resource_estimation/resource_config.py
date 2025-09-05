@@ -42,9 +42,9 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         self.conf = {
-            ResourceRX: {"error_rx": 1e-9},
-            ResourceRY: {"error_ry": 1e-9},
-            ResourceRZ: {"error_rz": 1e-9},
+            ResourceRX: {"eps": 1e-9},
+            ResourceRY: {"eps": 1e-9},
+            ResourceRZ: {"eps": 1e-9},
             ResourceSelectPauliRot: {"precision": 1e-9},
             ResourceQubitUnitary: {"precision": 1e-9},
             ResourceQROMStatePreparation: {"precision": 1e-9},
