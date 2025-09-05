@@ -65,8 +65,8 @@ class TransformFunctionsExt(TransformFunctions):
         """Callback wrapper to run the callback function before the pass."""
         if not self.callback:
             return
-        if self.pass_level == 0 and self.callback_first:
-            self.callback(previous_pass, module, None, pass_level=self.pass_level)
+        if self.callback_first:
+            self.callback(previous_pass, module, None)
 
     def _post_pass_callback(self, previous_pass, module):
         """Increment level and run callback if defined."""
