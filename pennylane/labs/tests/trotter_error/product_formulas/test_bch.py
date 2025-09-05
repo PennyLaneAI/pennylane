@@ -277,3 +277,27 @@ def test_against_matrix_log(fragments, product_formula):
     log_error = log - (1j * t * ham) / t**order
 
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
+
+
+def test_importance_scores():
+    """Test that unimportant commutators are discarded."""
+
+    u = 1 / (4 - 4 ** (1 / 3))
+    v = 1 - 4 * u
+
+    pf_second = ProductFormula(["A", "B", "A"], [1 / 2, 1, 1 / 2])
+    pf_fourth = pf_second(u) ** 2 @ pf_second(v) @ pf_second(u) ** 2
+
+    importance_scores = {
+        "A": 0.9,
+        "B": 0.1,
+    }
+
+    bch = bch_expansion(pf_fourth, order=5, importance=(importance_scores, 1e-8))[4]
+    assert set(bch.keys()) == {
+        ("A", "A", "B", "A", "B"),
+        ("A", "A", "A", "A", "B"),
+        ("B", "A", "A", "A", "B"),
+        ("B", "A", "B", "A", "B"),
+        ("B", "B", "B", "A", "B"),
+    }
