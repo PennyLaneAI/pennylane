@@ -98,8 +98,8 @@ class TestWireResourceManager:
         clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
 
         expected_string = (
-            f"WireResourceManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
-            f"algorithmic qubits={logic_qubits}, tight budget={tight_budget})"
+            f"WireResourceManager(clean wires={clean_qubits}, dirty wires={dirty_qubits}, "
+            f"algorithmic wires={logic_qubits}, tight budget={tight_budget})"
         )
         qm.algo_qubits = algo_q
         assert str(qm) == expected_string

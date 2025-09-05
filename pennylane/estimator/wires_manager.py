@@ -23,9 +23,9 @@ class WireResourceManager:
     r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.
 
     Args:
-        work_wires (int or Dict[str, int]): Number of work wires or a dictionary containing
+        work_wires (int or dict[str, int]): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
-            `int` is provided.
+            ``int`` is provided.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
         tight_budget (bool): Determines whether extra clean qubits can be allocated when they
             exceed the available amount. The default is ``False``.
@@ -37,18 +37,17 @@ class WireResourceManager:
     ...             tight_budget=False,
     ...     )
     >>> print(q)
-    WireResourceManager(clean=2, dirty=2, logic=0, tight_budget=False)
+    WireResourceManager(clean wires=2, dirty wires=2, algorithmic wires=0, tight budget=False)
 
     """
 
     def __init__(self, work_wires: int | dict, algo_wires=0, tight_budget=False) -> None:
 
-        if isinstance(work_wires, dict):
-            clean_wires = work_wires["clean"]
-            dirty_wires = work_wires["dirty"]
-        else:
-            clean_wires = work_wires
-            dirty_wires = 0
+        clean_wires, dirty_wires = (
+            (work_wires["clean"], work_wires["dirty"])
+            if isinstance(work_wires, dict)
+            else (work_wires, 0)
+        )
 
         self.tight_budget = tight_budget
         self.algo_wires = algo_wires
@@ -57,14 +56,12 @@ class WireResourceManager:
 
     def __str__(self):
         return (
-            f"WireResourceManager(clean qubits={self.clean_wires}, dirty qubits={self.dirty_wires}, "
-            f"algorithmic qubits={self.algo_wires}, tight budget={self.tight_budget})"
+            f"WireResourceManager(clean wires={self.clean_wires}, dirty wires={self.dirty_wires}, "
+            f"algorithmic wires={self.algo_wires}, tight budget={self.tight_budget})"
         )
 
     def __repr__(self) -> str:
-        work_wires_str = repr(
-            {"clean": self.clean_wires, "dirty": self.dirty_wires}
-        )
+        work_wires_str = repr({"clean": self.clean_wires, "dirty": self.dirty_wires})
         return (
             f"WireResourceManager(work_wires={work_wires_str}, algo_wires={self.algo_wires}, "
             f"tight_budget={self.tight_budget})"
