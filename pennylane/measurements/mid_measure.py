@@ -135,6 +135,7 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
+    has_matrix = False
     has_decomposition = False
 
     def decomposition(self):
