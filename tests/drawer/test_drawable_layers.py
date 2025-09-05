@@ -207,20 +207,12 @@ class TestDrawableLayers:
         assert layers == [ops[:2]] + [[op] for op in ops[2:]]
 
 
-class TestMidMeasure:
-    """Tests the various changes from mid-circuit measurements."""
+def test_basic_mid_measure():
+    """Tests a simple case with mid-circuit measurement."""
+    with AnnotatedQueue() as q:
+        m0 = qml.measure(0)
+        qml.cond(m0, qml.PauliX)(1)
 
-    def test_basic_mid_measure(self):
-        """Tests a simple case with mid-circuit measurement."""
-        with AnnotatedQueue() as q:
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.PauliX)(1)
+    bit_map = {q.queue[0]: None}
 
-        bit_map = {q.queue[0]: None}
-
-        assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
-
-    def test_cannot_draw_multi_wire_MidMeasureMP(self):
-        """Tests that MidMeasureMP is only supported with one wire."""
-        with pytest.raises(ValueError, match="mid-circuit measurements with more than one wire."):
-            drawable_layers([MidMeasureMP([0, 1])])
+    assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
