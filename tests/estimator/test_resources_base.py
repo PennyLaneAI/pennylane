@@ -19,7 +19,6 @@ from dataclasses import dataclass
 
 import pytest
 
-from pennylane.estimator.wires_manager import WireResourceManager
 from pennylane.estimator.resources_base import (
     Resources,
     _combine_dict,
@@ -29,6 +28,7 @@ from pennylane.estimator.resources_base import (
     mul_in_parallel,
     mul_in_series,
 )
+from pennylane.estimator.wires_manager import WireResourceManager
 
 # pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself
 

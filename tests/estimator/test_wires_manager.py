@@ -20,17 +20,17 @@ import pytest
 
 import pennylane as qml
 from pennylane.estimator import AllocWires, FreeWires
-from pennylane.estimator.wires_manager import _WireResourceManager
+from pennylane.estimator.wires_manager import WireResourceManager
 
 
 # pylint: disable= no-self-use
 class TestWireResourceManager:
-    """Test the methods and attributes of the _WireResourceManager class"""
+    """Test the methods and attributes of the WireResourceManager class"""
 
     qm_quantities = (
-        _WireResourceManager(work_wires=2),
-        _WireResourceManager(work_wires={"clean": 4, "dirty": 2}, algo_wires=20),
-        _WireResourceManager({"clean": 2, "dirty": 2}, algo_wires=10, tight_budget=True),
+        WireResourceManager(work_wires=2),
+        WireResourceManager(work_wires={"clean": 4, "dirty": 2}, algo_wires=20),
+        WireResourceManager({"clean": 2, "dirty": 2}, algo_wires=10, tight_budget=True),
     )
 
     qm_parameters = (
@@ -41,7 +41,7 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
     def test_init(self, qm, attribute_tup):
-        """Test that the _WireResourceManager class is instantiated as expected."""
+        """Test that the WireResourceManager class is instantiated as expected."""
         clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
 
         assert qm.clean_qubits == clean_qubits
@@ -55,7 +55,7 @@ class TestWireResourceManager:
 
         clean_qubits, dirty_qubits, algo_qubits, tight_budget = attribute_tup
 
-        qm2 = _WireResourceManager(
+        qm2 = WireResourceManager(
             work_wires={"clean": clean_qubits, "dirty": dirty_qubits},
             algo_wires=algo_qubits,
             tight_budget=tight_budget,
@@ -86,13 +86,13 @@ class TestWireResourceManager:
         zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
     )
     def test_repr(self, qm, attribute_tup, algo_q):
-        """Test that the _WireResourceManager representation is correct."""
+        """Test that the WireResourceManager representation is correct."""
 
         clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
 
         work_wires_str = repr({"clean": clean_qubits, "dirty": dirty_qubits})
         expected_string = (
-            f"_WireResourceManager(work_wires={work_wires_str}, algo_wires={logic_qubits}, "
+            f"WireResourceManager(work_wires={work_wires_str}, algo_wires={logic_qubits}, "
             f"tight_budget={tight_budget})"
         )
 
@@ -104,12 +104,12 @@ class TestWireResourceManager:
         zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
     )
     def test_str(self, qm, attribute_tup, algo_q):
-        """Test that the _WireResourceManager string is correct."""
+        """Test that the WireResourceManager string is correct."""
 
         clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
 
         expected_string = (
-            f"_WireResourceManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
+            f"WireResourceManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
             f"algorithmic qubits={logic_qubits}, tight budget={tight_budget})"
         )
         qm.algo_qubits = algo_q
@@ -144,7 +144,7 @@ class TestWireResourceManager:
     def test_grab_clean_qubits(self, wires, clean_wires, dirty_wires):
         """Test that the clean qubits are grabbed properly."""
 
-        qm = _WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=False)
+        qm = WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=False)
         qm.grab_clean_qubits(wires)
         assert qm.clean_qubits == clean_wires
         assert qm.dirty_qubits == dirty_wires
@@ -153,14 +153,14 @@ class TestWireResourceManager:
         """Test that an error is raised when the number of clean qubits required is greater
         than the available qubits."""
 
-        qm = _WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
+        qm = WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
         with pytest.raises(ValueError, match="Grabbing more qubits than available clean qubits."):
             qm.grab_clean_qubits(6)
 
     def test_free_qubits(self):
         """Test that the dirty qubits are freed properly."""
 
-        qm = _WireResourceManager(work_wires={"clean": 4, "dirty": 2})
+        qm = WireResourceManager(work_wires={"clean": 4, "dirty": 2})
         qm.free_qubits(2)
         assert qm.clean_qubits == 6
         assert qm.dirty_qubits == 0
@@ -169,7 +169,7 @@ class TestWireResourceManager:
         """Test that an error is raised when the number of qubits being freed is greater
         than the available dirty qubits."""
 
-        qm = _WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
+        qm = WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
         with pytest.raises(ValueError, match="Freeing more qubits than available dirty qubits."):
             qm.free_qubits(6)
 

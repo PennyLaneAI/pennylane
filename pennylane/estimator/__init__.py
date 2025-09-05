@@ -38,4 +38,3 @@ Resource Estimation Base Classes:
 from .wires_manager import AllocWires, FreeWires
 
 from .resources_base import Resources
-
