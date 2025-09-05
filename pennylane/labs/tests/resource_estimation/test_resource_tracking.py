@@ -29,7 +29,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate_resources
 from pennylane.labs.resource_estimation.resources_base import Resources
 
-# pylint: disable= no-self-use, arguments-differ
+# pylint: disable= no-self-use, arguments-differ, unused-argument
 
 
 class ResourceTestCNOT(ResourceOperator):
