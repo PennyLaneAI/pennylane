@@ -146,13 +146,19 @@ class ResourceSelectTHC(ResourceOperator):
             raise TypeError(
                 f"`rotation_precision` must be an integer, provided {type(rotation_precision)}."
             )
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
 
+        # num_orb*2 for state register, 2*log(M) for \mu and \nu registers
+        # 6 extras are for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
         params = {
             "compact_ham": compact_ham,
             "rotation_precision": rotation_precision,
             "select_swap_depth": select_swap_depth,
         }
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(

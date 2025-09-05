@@ -160,8 +160,6 @@ class QubitManager:
 class _WireAction:
     """Base class for operations that manage qubit resources."""
 
-    _queue_category = "_resource_qubit_action"
-
     def __init__(self, num_wires):
         self.num_wires = num_wires
         if qml.QueuingManager.recording():

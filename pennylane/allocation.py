@@ -14,14 +14,13 @@
 """
 This module contains the commands for allocating and deallocating wires dynamically.
 """
-import uuid
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
@@ -70,31 +69,6 @@ else:
     @deallocate_prim.def_abstract_eval
     def _(*wires):
         return []
-
-
-class DynamicWire:
-    """A wire whose concrete value will be determined later during a compilation step or execution.
-
-    Multiple dynamic wires can correspond to the same device wire as long as they are properly allocated and
-    deallocated.
-
-    Args:
-        key (Optional[str]): a ``uuid4`` string to uniquely identify the dynamic wire.
-    """
-
-    def __init__(self, key: uuid.UUID | None = None):
-        self.key = key or uuid.uuid4()
-
-    def __eq__(self, other):
-        if not isinstance(other, DynamicWire):
-            return False
-        return self.key == other.key
-
-    def __hash__(self):
-        return hash(("DynamicWire", self.key))
-
-    def __repr__(self):
-        return "<DynamicWire>"
 
 
 class Allocate(Operator):
