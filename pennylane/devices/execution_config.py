@@ -19,11 +19,20 @@ from __future__ import annotations
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.math.interface_utils import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
+
+from .mcm_config_utils import (
+    MCM_METHOD,
+    POSTSELECT_MODE,
+    SUPPORTED_MCM_METHODS,
+    SUPPORTED_POSTSELECT_MODES,
+    get_canonical_mcm_method,
+    get_canonical_postselect_mode,
+)
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors.base import RemoteExec
@@ -84,16 +93,14 @@ class FrozenMapping(MutableMapping):
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: (
-        Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"] | str | None
-    ) = None
+    mcm_method: MCM_METHOD | str | None = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: Literal["hw-like", "fill-shots", "pad-invalid-samples"] | str | None = None
+    postselect_mode: POSTSELECT_MODE | str | None = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
@@ -103,8 +110,25 @@ class MCMConfig:
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
-            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+        if isinstance(self.mcm_method, str):
+            object.__setattr__(self, "mcm_method", get_canonical_mcm_method(self.mcm_method))
+        elif isinstance(self.mcm_method, MCM_METHOD):
+            object.__setattr__(self, "mcm_method", self.mcm_method)
+        elif self.mcm_method and not isinstance(self.mcm_method, MCM_METHOD):
+            raise ValueError(
+                f"Invalid mid-circuit measurement method '{self.mcm_method}', must be one of {SUPPORTED_MCM_METHODS}."
+            )
+
+        if isinstance(self.postselect_mode, str):
+            object.__setattr__(
+                self, "postselect_mode", get_canonical_postselect_mode(self.postselect_mode)
+            )
+        elif isinstance(self.postselect_mode, POSTSELECT_MODE):
+            object.__setattr__(self, "postselect_mode", self.postselect_mode)
+        elif self.postselect_mode and not isinstance(self.postselect_mode, POSTSELECT_MODE):
+            raise ValueError(
+                f"Invalid postselection mode '{self.postselect_mode}', must be one of {SUPPORTED_POSTSELECT_MODES}."
+            )
 
 
 # pylint: disable=too-many-instance-attributes

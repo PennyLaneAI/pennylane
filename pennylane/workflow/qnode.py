@@ -48,10 +48,13 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
+    from pennylane.devices.mcm_config_utils import (
+        SupportedMCMMethodUserInput,
+        SupportedPostSelectModeUserInput,
+    )
     from pennylane.math import SupportedInterfaceUserInput
     from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
-    from pennylane.workflow.resolution import SupportedDiffMethods
 
     SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
@@ -119,13 +122,6 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) 
         results = (results,)
 
     return pytrees.unflatten(results, qfunc_output_structure)
-
-
-def _validate_mcm_config(
-    postselect_mode: Literal["hw-like", "fill-shots"] | None,
-    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None,
-) -> None:
-    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
@@ -530,8 +526,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: bool | None = False,
-        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
-        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        postselect_mode: SupportedPostSelectModeUserInput = None,
+        mcm_method: SupportedMCMMethodUserInput = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,
@@ -591,7 +587,6 @@ class QNode:
         self.static_argnums = sorted(static_argnums)
 
         # execution keyword arguments
-        _validate_mcm_config(postselect_mode, mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
