@@ -25,7 +25,16 @@ Qubit Management Classes:
     ~AllocWires
     ~FreeWires
 
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
 
 """
 
 from .wires_manager import AllocWires, FreeWires
+
+from .resources_base import Resources
