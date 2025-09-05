@@ -336,7 +336,8 @@ class TestCallbackIntegration:
 
             def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None: ...
 
-        def print_between_passes(*args, **kwargs):
+        # pylint: disable=unused-argument
+        def print_between_passes(*_, **kwargs):
             print("hello world")
 
         @xdsl_from_docstring
@@ -364,7 +365,7 @@ class TestCallbackIntegration:
     def test_callback_prints_module_after_each_pass(self, capsys):
         """Test that the callback prints the module after each pass"""
 
-        # pylint: disable=redefined-outer-name
+        # pylint: disable=redefined-outer-name, unused-argument
         def print_between_passes(_, module, __, **kwargs):
             print("=== Between Pass ===")
             print(module)
@@ -431,7 +432,7 @@ class TestCallbackIntegration:
     def test_callback_run_integration(self, capsys):
         """Test that the callback is integrated into the pass pipeline with the Compiler.run() method"""
 
-        # pylint: disable=redefined-outer-name
+        # pylint: disable=redefined-outer-name, unused-argument
         def print_between_passes(_, module, __, **kwargs):
             print("=== Between Pass ===")
             print(module)
