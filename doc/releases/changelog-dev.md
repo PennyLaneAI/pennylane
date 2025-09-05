@@ -516,7 +516,7 @@
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
   * Fixed a queueing issue in `ResourceOperator` tests.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
   
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
   submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
