@@ -49,7 +49,7 @@ class TestResourceOutOfPlaceSquare:
             GateCount(resource_rep(plre.ResourceCNOT), register_size),
         ]
         assert (
-            plre.ResourceOutOfPlaceSquare.resource_decomp(register_size=register_size) == expected
+            plre.ResourceOutOfPlaceSquare.default_resource_decomp(register_size=register_size) == expected
         )
 
 
@@ -111,7 +111,7 @@ class TestResourcePhaseGradient:
     )
     def test_resources(self, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourcePhaseGradient.resource_decomp(num_wires=num_wires) == expected_res
+        assert plre.ResourcePhaseGradient.default_resource_decomp(num_wires=num_wires) == expected_res
 
 
 class TestResourceOutMultiplier:
@@ -157,7 +157,7 @@ class TestResourceOutMultiplier:
             GateCount(toff, num_toff),
         ]
         assert (
-            plre.ResourceOutMultiplier.resource_decomp(a_register_size, b_register_size) == expected
+            plre.ResourceOutMultiplier.default_resource_decomp(a_register_size, b_register_size) == expected
         )
 
 
@@ -213,7 +213,7 @@ class TestResourceSemiAdder:
     )
     def test_resources(self, register_size, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceSemiAdder.resource_decomp(register_size) == expected_res
+        assert plre.ResourceSemiAdder.default_resource_decomp(register_size) == expected_res
 
     def test_resources_controlled(self):
         """Test that the special case controlled resources are correct."""
@@ -235,7 +235,7 @@ class TestResourceSemiAdder:
             ),
             plre.FreeWires(4),
         ]
-        assert op.resource_decomp(**op.resource_params) == expected_res
+        assert op.default_resource_decomp(**op.resource_params) == expected_res
 
 
 class TestResourceControlledSequence:
@@ -824,7 +824,7 @@ class TestResourceQFT:
     )
     def test_resources(self, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceQFT.resource_decomp(num_wires) == expected_res
+        assert plre.ResourceQFT.default_resource_decomp(num_wires) == expected_res
 
     @pytest.mark.parametrize(
         "num_wires, expected_res",
@@ -1001,7 +1001,7 @@ class TestResourceAQFT:
     )
     def test_resources(self, order, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceAQFT.resource_decomp(order, num_wires) == expected_res
+        assert plre.ResourceAQFT.default_resource_decomp(order, num_wires) == expected_res
 
 
 class TestResourceBasisRotation:
@@ -1026,7 +1026,7 @@ class TestResourceBasisRotation:
             GateCount(resource_rep(plre.ResourcePhaseShift), dim_n + (dim_n * (dim_n - 1) // 2)),
             GateCount(resource_rep(plre.ResourceSingleExcitation), dim_n * (dim_n - 1) // 2),
         ]
-        assert plre.ResourceBasisRotation.resource_decomp(dim_n) == expected
+        assert plre.ResourceBasisRotation.default_resource_decomp(dim_n) == expected
 
 
 class TestResourceSelect:
@@ -1096,7 +1096,7 @@ class TestResourceSelect:
             ),
             plre.FreeWires(1),
         ]
-        assert plre.ResourceSelect.resource_decomp(cmpr_ops, num_wires=4) == expected
+        assert plre.ResourceSelect.default_resource_decomp(cmpr_ops, num_wires=4) == expected
 
 
 class TestResourceQROM:
@@ -1283,7 +1283,7 @@ class TestResourceQROM:
     ):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceQROM.resource_decomp(
+            plre.ResourceQROM.default_resource_decomp(
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
@@ -1431,14 +1431,14 @@ class TestResourceQubitUnitary:
         if eps is None:
             config = {"precision_qubit_unitary": 1e-9}
             assert (
-                plre.ResourceQubitUnitary.resource_decomp(
+                plre.ResourceQubitUnitary.default_resource_decomp(
                     num_wires=num_wires, precision=eps, config=config
                 )
                 == expected_res
             )
         else:
             assert (
-                plre.ResourceQubitUnitary.resource_decomp(num_wires=num_wires, precision=eps)
+                plre.ResourceQubitUnitary.default_resource_decomp(num_wires=num_wires, precision=eps)
                 == expected_res
             )
 
@@ -1518,7 +1518,7 @@ class TestResourceSelectPauliRot:
         if precision is None:
             config = {"precision_select_pauli_rot": 1e-9}
             assert (
-                plre.ResourceSelectPauliRot.resource_decomp(
+                plre.ResourceSelectPauliRot.default_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
                     rotation_axis=rotation_axis,
                     precision=precision,
@@ -1528,7 +1528,7 @@ class TestResourceSelectPauliRot:
             )
         else:
             assert (
-                plre.ResourceSelectPauliRot.resource_decomp(
+                plre.ResourceSelectPauliRot.default_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
                     rotation_axis=rotation_axis,
                     precision=precision,

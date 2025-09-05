@@ -499,14 +499,14 @@ def test_set_decomp():
     """Test that the set_decomp function works as expected."""
     op1 = DummyOp(x=5)
     rc = ResourceConfig()
-    assert DummyOp.resource_decomp(config=rc, **op1.resource_params) == [5]
+    assert DummyOp.default_resource_decomp(config=rc, **op1.resource_params) == [5]
 
     def custom_res_decomp(config, x, **kwargs):
         return [x + 1]
 
     rc.set_decomp(DummyOp, custom_res_decomp)
 
-    assert DummyOp.resource_decomp(config=rc, **op1.resource_params) == [6]
+    assert DummyOp.default_resource_decomp(config=rc, **op1.resource_params) == [6]
 
 
 def test_set_adj_decomp():
@@ -522,14 +522,14 @@ def test_set_adj_decomp():
 
     op1 = DummyAdjOp(x=5)
     rc = ResourceConfig()
-    assert DummyAdjOp.adjoint_resource_decomp(config=rc, **op1.resource_params) == [5]
+    assert DummyAdjOp.default_adjoint_resource_decomp(config=rc, **op1.resource_params) == [5]
 
     def custom_res_decomp(config, x, **kwargs):
         return [x + 1]
 
     rc.set_decomp(DummyAdjOp, custom_res_decomp, type="adj")
 
-    assert DummyAdjOp.adjoint_resource_decomp(config=rc, **op1.resource_params) == [6]
+    assert DummyAdjOp.default_adjoint_resource_decomp(config=rc, **op1.resource_params) == [6]
 
 
 def test_set_ctrl_decomp():
@@ -548,14 +548,14 @@ def test_set_ctrl_decomp():
     op1 = DummyCtrlOp(x=5)
     rc = ResourceConfig()
 
-    assert DummyCtrlOp.controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [5]
+    assert DummyCtrlOp.default_controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [5]
 
     def custom_res_decomp(config, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
         return [x + ctrl_num_ctrl_wires]
 
     rc.set_decomp(DummyCtrlOp, custom_res_decomp, type="ctrl")
 
-    assert DummyCtrlOp.controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [6]
+    assert DummyCtrlOp.default_controlled_resource_decomp(rc, 1, 0, **op1.resource_params) == [6]
 
 
 def test_set_pow_decomp():
@@ -572,14 +572,14 @@ def test_set_pow_decomp():
     op1 = DummyPowOp(x=5)
     rc = ResourceConfig()
 
-    assert DummyPowOp.pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [5]
+    assert DummyPowOp.default_pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [5]
 
     def custom_res_decomp(config, pow_z, x):
         return [x * pow_z]
 
     rc.set_decomp(DummyPowOp, custom_res_decomp, type="pow")
 
-    assert DummyPowOp.pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [15]
+    assert DummyPowOp.default_pow_resource_decomp(config=rc, pow_z=3, **op1.resource_params) == [15]
 
 
 class TestGateCount:

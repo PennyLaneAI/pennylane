@@ -72,7 +72,7 @@ class ResourcePhaseShift(ResourceOperator):
 
     The resources for this operation are computed as:
 
-    >>> plre.ResourcePhaseShift.resource_decomp()
+    >>> plre.ResourcePhaseShift.default_resource_decomp()
     [(1 x RZ), (1 x GlobalPhase)]
     """
 
@@ -760,7 +760,7 @@ class ResourceRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceRot.resource_decomp()
+    >>> plre.ResourceRot.default_resource_decomp()
     [(1 x RY), (2 x RZ)]
     """
 

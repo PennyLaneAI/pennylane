@@ -190,10 +190,10 @@ class ResourceAdjoint(ResourceOperator):
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         try:
-            return base_class.adjoint_resource_decomp(**base_params, **kwargs)
+            return base_class.default_adjoint_resource_decomp(**base_params, **kwargs)
         except ResourcesNotDefined:
             gate_lst = []
-            decomp = base_class.resource_decomp(**base_params, **kwargs)
+            decomp = base_class.default_resource_decomp(**base_params, **kwargs)
 
             for gate in decomp[::-1]:  # reverse the order
                 gate_lst.append(_apply_adj(gate))
@@ -240,7 +240,7 @@ class ResourceControlled(ResourceOperator):
 
     Resources:
         The resources are determined as follows. If the base operator implements the
-        :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
+        :code:`.default_controlled_resource_decomp()` method, then the resources are obtained directly from
         this.
 
         Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
@@ -374,7 +374,7 @@ class ResourceControlled(ResourceOperator):
 
         Resources:
             The resources are determined as follows. If the base operator implements the
-            :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
+            :code:`.default_controlled_resource_decomp()` method, then the resources are obtained directly from
             this.
 
             Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
@@ -422,7 +422,7 @@ class ResourceControlled(ResourceOperator):
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         try:
-            return base_class.controlled_resource_decomp(
+            return base_class.default_controlled_resource_decomp(
                 ctrl_num_ctrl_wires=num_ctrl_wires,
                 ctrl_num_ctrl_values=num_ctrl_values,
                 **base_params,
@@ -436,7 +436,7 @@ class ResourceControlled(ResourceOperator):
             x = resource_rep(re.ResourceX)
             gate_lst.append(GateCount(x, 2 * num_ctrl_values))
 
-        decomp = base_class.resource_decomp(**base_params, **kwargs)
+        decomp = base_class.default_resource_decomp(**base_params, **kwargs)
         for action in decomp:
             if isinstance(action, GateCount):
                 gate = action.gate
@@ -519,7 +519,7 @@ class ResourcePow(ResourceOperator):
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
         gate and we have no resources. If the base operation class :code:`base_class` implements the
-        :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
+        :code:`.default_pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
         the resources of the operation raised to the power :math:`z` are given by extracting the base
         operation's resources (via :code:`.resources()`) and raising each operation to the same power.
 
@@ -611,7 +611,7 @@ class ResourcePow(ResourceOperator):
         Resources:
             The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
             gate and we have no resources. If the base operation class :code:`base_class` implements the
-            :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
+            :code:`.default_pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
             the resources of the operation raised to the power :math:`z` are given by extracting the base
             operation's resources (via :code:`.resources()`) and raising each operation to the same power.
 
@@ -660,7 +660,7 @@ class ResourcePow(ResourceOperator):
             return [GateCount(base_cmpr_op)]
 
         try:
-            return base_class.pow_resource_decomp(pow_z=z, **base_params, **kwargs)
+            return base_class.default_pow_resource_decomp(pow_z=z, **base_params, **kwargs)
         except re.ResourcesNotDefined:
             return [GateCount(base_cmpr_op, z)]
 

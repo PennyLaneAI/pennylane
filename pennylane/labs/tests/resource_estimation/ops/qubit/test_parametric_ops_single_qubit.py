@@ -62,7 +62,7 @@ class TestPauliRotation:
         label = "error_" + resource_class.__name__.replace("Resource", "").lower()
         config = {label: epsilon}
         op = resource_class(wires=0)
-        assert op.resource_decomp(config=config) == _rotation_resources(epsilon=epsilon)
+        assert op.default_resource_decomp(config=config) == _rotation_resources(epsilon=epsilon)
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -85,7 +85,7 @@ class TestPauliRotation:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params, config=config) == expected
+        assert op_resource_type.default_resource_decomp(**op_resource_params, config=config) == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -100,7 +100,7 @@ class TestPauliRotation:
         """Test that the adjoint decompositions are correct."""
 
         expected = [plre.GateCount(resource_class(epsilon).resource_rep(), 1)]
-        assert resource_class(epsilon).adjoint_resource_decomp() == expected
+        assert resource_class(epsilon).default_adjoint_resource_decomp() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -115,7 +115,7 @@ class TestPauliRotation:
                 else plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)
             )
         ]
-        assert resource_class(epsilon).pow_resource_decomp(z) == expected
+        assert resource_class(epsilon).default_pow_resource_decomp(z) == expected
 
     params_ctrl_classes = (
         (plre.ResourceRX, plre.ResourceCRX),
@@ -130,13 +130,13 @@ class TestPauliRotation:
     ):
         """Test that the controlled decompositions are correct."""
         expected = [plre.GateCount(controlled_class.resource_rep(), 1)]
-        assert resource_class.controlled_resource_decomp(1, 0) == expected
+        assert resource_class.default_controlled_resource_decomp(1, 0) == expected
 
         expected = [
             plre.GateCount(controlled_class.resource_rep(), 1),
             plre.GateCount(plre.ResourceX.resource_rep(), 2),
         ]
-        assert resource_class.controlled_resource_decomp(1, 1) == expected
+        assert resource_class.default_controlled_resource_decomp(1, 1) == expected
 
         op = resource_class(wires=0)
         c_op = plre.ResourceControlled(op, 1, 0)
@@ -183,8 +183,8 @@ class TestPauliRotation:
         expected_resources = copy.copy(local_res)
         expected_resources.extend(general_res)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_resources
-        assert op2.resource_decomp(**op2.resource_params) == expected_resources
+        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_resources
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_resources
 
 
 class TestRot:
@@ -197,7 +197,7 @@ class TestRot:
         rz = plre.ResourceRZ.resource_rep()
         expected = [plre.GateCount(ry, 1), plre.GateCount(rz, 2)]
 
-        assert op.resource_decomp() == expected
+        assert op.default_resource_decomp() == expected
 
     def test_resource_rep(self):
         """Test the compressed representation"""
@@ -215,7 +215,7 @@ class TestRot:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert op_resource_type.default_resource_decomp(**op_resource_params) == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -226,7 +226,7 @@ class TestRot:
         """Test that the adjoint decomposition is correct"""
 
         expected = [plre.GateCount(plre.ResourceRot.resource_rep(), 1)]
-        assert plre.ResourceRot.adjoint_resource_decomp() == expected
+        assert plre.ResourceRot.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         ([1], [1], [plre.GateCount(plre.ResourceCRot.resource_rep(), 1)]),
@@ -267,8 +267,8 @@ class TestRot:
         op = plre.ResourceRot(wires=0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceRot.resource_rep(), 1)]),
@@ -280,7 +280,7 @@ class TestRot:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
         op = plre.ResourceRot()
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestPhaseShift:
@@ -294,7 +294,7 @@ class TestPhaseShift:
 
         expected = [plre.GateCount(rz, 1), plre.GateCount(global_phase, 1)]
 
-        assert op.resource_decomp() == expected
+        assert op.default_resource_decomp() == expected
 
     def test_resource_rep(self):
         """Test the compressed representation"""
@@ -312,7 +312,7 @@ class TestPhaseShift:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert op_resource_type.default_resource_decomp(**op_resource_params) == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -323,7 +323,7 @@ class TestPhaseShift:
         """Test that the adjoint decomposition is correct"""
 
         expected = [plre.GateCount(plre.ResourcePhaseShift.resource_rep(), 1)]
-        assert plre.ResourcePhaseShift.adjoint_resource_decomp() == expected
+        assert plre.ResourcePhaseShift.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         ([1], [1], [plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1)]),
@@ -366,10 +366,10 @@ class TestPhaseShift:
         op = plre.ResourcePhaseShift(wires=0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert repr(op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)) == repr(
+        assert repr(op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)) == repr(
             expected_res
         )
-        assert repr(op2.resource_decomp(**op2.resource_params)) == repr(expected_res)
+        assert repr(op2.default_resource_decomp(**op2.resource_params)) == repr(expected_res)
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourcePhaseShift.resource_rep(), 1)]),
@@ -381,4 +381,4 @@ class TestPhaseShift:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
         op = plre.ResourcePhaseShift()
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
