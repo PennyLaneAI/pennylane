@@ -92,7 +92,7 @@ class WireResourceManager:
         self.algo_wires = count
 
     def grab_clean_qubits(self, num_qubits: int):
-        r"""Grabs clean qubits, and adds them to dirty qubits.
+        r"""Grabs clean qubits, and converts them into dirty ones.
 
         Args:
             num_qubits(int) : number of clean qubits to be grabbed
@@ -116,7 +116,7 @@ class WireResourceManager:
         self.dirty_wires += num_qubits
 
     def free_qubits(self, num_qubits: int):
-        r"""Frees dirty qubits and converts them to clean qubits.
+        r"""Frees dirty qubits and converts them into clean qubits.
 
         Args:
             num_qubits(int) : number of qubits to be freed
