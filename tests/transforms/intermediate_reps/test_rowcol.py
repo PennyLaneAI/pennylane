@@ -166,6 +166,13 @@ def assert_respects_connectivity(cnots, connectivity):
 class TestRowCol:
     """Tests for rowcol."""
 
+    def test_verbose(self, capsys):
+        """Test verbose output"""
+        _ = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=None, verbose=True)
+        captured = capsys.readouterr()
+        assert "CNOTs from column elimination (0): [(0, 1)]" in captured.out
+        assert "CNOTs from row elimination (0): []" in captured.out
+
     @pytest.mark.parametrize("n", list(range(2, 13)))
     @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
     def test_identity(self, n, connectivity_fn):

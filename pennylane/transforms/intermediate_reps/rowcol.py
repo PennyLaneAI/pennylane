@@ -689,13 +689,13 @@ def _rowcol_parity_matrix(
         )  # pragma: no cover
 
     P = P.copy()
-    connectivity = connectivity.copy()
     n = len(P)
     # If no connectivity is given, assume full connectivity
     if connectivity is None:
         connectivity = nx.complete_graph(n)
         cut_vertices = set()
     else:
+        connectivity = connectivity.copy()
         cut_vertices = set(nx.articulation_points(connectivity))
 
     cnots = []
