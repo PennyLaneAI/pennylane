@@ -518,6 +518,9 @@
 * Added concurrency support for `effective_hamiltonian` in labs.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
 
+* Fixed a queueing issue in `ResourceOperator` tests.
+  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
+
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
   submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
   may have changed.
@@ -955,6 +958,9 @@
   `mbqc.graph_state_prep` operations with single quantum-register allocation operations for
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
+
+* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
+  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
 
 <h3>Documentation 📝</h3>
 
