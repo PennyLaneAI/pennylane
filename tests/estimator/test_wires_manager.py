@@ -154,6 +154,7 @@ class TestWireResourceManager:
         than the available qubits."""
 
         qm = WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
+
         with pytest.raises(ValueError, match="Grabbing more qubits than available clean qubits."):
             qm.grab_clean_qubits(6)
 
