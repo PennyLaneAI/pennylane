@@ -372,11 +372,13 @@ def _modify_program(program, custom_decomps):
         # Check for both the standard preprocess.decompose and any decompose transform
         # (including DefaultQubit's wrapped decompose)
         is_decompose_transform = (
-            container.transform == qml.devices.preprocess.decompose.transform or
-            (hasattr(container.transform, '__name__') and 
-             container.transform.__name__ == 'decompose')
+            container.transform == qml.devices.preprocess.decompose.transform
+            or (
+                hasattr(container.transform, "__name__")
+                and container.transform.__name__ == "decompose"
+            )
         )
-        
+
         if is_decompose_transform:
             container.kwargs["decomposer"] = decomposer
 
