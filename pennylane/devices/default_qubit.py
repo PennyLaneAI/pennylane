@@ -28,6 +28,7 @@ import numpy as np
 from pennylane import capture, math, ops
 from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import DeviceError
+from pennylane.transforms.decompose import _construct_and_solve_decomp_graph
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -325,13 +326,26 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_se
 
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
-    program.add_transform(
-        decompose,
-        stopping_condition=adjoint_ops,
-        name=name,
-        skip_initial_state_prep=False,
-        gate_set=gate_set,
-    )
+    
+    # Prepare graph decomposition parameters when graph mode is enabled
+    decompose_kwargs = {
+        "stopping_condition": adjoint_ops,
+        "name": name,
+        "skip_initial_state_prep": False,
+    }
+    if enabled_graph():
+        # Use graph decomposition for adjoint mode
+        # No circuit available at transform-program construction time, so pass empty ops and 0 work wires
+        decompose_kwargs["graph_solution"] = _construct_and_solve_decomp_graph(
+            [],
+            gate_set,
+            0,
+            fixed_decomps=None,
+            alt_decomps=None,
+        )
+        decompose_kwargs["num_available_work_wires"] = 0
+    
+    program.add_transform(decompose, **decompose_kwargs)
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
         validate_measurements,
@@ -633,12 +647,27 @@ class DefaultQubit(Device):
 
         if config.interface == math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
+        
+        # Prepare graph decomposition parameters when graph mode is enabled
+        decompose_kwargs = {}
+        if enabled_graph():
+            # Use graph decomposition: build graph_solution and num_available_work_wires
+            # No circuit available at transform-program construction time, so pass empty ops and 0 work wires
+            decompose_kwargs["graph_solution"] = _construct_and_solve_decomp_graph(
+                [],  # No operations at transform-program construction time
+                ALL_DQ_GATE_SET,
+                0,  # No work wires known at this stage
+                fixed_decomps=None,
+                alt_decomps=None,
+            )
+            decompose_kwargs["num_available_work_wires"] = 0
+        
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
-            gate_set=ALL_DQ_GATE_SET,
+            **decompose_kwargs,
         )
         transform_program.add_transform(device_resolve_dynamic_wires, wires=self.wires)
         transform_program.add_transform(
