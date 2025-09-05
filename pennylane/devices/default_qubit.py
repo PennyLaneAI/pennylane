@@ -81,7 +81,7 @@ if TYPE_CHECKING:
 _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
-    "FromBloq": lambda op: len(op.wires) < 4,
+    "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
     "Snapshot": lambda _: True,
     "Allocate": lambda _: True,
     "Deallocate": lambda _: True,
@@ -93,15 +93,10 @@ def stopping_condition(op: Operator, allow_mcms=True) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
     if constraint := _special_operator_support.get(op.name):
         return constraint(op)
-
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
     if isinstance(op, MidMeasureMP):
         return allow_mcms
-    if isinstance(op, Conditional):
-        # no more mcms when using deferred measurements
-        return allow_mcms and stopping_condition(op.base)
-
     return op.has_matrix or op.has_sparse_matrix
 
 

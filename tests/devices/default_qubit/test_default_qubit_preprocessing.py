@@ -831,8 +831,7 @@ class TestPreprocessingIntegration:
         )
         qml.assert_equal(new_tape, expected)
 
-    @pytest.mark.parametrize("version", ("mcm", "cond"))
-    def test_no_mcms_conditionals_defer_measurements(self, version):
+    def test_no_mcms_conditionals_defer_measurements(self):
         """Test that an error is raised if an mcm occurs in a decomposition after defer measurements has been applied."""
 
         m0 = qml.measure(0)
@@ -840,9 +839,7 @@ class TestPreprocessingIntegration:
         class MyOp(qml.operation.Operator):
 
             def decomposition(self):
-                if version == "mcm":
-                    return m0.measurements
-                return [qml.ops.Conditional(m0, qml.X(0))]
+                return m0.measurements
 
         tape = qml.tape.QuantumScript([MyOp(0)])
         config = qml.devices.ExecutionConfig(
