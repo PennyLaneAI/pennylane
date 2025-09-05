@@ -498,6 +498,7 @@
   * The :func:`~.transforms.decompose` transform now accepts a `num_available_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
   [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
+  [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
 
   * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
   [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
@@ -514,6 +515,9 @@
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+  * Fixed a queueing issue in `ResourceOperator` tests.
+  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
+  
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
   submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
   may have changed.
@@ -555,8 +559,8 @@
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
   [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  [(#8113)](https://github.com/PennyLaneAI/pennylane/pull/8113)
   
-
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
@@ -952,6 +956,9 @@
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
+* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
+  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
+
 * Adding nightly RC builds [(8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
 <h3>Documentation 📝</h3>
@@ -1095,6 +1102,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
+Soran Jahangiri,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares
