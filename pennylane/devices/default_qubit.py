@@ -70,89 +70,6 @@ from .qubit.simulate import get_final_state, measure_final_state, simulate
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-# Extract plxpr transform for capture mode compatibility
-_, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
-
-
-def device_decompose_plxpr_to_plxpr(
-    jaxpr, consts, targs, tkwargs, *args
-):  # pylint: disable=unused-argument
-    """Custom plxpr transform adapter for decompose_with_device_wires.
-
-    This function adapts the parameters from decompose_with_device_wires to
-    the parameters expected by the original decompose_plxpr_to_plxpr function.
-    """
-    # Extract parameters specific to decompose_with_device_wires
-    device_wires = tkwargs.get("device_wires")
-    stopping_condition_fn = tkwargs.get("stopping_condition_fn")
-
-    # Calculate num_available_work_wires from device_wires (if provided)
-    # Note: In plxpr mode we can't access the tape directly, so we need to
-    # estimate this or get it from kwargs if provided
-    num_available_work_wires = tkwargs.get("num_available_work_wires", 0)
-    if device_wires is not None and "num_available_work_wires" not in tkwargs:
-        # This is a rough estimate - in plxpr mode we might not have perfect wire count
-        num_available_work_wires = len(device_wires)
-
-    # Create parameters that the original decompose_plxpr_to_plxpr expects
-    # In non-graph mode, we can't specify both gate_set and stopping_condition
-    # so we prioritize stopping_condition since that's what the device uses
-    adapted_targs = []
-    adapted_tkwargs = {
-        "stopping_condition": stopping_condition_fn,
-        "max_expansion": tkwargs.get("max_expansion"),
-        "num_available_work_wires": num_available_work_wires,
-        "fixed_decomps": tkwargs.get("fixed_decomps"),
-        "alt_decomps": tkwargs.get("alt_decomps"),
-    }
-
-    if enabled_graph():
-        adapted_tkwargs["gate_set"] = ALL_DQ_GATE_SET
-
-    # Remove None values
-    adapted_tkwargs = {k: v for k, v in adapted_tkwargs.items() if v is not None}
-
-    return decompose_plxpr_to_plxpr(jaxpr, consts, adapted_targs, adapted_tkwargs, *args)
-
-
-@partial(transform, plxpr_transform=device_decompose_plxpr_to_plxpr)
-def decompose_with_device_wires(tape: QuantumScript, device_wires, stopping_condition_fn, **kwargs):
-    """Wrapper for preprocess.decompose that calculates num_available_work_wires correctly.
-
-    This wrapper calculates the number of available work wires as device_wires - num_tape_wires
-    and handles graph decomposition setup properly.
-    """
-    # Calculate the number of available work wires
-    num_available_work_wires = None
-    if device_wires is not None:
-        num_available_work_wires = len(device_wires) - len(tape.wires)
-
-    # Handle graph decomposition if enabled
-    graph_solution = kwargs.pop("graph_solution", None)
-    # Use device-level gate set - no need to pass it around
-    target_gates = ALL_DQ_GATE_SET
-
-    if enabled_graph() and graph_solution is None:
-        # Filter out MeasurementProcess instances (like MidMeasureMP) that shouldn't be decomposed
-        decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
-
-        graph_solution = _construct_and_solve_decomp_graph(
-            operations=decomposable_ops,
-            target_gates=target_gates,
-            num_work_wires=num_available_work_wires,
-            fixed_decomps=None,
-            alt_decomps=None,
-        )
-
-    # Apply the decompose transform with correct parameters
-    return preprocess_decompose(
-        tape,
-        stopping_condition=stopping_condition_fn,
-        num_available_work_wires=num_available_work_wires,
-        graph_solution=graph_solution,
-        **kwargs,
-    )
-
 
 if TYPE_CHECKING:
     # pylint: disable=ungrouped-imports
@@ -161,30 +78,6 @@ if TYPE_CHECKING:
     from jax.extend.core import Jaxpr
 
     from pennylane.operation import Operator
-
-
-def _generate_controlled_gate_names(base_gates: set[str]) -> set[str]:
-    """Generate controlled gate names from base gate names.
-
-    Args:
-        base_gates: Set of base gate names
-
-    Returns:
-        Set of controlled gate names in the format C(gate_name)
-    """
-    return {f"C({gate})" for gate in base_gates}
-
-
-def _generate_adjoint_gate_names(base_gates: set[str]) -> set[str]:
-    """Generate adjoint gate names from base gate names.
-
-    Args:
-        base_gates: Set of base gate names
-
-    Returns:
-        Set of adjoint gate names in the format Adjoint(gate_name)
-    """
-    return {f"Adjoint({gate})" for gate in base_gates}
 
 
 # Base gate set for DefaultQubit
@@ -226,9 +119,90 @@ _BASE_DQ_GATE_SET = {
 # Complete gate set including controlled and adjoint variants
 ALL_DQ_GATE_SET = (
     _BASE_DQ_GATE_SET
-    | _generate_controlled_gate_names(_BASE_DQ_GATE_SET)
-    | _generate_adjoint_gate_names(_BASE_DQ_GATE_SET)
+    | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
+    | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
 )
+
+# Extract plxpr transform for capture mode compatibility
+_, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
+
+
+def device_decompose_plxpr_to_plxpr(
+    jaxpr, consts, targs, tkwargs, *args
+):  # pylint: disable=unused-argument
+    """Custom plxpr transform adapter for decompose.
+
+    This function adapts the parameters from our wrapped decompose to
+    the parameters expected by the original decompose_plxpr_to_plxpr function.
+    """
+    # Extract parameters - handle both old and new parameter styles
+    device_wires = tkwargs.get("device_wires")
+
+    # Calculate num_available_work_wires from device_wires (if provided)
+    # Note: In plxpr mode we can't access the tape directly, so we need to
+    # estimate this or get it from kwargs if provided
+    num_available_work_wires = tkwargs.get("num_available_work_wires", 0)
+    if device_wires is not None and "num_available_work_wires" not in tkwargs:
+        # This is a rough estimate - in plxpr mode we might not have perfect wire count
+        num_available_work_wires = len(device_wires)
+
+    # Create parameters that the original decompose_plxpr_to_plxpr expects
+
+    # 1. Start with a direct copy of the incoming keyword arguments.
+    adapted_tkwargs = tkwargs.copy()
+
+    # 2. Remove device-specific args and use them to add generic ones.
+    #    We use .pop() to remove it so it's not passed on.
+    device_wires = adapted_tkwargs.pop("device_wires", None)
+    if device_wires is not None:
+        adapted_tkwargs["num_available_work_wires"] = num_available_work_wires
+    # POP the unexpected keyword argument so it is not passed to the generic interpreter.
+    adapted_tkwargs.pop("stopping_condition_shots")
+    adapted_tkwargs.pop("name")
+    # 3. Inject device-specific configuration when needed.
+    if enabled_graph():
+        adapted_tkwargs["gate_set"] = ALL_DQ_GATE_SET
+
+    # Remove None values
+    adapted_tkwargs = {k: v for k, v in adapted_tkwargs.items() if v is not None}
+
+    return decompose_plxpr_to_plxpr(jaxpr, consts, [], adapted_tkwargs, *args)
+
+
+@partial(transform, plxpr_transform=device_decompose_plxpr_to_plxpr)
+def decompose(tape: QuantumScript, device_wires=None, **kwargs):
+    """Wrapper for preprocess.decompose that calculates num_available_work_wires correctly.
+
+    This wrapper calculates the number of available work wires as device_wires - num_tape_wires
+    and handles graph decomposition setup properly.
+    """
+
+    # Calculate the number of available work wires if device_wires is provided
+    if device_wires is not None and "num_available_work_wires" not in kwargs:
+        kwargs["num_available_work_wires"] = len(device_wires) - len(tape.wires)
+
+    # Handle graph decomposition if enabled
+    # Use device-level gate set - no need to pass it around
+    target_gates = ALL_DQ_GATE_SET
+
+    if enabled_graph() and device_wires is not None:
+        # Filter out MeasurementProcess instances (like MidMeasureMP) that shouldn't be decomposed
+        decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
+
+        graph_solution = _construct_and_solve_decomp_graph(
+            operations=decomposable_ops,
+            target_gates=target_gates,
+            num_work_wires=kwargs.get("num_available_work_wires"),
+            fixed_decomps=None,
+            alt_decomps=None,
+        )
+        kwargs["graph_solution"] = graph_solution
+
+    # Apply the decompose transform with correct parameters
+    return preprocess_decompose(
+        tape,
+        **kwargs,
+    )
 
 
 def stopping_condition(op: Operator) -> bool:
@@ -443,9 +417,9 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_
 
     # Add decompose transform with proper work wire calculation
     program.add_transform(
-        decompose_with_device_wires,
+        decompose,
         device_wires=device_wires,
-        stopping_condition_fn=adjoint_ops,
+        stopping_condition=adjoint_ops,
         name=name,
         skip_initial_state_prep=False,
     )
@@ -733,10 +707,11 @@ class DefaultQubit(Device):
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
             transform_program.add_transform(
-                decompose_with_device_wires,
+                decompose,
                 device_wires=self.wires,
-                stopping_condition_fn=stopping_condition,
+                stopping_condition=stopping_condition,
                 stopping_condition_shots=stopping_condition_shots,
+                name=self.name,
             )
 
             return transform_program
@@ -746,9 +721,9 @@ class DefaultQubit(Device):
 
         # Add decompose transform with proper work wire calculation
         transform_program.add_transform(
-            decompose_with_device_wires,
+            decompose,
             device_wires=self.wires,
-            stopping_condition_fn=stopping_condition,
+            stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
