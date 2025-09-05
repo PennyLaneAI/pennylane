@@ -154,13 +154,13 @@ def _rot_measurements(op: RotXZX, wires, diagonalize_mcms=False):
 
         cond(m2, partial(PhaseShift, phi=-theta), partial(PhaseShift, phi=theta))(wires=wires[2])
         H(wires[2])
-        m3 = measure(wires[2])
+        m3 = measure(wires[2], reset=True)
 
         cond(m1 ^ m3, partial(PhaseShift, phi=-omega), partial(PhaseShift, phi=omega))(
             wires=wires[3]
         )
         H(wires[3])
-        m4 = measure(wires[3])
+        m4 = measure(wires[3], reset=True)
 
         return [m1, m2, m3, m4]
 
