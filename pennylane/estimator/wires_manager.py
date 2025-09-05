@@ -51,9 +51,9 @@ class _WireResourceManager:
             dirty_wires = 0
 
         self.tight_budget = tight_budget
-        self._logic_qubit_counts = algo_wires
-        self._clean_qubit_counts = clean_wires
-        self._dirty_qubit_counts = dirty_wires
+        self.algo_wires = algo_wires
+        self.clean_wires = clean_wires
+        self.dirty_wires = dirty_wires
 
     def __str__(self):
         return (
