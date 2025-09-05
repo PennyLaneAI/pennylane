@@ -16,7 +16,7 @@ r"""This module contains the base class for qubit management"""
 
 import pennylane as qml
 
-# pylint: disable= too-few-public-methods
+# pylint: disable=too-few-public-methods
 
 
 class _WireResourceManager:
