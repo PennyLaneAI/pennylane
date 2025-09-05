@@ -274,19 +274,9 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def resource_decomp(cls, *args, **kwargs) -> list:
-        r"""Returns a list of actions that define the resources of the operator."""
-        return cls.default_resource_decomp(*args, **kwargs)
-
-    @classmethod
     def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for the adjoint of the operator."""
         raise ResourcesNotDefined
-
-    @classmethod
-    def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
-        r"""Returns a list of actions that define the resources of the operator."""
-        return cls.default_adjoint_resource_decomp(*args, **kwargs)
 
     @classmethod
     def default_controlled_resource_decomp(
@@ -303,22 +293,6 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
-    def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-    ) -> list:
-        r"""Returns a list representing the resources for a controlled version of the operator.
-
-        Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
-                operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
-                controlled when in the :math:`|0\rangle` state
-        """
-        return cls.default_controlled_resource_decomp(
-            ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
-        )
-
-    @classmethod
     def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for an operator
         raised to a power.
@@ -329,42 +303,32 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> list:
-        r"""Returns a list representing the resources for an operator
-        raised to a power.
-
-        Args:
-            pow_z (int): exponent that the operator is being raised to
-        """
-        return cls.default_pow_resource_decomp(pow_z, *args, **kwargs)
-
-    @classmethod
     def set_resources(cls, new_func: Callable, override_type: str = "base"):
         """Set a custom function to override the default resource decomposition.
 
-        This method allows users to replace any of the `resource_decomp`, `adjoint_resource_decomp`,
-        `ctrl_resource_decomp`, or `pow_resource_decomp` methods globally for every instance of
+        This method allows users to replace any of the `default_resource_decomp`, `default_adjoint_resource_decomp`,
+        `ctrl_resource_decomp`, or `default_pow_resource_decomp` methods globally for every instance of
         the class.
 
         """
         if override_type == "base":
             keys = cls.resource_keys.union({"kwargs"})
             _validate_signature(new_func, keys)
-            cls.resource_decomp = new_func
+            cls.default_resource_decomp = new_func
         if override_type == "pow":
             keys = cls.resource_keys.union({"pow_z", "kwargs"})
             _validate_signature(new_func, keys)
-            cls.pow_resource_decomp = new_func
+            cls.default_pow_resource_decomp = new_func
         if override_type == "adj":
             keys = cls.resource_keys.union({"kwargs"})
             _validate_signature(new_func, keys)
-            cls.adjoint_resource_decomp = new_func
+            cls.default_adjoint_resource_decomp = new_func
         if override_type == "ctrl":
             keys = cls.resource_keys.union(
                 {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"}
             )
             _validate_signature(new_func, keys)
-            cls.controlled_resource_decomp = new_func
+            cls.default_controlled_resource_decomp = new_func
 
     def __repr__(self) -> str:
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"

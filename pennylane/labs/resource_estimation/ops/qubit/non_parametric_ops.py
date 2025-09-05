@@ -181,7 +181,7 @@ class ResourceS(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceS.resource_decomp()
+    >>> plre.ResourceS.default_resource_decomp()
     [(2 x T)]
     """
 
@@ -365,7 +365,7 @@ class ResourceSWAP(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceSWAP.resource_decomp()
+    >>> plre.ResourceSWAP.default_resource_decomp()
     [(3 x CNOT)]
 
     """
@@ -687,7 +687,7 @@ class ResourceX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceX.resource_decomp()
+    >>> plre.ResourceX.default_resource_decomp()
     [(2 x Hadamard), (2 x S)]
     """
 
@@ -840,7 +840,7 @@ class ResourceY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceY.resource_decomp()
+    >>> plre.ResourceY.default_resource_decomp()
     [(1 x S), (1 x Z), (1 x Adjoint(S)), (2 x Hadamard)]
     """
 
@@ -988,7 +988,7 @@ class ResourceZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceZ.resource_decomp()
+    >>> plre.ResourceZ.default_resource_decomp()
     [(2 x S)]
     """
 

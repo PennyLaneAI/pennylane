@@ -72,7 +72,7 @@ class ResourcePhaseShift(ResourceOperator):
 
     The resources for this operation are computed as:
 
-    >>> plre.ResourcePhaseShift.resource_decomp()
+    >>> plre.ResourcePhaseShift.default_resource_decomp()
     [(1 x RZ), (1 x GlobalPhase)]
     """
 
@@ -295,7 +295,6 @@ class ResourceRX(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
-        eps = eps or kwargs["config"]["error_rx"]
         return _rotation_resources(epsilon=eps)
 
     @classmethod
@@ -473,7 +472,6 @@ class ResourceRY(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
-        eps = eps or kwargs["config"]["error_ry"]
         return _rotation_resources(epsilon=eps)
 
     @classmethod
@@ -651,7 +649,6 @@ class ResourceRZ(ResourceOperator):
         Args:
             eps (float): error threshold for clifford plus T decomposition of this operation
         """
-        eps = eps or kwargs["config"]["error_rz"]
         return _rotation_resources(epsilon=eps)
 
     @classmethod
@@ -760,7 +757,7 @@ class ResourceRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceRot.resource_decomp()
+    >>> plre.ResourceRot.default_resource_decomp()
     [(1 x RY), (2 x RZ)]
     """
 

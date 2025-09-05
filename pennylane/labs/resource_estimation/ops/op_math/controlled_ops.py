@@ -51,7 +51,7 @@ class ResourceCH(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCH.resource_decomp()
+    >>> re.ResourceCH.default_resource_decomp()
     [(2 x Hadamard), (2 x RY), (1 x CNOT)]
 
     """
@@ -127,7 +127,7 @@ class ResourceCH(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceHadamard` class.
 
         Returns:
@@ -189,7 +189,7 @@ class ResourceCY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCY.resource_decomp()
+    >>> re.ResourceCY.default_resource_decomp()
     [(1 x CNOT), (1 x S), (1 x Adjoint(S))]
     """
 
@@ -260,7 +260,7 @@ class ResourceCY(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceY` class.
 
         Returns:
@@ -322,7 +322,7 @@ class ResourceCZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCZ.resource_decomp()
+    >>> re.ResourceCZ.default_resource_decomp()
     [(1 x CNOT), (2 x Hadamard)]
     """
 
@@ -389,7 +389,7 @@ class ResourceCZ(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceZ` class.
 
         Returns:
@@ -457,7 +457,7 @@ class ResourceCSWAP(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCSWAP.resource_decomp()
+    >>> re.ResourceCSWAP.default_resource_decomp()
     [(1 x Toffoli), (2 x CNOT)]
     """
 
@@ -526,7 +526,7 @@ class ResourceCSWAP(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceSWAP` class.
 
         Returns:
@@ -588,7 +588,7 @@ class ResourceCCZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCCZ.resource_decomp()
+    >>> re.ResourceCCZ.default_resource_decomp()
     [(1 x Toffoli), (2 x Hadamard)]
     """
 
@@ -657,7 +657,7 @@ class ResourceCCZ(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceZ` class.
 
         Returns:
@@ -830,7 +830,7 @@ class ResourceTempAND(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceTempAND.resource_decomp()
+    >>> re.ResourceTempAND.default_resource_decomp()
     [(1 x Toffoli)]
     """
 
@@ -951,7 +951,7 @@ class ResourceToffoli(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceToffoli.resource_decomp()
+    >>> re.ResourceToffoli.default_resource_decomp()
     [AllocWires(2), (9 x CNOT), (3 x Hadamard), (1 x S), (1 x CZ), (2 x T), (2 x Adjoint(T)), FreeWires(2)]
     """
 
@@ -1206,7 +1206,7 @@ class ResourceMultiControlledX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceMultiControlledX.resource_decomp(num_ctrl_wires=5, num_ctrl_values=2)
+    >>> re.ResourceMultiControlledX.default_resource_decomp(num_ctrl_wires=5, num_ctrl_values=2)
     [(4 x X), AllocWires(3), (3 x TempAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
     """
 
@@ -1431,7 +1431,7 @@ class ResourceCRX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCRX.resource_decomp()
+    >>> re.ResourceCRX.default_resource_decomp()
     [(2 x CNOT), (2 x RZ), (2 x Hadamard)]
     """
 
@@ -1518,7 +1518,7 @@ class ResourceCRX(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceRX` class.
 
         Returns:
@@ -1582,7 +1582,7 @@ class ResourceCRY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCRY.resource_decomp()
+    >>> re.ResourceCRY.default_resource_decomp()
     [(2 x CNOT), (2 x RY)]
     """
 
@@ -1667,7 +1667,7 @@ class ResourceCRY(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceRY` class.
 
         Returns:
@@ -1731,7 +1731,7 @@ class ResourceCRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCRZ.resource_decomp()
+    >>> re.ResourceCRZ.default_resource_decomp()
     [(2 x CNOT), (2 x RZ)]
     """
 
@@ -1816,7 +1816,7 @@ class ResourceCRZ(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceRZ` class.
 
         Returns:
@@ -1888,7 +1888,7 @@ class ResourceCRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCRot.resource_decomp()
+    >>> re.ResourceCRot.default_resource_decomp()
     [(2 x CNOT), (3 x RZ), (2 x RY)]
     """
 
@@ -1984,7 +1984,7 @@ class ResourceCRot(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourceRot` class.
 
         Returns:
@@ -2048,7 +2048,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceControlledPhaseShift.resource_decomp()
+    >>> re.ResourceControlledPhaseShift.default_resource_decomp()
     [(2 x CNOT), (3 x RZ)]
     """
 
@@ -2101,7 +2101,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
         The resources for this operation are computed using:
 
-        >>> re.ResourceControlledPhaseShift.resource_decomp()
+        >>> re.ResourceControlledPhaseShift.default_resource_decomp()
         [(2 x CNOT), (3 x RZ)]
         """
         cnot = resource_rep(ResourceCNOT)
@@ -2141,7 +2141,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
+            are computed according to the :code:`default_controlled_resource_decomp()` of the base
             :class:`~.ResourcePhaseShift` class.
 
         Returns:

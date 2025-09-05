@@ -40,7 +40,7 @@ class ResourceIdentity(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceIdentity.resource_decomp()
+    >>> plre.ResourceIdentity.default_resource_decomp()
     []
     """
 
@@ -147,7 +147,7 @@ class ResourceGlobalPhase(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.ResourceGlobalPhase.resource_decomp()
+    >>> plre.ResourceGlobalPhase.default_resource_decomp()
     []
 
     """

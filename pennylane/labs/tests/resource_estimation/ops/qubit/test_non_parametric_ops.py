@@ -28,7 +28,7 @@ class TestHadamard:
         """Test that ResourceHadamard does not implement a decomposition"""
         op = plre.ResourceHadamard()
         with pytest.raises(plre.ResourcesNotDefined):
-            op.resource_decomp()
+            op.default_resource_decomp()
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -43,7 +43,7 @@ class TestHadamard:
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct."""
         h = plre.ResourceHadamard()
-        h_dag = h.adjoint_resource_decomp()
+        h_dag = h.default_adjoint_resource_decomp()
 
         expected = [plre.GateCount(plre.ResourceHadamard.resource_rep(), 1)]
         assert h_dag == expected
@@ -96,8 +96,10 @@ class TestHadamard:
         op = plre.ResourceHadamard(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceHadamard.resource_rep(), 1)]),
@@ -110,7 +112,7 @@ class TestHadamard:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = plre.ResourceHadamard(0)
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestSWAP:
@@ -122,7 +124,7 @@ class TestSWAP:
         cnot = plre.ResourceCNOT.resource_rep()
         expected = [plre.GateCount(cnot, 3)]
 
-        assert op.resource_decomp() == expected
+        assert op.default_resource_decomp() == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -143,14 +145,14 @@ class TestSWAP:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert op_resource_type.default_resource_decomp(**op_resource_params) == expected
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct."""
         swap = plre.ResourceSWAP([0, 1])
         expected = [plre.GateCount(swap.resource_rep(), 1)]
 
-        assert swap.adjoint_resource_decomp() == expected
+        assert swap.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         (
@@ -197,7 +199,9 @@ class TestSWAP:
 
         op = plre.ResourceSWAP([0, 1])
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceSWAP.resource_rep(), 1)]),
@@ -210,7 +214,7 @@ class TestSWAP:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = plre.ResourceSWAP([0, 1])
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestS:
@@ -220,7 +224,7 @@ class TestS:
         """Test that S decomposes into two Ts"""
         op = plre.ResourceS(0)
         expected = [plre.GateCount(plre.ResourceT.resource_rep(), 2)]
-        assert op.resource_decomp() == expected
+        assert op.default_resource_decomp() == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -240,7 +244,7 @@ class TestS:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert op_resource_type.default_resource_decomp(**op_resource_params) == expected
 
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
@@ -248,7 +252,7 @@ class TestS:
             plre.GateCount(plre.ResourceZ.resource_rep(), 1),
             plre.GateCount(plre.ResourceS.resource_rep(), 1),
         ]
-        assert plre.ResourceS.adjoint_resource_decomp() == expected
+        assert plre.ResourceS.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         (
@@ -324,8 +328,10 @@ class TestS:
             num_ctrl_values,
         )
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceS.resource_rep(), 1)]),
@@ -360,7 +366,7 @@ class TestS:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = plre.ResourceS(0)
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestT:
@@ -370,7 +376,7 @@ class TestT:
         """Test that there is no further decomposition of the T gate."""
         op = plre.ResourceT(0)
         with pytest.raises(plre.ResourcesNotDefined):
-            op.resource_decomp()
+            op.default_resource_decomp()
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -389,7 +395,7 @@ class TestT:
             plre.GateCount(plre.ResourceS.resource_rep(), 1),
             plre.GateCount(plre.ResourceZ.resource_rep(), 1),
         ]
-        assert plre.ResourceT.adjoint_resource_decomp() == expected
+        assert plre.ResourceT.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         (
@@ -437,8 +443,10 @@ class TestT:
         op = plre.ResourceT(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceT.resource_rep(), 1)]),
@@ -481,7 +489,7 @@ class TestT:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = plre.ResourceT
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestX:
@@ -493,7 +501,7 @@ class TestX:
             plre.GateCount(plre.ResourceHadamard.resource_rep(), 2),
             plre.GateCount(plre.ResourceS.resource_rep(), 2),
         ]
-        assert plre.ResourceX.resource_decomp() == expected
+        assert plre.ResourceX.default_resource_decomp() == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -508,7 +516,7 @@ class TestX:
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
         expected = [plre.GateCount(plre.ResourceX.resource_rep(), 1)]
-        assert plre.ResourceX.adjoint_resource_decomp() == expected
+        assert plre.ResourceX.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         (
@@ -569,8 +577,10 @@ class TestX:
         op = plre.ResourceX(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceX.resource_rep(), 1)]),
@@ -583,7 +593,7 @@ class TestX:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = plre.ResourceX(0)
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestY:
@@ -597,7 +607,7 @@ class TestY:
             plre.GateCount(plre.ResourceAdjoint.resource_rep(plre.ResourceS.resource_rep()), 1),
             plre.GateCount(plre.ResourceHadamard.resource_rep(), 2),
         ]
-        assert plre.ResourceY.resource_decomp() == expected
+        assert plre.ResourceY.default_resource_decomp() == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -612,7 +622,7 @@ class TestY:
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
         expected = [plre.GateCount(plre.ResourceY.resource_rep(), 1)]
-        assert plre.ResourceY.adjoint_resource_decomp() == expected
+        assert plre.ResourceY.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         (
@@ -686,8 +696,10 @@ class TestY:
         op = plre.ResourceY(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceY.resource_rep())]),
@@ -700,7 +712,7 @@ class TestY:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = plre.ResourceY(0)
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestZ:
@@ -709,7 +721,7 @@ class TestZ:
     def test_resources(self):
         """Test that ResourceZ implements the correct decomposition"""
         expected = [plre.GateCount(plre.ResourceS.resource_rep(), 2)]
-        assert plre.ResourceZ.resource_decomp() == expected
+        assert plre.ResourceZ.default_resource_decomp() == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -724,7 +736,7 @@ class TestZ:
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
         expected = [plre.GateCount(plre.ResourceZ.resource_rep(), 1)]
-        assert plre.ResourceZ.adjoint_resource_decomp() == expected
+        assert plre.ResourceZ.default_adjoint_resource_decomp() == expected
 
     ctrl_data = (
         (
@@ -779,8 +791,10 @@ class TestZ:
         op = plre.ResourceZ(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
-        assert op2.resource_decomp(**op2.resource_params) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
+        assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceZ.resource_rep())]),
@@ -793,4 +807,4 @@ class TestZ:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = plre.ResourceZ(0)
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.default_pow_resource_decomp(z) == expected_res

@@ -36,7 +36,7 @@ class TestResourceCH:
             re.GateCount(re.ResourceRY.resource_rep(), 2),
             re.GateCount(re.ResourceCNOT.resource_rep(), 1),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -51,7 +51,7 @@ class TestResourceCH:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     def test_resource_controlled(self):
         """Test that the controlled resources are as expected"""
@@ -65,7 +65,10 @@ class TestResourceCH:
         )
         expected_res = [GateCount(expected_op.resource_rep_from_op())]
 
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            == expected_res
+        )
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -77,7 +80,7 @@ class TestResourceCH:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
 
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCY:
@@ -93,7 +96,7 @@ class TestResourceCY:
             re.GateCount(re.ResourceS.resource_rep(), 1),
             re.GateCount(re.ResourceAdjoint.resource_rep(re.resource_rep(re.ResourceS)), 1),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -108,7 +111,7 @@ class TestResourceCY:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -135,7 +138,9 @@ class TestResourceCY:
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
 
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -147,7 +152,7 @@ class TestResourceCY:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
 
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCZ:
@@ -162,7 +167,7 @@ class TestResourceCZ:
             re.GateCount(re.ResourceCNOT.resource_rep(), 1),
             re.GateCount(re.ResourceHadamard.resource_rep(), 2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -178,7 +183,7 @@ class TestResourceCZ:
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
 
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -204,7 +209,9 @@ class TestResourceCZ:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = [
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -216,7 +223,7 @@ class TestResourceCZ:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
 
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCSWAP:
@@ -230,7 +237,7 @@ class TestResourceCSWAP:
             re.GateCount(re.ResourceToffoli.resource_rep(), 1),
             re.GateCount(re.ResourceCNOT.resource_rep(), 2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -245,7 +252,7 @@ class TestResourceCSWAP:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -271,7 +278,9 @@ class TestResourceCSWAP:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -282,7 +291,7 @@ class TestResourceCSWAP:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCCZ:
@@ -296,7 +305,7 @@ class TestResourceCCZ:
             re.GateCount(re.ResourceToffoli.resource_rep(), 1),
             re.GateCount(re.ResourceHadamard.resource_rep(), 2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -312,7 +321,7 @@ class TestResourceCCZ:
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
 
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -338,7 +347,9 @@ class TestResourceCCZ:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -349,7 +360,7 @@ class TestResourceCCZ:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCNOT:
@@ -360,7 +371,7 @@ class TestResourceCNOT:
     def test_resources(self):
         """Test that the resources method is not implemented"""
         with pytest.raises(re.ResourcesNotDefined):
-            self.op.resource_decomp()
+            self.op.default_resource_decomp()
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -375,7 +386,7 @@ class TestResourceCNOT:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -404,7 +415,10 @@ class TestResourceCNOT:
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            == expected_res
+        )
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -416,7 +430,7 @@ class TestResourceCNOT:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceToffoli:
@@ -437,7 +451,7 @@ class TestResourceToffoli:
             re.GateCount(re.ResourceAdjoint.resource_rep(re.resource_rep(re.ResourceT)), 2),
             FreeWires(2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -453,7 +467,7 @@ class TestResourceToffoli:
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
 
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -482,7 +496,10 @@ class TestResourceToffoli:
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            == expected_res
+        )
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -494,7 +511,7 @@ class TestResourceToffoli:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceMultiControlledX:
@@ -576,7 +593,10 @@ class TestResourceMultiControlledX:
     def test_resources(self, params, expected_res):
         """Test that the resources method produces the expected resources."""
         op_resource_params = self._prep_params(*params)
-        assert re.ResourceMultiControlledX.resource_decomp(**op_resource_params) == expected_res
+        assert (
+            re.ResourceMultiControlledX.default_resource_decomp(**op_resource_params)
+            == expected_res
+        )
 
     @pytest.mark.parametrize("op, params", zip(res_ops, res_params))
     def test_resource_rep(self, op, params):
@@ -599,7 +619,7 @@ class TestResourceMultiControlledX:
         op = re.ResourceMultiControlledX(5, 3)
         expected_res = [re.GateCount(op.resource_rep(**op.resource_params), 1)]
 
-        assert op.adjoint_resource_decomp(**op.resource_params) == expected_res
+        assert op.default_adjoint_resource_decomp(**op.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -634,7 +654,9 @@ class TestResourceMultiControlledX:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.default_controlled_resource_decomp(
+                num_ctrl_wires, num_ctrl_values, **op.resource_params
+            )
             == expected_res
         )
 
@@ -649,7 +671,7 @@ class TestResourceMultiControlledX:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
         op = re.ResourceMultiControlledX(5, 3)
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
+        assert op.default_pow_resource_decomp(z, **op.resource_params) == expected_res
 
 
 class TestResourceCRX:
@@ -669,7 +691,7 @@ class TestResourceCRX:
             re.GateCount(re.ResourceRZ.resource_rep(), 2),
             re.GateCount(re.ResourceHadamard.resource_rep(), 2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -684,7 +706,7 @@ class TestResourceCRX:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -710,7 +732,9 @@ class TestResourceCRX:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -722,7 +746,7 @@ class TestResourceCRX:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
 
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCRY:
@@ -741,7 +765,7 @@ class TestResourceCRY:
             re.GateCount(re.ResourceCNOT.resource_rep(), 2),
             re.GateCount(re.ResourceRY.resource_rep(), 2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -756,7 +780,7 @@ class TestResourceCRY:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -782,7 +806,9 @@ class TestResourceCRY:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -793,7 +819,7 @@ class TestResourceCRY:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCRZ:
@@ -812,7 +838,7 @@ class TestResourceCRZ:
             re.GateCount(re.ResourceCNOT.resource_rep(), 2),
             re.GateCount(re.ResourceRZ.resource_rep(), 2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -827,7 +853,7 @@ class TestResourceCRZ:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -853,7 +879,9 @@ class TestResourceCRZ:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -864,7 +892,7 @@ class TestResourceCRZ:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceCRot:
@@ -883,7 +911,7 @@ class TestResourceCRot:
             re.GateCount(re.ResourceRZ.resource_rep(), 3),
             re.GateCount(re.ResourceRY.resource_rep(), 2),
         ]
-        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+        assert self.op.default_resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -898,7 +926,7 @@ class TestResourceCRot:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.default_adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
         (
@@ -924,7 +952,9 @@ class TestResourceCRot:
     )
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert self.op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
 
     pow_data = (
         (1, [re.GateCount(op.resource_rep(), 1)]),
@@ -935,7 +965,7 @@ class TestResourceCRot:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.default_pow_resource_decomp(z) == expected_res
 
 
 class TestResourceControlledPhaseShift:
@@ -956,7 +986,7 @@ class TestResourceControlledPhaseShift:
             re.GateCount(re.CompressedResourceOp(re.ResourceRZ, 1, {"eps": None}), 3),
         ]
 
-        assert op.resource_decomp(**op.resource_params) == expected
+        assert op.default_resource_decomp(**op.resource_params) == expected
 
     def test_resource_params(self):
         """Test the resource parameters"""
@@ -996,7 +1026,7 @@ class TestResourceControlledPhaseShift:
         op_resource_params = op_compressed_rep.params
         op_compressed_rep_type = op_compressed_rep.op_type
 
-        assert op_compressed_rep_type.resource_decomp(**op_resource_params) == expected
+        assert op_compressed_rep_type.default_resource_decomp(**op_resource_params) == expected
 
     def test_adjoint_decomp(self):
         """Test that the adjoint resources are correct."""
@@ -1042,4 +1072,6 @@ class TestResourceControlledPhaseShift:
         """Test that the controlled resources are as expected"""
         op = re.ResourceControlledPhaseShift()
 
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
+        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [
+            expected_res
+        ]
