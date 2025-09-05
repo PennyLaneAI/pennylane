@@ -33,6 +33,7 @@ from pennylane.labs.resource_estimation.templates import (
     ResourcePrepTHC,
     ResourceQubitizeTHC,
 )
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import ResourceAdjoint
 
 
 class ResourceConfig:
@@ -53,6 +54,7 @@ class ResourceConfig:
             ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
             ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
             ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourceAdjoint: {"rotation_precision": 15, "coeff_precision": 15}
         }
         self._decomp_tracker = {}
         self._adj_decomp_tracker = {}

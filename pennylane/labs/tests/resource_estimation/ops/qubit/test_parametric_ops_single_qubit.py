@@ -60,14 +60,12 @@ class TestPauliRotation:
     def test_resources(self, resource_class, epsilon):
         """Test the resources method"""
 
-        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
-        config = {label: epsilon}
+        config = {"eps": epsilon}
         op = resource_class(wires=0)
         assert op.default_resource_decomp(**config) == _rotation_resources(epsilon=epsilon)
 
     @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_resource_rep(self, resource_class, epsilon):  # pylint: disable=unused-argument
+    def test_resource_rep(self, resource_class):
         """Test the compact representation"""
         op = resource_class(wires=0)
         expected = plre.CompressedResourceOp(resource_class, 1, {"eps": None})
@@ -78,15 +76,13 @@ class TestPauliRotation:
     def test_resources_from_rep(self, resource_class, epsilon):
         """Test the resources can be obtained from the compact representation"""
 
-        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
-        config = {label: epsilon}
-        op = resource_class(wires=0)
+        op = resource_class(wires=0, eps=epsilon)
         expected = _rotation_resources(epsilon=epsilon)
 
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.default_resource_decomp(**op_resource_params, **config) == expected
+        assert op_resource_type.default_resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -145,9 +141,9 @@ class TestPauliRotation:
         c = controlled_class(wires=[0, 1])
 
         config = ResourceConfig()
-        config.conf[plre.ResourceRX]["error_rx"] = epsilon
-        config.conf[plre.ResourceRY]["error_ry"] = epsilon
-        config.conf[plre.ResourceRY]["error_ry"] = epsilon
+        config.conf[plre.ResourceRX]["eps"] = epsilon
+        config.conf[plre.ResourceRY]["eps"] = epsilon
+        config.conf[plre.ResourceRY]["eps"] = epsilon
 
         r1 = plre.estimate_resources(c, config=config)
         r2 = plre.estimate_resources(c_op, config=config)

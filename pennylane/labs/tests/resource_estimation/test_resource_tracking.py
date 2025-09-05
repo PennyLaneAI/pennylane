@@ -129,7 +129,7 @@ class ResourceTestRZ(ResourceOperator):
         return {"epsilon": self.epsilon}
 
     @classmethod
-    def default_resource_decomp(cls, epsilon, **kwargs):
+    def default_resource_decomp(cls, epsilon):
         t = resource_rep(ResourceTestT)
         t_counts = round(1 / epsilon)
         return [GateCount(t, count=t_counts)]
@@ -224,7 +224,7 @@ class TestEstimateResources:
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
-        custom_config.conf[ResourceTestRZ] = {"error_rz": 1e-9}
+        custom_config.conf[ResourceTestRZ] = {"epsilon": 1e-9}
         computed_resources = estimate_resources(
             my_circuit, gate_set=gate_set, config=custom_config
         )()
@@ -329,7 +329,7 @@ class TestEstimateResources:
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.conf[ResourceTestRZ] = {"error_rz": error_val}
+        custom_config.conf[ResourceTestRZ] = {"epsilon": error_val}
 
         op = ResourceTestRZ()  # don't specify epsilon
         computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)
@@ -346,7 +346,7 @@ class TestEstimateResources:
         """Test that setting the single_qubit_rotation_error correctly updates the resources"""
         op = ResourceTestRZ()  # don't specify epsilon
         custom_config = ResourceConfig()
-        custom_config.conf[ResourceTestRZ] = {"error_rz": error_val}
+        custom_config.conf[ResourceTestRZ] = {"epsilon": error_val}
         computed_resources = estimate_resources(
             op, gate_set={"TestT"}, single_qubit_rotation_error=error_val, config=custom_config
         )

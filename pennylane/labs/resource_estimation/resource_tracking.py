@@ -304,7 +304,10 @@ def _update_counts_from_compressed_res_op(
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
     kwargs = config.conf.get(cp_rep.op_type, {})
-    default_resource_decomp = cp_rep.op_type.default_resource_decomp(**cp_rep.params, **kwargs)
+    params = {key: value for key, value in cp_rep.params.items() if value is not None}
+    filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
+
+    default_resource_decomp = cp_rep.op_type.default_resource_decomp(**params, **filtered_kwargs)
     qubit_alloc_sum = _sum_allocated_wires(default_resource_decomp)
 
     for action in default_resource_decomp:
@@ -354,9 +357,9 @@ def _config_for_single_qubit_rot_error(config, error):
 
     """
 
-    config.conf[ResourceRX]["error_rx"] = error
-    config.conf[ResourceRY]["error_ry"] = error
-    config.conf[ResourceRZ]["error_rz"] = error
+    config.conf[ResourceRX]["eps"] = error
+    config.conf[ResourceRY]["eps"] = error
+    config.conf[ResourceRZ]["eps"] = error
     return config
 
 
