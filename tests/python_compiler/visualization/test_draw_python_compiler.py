@@ -85,10 +85,8 @@ class Testdraw:
     def test_multiple_levels_xdsl(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with xDSL compilation passes."""
 
-        transforms_circuit = qml.compiler.python_compiler.transforms.merge_rotations_pass(
-            qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
-                transforms_circuit
-            )
+        transforms_circuit = qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
+            qml.compiler.python_compiler.transforms.merge_rotations_pass(transforms_circuit)
         )
 
         if qjit:
@@ -122,8 +120,8 @@ class Testdraw:
     def test_multiple_levels_catalyst(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with Catalyst compilation passes."""
 
-        transforms_circuit = qml.transforms.merge_rotations(
-            qml.transforms.cancel_inverses(transforms_circuit)
+        transforms_circuit = qml.transforms.cancel_inverses(
+            qml.transforms.merge_rotations(transforms_circuit)
         )
 
         if qjit:
@@ -157,10 +155,8 @@ class Testdraw:
     def test_multiple_levels_xdsl_catalyst(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with xDSL and Catalyst compilation passes."""
 
-        transforms_circuit = qml.transforms.merge_rotations(
-            qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
-                transforms_circuit
-            )
+        transforms_circuit = qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
+            qml.transforms.merge_rotations(transforms_circuit)
         )
         if qjit:
             transforms_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(

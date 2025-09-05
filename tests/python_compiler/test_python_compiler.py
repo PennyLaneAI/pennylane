@@ -438,8 +438,8 @@ class TestCallbackIntegration:
             print(module)
 
         @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
             qml.RX(0.1, 0)
