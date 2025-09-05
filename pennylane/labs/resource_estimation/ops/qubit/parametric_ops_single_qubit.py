@@ -295,7 +295,7 @@ class ResourceRX(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
-        eps = eps or kwargs["config"]["error_rx"]
+        eps = eps or kwargs["error_rx"]
         return _rotation_resources(epsilon=eps)
 
     @classmethod
@@ -473,7 +473,7 @@ class ResourceRY(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
-        eps = eps or kwargs["config"]["error_ry"]
+        eps = eps or kwargs["error_ry"]
         return _rotation_resources(epsilon=eps)
 
     @classmethod
@@ -651,7 +651,7 @@ class ResourceRZ(ResourceOperator):
         Args:
             eps (float): error threshold for clifford plus T decomposition of this operation
         """
-        eps = eps or kwargs["config"]["error_rz"]
+        eps = eps or kwargs["error_rz"]
         return _rotation_resources(epsilon=eps)
 
     @classmethod

@@ -239,7 +239,7 @@ class ResourceAliasSampling(ResourceOperator):
         gate_lst = []
 
         logl = int(math.ceil(math.log2(num_coeffs)))
-        precision = precision or kwargs["config"]["precision_alias_sampling"]
+        precision = precision or kwargs["precision_alias_sampling"]
 
         num_prec_wires = abs(math.floor(math.log2(precision)))
 
@@ -380,7 +380,7 @@ class ResourceMPSPrep(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        precision = precision or kwargs["config"]["precision_mps_prep"]
+        precision = precision or kwargs["precision_mps_prep"]
         num_work_wires = min(
             math.ceil(math.log2(max_bond_dim)), math.ceil(num_mps_matrices / 2)  # truncate bond dim
         )
@@ -644,7 +644,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
             in the decomposition.
         """
         gate_counts = []
-        precision = precision or kwargs["config"]["precision_qrom_state_prep"]
+        precision = precision or kwargs["precision_qrom_state_prep"]
 
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
         if isinstance(selswap_depths, int) or selswap_depths is None:
@@ -985,7 +985,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_precision = coeff_precision or kwargs["config"]["qubitization_coeff_precision"]
+        coeff_precision = coeff_precision or kwargs["qubitization_coeff_precision"]
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
@@ -1114,7 +1114,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_precision = coeff_precision or kwargs["config"]["qubitization_coeff_precision"]
+        coeff_precision = coeff_precision or kwargs["qubitization_coeff_precision"]
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
         coeff_register = int(math.ceil(math.log2(num_coeff)))

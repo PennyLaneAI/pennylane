@@ -216,7 +216,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
         coeff_precision = (
-            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
+            prep_op.params["coeff_precision"] or kwargs["qubitization_coeff_precision"]
         )
 
         toffoli = resource_rep(plre.ResourceToffoli)
@@ -306,7 +306,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # reflection cost from Eq. 44 in arXiv:2011.03494s
         coeff_precision = (
-            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
+            prep_op.params["coeff_precision"] or kwargs["qubitization_coeff_precision"]
         )
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))

@@ -22,6 +22,7 @@ import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
     _rotation_resources,
 )
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
 # pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
 
@@ -62,7 +63,7 @@ class TestPauliRotation:
         label = "error_" + resource_class.__name__.replace("Resource", "").lower()
         config = {label: epsilon}
         op = resource_class(wires=0)
-        assert op.default_resource_decomp(config=config) == _rotation_resources(epsilon=epsilon)
+        assert op.default_resource_decomp(**config) == _rotation_resources(epsilon=epsilon)
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -86,7 +87,7 @@ class TestPauliRotation:
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert (
-            op_resource_type.default_resource_decomp(**op_resource_params, config=config)
+            op_resource_type.default_resource_decomp(**op_resource_params, **config)
             == expected
         )
 
@@ -146,7 +147,10 @@ class TestPauliRotation:
 
         c = controlled_class(wires=[0, 1])
 
-        config = {"error_rx": epsilon, "error_ry": epsilon, "error_rz": epsilon}
+        config = ResourceConfig()
+        config.conf[plre.ResourceRX]["error_rx"] = epsilon
+        config.conf[plre.ResourceRY]["error_ry"] = epsilon
+        config.conf[plre.ResourceRY]["error_ry"] = epsilon
 
         r1 = plre.estimate_resources(c, config=config)
         r2 = plre.estimate_resources(c_op, config=config)

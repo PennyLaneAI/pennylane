@@ -196,7 +196,7 @@ class ResourceSelectTHC(ResourceOperator):
         tensor_rank = compact_ham.params["tensor_rank"]
 
         rotation_precision = (
-            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
+            rotation_precision or kwargs["qubitization_rotation_precision"]
         )
 
         gate_list = []
@@ -332,7 +332,7 @@ class ResourceSelectTHC(ResourceOperator):
         tensor_rank = compact_ham.params["tensor_rank"]
 
         rotation_precision = (
-            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
+            rotation_precision or kwargs["qubitization_rotation_precision"]
         )
 
         gate_list = []
