@@ -292,14 +292,6 @@ class OutAdder(Operation):
                 ),
             ),
         ]
-        # op_list.append(QFT(wires=qft_new_output_wires))
-        # op_list.append(
-        #     ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
-        # )
-        # op_list.append(
-        #     ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-        # )
-        # op_list.append(adjoint(QFT)(wires=qft_new_output_wires))
 
         return op_list
 
@@ -331,7 +323,7 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     params = {
         "compute_op_params": {"num_wires": qft_wires},
         "target_op_params": {
-            "resources": target_resources,
+            "resources": dict(target_resources),
         },
         "uncompute_op_params": {"num_wires": qft_wires},
     }

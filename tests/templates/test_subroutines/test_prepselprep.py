@@ -213,15 +213,6 @@ class TestPrepSelPrep:
                         ),
                         qml.Select(ops1, control=[0]),
                     )
-                    # qml.AmplitudeEmbedding(
-                    #     qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
-                    # ),
-                    # qml.Select(ops1, control=[0]),
-                    # qml.ops.Adjoint(
-                    #     qml.AmplitudeEmbedding(
-                    #         qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
-                    #     )
-                    # ),
                 ],
             )
         ],

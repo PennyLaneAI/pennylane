@@ -32,17 +32,6 @@ def test_standard_validity_Multiplier():
     qml.ops.functions.assert_valid(op)
 
 
-# def test_mul_out_k_mod():
-#     """Test the _mul_out_k_mod function."""
-
-#     op = _mul_out_k_mod(2, [0, 1], 4, None, [4, 5])
-#     assert op[0].name == "QFT"
-#     assert op[1].name == "ControlledSequence"
-#     assert op[2].name == "Adjoint(QFT)"
-#     print(op[1].base)
-#     qml.assert_equal(op[1].base, qml.PhaseAdder(2, x_wires=[4, 5]))
-
-
 class TestMultiplier:
     """Test the qml.Multiplier template."""
 
@@ -171,9 +160,17 @@ class TestMultiplier:
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
-        multiplier_decomposition = qml.Multiplier(
-            k, x_wires, mod, work_wires
-        ).compute_decomposition(k, x_wires, mod, work_wires)
+        _multiplier_decomposition = (
+            qml.Multiplier(k, x_wires, mod, work_wires)
+            .compute_decomposition(k, x_wires, mod, work_wires)[0]
+            .decomposition()
+        )
+        multiplier_decomposition = [
+            *_multiplier_decomposition[0].decomposition(),
+            *_multiplier_decomposition[1].decomposition(),
+            *_multiplier_decomposition[2].decomposition(),
+        ]
+
         op_list = []
         if mod != 2 ** len(x_wires):
             work_wire_aux = work_wires[:1]
@@ -183,25 +180,27 @@ class TestMultiplier:
             work_wire_aux = None
             wires_aux = work_wires[:3]
             wires_aux_swap = wires_aux
+
+        op_list.append(qml.QFT(wires=wires_aux))
         op_list.append(
             qml.ControlledSequence(
-                qml.ops.change_op_basis(
-                    qml.QFT(wires=wires_aux), qml.PhaseAdder(k, wires_aux, mod, work_wire_aux)
-                ),
-                control=x_wires,
+                qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires
             )
         )
+        op_list.append(qml.adjoint(qml.QFT(wires=wires_aux)))
+
         for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
             op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
+        op_list.append(qml.QFT(wires=wires_aux))
         op_list.append(
-            qml.ControlledSequence(
-                qml.ops.change_op_basis(
-                    qml.QFT(wires=wires_aux), qml.PhaseAdder(inv_k, wires_aux, mod, work_wire_aux)
-                ),
-                control=x_wires,
+            qml.adjoint(
+                qml.ControlledSequence(
+                    qml.PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires
+                )
             )
         )
+        op_list.append(qml.adjoint(qml.QFT(wires=wires_aux)))
 
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)

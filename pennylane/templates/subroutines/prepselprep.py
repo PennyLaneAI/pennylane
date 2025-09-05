@@ -157,14 +157,6 @@ class PrepSelPrep(Operation):
     def compute_decomposition(lcu, control):
         coeffs, ops = _get_new_terms(lcu)
 
-        # decomp_ops = [
-        #     AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
-        #     Select(ops, control, partial=True),
-        #     adjoint(
-        #         AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
-        #     ),
-        # ]
-
         return [
             change_op_basis(
                 AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
@@ -243,11 +235,6 @@ def _prepselprep_resources(op_reps, num_control):
     return {
         change_op_basis_resource_rep(StatePrep, Select, params=params): 1,
     }
-    # return {
-    #     resource_rep(StatePrep, num_wires=num_control): 1,
-    #     resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control, partial=True): 1,
-    #     adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
-    # }
 
 
 # pylint: disable=unused-argument, too-many-arguments
