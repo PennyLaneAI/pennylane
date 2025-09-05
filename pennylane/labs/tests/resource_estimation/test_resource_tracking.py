@@ -130,9 +130,6 @@ class ResourceTestRZ(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, epsilon, **kwargs):
-        if epsilon is None:
-            epsilon = kwargs["error_rz"]
-
         t = resource_rep(ResourceTestT)
         t_counts = round(1 / epsilon)
         return [GateCount(t, count=t_counts)]

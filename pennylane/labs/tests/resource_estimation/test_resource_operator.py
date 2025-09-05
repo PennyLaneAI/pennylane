@@ -28,7 +28,6 @@ from pennylane.labs.resource_estimation import (
     ResourceOperator,
     Resources,
 )
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     _make_hashable,
@@ -209,7 +208,7 @@ class DummyOp(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, config, x) -> list:
+    def default_resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -227,7 +226,7 @@ class DummyOp_no_resource_rep(ResourceOperator):
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
-    def default_resource_decomp(cls, config, x) -> list:
+    def default_resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -245,7 +244,7 @@ class DummyOp_no_resource_params(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, config, x) -> list:
+    def default_resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -574,7 +573,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, params)
 
         @classmethod
-        def default_resource_decomp(cls, config, num_wires, continuous_param, bool_param):
+        def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
             """dummy default resource decomp method"""
             raise NotImplementedError
 
@@ -594,7 +593,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, {})
 
         @classmethod
-        def default_resource_decomp(cls, config):
+        def default_resource_decomp(cls):
             """dummy default resource decomp method"""
             raise NotImplementedError
 

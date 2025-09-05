@@ -2057,7 +2057,6 @@ class ResourceQubitUnitary(ResourceOperator):
             in the decomposition.
         """
         gate_lst = []
-        precision = precision or kwargs["precision_qubit_unitary"]
 
         one_qubit_decomp_cost = [GateCount(resource_rep(re.ResourceRZ, {"eps": precision}))]
         two_qubit_decomp_cost = [
@@ -2216,7 +2215,6 @@ class ResourceSelectPauliRot(ResourceOperator):
             "Y": re.ResourceRY,
             "Z": re.ResourceRZ,
         }
-        precision = precision or kwargs["precision_select_pauli_rot"]
 
         gate = resource_rep(rotation_gate_map[rotation_axis], {"eps": precision})
         cnot = resource_rep(re.ResourceCNOT)
@@ -2255,7 +2253,6 @@ class ResourceSelectPauliRot(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        precision = precision or kwargs["precision_select_pauli_rot"]
         num_prec_wires = math.ceil(math.log2(math.pi / precision)) + 1
         gate_lst = []
 
