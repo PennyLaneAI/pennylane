@@ -377,6 +377,10 @@
 
 <h4>Other improvements</h4>
 
+* A `draw` function has been introduced in the `qml.compiler.python_compiler.visualization` module to visualize circuits
+  with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
+  [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+
 * Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
   [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
 

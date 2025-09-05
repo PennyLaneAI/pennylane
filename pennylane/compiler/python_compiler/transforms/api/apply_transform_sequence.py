@@ -45,6 +45,7 @@ class ApplyTransformSequence(ModulePass):
 
     name = "apply-transform-sequence"
     callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None
+    callback_first: bool = False
 
     def apply(  # pylint: disable=arguments-renamed,no-self-use
         self, ctx: Context, module: builtin.ModuleOp
@@ -59,7 +60,13 @@ class ApplyTransformSequence(ModulePass):
 
         pipeline = PassPipeline(
             # pylint: disable-next=unexpected-keyword-arg
-            (TransformInterpreterPass(passes=available_passes, callback=self.callback),)
+            (
+                TransformInterpreterPass(
+                    passes=available_passes,
+                    callback=self.callback,
+                    callback_first=self.callback_first,
+                ),
+            )
         )
         for op in nested_modules:
             pipeline.apply(ctx, op)

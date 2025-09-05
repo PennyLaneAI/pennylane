@@ -55,6 +55,8 @@ from pennylane.compiler.python_compiler.transforms.api import (
 
 @dataclass(frozen=True)
 class HelloWorldPass(passes.ModulePass):
+    """A simple pass that prints 'hello world' when run."""
+
     name = "hello-world"
 
     def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
@@ -334,7 +336,8 @@ class TestCallbackIntegration:
 
             def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None: ...
 
-        def print_between_passes(*_):
+        # pylint: disable=unused-argument
+        def print_between_passes(*_, **kwargs):
             print("hello world")
 
         @xdsl_from_docstring
@@ -362,8 +365,8 @@ class TestCallbackIntegration:
     def test_callback_prints_module_after_each_pass(self, capsys):
         """Test that the callback prints the module after each pass"""
 
-        # pylint: disable=redefined-outer-name
-        def print_between_passes(_, module, __):
+        # pylint: disable=redefined-outer-name, unused-argument
+        def print_between_passes(_, module, __, **kwargs):
             print("=== Between Pass ===")
             print(module)
 
@@ -429,14 +432,14 @@ class TestCallbackIntegration:
     def test_callback_run_integration(self, capsys):
         """Test that the callback is integrated into the pass pipeline with the Compiler.run() method"""
 
-        # pylint: disable=redefined-outer-name
-        def print_between_passes(_, module, __):
+        # pylint: disable=redefined-outer-name, unused-argument
+        def print_between_passes(_, module, __, **kwargs):
             print("=== Between Pass ===")
             print(module)
 
         @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
             qml.RX(0.1, 0)
