@@ -515,6 +515,9 @@
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+  * Fixed a queueing issue in `ResourceOperator` tests.
+  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
+  
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
   submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
   may have changed.
@@ -953,6 +956,9 @@
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
+* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
+  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
@@ -1093,6 +1099,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
+Soran Jahangiri,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares
