@@ -22,7 +22,7 @@ Qubit Management Classes:
 .. autosummary::
     :toctree: api
 
-    ~QubitManager
+    ~WiresResourceManager
     ~AllocWires
     ~FreeWires
 

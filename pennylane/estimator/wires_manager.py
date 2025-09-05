@@ -120,7 +120,7 @@ class WiresResourceManager:
             num_qubits(int) : number of clean qubits to be grabbed
 
         Raises:
-            ValueError: If tight_budget is `True` number of qubits to be grabbed is greater than
+            ValueError: If tight_budget is `True` and the number of qubits to be grabbed is greater than
             available clean qubits.
 
         """
