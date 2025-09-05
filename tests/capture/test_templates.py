@@ -817,36 +817,37 @@ class TestModifiedTemplates:
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""
 
+        angles = np.arange(1, 9)
         kwargs = {
-            "angles": np.array([1, 2, 3, 4, 5, 6, 7, 8]),
             "control_wires": [0, 1, 2],
-            "target_wire": [3],
+            "target_wire": 3,
             "rot_axis": "X",
         }
 
-        def qfunc():
-            qml.SelectPauliRot(**kwargs)
+        def qfunc(angles):
+            qml.SelectPauliRot(angles, **kwargs)
 
         # Validate inputs
-        qfunc()
+        qfunc(angles)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(angles)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.SelectPauliRot._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert eqn.invars[:1] == jaxpr.jaxpr.invars
+        assert [invar.val for invar in eqn.invars[1:]] == [0, 1, 2, 3]
+        assert eqn.params == {"n_wires": 4, "rot_axis": "X"}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, angles)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.SelectPauliRot(**kwargs))
+        qml.assert_equal(q.queue[0], qml.SelectPauliRot(angles, **kwargs))
 
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""
