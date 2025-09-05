@@ -26,20 +26,23 @@ assert os.path.isfile(version_file_path)
 with open(version_file_path, "r+", encoding="UTF-8") as f:
     lines = f.readlines()
 
-    versionrc_line = lines[-1]
-    assert "versionrc = " in versionrc_line
-
-    pattern = r"(\d+).(\d+).(\d+)-rc(\d+)"
-    match = re.search(pattern, versionrc_line)
-    assert match
-
-    version_line = lines[-2]
+    version_line = lines[-1]
     assert "__version__ = " in version_line
+    pattern = r"(\d+).(\d+).(\d+)-rc(\d+)"
+    match = re.search(pattern, version_line)
+    if match:
+        # Case 1: Version has RC suffix
+        major, minor, bug, rc = match.groups()
+        replacement = f'__version__ = "{major}.{minor}.{bug}-rc{int(rc)+1}"\n'
+    else:
+        # Case 2: Version has no RC suffix
+        base_pattern = r"(\d+).(\d+).(\d+)"
+        base_match = re.search(base_pattern, version_line)
+        assert base_match, "Version string must be in format X.Y.Z or X.Y.Z-rcN"
+        major, minor, bug = base_match.groups()
+        replacement = f'__version__ = "{major}.{minor}.{bug}-rc0"\n'
 
-    major, minor, bug, dev = match.groups()
-
-    replacement = f'__version__ = "{major}.{minor}.{bug}-rc{int(dev)}"\n'
-    lines[-2] = replacement
+    lines[-1] = replacement
 
     f.seek(0)
     f.writelines(lines)
