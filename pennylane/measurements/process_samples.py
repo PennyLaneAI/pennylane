@@ -31,7 +31,7 @@ def process_raw_samples(
     wire_order: WiresLike,
     shot_range: Sequence[int],
     bin_size: int,
-    dtype: str | None = None,
+    dtype=None,
 ) -> TensorLike:
     """Slice the samples for a measurement process.
 
@@ -44,7 +44,7 @@ def process_raw_samples(
         bin_size (int): Divides the shot range into bins of size ``bin_size``, and
             returns the measurement statistic separately over each bin. If not
             provided, the entire shot range is treated as a single bin.
-        dtype (str or None): The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the samples returned by this measurement process.
 
     This function matches `SampleMP.process_samples`, but does not have a dependence on the measurement process.
 

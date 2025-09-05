@@ -136,7 +136,7 @@ class SampleMP(SampleMeasurement):
         wire_order: WiresLike,
         shot_range: None | tuple[int, ...] = None,
         bin_size: None | int = None,
-        dtype: None | str = None,
+        dtype=None,
     ) -> TensorLike:
 
         return process_raw_samples(
@@ -192,7 +192,7 @@ class SampleMP(SampleMeasurement):
 def sample(
     op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
     wires: WiresLike = None,
-    dtype: str | None = None,
+    dtype=None,
 ) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
     determined from QNode,
@@ -207,7 +207,7 @@ def sample(
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
-        dtype (str or None): The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the samples returned by this measurement process.
 
     Returns:
         SampleMP: Measurement process instance
