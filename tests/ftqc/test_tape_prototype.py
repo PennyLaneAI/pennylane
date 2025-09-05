@@ -212,6 +212,42 @@ class TestQuantumScriptSequence:
 
         assert repr(sequence) == "<QuantumScriptSequence: wires=[0, 1, 2]>"
 
+    def test_iterator_behaviour(self):
+        """Test that the sequence behaves like an iterator whose elements are the ordered tapes"""
+
+        operations = [[X(0), Y(1)], [Y(0), Z(0)], [H(1), S(0)]]
+        measurements = [[], [], [qml.expval(X(0))]]
+        tapes = [
+            qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
+            for ops, meas in zip(operations, measurements)
+        ]
+        sequence = QuantumScriptSequence(tapes)
+
+        # it has a length
+        assert len(sequence) == 3
+
+        # we can iterate over it and it matches the initial tapes (except for shots)
+        assert [tape.measurements for tape in sequence] == measurements
+        assert [tape.operations for tape in sequence] == operations
+
+        # we can iterate over it in reverse and it also matches initial tapes
+        assert [tape.measurements for tape in reversed(sequence)] == [[qml.expval(X(0))], [], []]
+        assert [tape.operations for tape in reversed(sequence)] == [
+            [H(1), S(0)],
+            [Y(0), Z(0)],
+            [X(0), Y(1)],
+        ]
+
+        # we can use next on it repeatedly and get the tapes out in order
+        for i in range(3):
+            next_tape = next(sequence)
+            assert isinstance(next_tape, qml.tape.QuantumScript)
+            assert next_tape.operations == operations[i]
+            assert next_tape.measurements == measurements[i]
+
+        with pytest.raises(StopIteration):
+            next(sequence)
+
     def test_sequence_copy(self):
         """Test that copying a sequence works as expected with no updates"""
 

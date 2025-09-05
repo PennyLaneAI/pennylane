@@ -52,14 +52,16 @@ def split_at_non_clifford_gates(tape):
 
     **Example**
 
-    >>> tape = QuantumScript([RZ(1.2, 0), X(1), S(2), RotXZX(0.1, 0.2, 0.3, 1), RZ(1.2, 2)])
+    >>> ops = [RZ(1.2, 0), X(1), S(2), RotXZX(0.1, 0.2, 0.3, 1), RZ(1.2, 2)]
+    >>> tape = QuantumScript(ops, measurements=[qml.expval(qml.Z(0))])
     >>> (seq,), null_postprocessing_fn = split_at_non_clifford_gates(tape)
     >>> seq.operations
     [[RZ(1.2, wires=[0]), X(1), S(2)],
     [RotXZX(0.1, 0.2, 0.3, wires=[1])],
     [RZ(1.2, wires=[2])]]
 
-
+    >>> seq.measurements
+    [expval(Z(0))]
     """
     all_operations = []
     current_ops = [tape.operations[0]]
@@ -110,6 +112,8 @@ class QuantumScriptSequence:
                 shots=[1],
             )
             self._tapes.append(aux_tape)
+
+        self._index = 0
 
     @property
     def tapes(self):
@@ -198,6 +202,22 @@ class QuantumScriptSequence:
             ~.Shots: Object with shot information
         """
         return self._shots
+
+    def __len__(self):
+        return len(self.tapes)
+
+    def __iter__(self):
+        return self.tapes.__iter__()
+
+    def __next__(self):
+        if self._index < len(self.tapes):
+            next_tape = self.tapes[self._index]
+            self._index += 1
+            return next_tape
+        raise StopIteration
+
+    def __reversed__(self):
+        return self.tapes.__reversed__()
 
     def __repr__(self) -> str:
         return f"<QuantumScriptSequence: wires={list(self.wires)}>"
