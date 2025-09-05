@@ -341,7 +341,7 @@ class TestResourceOperator:
         for op_to_remove, expected_queue in zip(ops_to_remove, expected_queues):
             with AnnotatedQueue() as q:
                 for op in self.ops_to_queue:
-                    qml.apply(op)
+                    op.queue()
 
                 ResourceOperator.dequeue(op_to_remove)
 
