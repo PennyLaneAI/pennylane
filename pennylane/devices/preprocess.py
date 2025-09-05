@@ -298,7 +298,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     num_available_work_wires: int | None = 0,
     name: str = "device",
     error: type[Exception] | None = None,
-    gate_set: None | set | dict | list = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -322,9 +321,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
             fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
-        gate_set (None, set, dict, list): The gate set to be used for decomposition when graph
-            decomposition is enabled. If ``None``, defaults to all operations filtered by the
-            stopping condition. Only used with graph decomposition.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
