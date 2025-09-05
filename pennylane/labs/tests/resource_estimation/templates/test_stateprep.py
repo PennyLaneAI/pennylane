@@ -225,11 +225,16 @@ class TestAliasSampling:
         if precision is None:
             config = {"precision_alias_sampling": 1e-9}
             assert (
-                plre.ResourceAliasSampling.default_resource_decomp(num_coeffs, precision, config=config)
+                plre.ResourceAliasSampling.default_resource_decomp(
+                    num_coeffs, precision, config=config
+                )
                 == expected_res
             )
         else:
-            assert plre.ResourceAliasSampling.default_resource_decomp(num_coeffs, precision) == expected_res
+            assert (
+                plre.ResourceAliasSampling.default_resource_decomp(num_coeffs, precision)
+                == expected_res
+            )
 
 
 class TestPrepTHC:

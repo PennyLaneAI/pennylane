@@ -49,9 +49,9 @@ class TestResourceAdjoint:
         """Test that we can obtain the resources as expected"""
         op = plre.ResourceS()  # has default_adjoint_decomp defined
         adj_op = plre.ResourceAdjoint(op)
-        assert adj_op.default_resource_decomp(**adj_op.resource_params) == op.default_adjoint_resource_decomp(
-            **op.resource_params
-        )
+        assert adj_op.default_resource_decomp(
+            **adj_op.resource_params
+        ) == op.default_adjoint_resource_decomp(**op.resource_params)
 
         class ResourceDummyS(plre.ResourceS):
             """Dummy class with no default adjoint decomp"""

@@ -96,7 +96,9 @@ class TestHadamard:
         op = plre.ResourceHadamard(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
@@ -197,7 +199,9 @@ class TestSWAP:
 
         op = plre.ResourceSWAP([0, 1])
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceSWAP.resource_rep(), 1)]),
@@ -324,7 +328,9 @@ class TestS:
             num_ctrl_values,
         )
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
@@ -437,7 +443,9 @@ class TestT:
         op = plre.ResourceT(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
@@ -569,7 +577,9 @@ class TestX:
         op = plre.ResourceX(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
@@ -686,7 +696,9 @@ class TestY:
         op = plre.ResourceY(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
@@ -779,7 +791,9 @@ class TestZ:
         op = plre.ResourceZ(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (

@@ -71,7 +71,9 @@ class TestIdentity:
         op = plre.ResourceIdentity(0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     identity_pow_data = (

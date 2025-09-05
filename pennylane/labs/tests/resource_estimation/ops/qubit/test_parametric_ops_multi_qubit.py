@@ -73,7 +73,10 @@ class TestMultiRZ:
     def test_adjoint_decomp(self, num_wires, eps):
         """Test that the adjoint decomposition is correct."""
         expected = [re.GateCount(re.ResourceMultiRZ.resource_rep(num_wires=num_wires, eps=eps))]
-        assert re.ResourceMultiRZ.default_adjoint_resource_decomp(num_wires=num_wires, eps=eps) == expected
+        assert (
+            re.ResourceMultiRZ.default_adjoint_resource_decomp(num_wires=num_wires, eps=eps)
+            == expected
+        )
 
     ctrl_data = (
         (
@@ -130,7 +133,9 @@ class TestMultiRZ:
         )
 
         assert (
-            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.default_controlled_resource_decomp(
+                num_ctrl_wires, num_ctrl_values, **op.resource_params
+            )
             == expected_res
         )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
@@ -371,7 +376,9 @@ class TestPauliRot:
         op2 = re.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
         assert (
-            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.default_controlled_resource_decomp(
+                num_ctrl_wires, num_ctrl_values, **op.resource_params
+            )
             == expected_res
         )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res

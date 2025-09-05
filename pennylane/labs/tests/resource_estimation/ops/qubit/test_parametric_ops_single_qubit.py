@@ -85,7 +85,10 @@ class TestPauliRotation:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.default_resource_decomp(**op_resource_params, config=config) == expected
+        assert (
+            op_resource_type.default_resource_decomp(**op_resource_params, config=config)
+            == expected
+        )
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -183,7 +186,10 @@ class TestPauliRotation:
         expected_resources = copy.copy(local_res)
         expected_resources.extend(general_res)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_resources
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            == expected_resources
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_resources
 
 
@@ -267,7 +273,9 @@ class TestRot:
         op = plre.ResourceRot(wires=0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
-        assert op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert (
+            op.default_controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        )
         assert op2.default_resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (

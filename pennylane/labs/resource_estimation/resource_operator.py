@@ -274,21 +274,11 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def default_resource_decomp(cls, *args, **kwargs) -> list:
-        r"""Returns a list of actions that define the resources of the operator."""
-        return cls.default_resource_decomp(*args, **kwargs)
-
-    @classmethod
     def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for the adjoint of the operator."""
         raise ResourcesNotDefined
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
-        r"""Returns a list of actions that define the resources of the operator."""
-        return cls.default_adjoint_resource_decomp(*args, **kwargs)
-
-    @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
     ) -> list:
@@ -301,22 +291,6 @@ class ResourceOperator(ABC):
                 controlled when in the :math:`|0\rangle` state
         """
         raise ResourcesNotDefined
-
-    @classmethod
-    def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-    ) -> list:
-        r"""Returns a list representing the resources for a controlled version of the operator.
-
-        Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
-                operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
-                controlled when in the :math:`|0\rangle` state
-        """
-        return cls.default_controlled_resource_decomp(
-            ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
-        )
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
@@ -327,16 +301,6 @@ class ResourceOperator(ABC):
             pow_z (int): exponent that the operator is being raised to
         """
         raise ResourcesNotDefined
-
-    @classmethod
-    def default_pow_resource_decomp(cls, pow_z, *args, **kwargs) -> list:
-        r"""Returns a list representing the resources for an operator
-        raised to a power.
-
-        Args:
-            pow_z (int): exponent that the operator is being raised to
-        """
-        return cls.default_pow_resource_decomp(pow_z, *args, **kwargs)
 
     @classmethod
     def set_resources(cls, new_func: Callable, override_type: str = "base"):

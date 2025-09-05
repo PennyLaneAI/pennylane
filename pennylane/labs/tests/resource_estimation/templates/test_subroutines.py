@@ -49,7 +49,8 @@ class TestResourceOutOfPlaceSquare:
             GateCount(resource_rep(plre.ResourceCNOT), register_size),
         ]
         assert (
-            plre.ResourceOutOfPlaceSquare.default_resource_decomp(register_size=register_size) == expected
+            plre.ResourceOutOfPlaceSquare.default_resource_decomp(register_size=register_size)
+            == expected
         )
 
 
@@ -111,7 +112,9 @@ class TestResourcePhaseGradient:
     )
     def test_resources(self, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourcePhaseGradient.default_resource_decomp(num_wires=num_wires) == expected_res
+        assert (
+            plre.ResourcePhaseGradient.default_resource_decomp(num_wires=num_wires) == expected_res
+        )
 
 
 class TestResourceOutMultiplier:
@@ -157,7 +160,8 @@ class TestResourceOutMultiplier:
             GateCount(toff, num_toff),
         ]
         assert (
-            plre.ResourceOutMultiplier.default_resource_decomp(a_register_size, b_register_size) == expected
+            plre.ResourceOutMultiplier.default_resource_decomp(a_register_size, b_register_size)
+            == expected
         )
 
 
@@ -1438,7 +1442,9 @@ class TestResourceQubitUnitary:
             )
         else:
             assert (
-                plre.ResourceQubitUnitary.default_resource_decomp(num_wires=num_wires, precision=eps)
+                plre.ResourceQubitUnitary.default_resource_decomp(
+                    num_wires=num_wires, precision=eps
+                )
                 == expected_res
             )
 
