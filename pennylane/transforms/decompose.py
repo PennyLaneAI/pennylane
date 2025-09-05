@@ -796,7 +796,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,
-    current_depth=0,
+    current_depth: int = 0,
     num_available_work_wires: int | None = 0,
     graph_solution: DecompGraphSolution | None = None,
     custom_decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
