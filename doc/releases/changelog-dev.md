@@ -515,6 +515,9 @@
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+  * Fixed a queueing issue in `ResourceOperator` tests.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
   submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
   may have changed.
@@ -1093,6 +1096,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
+Soran Jahangiri,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares
