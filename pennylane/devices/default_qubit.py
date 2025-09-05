@@ -54,8 +54,8 @@ from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 from .device_api import Device
 from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
+from .preprocess import decompose as preprocess_decompose
 from .preprocess import (
-    decompose,
     device_resolve_dynamic_wires,
     mid_circuit_measurements,
     no_sampling,
@@ -74,14 +74,12 @@ logger.addHandler(logging.NullHandler())
 
 
 @transform
-def decompose_with_device_wires(tape: QuantumScript, device_wires, stopping_condition, **kwargs):
+def decompose_with_device_wires(tape: QuantumScript, device_wires, stopping_condition_fn, **kwargs):
     """Wrapper for preprocess.decompose that calculates num_available_work_wires correctly.
 
     This wrapper calculates the number of available work wires as device_wires - num_tape_wires
     and handles graph decomposition setup properly.
     """
-    from pennylane.devices.preprocess import decompose
-
     # Calculate the number of available work wires
     num_available_work_wires = None
     if device_wires is not None:
@@ -94,8 +92,6 @@ def decompose_with_device_wires(tape: QuantumScript, device_wires, stopping_cond
 
     if enabled_graph() and graph_solution is None:
         # Filter out MeasurementProcess instances (like MidMeasureMP) that shouldn't be decomposed
-        from pennylane.measurements import MeasurementProcess
-
         decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
 
         graph_solution = _construct_and_solve_decomp_graph(
@@ -107,9 +103,9 @@ def decompose_with_device_wires(tape: QuantumScript, device_wires, stopping_cond
         )
 
     # Apply the decompose transform with correct parameters
-    return decompose(
+    return preprocess_decompose(
         tape,
-        stopping_condition=stopping_condition,
+        stopping_condition=stopping_condition_fn,
         num_available_work_wires=num_available_work_wires,
         graph_solution=graph_solution,
         **kwargs,
@@ -375,7 +371,7 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_
     program.add_transform(
         decompose_with_device_wires,
         device_wires=device_wires,
-        stopping_condition=adjoint_ops,
+        stopping_condition_fn=adjoint_ops,
         name=name,
         skip_initial_state_prep=False,
     )
@@ -680,7 +676,7 @@ class DefaultQubit(Device):
         transform_program.add_transform(
             decompose_with_device_wires,
             device_wires=self.wires,
-            stopping_condition=stopping_condition,
+            stopping_condition_fn=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
