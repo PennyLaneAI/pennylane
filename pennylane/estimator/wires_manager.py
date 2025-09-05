@@ -42,7 +42,7 @@ class WireResourceManager:
 
     """
 
-    def __init__(self, work_wires: int | dict, algo_wires=0, tight_budget=False) -> None:
+    def __init__(self, work_wires: int | dict, algo_wires: int = 0, tight_budget: bool = False) -> None:
 
         clean_wires, dirty_wires = (
             (work_wires["clean"], work_wires["dirty"])
