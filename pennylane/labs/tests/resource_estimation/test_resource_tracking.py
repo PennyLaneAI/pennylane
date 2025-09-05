@@ -40,14 +40,18 @@ class ResourceTestCNOT(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
+        """Dummy resource_rep for testing"""
+
         return CompressedResourceOp(cls, 2, {})
 
     @property
     def resource_params(self):
+        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
     def default_resource_decomp(cls, config):
+        """Dummy default_resource_decomp for testing"""
         raise ResourcesNotDefined
 
 
@@ -59,14 +63,18 @@ class ResourceTestHadamard(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
+        """Dummy resource_rep for testing"""
+
         return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
+        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
     def default_resource_decomp(cls, config):
+        """Dummy default_resource_decomp for testing"""
         raise ResourcesNotDefined
 
 
@@ -78,14 +86,17 @@ class ResourceTestT(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
+        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
+        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
     def default_resource_decomp(cls, config):
+        """Dummy default_resource_decomp for testing"""
         raise ResourcesNotDefined
 
 
@@ -97,14 +108,17 @@ class ResourceTestZ(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
+        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
+        """Dummy resource_params for testing"""
         return {}
 
     @classmethod
     def default_resource_decomp(cls, config):
+        """Dummy default_resource_decomp for testing"""
         t = resource_rep(ResourceTestT)
         return [GateCount(t, count=4)]
 
@@ -121,14 +135,17 @@ class ResourceTestRZ(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, epsilon=None):
+        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 1, {"epsilon": epsilon})
 
     @property
     def resource_params(self):
+        """Dummy resource_params for testing"""
         return {"epsilon": self.epsilon}
 
     @classmethod
     def default_resource_decomp(cls, config, epsilon):
+        """Dummy default_resource_decomp for testing"""
         if epsilon is None:
             epsilon = config.conf["error_rz"]
 
@@ -149,14 +166,17 @@ class ResourceTestAlg1(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, num_iter):
+        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, 2, {"num_iter": num_iter})
 
     @property
     def resource_params(self):
+        """Dummy resource_params for testing"""
         return {"num_iter": self.num_iter}
 
     @classmethod
     def default_resource_decomp(cls, config, num_iter):
+        """Dummy default_resource_decomp for testing"""
         cnot = resource_rep(ResourceTestCNOT)
         h = resource_rep(ResourceTestHadamard)
 
@@ -179,14 +199,17 @@ class ResourceTestAlg2(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, num_wires):
+        """Dummy resource_rep for testing"""
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @property
     def resource_params(self):
+        """Dummy resource_params for testing"""
         return {"num_wires": self.num_wires}
 
     @classmethod
     def default_resource_decomp(cls, config, num_wires):
+        """Dummy default_resource_decomp for testing"""
         rz = resource_rep(ResourceTestRZ, {"epsilon": 1e-2})
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
