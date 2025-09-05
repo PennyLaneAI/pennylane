@@ -150,17 +150,23 @@ class MidMeasureMP(Operator):
         self._hyperparameters = {"reset": reset, "postselect": postselect, "id": id}
 
     @property
-    def reset(self):
+    def reset(self) -> bool | None:
+        """Whether to reset the wire into the zero state after the measurement."""
         return self.hyperparameters["reset"]
 
     @property
-    def postselect(self):
+    def postselect(self) -> int | None:
+        """Which basis state to postselect after a mid-circuit measurement."""
         return self.hyperparameters["postselect"]
 
     # pylint: disable=arguments-renamed, arguments-differ
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return type.__call__(cls, *args, **kwargs)
+
+    @staticmethod
+    def compute_diagonalizing_gates(*params, wires, **hyperparams) -> list[Operator]:
+        return []
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
