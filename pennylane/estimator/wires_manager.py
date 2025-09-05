@@ -14,7 +14,8 @@
 r"""This module contains the base class for qubit management"""
 
 
-import pennylane as qml
+from pennylane.queuing import QueuingManager
+
 
 # pylint: disable=too-few-public-methods
 
@@ -140,10 +141,10 @@ class _WireAction:
 
     def __init__(self, num_wires):
         self.num_wires = num_wires
-        if qml.QueuingManager.recording():
+        if QueuingManager.recording():
             self.queue()
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         r"""Adds the wire action object to a queue."""
         context.append(self)
         return self
