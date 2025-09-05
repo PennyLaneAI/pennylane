@@ -836,7 +836,7 @@
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
-* Add `diagonalize_mcms` option to the `ftqc.decomposition.convert_to_mbqc_formalism` module. The arbitrary basis mid-measurement is diagonalized if `diagonalize_mcms` is set as `True`.
+* A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.  
   [(#8105)](https://github.com/PennyLaneAI/pennylane/pull/8105)
 
 * The `autograph` keyword argument has been removed from the `QNode` constructor. 

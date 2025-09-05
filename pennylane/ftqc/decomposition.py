@@ -64,7 +64,13 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
     before applying the transform.
 
     Note that this transform leaves all Paulis and Identities as physical gates, and applies
-    all byproduct operations online immediately after their respective measurement procedures."""
+    all byproduct operations online immediately after their respective measurement procedures.
+
+    Args:
+        diagonalize_mcms (bool, optional): When set, the transform inserts diagonalizing gates
+            before arbitrary-basis mid-circuit measurements. Defaults to False.
+
+    """
 
     if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
         raise NotImplementedError(
