@@ -24,6 +24,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     ResourceOperator,
 )
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import ResourceRX, ResourceRY, ResourceRZ
 from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -349,9 +350,9 @@ def _config_for_single_qubit_rot_error(config, error):
 
     """
 
-    config.conf["error_rx"] = error
-    config.conf["error_ry"] = error
-    config.conf["error_rz"] = error
+    config.conf[ResourceRX]["error_rx"] = error
+    config.conf[ResourceRY]["error_ry"] = error
+    config.conf[ResourceRZ]["error_rz"] = error
     return config
 
 
