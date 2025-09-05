@@ -28,7 +28,6 @@ import numpy as np
 from pennylane import capture, math, ops
 from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import DeviceError
-from pennylane.transforms.decompose import _construct_and_solve_decomp_graph
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -49,6 +48,7 @@ from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
 from pennylane.transforms import decompose as transforms_decompose
 from pennylane.transforms import defer_measurements
 from pennylane.transforms.core import TransformProgram, transform
+from pennylane.transforms.decompose import _construct_and_solve_decomp_graph
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .device_api import Device
@@ -326,7 +326,7 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_se
 
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
-    
+
     # Prepare graph decomposition parameters when graph mode is enabled
     decompose_kwargs = {
         "stopping_condition": adjoint_ops,
@@ -344,7 +344,7 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_se
             alt_decomps=None,
         )
         decompose_kwargs["num_available_work_wires"] = 0
-    
+
     program.add_transform(decompose, **decompose_kwargs)
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
@@ -647,7 +647,7 @@ class DefaultQubit(Device):
 
         if config.interface == math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
-        
+
         # Prepare graph decomposition parameters when graph mode is enabled
         decompose_kwargs = {}
         if enabled_graph():
@@ -661,7 +661,7 @@ class DefaultQubit(Device):
                 alt_decomps=None,
             )
             decompose_kwargs["num_available_work_wires"] = 0
-        
+
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
