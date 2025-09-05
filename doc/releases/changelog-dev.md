@@ -792,7 +792,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* `DefaultQubit`, `DefaultMixed`, `DefaultClifford`, and `DefaultTensor` all now determine the `mcm_method` in `Device.setup_execution_config`,
+* `DefaultQubit` now determines the `mcm_method` in `Device.setup_execution_config`,
   making it easier to tell which mcm method will be used. This also allows `defer_measurements` and `dynamic_one_shot` to be applied at different
   locations in the preprocessing program.
   [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184/files)

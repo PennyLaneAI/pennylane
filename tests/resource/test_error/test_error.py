@@ -245,12 +245,12 @@ class TestSpecAndTracker:
     # TODO: remove this when support for below is present
     # little hack for stopping device-level decomposition for custom ops
     @staticmethod
-    def preprocess_transforms(execution_config: qml.devices.ExecutionConfig | None = None):
+    def preprocess(execution_config: qml.devices.ExecutionConfig | None = None):
         """A vanilla preprocesser"""
-        return qml.transforms.core.TransformProgram()
+        return qml.transforms.core.TransformProgram(), execution_config
 
     dev = qml.device("null.qubit", wires=2)
-    dev.preprocess_transforms = preprocess_transforms.__func__
+    dev.preprocess = preprocess.__func__
 
     @staticmethod
     @qml.qnode(dev)

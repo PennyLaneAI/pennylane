@@ -585,13 +585,10 @@ class DefaultTensor(Device):
             **kwargs,
         )
 
-    def setup_execution_config(
-        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
-    ) -> ExecutionConfig:
+    def _setup_execution_config(self, config: ExecutionConfig) -> ExecutionConfig:
         """
         Update the execution config with choices for how the device should be used and the device options.
         """
-        config = config or ExecutionConfig()
         # TODO: add options for gradients next quarter
         updated_values = {}
 
@@ -600,19 +597,17 @@ class DefaultTensor(Device):
             if option not in new_device_options:
                 new_device_options[option] = getattr(self, f"_{option}", None)
 
-        if config.mcm_config.mcm_method is None:
-            updated_values["mcm_config"] = replace(config.mcm_config, mcm_method="deferred")
-        elif config.mcm_config.mcm_method != "deferred":
+        if config.mcm_config.mcm_method not in {None, "deferred"}:
             raise DeviceError(
                 f"{self.name} only supports the deferred measurement principle, not {config.mcm_config.mcm_method}"
             )
 
         return replace(config, **updated_values, device_options=new_device_options)
 
-    def preprocess_transforms(
+    def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> TransformProgram:
+    ):
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -620,8 +615,10 @@ class DefaultTensor(Device):
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram: A transform program that when called returns :class:`~.QuantumTape`'s that the
-            device can natively execute as well as a postprocessing function to be called after execution.
+            TransformProgram, ExecutionConfig: A transform program that when called returns :class:`~.QuantumTape`'s that the
+            device can natively execute as well as a postprocessing function to be called after execution, and a configuration
+            with unset specifications filled in.
+
         This device currently:
 
         * Does not support finite shots.
@@ -631,10 +628,13 @@ class DefaultTensor(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
 
+        config = self._setup_execution_config(execution_config)
+
         program = TransformProgram()
 
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
+        program.add_transform(validate_device_wires, self._wires, name=self.name)
         program.add_transform(qml.defer_measurements, allow_postselect=False)
         program.add_transform(
             decompose,
@@ -642,10 +642,9 @@ class DefaultTensor(Device):
             skip_initial_state_prep=True,
             name=self.name,
         )
-        program.add_transform(validate_device_wires, self._wires, name=self.name)
         program.add_transform(qml.transforms.broadcast_expand)
 
-        return program
+        return program, config
 
     def execute(
         self,

@@ -52,6 +52,7 @@ from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     null_postprocessing,
+    validate_adjoint_trainable_params,
     validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
@@ -425,9 +426,7 @@ class DefaultClifford(Device):
         self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-    def setup_execution_config(
-        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
-    ) -> ExecutionConfig:
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
 
         Args:
@@ -437,56 +436,47 @@ class DefaultClifford(Device):
             ExecutionConfig: a preprocessed execution config
 
         """
-        config = config or ExecutionConfig()
 
         updated_values = {}
-        if config.gradient_method == "best":  # pragma: no cover
+        if execution_config.gradient_method == "best":  # pragma: no cover
             updated_values["gradient_method"] = None
         updated_values["use_device_jacobian_product"] = False
-        if config.grad_on_execution is None:
+        if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = False
-        updated_values["device_options"] = dict(config.device_options)  # copy
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
         if "max_workers" not in updated_values["device_options"]:
             updated_values["device_options"]["max_workers"] = self._max_workers
         if "rng" not in updated_values["device_options"]:
             updated_values["device_options"]["rng"] = self._rng
         if "tableau" not in updated_values["device_options"]:
             updated_values["device_options"]["tableau"] = self._tableau
+        return replace(execution_config, **updated_values)
 
-        if config.gradient_method is not None:
-            updated_values["gradient_method"] = None
-
-        method = config.mcm_config.mcm_method
-        if method is None:
-            updated_values["mcm_config"] = replace(config.mcm_config, mcm_method="deferred")
-        elif method != "deferred":
-            raise DeviceError("DefaultClifford only supports mcm_method='deferred'. Got {method}.")
-
-        return replace(config, **updated_values)
-
-    def preprocess_transforms(
+    def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> TransformProgram:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
-            execution_config (ExecutionConfig | None): A data structure describing the
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram : A transform program that when called returns QuantumTapes that the device
-            can natively execute as well as a postprocessing function to be called after execution.
+            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
+            unset specifications filled in.
 
         This device currently does not intrinsically support parameter broadcasting.
 
         """
         if execution_config is None:
             execution_config = ExecutionConfig()
+        config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
-        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
@@ -502,11 +492,16 @@ class DefaultClifford(Device):
         )
 
         # Validate multi processing
-        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
             transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
-        return transform_program
+        # Validate derivatives
+        transform_program.add_transform(validate_adjoint_trainable_params)
+        if config.gradient_method is not None:
+            config = replace(config, gradient_method=None)
+
+        return transform_program, config
 
     def execute(
         self,

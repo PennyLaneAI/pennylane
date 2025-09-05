@@ -23,7 +23,6 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
-from pennylane.devices.preprocess import validate_multiprocessing_workers
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 stim = pytest.importorskip("stim")
@@ -65,27 +64,6 @@ def circuit_2():
     qml.Barrier()
     qml.Hadamard(wires=[0])
     qml.DepolarizingChannel(0.2, wires=[0])
-
-
-class TestSetupExecutionConfig:
-
-    def test_default_mcm_method_deferred(self):
-        """Test that default clifford's preferred mcm_method is deferred."""
-
-        config = qml.device("default.clifford").setup_execution_config()
-        assert config.mcm_config.mcm_method == "deferred"
-
-    @pytest.mark.parametrize("mcm_method", ("one-shot", "tree-traversal", "device"))
-    def test_only_deferred_supported(self, mcm_method):
-        """Test an error is raised for other mcm methods."""
-
-        dev = qml.device("default.clifford")
-        initial = qml.devices.ExecutionConfig(
-            mcm_config=qml.devices.MCMConfig(mcm_method=mcm_method)
-        )
-
-        with pytest.raises(DeviceError, match="only supports mcm_method='deferred'"):
-            dev.setup_execution_config(initial)
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
@@ -499,16 +477,6 @@ def test_snapshot_supported(measurement, tag):
     for key1, key2 in zip(snaps_qubit, snaps_clifford):
         assert key1 == key2
         assert qml.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
-
-
-def test_validate_multiprocessing_workers_in_program():
-    """Test that validate_multiprocessing_workers is in the program if workers are present."""
-
-    prog1 = qml.device("default.clifford").preprocess_transforms()
-    assert validate_multiprocessing_workers not in prog1
-
-    prog2 = qml.device("default.clifford", max_workers=2).preprocess_transforms()
-    assert validate_multiprocessing_workers in prog2
 
 
 def test_max_worker_clifford():
