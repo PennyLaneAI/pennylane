@@ -33,6 +33,7 @@ General Execution Errors
 .. autosummary::
     :toctree: api
 
+    ~AllocationError
     ~CaptureError
     ~DeviceError
     ~QuantumFunctionError
@@ -80,6 +81,10 @@ User Warnings
 # =============================================================================
 # General Execution and Quantum Function Errors
 # =============================================================================
+
+
+class AllocationError(RuntimeError):
+    """An error arising from trying handling a dynamically allocated wire."""
 
 
 class CaptureError(Exception):

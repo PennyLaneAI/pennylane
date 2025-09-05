@@ -14,6 +14,8 @@
 """
 Tests for quantum algorithmic subroutines resource operators.
 """
+import math
+
 import pytest
 
 import pennylane.labs.resource_estimation as plre
@@ -35,7 +37,7 @@ class TestResourceOutOfPlaceSquare:
     def test_resource_rep(self, register_size):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
-            plre.ResourceOutOfPlaceSquare, {"register_size": register_size}
+            plre.ResourceOutOfPlaceSquare, 3 * register_size, {"register_size": register_size}
         )
         assert plre.ResourceOutOfPlaceSquare.resource_rep(register_size=register_size) == expected
 
@@ -63,7 +65,9 @@ class TestResourcePhaseGradient:
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5))
     def test_resource_rep(self, num_wires):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourcePhaseGradient, {"num_wires": num_wires})
+        expected = plre.CompressedResourceOp(
+            plre.ResourcePhaseGradient, num_wires, {"num_wires": num_wires}
+        )
         assert plre.ResourcePhaseGradient.resource_rep(num_wires=num_wires) == expected
 
     @pytest.mark.parametrize(
@@ -127,8 +131,10 @@ class TestResourceOutMultiplier:
     @pytest.mark.parametrize("b_register_size", (4, 5, 6))
     def test_resource_rep(self, a_register_size, b_register_size):
         """Test that the compressed representation is correct."""
+        expected_num_wires = a_register_size + 3 * b_register_size
         expected = plre.CompressedResourceOp(
             plre.ResourceOutMultiplier,
+            expected_num_wires,
             {"a_num_qubits": a_register_size, "b_num_qubits": b_register_size},
         )
         assert plre.ResourceOutMultiplier.resource_rep(a_register_size, b_register_size) == expected
@@ -168,7 +174,7 @@ class TestResourceSemiAdder:
     def test_resource_rep(self, register_size):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
-            plre.ResourceSemiAdder, {"max_register_size": register_size}
+            plre.ResourceSemiAdder, 2 * register_size, {"max_register_size": register_size}
         )
         assert plre.ResourceSemiAdder.resource_rep(max_register_size=register_size) == expected
 
@@ -278,6 +284,7 @@ class TestResourceControlledSequence:
         base_cmpr_op = base_op.resource_rep_from_op()
         expected = plre.CompressedResourceOp(
             plre.ResourceControlledSequence,
+            base_cmpr_op.num_wires + num_ctrl_wires,
             {
                 "base_cmpr_op": base_cmpr_op,
                 "num_ctrl_wires": num_ctrl_wires,
@@ -483,6 +490,7 @@ class TestResourceQPE:
 
         expected = plre.CompressedResourceOp(
             plre.ResourceQPE,
+            base_cmpr_op.num_wires + num_est_wires,
             {
                 "base_cmpr_op": base_cmpr_op,
                 "num_estimation_wires": num_est_wires,
@@ -600,7 +608,9 @@ class TestResourceIterativeQPE:
         """Test the resource_rep method"""
         base_cmpr_op = base_op.resource_rep_from_op()
         expected = plre.CompressedResourceOp(
-            plre.ResourceIterativeQPE, {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter}
+            plre.ResourceIterativeQPE,
+            base_cmpr_op.num_wires,
+            {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter},
         )
         assert plre.ResourceIterativeQPE.resource_rep(base_cmpr_op, num_iter) == expected
 
@@ -784,7 +794,7 @@ class TestResourceQFT:
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4))
     def test_resource_rep(self, num_wires):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceQFT, {"num_wires": num_wires})
+        expected = plre.CompressedResourceOp(plre.ResourceQFT, num_wires, {"num_wires": num_wires})
         assert plre.ResourceQFT.resource_rep(num_wires=num_wires) == expected
 
     @pytest.mark.parametrize(
@@ -896,7 +906,7 @@ class TestResourceAQFT:
     def test_resource_rep(self, order, num_wires):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
-            plre.ResourceAQFT, {"order": order, "num_wires": num_wires}
+            plre.ResourceAQFT, num_wires, {"order": order, "num_wires": num_wires}
         )
         assert plre.ResourceAQFT.resource_rep(order=order, num_wires=num_wires) == expected
 
@@ -1006,7 +1016,7 @@ class TestResourceBasisRotation:
     @pytest.mark.parametrize("dim_n", (1, 2, 3))
     def test_resource_rep(self, dim_n):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceBasisRotation, {"dim_N": dim_n})
+        expected = plre.CompressedResourceOp(plre.ResourceBasisRotation, dim_n, {"dim_N": dim_n})
         assert plre.ResourceBasisRotation.resource_rep(dim_N=dim_n) == expected
 
     @pytest.mark.parametrize("dim_n", (1, 2, 3))
@@ -1028,15 +1038,24 @@ class TestResourceSelect:
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
 
         op = plre.ResourceSelect(ops)
-        assert op.resource_params == {"cmpr_ops": cmpr_ops}
+        assert op.resource_params == {"cmpr_ops": cmpr_ops, "num_wires": 4}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
-        ops = [plre.ResourceRX(), plre.ResourceZ(), plre.ResourceCNOT()]
+        ops = [plre.ResourceRX(wires=0), plre.ResourceZ(wires=1), plre.ResourceCNOT(wires=[1, 2])]
+        num_wires = 3 + 2  # 3 op wires + 2 control wires
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
 
-        expected = plre.CompressedResourceOp(plre.ResourceSelect, {"cmpr_ops": cmpr_ops})
-        assert plre.ResourceSelect.resource_rep(cmpr_ops) == expected
+        expected = plre.CompressedResourceOp(
+            plre.ResourceSelect, num_wires, {"cmpr_ops": cmpr_ops, "num_wires": num_wires}
+        )
+        print(expected)
+        print(plre.ResourceSelect.resource_rep(cmpr_ops, num_wires))
+        assert plre.ResourceSelect.resource_rep(cmpr_ops, num_wires) == expected
+
+        op = plre.ResourceSelect(ops)
+        print(op.resource_rep(**op.resource_params))
+        assert op.resource_rep(**op.resource_params) == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
@@ -1077,7 +1096,7 @@ class TestResourceSelect:
             ),
             plre.FreeWires(1),
         ]
-        assert plre.ResourceSelect.resource_decomp(cmpr_ops) == expected
+        assert plre.ResourceSelect.resource_decomp(cmpr_ops, num_wires=4) == expected
 
 
 class TestResourceQROM:
@@ -1138,8 +1157,10 @@ class TestResourceQROM:
     )
     def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, clean):
         """Test that the compressed representation is correct."""
+        expected_num_wires = size_data_points + math.ceil(math.log2(num_data_points))
         expected = plre.CompressedResourceOp(
             plre.ResourceQROM,
+            expected_num_wires,
             {
                 "num_bitstrings": num_data_points,
                 "size_bitstring": size_data_points,
@@ -1305,7 +1326,7 @@ class TestResourceQubitUnitary:
     def test_resource_rep(self, num_wires, eps):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
-            plre.ResourceQubitUnitary, {"num_wires": num_wires, "precision": eps}
+            plre.ResourceQubitUnitary, num_wires, {"num_wires": num_wires, "precision": eps}
         )
         assert (
             plre.ResourceQubitUnitary.resource_rep(num_wires=num_wires, precision=eps) == expected
@@ -1448,6 +1469,7 @@ class TestResourceSelectPauliRot:
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourceSelectPauliRot,
+            num_ctrl_wires + 1,
             {
                 "rotation_axis": rotation_axis,
                 "num_ctrl_wires": num_ctrl_wires,

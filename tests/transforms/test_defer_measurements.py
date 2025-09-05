@@ -752,7 +752,7 @@ class TestConditionalOperations:
         assert isinstance(sec_ctrl_op, Controlled)
         qml.assert_equal(sec_ctrl_op.base, qml.RZ(sec_par, 1))
 
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
     def test_correct_ops_in_tape_inversion(self):
         """Test that the underlying tape contains the correct operations if a

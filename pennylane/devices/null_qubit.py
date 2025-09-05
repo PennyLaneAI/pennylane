@@ -37,6 +37,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementValue,
     ProbabilityMP,
+    Shots,
     StateMP,
 )
 from pennylane.ops.op_math import Adjoint, Controlled, ControlledOp
@@ -494,17 +495,21 @@ class NullQubit(Device):
     # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def eval_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
+        self,
+        jaxpr: "jax.extend.core.Jaxpr",
+        consts: list,
+        *args,
+        execution_config=None,
+        shots=Shots(None),
     ) -> list:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             AbstractMeasurement,
         )
 
-        def zeros_like(var):
+        def zeros_like(var, shots):
             if isinstance(var.aval, AbstractMeasurement):
-                shots = self.shots.total_shots
                 s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
                 return math.zeros(s, dtype=dtype, like="jax")
             return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
 
-        return [zeros_like(var) for var in jaxpr.outvars]
+        return [zeros_like(var, Shots(shots).total_shots) for var in jaxpr.outvars]

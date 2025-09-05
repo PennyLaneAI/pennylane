@@ -2537,10 +2537,10 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = dev_fn(wires=2, shots=20000, seed=seed)
+        dev = dev_fn(wires=2, seed=seed)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=20000)
         def circuit(v):
             qml.RX(v, wires=0)
             qml.RY(0.5, wires=1)
@@ -2567,9 +2567,9 @@ class TestCutCircuitMCTransform:
         postprocessed to return bitstrings of the original circuit size.
         """
 
-        dev = dev_fn(wires=3, shots=100)
+        dev = dev_fn(wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=100)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2599,10 +2599,10 @@ class TestCutCircuitMCTransform:
         altered when executing the QNode
         """
         shots = 100
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2662,10 +2662,10 @@ class TestCutCircuitMCTransform:
         gives the correct error
         """
         shots = 100
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2716,10 +2716,10 @@ class TestCutCircuitMCTransform:
         Tests that attempting to cut a circuit with multiple sample measurements
         using `cut_circuit_mc` gives the correct error
         """
-        dev = dev_fn(wires=3, shots=100)
+        dev = dev_fn(wires=3)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=100)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2745,10 +2745,10 @@ class TestCutCircuitMCTransform:
         Tests that attempting to cut a circuit with non-sample measurements
         using `cut_circuit_mc` gives the correct error
         """
-        dev = dev_fn(wires=2, shots=100)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=100)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2775,10 +2775,10 @@ class TestCutCircuitMCTransform:
         correct output is given
         """
         shots = 100
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev, interface=None, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2807,10 +2807,10 @@ class TestCutCircuitMCTransform:
         import autograd
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2842,10 +2842,10 @@ class TestCutCircuitMCTransform:
         import tensorflow as tf
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2877,10 +2877,10 @@ class TestCutCircuitMCTransform:
         import torch
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2912,10 +2912,10 @@ class TestCutCircuitMCTransform:
         import jax
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2947,10 +2947,10 @@ class TestCutCircuitMCTransform:
         import autograd
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2980,10 +2980,10 @@ class TestCutCircuitMCTransform:
         import tensorflow as tf
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3013,10 +3013,10 @@ class TestCutCircuitMCTransform:
         import torch
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3046,10 +3046,10 @@ class TestCutCircuitMCTransform:
         import jax
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3077,10 +3077,10 @@ class TestCutCircuitMCTransform:
         transform."""
 
         shots = 10
-        dev = dev_fn(wires=3, shots=shots)
+        dev = dev_fn(wires=3)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -3103,10 +3103,10 @@ class TestCutCircuitMCTransform:
         that some of the subcircuits are disconnected from the final terminal sample
         measurements is executed successfully"""
         shots = 10
-        dev = dev_fn(wires=3, shots=shots)
+        dev = dev_fn(wires=3)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -3123,10 +3123,10 @@ class TestCutCircuitMCTransform:
         """Tests that a sample-based circuit with a trivial wire cut (not
         separating the circuit into fragments) is executed successfully"""
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -3157,14 +3157,14 @@ class TestCutCircuitMCTransform:
 
         # We need a 4-qubit device to account for mid-circuit measurements
         shots = 10
-        dev = dev_fn(wires=4, shots=shots)
+        dev = dev_fn(wires=4)
 
         def two_qubit_unitary(param, wires):
             qml.Hadamard(wires=[wires[0]])
             qml.CRY(param, wires=[wires[0], wires[1]])
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(params):
             qml.BasisState(np.array([1]), wires=[0])
             qml.WireCut(wires=0)

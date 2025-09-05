@@ -19,14 +19,14 @@ import uuid
 import pytest
 
 import pennylane as qml
+from pennylane import allocate, deallocate
 from pennylane.allocation import (
     Allocate,
+    AllocateState,
     Deallocate,
     DynamicRegister,
     DynamicWire,
-    allocate,
     allocate_prim,
-    deallocate,
     deallocate_prim,
 )
 
@@ -80,31 +80,42 @@ class TestAllocateOp:
     def test_allocate_from_num_wires(self):
         """Test that the op can be instantiated with from_num_wires"""
 
-        op = Allocate.from_num_wires(3, require_zeros=False, restored=True)
+        op = Allocate.from_num_wires(3, state=AllocateState.ANY, restored=True)
         assert len(op.wires) == 3
-        assert op.hyperparameters == {"require_zeros": False, "restored": True}
-        assert not op.require_zeros
+        assert op.hyperparameters == {"state": AllocateState.ANY, "restored": True}
+        assert op.state == AllocateState.ANY
         assert op.restored
 
     def test_normal_initialization(self):
         """Test that the op can also be initialized with already created dynamic wires."""
         wires = [DynamicWire() for _ in range(5)]
-        op = Allocate(wires, require_zeros=False, restored=True)
+        op = Allocate(wires, state=AllocateState.ANY, restored=True)
         assert op.wires == qml.wires.Wires(wires)
-        assert op.hyperparameters == {"require_zeros": False, "restored": True}
-        assert not op.require_zeros
+        assert op.hyperparameters == {"state": AllocateState.ANY, "restored": True}
+        assert op.state == AllocateState.ANY
         assert op.restored
 
     def test_default_hyperparameters(self):
         """Test the values of the default hyperparameters."""
 
         op = Allocate.from_num_wires(2)
-        assert op.require_zeros
+        assert op.state == AllocateState.ZERO
         assert not op.restored
 
         op2 = Allocate(DynamicWire())
-        assert op2.require_zeros
+        assert op2.state == AllocateState.ZERO
         assert not op.restored
+
+
+def test_dynamic_register_not_hashable():
+    """Test that the DynamicRegister is not hashable."""
+
+    reg = DynamicRegister([DynamicWire()])
+    with pytest.raises(TypeError, match="unhashable type"):
+        hash(reg)
+
+    with pytest.raises(qml.exceptions.WireError, match="Wires must be hashable"):
+        qml.wires.Wires((0, reg))
 
 
 def test_Deallocate_validity():
@@ -113,6 +124,13 @@ def test_Deallocate_validity():
     op = Deallocate(wires)
     assert op.wires == qml.wires.Wires(wires)
     qml.ops.functions.assert_valid(op)
+
+
+def test_error_bad_state():
+    """Test that a VAlueError is raised for an unsupported state."""
+
+    with pytest.raises(ValueError, match="is not a valid AllocateState"):
+        allocate(2, state="no")
 
 
 def test_allocate_function():
@@ -128,17 +146,17 @@ def test_allocate_function():
     op = q.queue[0]
     assert isinstance(op, Allocate)
     assert op.wires == qml.wires.Wires(wires)
-    assert op.require_zeros
+    assert op.state == AllocateState.ZERO
 
 
 def test_allocate_kwargs():
     """Test that the kwargs to allocate get passed to the op."""
 
     with qml.queuing.AnnotatedQueue() as q:
-        allocate(3, require_zeros=False, restored=True)
+        allocate(3, state="any", restored=True)
 
     op = q.queue[0]
-    assert not op.require_zeros
+    assert op.state == AllocateState.ANY
     assert op.restored
 
 
@@ -184,7 +202,7 @@ def test_allocate_context_manager():
     """Test that allocate when used as context manager allocates and deallocates qubits."""
 
     with qml.queuing.AnnotatedQueue() as q:
-        with allocate(3, require_zeros=False, restored=True) as wires:
+        with allocate(3, state="any", restored=True) as wires:
             assert len(wires) == 3
             assert all(isinstance(w, DynamicWire) for w in wires)
             assert len(set(wires)) == 3
@@ -192,7 +210,7 @@ def test_allocate_context_manager():
             qml.I(wires)
 
     assert len(q.queue) == 3
-    qml.assert_equal(q.queue[0], Allocate(wires, require_zeros=False, restored=True))
+    qml.assert_equal(q.queue[0], Allocate(wires, state=AllocateState.ANY, restored=True))
     qml.assert_equal(q.queue[1], qml.I(wires))
     qml.assert_equal(q.queue[2], Deallocate(wires))
 
@@ -209,11 +227,11 @@ class TestCaptureIntegration:
 
         def f():
             if use_context:
-                with allocate(2, require_zeros=True, restored=True) as wires:
+                with allocate(2, state="zero", restored=True) as wires:
                     qml.H(wires[0])
                     qml.Z(wires[1])
             else:
-                w, w2 = allocate(2, require_zeros=True, restored=True)
+                w, w2 = allocate(2, state="zero", restored=True)
                 qml.H(w)
                 qml.Z(w2)
                 deallocate((w, w2))
@@ -222,7 +240,11 @@ class TestCaptureIntegration:
         assert len(jaxpr.eqns) == 4
         assert jaxpr.eqns[0].primitive == allocate_prim
         assert len(jaxpr.eqns[0].invars) == 0
-        assert jaxpr.eqns[0].params == {"num_wires": 2, "require_zeros": True, "restored": True}
+        assert jaxpr.eqns[0].params == {
+            "num_wires": 2,
+            "state": AllocateState.ZERO,
+            "restored": True,
+        }
         assert len(jaxpr.eqns[0].outvars) == 2
         assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
         for v in jaxpr.eqns[0].outvars:
@@ -253,7 +275,11 @@ class TestCaptureIntegration:
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == allocate_prim
         assert len(jaxpr.eqns[0].invars) == 0
-        assert jaxpr.eqns[0].params == {"num_wires": 1, "require_zeros": True, "restored": False}
+        assert jaxpr.eqns[0].params == {
+            "num_wires": 1,
+            "state": AllocateState.ZERO,
+            "restored": False,
+        }
         assert len(jaxpr.eqns[0].outvars) == 1
         assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
         for v in jaxpr.eqns[0].outvars:
@@ -276,3 +302,52 @@ class TestCaptureIntegration:
 
         with pytest.raises(NotImplementedError):
             deallocate(2)
+
+
+@pytest.mark.integration
+class TestDeviceIntegration:
+
+    @pytest.mark.parametrize("dev_name", ("default.qubit",))
+    @pytest.mark.parametrize("device_wires", (None, (0, 1, 2)))
+    def test_reuse_without_mcms(self, dev_name, device_wires):
+        """Test that a dynamic allocations that do not require mcms can be executed."""
+
+        @qml.qnode(qml.device(dev_name, wires=device_wires))
+        def c():
+            with allocate(1, restored=True) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 0))
+                qml.H(wires)
+
+            with allocate(1) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        res1, res2 = c()
+        assert qml.math.allclose(res1, 0)
+        assert qml.math.allclose(res2, 0)
+
+    @pytest.mark.parametrize("dev_name", ("default.qubit",))
+    @pytest.mark.parametrize("device_wires", (None, (0, 1, 2, 3)))
+    @pytest.mark.parametrize("mcm_method", ("tree-traversal", "deferred", "one-shot"))
+    def test_reuse_with_mcms(self, dev_name, device_wires, mcm_method):
+        """Test that a simple dynamic allocation can be executed."""
+
+        @qml.set_shots(5000 if mcm_method == "one-shot" else None)
+        @qml.qnode(qml.device(dev_name, wires=device_wires), mcm_method=mcm_method)
+        def c():
+            with allocate(1, restored=False) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 0))
+                qml.H(wires)
+
+            with allocate(1) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        res1, res2 = c()
+        atol = 0.05 if mcm_method == "one-shot" else 1e-6
+        assert qml.math.allclose(res1, 0, atol=atol)
+        assert qml.math.allclose(res2, 0, atol=atol)

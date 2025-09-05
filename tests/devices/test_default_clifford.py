@@ -248,7 +248,7 @@ def test_meas_var(shots, ops, seed):
 def test_meas_samples(circuit, shots):
     """Test if samples are returned with shots given in the clifford device."""
 
-    @qml.qnode(qml.device("default.clifford", shots=shots))
+    @qml.qnode(qml.device("default.clifford"), shots=shots)
     def circuit_fn():
         qml.BasisState(np.array([1, 1]), wires=range(2))
         circuit()
@@ -639,7 +639,7 @@ def test_meas_error():
     ):
         circuit_exp()
 
-    @qml.qnode(qml.device("default.clifford", wires=3, shots=10))
+    @qml.qnode(qml.device("default.clifford", wires=3), shots=10)
     def circuit_herm():
         qml.Hadamard(wires=[0])
         qml.CNOT(wires=[0, 1])

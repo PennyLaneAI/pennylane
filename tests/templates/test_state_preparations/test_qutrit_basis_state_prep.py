@@ -129,7 +129,7 @@ class TestDecomposition:
         n = 2
 
         @jax.jit
-        @qml.qnode(qml.device("default.qutrit", wires=n, shots=1))
+        @qml.qnode(qml.device("default.qutrit", wires=n), shots=1)
         def circuit(state):
             qml.QutritBasisStatePreparation(state, wires=range(n))
             return qml.sample(wires=range(n))

@@ -563,7 +563,12 @@ class ShadowExpvalMP(MeasurementTransform):
     def queue(self, context=QueuingManager):
         """Append the measurement process to an annotated queue, making sure
         the observable is not queued"""
-        Hs = self.H if isinstance(self.H, Iterable) else [self.H]
+        # A CompositeOp is also an Iterable, but we should consider it to be a single observable
+        Hs = (
+            self.H
+            if isinstance(self.H, Iterable) and not isinstance(self.H, Operator)
+            else [self.H]
+        )
         for H in Hs:
             context.remove(H)
         context.append(self)
@@ -571,8 +576,11 @@ class ShadowExpvalMP(MeasurementTransform):
         return self
 
     def __copy__(self):
+        # A CompositeOp is also an Iterable, we do not want to copy each operand of the op.
         H_copy = (
-            [copy.copy(H) for H in self.H] if isinstance(self.H, Iterable) else copy.copy(self.H)
+            [copy.copy(H) for H in self.H]
+            if isinstance(self.H, Iterable) and not isinstance(self.H, Operator)
+            else copy.copy(self.H)
         )
         return self.__class__(
             H=H_copy,

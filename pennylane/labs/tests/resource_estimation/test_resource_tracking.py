@@ -41,7 +41,7 @@ class ResourceTestCNOT(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, 2, {})
 
     @property
     def resource_params(self):
@@ -60,7 +60,7 @@ class ResourceTestHadamard(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
@@ -79,7 +79,7 @@ class ResourceTestT(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
@@ -98,7 +98,7 @@ class ResourceTestZ(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, 1, {})
 
     @property
     def resource_params(self):
@@ -122,7 +122,7 @@ class ResourceTestRZ(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, epsilon=None):
-        return CompressedResourceOp(cls, {"epsilon": epsilon})
+        return CompressedResourceOp(cls, 1, {"epsilon": epsilon})
 
     @property
     def resource_params(self):
@@ -150,7 +150,7 @@ class ResourceTestAlg1(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, num_iter):
-        return CompressedResourceOp(cls, {"num_iter": num_iter})
+        return CompressedResourceOp(cls, 2, {"num_iter": num_iter})
 
     @property
     def resource_params(self):
@@ -180,7 +180,7 @@ class ResourceTestAlg2(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, num_wires):
-        return CompressedResourceOp(cls, {"num_wires": num_wires})
+        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @property
     def resource_params(self):
