@@ -90,7 +90,7 @@ class ResourceSingleQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def default_resource_decomp(cls, config):
+    def default_resource_decomp(cls, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -191,7 +191,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def default_resource_decomp(cls, config):
+    def default_resource_decomp(cls, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -229,7 +229,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
         return gate_list
 
     @classmethod
-    def tempand_based_decomp(cls):
+    def tempand_based_decomp(cls, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -362,7 +362,7 @@ class ResourceIntegerComparator(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(cls, config, value, register_size, geq=False):
+    def default_resource_decomp(cls, value, register_size, geq=False, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -574,7 +574,7 @@ class ResourceRegisterComparator(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(cls, config, first_register, second_register, geq=False):
+    def default_resource_decomp(cls, first_register, second_register, geq=False, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -601,7 +601,7 @@ class ResourceRegisterComparator(ResourceOperator):
         compare_register = min(first_register, second_register)
 
         one_qubit_compare = resource_rep(plre.ResourceSingleQubitComparator)
-        two_qubit_compare = plre.ResourceTwoQubitComparator.tempand_based_decomp()
+        two_qubit_compare = plre.ResourceTwoQubitComparator.tempand_based_decomp(**kwargs)
 
         if first_register == second_register:
 

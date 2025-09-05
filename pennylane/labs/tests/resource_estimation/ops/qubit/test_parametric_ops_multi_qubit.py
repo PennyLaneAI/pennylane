@@ -16,11 +16,8 @@
 import pytest
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
 # pylint: disable=use-implicit-booleaness-not-comparison,no-self-use,too-many-arguments
-
-rc = ResourceConfig()
 
 
 class TestMultiRZ:
@@ -54,7 +51,7 @@ class TestMultiRZ:
             re.GateCount(re.ResourceCNOT.resource_rep(), 2 * (num_wires - 1)),
             re.GateCount(re.ResourceRZ.resource_rep(eps=eps)),
         ]
-        assert re.ResourceMultiRZ.resource_decomp(rc, num_wires, eps) == expected
+        assert re.ResourceMultiRZ.resource_decomp(num_wires, eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     @pytest.mark.parametrize("num_wires", range(1, 5))
@@ -69,16 +66,14 @@ class TestMultiRZ:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(rc, **op_resource_params) == expected
+        assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_adjoint_decomp(self, num_wires, eps):
         """Test that the adjoint decomposition is correct."""
         expected = [re.GateCount(re.ResourceMultiRZ.resource_rep(num_wires=num_wires, eps=eps))]
-        assert (
-            re.ResourceMultiRZ.adjoint_resource_decomp(rc, num_wires=num_wires, eps=eps) == expected
-        )
+        assert re.ResourceMultiRZ.adjoint_resource_decomp(num_wires=num_wires, eps=eps) == expected
 
     ctrl_data = (
         (
@@ -135,10 +130,10 @@ class TestMultiRZ:
         )
 
         assert (
-            op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
             == expected_res
         )
-        assert op2.resource_decomp(rc, **op2.resource_params) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     @pytest.mark.parametrize("z", range(1, 5))
     @pytest.mark.parametrize("eps", (None, 1e-3))
@@ -147,7 +142,7 @@ class TestMultiRZ:
         """Test that the pow decomposition is correct."""
         op = re.ResourceMultiRZ(num_wires, eps=eps)
         expected_res = [re.GateCount(re.ResourceMultiRZ.resource_rep(num_wires, eps))]
-        assert op.pow_resource_decomp(rc, z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
 
 
 class TestPauliRot:
@@ -201,12 +196,12 @@ class TestPauliRot:
             expected.append(re.GateCount(re.ResourceRZ.resource_rep(eps=eps)))
             expected.append(re.GateCount(re.ResourceCNOT.resource_rep(), 2 * (active_wires - 1)))
 
-        assert re.ResourcePauliRot.resource_decomp(rc, pauli_string, eps=eps) == expected
+        assert re.ResourcePauliRot.resource_decomp(pauli_string, eps=eps) == expected
 
     def test_resources_empty_pauli_string(self):
         """Test that the resources method produces the correct result for an empty pauli string."""
         expected = [re.GateCount(re.ResourceGlobalPhase.resource_rep())]
-        assert re.ResourcePauliRot.resource_decomp(rc, pauli_string="") == expected
+        assert re.ResourcePauliRot.resource_decomp(pauli_string="") == expected
 
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)
     def test_resources_from_rep(self, pauli_string, expected_h_count, expected_s_count):
@@ -237,7 +232,7 @@ class TestPauliRot:
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(rc, **op_resource_params) == expected
+        assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     @pytest.mark.parametrize("pauli_word", pauli_words)
@@ -247,7 +242,7 @@ class TestPauliRot:
             re.GateCount(re.ResourcePauliRot.resource_rep(pauli_string=pauli_word, eps=eps))
         ]
         assert (
-            re.ResourcePauliRot.adjoint_resource_decomp(rc, pauli_string=pauli_word, eps=eps)
+            re.ResourcePauliRot.adjoint_resource_decomp(pauli_string=pauli_word, eps=eps)
             == expected
         )
 
@@ -376,10 +371,10 @@ class TestPauliRot:
         op2 = re.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
 
         assert (
-            op.controlled_resource_decomp(rc, num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
             == expected_res
         )
-        assert op2.resource_decomp(rc, **op2.resource_params) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     @pytest.mark.parametrize("z", range(1, 5))
     @pytest.mark.parametrize("eps", (None, 1e-3))
@@ -390,10 +385,10 @@ class TestPauliRot:
         expected_res = [
             re.GateCount(re.ResourcePauliRot.resource_rep(pauli_string=pauli_word, eps=eps))
         ]
-        assert op.pow_resource_decomp(rc, z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resource_decomp(rc, **op2.resource_params) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
 
 class TestIsingXX:
@@ -422,19 +417,19 @@ class TestIsingXX:
             re.GateCount(re.ResourceCNOT.resource_rep(), 2),
             re.GateCount(re.ResourceRX.resource_rep(eps=eps)),
         ]
-        assert re.ResourceIsingXX.resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingXX.resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_pow(self, eps):
         """Test that the pow resources are correct."""
         expected = [re.GateCount(re.ResourceIsingXX.resource_rep(eps=eps))]
-        assert re.ResourceIsingXX.pow_resource_decomp(rc, pow_z=3, eps=eps) == expected
+        assert re.ResourceIsingXX.pow_resource_decomp(pow_z=3, eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_adjoint(self, eps):
         """Test that the adjoint resources are correct."""
         expected = [re.GateCount(re.ResourceIsingXX.resource_rep(eps=eps))]
-        assert re.ResourceIsingXX.adjoint_resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingXX.adjoint_resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_controlled(self, eps):
@@ -450,7 +445,7 @@ class TestIsingXX:
             ),
         ]
         op = re.ResourceControlled(re.ResourceIsingXX(eps=eps), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(rc, **op.resource_params) == expected
+        assert op.resource_decomp(**op.resource_params) == expected
 
 
 class TestIsingXY:
@@ -481,19 +476,19 @@ class TestIsingXY:
             re.GateCount(re.ResourceRY.resource_rep(eps=eps)),
             re.GateCount(re.ResourceRX.resource_rep(eps=eps)),
         ]
-        assert re.ResourceIsingXY.resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingXY.resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_pow(self, eps):
         """Test that the pow resources are correct."""
         expected = [re.GateCount(re.ResourceIsingXY.resource_rep(eps=eps))]
-        assert re.ResourceIsingXY.pow_resource_decomp(rc, pow_z=3, eps=eps) == expected
+        assert re.ResourceIsingXY.pow_resource_decomp(pow_z=3, eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_adjoint(self, eps):
         """Test that the adjoint resources are correct."""
         expected = [re.GateCount(re.ResourceIsingXY.resource_rep(eps=eps))]
-        assert re.ResourceIsingXY.adjoint_resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingXY.adjoint_resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_controlled(self, eps):
@@ -517,7 +512,7 @@ class TestIsingXY:
             ),
         ]
         op = re.ResourceControlled(re.ResourceIsingXY(eps=eps), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(rc, **op.resource_params) == expected
+        assert op.resource_decomp(**op.resource_params) == expected
 
 
 class TestIsingYY:
@@ -546,19 +541,19 @@ class TestIsingYY:
             re.GateCount(re.ResourceCY.resource_rep(), 2),
             re.GateCount(re.ResourceRY.resource_rep(eps=eps)),
         ]
-        assert re.ResourceIsingYY.resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingYY.resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_pow(self, eps):
         """Test that the pow resources are correct."""
         expected = [re.GateCount(re.ResourceIsingYY.resource_rep(eps=eps))]
-        assert re.ResourceIsingYY.pow_resource_decomp(rc, pow_z=3, eps=eps) == expected
+        assert re.ResourceIsingYY.pow_resource_decomp(pow_z=3, eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_adjoint(self, eps):
         """Test that the adjoint resources are correct."""
         expected = [re.GateCount(re.ResourceIsingYY.resource_rep(eps=eps))]
-        assert re.ResourceIsingYY.adjoint_resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingYY.adjoint_resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_controlled(self, eps):
@@ -574,7 +569,7 @@ class TestIsingYY:
             ),
         ]
         op = re.ResourceControlled(re.ResourceIsingYY(eps=eps), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(rc, **op.resource_params) == expected
+        assert op.resource_decomp(**op.resource_params) == expected
 
 
 class TestIsingZZ:
@@ -603,19 +598,19 @@ class TestIsingZZ:
             re.GateCount(re.ResourceCNOT.resource_rep(), 2),
             re.GateCount(re.ResourceRZ.resource_rep(eps=eps)),
         ]
-        assert re.ResourceIsingZZ.resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingZZ.resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_pow(self, eps):
         """Test that the pow resources are correct."""
         expected = [re.GateCount(re.ResourceIsingZZ.resource_rep(eps=eps))]
-        assert re.ResourceIsingZZ.pow_resource_decomp(rc, pow_z=3, eps=eps) == expected
+        assert re.ResourceIsingZZ.pow_resource_decomp(pow_z=3, eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_adjoint(self, eps):
         """Test that the adjoint resources are correct."""
         expected = [re.GateCount(re.ResourceIsingZZ.resource_rep(eps=eps))]
-        assert re.ResourceIsingZZ.adjoint_resource_decomp(rc, eps=eps) == expected
+        assert re.ResourceIsingZZ.adjoint_resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_controlled(self, eps):
@@ -631,7 +626,7 @@ class TestIsingZZ:
             ),
         ]
         op = re.ResourceControlled(re.ResourceIsingZZ(eps=eps), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(rc, **op.resource_params) == expected
+        assert op.resource_decomp(**op.resource_params) == expected
 
 
 class TestPSWAP:
@@ -661,13 +656,13 @@ class TestPSWAP:
             re.GateCount(re.ResourcePhaseShift.resource_rep(eps=eps)),
             re.GateCount(re.ResourceCNOT.resource_rep(), 2),
         ]
-        assert re.ResourcePSWAP.resource_decomp(rc, eps=eps) == expected
+        assert re.ResourcePSWAP.resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_adjoint(self, eps):
         """Test that the adjoint resources are correct."""
         expected = [re.GateCount(re.ResourcePSWAP.resource_rep(eps=eps))]
-        assert re.ResourcePSWAP.adjoint_resource_decomp(rc, eps=eps) == expected
+        assert re.ResourcePSWAP.adjoint_resource_decomp(eps=eps) == expected
 
     @pytest.mark.parametrize("eps", (None, 1e-3))
     def test_resources_controlled(self, eps):
@@ -690,4 +685,4 @@ class TestPSWAP:
             ),
         ]
         op = re.ResourceControlled(re.ResourcePSWAP(eps=eps), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(rc, **op.resource_params) == expected
+        assert op.resource_decomp(**op.resource_params) == expected
