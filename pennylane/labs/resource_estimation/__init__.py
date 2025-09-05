@@ -42,6 +42,10 @@ Resource Estimation Functions:
 
     ~estimate_resources
     ~resource_rep
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -169,13 +173,17 @@ from .resource_operator import (
     ResourceOperator,
     ResourcesNotDefined,
     resource_rep,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
     GateCount,
 )
 from .resource_mapping import map_to_resource_op
 from .resource_tracking import (
     StandardGateSet,
     DefaultGateSet,
-    ResourceConfig,
+    resource_config,
     estimate_resources,
 )
 from .ops import (

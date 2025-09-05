@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource tracking logic."""
+import copy
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -62,11 +62,25 @@ DefaultGateSet = {
     "Toffoli",
 }
 
+# parameters for further configuration of the decompositions
+resource_config = {
+    "error_rx": 1e-9,
+    "error_ry": 1e-9,
+    "error_rz": 1e-9,
+    "precision_select_pauli_rot": 1e-9,
+    "precision_qubit_unitary": 1e-9,
+    "precision_qrom_state_prep": 1e-9,
+    "precision_mps_prep": 1e-9,
+    "precision_alias_sampling": 1e-9,
+    "qubitization_rotation_precision": 15,
+    "qubitization_coeff_precision": 15,
+}
+
 
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    config: dict = resource_config,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
     single_qubit_rotation_error: float | None = None,
@@ -132,7 +146,7 @@ def estimate_resources(
     """
 
     if single_qubit_rotation_error is not None:
-        config = _config_for_single_qubit_rot_error(config, single_qubit_rotation_error)
+        config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     return _estimate_resources(obj, gate_set, config, work_wires, tight_budget)
 
@@ -141,7 +155,7 @@ def estimate_resources(
 def _estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    config: dict = resource_config,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
 ) -> Resources | Callable:
@@ -156,7 +170,7 @@ def _estimate_resources(
 def resources_from_qfunc(
     obj: Callable,
     gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    config: dict = resource_config,
     work_wires=0,
     tight_budget=False,
 ) -> Callable:
@@ -186,7 +200,7 @@ def resources_from_qfunc(
 
         gate_counts = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
-            _update_counts_from_compressed_res_op(
+            _counts_from_compressed_res_op(
                 cmp_rep_op, gate_counts, qbit_mngr=qm, gate_set=gate_set, config=config
             )
 
@@ -199,7 +213,7 @@ def resources_from_qfunc(
 def resources_from_resource(
     obj: Resources,
     gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    config: dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -222,7 +236,7 @@ def resources_from_resource(
 
     gate_counts = defaultdict(int)
     for cmpr_rep_op, count in obj.gate_types.items():
-        _update_counts_from_compressed_res_op(
+        _counts_from_compressed_res_op(
             cmpr_rep_op,
             gate_counts,
             qbit_mngr=existing_qm,
@@ -239,7 +253,7 @@ def resources_from_resource(
 def resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    config: dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -260,7 +274,7 @@ def resources_from_resource_ops(
 def resources_from_pl_ops(
     obj: Operation,
     gate_set: set = DefaultGateSet,
-    config: ResourceConfig = ResourceConfig(),
+    config: dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -275,13 +289,13 @@ def resources_from_pl_ops(
     )
 
 
-def _update_counts_from_compressed_res_op(
+def _counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
     qbit_mngr,
     gate_set: set,
     scalar: int = 1,
-    config: ResourceConfig = ResourceConfig(),
+    config: dict = resource_config,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
@@ -303,7 +317,7 @@ def _update_counts_from_compressed_res_op(
 
     for action in resource_decomp:
         if isinstance(action, GateCount):
-            _update_counts_from_compressed_res_op(
+            _counts_from_compressed_res_op(
                 action.gate,
                 gate_counts_dict,
                 qbit_mngr=qbit_mngr,
@@ -338,7 +352,7 @@ def _sum_allocated_wires(decomp):
     return s
 
 
-def _config_for_single_qubit_rot_error(config, error):
+def _update_config_single_qubit_rot_error(config, error):
     r"""Create a new config dictionary with the new single qubit
     error threshold.
 
@@ -347,11 +361,11 @@ def _config_for_single_qubit_rot_error(config, error):
         error (float): the new error threshold to be set
 
     """
-
-    config.conf["error_rx"] = error
-    config.conf["error_ry"] = error
-    config.conf["error_rz"] = error
-    return config
+    new_config = copy.copy(config)
+    new_config["error_rx"] = error
+    new_config["error_ry"] = error
+    new_config["error_rz"] = error
+    return new_config
 
 
 @QueuingManager.stop_recording()
