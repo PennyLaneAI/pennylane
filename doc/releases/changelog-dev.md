@@ -226,10 +226,10 @@
 
 <h4>Other improvements</h4>
 
-* The `qml.compiler.python_compiler` module has been renamed `qml.compiler.unified_compiler`.
+* The `qml.compiler.python_compiler` module has been renamed `qml.compiler.interface`.
   [(#8121)](https://github.com/PennyLaneAI/pennylane/pull/8121)
 
-* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
+* Added a callback mechanism to the `qml.compiler.interface` submodule to inspect the intermediate 
   representation of the program between multiple compilation passes.
   [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
 

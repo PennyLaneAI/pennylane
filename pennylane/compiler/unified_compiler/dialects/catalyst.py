@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the Catalyst dialect for the Unified compiler.
+This file contains the Catalyst dialect for the Python interface to Catalyst.
 
 This file was originally ported automatically by xDSL (using the ``xdsl-tblgen`` tool) and modified manually
-to support the Unified compiler.
+to support the compiler interface.
 
 The catalyst dialect serves as a standard library for the Catalyst compiler.
 It contains data structures that support core compiler functionality.

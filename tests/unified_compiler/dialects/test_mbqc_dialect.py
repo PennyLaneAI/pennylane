@@ -26,7 +26,7 @@ pytestmark = pytest.mark.external
 from xdsl.dialects import arith, builtin, test
 from xdsl.utils.exceptions import VerifyException
 
-from pennylane.compiler.unified_compiler.dialects import Quantum, mbqc
+from pennylane.compiler.interface.dialects import Quantum, mbqc
 
 all_ops = list(mbqc.MBQC.operations)
 all_attrs = list(mbqc.MBQC.attributes)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit and integration tests for the Unified compiler `measurements_from_samples` transform."""
+"""Unit and integration tests for the Python interface to the compiler's `measurements_from_samples` transform."""
 
 # pylint: disable=wrong-import-position
 
@@ -28,7 +28,7 @@ catalyst = pytest.importorskip("catalyst")
 from catalyst.passes import xdsl_plugin
 
 import pennylane as qml
-from pennylane.compiler.unified_compiler.transforms import (
+from pennylane.compiler.interface.transforms import (
     MeasurementsFromSamplesPass,
     measurements_from_samples_pass,
 )

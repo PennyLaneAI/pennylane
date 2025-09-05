@@ -24,7 +24,7 @@ pytest.importorskip("catalyst")
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
-from pennylane.compiler.unified_compiler.transforms import (
+from pennylane.compiler.interface.transforms import (
     IterativeCancelInversesPass,
     iterative_cancel_inverses_pass,
 )

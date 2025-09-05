@@ -37,14 +37,14 @@ from xdsl.interpreters import Interpreter
 
 import pennylane as qml
 from pennylane.capture import enabled as capture_enabled
-from pennylane.compiler.unified_compiler import Compiler
-from pennylane.compiler.unified_compiler.dialects import transform
-from pennylane.compiler.unified_compiler.jax_utils import (
+from pennylane.compiler.interface import Compiler
+from pennylane.compiler.interface.dialects import transform
+from pennylane.compiler.interface.jax_utils import (
     jax_from_docstring,
     module,
     xdsl_from_docstring,
 )
-from pennylane.compiler.unified_compiler.transforms.api import (
+from pennylane.compiler.interface.transforms.api import (
     ApplyTransformSequence,
     TransformFunctionsExt,
     TransformInterpreterPass,
@@ -207,7 +207,7 @@ def test_integration_for_transform_interpreter(capsys):
 
 
 class TestCatalystIntegration:
-    """Tests for integration of the Unified compiler with Catalyst"""
+    """Tests for integration of the Python interface to the compiler with Catalyst"""
 
     @pytest.mark.capture
     def test_integration_catalyst_no_passes_with_capture(self):
@@ -279,7 +279,7 @@ class TestCatalystIntegration:
 
     @pytest.mark.capture
     def test_integration_catalyst_mixed_passes_with_capture(self, capsys):
-        """Test that both Catalyst and Unified compiler passes can be used with qjit
+        """Test that both Catalyst and the Python interface to the compiler's passes can be used with qjit
         when capture is enabled."""
 
         assert capture_enabled()
@@ -300,7 +300,7 @@ class TestCatalystIntegration:
         assert captured.out.strip() == "hello world"
 
     def test_integration_catalyst_mixed_passes_no_capture(self, capsys):
-        """Test that both Catalyst and Unified compiler passes can be used with qjit
+        """Test that both Catalyst and the Python interface to the compiler's passes can be used with qjit
         when capture is disabled."""
 
         assert not capture_enabled()

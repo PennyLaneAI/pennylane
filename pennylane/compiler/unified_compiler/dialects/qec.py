@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the QEC dialect for the Unified compiler.
+This module contains the QEC dialect for the compiler interface.
 
 The QEC dialect is a set of operations and types used to represent quantum error correction
 instructions in the xDSL framework.

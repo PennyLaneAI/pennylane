@@ -26,7 +26,7 @@ pytestmark = pytest.mark.external
 from xdsl.dialects.test import TestOp
 from xdsl.ir import AttributeCovT, OpResult
 
-from pennylane.compiler.unified_compiler.dialects import Quantum
+from pennylane.compiler.interface.dialects import Quantum
 
 all_ops = list(Quantum.operations)
 all_attrs = list(Quantum.attributes)

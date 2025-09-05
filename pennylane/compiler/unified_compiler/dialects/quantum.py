@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the definition of the Quantum dialect for the Unified compiler.
+This file contains the definition of the Quantum dialect for the Python interface to the compiler.
 
 The Quantum dialect is a set of operations and types used to represent quantum computations
 in the xDSL framework.

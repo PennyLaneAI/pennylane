@@ -23,7 +23,7 @@ filecheck = pytest.importorskip("filecheck")
 
 pytestmark = pytest.mark.external
 
-from pennylane.compiler.unified_compiler.dialects import Catalyst
+from pennylane.compiler.interface.dialects import Catalyst
 
 all_ops = list(Catalyst.operations)
 all_attrs = list(Catalyst.attributes)

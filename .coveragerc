@@ -4,7 +4,7 @@ source = pennylane
 omit =
     pennylane/devices/tests*
     pennylane/labs/*
-    pennylane/compiler/unified_compiler/*
+    pennylane/compiler/interface/*
     pennylane/workflow/interfaces/tensorflow.py
     pennylane/workflow/interfaces/tensorflow_autograph.py
 
