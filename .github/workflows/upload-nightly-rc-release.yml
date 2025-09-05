@@ -15,6 +15,12 @@ jobs:
     - name: Checkout PennyLane repo
       uses: actions/checkout@v4
 
+    # Sets up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        
     # Ensure setuptools is up-to-date for pyproject.toml processing
     - name: Install latest setuptools 
       run: |
