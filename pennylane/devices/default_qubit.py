@@ -89,6 +89,29 @@ _special_operator_support = {
 """Map from gates with a special support condition."""
 
 
+class _Partial:
+    """A version of partial that has equality."""
+
+    def __init__(self, f, *args, **kwargs):
+        self.f = f
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, *args, **kwargs):
+        return self.f(*self.args, *args, **self.kwargs, **kwargs)
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, _Partial)
+            and self.f == other.f
+            and self.args == other.args
+            and self.kwargs == other.kwargs
+        )
+
+    def __repr__(self):
+        return f"<_Partial: {self.f}, {self.args}, {self.kwargs}>"
+
+
 def stopping_condition(op: Operator, allow_mcms=True) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
     if constraint := _special_operator_support.get(op.name):
@@ -588,10 +611,10 @@ class DefaultQubit(Device):
             transform_program.add_transform(defer_measurements, allow_postselect=True)
         transform_program.add_transform(
             decompose,
-            stopping_condition=partial(
+            stopping_condition=_Partial(
                 stopping_condition, allow_mcms=config.mcm_config.mcm_method != "deferred"
             ),
-            stopping_condition_shots=partial(
+            stopping_condition_shots=_Partial(
                 stopping_condition_shots, allow_mcms=config.mcm_config.mcm_method != "deferred"
             ),
             name=self.name,

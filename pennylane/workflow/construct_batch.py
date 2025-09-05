@@ -79,6 +79,7 @@ def _get_full_transform_program(qnode: QNode, gradient_fn) -> qml.transforms.cor
     )
 
     config = _make_execution_config(qnode, gradient_fn, mcm_config)
+    config = qnode.device.setup_execution_config(config)
     return program + qnode.device.preprocess_transforms(config)
 
 
