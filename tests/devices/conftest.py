@@ -20,6 +20,7 @@ from tempfile import TemporaryDirectory
 from textwrap import dedent
 
 import pytest
+
 import pennylane as qml
 
 
@@ -34,23 +35,30 @@ def create_temporary_toml_file(request) -> str:
         request.node.toml_file = toml_file
         yield
 
-@pytest.fixture(params=[False, True], ids=["no_graph", "with_graph"], autouse=True)
-def decomposition_mode(request):
-    """Fixture that runs tests with both graph and non-graph decomposition modes.
 
-    Automatically sets up and tears down the graph decomposition mode for each test.
+@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
+def enable_and_disable_graph_decomp(request):
     """
-    use_graph = request.param
+    A fixture that parametrizes a test to run twice: once with graph
+    decomposition disabled and once with it enabled.
 
-    # Setup: Configure graph decomposition based on parameter
-    try:
-        if use_graph:
-            qml.decomposition.enable_graph()
-        else:
-            qml.decomposition.disable_graph()
+    It automatically handles the setup (enabling/disabling) before the
+    test runs and the teardown (always disabling) after the test completes.
+    """
+    use_graph_decomp = request.param
 
-        yield use_graph
-
-    finally:
-        # Teardown: Always clean up
+    # --- Setup Phase ---
+    # This code runs before the test function is executed.
+    if use_graph_decomp:
+        qml.decomposition.enable_graph()
+    else:
+        # Explicitly disable to ensure a clean state
         qml.decomposition.disable_graph()
+
+    # Yield control to the test function
+    yield use_graph_decomp
+
+    # --- Teardown Phase ---
+    # This code runs after the test function has finished,
+    # regardless of whether it passed or failed.
+    qml.decomposition.disable_graph()
