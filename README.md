@@ -8,7 +8,7 @@
 Take 10 minutes to share your voice and help build a better quantum computing ecosystem!
 </p>
 
-<center><img width="200" alt="UFoundation_logosmall" src="https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_UnitaryFundSurvey.png" /></center>
+<p align="center"><img width="200" alt="UFoundation_logosmall" src="https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_UnitaryFundSurvey.png" /></p>
 
 <p align="center">
 Survey closes October 3, 2025
