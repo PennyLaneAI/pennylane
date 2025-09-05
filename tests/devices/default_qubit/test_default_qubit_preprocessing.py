@@ -1038,4 +1038,3 @@ class TestAdjointDiffTapeValidation:
 
         x = pnp.array(1.1, requires_grad=True)
         assert qml.jacobian(circuit)(x) == 0
-
