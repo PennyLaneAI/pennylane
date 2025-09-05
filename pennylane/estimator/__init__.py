@@ -14,7 +14,7 @@
 r"""
 This module contains tools for logical resource estimation.
 
-.. currentmodule:: pennylane.labs.estimator
+.. currentmodule:: pennylane.estimator
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
