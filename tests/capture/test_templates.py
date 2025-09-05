@@ -1162,20 +1162,52 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.GQSP(angles=angles, **kwargs))
 
-    @pytest.mark.parametrize(
-        "template, kwargs",
-        [
-            (qml.QuantumPhaseEstimation, {"estimation_wires": range(2, 4)}),
-            (qml.Reflection, {"alpha": np.pi / 2, "reflection_wires": [0]}),
-        ],
-    )
-    def test_quantum_phase_estimation_and_reflection(self, template, kwargs):
-        """Test the primitive bind call of QuantumPhaseEstimation and Reflection."""
+    def test_reflection(self):
+        """Test the primitive bind call of Reflection."""
 
+        op = qml.RX(np.pi / 4, 0) @ qml.Hadamard(1)
+        reflection_wires = [0]
+        alpha = np.pi / 2
+
+        def qfunc(op, alpha):
+            qml.Reflection(op, alpha, reflection_wires=reflection_wires)
+
+        # Validate inputs
+        qfunc(op, alpha)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(op, alpha)
+
+        assert len(jaxpr.eqns) == 4
+
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[2].primitive == qml.ops.op_math.Prod._primitive
+
+        eqn = jaxpr.eqns[3]
+        assert eqn.primitive == qml.Reflection._primitive
+        # Input operator and reflection/estimation wires are invars to template
+        assert eqn.invars[:1] == jaxpr.eqns[2].outvars
+        assert eqn.invars[1] == jaxpr.jaxpr.invars[1]
+        assert [invar.val for invar in eqn.invars[2:]] == reflection_wires
+        assert eqn.params == {"n_wires": 1}
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 4, np.pi / 2)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.Reflection(op, alpha, reflection_wires=reflection_wires))
+
+    def test_quantum_phase_estimation(self):
+        """Test the primitive bind call of QuantumPhaseEstimation."""
+
+        kwargs = {"estimation_wires": [2, 3]}
         op = qml.RX(np.pi / 2, 0) @ qml.Hadamard(1)
 
         def qfunc(op):
-            template(op, **kwargs)
+            qml.QuantumPhaseEstimation(op, **kwargs)
 
         # Validate inputs
         qfunc(op)
@@ -1190,7 +1222,7 @@ class TestModifiedTemplates:
         assert jaxpr.eqns[2].primitive == qml.ops.op_math.Prod._primitive
 
         eqn = jaxpr.eqns[3]
-        assert eqn.primitive == template._primitive
+        assert eqn.primitive == qml.QuantumPhaseEstimation._primitive
         assert eqn.invars == jaxpr.eqns[2].outvars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -1200,7 +1232,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 2)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], template(op, **kwargs))
+        qml.assert_equal(q.queue[0], qml.QuantumPhaseEstimation(op, **kwargs))
 
     def test_select(self):
         """Test the primitive bind call of Select."""
