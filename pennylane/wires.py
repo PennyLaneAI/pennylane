@@ -741,6 +741,7 @@ class DynamicWire:
 
     Args:
         key (uuid.UUID or None): An optional UUID key to identify the dynamic wire. If None, a random UUID will be generated.
+
     """
 
     def __init__(self, key: uuid.UUID | None = None):

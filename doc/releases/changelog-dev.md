@@ -498,6 +498,7 @@
   * The :func:`~.transforms.decompose` transform now accepts a `num_available_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
   [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
+  [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
 
   * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
   [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
@@ -555,8 +556,8 @@
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
   [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  [(#8113)](https://github.com/PennyLaneAI/pennylane/pull/8113)
   
-
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
