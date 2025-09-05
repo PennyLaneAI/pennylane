@@ -110,7 +110,7 @@ class SampleMP(SampleMeasurement):
         return float
 
     @property
-    def dtype(self) -> str | None:
+    def dtype(self):
         """The dtype of the samples returned by this measurement process."""
         return self._dtype
 
