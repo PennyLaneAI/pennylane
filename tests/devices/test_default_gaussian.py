@@ -712,7 +712,7 @@ class TestSample:
 
     @pytest.mark.parametrize(
         "observable",
-        sorted(set(qml.ops.cv.__obs__) - set(["QuadP", "QuadX", "QuadOperator"])),
+        sorted(set(qml.ops.cv.__obs__) - {"QuadP", "QuadX", "QuadOperator"}),
     )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
@@ -819,10 +819,11 @@ class TestDefaultGaussianIntegration:
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
         shots = 10**4
-        dev = qml.device("default.gaussian", wires=1, shots=shots)
+        dev = qml.device("default.gaussian", wires=1)
 
         p = 0.543
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(x):
             """Test quantum function"""
@@ -840,8 +841,9 @@ class TestDefaultGaussianIntegration:
         default.gaussian and emits a warning"""
 
         shots = [10, 10, 10]
-        dev = qml.device("default.gaussian", wires=1, shots=shots)
+        dev = qml.device("default.gaussian", wires=1)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             """Test quantum function"""
@@ -852,7 +854,7 @@ class TestDefaultGaussianIntegration:
             match="Specifying a list of shots is only supported for QubitDevice based devices.",
         ):
             circuit()
-        assert dev.shots.total_shots == sum(shots)
+        assert circuit._shots.total_shots == sum(shots)
 
     def test_new_return_type_error_multi_measurements(self):
         """Test that multiple measurements raise an error with the new return type."""

@@ -14,7 +14,7 @@
 
 """Utility functions for decompositions are available from ``qml.math.decomposition``."""
 
-import functools
+from functools import lru_cache, partial
 
 import numpy as np
 
@@ -306,7 +306,7 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
     return unitary_matrix
 
 
-def _givens_matrix_core(a, b, left=True, tol=1e-8):
+def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -341,7 +341,6 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8):
 
     interface = interface_a
 
-    aprod = math.nan_to_num(abs_b * abs_a)
     hypot = math.hypot(abs_a, abs_b) + 1e-15  # avoid division by zero
 
     cosine = math.where(abs_b < tol, 0.0, abs_b / hypot)
@@ -350,96 +349,226 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8):
     sine = math.where(abs_b < tol, 1.0, abs_a / hypot)
     sine = math.where(abs_a < tol, 0.0, sine)
 
-    phase = math.where(abs_b < tol, 1.0, (1.0 * b * math.conj(a)) / (aprod + 1e-15))
-    phase = math.where(abs_a < tol, 1.0, phase)
-
+    # The following logic produces four different matrices for the four possible settings
+    # of ``left`` and ``real_valued``:
+    # (left, real_valued) = (True, True)
+    # array = [[cosine, -phase * sine], [phase * sine, cosine]]
+    # (left, real_valued) = (False, True)
+    # array = [[sine, phase * cosine], [-phase * cosine, sine]]
+    # (left, real_valued) = (True, False)
+    # array = [[phase * cosine, -sine], [phase * sine, cosine]]
+    # (left, real_valued) = (False, False)
+    # array = [[phase * sine, cosine], [-phase * cosine, sine]]
     if interface == "jax":
-        return jax.lax.cond(
+        cosine, sine = jax.lax.cond(
             left,
-            lambda phase, cosine, sine: math.array(
-                [[phase * cosine, -sine], [phase * sine, cosine]], like=interface
-            ),
-            lambda phase, cosine, sine: math.array(
-                [[phase * sine, cosine], [-phase * cosine, sine]], like=interface
-            ),
-            phase,
+            lambda cosine, sine: (cosine, sine),
+            lambda cosine, sine: (sine, -cosine),
             cosine,
             sine,
         )
+    elif not left:
+        cosine, sine = sine, -cosine
 
-    if left:
-        return math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
+    g00, g01 = cosine, -sine
+    if real_valued:
+        phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))  # previously sign
+        g01 *= phase
+    else:
+        aprod = math.nan_to_num(abs_b * abs_a)
+        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + 1e-15))
+        phase = math.where(abs_a < tol, 1.0, phase)
+        g00 = phase * g00
 
-    return math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
+    g10, g11 = phase * sine, cosine
+
+    return math.array([[g00, g01], [g10, g11]], like=interface)
 
 
-@functools.lru_cache
+def _absorb_phases_so(left_givens, right_givens, phases, interface):
+    r"""Function handling the diagonal phases left over from diagonalization via Givens
+    rotations, for the real-valued case.
+
+    Args:
+        left_givens (list[tuple[array, int]]): Givens rotations applied from the left
+            in the obtained decomposition (see details below). Each rotation is given as a
+            :math:`2\times 2` matrix describing the rotation and two (sorted) integers encoding
+            the matrix dimensions to which the rotation is applied.
+        right_givens (list[tuple[array, int]]): Givens rotations applied from the right
+            in the obtained decomposition (see details below). The format is as for ``left_givens``
+        phases (array): Result of the diagonalization via Givens rotations (see details below).
+            Will be diagonal and only contain :math:`\pm 1`.
+        interface (str): The ML interface of ``phases``.
+
+    Returns:
+        tuple[array, list[tuple[array,int]]]: New phases with at most one entry :math:`-1`, and
+        concatenated list of Givens rotations that form a new valid decomposition of the originally
+        decomposed matrix. The format for each rotation is like that for ``left_givens``.
+
+    The rotations in `left_givens` and `right_givens` are such that
+    `reduce(dot, [mat.T for mat in left_givens] + reversed(right_givens)) == phases`
+    and the phases are guaranteed to be :math:`\pm 1`.
+    This function goes through the last `N-1` nearest-neighbour Givens rotations added
+    in the diagonalization. They are the last ones in `left_givens` (`right_givens`) if `N` is
+    odd (even). For each of these rotations, we denote the matrix index `idx0` (`idx1`) that will (not)
+    be affected by any subsequent Givens rotation. Then, depending on the phases for these indices,
+    we do the following:
+
+    - If both phases are 1, do nothing.
+    - If both phases are -1, absorb them in the rotation by multiplying it with -np.eye(2).
+    - If the phases at `idx0, idx1` are `-1, 1`, absorb two phases in the rotation and commute
+      the created phase at `idx1` through the rotation, causing it to transpose.
+    - If the phases are `idx, idx1` are `1, -1`, commute the phase through the rotation, causing
+      it to transpose.
+
+    This can be simplified to two independent moves:
+    - If the first phase is -1, absorb two phases in the rotation
+    - If the second phase is -1, commute a phase on index `idx1` through the rotation, transposing it.
+
+    The phases with -1 are guaranteed to come in an even number, so that this procedure will
+    end up with modified rotations and the identity as phase matrix.
+    """
+    N = len(phases)
+    mod = N % 2
+    last_rotations = left_givens if mod else right_givens
+    for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
+        grot_mat, (i, j) = last_rotations[k]
+
+        ph0 = math.sign(phases[j, j]) if mod else math.sign(phases[i, i])
+        phases = _set_unitary_matrix(phases, (i, i), ph0 * phases[i, i], like=interface)
+        phases = _set_unitary_matrix(phases, (j, j), ph0 * phases[j, j], like=interface)
+        grot_mat = ph0 * grot_mat
+        ph1 = phases[i, i] if mod else phases[j, j]
+        if interface == "jax":
+            grot_mat = jax.lax.cond(ph1 < 0, lambda mat: mat.T, lambda mat: mat, grot_mat)
+
+        elif ph1 < 0:
+            grot_mat = grot_mat.T
+
+        last_rotations[k] = (grot_mat, (i, j))
+
+    left_givens = [(mat.T, indices) for mat, indices in left_givens]
+    return math.diag(phases), left_givens + list(reversed(right_givens))
+
+
+def _commute_phases_u(left_givens, right_givens, phases, interface):
+    r"""Function handling the diagonal phases left over from diagonalization via Givens
+    rotations, for the complex-valued case.
+
+    Args:
+        left_givens (list[tuple[array, int]]): Givens rotations applied from the left
+            in the obtained decomposition (see details below). Each rotation is given as a
+            :math:`2\times 2` matrix describing the rotation and two (sorted) integers encoding
+            the matrix dimensions to which the rotation is applied.
+        right_givens (list[tuple[array, int]]): Givens rotations applied from the right
+            in the obtained decomposition (see details below). The format is as for ``left_givens``
+        phases (array): Result of the diagonalization via Givens rotations (see details below).
+            Will be diagonal and only contain complex phases :math:`e^{i\phi}`.
+        interface (str): The ML interface of ``phases``.
+
+    Returns:
+        tuple[array, list[tuple[array,int]]]: New diagonal phases after commuting through Givens
+        rotations, and concatenated list of Givens rotations that form a new valid decomposition
+        of the originally decomposed matrix. The format for each rotation is like that
+        for ``left_givens``.
+
+    After the diagonalization, the phases sit at the diagonal of the square grid of Givens
+    rotations. Instead, we want them to be moved to the front of the decomposition. For
+    this, the condition `T_{m,n}^{-1} x D = D' x T'` is solved, see the Optica reference
+    for details.
+
+    After pulling the phases out, the Givens rotations are reordered so that they do not
+    diagonalize, but reproduce, the original unitary.
+    """
+    nleft_givens = []
+    for grot_mat, (i, j) in reversed(left_givens):
+        # Manually compute new Givens matrix and new phase when commuting a phase through.
+        abs_c, abs_s = math.abs(grot_mat[:, 0])
+        first_col = phases[j, j] * math.conj(phases[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
+        givens_mat = math.array(
+            [[first_col / abs_s, -abs_s], [first_col / abs_c, abs_c]], like=interface
+        )
+        nphase_diag = [
+            -math.conj(grot_mat[1, 0]) / abs_s * phases[j, j],
+            grot_mat[1, 1] / abs_c * phases[j, j],
+        ]
+        for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
+            phases = _set_unitary_matrix(phases, diag_idx, diag_val, like=interface)
+
+        nleft_givens.append((math.conj(givens_mat), (i, j)))
+
+    ordered_rotations = nleft_givens[::-1] + right_givens[::-1]
+
+    return math.diag(phases), ordered_rotations
+
+
+@lru_cache
 def _givens_matrix_jax():
 
-    @jax.jit
-    def givens_matrix_jax(a, b, left=True, tol=1e-8):
-        return _givens_matrix_core(a, b, left=left, tol=tol)
+    @partial(jax.jit, static_argnames=("real_valued",))
+    def givens_matrix_jax(a, b, left=True, tol=1e-8, real_valued=False):
+        return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
 
     return givens_matrix_jax
 
 
-def _givens_matrix(a, b, left=True, tol=1e-8):
+def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
     interface = math.get_interface(a)
     if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
-        return _givens_matrix_jax()(a, b, left=left, tol=tol)
-    return _givens_matrix_core(a, b, left=left, tol=tol)
+        return _givens_matrix_jax()(a, b, left=left, tol=tol, real_valued=real_valued)
+    return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
 
 
-def _right_givens_core(indices, unitary, N, j):
+def _right_givens_core(indices, unitary, N, j, real_valued):
     interface = math.get_interface(unitary)
-    grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
+    grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True, real_valued=real_valued)
     unitary = _set_unitary_matrix(
         unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
     )
     return unitary, math.conj(grot_mat)
 
 
-@functools.lru_cache
+@lru_cache
 def _right_givens_jax():
 
-    @jax.jit
-    def _right_givens_jax(indices, unitary, N, j):
-        return _right_givens_core(indices, unitary, N, j)
+    @partial(jax.jit, static_argnames=("real_valued",))
+    def _right_givens_jax(indices, unitary, N, j, real_valued):
+        return _right_givens_core(indices, unitary, N, j, real_valued)
 
     return _right_givens_jax
 
 
-def _right_givens(indices, unitary, N, j):
+def _right_givens(indices, unitary, N, j, real_valued):
     interface = math.get_interface(unitary)
     if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
-        return _right_givens_jax()(indices, unitary, N, j)
-    return _right_givens_core(indices, unitary, N, j)
+        return _right_givens_jax()(indices, unitary, N, j, real_valued)
+    return _right_givens_core(indices, unitary, N, j, real_valued)
 
 
-def _left_givens_core(indices, unitary, j):
+def _left_givens_core(indices, unitary, j, real_valued):
     interface = math.get_interface(unitary)
-    grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
+    grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False, real_valued=real_valued)
     unitary = _set_unitary_matrix(
         unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
     )
     return unitary, grot_mat
 
 
-@functools.lru_cache
+@lru_cache
 def _left_givens_jax():
 
-    @jax.jit
-    def _left_givens_jax(indices, unitary, j):
-        return _left_givens_core(indices, unitary, j)
+    @partial(jax.jit, static_argnames=("real_valued",))
+    def _left_givens_jax(indices, unitary, j, real_valued):
+        return _left_givens_core(indices, unitary, j, real_valued)
 
     return _left_givens_jax
 
 
-def _left_givens(indices, unitary, j):
+def _left_givens(indices, unitary, j, real_valued):
     interface = math.get_interface(unitary)
     if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
-        return _left_givens_jax()(indices, unitary, j)
-    return _left_givens_core(indices, unitary, j)
+        return _left_givens_jax()(indices, unitary, j, real_valued)
+    return _left_givens_core(indices, unitary, j, real_valued)
 
 
 # pylint: disable=too-many-branches
@@ -447,25 +576,34 @@ def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
     This decomposition is based on the construction scheme given in `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ ,
-    which allows one to write any unitary matrix :math:`U` as:
+    which allows one to write any :math:`N\times N` unitary matrix :math:`U` as:
 
     .. math::
 
-        U = D \left(\prod_{(m, n) \in G} T_{m, n}(\theta, \phi)\right),
+        U = D \left(\prod_{m \in G} T_m(\theta, \phi)\right),
 
-    where :math:`D` is a diagonal phase matrix, :math:`T(\theta, \phi)` is the Givens rotation gates with phase shifts and :math:`G` defines the
-    specific ordered sequence of the Givens rotation gates acting on wires :math:`(m, n)`. The unitary for the :math:`T(\theta, \phi)` gates
-    appearing in the decomposition is of the following form:
+    where :math:`D` is a diagonal phase matrix, :math:`T_m(\theta, \phi)` is the Givens rotation
+    (with phase shift) between matrix indices :math:`m` and :math:`m+1` (zero-based indexing),
+    and :math:`G` defines the ordered sequence of the Givens rotations. The explicit form of the
+    Givens rotation with phase shift reads:
 
     .. math:: T(\theta, \phi) = \begin{bmatrix}
-                                    1 & 0 & 0 & 0 \\
+                                    \mathbb{I}_{m} & 0 & 0 & 0 \\
                                     0 & e^{i \phi} \cos(\theta) & -\sin(\theta) & 0 \\
                                     0 & e^{i \phi} \sin(\theta) & \cos(\theta) & 0 \\
-                                    0 & 0 & 0 & 1
+                                    0 & 0 & 0 & \mathbb{I}_{N-m-2}
                                 \end{bmatrix},
 
-    where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace
-    and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+    where :math:`\theta \in [0, \pi/2]` is the angle of rotation
+    and :math:`\phi \in [0, 2 \pi]` represents the phase shift.
+
+    For real-valued matrices with unit determinant, i.e. special orthogonal :math:`U`,
+    all phase angles :math:`\phi` vanish and :math:`D` can be fixed to the identity,
+    absorbing its phases :math:`\pm 1` (with an even number of :math:`-1`\ s due to the
+    determinant constraint) into the :math:`T` matrices.
+    Whether :math:`U` is orthogonal is inferred from the data type of ``unitary``.
+    If the determinant of an orthogonal :math:`U` is negative, this will show as a single
+    negative phase in the first output value of ``givens_decomposition``.
 
     **Example**
 
@@ -503,17 +641,6 @@ def givens_decomposition(unitary):
     .. details::
         :title: Theory and Pseudocode
 
-        **Givens Rotation**
-
-        Applying the Givens rotation :math:`T(\theta, \phi)` performs the following transformation of the basis states:
-
-        .. math::
-
-            &|00\rangle \mapsto |00\rangle\\
-            &|01\rangle \mapsto e^{i \phi} \cos(\theta) |01\rangle - \sin(\theta) |10\rangle\\
-            &|10\rangle \mapsto e^{i \phi} \sin(\theta) |01\rangle + \cos(\theta) |10\rangle\\
-            &|11\rangle \mapsto |11\rangle.
-
         **Pseudocode**
 
         The algorithm that implements the decomposition is the following:
@@ -527,54 +654,51 @@ def givens_decomposition(unitary):
                             # Find T^-1(i-j, i-j+1) matrix that nulls element (N-j, i-j) of U
                             # Update U = U @ T^-1(i-j, i-j+1)
                     else:
-                        for j in range(1, i):
+                        for j in range(i):
                             # Find T(N+j-i-1, N+j-i) matrix that nulls element (N+j-i, j) of U
                             # Update U = T(N+j-i-1, N+j-i) @ U
 
+                if real_data_type:
+                    # Absorb the diagonal phases, which can only be 1s and an even number of
+                    # -1s, in the T gates. Adjust ordering and/or matrices of left-applied
+                    # and right-applied T matrices so that they make up U instead of U^{-1}.
+                else:
+                    # Commute the diagonal phases from between the left-applied and right-applied
+                    # T matrices to the left. Adjust ordering and/or matrices of left-applied
+                    # and right-applied T matrices so that they make up U instead of U^{-1}.
+
     """
     interface = math.get_deep_interface(unitary)
-    unitary = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
-    M, N = math.shape(unitary)
+    is_real = math.is_real_obj_or_close(unitary)
+    unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
+    converted_dtype = False
+    if math.get_dtype_name(unitary).startswith("complex") and is_real:
+        converted_dtype = True
+        unitary_mat = math.real(unitary_mat)
 
-    if M != N:
-        raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
+    shape = math.shape(unitary_mat)
+
+    if len(shape) != 2 or shape[0] != shape[1]:
+        raise ValueError(f"The unitary matrix should be of shape NxN, got {shape}")
+
+    N = shape[0]
 
     left_givens, right_givens = [], []
     for i in range(1, N):
         if i % 2:
-            for j in range(0, i):
+            for j in range(i):
                 indices = [i - j - 1, i - j]
-                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j)
+                unitary_mat, grot_mat_conj = _right_givens(indices, unitary_mat, N, j, is_real)
                 right_givens.append((grot_mat_conj, indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
-                unitary, grot_mat = _left_givens(indices, unitary, j)
+                unitary_mat, grot_mat = _left_givens(indices, unitary_mat, j, is_real)
                 left_givens.append((grot_mat, indices))
-
-    nleft_givens = []
-    for grot_mat, (i, j) in reversed(left_givens):
-        sphase_mat = math.diag(math.diag(unitary)[math.array([i, j])])
-        decomp_mat = math.conj(grot_mat).T @ sphase_mat
-        givens_mat = _givens_matrix(*decomp_mat[1, :].T)
-        nphase_mat = decomp_mat @ givens_mat.T
-
-        # check for T_{m,n}^{-1} x D = D x T.
-        if not math.is_abstract(decomp_mat) and not math.allclose(
-            nphase_mat @ math.conj(givens_mat), decomp_mat
-        ):  # pragma: no cover
-            raise ValueError("Failed to shift phase transposition.")
-
-        for diag_idx, diag_val in zip([(i, i), (j, j)], math.diag(nphase_mat)):
-            unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
-        nleft_givens.append((math.conj(givens_mat), (i, j)))
-
-    phases, ordered_rotations = math.diag(unitary), []
-    for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not math.is_abstract(grot_mat) and not math.all(
-            math.isreal(grot_mat[0, 1]) and math.isreal(grot_mat[1, 1])
-        ):  # pragma: no cover
-            raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
-        ordered_rotations.append((grot_mat, (i, j)))
-
-    return phases, ordered_rotations
+    unitary_mat, all_givens = (_absorb_phases_so if is_real else _commute_phases_u)(
+        left_givens, right_givens, unitary_mat, interface
+    )
+    if converted_dtype:
+        unitary_mat = math.convert_like(unitary_mat, unitary)
+        all_givens = [(math.convert_like(mat, unitary), indices) for mat, indices in all_givens]
+    return unitary_mat, all_givens

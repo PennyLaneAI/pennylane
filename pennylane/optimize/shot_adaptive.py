@@ -248,7 +248,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         grads = []
 
-        for o, c, p, s in zip(observables, coeffs, prob_shots, shots_per_term):
+        for o, c, p, s in zip(observables, coeffs, prob_shots, shots_per_term, strict=True):
             # if the number of shots is 0, do nothing
             if s == 0:
                 continue
@@ -282,23 +282,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # because we are sampling one at a time.
             grads.append([(c * j / p) for j in jacs])
 
-        return [np.concatenate(i) for i in zip(*grads)]
-
-    @staticmethod
-    def check_device(dev):
-        r"""Verifies that the device used by the objective function is non-analytic.
-
-        Args:
-            dev (.devices.Device): the device to verify
-
-        Raises:
-            ValueError: if the device is analytic
-        """
-        if not dev.shots:
-            raise ValueError(
-                "The Rosalin optimizer can only be used with devices "
-                "that estimate expectation values with a finite number of shots."
-            )
+        return [np.concatenate(i) for i in zip(*grads, strict=True)]
 
     def check_learning_rate(self, coeffs):
         r"""Verifies that the learning rate is less than 2 over the Lipschitz constant,
@@ -318,9 +302,12 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
-        self.check_device(qnode.device)
-
         tape = construct_tape(qnode)(*args, **kwargs)
+        if not tape.shots:
+            raise ValueError(
+                "The Rosalin optimizer can only be used with qnodes "
+                "that estimate expectation values with a finite number of shots."
+            )
         [expval] = tape.measurements
         coeffs, observables = (
             expval.obs.terms()
@@ -438,12 +425,14 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             self.xi = [np.zeros_like(g, dtype=np.float64) for g in grads]
 
         # running average of the gradient
-        self.chi = [self.mu * c + (1 - self.mu) * g for c, g in zip(self.chi, grads)]
+        self.chi = [self.mu * c + (1 - self.mu) * g for c, g in zip(self.chi, grads, strict=True)]
 
         # running average of the gradient variance
-        self.xi = [self.mu * x + (1 - self.mu) * v for x, v in zip(self.xi, grad_variances)]
+        self.xi = [
+            self.mu * x + (1 - self.mu) * v for x, v in zip(self.xi, grad_variances, strict=True)
+        ]
 
-        for idx, (c, x) in enumerate(zip(self.chi, self.xi)):
+        for idx, (c, x) in enumerate(zip(self.chi, self.xi, strict=True)):
             xi = x / (1 - self.mu ** (self.k + 1))
             chi = c / (1 - self.mu ** (self.k + 1))
 

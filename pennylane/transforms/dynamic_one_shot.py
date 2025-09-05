@@ -81,10 +81,6 @@ def _add_shot_vector_support(fn: PostprocessingFn, shots: Shots) -> Postprocessi
     return new_fn
 
 
-def _squeeze_stack(array):
-    return qml.math.squeeze(qml.math.vstack(array))
-
-
 @partial(transform, expand_transform=_expand_fn)
 def dynamic_one_shot(
     tape: QuantumScript, postselect_mode=None, **_
@@ -143,16 +139,14 @@ def dynamic_one_shot(
         raise QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
     aux_tapes = [init_auxiliary_tape(tape)]
+    num_mp = len(aux_tapes[0].measurements)
 
-    def processing_fn(results):
+    def processing_fn(results: ResultBatch) -> Result:
         results = results[0]
-        if len(aux_tapes[0].measurements) == 1:
-            results = [_squeeze_stack(tuple(results))]
+        if num_mp == 1:
+            results = [tuple(results)]
         else:
-            results = [
-                _squeeze_stack(tuple(res[i] for res in results))
-                for i, _ in enumerate(aux_tapes[0].measurements)
-            ]
+            results = [tuple(res[i] for res in results) for i in range(num_mp)]
         return parse_native_mid_circuit_measurements(
             tape, results=results, postselect_mode=postselect_mode
         )
@@ -223,7 +217,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
         if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
         elif isinstance(op, MidMeasureMP):
-            new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
+            new_measurements.append(qml.sample(MeasurementValue([op])))
     return qml.tape.QuantumScript(
         circuit.operations,
         new_measurements,
@@ -283,7 +277,7 @@ def parse_native_mid_circuit_measurements(
 
     all_mcms = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = qml.math.hstack(
-        tuple(qml.math.reshape(res, (-1, 1)) for res in results[-len(all_mcms) :])
+        tuple(qml.math.reshape(qml.math.vstack(res), (-1, 1)) for res in results[-len(all_mcms) :])
     )
     mcm_samples = qml.math.array(mcm_samples, like=interface)
 
@@ -308,8 +302,6 @@ def parse_native_mid_circuit_measurements(
             postselect_mode=postselect_mode,
             is_valid=is_valid,
         )
-        if isinstance(m, SampleMP):
-            r = qml.math.squeeze(r)
         normalized_meas.append(r)
 
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
@@ -339,6 +331,7 @@ def _handle_measurement_qjit(
             qml.math.sum(result[1] * qml.math.reshape(is_valid, (-1, 1)), axis=0),
         )
         return res, m_count + 1
+    result = qml.math.squeeze(result)
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
@@ -362,11 +355,6 @@ def _handle_measurement(
         return gather_mcm(m, mcm_samples, is_valid, postselect_mode=postselect_mode), m_count
 
     result = results[m_count]
-    if not isinstance(m, CountsMP):
-        # We don't need to cast to arrays when using qml.counts. qml.math.array is not viable
-        # as it assumes all elements of the input are of builtin python types and not belonging
-        # to any particular interface
-        result = qml.math.array(result, like=interface)
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
@@ -450,35 +438,39 @@ def _gather_counts(measurement: CountsMP, samples, is_valid, postselect_mode=Non
 # pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=None):
+    samples = qml.math.concatenate(samples) if isinstance(samples, (list, tuple)) else samples
     if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
         is_valid = qml.math.reshape(is_valid, (-1, 1))
     if postselect_mode == "pad-invalid-samples":
         return qml.math.where(is_valid, samples, fill_in_value)
-    if qml.math.shape(samples) == ():  # single shot case
-        samples = qml.math.reshape(samples, (-1, 1))
     return samples[is_valid]
 
 
 # pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mode=None):
-    if qml.math.get_interface(is_valid) == "tensorflow":
+    samples = qml.math.stack(samples)
+    if (
+        qml.math.get_interface(is_valid) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
         is_valid = qml.math.cast_like(is_valid, samples)
-    return qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
+    return qml.math.sum(qml.math.squeeze(samples) * is_valid) / qml.math.sum(is_valid)
 
 
 # pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselect_mode=None):
-    if qml.math.get_interface(is_valid) == "tensorflow":
+    samples = qml.math.stack(samples, axis=0)
+    if (
+        qml.math.get_interface(is_valid) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
         is_valid = qml.math.cast_like(is_valid, samples)
-
     return qml.math.sum(samples * qml.math.reshape(is_valid, (-1, 1)), axis=0) / qml.math.sum(
         is_valid
     )
@@ -487,13 +479,19 @@ def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselec
 # pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode=None):
-    if (interface := qml.math.get_interface(is_valid)) == "tensorflow":
+    samples = qml.math.stack(samples)
+    if (
+        interface := qml.math.get_interface(is_valid)
+    ) == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
         is_valid = qml.math.cast_like(is_valid, samples)
+    samples = qml.math.squeeze(samples)
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Casting needed for tensorflow
         samples = qml.math.cast_like(samples, expval)
         is_valid = qml.math.cast_like(is_valid, expval)
@@ -512,6 +510,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
     Returns:
         TensorLike: The combined measurement outcome
     """
+
     interface = qml.math.get_deep_interface(is_valid)
     mv = measurement.mv
     # The following block handles measurement value lists, like ``qml.counts(op=[mcm0, mcm1, mcm2])``.
@@ -535,10 +534,12 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
         if isinstance(measurement, CountsMP):
             mcm_samples = [{"".join(str(int(v)) for v in tuple(s)): 1} for s in mcm_samples]
         return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
-    mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
+
+    mcm_samples = qml.math.array(mv.concretize(samples), like=interface)
     if isinstance(measurement, ProbabilityMP):
         # Need to use boolean functions explicitly as Tensorflow does not allow integer math
         # on boolean arrays
+        mcm_samples = qml.math.squeeze(mcm_samples)
         counts = [
             qml.math.count_nonzero(qml.math.logical_and((mcm_samples == v), is_valid))
             for v in list(mv.branches.values())
@@ -547,4 +548,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
         mcm_samples = [{float(s): 1} for s in mcm_samples]
-    return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
+    results = gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
+    if isinstance(measurement, SampleMP):
+        results = qml.math.squeeze(results)
+    return results

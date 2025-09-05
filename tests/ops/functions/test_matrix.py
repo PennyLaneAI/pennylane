@@ -238,6 +238,16 @@ class TestSingleOperation:
         ]
         assert all(np.allclose(mat, np.eye(4)) for mat in mats)
 
+    def test_matrix_dequeues_operation(self):
+        """Tests that the operator is dequeued."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            mat = qml.matrix(qml.X(0))
+            qml.QubitUnitary(mat, wires=[0])
+
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], qml.QubitUnitary)
+
 
 class TestMultipleOperations:
     def test_multiple_operations_tape(self):
@@ -273,6 +283,21 @@ class TestMultipleOperations:
         matrix = qml.matrix(testcircuit, wire_order)()
         expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
+
+    def test_qfunc_arguments_dequeued(self):
+        """Tests that operators passed as arguments to the qfunc are dequeued"""
+
+        def func(op, op1=None):
+            qml.apply(op)
+            if op1:
+                qml.apply(op1)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            mat = qml.matrix(func, wire_order=[0])(qml.X(0), op1=qml.Z(0))
+            qml.QubitUnitary(mat, wires=[0])
+
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], qml.QubitUnitary)
 
     def test_multiple_operations_qnode(self):
         """Check the total matrix for a QNode containing multiple gates"""
@@ -566,7 +591,9 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         op = CustomOp(weights, wires=[0, 1])
-        res = qml.matrix(op)
+        with qml.queuing.AnnotatedQueue() as q_test:
+            res = qml.matrix(op)
+        assert len(q_test) == 0  # Test that no operators were leaked
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
         with qml.queuing.AnnotatedQueue() as q:
@@ -593,7 +620,10 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
-        res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+        with qml.queuing.AnnotatedQueue() as q_test:
+            res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+
+        assert len(q_test) == 0  # Test that no operators were leaked
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 

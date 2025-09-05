@@ -75,7 +75,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument, too-many-arguments, too-many-instance-attributes
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -97,7 +97,7 @@ class DefaultQubitLegacy(QubitDevice):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
@@ -203,7 +203,14 @@ class DefaultQubitLegacy(QubitDevice):
     }
 
     def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+        self,
+        wires,
+        *,
+        r_dtype=np.float64,
+        c_dtype=np.complex128,
+        shots=None,
+        analytic=None,
+        seed=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
@@ -226,6 +233,13 @@ class DefaultQubitLegacy(QubitDevice):
             "CZ": self._apply_cz,
             "Toffoli": self._apply_toffoli,
         }
+        self._seed = seed
+        # Counter for sampling calls to ensure different seeds each time
+        # This gets reset only during true device initialization, not during
+        # intermediate resets (like in classical shadow protocol)
+        self._sample_call_count = 0
+        # Flag to track if this is a fresh execution context
+        self._fresh_execution = True
 
     @property
     def stopping_condition(self):
@@ -242,7 +256,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return qml.BooleanFn(accepts_obj)
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
@@ -271,6 +285,15 @@ class DefaultQubitLegacy(QubitDevice):
             return size // expected_size
 
         return None
+
+    def execute(self, circuit, **kwargs):
+        """Execute a quantum circuit and return the results.
+
+        This method marks the start of a fresh execution for reproducibility."""
+        # Mark as fresh execution for proper seed counter reset
+        self._fresh_execution = True
+        result = super().execute(circuit, **kwargs)
+        return result
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
@@ -949,6 +972,10 @@ class DefaultQubitLegacy(QubitDevice):
         # init the state vector to |00..0>
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        # Reset the sample call counter only on fresh executions for reproducibility
+        if getattr(self, "_fresh_execution", True):
+            self._sample_call_count = 0
+            self._fresh_execution = False
 
     def analytic_probability(self, wires=None):
         if self._state is None:
@@ -970,3 +997,57 @@ class DefaultQubitLegacy(QubitDevice):
             if m.obs is None or not isinstance(m.obs, qml.ops.LinearCombination)
         ]
         return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
+
+    def sample_basis_states(self, number_of_states, state_probability):
+        """Sample from the computational basis states based on the state
+        probability.
+
+        This is an auxiliary method to the generate_samples method.
+
+        Args:
+            number_of_states (int): the number of basis states to sample from
+            state_probability (array[float]): the computational basis probability vector
+
+        Returns:
+            array[int]: the sampled basis states
+        """
+        if self.shots is None:
+            raise ValueError(
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements."
+            )
+        seed = self._seed or np.random.randint(0, 2**31)
+
+        # Create a locally rolling seed by using deterministic context properties
+        # Use only deterministic properties for reproducibility across executions
+        context_variation = hash((len(state_probability), tuple(state_probability.shape))) % (2**16)
+        effective_seed = (seed + self._sample_call_count + context_variation) % (2**31)
+        self._sample_call_count += 1
+
+        shots = self.shots
+        rng = np.random.default_rng(effective_seed)
+
+        basis_states = np.arange(number_of_states)
+        # pylint:disable = import-outside-toplevel
+        if (
+            qml.math.is_abstract(state_probability)
+            and qml.math.get_interface(state_probability) == "jax"
+        ):
+            import jax
+
+            key = jax.random.PRNGKey(seed)
+            if jax.numpy.ndim(state_probability) == 2:
+                return jax.numpy.array(
+                    [
+                        jax.random.choice(key, basis_states, shape=(shots,), p=prob)
+                        for prob in state_probability
+                    ]
+                )
+            return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
+
+        state_probs = qml.math.unwrap(state_probability)
+        if self._ndim(state_probability) == 2:
+            # np.random.choice does not support broadcasting as needed here.
+            return np.array([rng.choice(basis_states, shots, p=prob) for prob in state_probs])
+
+        return rng.choice(basis_states, shots, p=state_probs)

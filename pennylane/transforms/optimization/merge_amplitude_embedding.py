@@ -249,35 +249,29 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         initial_ops_found = self.state["ops_found"]
         curr_ops_found = self.state["ops_found"]
 
-        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
+        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches, strict=True):
             consts = invals[const_slice]
-            if jaxpr is None:
-                new_jaxprs.append(None)
-                new_consts_slices.append(slice(0, 0))
-            else:
-                new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+            new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
-                # Update state so far so collisions with
-                # newly seen states from the branches continue to be
-                # detected after the cond
-                curr_wires |= self.state["visited_wires"]
-                curr_dynamic_wires_found = self.state["dynamic_wires_found"]
-                curr_ops_found = self.state["ops_found"]
+            # Update state so far so collisions with
+            # newly seen states from the branches continue to be
+            # detected after the cond
+            curr_wires |= self.state["visited_wires"]
+            curr_dynamic_wires_found = curr_dynamic_wires_found or self.state["dynamic_wires_found"]
+            curr_ops_found = curr_ops_found or self.state["ops_found"]
 
-                # Reset state for the next branch so we don't get false positive collisions
-                # (copy so if state mutates we preserved true initial state)
-                self.state = {
-                    "visited_wires": copy(initial_wires),
-                    "dynamic_wires_found": initial_dynamic_wires_found,
-                    "ops_found": initial_ops_found,
-                }
+            # Reset state for the next branch so we don't get false positive collisions
+            # (copy so if state mutates we preserved true initial state)
+            self.state = {
+                "visited_wires": copy(initial_wires),
+                "dynamic_wires_found": initial_dynamic_wires_found,
+                "ops_found": initial_ops_found,
+            }
 
-                new_jaxprs.append(new_jaxpr.jaxpr)
-                new_consts.extend(new_jaxpr.consts)
-                new_consts_slices.append(
-                    slice(end_const_ind, end_const_ind + len(new_jaxpr.consts))
-                )
-                end_const_ind += len(new_jaxpr.consts)
+            new_jaxprs.append(new_jaxpr.jaxpr)
+            new_consts.extend(new_jaxpr.consts)
+            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+            end_const_ind += len(new_jaxpr.consts)
 
         # Reset state to all updates from all branches in the cond
         self.state = {
@@ -415,7 +409,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         final_batch_size = input_batch_size[0]
 
         # Merge all parameters and qubits into a single one.
-        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:]):
+        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:], strict=True):
             final_vector = final_vector[..., :, None] * v[..., None, :]
             final_batch_size = final_batch_size or b
             final_wires = final_wires + w

@@ -18,8 +18,14 @@ Contains the PrepSelPrep template.
 import copy
 
 from pennylane import math
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
-from pennylane.ops import GlobalPhase, LinearCombination, adjoint
+from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint, prod
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires
 
@@ -31,11 +37,8 @@ def _get_new_terms(lcu):
     coeffs, ops = lcu.terms()
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
-    new_ops = []
-
-    for angle, op in zip(angles, ops):
-        new_op = op @ GlobalPhase(-angle, wires=op.wires)
-        new_ops.append(new_op)
+    # The following will produce a nested `Prod` object for a `Prod` object in`ops`
+    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
 
     return math.abs(coeffs), new_ops
 
@@ -75,6 +78,14 @@ class PrepSelPrep(Operation):
     [[-0.25  0.75]
      [ 0.75  0.25]]
     """
+
+    resource_keys = frozenset({"num_control", "op_reps"})
+
+    @property
+    def resource_params(self):
+        ops = self.lcu.terms()[1]
+        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None
 
@@ -141,7 +152,7 @@ class PrepSelPrep(Operation):
 
         decomp_ops = [
             AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
-            Select(ops, control),
+            Select(ops, control, partial=True),
             adjoint(
                 AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
             ),
@@ -203,3 +214,27 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+
+def _prepselprep_resources(op_reps, num_control):
+    prod_reps = tuple(
+        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
+    )
+    return {
+        resource_rep(StatePrep, num_wires=num_control): 1,
+        resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control, partial=True): 1,
+        adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
+    }
+
+
+# pylint: disable=unused-argument, too-many-arguments
+@register_resources(_prepselprep_resources)
+def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
+    coeffs, ops = _get_new_terms(lcu)
+    sqrt_coeffs = math.sqrt(coeffs)
+    StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
+    Select(ops, control, partial=True)
+    adjoint(StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
+
+
+add_decomps(PrepSelPrep, _prepselprep_decomp)

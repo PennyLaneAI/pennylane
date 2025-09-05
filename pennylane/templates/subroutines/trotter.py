@@ -61,10 +61,10 @@ def _recursive_expression(x, order, ops):
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        return [qml_ops.exp(op, x * 1j) for op in ops]
+        return [qml_ops.Evolution(op, -x) for op in ops]
 
     if order == 2:
-        return [qml_ops.exp(op, x * 0.5j) for op in ops + ops[::-1]]
+        return [qml_ops.Evolution(op, -x * 0.5) for op in ops + ops[::-1]]
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
@@ -94,8 +94,8 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
-    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m^{\text{th}}` order,
+    :math:`n`\ -step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
@@ -394,7 +394,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         parameters = [t] + base_unitary.parameters
         if any(
             math.get_interface(param) == "tensorflow" for param in parameters
-        ):  # TODO: Add TF support
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             raise TypeError(
                 "Calculating error bound for Tensorflow objects is currently not supported"
             )
@@ -523,16 +523,18 @@ def _trotter_product_decomposition_resources(n, order, ops):
 
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Exp, base=op, num_steps=None)] = n * _count(op, ops)
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = n * _count(
+                op, ops
+            )
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Exp, base=op, num_steps=None)] = (
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
                 n * 2 * _count(op, ops)
             )
         return reps
     for op in ops:
-        reps[resource_rep(qml_ops.op_math.Exp, base=op, num_steps=None)] = (
+        reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
             n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
@@ -548,12 +550,12 @@ def _trotter_product_decomposition(*args, **kwargs):
     def _recursive(x, order, ops):
         if order == 1:
             for op in ops[::-1]:
-                qml_ops.exp(op, x * 1j)
+                qml_ops.Evolution(op, -x)
             return
 
         if order == 2:
             for op in ops + ops[::-1]:
-                qml_ops.exp(op, x * 0.5j)
+                qml_ops.Evolution(op, -x * 0.5)
             return
 
         scalar_1 = _scalar(order)
@@ -782,8 +784,8 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
-    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m^{\text{th}}` order,
+    :math:`n`\-step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 

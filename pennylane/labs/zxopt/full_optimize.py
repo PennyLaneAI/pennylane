@@ -125,7 +125,7 @@ def full_optimize(
     """
     if not has_zx:  # pragma: no cover
         raise ImportError(
-            "full_optimize requires the package pyzx. " "You can install it with pip install pyzx"
+            "full_optimize requires the package pyzx. You can install it with pip install pyzx"
         )  # pragma: no cover
 
     try:

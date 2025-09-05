@@ -2537,10 +2537,10 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = dev_fn(wires=2, shots=20000, seed=seed)
+        dev = dev_fn(wires=2, seed=seed)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=20000)
         def circuit(v):
             qml.RX(v, wires=0)
             qml.RY(0.5, wires=1)
@@ -2567,9 +2567,9 @@ class TestCutCircuitMCTransform:
         postprocessed to return bitstrings of the original circuit size.
         """
 
-        dev = dev_fn(wires=3, shots=100)
+        dev = dev_fn(wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=100)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2599,10 +2599,10 @@ class TestCutCircuitMCTransform:
         altered when executing the QNode
         """
         shots = 100
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2662,10 +2662,10 @@ class TestCutCircuitMCTransform:
         gives the correct error
         """
         shots = 100
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2716,10 +2716,10 @@ class TestCutCircuitMCTransform:
         Tests that attempting to cut a circuit with multiple sample measurements
         using `cut_circuit_mc` gives the correct error
         """
-        dev = dev_fn(wires=3, shots=100)
+        dev = dev_fn(wires=3)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=100)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2745,10 +2745,10 @@ class TestCutCircuitMCTransform:
         Tests that attempting to cut a circuit with non-sample measurements
         using `cut_circuit_mc` gives the correct error
         """
-        dev = dev_fn(wires=2, shots=100)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=100)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2775,10 +2775,10 @@ class TestCutCircuitMCTransform:
         correct output is given
         """
         shots = 100
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev, interface=None, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2807,10 +2807,10 @@ class TestCutCircuitMCTransform:
         import autograd
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2842,10 +2842,10 @@ class TestCutCircuitMCTransform:
         import tensorflow as tf
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2877,10 +2877,10 @@ class TestCutCircuitMCTransform:
         import torch
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2912,10 +2912,10 @@ class TestCutCircuitMCTransform:
         import jax
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2947,10 +2947,10 @@ class TestCutCircuitMCTransform:
         import autograd
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2980,10 +2980,10 @@ class TestCutCircuitMCTransform:
         import tensorflow as tf
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3013,10 +3013,10 @@ class TestCutCircuitMCTransform:
         import torch
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3046,10 +3046,10 @@ class TestCutCircuitMCTransform:
         import jax
 
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3077,10 +3077,10 @@ class TestCutCircuitMCTransform:
         transform."""
 
         shots = 10
-        dev = dev_fn(wires=3, shots=shots)
+        dev = dev_fn(wires=3)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -3103,10 +3103,10 @@ class TestCutCircuitMCTransform:
         that some of the subcircuits are disconnected from the final terminal sample
         measurements is executed successfully"""
         shots = 10
-        dev = dev_fn(wires=3, shots=shots)
+        dev = dev_fn(wires=3)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -3123,10 +3123,10 @@ class TestCutCircuitMCTransform:
         """Tests that a sample-based circuit with a trivial wire cut (not
         separating the circuit into fragments) is executed successfully"""
         shots = 10
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -3157,14 +3157,14 @@ class TestCutCircuitMCTransform:
 
         # We need a 4-qubit device to account for mid-circuit measurements
         shots = 10
-        dev = dev_fn(wires=4, shots=shots)
+        dev = dev_fn(wires=4)
 
         def two_qubit_unitary(param, wires):
             qml.Hadamard(wires=[wires[0]])
             qml.CRY(param, wires=[wires[0], wires[1]])
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(params):
             qml.BasisState(np.array([1]), wires=[0])
             qml.WireCut(wires=0)
@@ -3868,8 +3868,9 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4420,7 +4421,7 @@ class TestCutCircuitTransform:
         dev_original = qml.device("default.qubit", wires=4, seed=seed)
 
         # We need a 3-qubit device
-        dev_cut = qml.device("default.qubit", wires=3, shots=shots)
+        dev_cut = qml.device("default.qubit", wires=3)
         us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
 
         def f():
@@ -4438,7 +4439,9 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
 
         circuit = qml.QNode(f, dev_original)
-        cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), use_opt_einsum=use_opt_einsum)
+        cut_circuit = qcut.cut_circuit(
+            qml.set_shots(qml.QNode(f, dev_cut), shots=shots), use_opt_einsum=use_opt_einsum
+        )
 
         res_expected = circuit()
 
@@ -4610,13 +4613,13 @@ class TestCutCircuitExpansion:
         n_blocks = qml.TTN.get_n_blocks(range(n_wires), n_block_wires)
         template_weights = [[0.1, -0.3]] * n_blocks
 
-        dev_cut = qml.device("default.qubit", wires=2, shots=10)
+        dev_cut = qml.device("default.qubit", wires=2)
 
         def circuit(template_weights):
             qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             return qml.sample(wires=[n_wires - 1])
 
-        qnode_cut = qcut.cut_circuit_mc(qml.QNode(circuit, dev_cut))
+        qnode_cut = qcut.cut_circuit_mc(qml.set_shots(qml.QNode(circuit, dev_cut), shots=10))
 
         spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
@@ -4672,7 +4675,7 @@ class TestCutStrategy:
 
         devices = [devices] if not isinstance(devices, list) else devices
 
-        max_dev_wires = max((len(d.wires) for d in devices))
+        max_dev_wires = max(len(d.wires) for d in devices)
         assert strategy.max_free_wires == max_free_wires or max_dev_wires or min_free_wires
         assert strategy.min_free_wires == min_free_wires or max_free_wires or max_dev_wires
         assert strategy.imbalance_tolerance == imbalance_tolerance
@@ -5249,7 +5252,7 @@ class TestAutoCutCircuit:
         dev_original = qml.device("default.qubit", wires=4)
 
         # We need a 3-qubit device
-        dev_cut = qml.device("default.qubit", wires=3, shots=shots)
+        dev_cut = qml.device("default.qubit", wires=3)
         us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
 
         def f():
@@ -5263,7 +5266,9 @@ class TestAutoCutCircuit:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
 
         circuit = qml.QNode(f, dev_original)
-        cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), auto_cutter=True)
+        cut_circuit = qcut.cut_circuit(
+            qml.set_shots(qml.QNode(f, dev_cut), shots=shots), auto_cutter=True
+        )
 
         res_expected = circuit()
 
@@ -5322,8 +5327,9 @@ class TestAutoCutCircuit:
         """
         pytest.importorskip("kahypar")
 
-        dev = qml.device("default.qubit", wires=3, shots=100)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -5415,7 +5421,7 @@ class TestAutoCutCircuit:
         assert all(lower <= f.order() <= upper for f in frags)
 
         # each frag should have the device size constraint satisfied.
-        assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+        assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
 
 
 class TestCutCircuitWithHamiltonians:
@@ -5592,7 +5598,7 @@ class TestCutCircuitWithHamiltonians:
             assert all(frag_ords[idx][0] <= f.order() <= frag_ords[idx][1] for f in frags)
 
             # each frag should have the device size constraint satisfied.
-            assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+            assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
 
     def test_hamiltonian_with_tape(self):
         """Test that an expand function that generates multiple tapes is applied before the transform and the transform

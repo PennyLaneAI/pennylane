@@ -96,7 +96,7 @@ def get_circuit_dm(n_qubits, output_dim, interface):
 def get_circuit_shots(n_qubits, output_dim, interface, shots):
     """Fixture for getting a circuit with shots specified."""
 
-    dev = qml.device("default.qubit", wires=n_qubits, shots=shots)
+    dev = qml.device("default.qubit", wires=n_qubits)
     weight_shapes = {
         "w1": (3, n_qubits, 3),
         "w2": (1,),
@@ -108,6 +108,7 @@ def get_circuit_shots(n_qubits, output_dim, interface, shots):
     }
 
     # pylint: disable=too-many-arguments
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
         """A circuit that embeds data using the AngleEmbedding and then performs a variety of
