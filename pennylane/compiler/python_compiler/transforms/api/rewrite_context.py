@@ -140,6 +140,7 @@ class RewriteContext:
 
     def get_wire_from_extract_op(self, op: quantum.ExtractOp, update=True) -> int | AbstractWire:
         """Get the wire label to which a qubit extraction corresponds."""
+        # TODO: Figure out if this method should be removed.
         wire = None
         if (idx_attr := getattr(op, "idx_attr", None)) is not None:
             wire = idx_attr.value.data
@@ -162,8 +163,6 @@ class RewriteContext:
         if wire is not None and update:
             self[wire] = op.qubit
         return wire
-
-    # TODO: Use singledispatchmethod
 
     @singledispatchmethod
     def update_from_op(self, op: xOperation):
