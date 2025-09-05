@@ -256,7 +256,8 @@ class TestRowCol:
 
         connectivity = connectivity_fn(n)
         input_connectivity = connectivity.copy()
-        (out_tape,), _ = rowcol(in_tape, connectivity)
+        res, processing_fn = rowcol(in_tape, connectivity)
+        out_tape = processing_fn(res)
         output_P = parity_matrix(out_tape, wire_order=range(n))
 
         assert np.allclose(input_P, output_P)
