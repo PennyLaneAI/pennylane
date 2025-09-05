@@ -498,6 +498,7 @@
   * The :func:`~.transforms.decompose` transform now accepts a `num_available_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
   [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
+  [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
 
   * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
   [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
@@ -555,8 +556,8 @@
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
   [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  [(#8113)](https://github.com/PennyLaneAI/pennylane/pull/8113)
   
-
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
@@ -992,6 +993,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Operators queued with :func:`pennylane.apply` no longer get dequeued by subsequent dequeuing operations
+  (e.g. :func:`pennylane.adjoint`).
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
 * Fixed a bug in the decomposition rules of :class:`~.Select` with the new decomposition system
   that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
   This enables the new decomposition system with ``Select`` of parametrized target ``ops``.
@@ -1066,6 +1071,10 @@
 * Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
   [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
+* Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
 <h3>Contributors ✍️</h3>
 
@@ -1074,6 +1083,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
+Astral Cai,
 Joey Carter,
 Yushao Chen,
 Isaac De Vlugt,

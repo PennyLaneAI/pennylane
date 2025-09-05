@@ -1020,7 +1020,9 @@ def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
     if not op.base.has_decomposition:
         return None
 
-    base_decomp = op.base.decomposition()
+    with qml.QueuingManager.stop_recording():
+        base_decomp = op.base.decomposition()
+
     return [
         ctrl(newop, op.control_wires, work_wires=op.work_wires, work_wire_type=op.work_wire_type)
         for newop in base_decomp
