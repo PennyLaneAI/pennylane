@@ -106,3 +106,13 @@ exclude_dirs = ["tests", "pennylane/labs/tests"]
 skips = [
     "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
 ]
+
+[tool.ruff.lint]
+select = [
+    "T201", # print statements used for debugging should be omitted from production code.
+    "T203", # pprint statements used for debugging should be omitted from production code.
+]
+fixable = [
+    "T201",
+    "T203",
+]

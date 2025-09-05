@@ -544,7 +544,6 @@ class TestTransformProgram:
 
         t_normal = TransformContainer(transform=second_valid_transform)
         transform_program.push_back(t_normal)
-        print(transform_program)
         assert len(transform_program) == 2
         assert transform_program[0] is t_normal
         assert transform_program[1] is transform1

@@ -386,7 +386,6 @@ def test_init_error_2(n, eta, omega, error, br, charge, vectors):
 )
 def test_norm_error_noncubic(n, eta, error, br, charge, vectors):
     r"""Test that _norm_noncubic raises an error when the computed norm is zero."""
-    print(n, eta, error, br, charge, vectors)
     with pytest.raises(ValueError, match="The computed 1-norm is zero"):
         qml.resource.FirstQuantization._norm_noncubic(n, eta, error, br, charge, vectors)
 
