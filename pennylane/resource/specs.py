@@ -12,17 +12,93 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for resource estimation"""
+import copy
 import inspect
+import json
+import os
+from collections import defaultdict
 from collections.abc import Callable
 from typing import Any, Literal
 
 import pennylane as qml
 
-from .resource import specs_from_tape
+from .resource import Resources, SpecsDict, specs_from_tape
+
+_RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
 
 
 def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
+
+
+def _create_tracker_device_class(dev, compute_depth):
+    from dataclasses import replace
+
+    from pennylane.transforms.core import TransformProgram
+
+    from ..devices import NullQubit
+    from ..devices.execution_config import ExecutionConfig
+
+    class TrackerDevice(NullQubit):
+        """A device that tracks the resources used by the circuit."""
+
+        config_filepath = dev.config_filepath
+        spoofed_class = dev.__class__
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(
+                *args,
+                track_resources=True,
+                resources_fname=_RESOURCE_TRACKING_FILEPATH,
+                compute_depth=compute_depth,
+                **kwargs,
+            )
+
+        def preprocess(
+            self, execution_config: ExecutionConfig | None = None
+        ) -> tuple[TransformProgram, ExecutionConfig]:
+            program, _ = self.spoofed_class.preprocess(self, execution_config)
+
+            for t in program:
+                if t.transform == qml.devices.preprocess.decompose.transform:
+                    original_stopping_condition = t.kwargs["stopping_condition"]
+
+                    def new_stopping_condition(op):
+                        return (not op.has_decomposition) or original_stopping_condition(op)
+
+                    t.kwargs["stopping_condition"] = new_stopping_condition
+
+                    original_shots_stopping_condition = t.kwargs.get(
+                        "stopping_condition_shots", None
+                    )
+                    if original_shots_stopping_condition:
+
+                        def new_shots_stopping_condition(op):
+                            return (not op.has_decomposition) or original_shots_stopping_condition(
+                                op
+                            )
+
+                        t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
+
+            updated_values = {}
+            if execution_config.gradient_method in ["best", "adjoint"]:
+                updated_values["gradient_method"] = "device"
+            if execution_config.use_device_gradient is None:
+                updated_values["use_device_gradient"] = execution_config.gradient_method in {
+                    "best",
+                    "device",
+                    "adjoint",
+                    "backprop",
+                }
+            if execution_config.use_device_jacobian_product is None:
+                updated_values["use_device_jacobian_product"] = (
+                    execution_config.gradient_method == "device"
+                )
+            if execution_config.grad_on_execution is None:
+                updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
+            return program, replace(execution_config, **updated_values)
+
+    return TrackerDevice
 
 
 def specs(
@@ -174,7 +250,7 @@ def specs(
         2
     """
 
-    def specs_qnode(*args, **kwargs) -> list[dict] | dict:
+    def specs_qnode(*args, **kwargs) -> list[SpecsDict] | SpecsDict:
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:
@@ -203,6 +279,10 @@ def specs(
         infos = []
         batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
+        # These values don't depend on the tape, so we can just get them once
+        config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
+        gradient_fn = config.gradient_method
+
         for tape in batch:
 
             info = specs_from_tape(tape, compute_depth)
@@ -218,8 +298,6 @@ def specs(
                 else qnode.diff_method
             )
 
-            config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
-            gradient_fn = config.gradient_method
             if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
                 info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 
@@ -237,4 +315,81 @@ def specs(
 
         return infos[0] if len(infos) == 1 else infos
 
-    return specs_qnode
+    def specs_qjit(*args, **kwargs) -> SpecsDict:
+        # TODO: Determine if its possible to have batched QJIT code / how to handle it
+
+        if not isinstance(qnode.original_function, qml.QNode):
+            raise NotImplementedError("qml.specs can only be used on QNodes or qjit'd QNodes")
+        original_device = qnode.device
+
+        info = qml.resource.resource.SpecsDict()
+
+        if level == "device":
+            # When running at the device level, execute on null.qubit directly with resource tracking,
+            # which will give resource usage information for after all compiler passes have completed
+
+            # breakpoint()
+            # TODO: Inherit devices args from input
+            TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
+            spoofed_dev = TrackerDevice(
+                wires=original_device.wires,
+                shots=original_device.shots,
+            )
+
+            # Only need a shallow copy here, to prevent replacing the device in the original QNode
+            new_qnode = copy.copy(qnode.original_function)
+            new_qnode.device = spoofed_dev
+
+            # TODO: Inherit correct qjit args from input
+            new_qnode = qml.qjit(new_qnode, autograph=True)
+
+            if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
+                # TODO: Warn that something has gone wrong here
+                os.remove(_RESOURCE_TRACKING_FILEPATH)
+
+            # Execute on null.qubit with resource tracking
+            new_qnode(*args, **kwargs)
+
+            with open(_RESOURCE_TRACKING_FILEPATH, "r", encoding="utf-8") as f:
+                resource_data = json.load(f)
+
+            info["resources"] = Resources(
+                num_wires=resource_data["num_wires"],
+                num_gates=resource_data["num_gates"],
+                gate_types=defaultdict(int, resource_data["gate_types"]),
+                gate_sizes=defaultdict(
+                    int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
+                ),
+                depth=resource_data["depth"],
+                shots=qnode.original_function.shots,  # TODO: Can this ever be overriden during compilation?
+            )
+
+            # print(resource_data)
+            os.remove(_RESOURCE_TRACKING_FILEPATH)
+        else:
+            raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+
+        info["num_device_wires"] = len(original_device.wires)
+        info["device_name"] = original_device.name
+        info["level"] = level
+        info["gradient_options"] = qnode.gradient_kwargs
+        info["interface"] = qnode.original_function.interface
+        info["diff_method"] = (
+            _get_absolute_import_path(qnode.diff_method)
+            if callable(qnode.diff_method)
+            else qnode.diff_method
+        )
+
+        # TODO: Determine if any of this information is possibly incorrect after QJIT'ing
+        config = qml.workflow.construct_execution_config(qnode.original_function)(*args, **kwargs)
+        gradient_fn = config.gradient_method
+        if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
+            info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
+        else:
+            info["gradient_fn"] = gradient_fn
+
+        return info
+
+    if isinstance(qnode, qml.QNode):
+        return specs_qnode
+    return specs_qjit
