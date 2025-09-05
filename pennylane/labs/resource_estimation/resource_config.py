@@ -17,8 +17,22 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import pennylane.labs.resource_estimation as plre
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.templates import (
+    ResourceSelectPauliRot,
+    ResourceQubitUnitary,
+    ResourceQROMStatePreparation,
+    ResourceMPSPrep,
+    ResourceAliasSampling,
+    ResourceSelectTHC,
+    ResourcePrepTHC,
+    ResourceQubitizeTHC,
+)
 
 
 class ResourceConfig:
@@ -28,17 +42,17 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         self.conf = {
-            plre.ResourceRX: {"error_rx": 1e-9},
-            plre.ResourceRY: {"error_ry": 1e-9},
-            plre.ResourceRZ: {"error_rz": 1e-9},
-            plre.ResourceSelectPauliRot: {"precision": 1e-9},
-            plre.ResourceQubitUnitary: {"precision": 1e-9},
-            plre.ResourceQROMStatePreparation: {"precision": 1e-9},
-            plre.ResourceMPSPrep: {"precision": 1e-9},
-            plre.ResourceAliasSampling: {"precision": 1e-9},
-            plre.ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
-            plre.ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
-            plre.ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourceRX: {"error_rx": 1e-9},
+            ResourceRY: {"error_ry": 1e-9},
+            ResourceRZ: {"error_rz": 1e-9},
+            ResourceSelectPauliRot: {"precision": 1e-9},
+            ResourceQubitUnitary: {"precision": 1e-9},
+            ResourceQROMStatePreparation: {"precision": 1e-9},
+            ResourceMPSPrep: {"precision": 1e-9},
+            ResourceAliasSampling: {"precision": 1e-9},
+            ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
         }
         self._decomp_tracker = {}
         self._adj_decomp_tracker = {}
