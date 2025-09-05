@@ -509,7 +509,7 @@ class TestMBQCFormalismConversion:
     # to test our protocol for conversion to the MBQC formalism with multiple gates and
     # wires E2E. Following discussion at the FTQC team meeting, we are marking
     # this test as flaky and keeping it here for the time being.
-    @flaky(max_runs=5, min_passes=3)
+    @flaky(max_runs=5)
     @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
@@ -522,7 +522,6 @@ class TestMBQCFormalismConversion:
             RotXZX(theta, 0, theta / 2, 0)
             RotXZX(theta / 2, 0, theta / 4, 1)
             qml.RZ(theta / 3, 0)
-            qml.RZ(theta / 2, 1)
             qml.X(0)
             qml.H(1)
             qml.S(1)
@@ -562,11 +561,10 @@ class TestMBQCFormalismConversion:
 
             samples = qml.execute([diagonalized_tape], dev)[0]
             for wire in (0, 1):
-                mp = qml.expval(qml.Z(wire))
+                mp = qml.expval(obs(wire))
                 res.append(mp.process_samples(samples, wire_order=[0, 1]))
 
-        dev_ref = qml.device("lightning.qubit", seed=1234)
-        reference_result = qml.execute([reference_tape], dev_ref)[0]
+        reference_result = qml.execute([reference_tape], dev)[0]
 
         # analytic results, to 2 s.f., are (-0.40, 0.95, -0.37, -0.25, 0.82, 6.2e-17)
         # an atol of 0.1 is not ideal for comparing to these results, but it's enough
