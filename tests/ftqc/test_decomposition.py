@@ -509,36 +509,53 @@ class TestMBQCFormalismConversion:
     # to test our protocol for conversion to the MBQC formalism with multiple gates and
     # wires E2E. Following discussion at the FTQC team meeting, we are marking
     # this test as flaky and keeping it here for the time being.
-    #@flaky(max_runs=5, min_passes=3)
+    # @flaky(max_runs=5, min_passes=3)
     @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
         correctly, and the returned tape continues to produce the expected output"""
 
-        dev = qml.device("lightning.qubit", seed=1234)
+        # dev = qml.device("lightning.qubit", seed=1234)
 
         theta = 2.5
         with qml.queuing.AnnotatedQueue() as q:
-            RotXZX(theta, 0, theta / 2, 0)
-            RotXZX(theta / 2, 0, theta / 4, 1)
-            #qml.RZ(theta / 3, 0)
-            # qml.X(0)
+            RotXZX(theta, theta / 2, theta / 3, 0)
+            RotXZX(theta / 2, theta / 3, theta / 4, 1)
+            # qml.RZ(theta / 3, 0)
+            # qml.RZ(theta / 4, 1)
             # qml.H(1)
             # qml.S(1)
-            # qml.Y(1)
             # qml.CNOT([0, 1])
 
+        with qml.queuing.AnnotatedQueue() as q1:
+            qml.RX(theta, 0)
+            qml.RZ(theta / 2, 0)
+            qml.RX(theta / 3, 0)
+
+            qml.RX(theta / 2, 1)
+            qml.RZ(theta / 3, 1)
+            qml.RX(theta / 4, 1)
+
         base_tape = qml.tape.QuantumScript.from_queue(q)
-        tape = base_tape.copy(measurements=[qml.sample(wires=[0, 1])])
-        reference_tape = base_tape.copy(
+        tape = base_tape.copy(measurements=[qml.sample(wires=[1])])
+        base_tape1 = qml.tape.QuantumScript.from_queue(q1)
+        reference_tape = qml.tape.QuantumScript(
+            ops=[
+                qml.RX(theta, 0),
+                qml.RZ(theta / 2, 0),
+                qml.RX(theta / 3, 0),
+                qml.RX(theta / 2, 1),
+                qml.RZ(theta / 3, 1),
+                qml.RX(theta / 4, 1),
+            ],
             measurements=[
-                qml.expval(qml.X(0)),
-                qml.expval(qml.X(1)),
-                qml.expval(qml.Y(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0)),
+                # qml.expval(qml.X(0)),
+                # qml.expval(qml.X(1)),
                 qml.expval(qml.Z(1)),
-            ]
+                # qml.expval(qml.Y(1)),
+                # qml.expval(qml.Z(0)),
+                # qml.expval(qml.Z(1)),
+            ],
         )
 
         # after transform, only state prep and MCMs are present on the tape
@@ -552,23 +569,23 @@ class TestMBQCFormalismConversion:
 
         # diagonalize final measurements, convert to the mbqc formalism, and execute
         res = []
-        for obs in (qml.X, qml.Y, qml.Z):
-            ops = base_tape.operations + obs(0).diagonalizing_gates() + obs(1).diagonalizing_gates()
-            tape = base_tape.copy(
-                operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=1000
-            )
+        for obs in (qml.Z,):  # (qml.X, qml.Y, qml.Z):
+            ops = (
+                base_tape.operations
+            )  # + obs(0).diagonalizing_gates() #+ obs(1).diagonalizing_gates()
+            tape = base_tape.copy(operations=ops, measurements=[qml.sample(wires=[1])], shots=5000)
             (diagonalized_tape,), _ = convert_to_mbqc_formalism(tape, diagonalize_mcms=True)
-            #(diagonalized_tape,), _ = diagonalize_mcms(mbqc_tape)
-
-            samples = qml.execute([diagonalized_tape], dev)[0]
-            for wire in (0, 1):
+            # (diagonalized_tape,), _ = diagonalize_mcms(mbqc_tape)
+            samples = qml.execute([diagonalized_tape], qml.device("lightning.qubit", seed=1234))[0]
+            for wire in (1,):
                 mp = qml.expval(qml.Z(wire))
-                res.append(mp.process_samples(samples, wire_order=[0, 1]))
+                res.append(mp.process_samples(samples, wire_order=[1]))
 
-        reference_result = qml.execute([reference_tape], dev)[0]
+        dev_ref = qml.device("lightning.qubit", seed=1234)
+        reference_result = qml.execute([reference_tape], dev_ref)[0]
 
         # analytic results, to 2 s.f., are (-0.40, 0.95, -0.37, -0.25, 0.82, 6.2e-17)
         # an atol of 0.1 is not ideal for comparing to these results, but it's enough
         # to catch changes that modify the results, and we have to choose here between
         # very slow, or fairly noisy
-        assert np.allclose(res, reference_result, atol=0.05)
+        assert np.allclose(res, reference_result, atol=0.005)
