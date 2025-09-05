@@ -55,7 +55,7 @@ jobs:
         git config --global user.name "ringo-but-quantum"
         git add $GITHUB_WORKSPACE/pennylane/_version.py
         git commit -m "[no ci] bump nightly version"
-        # git push
+        git push
 
     - name: Build wheels
       # if: ${{ env.branch_exists == 'true' }}
