@@ -31,17 +31,6 @@ from .controlled_sequence import ControlledSequence
 from .phase_adder import PhaseAdder
 from .qft import QFT
 
-# def _mul_out_k_mod(k, x_wires: WiresLike, mod, work_wire_aux: WiresLike, wires_aux: WiresLike):
-#     """Performs :math:`x \times k` in the registers wires wires_aux"""
-#     op_list = []
-
-#     op_list.append(QFT(wires=wires_aux))
-#     op_list.append(
-#         ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
-#     )
-#     op_list.append(adjoint(QFT(wires=wires_aux)))
-#     return op_list
-
 
 class Multiplier(Operation):
     r"""Performs the in-place modular multiplication operation.
