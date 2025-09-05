@@ -30,6 +30,7 @@ from pennylane.templates.subroutines.select import (
 )
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("num_ops", [3, 10, 15, 16])
 @pytest.mark.parametrize("partial", [True, False])
 @pytest.mark.parametrize("work_wires", [None, [5, 6, 7]])

@@ -1253,8 +1253,8 @@ class TestModifiedTemplates:
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Select._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert [invar.val for invar in eqn.invars] == [0, 1]
+        assert eqn.params == {"ops": ops, "n_wires": 2}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 

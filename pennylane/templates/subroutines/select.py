@@ -358,19 +358,23 @@ class Select(Operation):
         }
 
     def _flatten(self):
-        return (self.ops), (
+        return tuple(), (
+            self.ops,
             self.control,
             self.hyperparameters["work_wires"],
             self.partial,
         )
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, ops, control, **kwargs):
+        return super()._primitive_bind_call(ops=ops, wires=control, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
-        return cls(data, control=metadata[0], work_wires=metadata[1], partial=metadata[2])
+        return cls(
+            *data, ops=metadata[0], control=metadata[1], work_wires=metadata[2], partial=metadata[3]
+        )
 
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
@@ -798,3 +802,11 @@ def _select_decomp_partial_unary(*_, ops, control, work_wires, partial, **__):
 
 
 add_decomps(Select, _select_decomp_partial_unary)
+
+# pylint: disable=protected-access
+if Select._primitive is not None:
+
+    @Select._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        control = args[-n_wires:]
+        return type.__call__(Select, control=control, **kwargs)
