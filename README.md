@@ -2,7 +2,7 @@
 <img width="200" height="46" alt="UFoundation_logosmall" src="https://github.com/user-attachments/assets/643e69cd-3d41-42f9-a9e8-ac113e8b6de3" />
 </p>
 
-<h2 align="center"> The 2025 Quantum Open Source Software Survey is now open. 👉 <a src="https://unitary.foundation/posts/2025_qoss_survey/" target="_blank">Take the survey!</a> 👈</h2>
+<h2 align="center"> The 2025 Quantum Open Source Software Survey is now open. 👉 <a href="https://unitary.foundation/posts/2025_qoss_survey/" target="_blank">Take the survey!</a> 👈</h2>
 
 <p align="center">
 Take 10 minutes to share your voice and help build a better quantum computing ecosystem!
