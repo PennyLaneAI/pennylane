@@ -55,7 +55,7 @@ class WireResourceManager:
         self.clean_wires = clean_wires
         self.dirty_wires = dirty_wires
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"WireResourceManager(clean wires={self.clean_wires}, dirty wires={self.dirty_wires}, "
             f"algorithmic wires={self.algo_wires}, tight budget={self.tight_budget})"
