@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 
 
@@ -27,16 +28,17 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         self.conf = {
-            "error_rx": 1e-9,
-            "error_ry": 1e-9,
-            "error_rz": 1e-9,
-            "precision_select_pauli_rot": 1e-9,
-            "precision_qubit_unitary": 1e-9,
-            "precision_qrom_state_prep": 1e-9,
-            "precision_mps_prep": 1e-9,
-            "precision_alias_sampling": 1e-9,
-            "qubitization_rotation_precision": 15,
-            "qubitization_coeff_precision": 15,
+            plre.ResourceRX: {"error_rx": 1e-9},
+            plre.ResourceRY: {"error_ry": 1e-9},
+            plre.ResourceRZ: {"error_rz": 1e-9},
+            plre.ResourceSelectPauliRot: {"precision": 1e-9},
+            plre.ResourceQubitUnitary: {"precision": 1e-9},
+            plre.ResourceQROMStatePreparation: {"precision": 1e-9},
+            plre.ResourceMPSPrep: {"precision": 1e-9},
+            plre.ResourceAliasSampling: {"precision": 1e-9},
+            plre.ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            plre.ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            plre.ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
         }
         self._decomp_tracker = {}
         self._adj_decomp_tracker = {}
