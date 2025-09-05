@@ -24,24 +24,23 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import SWAP, adjoint
+from pennylane.ops import SWAP, ChangeOpBasis, change_op_basis
 from pennylane.wires import Wires, WiresLike
 
 from .controlled_sequence import ControlledSequence
 from .phase_adder import PhaseAdder
 from .qft import QFT
 
+# def _mul_out_k_mod(k, x_wires: WiresLike, mod, work_wire_aux: WiresLike, wires_aux: WiresLike):
+#     """Performs :math:`x \times k` in the registers wires wires_aux"""
+#     op_list = []
 
-def _mul_out_k_mod(k, x_wires: WiresLike, mod, work_wire_aux: WiresLike, wires_aux: WiresLike):
-    """Performs :math:`x \times k` in the registers wires wires_aux"""
-    op_list = []
-
-    op_list.append(QFT(wires=wires_aux))
-    op_list.append(
-        ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
-    )
-    op_list.append(adjoint(QFT(wires=wires_aux)))
-    return op_list
+#     op_list.append(QFT(wires=wires_aux))
+#     op_list.append(
+#         ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
+#     )
+#     op_list.append(adjoint(QFT(wires=wires_aux)))
+#     return op_list
 
 
 class Multiplier(Operation):
@@ -248,13 +247,25 @@ class Multiplier(Operation):
             work_wire_aux = ()
             wires_aux = work_wires[: len(x_wires)]
             wires_aux_swap = wires_aux
-        op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
+
+        op_list.append(
+            ControlledSequence(
+                change_op_basis(QFT(wires=wires_aux), PhaseAdder(k, wires_aux, mod, work_wire_aux)),
+                control=x_wires,
+            )
+        )
+
         for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
             op_list.append(SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
-
-        for op in reversed(_mul_out_k_mod(inv_k, x_wires, mod, work_wire_aux, wires_aux)):
-            op_list.append(adjoint(op))
+        op_list.append(
+            ControlledSequence(
+                change_op_basis(
+                    QFT(wires=wires_aux), PhaseAdder(inv_k, wires_aux, mod, work_wire_aux)
+                ),
+                control=x_wires,
+            )
+        )
 
         return op_list
 
@@ -270,22 +281,16 @@ def _multiplier_decomposition_resources(
         num_wires_aux = num_x_wires
 
     resources = {
-        resource_rep(QFT, num_wires=num_wires_aux): 2,
         resource_rep(
             ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": num_wires_aux, "mod": mod},
-            num_control_wires=num_x_wires,
-        ): 1,
-        adjoint_resource_rep(
-            ControlledSequence,
-            {
-                "base_class": PhaseAdder,
-                "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
-                "num_control_wires": num_x_wires,
+            base_class=ChangeOpBasis,
+            base_params={
+                "compute_op": resource_rep(QFT, num_wires=num_wires_aux),
+                "target_op": resource_rep(PhaseAdder, num_x_wires=num_wires_aux, mod=mod),
+                "uncompute_op": adjoint_resource_rep(QFT, {"num_wires": num_wires_aux}),
             },
-        ): 1,
-        adjoint_resource_rep(QFT, {"num_wires": num_wires_aux}): 2,
+            num_control_wires=num_x_wires,
+        ): 2,
         SWAP: num_x_wires,
     }
 
@@ -303,18 +308,20 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
         wires_aux = work_wires[: len(x_wires)]
         wires_aux_swap = wires_aux
 
-    QFT(wires=wires_aux)
-    ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
-    adjoint(QFT(wires=wires_aux))
+    ControlledSequence(
+        change_op_basis(QFT(wires=wires_aux), PhaseAdder(k, wires_aux, mod, work_wire_aux)),
+        control=x_wires,
+    )
 
     for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
         SWAP(wires=[x_wire, aux_wire])
 
     inv_k = pow(k, -1, mod)
 
-    QFT(wires=wires_aux)
-    adjoint(ControlledSequence(PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires))
-    adjoint(QFT(wires=wires_aux))
+    ControlledSequence(
+        change_op_basis(QFT(wires=wires_aux), PhaseAdder(inv_k, wires_aux, mod, work_wire_aux)),
+        control=x_wires,
+    )
 
 
 add_decomps(Multiplier, _multiplier_decomposition)

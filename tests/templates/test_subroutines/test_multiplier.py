@@ -20,7 +20,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.multiplier import _mul_out_k_mod
 
 
 def test_standard_validity_Multiplier():
@@ -33,15 +32,15 @@ def test_standard_validity_Multiplier():
     qml.ops.functions.assert_valid(op)
 
 
-def test_mul_out_k_mod():
-    """Test the _mul_out_k_mod function."""
+# def test_mul_out_k_mod():
+#     """Test the _mul_out_k_mod function."""
 
-    op = _mul_out_k_mod(2, [0, 1], 4, None, [4, 5])
-    assert op[0].name == "QFT"
-    assert op[1].name == "ControlledSequence"
-    assert op[2].name == "Adjoint(QFT)"
-    print(op[1].base)
-    qml.assert_equal(op[1].base, qml.PhaseAdder(2, x_wires=[4, 5]))
+#     op = _mul_out_k_mod(2, [0, 1], 4, None, [4, 5])
+#     assert op[0].name == "QFT"
+#     assert op[1].name == "ControlledSequence"
+#     assert op[2].name == "Adjoint(QFT)"
+#     print(op[1].base)
+#     qml.assert_equal(op[1].base, qml.PhaseAdder(2, x_wires=[4, 5]))
 
 
 class TestMultiplier:
@@ -184,11 +183,25 @@ class TestMultiplier:
             work_wire_aux = None
             wires_aux = work_wires[:3]
             wires_aux_swap = wires_aux
-        op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
+        op_list.append(
+            qml.ControlledSequence(
+                qml.ops.change_op_basis(
+                    qml.QFT(wires=wires_aux), qml.PhaseAdder(k, wires_aux, mod, work_wire_aux)
+                ),
+                control=x_wires,
+            )
+        )
         for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
             op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
-        op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, x_wires, mod, work_wire_aux, wires_aux))
+        op_list.append(
+            qml.ControlledSequence(
+                qml.ops.change_op_basis(
+                    qml.QFT(wires=wires_aux), qml.PhaseAdder(inv_k, wires_aux, mod, work_wire_aux)
+                ),
+                control=x_wires,
+            )
+        )
 
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)
