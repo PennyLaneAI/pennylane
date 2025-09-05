@@ -47,15 +47,15 @@ class SampleMP(SampleMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
-        precision (str or None): The precision of the samples returned by this measurement process.
+        dtype (str or None): The dtype of the samples returned by this measurement process.
     """
 
     _shortname = "sample"
 
     # pylint: disable=too-many-arguments
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None, precision=None):
+    def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
 
-        self._precision = precision
+        self._dtype = dtype
 
         if isinstance(obs, MeasurementValue):
             super().__init__(obs=obs)
@@ -110,9 +110,9 @@ class SampleMP(SampleMeasurement):
         return float
 
     @property
-    def precision(self) -> str | None:
-        """The precision of the samples returned by this measurement process."""
-        return self._precision
+    def dtype(self) -> str | None:
+        """The dtype of the samples returned by this measurement process."""
+        return self._dtype
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         if not shots:
@@ -136,7 +136,7 @@ class SampleMP(SampleMeasurement):
         wire_order: WiresLike,
         shot_range: None | tuple[int, ...] = None,
         bin_size: None | int = None,
-        precision: None | str = None,
+        dtype: None | str = None,
     ) -> TensorLike:
 
         return process_raw_samples(
@@ -145,7 +145,7 @@ class SampleMP(SampleMeasurement):
             wire_order,
             shot_range=shot_range,
             bin_size=bin_size,
-            precision=self.precision if precision is None else precision,
+            dtype=self.dtype if dtype is None else dtype,
         )
 
     def process_counts(self, counts: dict, wire_order: WiresLike) -> np.ndarray:
@@ -192,7 +192,7 @@ class SampleMP(SampleMeasurement):
 def sample(
     op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
     wires: WiresLike = None,
-    precision: str | None = None,
+    dtype: str | None = None,
 ) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
     determined from QNode,
@@ -207,7 +207,7 @@ def sample(
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
-        precision (str or None): The precision of the samples returned by this measurement process.
+        dtype (str or None): The dtype of the samples returned by this measurement process.
 
     Returns:
         SampleMP: Measurement process instance
@@ -339,10 +339,10 @@ def sample(
     .. details::
             :title: Setting the precision of the samples
 
-            The ``precision`` argument can be used to set the precision of the samples returned by this measurement process.
+            The ``dtype`` argument can be used to set the type and precision of the samples returned by this measurement process.
 
             By default, the samples will be returned as floating point numbers if an observable is provided,
-            and as integers if no observable is provided. The ``precision`` argument can be used to override this default behavior,
+            and as integers if no observable is provided. The ``dtype`` argument can be used to override this default behavior,
             and set the precision to any valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
 
             We show two examples below using the JAX and PyTorch interfaces.
@@ -356,7 +356,7 @@ def sample(
                 @qml.qnode(qml.device("default.qubit", wires=1), interface="jax")
                 def circuit():
                     qml.Hadamard(0)
-                    return qml.sample(precision="int8")
+                    return qml.sample(dtype="int8")
 
             Executing this QNode, we get:
 
@@ -374,7 +374,7 @@ def sample(
                 @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
                 def circuit():
                     qml.Hadamard(0)
-                    return qml.sample(qml.Z(0), precision="float32")
+                    return qml.sample(qml.Z(0), dtype="float32")
 
             Executing this QNode, we get:
 
@@ -385,4 +385,4 @@ def sample(
             torch.Tensor
 
     """
-    return SampleMP(obs=op, wires=None if wires is None else Wires(wires), precision=precision)
+    return SampleMP(obs=op, wires=None if wires is None else Wires(wires), dtype=dtype)

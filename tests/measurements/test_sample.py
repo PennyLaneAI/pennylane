@@ -408,10 +408,10 @@ class TestSample:
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
-    def test_process_samples_precision(self):
-        """Test that the precision argument changes the dtype of the returned samples."""
+    def test_process_samples_dtype(self):
+        """Test that the dtype argument changes the dtype of the returned samples."""
         samples = np.zeros(10, dtype="int64")
-        processed_samples = qml.sample().process_samples(samples, wire_order=[0], precision="int8")
+        processed_samples = qml.sample().process_samples(samples, wire_order=[0], dtype="int8")
         assert processed_samples.dtype == np.dtype("int8")
 
     def test_sample_allowed_with_parameter_shift(self):
@@ -448,7 +448,7 @@ class TestSample:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
     @pytest.mark.parametrize(
-        "precision, obs",
+        "dtype, obs",
         [
             ("int8", None),
             ("int16", None),
@@ -459,23 +459,19 @@ class TestSample:
             ("float64", qml.Z(0)),
         ],
     )
-    def test_sample_precision_combined(self, interface, precision, obs):
-        """Test that the precision argument changes the dtype of the returned samples,
+    def test_sample_dtype_combined(self, interface, dtype, obs):
+        """Test that the dtype argument changes the dtype of the returned samples,
         both with and without an observable."""
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
         def _():
             qml.Hadamard(wires=0)
-            return (
-                qml.sample(obs, precision=precision)
-                if obs is not None
-                else qml.sample(precision=precision)
-            )
+            return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
 
         samples = _()
         assert qml.math.get_interface(samples) == interface
-        assert qml.math.get_dtype_name(samples) == precision
+        assert qml.math.get_dtype_name(samples) == dtype
 
 
 @pytest.mark.jax
