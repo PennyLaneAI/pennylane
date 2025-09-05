@@ -20,6 +20,7 @@ from tempfile import TemporaryDirectory
 from textwrap import dedent
 
 import pytest
+import pennylane as qml
 
 
 @pytest.fixture(scope="function")
