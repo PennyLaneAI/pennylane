@@ -216,15 +216,7 @@ class Multiplier(Operation):
         **Example**
 
         >>> qml.Multiplier.compute_decomposition(k=3, mod=8, x_wires=[0,1,2], work_wires=[3,4,5])
-        [QFT(wires=[3, 4, 5]),
-        ControlledSequence(PhaseAdder(wires=[3, 4 , 5 , None]), control=[0, 1, 2]),
-        Adjoint(QFT(wires=[3, 4, 5])),
-        SWAP(wires=[0, 3]),
-        SWAP(wires=[1, 4]),
-        SWAP(wires=[2, 5]),
-        Adjoint(Adjoint(QFT(wires=[3, 4, 5]))),
-        Adjoint(ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2])),
-        Adjoint(QFT(wires=[3, 4, 5]))]
+        [((Adjoint(QFT(wires=[3, 4, 5]))) @ (Adjoint(ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2]))) @ QFT(wires=[[3, 4, 5]])) @ (SWAP(wires=[2, 5]) @ SWAP(wires=[1, 4]) @ SWAP(wires=[0, 3])) @ ((Adjoint(QFT(wires=[3, 4, 5]))) @ (ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2])) @ QFT(wires=[3, 4, 5]))]
         """
 
         op_list = []
