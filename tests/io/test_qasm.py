@@ -434,9 +434,7 @@ class TestQNodeQasmIntegrationTests:
             qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
-        ):
+        with pytest.raises(ValueError, match="not supported with to_openqasm"):
             qml.to_openqasm(qnode)()
 
     def test_unused_wires(self):

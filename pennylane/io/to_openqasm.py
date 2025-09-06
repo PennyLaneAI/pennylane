@@ -18,6 +18,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, overload
 
+from pennylane.devices.preprocess import decompose
 from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
 from pennylane.ops import Conditional
@@ -142,14 +143,20 @@ def _tape_openqasm(
         operations += tape.diagonalizing_gates
 
     just_ops = QuantumScript(operations)
-    operations = just_ops.expand(
-        depth=10,
-        stop_at=lambda obj: obj.name in OPENQASM_GATES
-        or isinstance(obj, (MidMeasureMP, Conditional)),
-    ).operations
+
+    def stopping_condition(op):
+        return op.name in OPENQASM_GATES or isinstance(op, (MidMeasureMP, Conditional))
+
+    [new_tape], _ = decompose(
+        just_ops,
+        stopping_condition=stopping_condition,
+        skip_initial_state_prep=False,
+        name="to_openqasm",
+        error=ValueError,
+    )
 
     # create the QASM code representing the operations
-    for op in operations:
+    for op in new_tape.operations:
         if op.name == "MidMeasureMP":
             lines.append(_mid_measure_str(op, wires, bit_map, precision))
         elif isinstance(op, Conditional):
