@@ -111,6 +111,7 @@
 <h3>Improvements 🛠</h3>
 
 * `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
+  [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
