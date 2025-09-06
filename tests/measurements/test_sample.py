@@ -565,11 +565,11 @@ class TestJAXCompatibility:
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
-        def _():
-            qml.Hadamard(wires=0)
+        def _(x):
+            qml.RX(x, wires=0)
             return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
 
-        samples = jax.jit(_)()
+        samples = jax.jit(_)(jax.numpy.array(0.123))
         assert qml.math.get_interface(samples) == "jax"
         assert qml.math.get_dtype_name(samples) == dtype
 
