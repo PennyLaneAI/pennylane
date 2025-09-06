@@ -1088,6 +1088,7 @@ class TestShotDistribution:
         initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
 
         mock_shot_dist = MagicMock(spec=ShotDistFunction)
+        mock_shot_dist.return_value = [334, 333, 333]
 
         _ = split_non_commuting(
             initial_tape,
