@@ -204,13 +204,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     # Apply device preprocessing transforms
-    graph_enabled = qml.decomposition.enabled_graph()
-    try:
-        qml.decomposition.disable_graph()
-        qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
-    finally:
-        if graph_enabled:
-            qml.decomposition.enable_graph()
+    qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
     consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
