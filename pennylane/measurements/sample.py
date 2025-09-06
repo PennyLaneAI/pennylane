@@ -103,7 +103,9 @@ class SampleMP(SampleMeasurement):
         return (shots, dim), dtype
 
     @property
-    def numeric_type(self) -> type:
+    def numeric_type(self):
+        if self.dtype is not None:
+            return self.dtype
         if self.obs is None:
             # Computational basis samples
             return int

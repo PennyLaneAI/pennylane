@@ -547,6 +547,32 @@ class TestJAXCompatibility:
         assert results.dtype == jax.numpy.float64
         assert np.all([r in [1, -1] for r in results])
 
+    @pytest.mark.parametrize(
+        "dtype, obs",
+        [
+            ("int8", None),
+            ("int16", None),
+            ("int32", None),
+            ("int64", None),
+            ("float16", qml.Z(0)),
+            ("float32", qml.Z(0)),
+            ("float64", qml.Z(0)),
+        ],
+    )
+    def test_jitting_with_dtype(self, dtype, obs):
+        """Test that jitting works when the dtype argument is provided"""
+        import jax
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
+        def _():
+            qml.Hadamard(wires=0)
+            return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
+
+        samples = jax.jit(_)()
+        assert qml.math.get_interface(samples) == "jax"
+        assert qml.math.get_dtype_name(samples) == dtype
+
     def test_process_samples_with_jax_tracer(self):
         """Test that qml.sample can be used when samples is a JAX Tracer"""
 
