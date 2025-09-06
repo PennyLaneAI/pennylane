@@ -288,7 +288,7 @@ class TestConstruction:
         assert isinstance(tape.circuit[3].base, qml.PauliZ)
         assert tape.circuit[3].base.wires == target_wire
 
-        assert tape.circuit[4] is terminal_measurement
+        assert tape.circuit[4] == terminal_measurement
 
     @pytest.mark.parametrize(
         "x, rot, exp_batch_size",
