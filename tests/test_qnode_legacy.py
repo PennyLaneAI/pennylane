@@ -872,28 +872,12 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(circuit(0.8, shots=1)) == 10
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        assert len(circuit(0.8, shots=1)) == 10
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(circuit(0.8, shots=0)) == 10
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        assert len(circuit(0.8, shots=0)) == 10
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
@@ -927,11 +911,7 @@ class TestShots:
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(ansatz1(0.8, shots=0)) == 10
+        assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 

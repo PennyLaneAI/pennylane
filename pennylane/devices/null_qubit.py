@@ -352,7 +352,8 @@ class NullQubit(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
 
-        program = DefaultQubit.preprocess_transforms(self, execution_config)
+        target = DefaultQubit(wires=self.wires)
+        program = target.preprocess_transforms(execution_config)
         for t in program:
             if t.transform == decompose.transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]

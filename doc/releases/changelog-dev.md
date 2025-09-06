@@ -423,8 +423,9 @@
   [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
 
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
-  qubit allocation.
+  qubit allocation. Adds a `use_resets` keyword argument to `resolve_dynamic_wires`.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -822,6 +823,11 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* `DefaultQubit` now determines the `mcm_method` in `Device.setup_execution_config`,
+  making it easier to tell which mcm method will be used. This also allows `defer_measurements` and `dynamic_one_shot` to be applied at different
+  locations in the preprocessing program.
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184/files)
 
 * Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
   [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
