@@ -285,6 +285,19 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):
         return pow_resource_rep(**params)
+    if issubclass(op_type, qml.ops.ChangeOpBasis):
+        base_compute_op = params.pop("compute_op")
+        base_target_op = params.pop("target_op")
+        base_uncompute_op = params.pop("uncompute_op")
+        compute_op, compute_params = base_compute_op.op_type, base_compute_op.params
+        target_op, target_params = base_target_op.op_type, base_target_op.params
+        uncompute_op, uncompute_params = base_uncompute_op.op_type, base_uncompute_op.params
+        params = {
+            "compute_op_params": compute_params,
+            "target_op_params": target_params,
+            "uncompute_op_params": uncompute_params,
+        }
+        return change_op_basis_resource_rep(compute_op, target_op, uncompute_op, params)
     if op_type is qml.ops.ControlledOp:
         op_type = qml.ops.Controlled
     if op_type is qml.ops.Controlled:
@@ -402,6 +415,37 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
     return CompressedResourceOp(
         qml.ops.Adjoint,
         {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
+    )
+
+
+def change_op_basis_resource_rep(
+    compute_op: type[Operator],
+    target_op: type[Operator],
+    uncompute_op: type[Operator] = None,
+    params: dict = None,
+):
+    """Creates a ``CompressedResourceOp`` representation of the change of basis of an operator.
+
+    Args:
+        compute_op: the base operator type
+        target_op: the target operator type
+        uncompute_op: the uncompute operator type
+        params: the resource params of the compute, target, and uncompute operators
+    """
+    compute_op_resource_rep = resource_rep(compute_op, **params["compute_op_params"])
+    target_op_resource_rep = resource_rep(target_op, **params["target_op_params"])
+    if uncompute_op is None:
+        uncompute_op_resource_rep = adjoint_resource_rep(compute_op, params["compute_op_params"])
+    else:
+        uncompute_op_resource_rep = resource_rep(uncompute_op, **params["uncompute_op_params"])
+
+    return CompressedResourceOp(
+        qml.ops.ChangeOpBasis,
+        {
+            "compute_op": compute_op_resource_rep,
+            "target_op": target_op_resource_rep,
+            "uncompute_op": uncompute_op_resource_rep,
+        },
     )
 
 

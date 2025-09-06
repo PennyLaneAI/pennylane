@@ -180,9 +180,17 @@ class TestOutAdder:
             7,
             [9, 10],
         )
-        adder_decomposition = qml.OutAdder(
-            x_wires, y_wires, output_wires, mod, work_wires
-        ).compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)
+        _adder_decomposition = (
+            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
+            .decomposition()
+        )
+        adder_decomposition = [
+            _adder_decomposition[0],
+            *_adder_decomposition[1].decomposition(),
+            _adder_decomposition[2],
+        ]
+
         op_list = []
         if mod != 2 ** len(output_wires) and mod is not None:
             qft_new_output_wires = work_wires[:1] + output_wires
