@@ -16,12 +16,11 @@ Contains the OutMultiplier template.
 """
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
+    change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import adjoint
+from pennylane.ops import change_op_basis
 from pennylane.wires import Wires, WiresLike
 
 from .controlled_sequence import ControlledSequence
@@ -278,24 +277,24 @@ class OutMultiplier(Operation):
         ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3]),
         Adjoint(QFT(wires=[5, 6]))]
         """
-        op_list = []
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
             work_wire = work_wires[1:]
         else:
             qft_output_wires = output_wires
             work_wire = ()
-        op_list.append(QFT(wires=qft_output_wires))
-        op_list.append(
-            ControlledSequence(
-                ControlledSequence(
-                    PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
-                ),
-                control=y_wires,
-            )
-        )
-        op_list.append(adjoint(QFT)(wires=qft_output_wires))
 
+        op_list = [
+            change_op_basis(
+                QFT(wires=qft_output_wires),
+                ControlledSequence(
+                    ControlledSequence(
+                        PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+                    ),
+                    control=y_wires,
+                ),
+            )
+        ]
         return op_list
 
 
@@ -308,20 +307,21 @@ def _out_multiplier_decomposition_resources(
     else:
         qft_wires = num_output_wires
 
-    return {
-        resource_rep(QFT, num_wires=qft_wires): 1,
-        resource_rep(
-            ControlledSequence,
-            base_class=ControlledSequence,
-            base_params={
+    params = {
+        "compute_op_params": {"num_wires": qft_wires},
+        "target_op_params": {
+            "base_class": ControlledSequence,
+            "base_params": {
                 "base_class": PhaseAdder,
                 "base_params": {"num_x_wires": qft_wires, "mod": mod},
                 "num_control_wires": num_x_wires,
             },
-            num_control_wires=num_y_wires,
-        ): 1,
-        adjoint_resource_rep(QFT, {"num_wires": qft_wires}): 1,
+            "num_control_wires": num_y_wires,
+        },
+        "uncompute_op_params": {"num_wires": qft_wires},
     }
+
+    return {change_op_basis_resource_rep(QFT, ControlledSequence, params=params): 1}
 
 
 # pylint: disable=no-value-for-parameter
@@ -340,12 +340,14 @@ def _out_multiplier_decomposition(
     else:
         qft_output_wires = output_wires
         work_wire = ()
-    QFT(wires=qft_output_wires)
-    ControlledSequence(
-        ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
-        control=y_wires,
+
+    change_op_basis(
+        QFT(wires=qft_output_wires),
+        ControlledSequence(
+            ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
+            control=y_wires,
+        ),
     )
-    adjoint(QFT(wires=qft_output_wires))
 
 
 add_decomps(OutMultiplier, _out_multiplier_decomposition)
