@@ -72,6 +72,20 @@ class CompactHamiltonian:
         return cls("cdf", num_orbitals=num_orbitals, num_fragments=num_fragments)
 
     @classmethod
+    def df(cls, num_orbitals: int, num_fragments: int, num_eigenvectors: int):
+        """Constructs a double factorized Hamiltonian instance
+
+        Args:
+            num_orbitals (int): number of spatial orbitals
+            num_fragments (int): number of fragments in the double factorized (DF) representation
+            num_eigenvectors(int): total number of eigenvectors
+
+        Returns:
+            CompactHamiltonian: An instance of CompactHamiltonian initialized with DF parameters.
+        """
+        return cls("df", num_orbitals=num_orbitals, num_fragments=num_fragments, num_eigenvectors=num_eigenvectors)
+
+    @classmethod
     def thc(cls, num_orbitals: int, tensor_rank: int):
         """Constructs a tensor hypercontracted Hamiltonian instance
 

@@ -98,6 +98,33 @@ class ResourceCH(ResourceOperator):
         return [GateCount(h, 2), GateCount(ry, 2), GateCount(cnot, 1)]
 
     @classmethod
+    def catalytic_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list of GateCount objects representing the resources of the operator.
+        Each GateCount object specifies a gate type and its total occurrence count.
+
+        Resources:
+            The resources are derived from Figure 17 in arXiv:2011.03494
+        """
+        gate_list = []
+        h = resource_rep(re.ResourceHadamard)
+        cnot = resource_rep(re.ResourceCNOT)
+        toffoli = resource_rep(re.ResourceToffoli)
+        x = resource_rep(re.ResourceX)
+        s = resource_rep(re.ResourceS)
+        cz = resource_rep(re.ResourceCZ)
+
+        gate_list.append(GateCount(h,5))
+        gate_list.append(GateCount(cnot,5))
+        gate_list.append(GateCount(x, 4))
+        gate_list.append(GateCount(s,2))
+        gate_list.append(GateCount(resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})))
+        gate_list.append(GateCount(toffoli,1))
+        gate_list.append(GateCount(cz, 1))
+
+        return gate_list
+
+
+    @classmethod
     def default_adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 

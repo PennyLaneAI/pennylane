@@ -255,4 +255,5 @@ from .templates import (
     ResourceQPE,
     ResourceControlledSequence,
     ResourceIterativeQPE,
+    ResourceQubitizeDF
 )

@@ -35,7 +35,7 @@ from .trotter import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
 )
-from .qubitize import ResourceQubitizeTHC
+from .qubitize import ResourceQubitizeTHC, ResourceQubitizeDF
 from .compact_hamiltonian import CompactHamiltonian
 from .comparators import (
     ResourceIntegerComparator,

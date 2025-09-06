@@ -224,9 +224,9 @@ class Resources:
         total_qubits = qm.total_qubits
         total_gates = sum(self.clean_gate_counts.values())
 
-        total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
+        total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(int(total_gates)):.3E}"
         total_qubits_str = (
-            str(total_qubits) if total_qubits <= 9999 else f"{Decimal(total_qubits):.3E}"
+            str(total_qubits) if total_qubits <= 9999 else f"{Decimal(int(total_qubits)):.3E}"
         )
 
         items = "--- Resources: ---\n"
@@ -238,7 +238,7 @@ class Resources:
 
         gate_type_str = ", ".join(
             [
-                f"'{gate_name}': {Decimal(count):.3E}" if count > 999 else f"'{gate_name}': {count}"
+                f"'{gate_name}': {Decimal(int(count)):.3E}" if count > 999 else f"'{gate_name}': {count}"
                 for gate_name, count in self.clean_gate_counts.items()
             ]
         )
