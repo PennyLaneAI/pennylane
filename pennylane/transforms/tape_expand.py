@@ -369,7 +369,17 @@ def _modify_program(program, custom_decomps):
         return op.decomposition()
 
     for container in program:
-        if container.transform == qml.devices.preprocess.decompose.transform:
+        # Check for both the standard preprocess.decompose and any decompose transform
+        # (including DefaultQubit's wrapped decompose)
+        is_decompose_transform = (
+            container.transform == qml.devices.preprocess.decompose.transform
+            or (
+                hasattr(container.transform, "__name__")
+                and container.transform.__name__ == "decompose"
+            )
+        )
+
+        if is_decompose_transform:
             container.kwargs["decomposer"] = decomposer
 
             for cond in ["stopping_condition", "stopping_condition_shots"]:

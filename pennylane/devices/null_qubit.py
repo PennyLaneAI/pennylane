@@ -354,7 +354,13 @@ class NullQubit(Device):
 
         program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
-            if t.transform == decompose.transform:
+            # Check for decompose transform using flexible detection
+            # This handles both standard preprocess.decompose.transform and wrapped decompose functions
+            is_decompose_transform = (
+                t.transform == decompose.transform
+                or getattr(t.transform, "__name__", None) == "decompose"
+            )
+            if is_decompose_transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
