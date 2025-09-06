@@ -59,10 +59,11 @@
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
   [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
-* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
+* New transforms called :func:`~.transforms.match_relative_phase_toffoli`, :func:`~.transforms.match_mcx_gt4wires` and
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
+  [(#7754)](https://github.com/PennyLaneAI/pennylane/pull/7754)
 
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
   quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.

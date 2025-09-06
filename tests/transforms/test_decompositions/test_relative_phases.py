@@ -22,8 +22,140 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.optimization.relative_phases import (  # pylint: disable=no-name-in-module
     match_controlled_iX_gate,
+    match_mcx_gt4wires,
     match_relative_phase_toffoli,
 )
+
+
+class TestMultiControlledXGate:
+
+    def test_multiple_matches(self):
+
+        controls = 4
+
+        def qfunc():
+            qml.X(controls)
+            qml.MultiControlledX(wires=list(range(controls)) + [controls + 2])
+            qml.X(controls + 1)
+            qml.MultiControlledX(wires=list(range(controls)) + [controls + 2])
+            return qml.expval(qml.Z(0))
+
+        lowered_qfunc = match_mcx_gt4wires(
+            qfunc,
+            additional_controls=controls - 4,
+            custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
+        )
+
+        tape = qml.tape.make_qscript(lowered_qfunc)()
+        assert len(tape.operations) == 20
+        assert tape.operations == [
+            qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
+            qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 0, controls - 4 + 1, controls - 4 + 4]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+            ),
+            qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
+            qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
+        ] * 2 + [
+            qml.PauliX(4),
+            qml.PauliX(5),
+        ]
+
+    def test_additional_controls(self):
+
+        controls = 5
+
+        def qfunc():
+            qml.X(controls)
+            qml.MultiControlledX(wires=list(range(controls)) + [controls + 2])
+            qml.X(controls + 1)
+            return qml.expval(qml.Z(0))
+
+        lowered_qfunc = match_mcx_gt4wires(
+            qfunc,
+            additional_controls=controls - 4,
+            custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
+        )
+
+        tape = qml.tape.make_qscript(lowered_qfunc)()
+        assert len(tape.operations) == 11
+        assert tape.operations == [
+            qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
+            qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
+            qml.MultiControlledX(
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+            ),
+            qml.MultiControlledX(
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+            ),
+            qml.MultiControlledX(
+                list(range(controls - 4)) + [controls - 4 + 0, controls - 4 + 1, controls - 4 + 4]
+            ),
+            qml.MultiControlledX(
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+            ),
+            qml.MultiControlledX(
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+            ),
+            qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
+            qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
+            qml.PauliX(5),
+            qml.PauliX(6),
+        ]
+
+    def test_basic_transform(self):
+
+        controls = 4
+
+        def qfunc():
+            qml.X(controls)
+            qml.MultiControlledX(wires=list(range(controls)) + [controls + 2])
+            qml.X(controls + 1)
+            return qml.expval(qml.Z(0))
+
+        lowered_qfunc = match_mcx_gt4wires(
+            qfunc,
+            additional_controls=controls - 4,
+            custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
+        )
+
+        tape = qml.tape.make_qscript(lowered_qfunc)()
+        assert len(tape.operations) == 11
+        assert tape.operations == [
+            qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
+            qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 0, controls - 4 + 1, controls - 4 + 4]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+            ),
+            qml.Toffoli(
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+            ),
+            qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
+            qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
+            qml.PauliX(4),
+            qml.PauliX(5),
+        ]
 
 
 class TestMultiControlledPhaseXGate:

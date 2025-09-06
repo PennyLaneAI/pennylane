@@ -51,7 +51,7 @@ CONTROL_BASE = {
 
 @transform
 def pattern_matching_optimization(
-    tape: QuantumScript, pattern_tapes, custom_quantum_cost=None
+    tape: QuantumScript, pattern_tapes, custom_quantum_cost=None, allow_phase=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
@@ -59,6 +59,7 @@ def pattern_matching_optimization(
         tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized.
         pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
+        allow_phase (Boolean): Optional, whether to skip the assertion that the template is equivalent to the identity.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -230,7 +231,7 @@ def pattern_matching_optimization(
             raise QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity
-        if not np.allclose(
+        if not allow_phase and not np.allclose(
             qml.matrix(pattern, wire_order=pattern.wires), np.eye(2**pattern.num_wires)
         ):
             raise QuantumFunctionError("Pattern is not valid, it does not implement identity.")
@@ -249,7 +250,7 @@ def pattern_matching_optimization(
         if max_matches:
             # Initialize the optimization by substitution of the different matches
             substitution = TemplateSubstitution(
-                max_matches, circuit_dag, pattern_dag, custom_quantum_cost
+                max_matches, circuit_dag, pattern_dag, custom_quantum_cost, allow_phase
             )
             substitution.substitution()
             already_sub = []
@@ -1512,7 +1513,14 @@ class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-
 class TemplateSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal matches."""
 
-    def __init__(self, max_matches, circuit_dag, template_dag, custom_quantum_cost=None):
+    def __init__(
+        self,
+        max_matches,
+        circuit_dag,
+        template_dag,
+        custom_quantum_cost=None,
+        allow_phase=False,
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
@@ -1528,34 +1536,41 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
 
         self.substitution_list = []
         self.unmatched_list = []
+        self.allow_phase = allow_phase
 
-        if custom_quantum_cost is not None:
-            self.quantum_cost = dict(custom_quantum_cost)
-        else:
-            self.quantum_cost = {
-                "Identity": 0,
-                "PauliX": 1,
-                "PauliY": 1,
-                "PauliZ": 1,
-                "RX": 1,
-                "RY": 1,
-                "RZ": 1,
-                "Hadamard": 1,
-                "T": 1,
-                "Adjoint(T)": 1,
-                "S": 1,
-                "Adjoint(S)": 1,
-                "CNOT": 2,
-                "CZ": 4,
-                "SWAP": 6,
-                "CSWAP": 63,
-                "Toffoli": 21,
-                "C(S)": 4,
-                "CCZ": 21,
+        self.quantum_cost = {
+            "Identity": 0,
+            "PauliX": 1,
+            "PauliY": 1,
+            "PauliZ": 1,
+            "RX": 1,
+            "RY": 1,
+            "RZ": 1,
+            "Hadamard": 1,
+            "T": 1,
+            "Adjoint(T)": 1,
+            "S": 1,
+            "Adjoint(S)": 1,
+            "CNOT": 2,
+            "CZ": 4,
+            "C(Hadamard)": 4,
+            "CH": 4,
+            "SWAP": 6,
+            "CSWAP": 63,
+            "Toffoli": 21,
+            "C(S)": 4,
+            "CCZ": 21,
+            "MultiControlledX": lambda op: (
+                # special case possible due to phase trick, approx. MultiControlledX cost == MultiControlledH cost
+                9 * (2 * 4 * (2 + len(op.control_wires) - 4) ** 2)
+                if len(op.control_wires) >= 4 and self.allow_phase
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
-                "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2,
-            }
+                else 2 * 4 * len(op.control_wires) ** 2
+            ),
+        }
+        if custom_quantum_cost is not None:
+            self.quantum_cost.update(custom_quantum_cost)
 
     def _pred_block(self, circuit_sublist, index):
         """It returns the predecessors of a given part of the circuit.
@@ -1587,6 +1602,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
             bool: True if the quantum cost is reduced
         """
         cost_left = 0
+
         for i in left:
             cost = self.quantum_cost[self.template_dag.get_node(i).op.name]
             cost_left += cost(self.template_dag.get_node(i).op) if callable(cost) else cost
