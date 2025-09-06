@@ -122,7 +122,7 @@ def _tape_openqasm(
 
     if tape.num_wires == 0:
         # empty circuit
-        return "\n".join(lines)
+        return "\n".join(lines) + "\n"
 
     # create the quantum and classical registers
     lines.append(f"qreg q[{len(wires)}];")
@@ -179,7 +179,7 @@ def _tape_openqasm(
             wire_indx = tape.wires.index(w)
             lines.append(f"measure q[{wire_indx}] -> c[{wire_indx}];")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n"
 
 
 @overload
