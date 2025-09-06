@@ -361,3 +361,8 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 [[modules]]
 path = "pennylane.workflow"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
+
+[[modules]]
+path = "pennylane.estimator"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
