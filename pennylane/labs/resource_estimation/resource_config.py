@@ -62,16 +62,16 @@ class ResourceConfig:
             ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
             ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
         }
-        self._decomp_tracker = {}
-        self._adj_decomp_tracker = {}
-        self._ctrl_decomp_tracker = {}
-        self._pow_decomp_tracker = {}
+        self._custom_decomps = {}
+        self._adj_custom_decomps = {}
+        self._ctrl_custom_decomps = {}
+        self._pow_custom_decomps = {}
 
     def __str__(self):
-        return f"ResourceConfig(conf = {self.conf}, decomps = {self._decomp_tracker}, {self._adj_decomp_tracker}, {self._ctrl_decomp_tracker}, {self._pow_decomp_tracker})"
+        return f"ResourceConfig(conf = {self.conf}, decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
 
     def __repr__(self) -> str:
-        return f"ResourceConfig(conf = {self.conf}), decomps = {self._decomp_tracker}, {self._adj_decomp_tracker}, {self._ctrl_decomp_tracker}, {self._pow_decomp_tracker}"
+        return f"ResourceConfig(conf = {self.conf}), decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self.v}, {self._pow_custom_decomps}"
 
     def set_decomp(
         self, op_type: type[ResourceOperator], decomp_func: Callable, type: str = None
@@ -123,10 +123,10 @@ class ResourceConfig:
 
         """
         if type == "adj":
-            self._adj_decomp_tracker[op_type] = decomp_func
+            self._adj_custom_decomps[op_type] = decomp_func
         elif type == "ctrl":
-            self._ctrl_decomp_tracker[op_type] = decomp_func
+            self._ctrl_custom_decomps[op_type] = decomp_func
         elif type == "pow":
-            self._pow_decomp_tracker[op_type] = decomp_func
+            self._pow_custom_decomps[op_type] = decomp_func
         else:
-            self._decomp_tracker[op_type] = decomp_func
+            self._custom_decomps[op_type] = decomp_func
