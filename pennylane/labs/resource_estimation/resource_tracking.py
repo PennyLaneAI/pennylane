@@ -33,7 +33,6 @@ from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
     ResourceAdjoint,
     ResourceControlled,
     ResourcePow,
-    ResourceProd,
 )
 from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation

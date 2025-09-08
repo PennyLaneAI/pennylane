@@ -14,7 +14,6 @@
 """
 Test the core resource tracking functionality.
 """
-import copy
 from collections import defaultdict
 
 import pytest
