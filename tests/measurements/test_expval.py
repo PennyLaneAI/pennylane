@@ -114,7 +114,7 @@ class TestExpval:
             "complex128",
         ],
     )
-    def test_sample_dtype_combined(self, interface, dtype):
+    def test_sample_dtype(self, interface, dtype):
         """Test that the dtype argument changes the dtype of the returned samples"""
 
         @qml.set_shots(10)
@@ -129,7 +129,7 @@ class TestExpval:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype", ["float16", "float32", "float64", "complex64", "complex128"])
-    def test_jax_jit(self, dtype):
+    def test_jax_jit_dtype(self, dtype):
         """Test that jitting works when the dtype argument is provided"""
 
         import jax
