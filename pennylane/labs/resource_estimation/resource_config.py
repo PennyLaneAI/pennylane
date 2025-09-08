@@ -17,28 +17,27 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-)
 from pennylane.labs.resource_estimation.ops.op_math.controlled_ops import (
     ResourceCRX,
     ResourceCRY,
     ResourceCRZ,
 )
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.labs.resource_estimation.templates import (
-    ResourceSelectPauliRot,
-    ResourceQubitUnitary,
-    ResourceQROMStatePreparation,
-    ResourceMPSPrep,
     ResourceAliasSampling,
-    ResourceSelectTHC,
+    ResourceMPSPrep,
     ResourcePrepTHC,
+    ResourceQROMStatePreparation,
     ResourceQubitizeTHC,
+    ResourceQubitUnitary,
+    ResourceSelectPauliRot,
+    ResourceSelectTHC,
 )
-from pennylane.labs.resource_estimation.ops.op_math.symbolic import ResourceAdjoint
 
 
 class ResourceConfig:

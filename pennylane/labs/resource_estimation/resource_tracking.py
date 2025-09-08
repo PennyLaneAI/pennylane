@@ -16,6 +16,16 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourcePow,
+)
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
 from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
@@ -23,16 +33,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-)
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-)
-from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
-    ResourceAdjoint,
-    ResourceControlled,
-    ResourcePow,
 )
 from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation
@@ -309,11 +309,7 @@ def _update_counts_from_compressed_res_op(
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
     kwargs = config.conf.get(cp_rep.op_type, {})
-    if (
-        cp_rep.op_type == ResourceAdjoint
-        or cp_rep.op_type == ResourceControlled
-        or cp_rep.op_type == ResourcePow
-    ):
+    if cp_rep.op_type in (ResourceAdjoint, ResourceControlled, ResourcePow):
         base_op_type = cp_rep.params["base_cmpr_op"].op_type
         kwargs = config.conf.get(base_op_type, {})
 
