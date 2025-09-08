@@ -49,6 +49,7 @@ def _rz_phase_gradient(
         qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
         qml.SemiAdder(aux_wires, phase_grad_wires, work_wires),
         qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
+        qml.GlobalPhase(1j * 7 * np.pi / 8),
     ]
     return ops
 

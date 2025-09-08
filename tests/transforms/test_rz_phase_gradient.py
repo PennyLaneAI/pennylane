@@ -94,4 +94,4 @@ def test_integration_rz_phase_gradient():
     output_expected = np.kron(output_expected, np.eye(2 ** (len(wire_order) - 1))[0])
 
     assert np.isclose(np.abs(output.conj() @ output_expected), 1)
-    assert np.allclose(output * np.exp(-1j * 7 * np.pi / 8), output_expected)
+    assert np.allclose(output, output_expected)
