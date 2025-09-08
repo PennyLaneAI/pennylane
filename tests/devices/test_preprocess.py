@@ -891,10 +891,10 @@ class TestDeviceResolveDynamicWires:
         with pytest.raises(
             qml.exceptions.AllocationError, match="Not enough available wires on device"
         ):
-            device_resolve_dynamic_wires(tape, wires=(0, 1), use_resets=False)
+            device_resolve_dynamic_wires(tape, wires=(0, 1), allow_resets=False)
 
     def test_no_resets_min_int(self):
-        """Test that if a min_int is specified along with use_resets=False, then fresh wires keep getting added."""
+        """Test that if a min_int is specified along with allow_resets=False, then fresh wires keep getting added."""
 
         alloc1 = qml.allocation.Allocate.from_num_wires(1)
         dealloc1 = qml.allocation.Deallocate(alloc1.wires)
@@ -905,7 +905,7 @@ class TestDeviceResolveDynamicWires:
             [qml.Z(0), alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
         )
 
-        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None, use_resets=False)
+        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None, allow_resets=False)
 
         expected = qml.tape.QuantumScript([qml.Z(0), qml.X(1), qml.Y(2)])
         qml.assert_equal(expected, new_tape)

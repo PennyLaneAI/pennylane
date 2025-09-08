@@ -19,7 +19,7 @@ from collections.abc import Hashable
 from functools import lru_cache
 
 from pennylane.capture import enabled as capture_enabled
-from pennylane.exceptions import DecompositionUndefinedError, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.wires import Wires
 
 from .measurement_value import MeasurementValue
@@ -137,10 +137,6 @@ class MidMeasureMP(MeasurementProcess):
 
     has_matrix = False
     has_decomposition = False
-
-    def decomposition(self):
-        """Decomposition for MidMeasureMP."""
-        raise DecompositionUndefinedError
 
     _shortname = "measure"
 

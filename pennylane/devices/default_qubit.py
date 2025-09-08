@@ -89,29 +89,6 @@ _special_operator_support = {
 """Map from gates with a special support condition."""
 
 
-class _Partial:
-    """A version of partial that has equality."""
-
-    def __init__(self, f, *args, **kwargs):
-        self.f = f
-        self.args = args
-        self.kwargs = kwargs
-
-    def __call__(self, *args, **kwargs):
-        return self.f(*self.args, *args, **self.kwargs, **kwargs)
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, _Partial)
-            and self.f == other.f
-            and self.args == other.args
-            and self.kwargs == other.kwargs
-        )
-
-    def __repr__(self):
-        return f"<_Partial: {self.f}, {self.args}, {self.kwargs}>"
-
-
 def stopping_condition(op: Operator, allow_mcms=True) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
     if constraint := _special_operator_support.get(op.name):
@@ -121,6 +98,11 @@ def stopping_condition(op: Operator, allow_mcms=True) -> bool:
     if isinstance(op, MidMeasureMP):
         return allow_mcms
     return op.has_matrix or op.has_sparse_matrix
+
+
+# need to create these once so we can compare in tests
+allow_mcms_stopping_condition = partial(stopping_condition, allow_mcms=True)
+no_mcms_stopping_condition = partial(stopping_condition, allow_mcms=False)
 
 
 def stopping_condition_shots(op: Operator, allow_mcms=True) -> bool:
@@ -609,19 +591,17 @@ class DefaultQubit(Device):
 
         if config.mcm_config.mcm_method == "deferred":
             transform_program.add_transform(defer_measurements, allow_postselect=True)
+            _stopping_condition = no_mcms_stopping_condition
+        else:
+            _stopping_condition = allow_mcms_stopping_condition
         transform_program.add_transform(
             decompose,
-            stopping_condition=_Partial(
-                stopping_condition, allow_mcms=config.mcm_config.mcm_method != "deferred"
-            ),
-            stopping_condition_shots=_Partial(
-                stopping_condition_shots, allow_mcms=config.mcm_config.mcm_method != "deferred"
-            ),
+            stopping_condition=_stopping_condition,
             name=self.name,
         )
-        _use_resets = config.mcm_config.mcm_method != "deferred"
+        _allow_resets = config.mcm_config.mcm_method != "deferred"
         transform_program.add_transform(
-            device_resolve_dynamic_wires, wires=self.wires, use_resets=_use_resets
+            device_resolve_dynamic_wires, wires=self.wires, allow_resets=_allow_resets
         )
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
@@ -721,16 +701,15 @@ class DefaultQubit(Device):
     def _setup_mcm_config(self, config, tape) -> MCMConfig:
         mcm_config = config.mcm_config
 
+        if capture.enabled():
+            return self._capture_setup_mcm_config(mcm_config)
+
         final_mcm_method = mcm_config.mcm_method
         if mcm_config.mcm_method is None:
             final_mcm_method = "one-shot" if tape is not None and tape.shots else "deferred"
         elif mcm_config.mcm_method == "device":
             final_mcm_method = "tree-traversal"
-        mcm_config = replace(mcm_config, mcm_method=final_mcm_method)
-
-        if capture.enabled():
-            return self._capture_setup_mcm_config(mcm_config)
-        return mcm_config
+        return replace(mcm_config, mcm_method=final_mcm_method)
 
     def _capture_setup_mcm_config(self, mcm_config):
         mcm_updated_values = {}

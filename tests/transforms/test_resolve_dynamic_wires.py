@@ -153,7 +153,7 @@ class TestFirstExtraction:
         )
 
         with pytest.raises(qml.exceptions.AllocationError, match="no wires left to allocate"):
-            qml.transforms.resolve_dynamic_wires(tape, any_state=("a",), use_resets=False)
+            qml.transforms.resolve_dynamic_wires(tape, any_state=("a",), allow_resets=False)
 
 
 class TestReuse:
@@ -229,10 +229,10 @@ class TestReuse:
         )
 
         with pytest.raises(qml.exceptions.AllocationError, match="no wires left to allocate."):
-            qml.transforms.resolve_dynamic_wires(tape, zeroed=("a",), use_resets=False)
+            qml.transforms.resolve_dynamic_wires(tape, zeroed=("a",), allow_resets=False)
 
     def test_no_resets_min_int(self):
-        """Test that if a min_int is specified along with use_resets=False, then fresh wires keep getting added."""
+        """Test that if a min_int is specified along with allow_resets=False, then fresh wires keep getting added."""
 
         alloc1 = qml.allocation.Allocate.from_num_wires(1, state=AllocateState.ANY, restored=False)
         dealloc1 = qml.allocation.Deallocate(alloc1.wires)
@@ -243,7 +243,7 @@ class TestReuse:
             [alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
         )
 
-        [new_tape], _ = qml.transforms.resolve_dynamic_wires(tape, use_resets=False, min_int=2)
+        [new_tape], _ = qml.transforms.resolve_dynamic_wires(tape, allow_resets=False, min_int=2)
 
         expected = qml.tape.QuantumScript([qml.X(2), qml.Y(3)])
         qml.assert_equal(expected, new_tape)

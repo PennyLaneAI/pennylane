@@ -340,11 +340,6 @@ class NullQubit(Device):
         """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return execution_config
 
-    @property
-    def _max_workers(self):
-        """No-op property to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
-        return None
-
     # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
