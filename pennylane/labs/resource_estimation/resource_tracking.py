@@ -68,6 +68,7 @@ DefaultGateSet = {
 }
 
 
+@singledispatch
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set = None,
@@ -132,25 +133,12 @@ def estimate_resources(
 
     """
 
-    return _estimate_resources(obj, gate_set, config, work_wires, tight_budget)
-
-
-@singledispatch
-def _estimate_resources(
-    obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set = None,
-    config: ResourceConfig = ResourceConfig(),
-    work_wires: int | dict = 0,
-    tight_budget: bool = False,
-) -> Resources | Callable:
-    r"""Raise error if there is no implementation registered for the object type."""
-
     raise TypeError(
         f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Resources, Callable or ResourceOperator"
     )
 
 
-@_estimate_resources.register
+@estimate_resources.register
 def resources_from_qfunc(
     obj: Callable,
     gate_set: set = None,
@@ -193,7 +181,7 @@ def resources_from_qfunc(
     return wrapper
 
 
-@_estimate_resources.register
+@estimate_resources.register
 def resources_from_resource(
     obj: Resources,
     gate_set: set = None,
@@ -233,7 +221,7 @@ def resources_from_resource(
     return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
 
 
-@_estimate_resources.register
+@estimate_resources.register
 def resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set = None,
@@ -254,7 +242,7 @@ def resources_from_resource_ops(
     )
 
 
-@_estimate_resources.register
+@estimate_resources.register
 def resources_from_pl_ops(
     obj: Operation,
     gate_set: set = None,
