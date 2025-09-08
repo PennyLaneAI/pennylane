@@ -81,7 +81,7 @@ HLO_SignedInt = _create_param_constrained_type(IntegerType, _HLO_INT_WIDTHS, Sig
 HLO_UnsignedInt = _create_param_constrained_type(IntegerType, _HLO_INT_WIDTHS, Signedness.UNSIGNED)
 HLO_SignlessInt = _create_param_constrained_type(IntegerType, _HLO_INT_WIDTHS, None)
 
-HLO_Int: TypeAlias = HLO_UnsignedInt | HLO_SignedInt
+HLO_Int: TypeAlias = HLO_UnsignedInt | HLO_SignlessInt
 HLO_IntTensor: TypeAlias = TensorType[HLO_Int]
 
 _HLO_INT_OR_PRED_WIDTHS = [1, 2, 4, 8, 16, 32, 64]
