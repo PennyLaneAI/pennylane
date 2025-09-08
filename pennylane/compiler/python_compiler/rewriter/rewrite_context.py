@@ -14,7 +14,7 @@
 """A context that maintains state and configuration information for rewriting
 hybrid workflows."""
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from functools import singledispatchmethod
 from typing import Any
@@ -50,7 +50,7 @@ class AbstractWire:
 class WireQubitMap:
     """Class to maintain two-way mapping between wire labels and SSA qubits."""
 
-    wires: tuple[int] | None = field(default=None)
+    wires: tuple[int | AbstractWire, ...] | None = None
     """Tuple containing all available wire labels. None if not provided."""
 
     wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = {}
@@ -59,10 +59,6 @@ class WireQubitMap:
 
     qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire] = {}
     """Map from qubit SSAValues to their corresponding wire labels."""
-
-    def __post_init__(self):
-        if self.wires is not None:
-            self.wires = tuple(self.wires)
 
     def __contains__(self, key: int | AbstractWire | quantum.QubitSSAValue) -> bool:
         """Check if the map contains a wire label or qubit."""
@@ -161,7 +157,7 @@ class WireQubitMap:
         self.qubit_to_wire_map[new_qubit] = wire
 
 
-@dataclass(init=False)
+@dataclass
 class RewriteContext:
     """Rewrite context data class.
 
@@ -182,10 +178,6 @@ class RewriteContext:
 
     qreg: quantum.QuregSSAValue | None = None
     """Most up-to-date quantum register."""
-
-    def __init__(self, wires: Sequence[int] | None = None):
-        if wires is not None:
-            self.wire_qubit_map = WireQubitMap(wires=wires)
 
     # TODO: Figure out if this method should be removed.
     def get_wire_from_extract_op(self, op: quantum.ExtractOp, update=True) -> int | AbstractWire:
