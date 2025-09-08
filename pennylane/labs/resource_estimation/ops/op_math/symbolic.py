@@ -189,6 +189,9 @@ class ResourceAdjoint(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+
         try:
             return base_class.default_adjoint_resource_decomp(**base_params, **kwargs)
         except ResourcesNotDefined:
@@ -421,6 +424,8 @@ class ResourceControlled(ResourceOperator):
         """
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
         try:
             return base_class.default_controlled_resource_decomp(
                 ctrl_num_ctrl_wires=num_ctrl_wires,
@@ -652,6 +657,8 @@ class ResourcePow(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
 
         if z == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]

@@ -20,6 +20,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -1433,11 +1434,10 @@ class TestResourceQubitUnitary:
     def test_default_resources(self, num_wires, eps, expected_res):
         """Test that the resources are correct."""
         if eps is None:
-            config = {"precision_qubit_unitary": 1e-9}
+            config = ResourceConfig()
+            kwargs = config.conf[plre.ResourceQubitUnitary]
             assert (
-                plre.ResourceQubitUnitary.default_resource_decomp(
-                    num_wires=num_wires, precision=eps, config=config
-                )
+                plre.ResourceQubitUnitary.default_resource_decomp(num_wires=num_wires, **kwargs)
                 == expected_res
             )
         else:
@@ -1522,13 +1522,11 @@ class TestResourceSelectPauliRot:
     def test_default_resources(self, num_ctrl_wires, rotation_axis, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
-            config = {"precision_select_pauli_rot": 1e-9}
+            config = ResourceConfig()
+            kwargs = config.conf[plre.ResourceSelectPauliRot]
             assert (
                 plre.ResourceSelectPauliRot.default_resource_decomp(
-                    num_ctrl_wires=num_ctrl_wires,
-                    rotation_axis=rotation_axis,
-                    precision=precision,
-                    config=config,
+                    num_ctrl_wires=num_ctrl_wires, rotation_axis=rotation_axis, **kwargs
                 )
                 == expected_res
             )
@@ -1642,13 +1640,11 @@ class TestResourceSelectPauliRot:
     def test_phase_gradient_resources(self, num_ctrl_wires, rotation_axis, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
-            config = {"precision_select_pauli_rot": 1e-9}
+            config = ResourceConfig()
+            kwargs = config.conf[plre.ResourceSelectPauliRot]
             assert (
                 plre.ResourceSelectPauliRot.phase_grad_resource_decomp(
-                    num_ctrl_wires=num_ctrl_wires,
-                    rotation_axis=rotation_axis,
-                    precision=precision,
-                    config=config,
+                    num_ctrl_wires=num_ctrl_wires, rotation_axis=rotation_axis, **kwargs
                 )
                 == expected_res
             )

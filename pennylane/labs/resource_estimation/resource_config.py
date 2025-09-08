@@ -22,6 +22,11 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     ResourceRY,
     ResourceRZ,
 )
+from pennylane.labs.resource_estimation.ops.op_math.controlled_ops import (
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+)
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.labs.resource_estimation.templates import (
     ResourceSelectPauliRot,
@@ -46,6 +51,9 @@ class ResourceConfig:
             ResourceRX: {"eps": 1e-9},
             ResourceRY: {"eps": 1e-9},
             ResourceRZ: {"eps": 1e-9},
+            ResourceCRX: {"eps": 1e-9},
+            ResourceCRY: {"eps": 1e-9},
+            ResourceCRZ: {"eps": 1e-9},
             ResourceSelectPauliRot: {"precision": 1e-9},
             ResourceQubitUnitary: {"precision": 1e-9},
             ResourceQROMStatePreparation: {"precision": 1e-9},
@@ -54,7 +62,6 @@ class ResourceConfig:
             ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
             ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
             ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
-            ResourceAdjoint: {"rotation_precision": 15, "coeff_precision": 15}
         }
         self._decomp_tracker = {}
         self._adj_decomp_tracker = {}

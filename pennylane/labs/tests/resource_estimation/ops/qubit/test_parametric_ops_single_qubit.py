@@ -143,7 +143,10 @@ class TestPauliRotation:
         config = ResourceConfig()
         config.conf[plre.ResourceRX]["eps"] = epsilon
         config.conf[plre.ResourceRY]["eps"] = epsilon
-        config.conf[plre.ResourceRY]["eps"] = epsilon
+        config.conf[plre.ResourceRZ]["eps"] = epsilon
+        config.conf[plre.ResourceCRX]["eps"] = epsilon
+        config.conf[plre.ResourceCRY]["eps"] = epsilon
+        config.conf[plre.ResourceCRZ]["eps"] = epsilon
 
         r1 = plre.estimate_resources(c, config=config)
         r2 = plre.estimate_resources(c_op, config=config)

@@ -29,6 +29,12 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     ResourceRY,
     ResourceRZ,
 )
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourcePow,
+    ResourceProd,
+)
 from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -304,13 +310,21 @@ def _update_counts_from_compressed_res_op(
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
     kwargs = config.conf.get(cp_rep.op_type, {})
+    if (
+        cp_rep.op_type == ResourceAdjoint
+        or cp_rep.op_type == ResourceControlled
+        or cp_rep.op_type == ResourcePow
+    ):
+        base_op_type = cp_rep.params["base_cmpr_op"].op_type
+        kwargs = config.conf.get(base_op_type, {})
+
     params = {key: value for key, value in cp_rep.params.items() if value is not None}
     filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
 
-    default_resource_decomp = cp_rep.op_type.default_resource_decomp(**params, **filtered_kwargs)
-    qubit_alloc_sum = _sum_allocated_wires(default_resource_decomp)
+    resource_decomp = cp_rep.op_type.default_resource_decomp(**params, **filtered_kwargs)
+    qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
-    for action in default_resource_decomp:
+    for action in resource_decomp:
         if isinstance(action, GateCount):
             _update_counts_from_compressed_res_op(
                 action.gate,
