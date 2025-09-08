@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc import RotXZX, get_byproduct_corrections
+from pennylane.ftqc import RotXZX, apply_byproduct_corrections
 from pennylane.ftqc.pauli_tracker import (
     _parse_mid_measurements,
     commute_clifford_op,
@@ -239,7 +239,7 @@ class TestOfflineCorrection:
         mid_meas = [random.choice([0, 1]) for _ in range(8)]
 
         with pytest.raises(NotImplementedError):
-            _ = get_byproduct_corrections(tape, mid_meas, [1])
+            _ = apply_byproduct_corrections(tape, mid_meas, [1])
 
     @pytest.mark.parametrize(
         "ops, mid_meas, sample_wires, measures_expected",
@@ -313,6 +313,6 @@ class TestOfflineCorrection:
 
         measures, expected = measures_expected
 
-        corrected_meas = get_byproduct_corrections(tape, mid_meas, measures)
+        corrected_meas = apply_byproduct_corrections(tape, mid_meas, measures)
 
         assert np.allclose(corrected_meas, expected)

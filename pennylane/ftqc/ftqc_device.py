@@ -64,6 +64,23 @@ class FTQCQubit(Device):
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
     def preprocess_transforms(self, execution_config=None):
+        """Returns the transform program to preprocess a circuit for execution.
+
+        Args:
+            execution_config (ExecutionConfig): The execution configuration object
+
+        Returns:
+            TransformProgram: A transform program that is called before execution
+
+        The transform program is composed of a list of individual transforms. For this device,
+        it processes a general circuit to one that is expressed in the gate-set needed for
+        conversion to the textbook MBQC formalism, including (but not limited to):
+
+        * Splitting a circuit with measurements of non-commuting observables or Hamiltonians into multiple executions.
+        * Diagonalizing and converting all measurements to be derived from sampling the computational basis.
+        * Decomposition of operations and measurements to the MBQC gate-set
+        * Validation of wires, measurements, and observables.
+        """
 
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -79,36 +96,13 @@ class FTQCQubit(Device):
             name=self.name,
         )
 
-        # convert to mbqc formalism
+        # convert to mbqc gate set
         program.add_transform(split_non_commuting)
         program.add_transform(measurements_from_samples)
 
         program.add_transform(convert_to_mbqc_gateset)
         program.add_transform(combine_global_phases)
         program.add_transform(split_at_non_clifford_gates)
-        program.add_transform(convert_to_mbqc_formalism)
-
-        # validate that conversion didn't use too many wires
-        program.add_transform(
-            validate_device_wires,
-            wires=self.backend.wires,
-            name=f"{self.name}.{self.backend.name}",
-        )
-
-        # set up for backend execution (MCM handling, decomposing GraphStatePrep)
-        if self.backend.diagonalize_mcms:
-            program.add_transform(diagonalize_mcms)
-        program.add_transform(
-            qml.devices.preprocess.mid_circuit_measurements,
-            device=self,
-            mcm_config=execution_config.mcm_config,
-        )
-        program.add_transform(
-            qml.devices.preprocess.decompose,
-            stopping_condition=lambda op: not isinstance(op, GraphStatePrep),
-            skip_initial_state_prep=True,
-            name=self.name,
-        )
 
         return program
 
@@ -180,6 +174,47 @@ class LightningQubitBackend:
     name = "lightning"
     config_filepath = Path(__file__).parent / "lightning_backend.toml"
 
+    def preprocess_transforms(self, execution_config=DefaultExecutionConfig):
+        """Returns the transform program to preprocess a circuit for execution on the backend.
+
+        Args:
+            execution_config (ExecutionConfig): The execution configuration object
+
+        Returns:
+            TransformProgram: A transform program that is called before execution
+
+        The transform program is composed of a list of individual transforms. For this device,
+        it assumes the circuit is expressed in the MBQC formalism. Transforms for backend include:
+
+        * Any handling needed for the backed to process mid-circuit measurements
+        * Decomposition of graph state operations to their component parts
+        * Validation of wires
+        """
+
+        program = qml.transforms.core.TransformProgram()
+
+        # validate that conversion didn't use too many wires
+        program.add_transform(
+            validate_device_wires,
+            wires=self.wires,
+            name=f"{self.name} FTQC backend",
+        )
+
+        program.add_transform(diagonalize_mcms)
+        program.add_transform(
+            qml.devices.preprocess.mid_circuit_measurements,
+            device=self,
+            mcm_config=execution_config.mcm_config,
+        )
+        program.add_transform(
+            qml.devices.preprocess.decompose,
+            stopping_condition=lambda op: not isinstance(op, GraphStatePrep),
+            skip_initial_state_prep=True,
+            name=self.name,
+        )
+
+        return program
+
     def __init__(self):
         self.diagonalize_mcms = True
         self.wires = qml.wires.Wires(range(25))
@@ -195,9 +230,13 @@ class LightningQubitBackend:
 
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
-        """
+        """        
         if execution_config is None:
             execution_config = ExecutionConfig()
+            
+        preprocess_transforms = self.preprocess_transforms(execution_config)
+        sequences, mcm_corrections = convert_to_mbqc_formalism(sequences)
+        sequences, postprocess_fns = preprocess_transforms(sequences)
 
         results = []
         for sequence in sequences:
@@ -208,7 +247,9 @@ class LightningQubitBackend:
                     f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
                 )
 
-        return tuple(results)
+        results = mcm_corrections(results)
+        return postprocess_fns(results)
+
 
     def _execute_sequence(self, sequence, execution_config):
         """Execute a single QuantumScriptSecuence.
@@ -305,6 +346,47 @@ class NullQubitBackend:
 
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
+    def preprocess_transforms(self, execution_config=DefaultExecutionConfig):
+        """Returns the transform program to preprocess a circuit for execution on the backend.
+
+        Args:
+            execution_config (ExecutionConfig): The execution configuration object
+
+        Returns:
+            TransformProgram: A transform program that is called before execution
+
+        The transform program is composed of a list of individual transforms. For this device,
+        it assumes the circuit is expressed in the MBQC formalism. Transforms for backend include:
+
+        * Any handling needed for the backed to process mid-circuit measurements
+        * Decomposition of graph state operations to their component parts
+        * Validation of wires
+        """
+
+        program = qml.transforms.core.TransformProgram()
+
+        # validate that conversion didn't use too many wires
+        program.add_transform(
+            validate_device_wires,
+            wires=self.wires,
+            name=f"{self.name} FTQC backend",
+        )
+
+        program = qml.transforms.core.TransformProgram()
+        program.add_transform(
+            qml.devices.preprocess.mid_circuit_measurements,
+            device=self,
+            mcm_config=execution_config.mcm_config,
+        )
+        program.add_transform(
+            qml.devices.preprocess.decompose,
+            stopping_condition=lambda op: not isinstance(op, GraphStatePrep),
+            skip_initial_state_prep=True,
+            name=self.name,
+        )
+
+        return program
+
     def execute(self, sequences, execution_config):
         """Mock execution of a sequence or a batch of sequences and turn it into null results.
 
@@ -316,6 +398,11 @@ class NullQubitBackend:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
         tapes_to_execute = []
+
+        preprocess_transforms = self.preprocess_transforms(execution_config)
+        sequences, mcm_corrections = convert_to_mbqc_formalism(sequences)
+        sequences, postprocess_fns = preprocess_transforms(sequences)
+
         for sequence in sequences:
             if isinstance(sequence, QuantumScriptSequence):
                 shots = sequence.shots.total_shots
@@ -326,6 +413,15 @@ class NullQubitBackend:
                     f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
                 )
 
-        return tuple(
-            self.device.execute(tapes_to_execute, execution_config),
-        )
+        result = tuple(self.device.execute(tapes_to_execute, execution_config))
+
+        # ToDo: this doesn't work yet, I'm getting a shape wrong somewhere
+        # fix it or drop the NullQubit backend
+        result = mcm_corrections(result)
+
+        return postprocess_fns(result)
+
+#         return tuple(
+#             self.device.execute(tapes_to_execute, execution_config),
+#         )
+

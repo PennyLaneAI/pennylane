@@ -42,7 +42,7 @@ from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
 from .utils import QubitMgr
-from .pauli_tracker import get_byproduct_corrections
+from .pauli_tracker import apply_byproduct_corrections
 
 __all__ = [
     "GraphStatePrep",
@@ -63,5 +63,5 @@ __all__ = [
     "convert_to_mbqc_gateset",
     "generate_lattice",
     "make_graph_state",
-    "get_byproduct_corrections",
+    "apply_byproduct_corrections",
 ]
