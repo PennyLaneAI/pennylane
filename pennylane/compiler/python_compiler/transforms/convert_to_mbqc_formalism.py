@@ -53,7 +53,7 @@ def _generate_adj_matrix(op_name: str) -> list:
     Args:
         op_name (str): The gate name. Note that only a gate in the MBQC gate set is supported.
     Returns:
-        An adjaceny matrix represents the connectivity of auxiliary qubits.
+        An adjacency matrix representing the connectivity of auxiliary qubits.
     """
     if op_name in ["RotXZX", "RZ", "Hadamard", "S"]:
         return _generate_one_wire_op_adj_matrix()
