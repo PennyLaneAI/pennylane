@@ -823,6 +823,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
+  [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
+
 * Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
   [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
 
