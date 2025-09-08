@@ -392,14 +392,7 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
     return Resources(new_wire_manager, new_gate_types)
 
 
-def _combine_dict(dict1: defaultdict, dict2: defaultdict) -> defaultdict:
-    r"""Private function which combines two dictionaries together."""
-    combined_dict = copy.copy(dict1)
-
-    for k, v in dict2.items():
-        combined_dict[k] += v
-
-    return combined_dict
+    return defaultdict(int, Counter(dict1) + Counter(dict2))
 
 
 def _scale_dict(dict1: defaultdict, scalar: int) -> defaultdict:
