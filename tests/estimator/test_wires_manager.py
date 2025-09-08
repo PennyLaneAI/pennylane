@@ -22,6 +22,7 @@ from pennylane.estimator import Allocate, Deallocate
 from pennylane.estimator.wires_manager import WireResourceManager
 from pennylane.queuing import AnnotatedQueue
 
+
 # pylint: disable= no-self-use
 class TestWireResourceManager:
     """Test the methods and attributes of the WireResourceManager class"""
