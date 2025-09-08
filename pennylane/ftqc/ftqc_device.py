@@ -230,8 +230,7 @@ class LightningQubitBackend:
 
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
-        """
-        
+        """        
         if execution_config is None:
             execution_config = ExecutionConfig()
             
@@ -249,8 +248,8 @@ class LightningQubitBackend:
                 )
 
         results = mcm_corrections(results)
-
         return postprocess_fns(results)
+
 
     def _execute_sequence(self, sequence, execution_config):
         """Execute a single QuantumScriptSecuence.
@@ -421,3 +420,8 @@ class NullQubitBackend:
         result = mcm_corrections(result)
 
         return postprocess_fns(result)
+
+#         return tuple(
+#             self.device.execute(tapes_to_execute, execution_config),
+#         )
+
