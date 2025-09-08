@@ -27,7 +27,7 @@ class WireResourceManager:
     The manager tracks the state of three distinct types of qubits:
 
     * Algorithmic Qubits: The core qubits used by the quantum algorithm.
-    * Clean Qubits: Auxiliary qubits that are in the :math:`|0\rangle state. They are converted
+    * Clean Qubits: Auxiliary qubits that are in the :math:`|0\rangle` state. They are converted
       to dirty qubits upon allocation.
     * Dirty Qubits: Auxiliary qubits that are in an unknown state. They are converted to
       clean qubits when they are freed.
