@@ -15,10 +15,21 @@ r"""Base class for storing resources."""
 from __future__ import annotations
 
 import copy
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from decimal import Decimal
 
 from .wires_manager import WireResourceManager
+
+DefaultGateSet = {
+    "X",
+    "Y",
+    "Z",
+    "Hadamard",
+    "CNOT",
+    "S",
+    "T",
+    "Toffoli",
+}
 
 
 class Resources:
@@ -48,12 +59,12 @@ class Resources:
      Total wires: 3
         algorithmic wires: 0
         allocated wires: 3
-             clean wires: 3
+                 clean wires: 3
              dirty wires: 0
      Total gates : 20
-      'Hadamard': 10,
       'X': 7,
-      'Y': 3
+      'Y': 3,
+      'Hadamard': 10
 
     .. details::
         :title: Usage Details
@@ -97,25 +108,25 @@ class Resources:
             --- Resources: ---
              Total wires: 6
                 algorithmic wires: 3
-                allocated qubits: 3
-                     clean qubits: 2
-                     dirty qubits: 1
+                allocated wires: 3
+                         clean wires: 2
+                         dirty wires: 1
              Total gates : 17
-              'Hadamard': 10,
+              'CNOT': 2,
               'X': 5,
-              'CNOT': 2
+              'Hadamard': 10
 
             >>> print(res2)
             --- Resources: ---
-             Total qubits: 7
-                algorithmic qubits: 4
-                allocated qubits: 3
-                     clean qubits: 1
-                     dirty qubits: 2
+             Total wires: 7
+                algorithamic wires: 4
+                allocated wires: 3
+                         clean wires: 1
+                         dirty wires: 2
              Total gates : 24
-              'Hadamard': 15,
+              'CNOT': 4,
               'Z': 5,
-              'CNOT': 4
+              'Hadamard': 15
 
 
         Specifically, users can add together two instances of resources using the :code:`+` and
@@ -127,30 +138,30 @@ class Resources:
             >>> res_in_series = res1 + res2
             >>> print(res_in_series)
             --- Resources: ---
-             Total qubits: 9
-                algorithmic qubits: 4
-                allocated qubits: 5
-                     clean qubits: 2
-                     dirty qubits: 3
+             Total wires: 9
+                algorithmic wires: 4
+                allocated wires: 5
+                         clean wires: 2
+                         dirty wires: 3
              Total gates : 41
-              'Hadamard': 25,
-              'X': 5,
               'CNOT': 6,
-              'Z': 5
+              'X': 5,
+              'Z': 5,
+              'Hadamard': 25
 
             >>> res_in_parallel = res1 & res2
             >>> print(res_in_parallel)
             --- Resources: ---
-             Total qubits: 12
-                algorithmic qubits: 7
-                allocated qubits: 5
-                     clean qubits: 2
-                     dirty qubits: 3
+             Total wires: 12
+                algorithmic wires: 7
+                allocated wires: 5
+                         clean wires: 2
+                         dirty wires: 3
              Total gates : 41
-              'Hadamard': 25,
-              'X': 5,
               'CNOT': 6,
-              'Z': 5
+              'X': 5,
+              'Z': 5,
+              'Hadamard': 25
 
         Similarly, users can scale up the resources for an operator by some integer factor using
         the :code:`*` and :code:`@` operators. These represent scaling the resources assuming the
@@ -161,28 +172,28 @@ class Resources:
             >>> res_in_series = 5 * res1
             >>> print(res_in_series)
             --- Resources: ---
-             Total qubits: 10
-                algorithmic qubits: 3
-                allocated qubits: 7
-                     clean qubits: 2
-                     dirty qubits: 5
+             Total wires: 10
+                algorithmic wires: 3
+                allocated wires: 7
+                         clean wires: 2
+                         dirty wires: 5
              Total gates : 85
-              'Hadamard': 50,
+              'CNOT': 10,
               'X': 25,
-              'CNOT': 10
+              'Hadamard': 50
 
             >>> res_in_parallel = 5 @ res1
             >>> print(res_in_parallel)
             --- Resources: ---
-             Total qubits: 22
-                algorithmic qubits: 15
-                allocated qubits: 7
-                     clean qubits: 2
-                     dirty qubits: 5
+             Total wires: 22
+                algorithmic wires: 15
+                allocated wires: 7
+                         clean wires: 2
+                         dirty wires: 5
              Total gates : 85
-              'Hadamard': 50,
+              'CNOT': 10,
               'X': 25,
-              'CNOT': 10
+              'Hadamard': 50
 
     """
 
@@ -227,7 +238,7 @@ class Resources:
     __rmatmul__ = __matmul__
 
     @property
-    def clean_gate_counts(self):
+    def gate_counts(self):
         r"""Produce a dictionary which stores the gate counts
         using the operator names as keys.
 
@@ -235,23 +246,33 @@ class Resources:
             dict: A dictionary with operator names (str) as keys
                 and the number of occurances in the circuit (int) as values.
         """
-        clean_gate_counts = defaultdict(int)
+        gate_counts = defaultdict(int)
 
         for cmp_res_op, counts in self.gate_types.items():
-            clean_gate_counts[cmp_res_op.name] += counts
+            gate_counts[cmp_res_op.name] += counts
 
-        return clean_gate_counts
+        return gate_counts
 
     def __str__(self):
         """Generates a string representation of the Resources object."""
+
+        # --- Resources: ---
+        # Total wires: 29
+        #    algorithmic wires: 20
+        #    allocated wires: 9
+        #         clean wires: 9
+        #   	  dirty wires: 0
+        # Total gates : 96
+        #  'Toffoli': 9,
+        #  'CNOT': 60,
+        #  'Hadamard': 27
+
         wm = self.wire_manager
         total_wires = wm.total_wires
-        total_gates = sum(self.clean_gate_counts.values())
+        total_gates = sum(self.gate_counts.values())
 
         total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
-        total_wires_str = (
-            str(total_wires) if total_wires <= 9999 else f"{Decimal(total_wires):.3E}"
-        )
+        total_wires_str = str(total_wires) if total_wires <= 9999 else f"{Decimal(total_wires):.3E}"
 
         items = "--- Resources: ---\n"
         items += f" Total wires: {total_wires_str}\n"
@@ -261,10 +282,25 @@ class Resources:
 
         items += f" Total gates : {total_gates_str}\n  "
 
+        gate_counts = self.gate_counts
+        custom_gates = []
+        default_gates = []
+        for gate_name, count in gate_counts.items():
+            if gate_name not in DefaultGateSet:
+                custom_gates.append((gate_name, count))
+            else:
+                default_gates.append((gate_name, count))
+
+        res_order = ["Toffoli", "T", "CNOT", "X", "Y", "Z", "S", "Hadamard"]
+
+        gate_order_map = {name: i for i, name in enumerate(res_order)}
+        default_gates.sort(key=lambda x: gate_order_map.get(x[0], len(res_order)))
+
+        ordered_gates = custom_gates + default_gates
         gate_type_str = ",\n  ".join(
             [
                 f"'{gate_name}': {Decimal(count):.3E}" if count > 999 else f"'{gate_name}': {count}"
-                for gate_name, count in self.clean_gate_counts.items()
+                for gate_name, count in ordered_gates
             ]
         )
         items += gate_type_str

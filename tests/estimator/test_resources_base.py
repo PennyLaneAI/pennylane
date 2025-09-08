@@ -90,9 +90,9 @@ class TestResources:
             + "\t clean wires: 5\n"
             + "\t dirty wires: 0\n"
             + " Total gates : 4\n"
-            + "  'Hadamard': 2,\n"
             + "  'X': 1,\n"
-            + "  'Z': 1"
+            + "  'Z': 1,\n"
+            + "  'Hadamard': 2"
         ),
         (
             "--- Resources: ---\n"
@@ -102,8 +102,8 @@ class TestResources:
             + "\t clean wires: 8753\n"
             + "\t dirty wires: 2347\n"
             + " Total gates : 1.258E+3\n"
-            + "  'Hadamard': 467,\n"
-            + "  'CNOT': 791"
+            + "  'CNOT': 791,\n"
+            + "  'Hadamard': 467"
         ),
         (
             "--- Resources: ---\n"
@@ -113,10 +113,10 @@ class TestResources:
             + "\t clean wires: 400\n"
             + "\t dirty wires: 222\n"
             + " Total gates : 5.743E+3\n"
+            + "  'CNOT': 4.523E+3,\n"
             + "  'X': 100,\n"
             + "  'Y': 120,\n"
-            + "  'Z': 1.000E+3,\n"
-            + "  'CNOT': 4.523E+3"
+            + "  'Z': 1.000E+3"
         ),
     )
 
@@ -141,7 +141,7 @@ class TestResources:
         expected_gt = defaultdict(int, {}) if gt is None else gt
         assert repr(resources) == repr({"wire_manager": expected_wm, "gate_types": expected_gt})
 
-    def test_clean_gate_counts(self):
+    def test_gate_counts(self):
         """Test that this function correctly simplifies the gate types
         dictionary by grouping together gates with the same name."""
 
@@ -166,8 +166,8 @@ class TestResources:
         gate_types = {rx1: 1, ry1: 2, cnots: 3, rx2: 4, ry2: 5}
         res = Resources(wire_manager=wm1, gate_types=gate_types)
 
-        expected_clean_gate_counts = {"RX": 5, "RY": 7, "CNOT": 3}
-        assert res.clean_gate_counts == expected_clean_gate_counts
+        expected_gate_counts = {"RX": 5, "RY": 7, "CNOT": 3}
+        assert res.gate_counts == expected_gate_counts
 
     def test_equality(self):
         """Test that the equality method works as expected."""
