@@ -24,14 +24,14 @@ from catalyst.ftqc import mbqc_pipeline
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
+from pennylane.compiler.python_compiler.mbqc.graph_state_utils import (
+    _adj_matrix_generation_helper,
+)
 from pennylane.compiler.python_compiler.transforms import (
     ConvertToMBQCFormalismPass,
     convert_to_mbqc_formalism_pass,
     decompose_graph_state_pass,
     measurements_from_samples_pass,
-)
-from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import (
-    _adj_matrix_generation_helper,
 )
 from pennylane.ftqc import RotXZX
 
@@ -42,7 +42,7 @@ class TestConvertToMBQCFormalismPass:
     def test_adj_matrix_generation_helper(self):
         """Test that error raised for unsupported gates."""
         num_vertices = 4
-        edges = [(1, 0), (2, 1), (3, 2)]
+        edges = [(0, 1), (1, 2), (2, 3)]
         adj_matrix = _adj_matrix_generation_helper(num_vertices, edges)
         assert adj_matrix == [1, 0, 1, 0, 0, 1]
 

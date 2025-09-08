@@ -29,13 +29,15 @@ pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
 
+from pennylane.compiler.python_compiler.mbqc.graph_state_utils import (
+    GateGraphEdgeDict,
+    NumAuxWires,
+    edge_iter,
+    n_vertices_from_packed_adj_matrix,
+)
 from pennylane.compiler.python_compiler.transforms import (
     DecomposeGraphStatePass,
     NullDecomposeGraphStatePass,
-)
-from pennylane.compiler.python_compiler.transforms.decompose_graph_state import (
-    _edge_iter,
-    _n_vertices_from_packed_adj_matrix,
 )
 from pennylane.exceptions import CompileError
 
@@ -578,7 +580,7 @@ class TestAdjMatrixHelpers:
         """
         n_elements = int(n_vertices * (n_vertices - 1) / 2)
         adj_matrix = [0] * n_elements
-        n_observed = _n_vertices_from_packed_adj_matrix(adj_matrix)
+        n_observed = n_vertices_from_packed_adj_matrix(adj_matrix)
 
         assert n_observed == n_vertices
 
@@ -589,7 +591,7 @@ class TestAdjMatrixHelpers:
         """
         with pytest.raises(CompileError, match="densely packed adjacency matrix"):
             adj_matrix = [0] * n
-            _ = _n_vertices_from_packed_adj_matrix(adj_matrix)
+            _ = n_vertices_from_packed_adj_matrix(adj_matrix)
 
     @pytest.mark.parametrize(
         "adj_matrix, expected_edges",
@@ -607,7 +609,7 @@ class TestAdjMatrixHelpers:
     def test_edge_iter(self, adj_matrix, expected_edges):
         """Test that the ``_edge_iter`` generator function yields correct results when given a valid
         densely packed adjacency matrix as input."""
-        edges = list(_edge_iter(adj_matrix))
+        edges = list(edge_iter(adj_matrix))
         assert edges == expected_edges
 
     @pytest.mark.parametrize("n", [2, 4, 5, 7, 8, 9])
@@ -617,14 +619,14 @@ class TestAdjMatrixHelpers:
         """
         with pytest.raises(CompileError, match="densely packed adjacency matrix"):
             adj_matrix = [0] * n
-            _ = list(_edge_iter(adj_matrix))
+            _ = list(edge_iter(adj_matrix))
 
     def test_n_vertices_mbqc_single_qubit(self, mbqc_single_qubit_graph):
         """Test that the ``_n_vertices_from_packed_adj_matrix`` function correctly determines that
         the number of vertices in the densely packed adjacency matrix for the graph state used for
         representing single-qubit gates in the MBQC formalism is equal to 4.
         """
-        n_observed = _n_vertices_from_packed_adj_matrix(mbqc_single_qubit_graph)
+        n_observed = n_vertices_from_packed_adj_matrix(mbqc_single_qubit_graph)
         assert n_observed == 4
 
     def test_n_vertices_mbqc_cnot(self, mbqc_cnot_graph):
@@ -632,7 +634,7 @@ class TestAdjMatrixHelpers:
         the number of vertices in the densely packed adjacency matrix for the graph state used for
         representing a CNOT gate in the MBQC formalism is equal to 13.
         """
-        n_observed = _n_vertices_from_packed_adj_matrix(mbqc_cnot_graph)
+        n_observed = n_vertices_from_packed_adj_matrix(mbqc_cnot_graph)
         assert n_observed == 13
 
     def test_edge_iter_mbqc_single_qubit(self, mbqc_single_qubit_graph):
@@ -644,7 +646,7 @@ class TestAdjMatrixHelpers:
 
             0 -- 1 -- 2 -- 3
         """
-        edges_observed = list(_edge_iter(mbqc_single_qubit_graph))
+        edges_observed = list(edge_iter(mbqc_single_qubit_graph))
 
         assert edges_observed == [
             (0, 1),
@@ -665,18 +667,5 @@ class TestAdjMatrixHelpers:
                       |
             7 -- 8 -- 9 -- 10 - 11 - 12
         """
-        edges_observed = list(_edge_iter(mbqc_cnot_graph))
-        assert edges_observed == [
-            (0, 1),
-            (1, 2),
-            (2, 3),
-            (3, 4),
-            (4, 5),
-            (2, 6),
-            (7, 8),
-            (6, 9),
-            (8, 9),
-            (9, 10),
-            (10, 11),
-            (11, 12),
-        ]
+        edges_observed = list(edge_iter(mbqc_cnot_graph))
+        assert edges_observed == GateGraphEdgeDict[NumAuxWires.CNOT]
