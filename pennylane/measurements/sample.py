@@ -104,17 +104,12 @@ class SampleMP(SampleMeasurement):
 
     @property
     def numeric_type(self):
-        if self.dtype is not None:
-            return self.dtype
+        if self._dtype is not None:
+            return self._dtype
         if self.obs is None:
             # Computational basis samples
             return int
         return float
-
-    @property
-    def dtype(self):
-        """The dtype of the samples returned by this measurement process."""
-        return self._dtype
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         if not shots:
@@ -147,7 +142,7 @@ class SampleMP(SampleMeasurement):
             wire_order,
             shot_range=shot_range,
             bin_size=bin_size,
-            dtype=self.dtype if dtype is None else dtype,
+            dtype=self._dtype if dtype is None else dtype,
         )
 
     def process_counts(self, counts: dict, wire_order: WiresLike) -> np.ndarray:
