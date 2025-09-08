@@ -888,8 +888,6 @@ class ResourceQROM(ResourceOperator):
             the number of batches of unitaries to select.
         """
 
-        select_swap_depth = select_swap_depth or kwargs["config"]["select_swap_depth"]
-
         if select_swap_depth:
             select_swap_depth = 2 ** math.floor(math.log2(select_swap_depth))
         W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
