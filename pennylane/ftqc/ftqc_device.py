@@ -201,10 +201,12 @@ class LightningQubitBackend:
 
         results = []
         for sequence in sequences:
-            assert isinstance(
-                sequence, QuantumScriptSequence
-            ), "something is amiss - this device uses QuantumScriptSequence"
-            results.append(self._execute_sequence(sequence, execution_config))
+            if isinstance(sequence, QuantumScriptSequence):
+                results.append(self._execute_sequence(sequence, execution_config))
+            else:
+                raise TypeError(
+                    f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
+                )
 
         return tuple(results)
 
@@ -315,12 +317,14 @@ class NullQubitBackend:
         """
         tapes_to_execute = []
         for sequence in sequences:
-            assert isinstance(
-                sequence, QuantumScriptSequence
-            ), "something is amiss - this device uses QuantumScriptSequence"
-            shots = sequence.shots.total_shots
-            final_tape = sequence.final_tape
-            tapes_to_execute.append(final_tape.copy(shots=shots))
+            if isinstance(sequence, QuantumScriptSequence):
+                shots = sequence.shots.total_shots
+                final_tape = sequence.final_tape
+                tapes_to_execute.append(final_tape.copy(shots=shots))
+            else:
+                raise TypeError(
+                    f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
+                )
 
         return tuple(
             self.device.execute(tapes_to_execute, execution_config),
