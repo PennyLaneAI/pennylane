@@ -29,7 +29,7 @@ from xdsl.ir import Region, SSAValue
 
 from pennylane.exceptions import CompileError
 
-from ...dialects import mbqc, quantum
+from ..dialects import mbqc, quantum
 
 
 class AbstractWire:
