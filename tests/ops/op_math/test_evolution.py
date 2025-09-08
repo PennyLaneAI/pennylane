@@ -27,6 +27,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
 
+# pylint: disable=too-many-public-methods
 class TestEvolution:
     """Test Evolution(Exp) class that takes a parameter x and a generator G and defines an evolution exp(ixG)"""
 
@@ -227,3 +228,18 @@ class TestEvolution:
         pow_op = op.pow(2.5)
         qml.assert_equal(pow_op, Evolution(qml.Z(0), -0.5 * 2.5))
         assert type(pow_op) == Evolution  # pylint: disable=unidiomatic-typecheck
+
+    def test_bind_new_parameters(self):
+        """Test that bind_new_parameters works as expected."""
+
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def c(t):
+            qml.evolve(0.5 * qml.X(0), t)
+            return qml.expval(qml.Z(0))
+
+        result = qml.grad(c)(qml.numpy.array(0.5))
+        # |psi(t)> = exp(-i * (0.5*X) * t)|0> # Rotation around X-axis
+        # <Z(t)> = <psi(t)|Z|psi(t)> = cos(t)
+        # d/dt <Z(t)> = d/dt (cos(t)) = -sin(t)
+        expected = -np.sin(0.5)
+        assert np.allclose(result, expected)

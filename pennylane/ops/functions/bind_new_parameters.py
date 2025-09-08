@@ -34,7 +34,7 @@ from pennylane.templates.subroutines import (
 from pennylane.typing import TensorLike
 
 from ..identity import Identity
-from ..op_math import Adjoint, CompositeOp, Pow, ScalarSymbolicOp, SProd, SymbolicOp
+from ..op_math import Adjoint, CompositeOp, Evolution, Pow, ScalarSymbolicOp, SProd, SymbolicOp
 from ..qubit import Projector
 
 
@@ -61,6 +61,17 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         new_op = copy.deepcopy(op)
         new_op.data = tuple(params)
         return new_op
+
+
+@bind_new_parameters.register
+def bind_new_parameters_evolution(op: Evolution, params: Sequence[TensorLike]):
+    generator = op.hyperparameters["base"]
+    assert len(params) == 1, "Evolution expects a single parameter."
+    return Evolution(
+        generator,
+        param=params[0],
+        num_steps=op.hyperparameters["num_steps"],
+    )
 
 
 @bind_new_parameters.register
