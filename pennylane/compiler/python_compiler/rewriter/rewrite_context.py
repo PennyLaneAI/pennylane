@@ -27,8 +27,6 @@ from xdsl.ir import Block, BlockArgument
 from xdsl.ir import Operation as xOperation
 from xdsl.ir import Region, SSAValue
 
-from pennylane.exceptions import CompileError
-
 from ..dialects import mbqc, quantum
 
 
@@ -83,7 +81,7 @@ class WireQubitMap:
             return self.qubit_to_wire_map[key]
 
         if self.wires is not None and key not in self.wires:
-            raise CompileError(f"{key} is not an available wire.")
+            raise KeyError(f"{key} is not an available wire.")
 
         return self.wire_to_qubit_map[key]
 
@@ -117,7 +115,7 @@ class WireQubitMap:
             self.wire_to_qubit_map[key] = val
             self.qubit_to_wire_map[val] = key
 
-        raise CompileError(f"{key} is not a valid wire label or QubitType SSAValue.")
+        raise TypeError(f"{key} is not a valid wire label or QubitType SSAValue.")
 
     def pop(self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None):
         """Remove and return an item from the map, if it exists. Else, return the provided default value."""
