@@ -821,7 +821,7 @@
 * `DefaultQubit` now determines the `mcm_method` in `Device.setup_execution_config`,
   making it easier to tell which mcm method will be used. This also allows `defer_measurements` and `dynamic_one_shot` to be applied at different
   locations in the preprocessing program.
-  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184/files)
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
 
 * Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
   [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
