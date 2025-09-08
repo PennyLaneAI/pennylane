@@ -22,10 +22,34 @@ attributes for StableHLO operations.
 
 # pylint: disable=too-few-public-methods
 
+from collections.abc import Sequence
 from enum import StrEnum
 
-from xdsl.ir import EnumAttribute, SpacedOpaqueSyntaxAttribute
+from xdsl.dialects.builtin import I64, ArrayAttr, IntegerAttr, i64
+from xdsl.ir import Attribute, EnumAttribute, ParametrizedAttribute, SpacedOpaqueSyntaxAttribute
 from xdsl.irdl import irdl_attr_definition
+from xdsl.parser import AttrParser
+from xdsl.printer import Printer
+
+
+# Utility functions for dimension array parsing/printing
+def parse_dims(parser: AttrParser) -> ArrayAttr[IntegerAttr[I64]]:
+    """Parse dimension array in [1, 2, 3] format"""
+    value = parser.parse_comma_separated_list(
+        AttrParser.Delimiter.SQUARE,
+        lambda: IntegerAttr(parser.parse_integer(), i64),
+    )
+    return ArrayAttr(value)
+
+
+def print_dims(printer: Printer, dims: ArrayAttr[IntegerAttr[I64]]):
+    """Print dimension array in [1, 2, 3] format"""
+    printer.print_string("[")
+    printer.print_list(
+        dims.data,
+        lambda dim: printer.print_string(f"{dim.value.data}"),
+    )
+    printer.print_string("]")
 
 
 class ResultAccuracyMode(StrEnum):
@@ -47,3 +71,203 @@ class ResultAccuracyModeAttr(EnumAttribute[ResultAccuracyMode], SpacedOpaqueSynt
     """
 
     name = "stablehlo.result_accuracy_mode"
+
+
+@irdl_attr_definition
+class GatherDimensionNumbers(ParametrizedAttribute):
+    """
+    XLA gather dimension numbers.
+
+    This attribute models the dimension information for gather operations.
+    See external [documentation](https://github.com/openxla/stablehlo/blob/b075e948092d8a27ed0be48f4f8dbaa6df7e2e3e/stablehlo/dialect/StablehloAttrs.td#L42).
+    """
+
+    name = "stablehlo.gather"
+
+    offset_dims: ArrayAttr[IntegerAttr[I64]]
+    collapsed_slice_dims: ArrayAttr[IntegerAttr[I64]]
+    operand_batching_dims: ArrayAttr[IntegerAttr[I64]]
+    start_indices_batching_dims: ArrayAttr[IntegerAttr[I64]]
+    start_index_map: ArrayAttr[IntegerAttr[I64]]
+    index_vector_dim: IntegerAttr[I64]
+
+    def print_parameters(self, printer: Printer) -> None:
+        """Print gather dimension numbers in structured format"""
+        with printer.in_angle_brackets():
+            with printer.indented():
+                # Print offset_dims
+                printer.print_string("\noffset_dims = ")
+                print_dims(printer, self.offset_dims)
+                printer.print_string(",")
+
+                # Print collapsed_slice_dims
+                printer.print_string("\ncollapsed_slice_dims = ")
+                print_dims(printer, self.collapsed_slice_dims)
+                printer.print_string(",")
+
+                # Print operand_batching_dims
+                printer.print_string("\noperand_batching_dims = ")
+                print_dims(printer, self.operand_batching_dims)
+                printer.print_string(",")
+
+                # Print start_indices_batching_dims
+                printer.print_string("\nstart_indices_batching_dims = ")
+                print_dims(printer, self.start_indices_batching_dims)
+                printer.print_string(",")
+
+                # Print start_index_map
+                printer.print_string("\nstart_index_map = ")
+                print_dims(printer, self.start_index_map)
+                printer.print_string(",")
+
+                # Print index_vector_dim
+                printer.print_string(f"\nindex_vector_dim = {self.index_vector_dim.value.data}")
+            printer.print_string("\n")
+
+    @classmethod
+    def parse_parameters(cls, parser: AttrParser) -> Sequence[Attribute]:
+        """Parse gather dimension numbers from structured format"""
+        with parser.in_angle_brackets():
+            # Parse offset_dims
+            parser.parse_characters("offset_dims")
+            parser.parse_punctuation("=")
+            offset_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse collapsed_slice_dims
+            parser.parse_characters("collapsed_slice_dims")
+            parser.parse_punctuation("=")
+            collapsed_slice_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse operand_batching_dims
+            parser.parse_characters("operand_batching_dims")
+            parser.parse_punctuation("=")
+            operand_batching_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse start_indices_batching_dims
+            parser.parse_characters("start_indices_batching_dims")
+            parser.parse_punctuation("=")
+            start_indices_batching_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse start_index_map
+            parser.parse_characters("start_index_map")
+            parser.parse_punctuation("=")
+            start_index_map = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse index_vector_dim
+            parser.parse_characters("index_vector_dim")
+            parser.parse_punctuation("=")
+            index_vector_dim = IntegerAttr(parser.parse_integer(), i64)
+
+            return (
+                offset_dims,
+                collapsed_slice_dims,
+                operand_batching_dims,
+                start_indices_batching_dims,
+                start_index_map,
+                index_vector_dim,
+            )
+
+
+@irdl_attr_definition
+class ScatterDimensionNumbers(ParametrizedAttribute):
+    """
+    XLA scatter dimension numbers.
+
+    This attribute models the dimension information for scatter operations.
+    See external [documentation](https://github.com/openxla/stablehlo/blob/b075e948092d8a27ed0be48f4f8dbaa6df7e2e3e/stablehlo/dialect/StablehloAttrs.td#L28).
+    """
+
+    name = "stablehlo.scatter"
+
+    update_window_dims: ArrayAttr[IntegerAttr[I64]]
+    inserted_window_dims: ArrayAttr[IntegerAttr[I64]]
+    input_batching_dims: ArrayAttr[IntegerAttr[I64]]
+    scatter_indices_batching_dims: ArrayAttr[IntegerAttr[I64]]
+    scatter_dims_to_operand_dims: ArrayAttr[IntegerAttr[I64]]
+    index_vector_dim: IntegerAttr[I64]
+
+    def print_parameters(self, printer: Printer) -> None:
+        """Print scatter dimension numbers in structured format"""
+        with printer.in_angle_brackets():
+            with printer.indented():
+                # Print update_window_dims
+                printer.print_string("\nupdate_window_dims = ")
+                print_dims(printer, self.update_window_dims)
+                printer.print_string(",")
+
+                # Print inserted_window_dims
+                printer.print_string("\ninserted_window_dims = ")
+                print_dims(printer, self.inserted_window_dims)
+                printer.print_string(",")
+
+                # Print input_batching_dims
+                printer.print_string("\ninput_batching_dims = ")
+                print_dims(printer, self.input_batching_dims)
+                printer.print_string(",")
+
+                # Print scatter_indices_batching_dims
+                printer.print_string("\nscatter_indices_batching_dims = ")
+                print_dims(printer, self.scatter_indices_batching_dims)
+                printer.print_string(",")
+
+                # Print scatter_dims_to_operand_dims
+                printer.print_string("\nscatter_dims_to_operand_dims = ")
+                print_dims(printer, self.scatter_dims_to_operand_dims)
+                printer.print_string(",")
+
+                # Print index_vector_dim
+                printer.print_string(f"\nindex_vector_dim = {self.index_vector_dim.value.data}")
+            printer.print_string("\n")
+
+    @classmethod
+    def parse_parameters(cls, parser: AttrParser) -> Sequence[Attribute]:
+        """Parse scatter dimension numbers from structured format"""
+        with parser.in_angle_brackets():
+            # Parse update_window_dims
+            parser.parse_characters("update_window_dims")
+            parser.parse_punctuation("=")
+            update_window_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse inserted_window_dims
+            parser.parse_characters("inserted_window_dims")
+            parser.parse_punctuation("=")
+            inserted_window_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse input_batching_dims
+            parser.parse_characters("input_batching_dims")
+            parser.parse_punctuation("=")
+            input_batching_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse scatter_indices_batching_dims
+            parser.parse_characters("scatter_indices_batching_dims")
+            parser.parse_punctuation("=")
+            scatter_indices_batching_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse scatter_dims_to_operand_dims
+            parser.parse_characters("scatter_dims_to_operand_dims")
+            parser.parse_punctuation("=")
+            scatter_dims_to_operand_dims = parse_dims(parser)
+            parser.parse_punctuation(",")
+
+            # Parse index_vector_dim
+            parser.parse_characters("index_vector_dim")
+            parser.parse_punctuation("=")
+            index_vector_dim = IntegerAttr(parser.parse_integer(), i64)
+
+            return (
+                update_window_dims,
+                inserted_window_dims,
+                input_batching_dims,
+                scatter_indices_batching_dims,
+                scatter_dims_to_operand_dims,
+                index_vector_dim,
+            )
