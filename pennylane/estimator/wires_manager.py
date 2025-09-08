@@ -230,7 +230,7 @@ class Allocate(_WireAction):
 
 
 class Deallocate(_WireAction):
-    r"""Allows users to free dirty work wires through :class:`~.pennylane/estimator/WireResourceManager`.
+    r"""Allows users to free dirty work wires through :class:`~pennylane.estimator.WireResourceManager`.
 
     Args:
         num_wires (int): number of dirty work wires to be freed.
