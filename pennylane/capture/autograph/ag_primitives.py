@@ -476,9 +476,10 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
                 raise ValueError(f"{fn.__name__} requires at least one argument")
 
             # If first argument is already an operator, pass it through directly
-            if isinstance(args[0], qml.operation.Operator) or isinstance(
-                getattr(args[0], "aval", None), qml.capture.primitives.AbstractOperator
-            ):
+            is_operator_tracer = qml.math.is_abstract(args[0]) and isinstance(
+                args[0].aval, qml.capture.primitives.AbstractOperator
+            )
+            if isinstance(args[0], qml.operation.Operator) or is_operator_tracer:
                 return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
 
             # Otherwise, handle the callable case
