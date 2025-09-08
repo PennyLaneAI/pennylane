@@ -347,7 +347,7 @@ class TestEstimateResources:
         custom_config = ResourceConfig()
         custom_config.conf[ResourceTestRZ] = {"epsilon": error_val}
         computed_resources = estimate_resources(
-            op, gate_set={"TestT"}, single_qubit_rotation_error=error_val, config=custom_config
+            op, gate_set={"TestT"}, config=custom_config
         )
 
         expected_resources = Resources(
