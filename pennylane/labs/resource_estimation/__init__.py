@@ -202,6 +202,10 @@ from .templates import (
     ResourcePrepSparsePauli,
     ResourcePrepAC,
     ResourceSelectAC,
+    ResourceComparator,
+    ResourceQubitizeTHC,
+    ResourceQPE,
 )
 
 from .wrappers import qcow
+from .thc_decomp import *
