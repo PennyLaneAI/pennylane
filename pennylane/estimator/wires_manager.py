@@ -170,7 +170,7 @@ class _WireAction:
 
 
 class Allocate(_WireAction):
-    r"""Allows users to allocate work wires through :class:`~./pennylane/estimator/WireResourceManager`.
+    r"""Allows users to allocate work wires through :class:`~pennylane.estimator.WireResourceManager`.
 
     Args:
         num_wires (int): number of work wires to be allocated.
