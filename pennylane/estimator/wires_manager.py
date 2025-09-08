@@ -33,7 +33,7 @@ class WireResourceManager:
       clean qubits when they are freed.
 
     Args:
-        work_wires (int or dict[str, int]): Number of work wires or a dictionary containing
+        work_wires (int or dict[Literal["clean", "dirty"], int]): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
             ``int`` is provided.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
