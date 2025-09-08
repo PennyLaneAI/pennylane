@@ -59,7 +59,7 @@ class ResourceIdentity(ResourceOperator):
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
@@ -165,7 +165,7 @@ class ResourceGlobalPhase(ResourceOperator):
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:

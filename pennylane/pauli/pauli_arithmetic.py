@@ -1016,7 +1016,9 @@ class PauliSentence(dict):
             pw_op = pw.operation(wire_order=list(wire_order))
             rep = PauliSentence({pw: coeff})
             summands.append(
-                pw_op if qml.math.all(coeff == 1) else SProd(coeff, pw_op, _pauli_rep=rep)
+                pw_op
+                if not math.is_abstract(coeff) and qml.math.all(coeff == 1)
+                else SProd(coeff, pw_op, _pauli_rep=rep)
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
@@ -1024,7 +1026,7 @@ class PauliSentence(dict):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
         items = list(self.items())
         for pw, coeff in items:
-            if abs(coeff) <= tol:
+            if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
         if len(self) == 0:
             self = PauliSentence({})  # pylint: disable=self-cls-assignment
