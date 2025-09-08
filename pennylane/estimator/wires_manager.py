@@ -16,7 +16,6 @@ r"""This module contains the base class for qubit management"""
 
 from pennylane.queuing import QueuingManager
 
-
 # pylint: disable=too-few-public-methods
 
 
