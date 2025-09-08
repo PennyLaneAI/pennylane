@@ -24,8 +24,9 @@ Qubit Management Classes:
 
     ~Allocate
     ~Deallocate
+    ~WireResourceManager
 
 
 """
 
-from .wires_manager import Allocate, Deallocate
+from .wires_manager import Allocate, Deallocate, WireResourceManager
