@@ -66,6 +66,15 @@ from .control_flow import (
     OptimizationBarrierOp,
 )
 
+from .data_movement import (
+    ConcatenateOp,
+    GatherOp,
+    ReshapeOp,
+    ScatterOp,
+    SliceOp,
+    BroadcastInDimOp,
+)
+
 # Import the main StableHLO dialect
 from .dialect import StableHLO
 
@@ -111,4 +120,11 @@ __all__ = [
     "IfOp",
     "WhileOp",
     "OptimizationBarrierOp",
+    # Data movement operations
+    "ConcatenateOp",
+    "GatherOp",
+    "ReshapeOp",
+    "ScatterOp",
+    "SliceOp",
+    "BroadcastInDimOp",
 ]
