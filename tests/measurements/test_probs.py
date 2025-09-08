@@ -401,6 +401,7 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol_stochastic, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "dtype, obs",
         [

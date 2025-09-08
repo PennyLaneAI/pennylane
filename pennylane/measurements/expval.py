@@ -57,6 +57,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
+    # pylint: disable=too-many-arguments
     def process_samples(
         self,
         samples: Sequence[complex],
@@ -151,6 +152,29 @@ def expval(
 
     >>> circuit(0.5)
     -0.4794255386042029
+
+    The ``dtype`` argument can be used to specify the precision of the returned expectation value when
+    sampling is used to estimate expectation values. If sampling is not used, the ``dtype`` argument is ignored.
+
+    By default, the dtype is ``float64``.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.set_shots(10)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Y(0), dtype='float32')
+
+    Executing this QNode, we see that the returned samples have the specified dtype:
+
+    >>> samples = circuit(0.5)
+    >>> samples.dtype
+    dtype('float32')
 
     Args:
         op (Union[Operator, MeasurementValue]): a quantum observable object. To

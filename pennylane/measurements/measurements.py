@@ -156,6 +156,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
