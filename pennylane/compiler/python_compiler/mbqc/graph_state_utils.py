@@ -45,15 +45,13 @@ A dictionary stores the edges information in the graph state.
     Note that the target qubit is not in the adjacency matrix and the connectivity
     of the auxiliary qubits is:
     edges_in_adj_matrix = [
-       (1, 0),
-       (2, 1),
-       (3, 2),
+       (0, 1),
+       (1, 2),
+       (2, 3),
     ]
 
-    Also note that wire 1 is the target wire as described
-    in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
-
-    1  --  2  --  3  --  4  --  5
+    Wire 1 in the above isn't the target wire described in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_],
+    1 in the above maps to 3 in the figure.
 
 - The connectivity of the ctrl/target qubits in the register and auxiliary qubits for a CNOT gate is:
 
@@ -66,28 +64,23 @@ A dictionary stores the edges information in the graph state.
     Note that both ctrl and target qubits are not in the adjacency matrix and the connectivity
     of the auxiliary qubits is:
     edges_in_adj_matrix = [
-       (1, 0),
-       (2, 1),
-       (3, 2),
-       (4, 3),
-       (5, 4),
-       (6, 2),
-       (8, 7),
-       (9, 6),
-       (9, 8),
-       (10, 9),
-       (11, 10),
-       (12, 11),
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (4, 5),
+        (2, 6),
+        (7, 8),
+        (6, 9),
+        (8, 9),
+        (9, 10),
+        (10, 11),
+        (11, 12),
     ]
 
-    Also note that wire 1 is the control wire and wire 9 is the target wire as described
-    in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
-
-    1  --  2  --  3  --  4  --  5  --  6  -- 7
-                         |
-                         8
-                         |
-    9  -- 10  --  11 -- 12  -- 13  -- 14  -- 15
+    This graph is labelled based on the rows and columns of the adjacent matrix, but maps on to the graph described in
+    the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_], where wire 1 is the control and
+    wire 9 is the target.
 """
 GateGraphEdgeDict = {
     NumAuxWires.SINGLE_QUBIT: [
