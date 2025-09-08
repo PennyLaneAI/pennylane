@@ -14,7 +14,6 @@
 """
 This module contains the tests for the clifford simulator based on stim
 """
-import os
 
 import numpy as np
 import pytest
@@ -479,11 +478,10 @@ def test_snapshot_supported(measurement, tag):
         assert qml.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
 
 
-def test_max_worker_clifford():
+def test_max_worker_clifford(monkeypatch):
     """Test that the execution of multiple tapes is possible with multiprocessing on this device."""
 
-    os.environ["OMP_NUM_THREADS"] = "4"
-
+    monkeypatch.setenv("OMP_NUM_THREADS", "4")
     dev_c = qml.device("default.clifford", max_workers=2)
     dev_q = qml.device("default.qubit", max_workers=2)
 
