@@ -463,7 +463,6 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
-
         # HOTFIX: pass through calls of known PennyLane wrapper functions
         if fn in (
             qml.adjoint,

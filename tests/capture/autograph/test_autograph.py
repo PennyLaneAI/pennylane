@@ -350,6 +350,10 @@ class TestIntegration:
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
         def inner(x):
+            if x > 0:
+                qml.I(wires=0)  # Test will only pass if this is hit
+            else:
+                qml.RY(x, wires=0)
             qml.RY(x, wires=0)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -361,6 +365,7 @@ class TestIntegration:
         ag_fn = run_autograph(circ)
         phi = np.pi / 2
         assert np.allclose(ag_fn(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+        assert not np.allclose(ag_fn(-phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
@@ -370,6 +375,10 @@ class TestIntegration:
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 
         def inner(x):
+            if x == np.pi:
+                qml.I(wires=0)  # Test will only pass if this is hit
+            else:
+                qml.RX(x, wires=0)
             qml.RY(x, wires=0)
 
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -380,7 +389,7 @@ class TestIntegration:
 
         ag_fn = run_autograph(circ)
         assert np.allclose(ag_fn(np.pi), [0.0, 0.0, 0.0, 1.0])
-
+        assert not np.allclose(ag_fn(np.pi + 0.1), [0.0, 0.0, 0.0, 1.0])
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
