@@ -75,6 +75,12 @@ from .data_movement import (
     SliceOp,
 )
 
+from .attributes import (
+    GatherDimensionNumbers,
+    ResultAccuracyModeAttr,
+    ScatterDimensionNumbers,
+)
+
 # Import the main StableHLO dialect
 from .dialect import StableHLO
 
@@ -127,4 +133,8 @@ __all__ = [
     "ReshapeOp",
     "ScatterOp",
     "SliceOp",
+    # Attributes
+    "GatherDimensionNumbers",
+    "ResultAccuracyModeAttr",
+    "ScatterDimensionNumbers",
 ]
