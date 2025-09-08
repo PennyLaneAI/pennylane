@@ -698,7 +698,7 @@ class DefaultQubit(Device):
         updated_values["mcm_config"] = mcm_config
         return replace(config, **updated_values)
 
-    def _setup_mcm_config(self, config, tape) -> MCMConfig:
+    def _setup_mcm_config(self, config: ExecutionConfig, tape: QuantumScript) -> MCMConfig:
         mcm_config = config.mcm_config
 
         if capture.enabled():
