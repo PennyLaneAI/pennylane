@@ -186,7 +186,7 @@ class Resources:
 
     """
 
-    def __init__(self, wire_manager: WireResourceManager, gate_types: dict = None):
+    def __init__(self, wire_manager: WireResourceManager, gate_types: None | dict = None):
         """Initialize the Resources class."""
         gate_types = gate_types or {}
 
