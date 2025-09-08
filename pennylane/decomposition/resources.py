@@ -116,12 +116,13 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type: type[Operator], params: dict | None = None):
+    def __init__(self, op_type: type[Operator], params: dict | None = None, num_wires: int = 0):
         if not isinstance(op_type, type):
             raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, qml.operation.Operator):
             raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
+        self._num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
 
