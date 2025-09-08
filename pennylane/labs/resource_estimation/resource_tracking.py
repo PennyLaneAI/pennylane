@@ -72,7 +72,7 @@ DefaultGateSet = {
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set = None,
-    config: ResourceConfig = ResourceConfig(),
+    config: ResourceConfig = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
 ) -> Resources | Callable:
@@ -142,7 +142,7 @@ def estimate_resources(
 def resources_from_qfunc(
     obj: Callable,
     gate_set: set = None,
-    config: ResourceConfig = ResourceConfig(),
+    config: ResourceConfig = None,
     work_wires=0,
     tight_budget=False,
 ) -> Callable:
@@ -185,7 +185,7 @@ def resources_from_qfunc(
 def resources_from_resource(
     obj: Resources,
     gate_set: set = None,
-    config: ResourceConfig = ResourceConfig(),
+    config: ResourceConfig = None,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -246,7 +246,7 @@ def resources_from_resource_ops(
 def resources_from_pl_ops(
     obj: Operation,
     gate_set: set = None,
-    config: ResourceConfig = ResourceConfig(),
+    config: ResourceConfig = None,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -267,7 +267,7 @@ def _update_counts_from_compressed_res_op(
     qbit_mngr,
     gate_set: set = None,
     scalar: int = 1,
-    config: ResourceConfig = ResourceConfig(),
+    config: ResourceConfig = None,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
@@ -280,6 +280,9 @@ def _update_counts_from_compressed_res_op(
     """
     if gate_set is None:
         gate_set = DefaultGateSet
+
+    if config is None:
+        config = ResourceConfig()
 
     ## If op in gate_set add to resources
     if cp_rep.name in gate_set:
