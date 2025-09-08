@@ -63,16 +63,15 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
     before applying the transform.
 
+    Args:
+    diagonalize_mcms (bool, optional): When set, the transform inserts diagonalizing gates
+        before arbitrary-basis mid-circuit measurements. Defaults to False.
+
     Note that this transform leaves all Paulis and Identities as physical gates, and applies
     all byproduct operations online immediately after their respective measurement procedures.
 
     On this branch, the transform has been extended so it can be used directly on the experimental
-    QuantumScriptSequence class
-
-        Args:
-        diagonalize_mcms (bool, optional): When set, the transform inserts diagonalizing gates
-            before arbitrary-basis mid-circuit measurements. Defaults to False.
-
+    QuantumScriptSequence class.
     """
 
     if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
