@@ -67,12 +67,6 @@ DefaultGateSet = {
     "Toffoli",
 }
 
-_SYMBOLIC_DECOMP_MAP = {
-    ResourceAdjoint: "_adj_custom_decomps",
-    ResourceControlled: "_ctrl_custom_decomps",
-    ResourcePow: "_pow_custom_decomps",
-}
-
 
 @singledispatch
 def estimate_resources(
@@ -378,6 +372,11 @@ def _get_decomposition(
         A tuple containing the decomposition function and its associated kwargs.
     """
     op_type = cp_rep.op_type
+    _SYMBOLIC_DECOMP_MAP = {
+        ResourceAdjoint: "_adj_custom_decomps",
+        ResourceControlled: "_ctrl_custom_decomps",
+        ResourcePow: "_pow_custom_decomps",
+    }
 
     if op_type in _SYMBOLIC_DECOMP_MAP:
         decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
