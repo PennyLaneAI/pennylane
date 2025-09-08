@@ -54,8 +54,8 @@ class TestDecomposeInterpreter:
         assert interpreter.max_expansion == max_expansion
         valid_op = qml.RX(1.5, 0)
         invalid_op = qml.RY(1.5, 0)
-        assert interpreter._stopping_condition(valid_op)
-        assert not interpreter._stopping_condition(invalid_op)
+        assert interpreter.stopping_condition(valid_op)
+        assert not interpreter.stopping_condition(invalid_op)
 
     @pytest.mark.unit
     def test_fixed_alt_decomps_not_available_capture(self):
@@ -73,23 +73,12 @@ class TestDecomposeInterpreter:
             DecomposeInterpreter(alt_decomps={qml.CNOT: [my_cnot]})
 
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
-    def test_stopping_condition(self, op, recwarn):
+    def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""
         # pylint: disable=unnecessary-lambda-assignment
         gate_set = lambda op: op.name == "RX"
         interpreter = DecomposeInterpreter(gate_set=gate_set)
-
-        if gate_set(op):
-            assert interpreter.stopping_condition(op)
-            assert len(recwarn) == 0
-
-        else:
-            if not op.has_decomposition:
-                with pytest.warns(UserWarning, match="does not define a decomposition"):
-                    assert interpreter.stopping_condition(op)
-            else:
-                assert not interpreter.stopping_condition(op)
-                assert len(recwarn) == 0
+        assert interpreter.stopping_condition(op) == gate_set(op)
 
     def test_decompose_simple(self):
         """Test that a simple function can be decomposed correctly."""
