@@ -172,7 +172,8 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
         return qml.Identity(wires[0])
 
     coeffs, ops = zip(
-        *[(coef, _get_op(term, wires)) for term, coef in qubit_operator.terms.items()]
+        *[(coef, _get_op(term, wires)) for term, coef in qubit_operator.terms.items()],
+        strict=True,
         # example term: ((0,'X'), (2,'Z'), (3,'Y'))
     )
     coeffs = np.array(coeffs)
@@ -186,14 +187,16 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
 def _ps_to_coeff_term(ps, wire_order):
     """Convert a non-empty pauli sentence to a list of coeffs and terms."""
     ops_str = []
-    pws, coeffs = zip(*ps.items())
+    pws, coeffs = zip(*ps.items(), strict=True)
 
     for pw in pws:
         if len(pw) == 0:
             ops_str.append("")
             continue
-        wires, ops = zip(*pw.items())
-        ops_str.append(" ".join([f"{op}{wire_order.index(wire)}" for op, wire in zip(ops, wires)]))
+        wires, ops = zip(*pw.items(), strict=True)
+        ops_str.append(
+            " ".join([f"{op}{wire_order.index(wire)}" for op, wire in zip(ops, wires, strict=True)])
+        )
 
     return coeffs, ops_str
 
@@ -258,7 +261,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
         coeffs = coeffs.real
 
     q_op = openfermion.QubitOperator()
-    for coeff, op in zip(coeffs, ops):
+    for coeff, op in zip(coeffs, ops, strict=True):
 
         if (ps := op.pauli_rep) is None:
             raise ValueError(
@@ -267,7 +270,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
 
         if len(ps) > 0:
             sub_coeffs, op_strs = _ps_to_coeff_term(ps, wire_order=qubit_indexed_wires)
-            for c, op_str in zip(sub_coeffs, op_strs):
+            for c, op_str in zip(sub_coeffs, op_strs, strict=True):
                 # This is how one makes QubitOperator in OpenFermion
                 q_op += complex(coeff * c) * openfermion.QubitOperator(op_str)
 
@@ -555,7 +558,7 @@ def _wfdict_to_statevector(fcimatr_dict, norbs):
         bin_b = bin(int_b)[2:][::-1]
         bin_a += "0" * (norbs - len(bin_a))
         bin_b += "0" * (norbs - len(bin_b))
-        bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b))
+        bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b, strict=True))
         statevector[int(bin_ab, 2)] += coeff
 
     statevector = statevector / np.sqrt(np.sum(statevector**2))
@@ -616,16 +619,28 @@ def _rcisd_state(cisd_solver, tol=1e-15):
     ref_a = int(2**nocc - 1)
     ref_b = ref_a
 
-    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
+    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b], strict=True)), [c0], strict=True))
 
     # alpha -> alpha excitations
     c1a_configs, c1a_signs = _excited_configurations(nocc, norb, 1)
     fcimatr_dict.update(
-        dict(zip(list(zip(c1a_configs, [ref_b] * len(c1a_configs))), c1 * c1a_signs))
+        dict(
+            zip(
+                list(zip(c1a_configs, [ref_b] * len(c1a_configs), strict=True)),
+                c1 * c1a_signs,
+                strict=True,
+            )
+        )
     )
     # beta -> beta excitations
     fcimatr_dict.update(
-        dict(zip(list(zip([ref_a] * len(c1a_configs), c1a_configs)), c1 * c1a_signs))
+        dict(
+            zip(
+                list(zip([ref_a] * len(c1a_configs), c1a_configs, strict=True)),
+                c1 * c1a_signs,
+                strict=True,
+            )
+        )
     )
 
     # check if double excitations within one spin sector (aa->aa and bb->bb) are possible
@@ -639,11 +654,23 @@ def _rcisd_state(cisd_solver, tol=1e-15):
         # alpha, alpha -> alpha, alpha excitations
         c2aa_configs, c2aa_signs = _excited_configurations(nocc, norb, 2)
         fcimatr_dict.update(
-            dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa * c2aa_signs))
+            dict(
+                zip(
+                    list(zip(c2aa_configs, [ref_b] * len(c2aa_configs), strict=True)),
+                    c2aa * c2aa_signs,
+                    strict=True,
+                )
+            )
         )
         # beta, beta -> beta, beta excitations
         fcimatr_dict.update(
-            dict(zip(list(zip([ref_a] * len(c2aa_configs), c2aa_configs)), c2aa * c2aa_signs))
+            dict(
+                zip(
+                    list(zip([ref_a] * len(c2aa_configs), c2aa_configs, strict=True)),
+                    c2aa * c2aa_signs,
+                    strict=True,
+                )
+            )
         )
 
     # alpha, beta -> alpha, beta excitations
@@ -653,6 +680,7 @@ def _rcisd_state(cisd_solver, tol=1e-15):
             zip(
                 list(product(c1a_configs, c1a_configs)),
                 np.einsum("i,j,ij->ij", c1a_signs, c1a_signs, c2ab, optimize=True).ravel(),
+                strict=True,
             )
         )
     )
@@ -731,19 +759,35 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     ref_a = int(2**nelec_a - 1)
     ref_b = int(2**nelec_b - 1)
 
-    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b])), c0))
+    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b], strict=True)), c0, strict=True))
 
     # alpha -> alpha excitations
     c1a_configs, c1a_signs = _excited_configurations(nelec_a, norb, 1)
-    fcimatr_dict.update(dict(zip(list(zip(c1a_configs, [ref_b] * size_a)), c1a * c1a_signs)))
+    fcimatr_dict.update(
+        dict(
+            zip(list(zip(c1a_configs, [ref_b] * size_a, strict=True)), c1a * c1a_signs, strict=True)
+        )
+    )
 
     # beta -> beta excitations
     c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
-    fcimatr_dict.update(dict(zip(list(zip([ref_a] * size_b, c1b_configs)), c1b * c1b_signs)))
+    fcimatr_dict.update(
+        dict(
+            zip(list(zip([ref_a] * size_b, c1b_configs, strict=True)), c1b * c1b_signs, strict=True)
+        )
+    )
 
     # alpha, alpha -> alpha, alpha excitations
     c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
-    fcimatr_dict.update(dict(zip(list(zip(c2aa_configs, [ref_b] * size_aa)), c2aa * c2aa_signs)))
+    fcimatr_dict.update(
+        dict(
+            zip(
+                list(zip(c2aa_configs, [ref_b] * size_aa, strict=True)),
+                c2aa * c2aa_signs,
+                strict=True,
+            )
+        )
+    )
 
     # alpha, beta -> alpha, beta excitations
     fcimatr_dict.update(
@@ -751,13 +795,22 @@ def _ucisd_state(cisd_solver, tol=1e-15):
             zip(
                 list(product(c1a_configs, c1b_configs)),
                 np.einsum("i,j,ij->ij", c1a_signs, c1b_signs, c2ab, optimize=True).ravel(),
+                strict=True,
             )
         )
     )
 
     # beta, beta -> beta, beta excitations
     c2bb_configs, c2bb_signs = _excited_configurations(nelec_b, norb, 2)
-    fcimatr_dict.update(dict(zip(list(zip([ref_a] * size_bb, c2bb_configs)), c2bb * c2bb_signs)))
+    fcimatr_dict.update(
+        dict(
+            zip(
+                list(zip([ref_a] * size_bb, c2bb_configs, strict=True)),
+                c2bb * c2bb_signs,
+                strict=True,
+            )
+        )
+    )
 
     # filter based on tolerance cutoff
     fcimatr_dict = {key: value for key, value in fcimatr_dict.items() if abs(value) > tol}
@@ -847,18 +900,30 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
     ref_a = int(2**nelec_a - 1)
     ref_b = int(2**nelec_b - 1)
 
-    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b])), [1.0]))
+    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b], strict=True)), [1.0], strict=True))
 
     # alpha -> alpha excitations
     t1a_configs, t1a_signs = _excited_configurations(nelec_a, norb, 1)
     fcimatr_dict.update(
-        dict(zip(list(zip(t1a_configs, [ref_b] * len(t1a_configs))), t1a.ravel() * t1a_signs))
+        dict(
+            zip(
+                list(zip(t1a_configs, [ref_b] * len(t1a_configs), strict=True)),
+                t1a.ravel() * t1a_signs,
+                strict=True,
+            )
+        )
     )
 
     # beta -> beta excitations
     t1b_configs, t1b_signs = _excited_configurations(nelec_b, norb, 1)
     fcimatr_dict.update(
-        dict(zip(list(zip([ref_a] * len(t1b_configs), t1b_configs)), t1b.ravel() * t1b_signs))
+        dict(
+            zip(
+                list(zip([ref_a] * len(t1b_configs), t1b_configs, strict=True)),
+                t1b.ravel() * t1b_signs,
+                strict=True,
+            )
+        )
     )
 
     # alpha, alpha -> alpha, alpha excitations
@@ -870,7 +935,11 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
         t2aa = t2aa[ooidx][:, vvidx[0], vvidx[1]]
         fcimatr_dict.update(
             dict(
-                zip(list(zip(t2aa_configs, [ref_b] * len(t2aa_configs))), t2aa.ravel() * t2aa_signs)
+                zip(
+                    list(zip(t2aa_configs, [ref_b] * len(t2aa_configs), strict=True)),
+                    t2aa.ravel() * t2aa_signs,
+                    strict=True,
+                )
             )
         )
 
@@ -882,7 +951,11 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
         t2bb = t2bb[ooidx][:, vvidx[0], vvidx[1]]
         fcimatr_dict.update(
             dict(
-                zip(list(zip([ref_a] * len(t2bb_configs), t2bb_configs)), t2bb.ravel() * t2bb_signs)
+                zip(
+                    list(zip([ref_a] * len(t2bb_configs), t2bb_configs, strict=True)),
+                    t2bb.ravel() * t2bb_signs,
+                    strict=True,
+                )
             )
         )
 
@@ -898,6 +971,7 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
                     t2ab.reshape(nelec_a * nvir_a, -1),
                     optimize=True,
                 ).ravel(),
+                strict=True,
             )
         )
     )
@@ -991,18 +1065,30 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     ref_a = int(2**nelec_a - 1)
     ref_b = int(2**nelec_b - 1)
 
-    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b])), [1.0]))
+    fcimatr_dict = dict(zip(list(zip([ref_a], [ref_b], strict=True)), [1.0], strict=True))
 
     # alpha -> alpha excitations
     t1a_configs, t1a_signs = _excited_configurations(nelec_a, norb, 1)
     fcimatr_dict.update(
-        dict(zip(list(zip(t1a_configs, [ref_b] * len(t1a_configs))), t1a.ravel() * t1a_signs))
+        dict(
+            zip(
+                list(zip(t1a_configs, [ref_b] * len(t1a_configs), strict=True)),
+                t1a.ravel() * t1a_signs,
+                strict=True,
+            )
+        )
     )
 
     # beta -> beta excitations
     t1b_configs, t1b_signs = _excited_configurations(nelec_b, norb, 1)
     fcimatr_dict.update(
-        dict(zip(list(zip([ref_a] * len(t1b_configs), t1b_configs)), t1b.ravel() * t1b_signs))
+        dict(
+            zip(
+                list(zip([ref_a] * len(t1b_configs), t1b_configs, strict=True)),
+                t1b.ravel() * t1b_signs,
+                strict=True,
+            )
+        )
     )
 
     # alpha, alpha -> alpha, alpha excitations
@@ -1014,7 +1100,11 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
         t2aa = t2aa[ooidx][:, vvidx[0], vvidx[1]]
         fcimatr_dict.update(
             dict(
-                zip(list(zip(t2aa_configs, [ref_b] * len(t2aa_configs))), t2aa.ravel() * t2aa_signs)
+                zip(
+                    list(zip(t2aa_configs, [ref_b] * len(t2aa_configs), strict=True)),
+                    t2aa.ravel() * t2aa_signs,
+                    strict=True,
+                )
             )
         )
 
@@ -1027,7 +1117,11 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
         t2bb = t2bb[ooidx][:, vvidx[0], vvidx[1]]
         fcimatr_dict.update(
             dict(
-                zip(list(zip([ref_a] * len(t2bb_configs), t2bb_configs)), t2bb.ravel() * t2bb_signs)
+                zip(
+                    list(zip([ref_a] * len(t2bb_configs), t2bb_configs, strict=True)),
+                    t2bb.ravel() * t2bb_signs,
+                    strict=True,
+                )
             )
         )
 
@@ -1043,6 +1137,7 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
                     t2ab.reshape(nelec_a * nvir_a, -1),
                     optimize=True,
                 ).ravel(),
+                strict=True,
             )
         )
     )
@@ -1110,7 +1205,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
         # interleave spin-up/down operators) is consistent with pennylane
 
     ## create the FCI matrix as a dict
-    fcimatr_dict = dict(zip(list(zip(row, col)), coeffs))
+    fcimatr_dict = dict(zip(list(zip(row, col, strict=True)), coeffs, strict=True))
 
     # filter based on tolerance cutoff
     fcimatr_dict = {key: value for key, value in fcimatr_dict.items() if abs(value) > tol}
@@ -1167,7 +1262,7 @@ def _shci_state(wavefunction, tol=1e-15):
         xb.append(bin_b)
 
     ## create the FCI matrix as a dict
-    fcimatr_dict = dict(zip(list(zip(xa, xb)), coeffs))
+    fcimatr_dict = dict(zip(list(zip(xa, xb, strict=True)), coeffs, strict=True))
 
     # filter based on tolerance cutoff
     fcimatr_dict = {key: value for key, value in fcimatr_dict.items() if abs(value) > tol}

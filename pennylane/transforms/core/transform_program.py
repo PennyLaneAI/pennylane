@@ -54,7 +54,7 @@ def _batch_postprocessing(
     (3.0, 3.5, 8.0)
 
     """
-    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices))
+    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices, strict=True))
 
 
 def _apply_postprocessing_stack(

@@ -218,3 +218,12 @@ class TestEvolution:
             match="is not imaginary; the expected format is exp",
         ):
             _ = op.generator()
+
+    def test_pow_is_evolution(self):
+        """Test that Evolution raised to a pow is another Evolution."""
+
+        op = Evolution(qml.Z(0), -0.5)
+
+        pow_op = op.pow(2.5)
+        qml.assert_equal(pow_op, Evolution(qml.Z(0), -0.5 * 2.5))
+        assert type(pow_op) == Evolution  # pylint: disable=unidiomatic-typecheck
