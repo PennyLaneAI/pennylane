@@ -49,7 +49,6 @@ def _rz_phase_gradient(
         qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
         qml.SemiAdder(aux_wires, phase_grad_wires, work_wires),
         qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
-        qml.GlobalPhase(1j * 7 * np.pi / 8),
     ]
     return ops
 
@@ -109,8 +108,10 @@ def rz_phase_gradient(
         asd
     """
     operations = []
+    n_global_phases = 0
     for op in tape.operations:
         if isinstance(op, qml.RZ):
+            n_global_phases += 1
             with QueuingManager.stop_recording():
                 operations.extend(
                     _rz_phase_gradient(
@@ -123,6 +124,7 @@ def rz_phase_gradient(
         else:
             operations.append(op)
 
+    operations.append(qml.GlobalPhase(n_global_phases * 7 * np.pi / 8))
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):

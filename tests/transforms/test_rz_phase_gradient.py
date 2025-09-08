@@ -93,5 +93,4 @@ def test_integration_rz_phase_gradient():
     output_expected = qml.matrix(qml.RX(phi, 0)) @ np.eye(2)[0]
     output_expected = np.kron(output_expected, np.eye(2 ** (len(wire_order) - 1))[0])
 
-    assert np.isclose(np.abs(output.conj() @ output_expected), 1)
     assert np.allclose(output, output_expected)
