@@ -159,7 +159,6 @@ class TestWireResourceManager:
         than the available dirty wires."""
 
         qm = WireResourceManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
-
         with pytest.raises(ValueError, match="Freeing more wires than available dirty wires."):
             qm.free_wires(6)
 
