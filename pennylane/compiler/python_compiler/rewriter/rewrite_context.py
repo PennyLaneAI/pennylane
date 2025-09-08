@@ -68,6 +68,17 @@ class WireQubitMap:
         """Check if the map contains a wire label or qubit."""
         return key in self.wire_to_qubit_map or key in self.qubit_to_wire_map
 
+    def __len__(self):
+        """Return the length of the map."""
+        len1 = len(self.wire_to_qubit_map)
+        len2 = len(self.qubit_to_wire_map)
+        assert (
+            len1 == len2
+        ), """The lengths of the wire and qubit maps do not match. This could be
+        a result of incorrect usage of the WireQubitMap class."""
+
+        return len1
+
     def __getitem__(
         self, key: int | AbstractWire | quantum.QubitSSAValue
     ) -> int | AbstractWire | quantum.QubitSSAValue:
