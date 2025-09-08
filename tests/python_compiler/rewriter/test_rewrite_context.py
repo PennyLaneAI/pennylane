@@ -49,6 +49,63 @@ class TestAbstractWire:
 class TestWireQubitMap:
     """Unit tests for the WireQubitMap class."""
 
+    def test_init(self):
+        """Test that the WireQubitMap's initialization is correct."""
+
+    def test_contains(self):
+        """Test that the __contains__ dunder method works correctly."""
+
+    def test_len(self):
+        """Test that the __len__ dunder method works correctly."""
+
+    def test_len_invalid_length(self):
+        """Test that __len__ raises an error if the lengths of the dictionaries do not match."""
+
+    def test_getitem(self):
+        """Test that the __getitem__ dunder method works correctly."""
+
+    def test_getitem_invalid_ssa_value(self):
+        """Test that an error is raised if the input to __getitem__ is an SSAValue
+        but its type is not QubitType."""
+
+    def test_getitem_invalid_wire(self):
+        """Test that an error is raised if WireQubitMap.wires is defined but the static wire
+        label is not in the wires tuple."""
+
+    def test_setitem(self):
+        """Test that the __setitem__ dunder method works correctly."""
+
+    def test_setitem_invalid_ssa_value(self):
+        """Test that an error is raised if the input to __setitem__ is an SSAValue
+        but its type is not QubitType."""
+
+    def test_setitem_ssa_key_with_invalid_val(self):
+        """Test that an error is raised by __setitem__ if the key is a valid SSAValue but
+        the value is not a valid wire label."""
+
+    def test_setitem_wire_key_invalid_val(self):
+        """Test that an error is raised by __setitem__ if the key is a valid wire label
+        but the value is not a qubit SSAValue."""
+
+    def test_setitem_wire_key_not_in_wires(self):
+        """Test that an error is raised by __setitem__ if the key is a wire label that is
+        not in the wires tuple."""
+
+    def test_setitem_invalid_key_type(self):
+        """Test that an error is raised by __setitem__ if the key is not a qubit or a wire label."""
+
+    def test_pop(self):
+        """Test that the pop method works correctly."""
+
+    def test_pop_invalid_ssa_value(self):
+        """Test that an error is raised by pop if the key is not a valid SSAValue."""
+
+    def test_update_qubit(self):
+        """Test that the update_qubit method works correctly."""
+
+    def test_update_qubit_invalid(self):
+        """Test that an error is raised by update_qubit if the old qubit is not in the map."""
+
 
 class TestRewriteContext:
     """Unit tests for the RewriteContext class."""

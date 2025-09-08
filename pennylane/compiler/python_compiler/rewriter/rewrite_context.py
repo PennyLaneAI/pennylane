@@ -50,8 +50,8 @@ class AbstractWire:
 class WireQubitMap:
     """Class to maintain two-way mapping between wire labels and SSA qubits."""
 
-    wires: tuple[int | AbstractWire, ...] | None = None
-    """Tuple containing all available wire labels. None if not provided."""
+    wires: tuple[int, ...] | None = None
+    """Tuple containing all available static wire labels. None if not provided."""
 
     wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = {}
     """Map from wire labels to the latest known qubit SSAValues to which
@@ -87,7 +87,7 @@ class WireQubitMap:
 
             return self.qubit_to_wire_map[key]
 
-        if self.wires is not None and key not in self.wires:
+        if self.wires is not None and isinstance(key, int) and key not in self.wires:
             raise KeyError(f"{key} is not an available wire.")
 
         return self.wire_to_qubit_map[key]
@@ -105,6 +105,8 @@ class WireQubitMap:
                     f"with type {key.type}"
                 )
             assert isinstance(val, (int, AbstractWire))
+            if isinstance(val, int) and self.wires is not None and val not in self.wires:
+                raise KeyError(f"{key} is not an available wire.")
 
             old_wire = self.qubit_to_wire_map.pop(key, None)
             _ = self.wire_to_qubit_map.pop(old_wire, None)
