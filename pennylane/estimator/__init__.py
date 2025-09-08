@@ -24,6 +24,7 @@ Qubit Management Classes:
 
     ~Allocate
     ~Deallocate
+    ~WireResourceManager
 
 Resource Estimation Base Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,6 +36,6 @@ Resource Estimation Base Classes:
 
 """
 
-from .wires_manager import Allocate, Deallocate
+from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 from .resources_base import Resources

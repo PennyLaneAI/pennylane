@@ -15,10 +15,10 @@ r"""Base class for storing resources."""
 from __future__ import annotations
 
 import copy
-from collections import defaultdict
+from collections import defaultdict, Counter
 from decimal import Decimal
 
-from pennylane.estimator.wires_manager import WireResourceManager
+from .wires_manager import WireResourceManager
 
 
 class Resources:
@@ -36,20 +36,20 @@ class Resources:
     The resources can be accessed as class attributes. Additionally, the :class:`~.Resources`
     instance can be nicely displayed in the console.
 
-    >>> H = plre.resource_rep(plre.ResourceHadamard)
-    >>> X = plre.resource_rep(plre.ResourceX)
-    >>> Y = plre.resource_rep(plre.ResourceY)
+    >>> H = plre.resource_rep(plre.Hadamard)
+    >>> X = plre.resource_rep(plre.X)
+    >>> Y = plre.resource_rep(plre.Y)
     >>> wm = WireResourceManager(work_wires=3)
     >>> gt = defaultdict(int, {H: 10, X:7, Y:3})
     >>>
     >>> res = plre.Resources(wire_manager=wm, gate_types=gt)
     >>> print(res)
     --- Resources: ---
-     Total qubits: 3
-        algorithmic qubits: 0
-        allocated qubits: 3
-             clean qubits: 3
-             dirty qubits: 0
+     Total wires: 3
+        algorithmic wires: 0
+        allocated wires: 3
+             clean wires: 3
+             dirty wires: 0
      Total gates : 20
       'Hadamard': 10,
       'X': 7,
@@ -62,23 +62,23 @@ class Resources:
         and multiplication of resources. When combining resources, we can make a simplifying
         assumption about how they are applied in a quantum circuit (in series or in parallel).
 
-        When assuming the circuits were executed in series, the number of algorithmic qubits add
+        When assuming the circuits were executed in series, the number of algorithmic wires add
         together. When assuming the circuits were executed in parallel, the maximum of each set of
-        algorithmic qubits is used. The clean auxiliary qubits can be reused between the circuits,
+        algorithmic wires is used. The clean auxiliary wires can be reused between the circuits,
         and thus we always use the maximum of each set when combining the resources. Finally, the
-        dirty qubits cannot be reused between circuits, thus we always add them together.
+        dirty wires cannot be reused between circuits, thus we always add them together.
 
         .. code-block::
 
             from collections import defaultdict
 
             # Resource reps for each operator:
-            H = plre.resource_rep(plre.ResourceHadamard)
-            X = plre.resource_rep(plre.ResourceX)
-            Z = plre.resource_rep(plre.ResourceZ)
-            CNOT = plre.resource_rep(plre.ResourceCNOT)
+            H = plre.resource_rep(plre.Hadamard)
+            X = plre.resource_rep(plre.X)
+            Z = plre.resource_rep(plre.Z)
+            CNOT = plre.resource_rep(plre.CNOT)
 
-            # state of qubits:
+            # state of wires:
             wm1 = WireResourceManager(work_wires={"clean":2, "dirty":1}, algo_wires=3)
             wm2 = WireResourceManager(work_wires={"clean":1, "dirty":2}, algo_wires=4)
 
@@ -95,8 +95,8 @@ class Resources:
 
             >>> print(res1)
             --- Resources: ---
-             Total qubits: 6
-                algorithmic qubits: 3
+             Total wires: 6
+                algorithmic wires: 3
                 allocated qubits: 3
                      clean qubits: 2
                      dirty qubits: 1
@@ -245,18 +245,18 @@ class Resources:
     def __str__(self):
         """Generates a string representation of the Resources object."""
         wm = self.wire_manager
-        total_qubits = wm.total_qubits
+        total_wires = wm.total_wires
         total_gates = sum(self.clean_gate_counts.values())
 
         total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
-        total_qubits_str = (
-            str(total_qubits) if total_qubits <= 9999 else f"{Decimal(total_qubits):.3E}"
+        total_wires_str = (
+            str(total_wires) if total_wires <= 9999 else f"{Decimal(total_wires):.3E}"
         )
 
         items = "--- Resources: ---\n"
-        items += f" Total qubits: {total_qubits_str}\n"
+        items += f" Total wires: {total_wires_str}\n"
 
-        qubit_breakdown_str = f"    algorithmic qubits: {wm.algo_qubits}\n    allocated qubits: {wm.clean_qubits+wm.dirty_qubits}\n\t clean qubits: {wm.clean_qubits}\n\t dirty qubits: {wm.dirty_qubits}\n"
+        qubit_breakdown_str = f"    algorithmic wires: {wm.algo_wires}\n    allocated wires: {wm.clean_wires+wm.dirty_wires}\n\t clean wires: {wm.clean_wires}\n\t dirty wires: {wm.dirty_wires}\n"
         items += qubit_breakdown_str
 
         items += f" Total gates : {total_gates_str}\n  "
@@ -295,17 +295,17 @@ def add_in_series(first: Resources, other) -> Resources:  # +
     """
     wm1, wm2 = (first.wire_manager, other.wire_manager)
 
-    new_clean = max(wm1.clean_qubits, wm2.clean_qubits)
-    new_dirty = wm1.dirty_qubits + wm2.dirty_qubits
+    new_clean = max(wm1.clean_wires, wm2.clean_wires)
+    new_dirty = wm1.dirty_wires + wm2.dirty_wires
     new_budget = wm1.tight_budget or wm2.tight_budget
-    new_logic = max(wm1.algo_qubits, wm2.algo_qubits)
+    new_logic = max(wm1.algo_wires, wm2.algo_wires)
 
     new_wire_manager = WireResourceManager(
         work_wires={"clean": new_clean, "dirty": new_dirty}, tight_budget=new_budget
     )
 
-    new_wire_manager.algo_qubits = new_logic
-    new_gate_types = _combine_dict(first.gate_types, other.gate_types)
+    new_wire_manager.algo_wires = new_logic
+    new_gate_types = defaultdict(int, Counter(first.gate_types) + Counter(other.gate_types))
     return Resources(new_wire_manager, new_gate_types)
 
 
@@ -321,18 +321,18 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
     """
     qm1, qm2 = (first.wire_manager, other.wire_manager)
 
-    new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
-    new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
+    new_clean = max(qm1.clean_wires, qm2.clean_wires)
+    new_dirty = qm1.dirty_wires + qm2.dirty_wires
     new_budget = qm1.tight_budget or qm2.tight_budget
-    new_logic = qm1.algo_qubits + qm2.algo_qubits
+    new_logic = qm1.algo_wires + qm2.algo_wires
 
     new_wire_manager = WireResourceManager(
         work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
-    new_wire_manager.algo_qubits = new_logic
-    new_gate_types = _combine_dict(first.gate_types, other.gate_types)
+    new_wire_manager.algo_wires = new_logic
+    new_gate_types = defaultdict(int, Counter(first.gate_types) + Counter(other.gate_types))
     return Resources(new_wire_manager, new_gate_types)
 
 
@@ -348,18 +348,18 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     """
     qm = first.wire_manager
 
-    new_clean = qm.clean_qubits
-    new_dirty = scalar * qm.dirty_qubits
+    new_clean = qm.clean_wires
+    new_dirty = scalar * qm.dirty_wires
     new_budget = qm.tight_budget
-    new_logic = qm.algo_qubits
+    new_logic = qm.algo_wires
 
     new_wire_manager = WireResourceManager(
         work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
-    new_wire_manager.algo_qubits = new_logic
-    new_gate_types = _scale_dict(first.gate_types, scalar)
+    new_wire_manager.algo_wires = new_logic
+    new_gate_types = defaultdict(int, {k: v * scalar for k, v in first.gate_types.items()})
 
     return Resources(new_wire_manager, new_gate_types)
 
@@ -376,25 +376,17 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
     """
     qm = first.wire_manager
 
-    new_clean = qm.clean_qubits
-    new_dirty = scalar * qm.dirty_qubits
+    new_clean = qm.clean_wires
+    new_dirty = scalar * qm.dirty_wires
     new_budget = qm.tight_budget
-    new_logic = scalar * qm.algo_qubits
+    new_logic = scalar * qm.algo_wires
 
     new_wire_manager = WireResourceManager(
         work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
-    new_wire_manager.algo_qubits = new_logic
-    new_gate_types = _scale_dict(first.gate_types, scalar)
+    new_wire_manager.algo_wires = new_logic
+    new_gate_types = defaultdict(int, {k: v * scalar for k, v in first.gate_types.items()})
 
     return Resources(new_wire_manager, new_gate_types)
-
-
-    return defaultdict(int, Counter(dict1) + Counter(dict2))
-
-
-def _scale_dict(dict1: defaultdict, scalar: int) -> defaultdict:
-    r"""Private function which scales the values in a dictionary."""
-    return defaultdict(int, {k: v * scalar for k, v in dict1.items()})

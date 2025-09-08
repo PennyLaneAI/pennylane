@@ -189,14 +189,14 @@ class Allocate(_WireAction):
         >>> def resource_decomp(num_ctrl_wires=3, num_ctrl_values=0, **kwargs):
         ...     gate_list = []
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
         ...
         ...     return gate_list
         >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
         WireResourceManager(clean wires=0, dirty wires=0, algorithmic wires=4, tight budget=False)
 
@@ -209,15 +209,15 @@ class Allocate(_WireAction):
         ...     gate_list = []
         ...     gate_list.append(Allocate(num_wires=1))
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
         ...
         ...     gate_list.append(Deallocate(num_wires=1))
         ...     return gate_list
         >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
         WireResourceManager(clean wires=1, dirty wires=0, algorithmic wires=4, tight budget=False)
 
@@ -249,14 +249,14 @@ class Deallocate(_WireAction):
         ...     gate_list = []
         ...     gate_list.append(Allocate(num_wires=1))
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
         ...
         ...     return gate_list
         >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
         WireResourceManager(clean wires=0, dirty wires=1, algorithmic wires=4, tight budget=False)
 
@@ -269,15 +269,15 @@ class Deallocate(_WireAction):
         ...     gate_list = []
         ...     gate_list.append(Allocate(num_wires=1))
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
         ...
         ...     gate_list.append(Deallocate(num_wires=1))
         ...     return gate_list
         >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
         WireResourceManager(clean wires=1, dirty wires=0, algorithmic wires=4, tight budget=False)
 

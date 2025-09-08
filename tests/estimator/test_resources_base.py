@@ -21,8 +21,6 @@ import pytest
 
 from pennylane.estimator.resources_base import (
     Resources,
-    _combine_dict,
-    _scale_dict,
     add_in_parallel,
     add_in_series,
     mul_in_parallel,
@@ -86,11 +84,11 @@ class TestResources:
     str_data = (
         (
             "--- Resources: ---\n"
-            + " Total qubits: 5\n"
-            + "    algorithmic qubits: 0\n"
-            + "    allocated qubits: 5\n"
-            + "\t clean qubits: 5\n"
-            + "\t dirty qubits: 0\n"
+            + " Total wires: 5\n"
+            + "    algorithmic wires: 0\n"
+            + "    allocated wires: 5\n"
+            + "\t clean wires: 5\n"
+            + "\t dirty wires: 0\n"
             + " Total gates : 4\n"
             + "  'Hadamard': 2,\n"
             + "  'X': 1,\n"
@@ -98,22 +96,22 @@ class TestResources:
         ),
         (
             "--- Resources: ---\n"
-            + " Total qubits: 1.112E+4\n"
-            + "    algorithmic qubits: 22\n"
-            + "    allocated qubits: 11100\n"
-            + "\t clean qubits: 8753\n"
-            + "\t dirty qubits: 2347\n"
+            + " Total wires: 1.112E+4\n"
+            + "    algorithmic wires: 22\n"
+            + "    allocated wires: 11100\n"
+            + "\t clean wires: 8753\n"
+            + "\t dirty wires: 2347\n"
             + " Total gates : 1.258E+3\n"
             + "  'Hadamard': 467,\n"
             + "  'CNOT': 791"
         ),
         (
             "--- Resources: ---\n"
-            + " Total qubits: 730\n"
-            + "    algorithmic qubits: 108\n"
-            + "    allocated qubits: 622\n"
-            + "\t clean qubits: 400\n"
-            + "\t dirty qubits: 222\n"
+            + " Total wires: 730\n"
+            + "    algorithmic wires: 108\n"
+            + "    allocated wires: 622\n"
+            + "\t clean wires: 400\n"
+            + "\t dirty wires: 222\n"
             + " Total gates : 5.743E+3\n"
             + "  'X': 100,\n"
             + "  'Y': 120,\n"
@@ -210,7 +208,7 @@ class TestResources:
                 "dirty": 2569,  # dirty1 + dirty2
             }
         )
-        expected_wm_add.algo_qubits = 108  # max(algo1, algo2)
+        expected_wm_add.algo_wires = 108  # max(algo1, algo2)
         expected_gt_add = defaultdict(
             int,
             {h: 467, x: 100, y: 120, z: 1000, cnot: 5314},  # add gate counts
@@ -231,7 +229,7 @@ class TestResources:
                 "dirty": 2569,  # dirty1 + dirty2
             }
         )
-        expected_wm_and.algo_qubits = 130  # algo1 + algo2
+        expected_wm_and.algo_wires = 130  # algo1 + algo2
         expected_gt_and = defaultdict(
             int,
             {h: 467, x: 100, y: 120, z: 1000, cnot: 5314},  # add gate counts
@@ -252,7 +250,7 @@ class TestResources:
                 "dirty": 222 * k,  # k * dirty1
             }
         )
-        expected_wm_mul.algo_qubits = 108  # algo
+        expected_wm_mul.algo_wires = 108  # algo
         expected_gt_mul = defaultdict(
             int,
             {x: 100 * k, y: 120 * k, z: 1000 * k, cnot: 4523 * k},  # multiply gate counts
@@ -275,7 +273,7 @@ class TestResources:
                 "dirty": 222 * k,  # k * dirty1
             }
         )
-        expected_wm_matmul.algo_qubits = 108 * k  # k * algo
+        expected_wm_matmul.algo_wires = 108 * k  # k * algo
         expected_gt_matmul = defaultdict(
             int,
             {x: 100 * k, y: 120 * k, z: 1000 * k, cnot: 4523 * k},  # multiply gate counts
@@ -285,31 +283,3 @@ class TestResources:
         assert (k @ res) == expected_matmul
         assert (res @ k) == expected_matmul
         assert mul_in_parallel(res, k) == expected_matmul
-
-
-def test_combine_dict():
-    """Test the private _combine_dict function works as expected"""
-    g0 = defaultdict(int, {})
-    g1 = defaultdict(int, {"a": 1, "b": 2, "c": 3})
-    g2 = defaultdict(int, {"b": -1, "c": 0, "d": 1})
-
-    g_res = defaultdict(int, {"a": 1, "b": 1, "c": 3, "d": 1})
-    assert _combine_dict(g0, g1) == g1
-    assert _combine_dict(g1, g2) == g_res
-
-
-@pytest.mark.parametrize(
-    "k, expected_dict",
-    (
-        (0, defaultdict(int, {"a": 0, "b": 0, "c": 0})),
-        (1, defaultdict(int, {"a": 1, "b": 2, "c": 3})),
-        (3, defaultdict(int, {"a": 3, "b": 6, "c": 9})),
-    ),
-)
-def test_scale_dict(k, expected_dict):
-    """Test the private _scale_dict function works as expected"""
-    g0 = defaultdict(int, {})
-    g1 = defaultdict(int, {"a": 1, "b": 2, "c": 3})
-
-    assert _scale_dict(g0, k) == g0
-    assert _scale_dict(g1, k) == expected_dict
