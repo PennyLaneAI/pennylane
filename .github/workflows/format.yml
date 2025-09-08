@@ -35,7 +35,12 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install black pylint==3.3.8 isort==6.0.1
+        run: >-
+          pip install
+          --constraint requirements-dev.txt
+          black
+          pylint
+          isort
 
       - uses: actions/checkout@v4
 
