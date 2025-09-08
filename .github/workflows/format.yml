@@ -23,7 +23,7 @@ jobs:
       default_runner: ubuntu-latest
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
-  black-isort-pylint:
+  black-pylint:
     if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
