@@ -113,12 +113,12 @@ OPERATIONS = [
     TanOp,
     TanhOp,
     # Data movement operations
+    BroadcastInDimOp,
     ConcatenateOp,
     GatherOp,
     ReshapeOp,
     ScatterOp,
     SliceOp,
-    BroadcastInDimOp,
     # Control flow operations
     IfOp,
     WhileOp,

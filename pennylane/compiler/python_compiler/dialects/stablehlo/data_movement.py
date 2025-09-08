@@ -88,6 +88,40 @@ class SliceArraysSameSizeTrait(OpTrait):
 
 
 @irdl_op_definition
+class BroadcastInDimOp(IRDLOperation):
+    """
+    Expands the dimensions and/or rank of an input tensor by duplicating the
+    data in the `operand` tensor and produces a `result` tensor.
+
+    See:
+    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#broadcast_in_dim
+
+    Example:
+    ```mlir
+    %result = stablehlo.broadcast_in_dim %operand, dims = [2, 1] : (tensor<1x3xi32>) -> tensor<2x3x2xi32>
+    ```
+    """
+
+    name = "stablehlo.broadcast_in_dim"
+    operand = operand_def(HLO_AnyTensor)
+    broadcast_dimensions = attr_def(DenseArrayBase.constr(i64))
+    result = result_def(HLO_AnyTensor)
+
+    assembly_format = """
+        $operand `,` `dims` `=` $broadcast_dimensions
+          attr-dict `:` functional-type(operands, results)
+    """
+
+    traits = traits_def(
+        NoMemoryEffect(),
+        # TODO: HLO_SpeculatableIfAllInputsStatic,
+        # TODO: HLO_CompatibleOperandsAndResultElementType,
+    )
+
+    # TODO: MLIR has a custom verifier for the broadcast_in_dim operation.
+
+
+@irdl_op_definition
 class ConcatenateOp(IRDLOperation):
     """
     Concatenates a variadic number of tensors in `inputs` along `dimension`
@@ -299,37 +333,3 @@ class SliceOp(IRDLOperation):
         # TODO: HLO_SpeculatableIfStaticDimInOutputIsStaticInInput,
         # TODO: InferTypeOpInterface(),
     )
-
-
-@irdl_op_definition
-class BroadcastInDimOp(IRDLOperation):
-    """
-    Expands the dimensions and/or rank of an input tensor by duplicating the
-    data in the `operand` tensor and produces a `result` tensor.
-
-    See:
-    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#broadcast_in_dim
-
-    Example:
-    ```mlir
-    %result = stablehlo.broadcast_in_dim %operand, dims = [2, 1] : (tensor<1x3xi32>) -> tensor<2x3x2xi32>
-    ```
-    """
-
-    name = "stablehlo.broadcast_in_dim"
-    operand = operand_def(HLO_AnyTensor)
-    broadcast_dimensions = attr_def(DenseArrayBase.constr(i64))
-    result = result_def(HLO_AnyTensor)
-
-    assembly_format = """
-        $operand `,` `dims` `=` $broadcast_dimensions
-          attr-dict `:` functional-type(operands, results)
-    """
-
-    traits = traits_def(
-        NoMemoryEffect(),
-        # TODO: HLO_SpeculatableIfAllInputsStatic,
-        # TODO: HLO_CompatibleOperandsAndResultElementType,
-    )
-
-    # TODO: MLIR has a custom verifier for the broadcast_in_dim operation.
