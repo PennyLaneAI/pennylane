@@ -14,7 +14,7 @@
 r"""
 This module contains tools for logical resource estimation.
 
-.. currentmodule:: pennylane.labs.estimator
+.. currentmodule:: pennylane.estimator
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -22,8 +22,8 @@ Qubit Management Classes:
 .. autosummary::
     :toctree: api
 
-    ~AllocWires
-    ~FreeWires
+    ~Allocate
+    ~Deallocate
 
 Resource Estimation Base Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,6 +35,6 @@ Resource Estimation Base Classes:
 
 """
 
-from .wires_manager import AllocWires, FreeWires
+from .wires_manager import Allocate, Deallocate
 
 from .resources_base import Resources
