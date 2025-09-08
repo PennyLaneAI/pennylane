@@ -128,40 +128,48 @@ class GatherDimensionNumbers(ParametrizedAttribute):
     def parse_parameters(cls, parser: AttrParser) -> Sequence[Attribute]:
         """Parse gather dimension numbers from structured format"""
         with parser.in_angle_brackets():
-            # Parse offset_dims
-            parser.parse_characters("offset_dims")
-            parser.parse_punctuation("=")
-            offset_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Initialize default values for all fields
+            offset_dims = ArrayAttr([])
+            collapsed_slice_dims = ArrayAttr([])
+            operand_batching_dims = ArrayAttr([])
+            start_indices_batching_dims = ArrayAttr([])
+            start_index_map = ArrayAttr([])
+            index_vector_dim = IntegerAttr(0, i64)
 
-            # Parse collapsed_slice_dims
-            parser.parse_characters("collapsed_slice_dims")
-            parser.parse_punctuation("=")
-            collapsed_slice_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse offset_dims
+            if parser.parse_optional_characters("offset_dims") is not None:
+                parser.parse_punctuation("=")
+                offset_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse operand_batching_dims
-            parser.parse_characters("operand_batching_dims")
-            parser.parse_punctuation("=")
-            operand_batching_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse collapsed_slice_dims
+            if parser.parse_optional_characters("collapsed_slice_dims") is not None:
+                parser.parse_punctuation("=")
+                collapsed_slice_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse start_indices_batching_dims
-            parser.parse_characters("start_indices_batching_dims")
-            parser.parse_punctuation("=")
-            start_indices_batching_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse operand_batching_dims
+            if parser.parse_optional_characters("operand_batching_dims") is not None:
+                parser.parse_punctuation("=")
+                operand_batching_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse start_index_map
-            parser.parse_characters("start_index_map")
-            parser.parse_punctuation("=")
-            start_index_map = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse start_indices_batching_dims
+            if parser.parse_optional_characters("start_indices_batching_dims") is not None:
+                parser.parse_punctuation("=")
+                start_indices_batching_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse index_vector_dim
-            parser.parse_characters("index_vector_dim")
-            parser.parse_punctuation("=")
-            index_vector_dim = IntegerAttr(parser.parse_integer(), i64)
+            # Try to parse start_index_map
+            if parser.parse_optional_characters("start_index_map") is not None:
+                parser.parse_punctuation("=")
+                start_index_map = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
+
+            # Try to parse index_vector_dim
+            if parser.parse_optional_characters("index_vector_dim") is not None:
+                parser.parse_punctuation("=")
+                index_vector_dim = IntegerAttr(parser.parse_integer(), i64)
 
             return (
                 offset_dims,
@@ -228,40 +236,48 @@ class ScatterDimensionNumbers(ParametrizedAttribute):
     def parse_parameters(cls, parser: AttrParser) -> Sequence[Attribute]:
         """Parse scatter dimension numbers from structured format"""
         with parser.in_angle_brackets():
-            # Parse update_window_dims
-            parser.parse_characters("update_window_dims")
-            parser.parse_punctuation("=")
-            update_window_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Initialize default values for all fields
+            update_window_dims = ArrayAttr([])
+            inserted_window_dims = ArrayAttr([])
+            input_batching_dims = ArrayAttr([])
+            scatter_indices_batching_dims = ArrayAttr([])
+            scatter_dims_to_operand_dims = ArrayAttr([])
+            index_vector_dim = IntegerAttr(0, i64)
 
-            # Parse inserted_window_dims
-            parser.parse_characters("inserted_window_dims")
-            parser.parse_punctuation("=")
-            inserted_window_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse update_window_dims
+            if parser.parse_optional_characters("update_window_dims") is not None:
+                parser.parse_punctuation("=")
+                update_window_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse input_batching_dims
-            parser.parse_characters("input_batching_dims")
-            parser.parse_punctuation("=")
-            input_batching_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse inserted_window_dims
+            if parser.parse_optional_characters("inserted_window_dims") is not None:
+                parser.parse_punctuation("=")
+                inserted_window_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse scatter_indices_batching_dims
-            parser.parse_characters("scatter_indices_batching_dims")
-            parser.parse_punctuation("=")
-            scatter_indices_batching_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse input_batching_dims
+            if parser.parse_optional_characters("input_batching_dims") is not None:
+                parser.parse_punctuation("=")
+                input_batching_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse scatter_dims_to_operand_dims
-            parser.parse_characters("scatter_dims_to_operand_dims")
-            parser.parse_punctuation("=")
-            scatter_dims_to_operand_dims = parse_dims(parser)
-            parser.parse_punctuation(",")
+            # Try to parse scatter_indices_batching_dims
+            if parser.parse_optional_characters("scatter_indices_batching_dims") is not None:
+                parser.parse_punctuation("=")
+                scatter_indices_batching_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
 
-            # Parse index_vector_dim
-            parser.parse_characters("index_vector_dim")
-            parser.parse_punctuation("=")
-            index_vector_dim = IntegerAttr(parser.parse_integer(), i64)
+            # Try to parse scatter_dims_to_operand_dims
+            if parser.parse_optional_characters("scatter_dims_to_operand_dims") is not None:
+                parser.parse_punctuation("=")
+                scatter_dims_to_operand_dims = parse_dims(parser)
+                parser.parse_optional_punctuation(",")
+
+            # Try to parse index_vector_dim
+            if parser.parse_optional_characters("index_vector_dim") is not None:
+                parser.parse_punctuation("=")
+                index_vector_dim = IntegerAttr(parser.parse_integer(), i64)
 
             return (
                 update_window_dims,
