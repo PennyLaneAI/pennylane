@@ -48,7 +48,7 @@ class _NumAuxWires(Enum):
 
 
 def _generate_adj_matrix(op_name: str) -> list:
-    """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in a
+    """Generate an adjacency matrix represents the connectivity of auxiliary qubits in a
     graph state for a gate operation.
     Args:
         op_name (str): The gate name. Note that only a gate in the MBQC gate set is supported.
@@ -155,12 +155,12 @@ def _generate_cnot_adj_matrix() -> list:
 
 def _generate_one_wire_op_adj_matrix() -> list:
     """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in the graph state for
-    an one-wire gate based on the textbook MBQC formalism. The connectivity of the target qubits in the register
+    a single-qubit gate based on the textbook MBQC formalism. The connectivity of the target qubits in the register
     and auxiliary qubits is:
 
     tgt --  0  --  1  --  2  --  3
 
-    Note that the target qubit is not in the adjacent matrix and the connectivity
+    Note that the target qubit is not in the adjacency matrix and the connectivity
     of the auxiliary qubits is:
     edges_in_adj_matrix = [
        (1, 0),
@@ -174,7 +174,7 @@ def _generate_one_wire_op_adj_matrix() -> list:
     1  --  2  --  3  --  4  --  5
 
     Returns:
-        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a one-wire gate.
+        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a single-qubit gate.
     """
     num_vertices = _NumAuxWires.SINGLE_QUBIT.value
     edges_in_adj_matrix = [
@@ -222,7 +222,7 @@ class ConvertToMBQCFormalismPattern(
         in the graph state.
 
         Args:
-            adj_matrix_op (arith.ConstantOp) : A `arith.ConstantOp` object stores the connectivity
+            adj_matrix_op (arith.ConstantOp) : An `arith.ConstantOp` object stores the connectivity
             of auxiliary qubits in the graph state.
             op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
                  instead of a qml.ops.
