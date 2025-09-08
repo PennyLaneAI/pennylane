@@ -14,16 +14,16 @@
 """A context that maintains state and configuration information for rewriting
 hybrid workflows."""
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from functools import singledispatchmethod
 from uuid import UUID, uuid4
 
 from xdsl.dialects import arith
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor
-from xdsl.ir import BlockArgument
+from xdsl.ir import Block, BlockArgument
 from xdsl.ir import Operation as xOperation
-from xdsl.ir import SSAValue
+from xdsl.ir import Region, SSAValue
 
 from pennylane.exceptions import CompileError
 
@@ -89,13 +89,20 @@ class RewriteContext:
     def update_qubit(
         self, old_qubit: quantum.QubitSSAValue, new_qubit: quantum.QubitSSAValue
     ) -> None:
-        """Update a qubit."""
+        """Replace a qubit in the context with a new one.
+
+        Args:
+            old_qubit (SSAValue[QubitType]): The old qubit to remove.
+            new_qubit (SSAValue[QubitType]): The new qubit to add.
+        """
         wire = self.qubit_to_wire_map[old_qubit]
         self.wire_to_qubit_map[wire] = new_qubit
         self.qubit_to_wire_map[new_qubit] = wire
         self.qubit_to_wire_map.pop(old_qubit, None)
 
+    # TODO: Should the wire/qubit mapping be captured in its own class?
     def __getitem__(self, key: int | quantum.QubitSSAValue) -> int | quantum.QubitSSAValue | None:
+        """Get a value from the wire/qubit maps."""
         if isinstance(key, SSAValue):
             if not isinstance(key.type, quantum.QubitType):
                 raise CompileError(
@@ -112,6 +119,7 @@ class RewriteContext:
     def __setitem__(
         self, key: int | quantum.QubitSSAValue, val: quantum.QubitSSAValue | int
     ) -> None:
+        """Update the wire/qubit maps."""
         if isinstance(key, SSAValue):
             if not isinstance(key.type, quantum.QubitType):
                 raise CompileError(
@@ -139,7 +147,17 @@ class RewriteContext:
         raise CompileError(f"{key} is not a valid wire label or QubitType SSAValue.")
 
     def get_wire_from_extract_op(self, op: quantum.ExtractOp, update=True) -> int | AbstractWire:
-        """Get the wire label to which a qubit extraction corresponds."""
+        """Get the wire label to which a qubit extraction corresponds.
+
+        Args:
+            op (quantum.ExtractOp): ``ExtractOp`` from which we want to get the wire label.
+                If the wire is dynamic, then an ``AbstractWire`` will be returned.
+            update (bool): Whether or not to update the wire/qubit mapping. ``True`` by default.
+
+        Returns:
+            int | AbstractWire: Wire label corresponding to the qubit being extracted. If dynamic,
+            an ``AbstractWire`` is returned.
+        """
         # TODO: Figure out if this method should be removed.
         wire = None
         if (idx_attr := getattr(op, "idx_attr", None)) is not None:
@@ -166,8 +184,15 @@ class RewriteContext:
 
     @singledispatchmethod
     def update_from_op(self, op: xOperation):
-        """Update the wire mapping from an operation's outputs"""
-        # pylint: disable=too-many-branches
+        """Update the context using an operation's outputs.
+
+        This method uses the outputs of the input operation to update the various fields
+        that the context maintains.
+
+        Args:
+            op (xdsl.ir.Operation): The operation whose results will be used to update
+                the RewriteContext.
+        """
 
         # If any operations, including operations NOT part of the Quantum dialect,
         # return quantum registers, we should update it.
@@ -196,7 +221,11 @@ class RewriteContext:
 
     @update_from_op.register
     def _update_from_device_init(self, op: quantum.DeviceInitOp):
-        """Update the context from a DeviceInitOp."""
+        """Update the context from a ``DeviceInitOp``. The operation is used to update
+        the shots."""
+        # If shots are constant, they will be captured as the value of an ``arith.constant``
+        #  or ``stablehlo.constant``.
+        # Otherwise, they will be an argument to the function (``BlockArgument``).
         shots = getattr(op, "shots", None)
         if shots:
             shots_owner = shots.owner
@@ -207,18 +236,26 @@ class RewriteContext:
                     isinstance(shots_owner, tensor.ExtractOp)
                     and len(shots_owner.operands[0].type.shape) == 0
                 )
-                assert isinstance(shots_owner.operands[0], BlockArgument)
-                self.shots = shots
+                if isinstance(shots_owner.operands[0], BlockArgument):
+                    # Shots are dynamic, i.e., a ``BlockArgument``
+                    self.shots = shots
+
+                else:
+                    # Shots are static, but created using ``stablehlo.constant``
+                    cst_owner = shots_owner.operands[0].owner
+                    assert isinstance(cst_owner, xstablehlo.ConstantOp)
+                    self.nqubits = cst_owner.properties["value"].get_values()[0]
 
     @update_from_op.register
     def _update_from_extract(self, op: quantum.ExtractOp):
-        """Update the context from an ExtractOp."""
+        """Update the context from an ``ExtractOp``. The operation is used to update qubits."""
         # Update wires and qubits
         _ = self.get_wire_from_extract_op(op, update=True)
 
     @update_from_op.register
     def _update_from_insert(self, op: quantum.InsertOp):
-        """Update the context from an InsertOp."""
+        """Update the context from an ``InsertOp``. The operation is used to update qubits
+        and the quantum register."""
         # Remove the input qubit and its corresponding wire label from the maps. We're
         # inserting a qubit into the quantum register, so it is no longer valid.
         qubit = op.qubit
@@ -229,38 +266,77 @@ class RewriteContext:
         self.qreg = op.results[0]
 
     @update_from_op.register
-    def _update_from_alloc(self, op: quantum.AllocOp | quantum.AllocQubitOp):
-        """Update the context from an AllocOp or quantum.AllocQubitOp."""
-        if isinstance(op, quantum.AllocOp):
-            # Update number of qubits
-            if (nqubits_attr := getattr(op, "nqubits_attr", None)) is not None:
-                self.nqubits = nqubits_attr.data
-            else:
-                assert isinstance(op.nqubits.owner, tensor.ExtractOp)
-                assert isinstance(op.nqubits.owner.operands[0], BlockArgument)
-                self.nqubits = op.nqubits
-
-            # Update quantum register
-            self.qreg = op.results[0]
-
+    def _update_from_alloc(self, op: quantum.AllocOp):
+        """Update the context from an ``AllocOp``. The operation is used to update the number
+        of qubits and the quantum register."""
+        # If the number of qubits is static, they will either be captured as an IntegerAttr,
+        # or as an SSAValue using ``stablehlo.constant``.
+        # If number of qubits are dynamic, they will be a function argument (``BlockArgument``).
+        if (nqubits_attr := getattr(op, "nqubits_attr", None)) is not None:
+            self.nqubits = nqubits_attr.data
         else:
-            qubit = op.results[0]
-            self[qubit] = AbstractWire()
+            nqubits_owner = op.nqubits.owner
+            assert isinstance(nqubits_owner, tensor.ExtractOp)
+            if isinstance(nqubits_owner.operands[0], BlockArgument):
+                # Number of qubits is dynamic, i.e., ``BlockArgument``
+                self.nqubits = op.nqubits
+            else:
+                # Number of qubits is constant, but created using ``stablehlo.constant``
+                cst_owner = nqubits_owner.operands[0].owner
+                assert isinstance(cst_owner, xstablehlo.ConstantOp)
+                self.nqubits = cst_owner.properties["value"].get_values()[0]
+
+        # Update quantum register
+        self.qreg = op.results[0]
 
     @update_from_op.register
-    def _update_from_dealloc(self, op: quantum.DeallocOp | quantum.DeallocQubitOp):
-        """Update the context from a DeallocOp or quantum.DeallocQubitOp."""
+    def _update_from_alloc_qubit(self, op: quantum.AllocQubitOp):
+        """Update the context from an ``AllocQubitOp``. The operation is used to update
+        qubits."""
+        qubit = op.results[0]
+        self[qubit] = AbstractWire()
+
+    @update_from_op.register
+    def _update_from_dealloc(self, op: quantum.DeallocOp):
+        """Update the context from a ``DeallocOp``. The operation is used to delete the
+        quantum register."""
         if isinstance(op, quantum.DeallocOp):
             assert self.qreg == op.operands[0]
             self.qreg = None
 
-        else:
-            qubit = op.operands[0]
-            assert qubit in self.qubit_to_wire_map
-            wire = self.qubit_to_wire_map.pop(qubit)
-            _ = self.wire_to_qubit_map.pop(wire, None)
+    @update_from_op.register
+    def _update_from_dealloc_qubit(self, op: quantum.DeallocQubitOp):
+        """Update the context from a ``DeallocQubitOp``. The operation is used to delete
+        the dynamically allocated qubit."""
+        qubit = op.operands[0]
+        assert qubit in self.qubit_to_wire_map
+        wire = self.qubit_to_wire_map.pop(qubit)
+        _ = self.wire_to_qubit_map.pop(wire, None)
 
     @update_from_op.register
     def _update_from_measure(self, op: quantum.MeasureOp | mbqc.MeasureInBasisOp):
-        """Update the context from a MeasureOp."""
+        """Update the context from a ``MeasureOp`` or ``MeasureInBasisOp``. The operation is
+        used to update qubits."""
         self.update_qubit(op.in_qubit, op.out_qubit)
+
+    def walk(
+        self, obj: xOperation | Block | Region, reverse: bool = False, region_first: bool = False
+    ) -> Iterator[xOperation]:
+        """Walk over the body of the provided object.
+
+        This method provides a similar API to ``xdsl.ir.Operation.walk`` for traversing the body of
+        an operation, block, or region, while updating the ``RewriteContext`` at the same time.
+
+        Args:
+            obj (xdsl.ir.Operation | xdsl.ir.Block | xdsl.ir.Region): The object whose body to walk.
+            reverse (bool): Whether to traverse the body of the given object in reverse. ``False``
+                by default.
+            region_first (bool): Whether to traverse the regions of an operation before the operation
+                itself. ``False`` by default.
+        """
+
+        for op in obj.walk(reverse=reverse, region_first=region_first):
+            yield op
+
+            # Update the context
+            self.update_from_op(op)
