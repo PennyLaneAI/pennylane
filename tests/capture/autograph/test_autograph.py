@@ -300,7 +300,7 @@ class TestIntegration:
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
 
-    def test_adjoint_op(self):
+    def test_adjoint_of_operator_instance(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
 
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -311,13 +311,36 @@ class TestIntegration:
         plxpr = qml.capture.make_plxpr(circ)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    def test_ctrl_op(self):
+    def test_adjoint_of_operator_type(self):
+        """Test that the adjoint of an operator successfully passes through autograph"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circ():
+            qml.adjoint(qml.X)(0)
+            return qml.expval(qml.Z(0))
+
+        plxpr = qml.capture.make_plxpr(circ)()
+        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+
+    def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():
             qml.X(1)
             qml.ctrl(qml.X(0), 1)
+            return qml.expval(qml.Z(0))
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+
+    def test_ctrl_of_operator_type(self):
+        """Test that controlled operators successfully pass through autograph"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circ():
+            qml.X(1)
+            qml.ctrl(qml.X, 1)(0)
             return qml.expval(qml.Z(0))
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
@@ -343,9 +366,6 @@ class TestIntegration:
         assert check_cache(circ.func)
         assert check_cache(inner)
 
-    @pytest.mark.xfail(
-        reason="ctrl_transform_prim not working with autograph. See sc-84934",
-    )
     def test_ctrl_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 

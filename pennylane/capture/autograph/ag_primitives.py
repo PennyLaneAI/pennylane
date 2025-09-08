@@ -463,28 +463,32 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
-        # Using qml.ops.op_math.adjoint points to the adjoint function
-        # and importing this at the top of the file creates circular imports
-        # pylint: disable=import-outside-toplevel, protected-access
-        from pennylane.ops.op_math.adjoint import _capture_adjoint_transform
 
         # HOTFIX: pass through calls of known PennyLane wrapper functions
         if fn in (
-            _capture_adjoint_transform,
-            qml.ops.op_math.controlled._capture_ctrl_transform,
+            qml.adjoint,
+            qml.ctrl,
             qml.grad,
             qml.jacobian,
             qml.vjp,
             qml.jvp,
         ):
-            assert args and callable(args[0])
-            wrapped_fn = args[0]
+            if not args:
+                raise ValueError(f"{fn.__name__} requires at least one argument")
 
-            @functools.wraps(wrapped_fn)
-            def passthrough_wrapper(*inner_args, **inner_kwargs):
-                return converted_call(
-                    wrapped_fn, inner_args, inner_kwargs, caller_fn_scope, options
+            # If first argument is already an operator, pass it through directly
+            if isinstance(args[0], qml.operation.Operator):
+                return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
+
+            # Otherwise, handle the callable case
+            wrapped_fn = args[0]
+            if not callable(wrapped_fn):
+                raise ValueError(
+                    f"First argument to {fn.__name__} must be callable or an Operation"
                 )
+
+            def passthrough_wrapper(*args, **kwargs):
+                return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
 
             return fn(
                 passthrough_wrapper,
