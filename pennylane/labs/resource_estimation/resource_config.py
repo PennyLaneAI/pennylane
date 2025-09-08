@@ -46,7 +46,7 @@ class ResourceConfig:
     """
 
     def __init__(self) -> None:
-        self.conf = {
+        self.errors_and_precisions = {
             ResourceRX: {"eps": 1e-9},
             ResourceRY: {"eps": 1e-9},
             ResourceRZ: {"eps": 1e-9},
@@ -68,10 +68,10 @@ class ResourceConfig:
         self._pow_custom_decomps = {}
 
     def __str__(self):
-        return f"ResourceConfig(conf = {self.conf}, decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
+        return f"ResourceConfig(conf = {self.errors_and_precisions}, decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
 
     def __repr__(self) -> str:
-        return f"ResourceConfig(conf = {self.conf}, decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
+        return f"ResourceConfig(conf = {self.errors_and_precisions}, decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
 
     def set_decomp(
         self, op_type: type[ResourceOperator], decomp_func: Callable, type: str = None

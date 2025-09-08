@@ -230,7 +230,7 @@ class TestAliasSampling:
         """Test that the resources are correct."""
         if precision is None:
             config = ResourceConfig()
-            kwargs = config.conf[ResourceAliasSampling]
+            kwargs = config.errors_and_precisions[ResourceAliasSampling]
             assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, **kwargs) == expected_res
         else:
             assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision) == expected_res
@@ -456,7 +456,7 @@ class TestMPSPrep:
         "Test that the resources are correct."
         if precision is None:
             config = ResourceConfig()
-            kwargs = config.conf[ResourceMPSPrep]
+            kwargs = config.errors_and_precisions[ResourceMPSPrep]
             actual = plre.ResourceMPSPrep.resource_decomp(
                 num_mps_matrices=num_mps, max_bond_dim=bond_dim, **kwargs
             )
@@ -1198,7 +1198,7 @@ class TestQROMStatePrep:
 
         if precision is None:
             config = ResourceConfig()
-            kwargs = config.conf[ResourceQROMStatePreparation]
+            kwargs = config.errors_and_precisions[ResourceQROMStatePreparation]
             actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
                 num_state_qubits=num_state_qubits,
                 positive_and_real=positive_and_real,
@@ -1752,7 +1752,7 @@ class TestQROMStatePrep:
         """Test that the resources are as expected for the controlled-RY decomposition"""
         if precision is None:
             config = ResourceConfig()
-            kwargs = config.conf[ResourceQROMStatePreparation]
+            kwargs = config.errors_and_precisions[ResourceQROMStatePreparation]
             actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
                 num_state_qubits=num_state_qubits,
                 positive_and_real=positive_and_real,

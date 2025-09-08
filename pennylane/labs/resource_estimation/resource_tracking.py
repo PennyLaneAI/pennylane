@@ -386,11 +386,11 @@ def _get_decomposition(
         custom_decomp_dict = getattr(config, decomp_attr_name)
 
         base_op_type = cp_rep.params["base_cmpr_op"].op_type
-        kwargs = config.conf.get(base_op_type, {})
+        kwargs = config.errors_and_precisions.get(base_op_type, {})
         decomp_func = custom_decomp_dict.get(base_op_type, op_type.resource_decomp)
 
     else:
-        kwargs = config.conf.get(op_type, {})
+        kwargs = config.errors_and_precisions.get(op_type, {})
         decomp_func = config._custom_decomps.get(op_type, op_type.resource_decomp)
 
     return decomp_func, kwargs

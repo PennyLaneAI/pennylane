@@ -1431,7 +1431,7 @@ class TestResourceQubitUnitary:
         """Test that the resources are correct."""
         if eps is None:
             config = ResourceConfig()
-            kwargs = config.conf[plre.ResourceQubitUnitary]
+            kwargs = config.errors_and_precisions[plre.ResourceQubitUnitary]
             assert (
                 plre.ResourceQubitUnitary.resource_decomp(num_wires=num_wires, **kwargs)
                 == expected_res
@@ -1517,7 +1517,7 @@ class TestResourceSelectPauliRot:
         """Test that the resources are correct."""
         if precision is None:
             config = ResourceConfig()
-            kwargs = config.conf[plre.ResourceSelectPauliRot]
+            kwargs = config.errors_and_precisions[plre.ResourceSelectPauliRot]
             assert (
                 plre.ResourceSelectPauliRot.resource_decomp(
                     num_ctrl_wires=num_ctrl_wires, rotation_axis=rotation_axis, **kwargs
@@ -1635,7 +1635,7 @@ class TestResourceSelectPauliRot:
         """Test that the resources are correct."""
         if precision is None:
             config = ResourceConfig()
-            kwargs = config.conf[plre.ResourceSelectPauliRot]
+            kwargs = config.errors_and_precisions[plre.ResourceSelectPauliRot]
             assert (
                 plre.ResourceSelectPauliRot.phase_grad_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires, rotation_axis=rotation_axis, **kwargs
