@@ -21,11 +21,6 @@ from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
     ResourceControlled,
     ResourcePow,
 )
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-)
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
 from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
@@ -75,7 +70,7 @@ DefaultGateSet = {
 
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set = DefaultGateSet,
+    gate_set: set = None,
     config: ResourceConfig = ResourceConfig(),
     work_wires: int | dict = 0,
     tight_budget: bool = False,
@@ -143,7 +138,7 @@ def estimate_resources(
 @singledispatch
 def _estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set = DefaultGateSet,
+    gate_set: set = None,
     config: ResourceConfig = ResourceConfig(),
     work_wires: int | dict = 0,
     tight_budget: bool = False,
@@ -158,7 +153,7 @@ def _estimate_resources(
 @_estimate_resources.register
 def resources_from_qfunc(
     obj: Callable,
-    gate_set: set = DefaultGateSet,
+    gate_set: set = None,
     config: ResourceConfig = ResourceConfig(),
     work_wires=0,
     tight_budget=False,
@@ -201,7 +196,7 @@ def resources_from_qfunc(
 @_estimate_resources.register
 def resources_from_resource(
     obj: Resources,
-    gate_set: set = DefaultGateSet,
+    gate_set: set = None,
     config: ResourceConfig = ResourceConfig(),
     work_wires=None,
     tight_budget=None,
@@ -241,7 +236,7 @@ def resources_from_resource(
 @_estimate_resources.register
 def resources_from_resource_ops(
     obj: ResourceOperator,
-    gate_set: set = DefaultGateSet,
+    gate_set: set = None,
     config: ResourceConfig = ResourceConfig(),
     work_wires=None,
     tight_budget=None,
@@ -262,7 +257,7 @@ def resources_from_resource_ops(
 @_estimate_resources.register
 def resources_from_pl_ops(
     obj: Operation,
-    gate_set: set = DefaultGateSet,
+    gate_set: set = None,
     config: ResourceConfig = ResourceConfig(),
     work_wires=None,
     tight_budget=None,
@@ -282,7 +277,7 @@ def _update_counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
     qbit_mngr,
-    gate_set: set,
+    gate_set: set = None,
     scalar: int = 1,
     config: ResourceConfig = ResourceConfig(),
 ) -> None:
@@ -295,6 +290,9 @@ def _update_counts_from_compressed_res_op(
         scalar (int, optional): optional scalar to multiply the counts. Defaults to 1.
         config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
     """
+    if gate_set is None:
+        gate_set = DefaultGateSet
+
     ## If op in gate_set add to resources
     if cp_rep.name in gate_set:
         gate_counts_dict[cp_rep] += scalar
