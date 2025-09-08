@@ -20,8 +20,10 @@ import os
 import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
+from functools import partial
 
 import pennylane as qml
+from pennylane.decomposition import enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.exceptions import (
     AllocationError,
@@ -31,13 +33,17 @@ from pennylane.exceptions import (
     WireError,
 )
 from pennylane.math import requires_grad
-from pennylane.measurements import SampleMeasurement, StateMeasurement
+from pennylane.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import resolve_dynamic_wires
 from pennylane.transforms.core import transform
-from pennylane.transforms.decompose import _operator_decomposition_gen
+from pennylane.transforms.decompose import (
+    _construct_and_solve_decomp_graph,
+    _get_plxpr_decompose,
+    _operator_decomposition_gen,
+)
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -52,6 +58,44 @@ def null_postprocessing(results):
 
 
 #######################
+
+
+# Get the base plxpr decompose transform
+_, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
+
+
+def preprocess_decompose_plxpr_to_plxpr(
+    jaxpr, consts, targs, tkwargs, *args
+):  # pylint: disable=unused-argument
+    """Custom plxpr transform for preprocess.decompose that handles device-specific parameters.
+
+    This function adapts device-specific parameters (device_wires, target_gates)
+    to the standard format expected by the base decompose plxpr transform.
+    """
+    # Create adapted kwargs by removing device-specific parameters
+    adapted_tkwargs = tkwargs.copy()
+
+    # Handle device_wires -> num_available_work_wires conversion
+    device_wires = adapted_tkwargs.pop("device_wires", None)
+    target_gates = adapted_tkwargs.pop("target_gates", None)
+
+    # Calculate num_available_work_wires if not explicitly provided
+    if device_wires is not None and "num_available_work_wires" not in adapted_tkwargs:
+        # In plxpr mode we can't access tape directly, so estimate based on device_wires
+        adapted_tkwargs["num_available_work_wires"] = len(device_wires)
+
+    # Set gate_set for graph decomposition if target_gates provided
+    if enabled_graph() and target_gates:
+        adapted_tkwargs["gate_set"] = target_gates
+
+    # Remove None values and device-specific args that shouldn't be passed to generic transform
+    for key in ["stopping_condition_shots", "name", "error"]:
+        adapted_tkwargs.pop(key, None)
+
+    adapted_tkwargs = {k: v for k, v in adapted_tkwargs.items() if v is not None}
+
+    # Use the original decompose plxpr transform with adapted parameters
+    return decompose_plxpr_to_plxpr(jaxpr, consts, [], adapted_tkwargs, *args)
 
 
 @transform
@@ -287,7 +331,7 @@ def validate_adjoint_trainable_params(
     return (tape,), null_postprocessing
 
 
-@transform
+@partial(transform, plxpr_transform=preprocess_decompose_plxpr_to_plxpr)
 def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[Operator], bool],
@@ -296,6 +340,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     graph_solution: DecompGraphSolution | None = None,
     num_available_work_wires: int | None = 0,
+    device_wires: Wires | None = None,
+    target_gates: set | None = None,
     name: str = "device",
     error: type[Exception] | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -317,6 +363,15 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
+        graph_solution (DecompGraphSolution): a pre-calculated graph solution for decomposition.
+            If provided, it will be used directly. If not provided but ``target_gates`` and
+            ``device_wires`` are provided and graph decomposition is enabled, one will be computed.
+        num_available_work_wires (int): The number of available work wires for decomposition.
+            If not provided but ``device_wires`` is provided, it will be calculated automatically.
+        device_wires (Wires): The device wires. If provided along with ``target_gates``, will be
+            used to automatically calculate ``num_available_work_wires`` and set up graph decomposition.
+        target_gates (set): The target gate set for graph decomposition. Only used when
+            ``device_wires`` is provided and graph decomposition is enabled.
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
@@ -376,6 +431,31 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
+
+    # Calculate num_available_work_wires if device_wires is provided but not explicitly set
+    if device_wires is not None and num_available_work_wires is None:
+        num_available_work_wires = len(device_wires) - len(tape.wires)
+    elif num_available_work_wires is None:
+        num_available_work_wires = 0
+
+    # Set up graph decomposition if enabled and target_gates are provided
+    if (
+        graph_solution is None
+        and enabled_graph()
+        and device_wires is not None
+        and target_gates is not None
+    ):
+
+        # Filter out MeasurementProcess instances that shouldn't be decomposed
+        decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
+
+        graph_solution = _construct_and_solve_decomp_graph(
+            operations=decomposable_ops,
+            target_gates=target_gates,
+            num_work_wires=num_available_work_wires,
+            fixed_decomps=None,
+            alt_decomps=None,
+        )
 
     if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
         prep_op = [tape[0]]
