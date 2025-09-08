@@ -108,7 +108,7 @@ class ResourceUniformStatePrep(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_states": num_states})
 
     @classmethod
-    def default_resource_decomp(cls, num_states, **kwargs):
+    def resource_decomp(cls, num_states, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -218,7 +218,7 @@ class ResourceAliasSampling(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(cls, num_coeffs, precision=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, num_coeffs, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -353,7 +353,7 @@ class ResourceMPSPrep(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls,
         num_mps_matrices,
         max_bond_dim,
@@ -796,7 +796,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, num_state_qubits, positive_and_real, precision=None, selswap_depths=1, **kwargs
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
@@ -955,7 +955,7 @@ class ResourcePrepTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -1084,7 +1084,7 @@ class ResourcePrepTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def default_adjoint_resource_decomp(
+    def adjoint_resource_decomp(
         cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate

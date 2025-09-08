@@ -288,10 +288,22 @@ def _update_counts_from_compressed_res_op(
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
     kwargs = config.conf.get(cp_rep.op_type, {})
-    decomp_func = config._custom_decomps.get(cp_rep.op_type, cp_rep.op_type.default_resource_decomp)
+    decomp_func = config._custom_decomps.get(cp_rep.op_type, cp_rep.op_type.resource_decomp)
     if cp_rep.op_type in (ResourceAdjoint, ResourceControlled, ResourcePow):
         base_op_type = cp_rep.params["base_cmpr_op"].op_type
         kwargs = config.conf.get(base_op_type, {})
+        if cp_rep.op_type == ResourceAdjoint:
+            decomp_func = config._adj_custom_decomps.get(
+                base_op_type, cp_rep.op_type.resource_decomp
+            )
+        if cp_rep.op_type == ResourceControlled:
+            decomp_func = config._ctrl_custom_decomps.get(
+                base_op_type, cp_rep.op_type.resource_decomp
+            )
+        if cp_rep.op_type == ResourcePow:
+            decomp_func = config._pow_custom_decomps.get(
+                base_op_type, cp_rep.op_type.resource_decomp
+            )
 
     params = {key: value for key, value in cp_rep.params.items() if value is not None}
     filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
@@ -334,6 +346,7 @@ def _sum_allocated_wires(decomp):
         if isinstance(action, FreeWires):
             s -= action.num_wires
     return s
+
 
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(

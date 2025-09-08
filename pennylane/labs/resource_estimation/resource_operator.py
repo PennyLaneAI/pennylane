@@ -169,7 +169,7 @@ class ResourceOperator(ABC):
                 return plre.CompressedResourceOp(cls, params)  # representation of the operator
 
             @classmethod
-            def default_resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
+            def resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
 
                 # Get compressed reps for each gate in the decomposition:
 
@@ -269,16 +269,16 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def default_resource_decomp(cls, *args, **kwargs) -> list:
+    def resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
+    def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for the adjoint of the operator."""
         raise ResourcesNotDefined
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
     ) -> list:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -292,7 +292,7 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
+    def pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
@@ -352,6 +352,7 @@ class ResourceOperator(ABC):
 
 class ResourcesNotDefined(Exception):
     r"""Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+
 
 class GateCount:
     r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.

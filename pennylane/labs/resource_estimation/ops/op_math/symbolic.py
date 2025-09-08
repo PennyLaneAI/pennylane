@@ -41,7 +41,7 @@ class ResourceAdjoint(ResourceOperator):
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
         determined as follows. If the base operation implements the
-        :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+        :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
         this.
 
         Otherwise, the adjoint resources are given as the adjoint of each operation in the
@@ -126,7 +126,7 @@ class ResourceAdjoint(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op})
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
+    def resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -138,7 +138,7 @@ class ResourceAdjoint(ResourceOperator):
         Resources:
             This symbolic operation represents the adjoint of some base operation. The resources are
             determined as follows. If the base operation implements the
-            :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+            :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
             this.
 
             Otherwise, the adjoint resources are given as the adjoint of each operation in the
@@ -193,17 +193,17 @@ class ResourceAdjoint(ResourceOperator):
         kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
 
         try:
-            return base_class.default_adjoint_resource_decomp(**base_params, **kwargs)
+            return base_class.adjoint_resource_decomp(**base_params, **kwargs)
         except ResourcesNotDefined:
             gate_lst = []
-            decomp = base_class.default_resource_decomp(**base_params, **kwargs)
+            decomp = base_class.resource_decomp(**base_params, **kwargs)
 
             for gate in decomp[::-1]:  # reverse the order
                 gate_lst.append(_apply_adj(gate))
             return gate_lst
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
+    def adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -243,7 +243,7 @@ class ResourceControlled(ResourceOperator):
 
     Resources:
         The resources are determined as follows. If the base operator implements the
-        :code:`.default_controlled_resource_decomp()` method, then the resources are obtained directly from
+        :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
         this.
 
         Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
@@ -362,7 +362,7 @@ class ResourceControlled(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -377,7 +377,7 @@ class ResourceControlled(ResourceOperator):
 
         Resources:
             The resources are determined as follows. If the base operator implements the
-            :code:`.default_controlled_resource_decomp()` method, then the resources are obtained directly from
+            :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
             this.
 
             Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
@@ -427,7 +427,7 @@ class ResourceControlled(ResourceOperator):
         base_params = {key: value for key, value in base_params.items() if value is not None}
         kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
         try:
-            return base_class.default_controlled_resource_decomp(
+            return base_class.controlled_resource_decomp(
                 ctrl_num_ctrl_wires=num_ctrl_wires,
                 ctrl_num_ctrl_values=num_ctrl_values,
                 **base_params,
@@ -441,7 +441,7 @@ class ResourceControlled(ResourceOperator):
             x = resource_rep(re.ResourceX)
             gate_lst.append(GateCount(x, 2 * num_ctrl_values))
 
-        decomp = base_class.default_resource_decomp(**base_params, **kwargs)
+        decomp = base_class.resource_decomp(**base_params, **kwargs)
         for action in decomp:
             if isinstance(action, GateCount):
                 gate = action.gate
@@ -458,7 +458,7 @@ class ResourceControlled(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -524,7 +524,7 @@ class ResourcePow(ResourceOperator):
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
         gate and we have no resources. If the base operation class :code:`base_class` implements the
-        :code:`.default_pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
+        :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
         the resources of the operation raised to the power :math:`z` are given by extracting the base
         operation's resources (via :code:`.resources()`) and raising each operation to the same power.
 
@@ -604,7 +604,7 @@ class ResourcePow(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op, "z": z})
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -616,7 +616,7 @@ class ResourcePow(ResourceOperator):
         Resources:
             The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
             gate and we have no resources. If the base operation class :code:`base_class` implements the
-            :code:`.default_pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
+            :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
             the resources of the operation raised to the power :math:`z` are given by extracting the base
             operation's resources (via :code:`.resources()`) and raising each operation to the same power.
 
@@ -667,12 +667,12 @@ class ResourcePow(ResourceOperator):
             return [GateCount(base_cmpr_op)]
 
         try:
-            return base_class.default_pow_resource_decomp(pow_z=z, **base_params, **kwargs)
+            return base_class.pow_resource_decomp(pow_z=z, **base_params, **kwargs)
         except re.ResourcesNotDefined:
             return [GateCount(base_cmpr_op, z)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, base_cmpr_op, z, **kwargs):
+    def pow_resource_decomp(cls, pow_z, base_cmpr_op, z, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -836,7 +836,7 @@ class ResourceProd(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, cmpr_factors_and_counts, num_wires, **kwargs
     ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -1060,7 +1060,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, num_wires, **kwargs
     ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a

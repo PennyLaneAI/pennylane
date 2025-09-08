@@ -107,9 +107,9 @@ class ResourceConfig:
             Total qubits: 1
             Total gates : 4
             Qubit breakdown:
-            clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+              clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
             Gate breakdown:
-        {'Hadamard': 2, 'S': 2}
+              {'Hadamard': 2, 'S': 2}
             >>> config = plre.ResourceConfig()
             >>> config.set_decomp(plre.ResourceX, custom_res_decomp)
             >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}, config=config))
@@ -117,9 +117,9 @@ class ResourceConfig:
             Total qubits: 1
             Total gates : 3
             Qubit breakdown:
-            clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+              clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
             Gate breakdown:
-            {'S': 1, 'Hadamard': 2}
+              {'S': 1, 'Hadamard': 2}
         """
 
         if type == "adj":

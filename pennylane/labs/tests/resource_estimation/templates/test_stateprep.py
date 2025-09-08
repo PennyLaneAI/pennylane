@@ -116,7 +116,7 @@ class TestUniformStatePrep:
     )
     def test_resources(self, num_states, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceUniformStatePrep.default_resource_decomp(num_states) == expected_res
+        assert plre.ResourceUniformStatePrep.resource_decomp(num_states) == expected_res
 
 
 class TestAliasSampling:
@@ -231,15 +231,9 @@ class TestAliasSampling:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.conf[ResourceAliasSampling]
-            assert (
-                plre.ResourceAliasSampling.default_resource_decomp(num_coeffs, **kwargs)
-                == expected_res
-            )
+            assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, **kwargs) == expected_res
         else:
-            assert (
-                plre.ResourceAliasSampling.default_resource_decomp(num_coeffs, precision)
-                == expected_res
-            )
+            assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision) == expected_res
 
 
 class TestPrepTHC:
@@ -463,13 +457,13 @@ class TestMPSPrep:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.conf[ResourceMPSPrep]
-            actual = plre.ResourceMPSPrep.default_resource_decomp(
+            actual = plre.ResourceMPSPrep.resource_decomp(
                 num_mps_matrices=num_mps, max_bond_dim=bond_dim, **kwargs
             )
             assert actual == expected_res
 
         else:
-            actual = plre.ResourceMPSPrep.default_resource_decomp(
+            actual = plre.ResourceMPSPrep.resource_decomp(
                 num_mps_matrices=num_mps,
                 max_bond_dim=bond_dim,
                 precision=precision,
@@ -1205,14 +1199,14 @@ class TestQROMStatePrep:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.conf[ResourceQROMStatePreparation]
-            actual_resources = plre.ResourceQROMStatePreparation.default_resource_decomp(
+            actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
                 num_state_qubits=num_state_qubits,
                 positive_and_real=positive_and_real,
                 selswap_depths=selswap_depths,
                 **kwargs,
             )
         else:
-            actual_resources = plre.ResourceQROMStatePreparation.default_resource_decomp(
+            actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
                 num_state_qubits=num_state_qubits,
                 precision=precision,
                 positive_and_real=positive_and_real,

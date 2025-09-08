@@ -97,7 +97,7 @@ class TestResourceTrotterProduct:
     def test_resources(self, ops, num_wires, num_steps, order, expected_res):
         """Test the resources method returns the correct dictionary"""
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
-        computed_res = plre.ResourceTrotterProduct.default_resource_decomp(
+        computed_res = plre.ResourceTrotterProduct.resource_decomp(
             cmpr_ops, num_steps, order, num_wires
         )
         assert computed_res == expected_res

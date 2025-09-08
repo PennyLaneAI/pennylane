@@ -56,4 +56,4 @@ class TestResourceSingleExcitation:
             plre.GateCount(plre.resource_rep(plre.ResourceRY, {"eps": eps})),
             plre.GateCount(plre.resource_rep(plre.ResourceT), 2),
         ]
-        assert plre.ResourceSingleExcitation.default_resource_decomp(eps=eps) == expected
+        assert plre.ResourceSingleExcitation.resource_decomp(eps=eps) == expected

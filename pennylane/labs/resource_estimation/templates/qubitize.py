@@ -156,7 +156,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls,
         compact_ham,
         prep_op=None,
@@ -223,7 +223,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,

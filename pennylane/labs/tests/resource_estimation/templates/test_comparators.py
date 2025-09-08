@@ -42,7 +42,7 @@ class TestSingleQubitComparator:
             GateCount(resource_rep(plre.ResourceCNOT), 4),
             GateCount(resource_rep(plre.ResourceX), 3),
         ]
-        assert plre.ResourceSingleQubitComparator.default_resource_decomp() == expected
+        assert plre.ResourceSingleQubitComparator.resource_decomp() == expected
 
 
 class TestTwoQubitComparator:
@@ -67,7 +67,7 @@ class TestTwoQubitComparator:
             GateCount(resource_rep(plre.ResourceX), 1),
             FreeWires(1),
         ]
-        assert plre.ResourceTwoQubitComparator.default_resource_decomp() == expected
+        assert plre.ResourceTwoQubitComparator.resource_decomp() == expected
 
 
 class TestIntegerComparator:
@@ -180,7 +180,7 @@ class TestIntegerComparator:
     def test_resources(self, value, register_size, geq, expected_res):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceIntegerComparator.default_resource_decomp(value, register_size, geq)
+            plre.ResourceIntegerComparator.resource_decomp(value, register_size, geq)
             == expected_res
         )
 
@@ -381,8 +381,6 @@ class TestRegisterComparator:
     def test_resources(self, first_register, second_register, geq, expected_res):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceRegisterComparator.default_resource_decomp(
-                first_register, second_register, geq
-            )
+            plre.ResourceRegisterComparator.resource_decomp(first_register, second_register, geq)
             == expected_res
         )

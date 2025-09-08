@@ -47,7 +47,7 @@ class ResourceTestCNOT(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -66,7 +66,7 @@ class ResourceTestHadamard(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -85,7 +85,7 @@ class ResourceTestT(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -104,7 +104,7 @@ class ResourceTestZ(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         t = resource_rep(ResourceTestT)
         return [GateCount(t, count=4)]
 
@@ -128,7 +128,7 @@ class ResourceTestRZ(ResourceOperator):
         return {"epsilon": self.epsilon}
 
     @classmethod
-    def default_resource_decomp(cls, epsilon):
+    def resource_decomp(cls, epsilon):
         t = resource_rep(ResourceTestT)
         t_counts = round(1 / epsilon)
         return [GateCount(t, count=t_counts)]
@@ -153,7 +153,7 @@ class ResourceTestAlg1(ResourceOperator):
         return {"num_iter": self.num_iter}
 
     @classmethod
-    def default_resource_decomp(cls, num_iter, **kwargs):
+    def resource_decomp(cls, num_iter, **kwargs):
         cnot = resource_rep(ResourceTestCNOT)
         h = resource_rep(ResourceTestHadamard)
 
@@ -183,7 +183,7 @@ class ResourceTestAlg2(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def default_resource_decomp(cls, num_wires, **kwargs):
+    def resource_decomp(cls, num_wires, **kwargs):
         rz = resource_rep(ResourceTestRZ, {"epsilon": 1e-2})
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
@@ -346,9 +346,7 @@ class TestEstimateResources:
         op = ResourceTestRZ()  # don't specify epsilon
         custom_config = ResourceConfig()
         custom_config.conf[ResourceTestRZ] = {"epsilon": error_val}
-        computed_resources = estimate_resources(
-            op, gate_set={"TestT"}, config=custom_config
-        )
+        computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)
 
         expected_resources = Resources(
             qubit_manager=QubitManager(work_wires=0, algo_wires=1),

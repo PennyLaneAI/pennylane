@@ -161,7 +161,7 @@ class ResourceSelectTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, compact_ham, rotation_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -287,7 +287,7 @@ class ResourceSelectTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
