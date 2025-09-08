@@ -55,10 +55,8 @@ class SampleMP(SampleMeasurement):
     # pylint: disable=too-many-arguments
     def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
 
-        self._dtype = dtype
-
         if isinstance(obs, MeasurementValue):
-            super().__init__(obs=obs)
+            super().__init__(obs=obs, dtype=dtype)
             return
 
         if isinstance(obs, Sequence):
@@ -71,7 +69,7 @@ class SampleMP(SampleMeasurement):
                     "used when collecting statistics for a sequence of mid-circuit measurements."
                 )
 
-            super().__init__(obs=obs)
+            super().__init__(obs=obs, dtype=dtype)
             return
 
         if wires is not None:
@@ -82,7 +80,7 @@ class SampleMP(SampleMeasurement):
                 )
             wires = Wires(wires)
 
-        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id, dtype=dtype)
 
     @classmethod
     def _abstract_eval(

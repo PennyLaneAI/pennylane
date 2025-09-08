@@ -213,17 +213,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    @property
-    def dtype(self):
-        """The dtype of the samples returned by this measurement process.
-
-        Returns:
-            The dtype of the samples returned by this measurement process.
-        """
-        raise QuantumFunctionError(
-            f"The dtype of the measurement {self.__class__.__name__} is not defined."
-        )
-
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, ...]:
         """Calculate the shape of the result object tensor.
 

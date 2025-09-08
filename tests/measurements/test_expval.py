@@ -119,11 +119,11 @@ class TestExpval:
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
-        def _():
+        def circuit():
             qml.Hadamard(wires=0)
             return qml.expval(qml.Z(0), dtype=dtype)
 
-        samples = _()
+        samples = circuit()
         assert qml.math.get_interface(samples) == interface
         assert qml.math.get_dtype_name(samples) == dtype
 
@@ -136,11 +136,11 @@ class TestExpval:
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
-        def _(x):
+        def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0), dtype=dtype)
 
-        samples = jax.jit(_)(jax.numpy.array(0.123))
+        samples = jax.jit(circuit)(jax.numpy.array(0.123))
         assert qml.math.get_interface(samples) == "jax"
         assert qml.math.get_dtype_name(samples) == dtype
 
