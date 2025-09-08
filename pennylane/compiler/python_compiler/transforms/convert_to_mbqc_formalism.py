@@ -707,7 +707,7 @@ class ConvertToMBQCFormalismPattern(
             one_wire_adj_matrix_op = None
             two_wire_adj_matrix_op = None
             for op in region.ops:
-                # TODOs: Migrate the if/else body to functions
+                # TODOs: Refactor the code below in this loop into separate functions
                 if isinstance(op, CustomOp) and op.gate_name.data in [
                     "Hadamard",
                     "S",
