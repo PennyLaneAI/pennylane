@@ -327,24 +327,28 @@ class TestIntegration:
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():
-            qml.X(1)
-            qml.ctrl(qml.X(0), 1)
-            return qml.expval(qml.Z(0))
+            qml.H(0)
+            qml.ctrl(qml.X(1), control=0)
+            return qml.state()
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
+        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
+        assert jax.numpy.allclose(result, expected_state)
 
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():
-            qml.X(1)
-            qml.ctrl(qml.X, 1)(0)
-            return qml.expval(qml.Z(0))
+            qml.H(0)
+            qml.ctrl(qml.X, control=0)(1)
+            return qml.state()
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
+        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
+        assert jax.numpy.allclose(result, expected_state)
 
     def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
