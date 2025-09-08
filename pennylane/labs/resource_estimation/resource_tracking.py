@@ -39,7 +39,7 @@ from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=dangerous-default-value,protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments
 
 # user-friendly gateset for visual checks and initial compilation
 StandardGateSet = {
@@ -79,7 +79,6 @@ def estimate_resources(
     config: ResourceConfig = ResourceConfig(),
     work_wires: int | dict = 0,
     tight_budget: bool = False,
-    single_qubit_rotation_error: float | None = None,
 ) -> Resources | Callable:
     r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
     provided in the gateset.
@@ -89,11 +88,8 @@ def estimate_resources(
             to obtain resources from.
         gate_set (Set, optional): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        config (Dict, optional): A dictionary of additional parameters which sets default values
+        config (ResourceConfig, optional): A dictionary of additional parameters which sets default values
             when they are not specified on the operator.
-        single_qubit_rotation_error (Union[float, None]): The acceptable error when decomposing
-            single qubit rotations to `T`-gates using a Clifford + T approximation. This value takes
-            preference over the values set in the :code:`config`.
 
     Returns:
         Resources: the quantum resources required to execute the circuit
@@ -140,9 +136,6 @@ def estimate_resources(
      {'Hadamard': 5, 'CNOT': 10, 'T': 264}
 
     """
-
-    if single_qubit_rotation_error is not None:
-        config = _config_for_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     return _estimate_resources(obj, gate_set, config, work_wires, tight_budget)
 
@@ -354,23 +347,6 @@ def _sum_allocated_wires(decomp):
         if isinstance(action, FreeWires):
             s -= action.num_wires
     return s
-
-
-def _config_for_single_qubit_rot_error(config, error):
-    r"""Create a new config dictionary with the new single qubit
-    error threshold.
-
-    Args:
-        config (Dict): the configuration dictionary to override
-        error (float): the new error threshold to be set
-
-    """
-
-    config.conf[ResourceRX]["eps"] = error
-    config.conf[ResourceRY]["eps"] = error
-    config.conf[ResourceRZ]["eps"] = error
-    return config
-
 
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
