@@ -170,7 +170,7 @@ class _WireAction:
 
 
 class Allocate(_WireAction):
-    r"""Allows users to allocate work wires through WireResourceManager.
+    r"""Allows users to allocate work wires through :class:`~./pennylane/estimator/WireResourceManager`.
 
     Args:
         num_wires (int): number of work wires to be allocated.
@@ -179,7 +179,7 @@ class Allocate(_WireAction):
     .. details::
         :title: Usage Details
 
-        The `Allocate` class is typically used within a decomposition function to track the
+        The ``Allocate`` class is typically used within a decomposition function to track the
         allocation of auxiliary wires. This allows us to accurately determine the wire overhead of a circuit.
         In this example, we show the decomposition for a
         3-controlled X gate, which requires one work wire.
@@ -202,7 +202,7 @@ class Allocate(_WireAction):
 
         This decomposition uses a total of `4` wires and doesn't track any work wires.
 
-        Now, if we want to track the allocation of wires using the :class:`~.pennylane/estimator/Allocate`, the decomposition
+        Now, if we want to track the allocation of wires using the ``Allocate``, the decomposition
         can be redefined as:
 
         >>> def resource_decomp():
@@ -230,7 +230,7 @@ class Allocate(_WireAction):
 
 
 class Deallocate(_WireAction):
-    r"""Allows users to free dirty work wires through WireResourceManager.
+    r"""Allows users to free dirty work wires through :class:`~.pennylane/estimator/WireResourceManager`.
 
     Args:
         num_wires (int): number of dirty work wires to be freed.
@@ -238,7 +238,7 @@ class Deallocate(_WireAction):
     .. details::
         :title: Usage Details
 
-        The `Deallocate` class is typically used within a decomposition function to track the
+        The Deallocate class is typically used within a decomposition function to track the
         allocation of auxiliary wires. This allows us to accurately determine the wire overhead
         of a circuit. In this example, we show the decomposition for a
         3-controlled X gate, which requires one work wire that is returned in a clean state.
@@ -262,7 +262,7 @@ class Deallocate(_WireAction):
 
         This decomposition uses a total of `4` algorithmic wires and 1 work wire which is returned in the dirty state.
 
-        We can free this wire using the :class:`~.pennylane/estimator/Deallocate`, allowing it to be reused with more operations.
+        We can free this wire using the :class:``Deallocate``, allowing it to be reused with more operations.
         The decomposition can be redefined as:
 
         >>> def resource_decomp():
