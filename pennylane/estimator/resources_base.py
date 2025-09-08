@@ -14,7 +14,6 @@
 r"""Base class for storing resources."""
 from __future__ import annotations
 
-import copy
 from collections import Counter, defaultdict
 from decimal import Decimal
 
@@ -309,10 +308,7 @@ class Resources:
 
     def __repr__(self):
         """Compact string representation of the Resources object"""
-        return {
-            "wire_manager": self.wire_manager,
-            "gate_types": self.gate_types,
-        }.__repr__()
+        return f"Resources(wire_manager={self.wire_manager}, gate_types={self.gate_types})"
 
     def _ipython_display_(self):  # pragma: no cover
         """Displays __str__ in ipython instead of __repr__"""

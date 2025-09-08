@@ -139,7 +139,7 @@ class TestResources:
 
         expected_wm = wm
         expected_gt = defaultdict(int, {}) if gt is None else gt
-        assert repr(resources) == repr({"wire_manager": expected_wm, "gate_types": expected_gt})
+        assert repr(resources) == f"Resources(wire_manager={expected_wm}, gate_types={expected_gt})"
 
     def test_gate_counts(self):
         """Test that this function correctly simplifies the gate types
