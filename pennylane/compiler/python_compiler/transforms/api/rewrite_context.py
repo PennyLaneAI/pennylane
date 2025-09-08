@@ -15,7 +15,9 @@
 hybrid workflows."""
 
 from collections.abc import Iterator, Sequence
+from dataclasses import dataclass, field
 from functools import singledispatchmethod
+from typing import Any
 from uuid import UUID, uuid4
 
 from xdsl.dialects import arith
@@ -46,66 +48,35 @@ class AbstractWire:
         return self.id == other.id
 
 
-class RewriteContext:
-    """Rewrite context data class.
+@dataclass
+class WireQubitMap:
+    """Class to maintain two-way mapping between wire labels and SSA qubits."""
 
-    This class provides several abstractions for keep track of useful information
-    during pattern rewriting.
-    """
-
-    wires = tuple[int] | None
+    wires: tuple[int] | None = field(default=None)
     """Tuple containing all available wire labels. None if not provided."""
 
-    nqubits: int | SSAValue | None
-    """Number of allocated qubits. If not known at compile time, will be None
-    or an SSAValue."""
-
-    shots: int | SSAValue | None
-    """Number of shots. If not known at compile time, will be None
-    or an SSAValue."""
-
-    wire_to_qubit_map: dict[int, quantum.QubitSSAValue]
+    wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = {}
     """Map from wire labels to the latest known qubit SSAValues to which
     they correspond."""
 
-    qubit_to_wire_map: dict[quantum.QubitSSAValue, int]
+    qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire] = {}
     """Map from qubit SSAValues to their corresponding wire labels."""
 
-    qreg: quantum.QuregSSAValue | None
-    """Most up-to-date quantum register."""
+    def __post_init__(self):
+        if self.wires is not None:
+            self.wires = tuple(self.wires)
 
-    def __init__(self, wires: Sequence[int] | None = None):
-        if wires is not None:
-            self.wires = tuple(wires)
-            self.nqubits = len(wires)
-        else:
-            self.wires = None
-            self.nqubits = None
+    def __contains__(self, key: int | AbstractWire | quantum.QubitSSAValue) -> bool:
+        """Check if the map contains a wire label or qubit."""
+        return key in self.wire_to_qubit_map or key in self.qubit_to_wire_map
 
-        self.wire_to_qubit_map = {}
-        self.qubit_to_wire_map = {}
-        self.qreg = None
-
-    def update_qubit(
-        self, old_qubit: quantum.QubitSSAValue, new_qubit: quantum.QubitSSAValue
-    ) -> None:
-        """Replace a qubit in the context with a new one.
-
-        Args:
-            old_qubit (SSAValue[QubitType]): The old qubit to remove.
-            new_qubit (SSAValue[QubitType]): The new qubit to add.
-        """
-        wire = self.qubit_to_wire_map[old_qubit]
-        self.wire_to_qubit_map[wire] = new_qubit
-        self.qubit_to_wire_map[new_qubit] = wire
-        self.qubit_to_wire_map.pop(old_qubit, None)
-
-    # TODO: Should the wire/qubit mapping be captured in its own class?
-    def __getitem__(self, key: int | quantum.QubitSSAValue) -> int | quantum.QubitSSAValue | None:
+    def __getitem__(
+        self, key: int | AbstractWire | quantum.QubitSSAValue
+    ) -> int | AbstractWire | quantum.QubitSSAValue:
         """Get a value from the wire/qubit maps."""
         if isinstance(key, SSAValue):
             if not isinstance(key.type, quantum.QubitType):
-                raise CompileError(
+                raise TypeError(
                     f"Expected QubitType SSAValue, instead got SSAValue with type {key.type}"
                 )
 
@@ -117,12 +88,14 @@ class RewriteContext:
         return self.wire_to_qubit_map[key]
 
     def __setitem__(
-        self, key: int | quantum.QubitSSAValue, val: quantum.QubitSSAValue | int
+        self,
+        key: int | AbstractWire | quantum.QubitSSAValue,
+        val: quantum.QubitSSAValue | int | AbstractWire,
     ) -> None:
         """Update the wire/qubit maps."""
         if isinstance(key, SSAValue):
             if not isinstance(key.type, quantum.QubitType):
-                raise CompileError(
+                raise TypeError(
                     "Expected key to be a QubitType SSAValue, instead got SSAValue "
                     f"with type {key.type}"
                 )
@@ -135,9 +108,9 @@ class RewriteContext:
 
         elif isinstance(key, (int, AbstractWire)):
             if not isinstance(val, SSAValue) or not isinstance(val.type, quantum.QubitType):
-                raise CompileError(f"Expected value to be a QubitType SSAValue, instead got {val}.")
+                raise TypeError(f"Expected value to be a QubitType SSAValue, instead got {val}.")
             if isinstance(key, int) and self.wires is not None and key not in self.wires:
-                raise CompileError(f"{key} is not an available wire.")
+                raise KeyError(f"{key} is not an available wire.")
 
             old_qubit = self.wire_to_qubit_map.pop(key, None)
             _ = self.qubit_to_wire_map.pop(old_qubit, None)
@@ -146,6 +119,66 @@ class RewriteContext:
 
         raise CompileError(f"{key} is not a valid wire label or QubitType SSAValue.")
 
+    def pop(self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None):
+        """Remove and return an item from the map, if it exists. Else, return the provided default value."""
+        if isinstance(key, SSAValue):
+            if not isinstance(key.type, quantum.QubitType):
+                raise TypeError(
+                    "Expected key to be a QubitType SSAValue, instead got SSAValue "
+                    f"with type {key.type}"
+                )
+            wire = self.qubit_to_wire_map.pop(key, default)
+            _ = self.wire_to_qubit_map.pop(wire, None)
+            return wire
+
+        qubit = self.wire_to_qubit_map.pop(key, default)
+        _ = self.qubit_to_wire_map.pop(qubit, None)
+        return qubit
+
+    def update_qubit(
+        self, old_qubit: quantum.QubitSSAValue, new_qubit: quantum.QubitSSAValue
+    ) -> None:
+        """Replace a qubit in the map with a new one.
+
+        Args:
+            old_qubit (SSAValue[QubitType]): The old qubit to remove.
+            new_qubit (SSAValue[QubitType]): The new qubit to add.
+        """
+        wire = self.qubit_to_wire_map.pop(old_qubit)
+        if wire is None:
+            raise KeyError(f"{old_qubit} is not in the WireQubitMap.")
+
+        self.wire_to_qubit_map[wire] = new_qubit
+        self.qubit_to_wire_map[new_qubit] = wire
+
+
+@dataclass(init=False)
+class RewriteContext:
+    """Rewrite context data class.
+
+    This class provides several abstractions for keep track of useful information
+    during pattern rewriting.
+    """
+
+    nqubits: int | SSAValue | None = None
+    """Number of allocated qubits. If not known at compile time, will be None
+    or an SSAValue. Else, it will be an integer."""
+
+    shots: int | SSAValue | None = None
+    """Number of shots. If not known at compile time, will be None
+    or an SSAValue. Else, it will be an integer."""
+
+    wire_qubit_map: WireQubitMap = field(default_factory=WireQubitMap)
+    """Two way map between wire labels and SSA qubits."""
+
+    qreg: quantum.QuregSSAValue | None = None
+    """Most up-to-date quantum register."""
+
+    def __init__(self, wires: Sequence[int] | None = None):
+        if wires is not None:
+            self.wire_qubit_map = WireQubitMap(wires=wires)
+
+    # TODO: Figure out if this method should be removed.
     def get_wire_from_extract_op(self, op: quantum.ExtractOp, update=True) -> int | AbstractWire:
         """Get the wire label to which a qubit extraction corresponds.
 
@@ -158,7 +191,6 @@ class RewriteContext:
             int | AbstractWire: Wire label corresponding to the qubit being extracted. If dynamic,
             an ``AbstractWire`` is returned.
         """
-        # TODO: Figure out if this method should be removed.
         wire = None
         if (idx_attr := getattr(op, "idx_attr", None)) is not None:
             wire = idx_attr.value.data
@@ -179,7 +211,7 @@ class RewriteContext:
                 wire = AbstractWire()
 
         if wire is not None and update:
-            self[wire] = op.qubit
+            self.wire_qubit_map[wire] = op.qubit
         return wire
 
     @singledispatchmethod
@@ -217,7 +249,7 @@ class RewriteContext:
 
         assert len(in_qubits) == len(out_qubits)
         for iq, oq in zip(in_qubits, out_qubits, strict=True):
-            self.update_qubit(iq, oq)
+            self.wire_qubit_map.update_qubit(iq, oq)
 
     @update_from_op.register
     def _update_from_device_init(self, op: quantum.DeviceInitOp):
@@ -259,8 +291,7 @@ class RewriteContext:
         # Remove the input qubit and its corresponding wire label from the maps. We're
         # inserting a qubit into the quantum register, so it is no longer valid.
         qubit = op.qubit
-        wire = self.qubit_to_wire_map.pop(qubit, None)
-        _ = self.wire_to_qubit_map.pop(wire, None)
+        _ = self.wire_qubit_map.pop(qubit)
 
         # InsertOp returns a new quantum register
         self.qreg = op.results[0]
@@ -309,15 +340,14 @@ class RewriteContext:
         """Update the context from a ``DeallocQubitOp``. The operation is used to delete
         the dynamically allocated qubit."""
         qubit = op.operands[0]
-        assert qubit in self.qubit_to_wire_map
-        wire = self.qubit_to_wire_map.pop(qubit)
-        _ = self.wire_to_qubit_map.pop(wire, None)
+        assert qubit in self.wire_qubit_map
+        _ = self.wire_qubit_map.pop(qubit)
 
     @update_from_op.register
     def _update_from_measure(self, op: quantum.MeasureOp | mbqc.MeasureInBasisOp):
         """Update the context from a ``MeasureOp`` or ``MeasureInBasisOp``. The operation is
         used to update qubits."""
-        self.update_qubit(op.in_qubit, op.out_qubit)
+        self.wire_qubit_map.update_qubit(op.in_qubit, op.out_qubit)
 
     def walk(
         self, obj: xOperation | Block | Region, reverse: bool = False, region_first: bool = False
