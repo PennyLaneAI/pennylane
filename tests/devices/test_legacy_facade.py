@@ -43,6 +43,9 @@ class DummyDevice(qml.devices.LegacyDevice):
     operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
     pennylane_requires = 0.38
 
+    def __init__(self, wires=1, shots=None, *, analytic=None):
+        super().__init__(wires=wires, shots=shots, analytic=analytic)
+
     def reset(self):
         pass
 

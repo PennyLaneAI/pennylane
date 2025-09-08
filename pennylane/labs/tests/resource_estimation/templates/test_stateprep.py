@@ -35,13 +35,17 @@ class TestUniformStatePrep:
         assert op.resource_params == {"num_states": num_states}
 
     @pytest.mark.parametrize(
-        "num_states",
-        (10, 6, 4),
+        "num_states, num_wires",
+        (
+            (10, 4),
+            (6, 3),
+            (4, 2),
+        ),
     )
-    def test_resource_rep(self, num_states):
+    def test_resource_rep(self, num_states, num_wires):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
-            plre.ResourceUniformStatePrep, {"num_states": num_states}
+            plre.ResourceUniformStatePrep, num_wires, {"num_states": num_states}
         )
         assert plre.ResourceUniformStatePrep.resource_rep(num_states) == expected
 
@@ -106,7 +110,6 @@ class TestUniformStatePrep:
     )
     def test_resources(self, num_states, expected_res):
         """Test that the resources are correct."""
-        print(plre.ResourceUniformStatePrep.resource_decomp(num_states))
         assert plre.ResourceUniformStatePrep.resource_decomp(num_states) == expected_res
 
 
@@ -127,17 +130,19 @@ class TestAliasSampling:
         assert op.resource_params == {"num_coeffs": num_coeffs, "precision": precision}
 
     @pytest.mark.parametrize(
-        "num_coeffs, precision",
+        "num_coeffs, precision, num_wires",
         (
-            (10, None),
-            (6, None),
-            (4, 1e-6),
+            (10, None, 4),
+            (6, None, 3),
+            (4, 1e-6, 2),
         ),
     )
-    def test_resource_rep(self, num_coeffs, precision):
+    def test_resource_rep(self, num_coeffs, precision, num_wires):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
-            plre.ResourceAliasSampling, {"num_coeffs": num_coeffs, "precision": precision}
+            plre.ResourceAliasSampling,
+            num_wires,
+            {"num_coeffs": num_coeffs, "precision": precision},
         )
         assert plre.ResourceAliasSampling.resource_rep(num_coeffs, precision) == expected
 
@@ -227,6 +232,115 @@ class TestAliasSampling:
             assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision) == expected_res
 
 
+class TestPrepTHC:
+    """Test the ResourcePrepTHC class."""
+
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth",
+        (
+            (plre.CompactHamiltonian.thc(58, 160), 13, 1),
+            (plre.CompactHamiltonian.thc(10, 50), None, None),
+            (plre.CompactHamiltonian.thc(4, 20), None, 2),
+        ),
+    )
+    def test_resource_params(self, compact_ham, coeff_prec, selswap_depth):
+        """Test that the resource params are correct."""
+        op = plre.ResourcePrepTHC(compact_ham, coeff_prec, selswap_depth)
+        assert op.resource_params == {
+            "compact_ham": compact_ham,
+            "coeff_precision": coeff_prec,
+            "select_swap_depth": selswap_depth,
+        }
+
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth, num_wires",
+        (
+            (plre.CompactHamiltonian.thc(58, 160), 13, 1, 16),
+            (plre.CompactHamiltonian.thc(10, 50), None, None, 12),
+            (plre.CompactHamiltonian.thc(4, 20), None, 2, 10),
+        ),
+    )
+    def test_resource_rep(self, compact_ham, coeff_prec, selswap_depth, num_wires):
+        """Test that the compressed representation is correct."""
+        expected = plre.CompressedResourceOp(
+            plre.ResourcePrepTHC,
+            num_wires,
+            {
+                "compact_ham": compact_ham,
+                "coeff_precision": coeff_prec,
+                "select_swap_depth": selswap_depth,
+            },
+        )
+        assert plre.ResourcePrepTHC.resource_rep(compact_ham, coeff_prec, selswap_depth) == expected
+
+    # We are comparing the Toffoli and qubit cost here
+    # Expected number of Toffolis and qubits were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
+    # The numbers were adjusted slightly to account for a different QROM decomposition
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth, expected_res",
+        (
+            (
+                plre.CompactHamiltonian.thc(58, 160),
+                13,
+                1,
+                {"algo_qubits": 16, "ancilla_qubits": 86, "toffoli_gates": 13156},
+            ),
+            (
+                plre.CompactHamiltonian.thc(10, 50),
+                None,
+                None,
+                {"algo_qubits": 12, "ancilla_qubits": 174, "toffoli_gates": 579},
+            ),
+            (
+                plre.CompactHamiltonian.thc(4, 20),
+                None,
+                2,
+                {"algo_qubits": 10, "ancilla_qubits": 109, "toffoli_gates": 279},
+            ),
+        ),
+    )
+    def test_resources(self, compact_ham, coeff_prec, selswap_depth, expected_res):
+        """Test that the resources are correct."""
+
+        prep_cost = plre.estimate_resources(
+            plre.ResourcePrepTHC(
+                compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth
+            )
+        )
+        assert prep_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
+        assert (
+            prep_cost.qubit_manager.clean_qubits + prep_cost.qubit_manager.dirty_qubits
+            == expected_res["ancilla_qubits"]
+        )
+        assert prep_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+
+    def test_incompatible_hamiltonian(self):
+        """Test that an error is raised for incompatible Hamiltonians."""
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
+        ):
+            plre.ResourcePrepTHC(plre.CompactHamiltonian.cdf(58, 160))
+
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
+        ):
+            plre.ResourcePrepTHC.resource_rep(plre.CompactHamiltonian.cdf(58, 160))
+
+    def test_typeerror_precision(self):
+        "Test that an error is raised when wrong type is provided for precision."
+        with pytest.raises(
+            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+        ):
+            plre.ResourcePrepTHC(plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
+
+        with pytest.raises(
+            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+        ):
+            plre.ResourcePrepTHC.resource_rep(
+                plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5
+            )
+
+
 class TestMPSPrep:
     """Tests for the ResourceMPSPrep template"""
 
@@ -263,6 +377,7 @@ class TestMPSPrep:
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourceMPSPrep,
+            num_mps,
             {
                 "num_mps_matrices": num_mps,
                 "max_bond_dim": bond_dim,
@@ -342,8 +457,6 @@ class TestMPSPrep:
                 max_bond_dim=bond_dim,
                 config=config,
             )
-
-            print(actual)
             assert actual == expected_res
 
         else:
@@ -352,13 +465,6 @@ class TestMPSPrep:
                 max_bond_dim=bond_dim,
                 precision=precision,
             )
-            for op in actual:
-                if isinstance(op, GateCount):
-                    print(op.gate)
-                else:
-                    print(op)
-
-            print(actual)
             assert actual == expected_res
 
         assert plre.ResourceMPSPrep
@@ -432,6 +538,7 @@ class TestQROMStatePrep:
             actual_resource_rep = plre.ResourceQROMStatePreparation.resource_rep(num_state_qubits)
             expected = plre.CompressedResourceOp(
                 plre.ResourceQROMStatePreparation,
+                num_state_qubits,
                 {
                     "num_state_qubits": num_state_qubits,
                     "precision": None,
@@ -448,6 +555,7 @@ class TestQROMStatePrep:
             )
             expected = plre.CompressedResourceOp(
                 plre.ResourceQROMStatePreparation,
+                num_state_qubits,
                 {
                     "num_state_qubits": num_state_qubits,
                     "precision": precision,

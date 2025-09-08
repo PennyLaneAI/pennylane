@@ -633,8 +633,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 5
-        assert len(new_program) == 6
+        assert len(program) == 6
+        assert len(new_program) == 7
 
         assert new_program[-1].transform is valid_transform
 

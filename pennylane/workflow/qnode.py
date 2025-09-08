@@ -158,7 +158,9 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
 
     terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
 
-    if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
+    if any(
+        ret is not m for ret, m in zip(measurement_processes, terminal_measurements, strict=True)
+    ):
         raise QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
@@ -295,13 +297,14 @@ class QNode:
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
-            to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
-            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
-            ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
-            as the name suggests. If not provided,
-            the device will determine the best choice automatically. For usage details, please refer to the
-            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+        mcm_method (str): The strategy for applying mid-circuit measurements.
+            Available methods include ``"deferred"`` (to use the deferred
+            measurement principle), ``"one-shot"`` (to execute the circuit
+            for each shot separately when using finite shots), and
+            ``"tree-traversal"`` (visits the tree of possible MCM sequences,
+            only supported on ``default.qubit`` and ``lightning.qubit``).
+            If not provided, the device will select the method automatically.
+            For usage details, refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.

@@ -256,7 +256,7 @@ class TestDecompositionGraph:
 
         op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
-        with pytest.raises(DecompositionError, match="Decomposition not found for {'Hadamard'}"):
+        with pytest.warns(UserWarning, match="unable to find a decomposition for {'Hadamard'}"):
             graph.solve()
 
     def test_lazy_solve(self, _):
