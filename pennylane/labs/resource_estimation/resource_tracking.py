@@ -67,6 +67,12 @@ DefaultGateSet = {
     "Toffoli",
 }
 
+_SYMBOLIC_DECOMP_MAP = {
+    ResourceAdjoint: "_adj_custom_decomps",
+    ResourceControlled: "_ctrl_custom_decomps",
+    ResourcePow: "_pow_custom_decomps",
+}
+
 
 @singledispatch
 def estimate_resources(
@@ -287,23 +293,7 @@ def _update_counts_from_compressed_res_op(
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
-    kwargs = config.conf.get(cp_rep.op_type, {})
-    decomp_func = config._custom_decomps.get(cp_rep.op_type, cp_rep.op_type.resource_decomp)
-    if cp_rep.op_type in (ResourceAdjoint, ResourceControlled, ResourcePow):
-        base_op_type = cp_rep.params["base_cmpr_op"].op_type
-        kwargs = config.conf.get(base_op_type, {})
-        if cp_rep.op_type == ResourceAdjoint:
-            decomp_func = config._adj_custom_decomps.get(
-                base_op_type, cp_rep.op_type.resource_decomp
-            )
-        if cp_rep.op_type == ResourceControlled:
-            decomp_func = config._ctrl_custom_decomps.get(
-                base_op_type, cp_rep.op_type.resource_decomp
-            )
-        if cp_rep.op_type == ResourcePow:
-            decomp_func = config._pow_custom_decomps.get(
-                base_op_type, cp_rep.op_type.resource_decomp
-            )
+    decomp_func, kwargs = _get_decomposition(cp_rep, config)
 
     params = {key: value for key, value in cp_rep.params.items() if value is not None}
     filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
@@ -369,3 +359,36 @@ def _ops_to_compressed_reps(
             cmp_rep_ops.append(map_to_resource_op(op).resource_rep_from_op())
 
     return cmp_rep_ops
+
+
+def _get_decomposition(
+    cp_rep: CompressedResourceOp, config: ResourceConfig
+) -> tuple[Callable, dict]:
+    """
+    Selects the appropriate decomposition function and kwargs from a config object.
+
+    This helper function centralizes the logic for choosing a decomposition,
+    handling standard, custom, and symbolic operator rules using a mapping.
+
+    Args:
+        cp_rep (CompressedResourceOp): The operator to find the decomposition for.
+        config (ResourceConfig): The configuration object containing decomposition rules.
+
+    Returns:
+        A tuple containing the decomposition function and its associated kwargs.
+    """
+    op_type = cp_rep.op_type
+
+    if op_type in _SYMBOLIC_DECOMP_MAP:
+        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
+        custom_decomp_dict = getattr(config, decomp_attr_name)
+
+        base_op_type = cp_rep.params["base_cmpr_op"].op_type
+        kwargs = config.conf.get(base_op_type, {})
+        decomp_func = custom_decomp_dict.get(base_op_type, op_type.resource_decomp)
+
+    else:
+        kwargs = config.conf.get(op_type, {})
+        decomp_func = config._custom_decomps.get(op_type, op_type.resource_decomp)
+
+    return decomp_func, kwargs
