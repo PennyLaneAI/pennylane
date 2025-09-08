@@ -100,12 +100,41 @@ def rz_phase_gradient(
 
     **Example**
 
-    asd
+    .. code-block::python
 
-    .. details::
-        :title: Usage Details
+        import pennylane as qml
+        import numpy as np
+        from functools import partial
+        from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
 
-        asd
+        precision = 3
+        phi = (1/2 + 1/4 + 1/8) * 2 * np.pi
+        wire="targ"
+        aux_wires = [f"aux_{i}" for i in range(precision)]
+        phase_grad_wires = [f"qft_{i}" for i in range(precision)]
+        work_wires = [f"work_{i}" for i in range(precision-1)]
+        wire_order = [wire] + aux_wires + phase_grad_wires + work_wires
+
+        def phase_gradient(wires):
+            qml.X(wires[-1])
+            qml.QFT(wires)
+
+        @partial(qml.transforms.rz_phase_gradient, aux_wires=aux_wires, phase_grad_wires=phase_grad_wires, work_wires=work_wires)
+        @qml.qnode(qml.device("default.qubit"))
+        def rz_circ(phi, wire):
+            qml.Hadamard(wire) # prepare |+>
+            phase_gradient(phase_grad_wires) # prepare phase gradient state
+
+            qml.RZ(phi, wire)
+
+            qml.adjoint(phase_gradient)(phase_grad_wires)
+            qml.Hadamard(wire)
+
+            return qml.probs(wire)
+
+        rz_circ(phi, wire)
+        # array([0.85355339, 0.14644661])
+
     """
     operations = []
     n_global_phases = 0
