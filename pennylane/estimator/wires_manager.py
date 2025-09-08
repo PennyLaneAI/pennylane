@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains the base class for qubit management"""
+"""This module contains the base class for wire management."""
 
 
 from pennylane.queuing import QueuingManager
@@ -20,24 +20,24 @@ from pennylane.queuing import QueuingManager
 
 
 class WireResourceManager:
-    r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.
+    r"""Manages and tracks the auxiliary and algorithmic wires used in a quantum circuit.
 
-    This class provides a high-level abstraction for managing qubit resources within a quantum
+    This class provides a high-level abstraction for managing wire resources within a quantum
     circuit.
-    The manager tracks the state of three distinct types of qubits:
+    The manager tracks the state of three distinct types of wires:
 
-    * Algorithmic Qubits: The core qubits used by the quantum algorithm.
-    * Clean Qubits: Auxiliary qubits that are in the :math:`|0\rangle` state. They are converted
-      to dirty qubits upon allocation.
-    * Dirty Qubits: Auxiliary qubits that are in an unknown state. They are converted to
-      clean qubits when they are freed.
+    * Algorithmic wires: The core wires used by the quantum algorithm.
+    * Clean wires: Auxiliary wires that are in the :math:`|0\rangle` state. They are converted
+      to dirty wires upon allocation.
+    * Dirty wires: Auxiliary wires that are in an unknown state. They are converted to
+      clean wires when they are freed.
 
     Args:
         work_wires (int or dict[Literal["clean", "dirty"], int]): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
             ``int`` is provided.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
-        tight_budget (bool): Determines whether extra clean qubits can be allocated when they
+        tight_budget (bool): Determines whether extra clean wires can be allocated when they
             exceed the available amount. The default is ``False``.
 
     **Example**
@@ -62,7 +62,7 @@ class WireResourceManager:
         )
 
         self.tight_budget = tight_budget
-        self.algo_wires = algo_wires
+        self._algo_wires = algo_wires
         self.clean_wires = clean_wires
         self.dirty_wires = dirty_wires
 
@@ -89,66 +89,66 @@ class WireResourceManager:
         )
 
     @property
-    def algo_qubits(self):
-        r"""Returns the number of algorithmic qubits."""
-        return self.algo_wires
+    def algo_wires(self):
+        r"""Returns the number of algorithmic wires."""
+        return self._algo_wires
 
     @property
-    def total_qubits(self):
-        r"""Returns the number of total qubits."""
+    def total_wires(self):
+        r"""Returns the number of total wires."""
         return self.clean_wires + self.dirty_wires + self.algo_wires
 
-    @algo_qubits.setter
-    def algo_qubits(self, count: int):  # these get set manually, the rest are dynamically updated
-        r"""Setter for algorithmic qubits."""
-        self.algo_wires = count
+    @algo_wires.setter
+    def algo_wires(self, count: int):  # these get set manually, the rest are dynamically updated
+        r"""Setter for algorithmic wires."""
+        self._algo_wires = count
 
-    def grab_clean_qubits(self, num_qubits: int):
-        r"""Grabs clean qubits, and converts them into dirty ones.
+    def grab_clean_wires(self, num_wires: int):
+        r"""Grabs clean wires, and converts them into dirty ones.
 
         Args:
-            num_qubits(int) : number of clean qubits to be grabbed
+            num_wires(int) : number of clean wires to be grabbed
 
         Raises:
-            ValueError: If tight_budget is `True` and the number of qubits to be grabbed is greater than
-            available clean qubits.
+            ValueError: If tight_budget is `True` and the number of wires to be grabbed is greater than
+            available clean wires.
 
         """
         available_clean = self.clean_wires
 
-        if num_qubits > available_clean:
+        if num_wires > available_clean:
             if self.tight_budget:
                 raise ValueError(
-                    f"Grabbing more qubits than available clean qubits."
-                    f"Number of clean qubits available is {available_clean}, while {num_qubits} are being grabbed."
+                    f"Grabbing more wires than available clean wires."
+                    f"Number of clean wires available is {available_clean}, while {num_wires} are being grabbed."
                 )
             self.clean_wires = 0
         else:
-            self.clean_wires -= num_qubits
-        self.dirty_wires += num_qubits
+            self.clean_wires -= num_wires
+        self.dirty_wires += num_wires
 
-    def free_qubits(self, num_qubits: int):
-        r"""Frees dirty qubits and converts them into clean qubits.
+    def free_wires(self, num_wires: int):
+        r"""Frees dirty wires and converts them into clean wires.
 
         Args:
-            num_qubits(int) : number of qubits to be freed
+            num_wires(int) : number of wires to be freed
 
         Raises:
-            ValueError: If number of qubits to be freed is greater than available dirty qubits.
+            ValueError: If number of wires to be freed is greater than available dirty wires.
         """
 
-        if num_qubits > self.dirty_wires:
+        if num_wires > self.dirty_wires:
             raise ValueError(
-                f"Freeing more qubits than available dirty qubits."
-                f"Number of dirty qubits available is {self.dirty_wires}, while {num_qubits} qubits are being released."
+                f"Freeing more wires than available dirty wires."
+                f"Number of dirty wires available is {self.dirty_wires}, while {num_wires} wires are being released."
             )
 
-        self.dirty_wires -= num_qubits
-        self.clean_wires += num_qubits
+        self.dirty_wires -= num_wires
+        self.clean_wires += num_wires
 
 
 class _WireAction:
-    """Base class for operations that manage qubit resources."""
+    """Base class for operations that manage wire resources."""
 
     def __init__(self, num_wires):
         self.num_wires = num_wires
@@ -169,23 +169,122 @@ class _WireAction:
         raise NotImplementedError
 
 
-class AllocWires(_WireAction):
-    r"""Allows users to allocate clean work wires through WireResourceManager.
+class Allocate(_WireAction):
+    r"""Allows users to allocate work wires through WireResourceManager.
 
     Args:
         num_wires (int): number of work wires to be allocated.
+
+
+    .. details::
+        :title: Usage Details
+
+        The `Allocate` class is typically used within a decomposition function to track the
+        allocation of auxiliary wires. This allows the estimation functions
+        to accurately determine the wire overhead of a circuit. In this example, we show the decomposition for a
+        3-controlled X gate, which requires one work wire.
+
+        First, we define a custom decomposition which doesn't track the extra work wire:
+
+        >>> def resource_decomp(num_ctrl_wires=3, num_ctrl_values=0, **kwargs):
+        ...     gate_list = []
+        ...
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...
+        ...     return gate_list
+        >>> config = ResourceConfig()
+        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> print(res.WireResourceManager)
+        WireResourceManager(clean wires=0, dirty wires=0, algorithmic wires=4, tight budget=False)
+
+        This decomposition uses a total of `4` wires and doesn't track any work wires.
+
+        Now, if we want to track the allocation of wires using the :class:`~.pennylane/estimator/Allocate`, the decomposition
+        can be redefined as:
+
+        >>> def resource_decomp():
+        ...     gate_list = []
+        ...     gate_list.append(Allocate(num_wires=1))
+        ...
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...
+        ...     gate_list.append(Deallocate(num_wires=1))
+        ...     return gate_list
+        >>> config = ResourceConfig()
+        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> print(res.WireResourceManager)
+        WireResourceManager(clean wires=1, dirty wires=0, algorithmic wires=4, tight budget=False)
+
+        Now, the one extra auxiliary wire is being tracked.
+
     """
 
     def __repr__(self) -> str:
-        return f"AllocWires({self.num_wires})"
+        return f"Allocate({self.num_wires})"
 
 
-class FreeWires(_WireAction):
+class Deallocate(_WireAction):
     r"""Allows users to free dirty work wires through WireResourceManager.
 
     Args:
         num_wires (int): number of dirty work wires to be freed.
+
+    .. details::
+        :title: Usage Details
+
+        The `Deallocate` class is typically used within a decomposition function to track the
+        allocation of auxiliary wires. This allows the estimation functions
+        to accurately determine the wire overhead of a circuit. In this example, we show the decomposition for a
+        3-controlled X gate, which requires one work wire that is returned in a clean state.
+
+        First, we define a custom decomposition which allocates the work wire but doesn't free it.
+
+        >>> def resource_decomp(num_ctrl_wires=3, num_ctrl_values=0, **kwargs):
+        ...     gate_list = []
+        ...     gate_list.append(Allocate(num_wires=1))
+        ...
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...
+        ...     return gate_list
+        >>> config = ResourceConfig()
+        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> print(res.WireResourceManager)
+        WireResourceManager(clean wires=0, dirty wires=1, algorithmic wires=4, tight budget=False)
+
+        This decomposition uses a total of `4` algorithmic wires and 1 work wire which is returned in the dirty state.
+
+        We can free this wire using the :class:`~.pennylane/estimator/Deallocate`, allowing it to be reused with more operations.
+        The decomposition can be redefined as:
+
+        >>> def resource_decomp():
+        ...     gate_list = []
+        ...     gate_list.append(Allocate(num_wires=1))
+        ...
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceTempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(plre.ResourceToffoli), 1))
+        ...
+        ...     gate_list.append(Deallocate(num_wires=1))
+        ...     return gate_list
+        >>> config = ResourceConfig()
+        >>> config.set_decomp(plre.ResourceMultiControlledX, resource_decomp)
+        >>> res = plre.estimate(plre.ResourceMultiControlledX(3, 0), config)
+        >>> print(res.WireResourceManager)
+        WireResourceManager(clean wires=1, dirty wires=0, algorithmic wires=4, tight budget=False)
+
+        Now, auxiliary wire is freed and is returned in the clean state after the decomposition, and can
+        be used for other operators which require auxiliary wires.
+
     """
 
     def __repr__(self) -> str:
-        return f"FreeWires({self.num_wires})"
+        return f"Deallocate({self.num_wires})"

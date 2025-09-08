@@ -22,10 +22,10 @@ Qubit Management Classes:
 .. autosummary::
     :toctree: api
 
-    ~AllocWires
-    ~FreeWires
+    ~Allocate
+    ~Deallocate
 
 
 """
 
-from .wires_manager import AllocWires, FreeWires
+from .wires_manager import Allocate, Deallocate
