@@ -380,8 +380,8 @@ class TestConvertToMBQCFormalismPass:
             pipelines=mbqc_pipeline(),
             autograph=True,
         )
-        @convert_to_mbqc_formalism_pass
         @decompose_graph_state_pass
+        @convert_to_mbqc_formalism_pass
         @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
