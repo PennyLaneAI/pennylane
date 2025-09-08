@@ -47,6 +47,13 @@ angles1 = np.array([1, 2, 3])
 class TestPhasePolynomial:
     """Tests for qml.labs.dla.phase_polynomials.phase_polynomial"""
 
+    def test_TypeError_input(self):
+        """Test that a TypeError is raised for the wrong inputs"""
+        with pytest.raises(
+            TypeError, match="phase_polynomial can only handle CNOT and RZ operators"
+        ):
+            _ = phase_polynomial(qml.tape.QuantumScript([qml.RX(0.5, 0)]))
+
     @pytest.mark.parametrize(
         "circ, res",
         (
