@@ -648,11 +648,7 @@ class TestAdjMatrixHelpers:
         """
         edges_observed = list(edge_iter(mbqc_single_qubit_graph))
 
-        assert edges_observed == [
-            (0, 1),
-            (1, 2),
-            (2, 3),
-        ]
+        assert edges_observed == GateGraphEdgeDict[NumAuxWires.SINGLE_QUBIT]
 
     def test_edge_iter_mbqc_cnot(self, mbqc_cnot_graph):
         """Test that the ``_edge_iter`` generator function applied to the densely packed adjacency
