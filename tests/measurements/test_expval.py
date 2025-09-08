@@ -76,20 +76,73 @@ class TestExpval:
         ],
     )
     def test_process_density_matrix_dtype(self, coeffs, state, expected):
+        """Test that the return type of the process_density_matrix function is correct"""
         mp = ExpectationMP(obs=coeffs * qml.PauliZ(0))
         result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
         assert qml.math.allclose(result, expected * coeffs)
 
+    @pytest.mark.parametrize(
+        "dtype",
+        [
+            None,
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+        ],
+    )
     @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
-    def test_process_samples_dtype(self, coeffs, seed):
+    def test_process_samples_dtype(self, coeffs, dtype, seed):
         """Test that the return type of the process_samples function is correct"""
         shots = 100
         rng = np.random.default_rng(seed)
-        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(dtype=dtype if dtype else "int64")
         obs = coeffs * qml.PauliZ(0)
-        expected = qml.expval(obs).process_samples(samples, [0, 1])
-        result = ExpectationMP(obs=obs).process_samples(samples, [0, 1])
+        expected = qml.expval(obs).process_samples(samples, [0, 1], dtype=dtype)
+        result = ExpectationMP(obs=obs).process_samples(samples, [0, 1], dtype=dtype)
         assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize(
+        "dtype",
+        [
+            "float16",
+            "float32",
+            "float64",
+            "complex64",
+            "complex128",
+        ],
+    )
+    def test_sample_dtype_combined(self, interface, dtype):
+        """Test that the dtype argument changes the dtype of the returned samples"""
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
+        def _():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.Z(0), dtype=dtype)
+
+        samples = _()
+        assert qml.math.get_interface(samples) == interface
+        assert qml.math.get_dtype_name(samples) == dtype
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64", "complex64", "complex128"])
+    def test_jax_jit(self, dtype):
+        """Test that jitting works when the dtype argument is provided"""
+
+        import jax
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
+        def _(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Z(0), dtype=dtype)
+
+        samples = jax.jit(_)(jax.numpy.array(0.123))
+        assert qml.math.get_interface(samples) == "jax"
+        assert qml.math.get_dtype_name(samples) == dtype
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots, seed):

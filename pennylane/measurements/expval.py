@@ -43,13 +43,21 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        dtype: The dtype of the samples returned by this measurement process.
     """
 
     _shortname = "expval"
 
     @property
     def numeric_type(self):
+        if self.dtype is not None:
+            return self.dtype
         return float
+
+    @property
+    def dtype(self):
+        """The dtype of the samples returned by this measurement process."""
+        return self._dtype
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
@@ -60,6 +68,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         wire_order: Wires,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
+        dtype=None,
     ):
         if not self.wires:
             return math.squeeze(self.eigvals())
@@ -71,7 +80,11 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
                 eigvals=self._eigvals,
                 wires=self.wires if self._eigvals is not None else None,
             ).process_samples(
-                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+                samples=samples,
+                wire_order=wire_order,
+                shot_range=shot_range,
+                bin_size=bin_size,
+                dtype=self.dtype if dtype is None else dtype,
             )
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
@@ -122,6 +135,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
 
 def expval(
     op: Operator | MeasurementValue,
+    dtype=None,
 ) -> ExpectationMP:
     r"""Expectation value of the supplied observable.
 
@@ -147,12 +161,13 @@ def expval(
         op (Union[Operator, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
+        dtype: The dtype of the samples returned by this measurement process.
 
     Returns:
         ExpectationMP: measurement process instance
     """
     if isinstance(op, MeasurementValue):
-        return ExpectationMP(obs=op)
+        return ExpectationMP(obs=op, dtype=dtype)
 
     if isinstance(op, Sequence):
         raise ValueError(
@@ -166,4 +181,4 @@ def expval(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
 
-    return ExpectationMP(obs=op)
+    return ExpectationMP(obs=op, dtype=dtype)

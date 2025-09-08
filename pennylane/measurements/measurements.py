@@ -60,6 +60,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        dtype: The dtype of the samples returned by this measurement process.
     """
 
     _shortname = None
@@ -161,6 +162,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         wires: Wires | None = None,
         eigvals: TensorLike | None = None,
         id: str | None = None,
+        dtype=None,
     ):
         if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
             # Cast sequence of measurement values to list
@@ -174,6 +176,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             self.mv = None
 
         self.id = id
+        self._dtype = dtype
 
         if wires is not None:
             if not capture_enabled() and len(wires) == 0:
@@ -208,6 +211,17 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         """
         raise QuantumFunctionError(
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
+        )
+
+    @property
+    def dtype(self):
+        """The dtype of the samples returned by this measurement process.
+
+        Returns:
+            The dtype of the samples returned by this measurement process.
+        """
+        raise QuantumFunctionError(
+            f"The dtype of the measurement {self.__class__.__name__} is not defined."
         )
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, ...]:
