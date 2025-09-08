@@ -344,6 +344,12 @@ class RewriteContext:
         _ = self.wire_qubit_map.pop(qubit)
 
     @update_from_op.register
+    def _update_from_num_qubits(self, op: quantum.NumQubitsOp):
+        """Update the context from a ``NumQubitsOp``. The operation is used to update
+        the number of qubits."""
+        self.nqubits = op.results[0]
+
+    @update_from_op.register
     def _update_from_measure(self, op: quantum.MeasureOp | mbqc.MeasureInBasisOp):
         """Update the context from a ``MeasureOp`` or ``MeasureInBasisOp``. The operation is
         used to update qubits."""
