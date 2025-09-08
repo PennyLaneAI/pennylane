@@ -18,6 +18,11 @@ from collections import defaultdict
 
 import pytest
 
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -195,6 +200,13 @@ class ResourceTestAlg2(ResourceOperator):
         ]
 
 
+def mock_rotation_decomp(eps):
+    """A mock decomposition for rotation gates returning TestT gates for testing."""
+    t = resource_rep(ResourceTestT)
+    t_counts = round(1 / eps)
+    return [GateCount(t, count=t_counts)]
+
+
 class TestEstimateResources:
     """Test that core resource estimation functionality"""
 
@@ -343,14 +355,26 @@ class TestEstimateResources:
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
     def test_varying_single_qubit_rotation_error(self, error_val):
         """Test that setting the single_qubit_rotation_error correctly updates the resources"""
-        op = ResourceTestRZ()  # don't specify epsilon
         custom_config = ResourceConfig()
-        custom_config.errors_and_precisions[ResourceTestRZ] = {"epsilon": error_val}
-        computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)
+        custom_config.set_single_qubit_rotation_error(error_val)
 
+        custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
+        custom_config.set_decomp(ResourceRY, mock_rotation_decomp)
+        custom_config.set_decomp(ResourceRZ, mock_rotation_decomp)
+
+        def my_circuit():
+            ResourceRX(wires=0)
+            ResourceRY(wires=1)
+            ResourceRZ(wires=2)
+
+        computed_resources = estimate_resources(
+            my_circuit, gate_set={"TestT"}, config=custom_config
+        )()
+
+        expected_t_count = 3 * round(1 / error_val)
         expected_resources = Resources(
-            qubit_manager=QubitManager(work_wires=0, algo_wires=1),
-            gate_types=defaultdict(int, {resource_rep(ResourceTestT): round(1 / error_val)}),
+            qubit_manager=QubitManager(work_wires=0, algo_wires=3),
+            gate_types=defaultdict(int, {resource_rep(ResourceTestT): expected_t_count}),
         )
 
         assert computed_resources == expected_resources

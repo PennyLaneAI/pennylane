@@ -73,6 +73,53 @@ class ResourceConfig:
     def __repr__(self) -> str:
         return f"ResourceConfig(conf = {self.errors_and_precisions}, decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
 
+    def set_single_qubit_rotation_error(self, error: float):
+        r"""Sets the synthesis error for all single-qubit rotation gates.
+
+        This is a convenience method to update the synthesis error tolerance,
+        :math:`\epsilon`, for all standard single-qubit rotation gates and their
+        controlled versions at once. The synthesis error dictates the precision
+        for compiling rotation gates into a discrete gate set, which in turn
+        affects the number of gates required.
+
+        This method updates the ``eps`` value for the following operators:
+        - :class:`~.ResourceRX`
+        - :class:`~.ResourceRY`
+        - :class:`~.ResourceRZ`
+        - :class:`~.ResourceCRX`
+        - :class:`~.ResourceCRY`
+        - :class:`~.ResourceCRZ`
+
+        Args:
+            error (float): The desired synthesis error tolerance. A smaller
+                value corresponds to a higher precision compilation, which may
+                increase the required gate counts.
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.labs.resource_estimation import ResourceConfig
+            from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import ResourceRX
+
+            config = ResourceConfig()
+            print(f"Default RX error: {config.errors_and_precisions[ResourceRX]['eps']}")
+
+            config.set_single_qubit_rotation_error(1e-5)
+            print(f"Updated RX error: {config.errors_and_precisions[ResourceRX]['eps']}")
+
+        .. code-block:: pycon
+
+            Default RX error: 1e-09
+            Updated RX error: 1e-05
+        """
+        self.errors_and_precisions[ResourceRX]["eps"] = error
+        self.errors_and_precisions[ResourceCRX]["eps"] = error
+        self.errors_and_precisions[ResourceRY]["eps"] = error
+        self.errors_and_precisions[ResourceCRY]["eps"] = error
+        self.errors_and_precisions[ResourceRZ]["eps"] = error
+        self.errors_and_precisions[ResourceCRZ]["eps"] = error
+
     def set_decomp(
         self, op_type: type[ResourceOperator], decomp_func: Callable, type: str = None
     ) -> None:
