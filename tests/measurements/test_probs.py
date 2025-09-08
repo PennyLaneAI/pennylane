@@ -157,6 +157,12 @@ class TestProbs:
         expected = np.einsum("ijkl->jil", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_process_samples_dtype(self):
+        """Test that the dtype argument changes the dtype of the returned samples."""
+        samples = np.zeros((10, 10), dtype="int64")
+        processed_samples = qml.probs().process_samples(samples, wire_order=[0], dtype="float32")
+        assert processed_samples.dtype == np.dtype("float32")
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
@@ -320,6 +326,32 @@ class TestProbs:
             subset_probs, expected
         ), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "jax"])
+    @pytest.mark.parametrize(
+        "dtype, obs",
+        [
+            ("float16", qml.Z(0)),
+            ("float32", qml.Z(0)),
+            ("float64", qml.Z(0)),
+            ("complex64", qml.Z(0)),
+            ("complex128", qml.Z(0)),
+        ],
+    )
+    def test_sample_dtype_combined(self, interface, dtype, obs):
+        """Test that the dtype argument changes the dtype of the returned samples,
+        both with and without an observable."""
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.probs(op=obs, dtype=dtype) if obs is not None else qml.probs(dtype=dtype)
+
+        samples = circuit()
+        assert qml.math.get_interface(samples) == interface
+        assert qml.math.get_dtype_name(samples) == dtype
+
     def test_integration(self, tol):
         """Test the probability is correct for a known state preparation."""
         dev = qml.device("default.qubit", wires=2)
@@ -368,6 +400,30 @@ class TestProbs:
         res = jax.jit(circuit)(params)
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol_stochastic, rtol=0)
+
+    @pytest.mark.parametrize(
+        "dtype, obs",
+        [
+            ("float16", qml.Z(0)),
+            ("float32", qml.Z(0)),
+            ("float64", qml.Z(0)),
+            ("complex64", qml.Z(0)),
+            ("complex128", qml.Z(0)),
+        ],
+    )
+    def test_jitting_with_dtype(self, dtype, obs):
+        """Test that jitting works when the dtype argument is provided"""
+        import jax
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.probs(op=obs, dtype=dtype) if obs is not None else qml.probs(dtype=dtype)
+
+        samples = jax.jit(circuit)(jax.numpy.array(0.123))
+        assert qml.math.get_interface(samples) == "jax"
+        assert qml.math.get_dtype_name(samples) == dtype
 
     @pytest.mark.parametrize("shots", [100, [1, 10, 100]])
     def test_integration_analytic_false(self, tol, shots):

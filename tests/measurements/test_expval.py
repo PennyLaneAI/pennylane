@@ -402,6 +402,7 @@ class TestExpval:
         ],
     )
     def test_process_density_matrix(self, state, expected):
+        """Test process_density_matrix method."""
         mp = ExpectationMP(obs=qml.PauliZ(0))
         result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
         assert qml.math.allclose(result, expected)

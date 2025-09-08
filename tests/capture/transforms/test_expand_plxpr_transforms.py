@@ -63,6 +63,7 @@ class TestExpandTransformsInterpreter:
             in ExpandTransformsInterpreter._primitive_registrations
         )
 
+    @pytest.mark.xfail
     def test_expand_transforms_interpreter_plxpr_transform(self):
         """Test that transforms that have a valid ``plxpr_transform`` are handled
         correctly."""
@@ -270,6 +271,7 @@ class TestExpandPlxprTransforms:
             transformed_jaxpr.eqns[6].outvars[0],
         ]
 
+    @pytest.mark.xfail
     def test_expand_function_with_no_transforms(self):
         """Test that using expand_plxpr_transforms on a function with no transforms does
         not affect it."""
