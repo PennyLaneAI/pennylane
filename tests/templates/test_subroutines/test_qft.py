@@ -19,6 +19,7 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qml
+from pennylane.capture.autograph import run_autograph
 
 
 def test_standard_validity():
@@ -169,7 +170,7 @@ class TestDynamicDecomposition:
 
         # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
-        outer_loop, swap_loop = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
+        outer_loop, swap_loop = (eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim)
         assert outer_loop.primitive == for_loop_prim
         assert swap_loop.primitive == for_loop_prim
         outer_loop_eqn = outer_loop.params["jaxpr_body_fn"].eqns
@@ -213,18 +214,20 @@ class TestDynamicDecomposition:
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
         def circuit(wires):
             qml.QFT(wires=wires)
             return qml.state()
 
+        if autograph:
+            circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(wires=wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
 
         with qml.capture.pause():
 
             @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
-            @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+            @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
             def circuit_comparison():
                 qml.QFT(wires=wires)
                 return qml.state()
@@ -255,7 +258,7 @@ class TestDynamicDecomposition:
             operations=[qml.QFT(wires=wires)],
             gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
         )
-        graph.solve()
-        expected_resources = graph.resource_estimate(qml.QFT(wires=wires))
+        solution = graph.solve()
+        expected_resources = solution.resource_estimate(qml.QFT(wires=wires))
 
         assert len(collector.state["ops"]) == expected_resources.num_gates

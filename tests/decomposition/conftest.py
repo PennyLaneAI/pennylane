@@ -29,7 +29,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
-from pennylane.ops.qubit.parametric_ops_single_qubit import _controlled_phase_shift_decomp
 
 decompositions = defaultdict(list)
 
@@ -147,6 +146,14 @@ def _t_ps(wires, **__):
 
 decompositions["T"] = [_t_ps]
 
+
+@qml.register_resources({qml.RZ: 3, qml.RY: 2, qml.CNOT: 2})
+def _crot(*_, **__):
+    raise NotImplementedError
+
+
+decompositions["CRot"] = [_crot]
+
 ################################################
 # Custom Decompositions For Symbolic Operators #
 ################################################
@@ -154,7 +161,6 @@ decompositions["T"] = [_t_ps]
 decompositions["C(PauliX)"] = [_controlled_x_decomp]
 decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
 decompositions["C(Hadamard)"] = [_controlled_hadamard]
-decompositions["C(PhaseShift)"] = [_controlled_phase_shift_decomp]
 decompositions["Adjoint(Hadamard)"] = [self_adjoint]
 decompositions["Pow(Hadamard)"] = [pow_involutory]
 decompositions["Adjoint(RX)"] = [adjoint_rotation]

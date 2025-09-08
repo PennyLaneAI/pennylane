@@ -48,7 +48,7 @@ on:
           Indicate if a lightened version of the CI should be run instead of the entire suite.
 
           The lightened version of the CI includes the following changes:
-          - Only Python 3.10 is tested against, instead of 3.10, 3.11, 3.12
+          - Only Python 3.11 is tested against, instead of 3.11, 3.12, 3.13
         required: false
         type: boolean
         default: false
@@ -140,31 +140,30 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10"]
+            "default": ["3.11"]
           }
           EOF
           elif [ "${{ inputs.python_warning_level }}" == "error" ];
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10"]
+            "default": ["3.11"]
           }
           EOF
           else
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10", "3.11", "3.12"],
-            "torch-tests": ["3.10", "3.12"],
-            "tf-tests": ["3.10", "3.12"],
-            "jax-tests": ["3.10", "3.12"],
-            "capture-jax-tests": ["3.10", "3.12"],
-            "all-interfaces-tests": ["3.10"],
-            "external-libraries-tests": ["3.10"],
-            "qcut-tests": ["3.10"],
-            "qchem-tests": ["3.10"],
-            "gradients-tests": ["3.10"],
-            "data-tests": ["3.10", "3.12"],
-            "device-tests": ["3.10"]
+            "default": ["3.11", "3.12", "3.13"],
+            "torch-tests": ["3.11", "3.13"],
+            "jax-tests": ["3.11", "3.13"],
+            "capture-jax-tests": ["3.11", "3.13"],
+            "all-interfaces-tests": ["3.11"],
+            "external-libraries-tests": ["3.11"],
+            "qcut-tests": ["3.11"],
+            "qchem-tests": ["3.11"],
+            "gradients-tests": ["3.11"],
+            "data-tests": ["3.11", "3.13"],
+            "device-tests": ["3.11"]
           }
           EOF
           fi
@@ -183,7 +182,6 @@ jobs:
             "core-tests": 6,
             "gradients-tests": 2,
             "jax-tests": 4,
-            "tf-tests": 3,
             "device-tests": 1
           }
           EOF
@@ -193,7 +191,6 @@ jobs:
             "default": 1,
             "core-tests": 6,
             "jax-tests": 8,
-            "tf-tests": 6,
             "torch-tests": 2,
             "device-tests": 1
           }
@@ -302,46 +299,6 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}autograd-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
-
-
-  tf-tests:
-    needs:
-      - setup-ci-load
-      - determine_runner
-      - default-dependency-versions
-      - warnings-as-errors-setup
-    strategy:
-      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
-      max-parallel: >-
-        ${{
-           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).tf-tests
-           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
-         }}
-      matrix:
-        group: [1, 2, 3]
-        python-version: >-
-          ${{
-            fromJSON(needs.setup-ci-load.outputs.python-version).tf-tests
-            || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}
-    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'tf-tests') }}
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
-      job_name: ${{ inputs.job_name_prefix }}tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
-      branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
-      python_version: ${{ matrix.python-version }}
-      additional_pip_packages: |
-        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
-        ${{ inputs.additional_python_packages }}
-      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
-      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: tf and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 3 --group ${{ matrix.group }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
-      pytest_durations_file_path: '.github/durations/tf_tests_durations.json'
-      pytest_xml_file_path: '${{ inputs.job_name_prefix }}tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'tf.txt' || '' }}
 
   jax-tests:
     needs:
@@ -490,7 +447,6 @@ jobs:
       python_version: ${{ matrix.python-version }}
       additional_pip_packages: |
         ${{ needs.default-dependency-versions.outputs.jax-version }}
-        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
@@ -533,10 +489,9 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        pyzx matplotlib stim quimb==1.11.0 mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.46 filecheck
+        pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.49 filecheck
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
-        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
 
@@ -575,10 +530,9 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        kahypar==1.1.7 
+        kahypar==1.3.5 
         opt_einsum
         ${{ needs.default-dependency-versions.outputs.jax-version }}
-        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
@@ -654,7 +608,6 @@ jobs:
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
         ${{ needs.default-dependency-versions.outputs.jax-version }}
-        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
@@ -735,7 +688,6 @@ jobs:
       python_version: ${{ matrix.python-version }}
       additional_pip_packages: |
         ${{ !contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
-        ${{ !contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
         ${{ !contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
@@ -743,15 +695,15 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-
-  upload-to-codecov:
-    runs-on: ubuntu-latest
-
+  
+  all-tests-passed:
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     needs:
+      - determine_runner
       - torch-tests
       - autograd-tests
-      - tf-tests
       - jax-tests
+      - capture-jax-tests
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests
@@ -760,14 +712,32 @@ jobs:
       - gradients-tests
       - data-tests
       - device-tests
+    
+    # Run this job even if any dependencies were skipped
+    # but do not run if any dependencies failed or were cancelled
+    if: >-
+      ${{
+        always() &&
+        !contains(needs.*.result, 'failure') &&
+        !contains(needs.*.result, 'cancelled')
+       }}
 
-    # Run this even if any of the above jobs are skipped but not if any of the jobs failed
+    steps:
+      - name: Block until all test jobs are complete
+        run: echo "All test jobs completed successfully."
+
+  upload-to-codecov:
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    needs: 
+      - all-tests-passed
+      - determine_runner
+
+    # Run this if and only if the "all-test-passed" job succeeded
     if: >-
       ${{
         always() &&
         inputs.upload_to_codecov == true &&
-        !contains(needs.*.result, 'failure') &&
-        !contains(needs.*.result, 'cancelled')
+        needs.all-tests-passed.result == 'success'
        }}
 
     steps:
@@ -777,7 +747,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
 
-      - name: Down Coverage Artifacts
+      - name: Download Coverage Artifacts
         uses: actions/download-artifact@v4
 
       - name: Upload to Codecov
@@ -792,8 +762,8 @@ jobs:
       - determine_runner
       - torch-tests
       - autograd-tests
-      - tf-tests
       - jax-tests
+      - capture-jax-tests
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests

@@ -54,6 +54,8 @@ def test_domain_correction(angle, result):
         (qml.RZ(-math.pi / 5, wires=[0]), 1e-4),
         (qml.RZ(-math.pi / 7, wires=[1]), 1e-4),
         (qml.RZ(-math.pi / 8, wires=[2]), 1e-2),
+        (qml.RZ(9 * math.pi / 4, wires=[0]), 1e-3),
+        (qml.RZ(4.434079721283546, wires=[3]), 1e-3),
     ],
 )
 def test_ross_selinger(op, epsilon):

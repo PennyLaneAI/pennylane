@@ -70,6 +70,10 @@ resource_config = {
     "precision_select_pauli_rot": 1e-9,
     "precision_qubit_unitary": 1e-9,
     "precision_qrom_state_prep": 1e-9,
+    "precision_mps_prep": 1e-9,
+    "precision_alias_sampling": 1e-9,
+    "qubitization_rotation_precision": 15,
+    "qubitization_coeff_precision": 15,
 }
 
 
@@ -182,7 +186,7 @@ def resources_from_qfunc(
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
-            if op._queue_category in ["_ops", "_resource_op"]:
+            if isinstance(op, (ResourceOperator, Operation)):
                 if op.wires:
                     circuit_wires.append(op.wires)
                 else:
@@ -378,10 +382,10 @@ def _ops_to_compressed_reps(
     """
     cmp_rep_ops = []
     for op in ops:  # We are skipping measurement processes here.
-        if op._queue_category == "_resource_op":
+        if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
 
-        elif op._queue_category == "_ops":  # map: op --> res_op, then: res_op --> cmprsd_res_op
+        if isinstance(op, Operation):  # map: op --> res_op, then: res_op --> cmprsd_res_op
             cmp_rep_ops.append(map_to_resource_op(op).resource_rep_from_op())
 
     return cmp_rep_ops

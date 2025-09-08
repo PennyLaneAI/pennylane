@@ -466,7 +466,7 @@ class TestPostselection:
             _ = simulate(tape)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "autograd"])
     def test_nan_state(self, interface):
         """Test that a state with nan values is returned if the probability of a postselection state
         is 0."""
@@ -1651,3 +1651,28 @@ class TestMidMeasurements:
             )
             expected_sample = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+
+    def test_tree_traversal_non_standard_wire_order(self):
+        """Test that tree-traversal still works with a non-standard wire order."""
+
+        ops = [qml.H(0), qml.CNOT((0, 2)), qml.measurements.MidMeasureMP(wires=0), qml.S(1)]
+
+        tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, 0)
+
+    def test_measurement_on_non_op_wire(self):
+        """Test that we can measure wires not present in the circuit."""
+
+        ops = [qml.measurements.MidMeasureMP(wires=0)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1, 2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, np.array([1, 0, 0, 0, 0, 0, 0, 0]))
+
+    def test_measurement_on_non_op_wire_with_nonstandard_order(self):
+        """Test that we can measure wires not present in the circuit."""
+
+        ops = [qml.measurements.MidMeasureMP(wires=1), qml.X(1)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1, 2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, np.array([0, 0, 1, 0, 0, 0, 0, 0]))

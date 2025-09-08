@@ -539,7 +539,8 @@ def simulate_tree_mcm(
             else:
                 initial_state = branch_state(stack.states[depth], mcm_current[depth], mcms[depth])
             circtmp = circuits[depth].copy(shots=qml.measurements.shots.Shots(shots))
-            circtmp = prepend_state_prep(circtmp, initial_state, interface, circuit.wires)
+
+            circtmp = prepend_state_prep(circtmp, initial_state, interface, sorted(circuit.wires))
             state, is_state_batched = get_final_state(
                 circtmp,
                 debugger=debugger,
@@ -857,8 +858,6 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
             comb_meas = measurement_with_no_shots(circ_meas)
         else:
             comb_meas = combine_measurements_core(circ_meas, results.pop(0))
-        if isinstance(circ_meas, SampleMP):
-            comb_meas = qml.math.squeeze(comb_meas)
         final_measurements.append(comb_meas)
     return final_measurements[0] if len(final_measurements) == 1 else tuple(final_measurements)
 
@@ -915,7 +914,7 @@ def _(original_measurement: SampleMP, measures):
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
     )
-    return qml.math.squeeze(qml.math.concatenate(new_sample))
+    return qml.math.concatenate(new_sample)
 
 
 @debug_logger

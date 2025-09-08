@@ -77,22 +77,20 @@ def _is_jax(other, subclass=False):
     # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
-            import jax
-            import jaxlib
+            from jax import Array
+            from jax.core import Tracer
             from jax.numpy import ndarray
 
-            JaxTensor = ndarray | (
-                jax.Array
-                if hasattr(jax, "Array")
-                else jaxlib.xla_extension.DeviceArray | jax.core.Tracer
-            )
+            JaxTensor = ndarray | Array | Tracer
             check = issubclass if subclass else isinstance
 
             return check(other, JaxTensor)
     return False
 
 
-def _is_tensorflow(other, subclass=False):
+def _is_tensorflow(
+    other, subclass=False
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Check if other is an instance or a subclass of a tensorflow tensor."""
     if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
         with contextlib.suppress(ImportError):

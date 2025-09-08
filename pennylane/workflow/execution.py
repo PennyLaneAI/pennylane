@@ -19,12 +19,14 @@ from __future__ import annotations
 
 import inspect
 import logging
+import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 from cachetools import Cache
 
 import pennylane as qml
+from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 from pennylane.math.interface_utils import Interface
 from pennylane.transforms.core import TransformProgram
 
@@ -46,6 +48,7 @@ if TYPE_CHECKING:
     from pennylane.workflow.resolution import SupportedDiffMethods
 
 
+# pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
@@ -210,6 +213,9 @@ def execute(
     ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
+
+    if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:  # pragma: no cover
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
 
     config = qml.devices.ExecutionConfig(
         interface=interface,

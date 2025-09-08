@@ -19,7 +19,7 @@ from dataclasses import dataclass
 # pylint: disable=wrong-import-position
 import pytest
 
-pytestmark = pytest.mark.external
+pytestmark = pytest.mark.catalyst
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -27,12 +27,18 @@ jaxlib = pytest.importorskip("jaxlib")
 xdsl = pytest.importorskip("xdsl")
 
 from catalyst import CompileError
+from catalyst.passes import apply_pass
+from catalyst.passes import cancel_inverses as catalyst_cancel_inverses
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl import passes
 from xdsl.context import Context
-from xdsl.dialects import builtin, transform
+from xdsl.dialects import builtin
 from xdsl.interpreters import Interpreter
 
+import pennylane as qml
+from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler.python_compiler import Compiler
+from pennylane.compiler.python_compiler.dialects import transform
 from pennylane.compiler.python_compiler.jax_utils import (
     jax_from_docstring,
     module,
@@ -45,6 +51,17 @@ from pennylane.compiler.python_compiler.transforms.api import (
     available_passes,
     compiler_transform,
 )
+
+
+@dataclass(frozen=True)
+class HelloWorldPass(passes.ModulePass):
+    name = "hello-world"
+
+    def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+        print("hello world")
+
+
+hello_world_pass = compiler_transform(HelloWorldPass)
 
 
 def test_compiler():
@@ -158,30 +175,14 @@ def test_raises_error_when_pass_does_not_exists():
 
 def test_decorator():
     """Test that the decorator has modified the available_passes dictionary"""
-
-    @dataclass(frozen=True)
-    class PrintModule(passes.ModulePass):
-        name = "print-module"
-
-        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
-            print("hello")
-
-    compiler_transform(PrintModule)
-    assert "print-module" in available_passes
-    assert available_passes["print-module"]() == PrintModule
+    assert "hello-world" in available_passes
+    assert available_passes["hello-world"]() == HelloWorldPass
 
 
 def test_integration_for_transform_interpreter(capsys):
     """Test that a pass is run via the transform interpreter"""
 
-    @compiler_transform
-    @dataclass(frozen=True)
-    class _HelloWorld(passes.ModulePass):
-        name = "hello-world"
-
-        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
-            print("hello world")
-
+    # The hello-world pass is in the IR
     @xdsl_from_docstring
     def program():
         """
@@ -203,6 +204,265 @@ def test_integration_for_transform_interpreter(capsys):
     pipeline.apply(ctx, program())
     captured = capsys.readouterr()
     assert captured.out.strip() == "hello world"
+
+
+class TestCatalystIntegration:
+    """Tests for integration of the Python compiler with Catalyst"""
+
+    @pytest.mark.capture
+    def test_integration_catalyst_no_passes_with_capture(self):
+        """Test that the xDSL plugin can be used even when no passes are applied
+        when capture is enabled."""
+
+        assert capture_enabled()
+
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+
+    def test_integration_catalyst_no_passes_no_capture(self):
+        """Test that the xDSL plugin can be used even when no passes are applied
+        when capture is disabled."""
+
+        assert not capture_enabled()
+
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+
+    @pytest.mark.capture
+    def test_integration_catalyst_xdsl_pass_with_capture(self, capsys):
+        """Test that a pass is run via the transform interpreter when using with a
+        qjit workflow and capture is enabled."""
+
+        assert capture_enabled()
+
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @hello_world_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
+
+    def test_integration_catalyst_xdsl_pass_no_capture(self, capsys):
+        """Test that a pass is run via the transform interpreter when using with a
+        qjit workflow and capture is disabled."""
+
+        assert not capture_enabled()
+
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @apply_pass("hello-world")
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
+
+    @pytest.mark.capture
+    def test_integration_catalyst_mixed_passes_with_capture(self, capsys):
+        """Test that both Catalyst and Python compiler passes can be used with qjit
+        when capture is enabled."""
+
+        assert capture_enabled()
+
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @hello_world_pass
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
+
+    def test_integration_catalyst_mixed_passes_no_capture(self, capsys):
+        """Test that both Catalyst and Python compiler passes can be used with qjit
+        when capture is disabled."""
+
+        assert not capture_enabled()
+
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @apply_pass("hello-world")
+        @catalyst_cancel_inverses
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
+
+
+class TestCallbackIntegration:
+    """Test the integration of the callback functionality"""
+
+    def test_callback_integration(self, capsys):
+        """Test that the callback mechanism works with the transform interpreter"""
+
+        @compiler_transform
+        @dataclass(frozen=True)
+        class _(passes.ModulePass):
+            name = "none-pass"
+
+            def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None: ...
+
+        def print_between_passes(*_):
+            print("hello world")
+
+        @xdsl_from_docstring
+        def program():
+            """
+            builtin.module {
+              builtin.module {
+                transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+                  %0 = transform.apply_registered_pass "none-pass" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+                  transform.yield
+                }
+              }
+            }
+            """
+
+        ctx = Context()
+        ctx.load_dialect(builtin.Builtin)
+        pipeline = xdsl.passes.PassPipeline(
+            (ApplyTransformSequence(callback=print_between_passes),)
+        )
+        pipeline.apply(ctx, program())
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
+
+    def test_callback_prints_module_after_each_pass(self, capsys):
+        """Test that the callback prints the module after each pass"""
+
+        # pylint: disable=redefined-outer-name
+        def print_between_passes(_, module, __):
+            print("=== Between Pass ===")
+            print(module)
+
+        @xdsl_from_docstring
+        def program_2_passes():
+            """
+            builtin.module {
+              builtin.module @module_foo {
+                transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+                  %0 = transform.apply_registered_pass "xdsl-cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+                  %1 = transform.apply_registered_pass "xdsl-merge-rotations" to %0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+                  transform.yield %1 : !transform.op<"builtin.module">
+                  func.func public @foo() {
+                    %2 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                    %3 = tensor.extract %2[] : tensor<i64>
+                    %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %5 = quantum.alloc(1) : !quantum.reg
+                    %6 = tensor.extract %2[] : tensor<i64>
+                    %7 = quantum.extract %5[%6] : !quantum.reg -> !quantum.bit
+                    %8 = "stablehlo.constant"() <{value = dense<1.000000e+00> : tensor<f64>}> : () -> tensor<f64>
+                    %9 = tensor.extract %8[] : tensor<f64>
+                    %10 = quantum.custom "RX"(%9) %7 : !quantum.bit
+                    %11 = tensor.extract %8[] : tensor<f64>
+                    %12 = quantum.custom "RX"(%11) %10 : !quantum.bit
+                    %13 = quantum.custom "Hadamard"() %12 : !quantum.bit
+                    %14 = quantum.custom "Hadamard"() %13 : !quantum.bit
+                    %15 = tensor.extract %1[] : tensor<i64>
+                    %16 = quantum.insert %5[%15], %14 : !quantum.reg, !quantum.bit
+                    %17 = quantum.compbasis qreg %16 : !quantum.obs
+                    %18 = quantum.probs %17 : tensor<2xf64>
+                  }
+                }
+              }
+            }
+            """
+
+        ctx = Context()
+        ctx.load_dialect(builtin.Builtin)
+        pipeline = xdsl.passes.PassPipeline(
+            (ApplyTransformSequence(callback=print_between_passes),)
+        )
+        pipeline.apply(ctx, program_2_passes())
+
+        out = capsys.readouterr().out
+        printed_modules = out.split("=== Between Pass ===")[1:]
+
+        assert (
+            len(printed_modules) == 2
+        ), "Callback should have been called twice (after each pass)."
+
+        # callback after cancel-inverses
+        assert 'quantum.custom "RX"' in printed_modules[0]
+        assert 'quantum.custom "Hadamard"' not in printed_modules[0]
+
+        # callback after merge-rotations
+        # We expect an `arith.addf` if rotations were merged
+        assert "arith.addf" in printed_modules[1], "Expected merged RX gates into a single rotation"
+        assert 'quantum.custom "RX"' in printed_modules[1]
+
+        assert printed_modules[0] != printed_modules[1], "IR should differ between passes"
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_callback_run_integration(self, capsys):
+        """Test that the callback is integrated into the pass pipeline with the Compiler.run() method"""
+
+        # pylint: disable=redefined-outer-name
+        def print_between_passes(_, module, __):
+            print("=== Between Pass ===")
+            print(module)
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("null.qubit", wires=2))
+        def circuit():
+            qml.RX(0.1, 0)
+            qml.RX(2.0, 0)
+            qml.Hadamard(1)
+            qml.Hadamard(1)
+            return qml.state()
+
+        Compiler.run(circuit.mlir_module, callback=print_between_passes)
+        out = capsys.readouterr().out
+        printed_modules = out.split("=== Between Pass ===")[1:]
+
+        assert (
+            len(printed_modules) == 2
+        ), "Callback should have been called twice (after each pass)."
+
+        # callback after cancel-inverses
+        assert 'quantum.custom "RX"' in printed_modules[0]
+        assert 'quantum.custom "Hadamard"' not in printed_modules[0]
+
+        # callback after merge-rotations
+        # We expect an `arith.addf` if rotations were merged
+        assert "arith.addf" in printed_modules[1], "Expected merged RX gates into a single rotation"
+        assert 'quantum.custom "RX"' in printed_modules[1]
+
+        assert printed_modules[0] != printed_modules[1], "IR should differ between passes"
 
 
 if __name__ == "__main__":

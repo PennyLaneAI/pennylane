@@ -19,49 +19,6 @@ Workflow Development Status
 
 The non-exhaustive list of unsupported features are:
 
-**Overridden shots:** Device execution currently pulls the shot information from the device. In order
-to support dynamic shots, we need to develop an additional protocol for communicating the shot information
-associated with a circuit. Dynamically mutating objects is not compatible with jaxpr and jitting.
-
-**Shot vectors**.  Shot vectors are not yet supported. We need to figure out how to stack
-and reshape the outputs from measurements on the device when multiple measurements are present.
-
-**Gradients other than default qubit backprop**. We managed to get backprop of default qubit for
-free, but no other gradient methods have support yet.
-
-**MCM methods other than single branch statistics**. Mid-circuit measurements
-are only handled via a "single branch statistics" algorithm, which will lead to unexpected
-results. Even on analytic devices, one branch will be randomly chosen on each execution.
-Returning measurements based on mid-circuit measurements, ``qml.sample(m0)``,
-is also not yet supported on default qubit or lightning.
-
->>> @qml.qnode(qml.device('default.qubit', wires=1))
->>> def circuit(x):
-...     qml.H(0)
-...     m0 = qml.measure(0)
-...     qml.cond(m0, qml.RX, qml.RZ)(x,0)
-...     return qml.expval(qml.Z(0))
->>> circuit(0.5), circuit(0.5), circuit(0.5)
-(Array(-0.87758256, dtype=float64),
-Array(1., dtype=float64),
-Array(-0.87758256, dtype=float64))
->>> qml.capture.disable()
->>> circuit(0.5)
-np.float64(0.06120871905481362)
->>> qml.capture.enable()
-
-**Device preprocessing and validation**. No device preprocessing and validation will occur. The captured
-jaxpr is directly sent to the device, whether or not the device can handle it.
-
->>> @qml.qnode(qml.device('default.qubit', wires=3))
-... def circuit():
-...     qml.Permute(jax.numpy.array((0,1,2)), wires=(2,1,0))
-...     return qml.state()
->>> circuit()
-MatrixUndefinedError:
-
-**Transforms are still under development**. No transforms will currently be applied as part of the workflow.
-
 **Breaking ``vmap``/parameter broadcasting into a non-broadcasted state**. The current workflow assumes
 that the device execution can natively handle broadcasted parameters. ``vmap`` and parameter broadcasting
 will not work with devices other than default qubit.
@@ -108,17 +65,20 @@ features is non-exhaustive.
 
 """
 import logging
+from collections.abc import Sequence
 from functools import partial
 from numbers import Number
 from warnings import warn
 
 import jax
 from jax.interpreters import ad, batching, mlir
+from jax.interpreters import partial_eval as pe
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
+from pennylane.measurements import Shots
 from pennylane.typing import TensorLike
 
 from .construct_execution_config import construct_execution_config
@@ -149,7 +109,7 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
 
     input_shapes = [
         (arg.shape[batch_dim],)
-        for arg, batch_dim in zip(non_const_args, non_const_batch_dims)
+        for arg, batch_dim in zip(non_const_args, non_const_batch_dims, strict=True)
         if batch_dim is not None
     ]
 
@@ -178,9 +138,18 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 
     for s in shots:
         for m in measurements:
+            s = s.val if isinstance(s, jax.extend.core.Literal) else s
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            shapes.append(jax.core.ShapedArray(batch_shape + shape, dtype_map.get(dtype, dtype)))
-
+            if all(isinstance(si, int) for si in shape):
+                aval_type = jax.core.ShapedArray
+            else:
+                aval_type = jax.core.DShapedArray
+                if not jax.config.jax_dynamic_shapes:
+                    raise ValueError(
+                        "Returning arrays with a dynamic shape requires setting jax.config.update('jax_dynamic_shapes', True)"
+                    )
+            dtype = jax.numpy.dtype(dtype_map.get(dtype, dtype))
+            shapes.append(aval_type(batch_shape + shape, dtype))
     return shapes
 
 
@@ -192,14 +161,16 @@ qnode_prim.prim_type = "higher_order"
 # pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
-def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
-    if shots != device.shots:
-        raise NotImplementedError(
-            "Overriding shots is not yet supported with the program capture execution."
-        )
+def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
-    consts = args[:n_consts]
-    non_const_args = args[n_consts:]
+    if shots_len == 0:
+        shots = None
+        non_shots_args = args
+    else:
+        shots, non_shots_args = args[:shots_len], args[shots_len:]
+
+    consts = non_shots_args[:n_consts]
+    non_const_args = non_shots_args[n_consts:]
 
     device_program = device.preprocess_transforms(execution_config)
     if batch_dims is not None:
@@ -211,8 +182,8 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
                 temp_all_args.append(a[tuple(slices)])
             else:
                 temp_all_args.append(a)
-        temp_consts = temp_all_args[:n_consts]
-        temp_args = temp_all_args[n_consts:]
+        temp_consts = temp_all_args[shots_len : (n_consts + shots_len)]
+        temp_args = temp_all_args[(n_consts + shots_len) :]
     else:
         temp_consts = consts
         temp_args = non_const_args
@@ -244,27 +215,59 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
+        device.eval_jaxpr,
+        qfunc_jaxpr,
+        consts,
+        execution_config=execution_config,
+        shots=Shots(shots),
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
-    return jax.vmap(partial_eval, batch_dims[n_consts:])(*non_const_args)
+    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
 
 
-# pylint: disable=unused-argument
-@debug_logger
-@qnode_prim.def_abstract_eval
-def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
+def custom_staging_rule(
+    jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
+) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
+    """
+    Add new jaxpr equation to the jaxpr_trace and return new tracers.
 
-    mps = qfunc_jaxpr.outvars
+    See capture/intro_to_dynamic_shapes.py for more context and capture.register_custom_staging_rule
+    for the implementation used on other higher order primitives.
+    """
+    shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
+    device = params["device"]
+    invars = [jaxpr_trace.getvar(x) for x in tracers]
+    shots_vars = invars[:shots_len]
 
+    batch_dims = params.get("batch_dims")
+    split = params["n_consts"] + params["shots_len"]
     batch_shape = (
-        _get_batch_shape(args[n_consts:], batch_dims[n_consts:]) if batch_dims is not None else ()
+        _get_batch_shape(tracers[split:], batch_dims[split:]) if batch_dims is not None else ()
     )
 
-    return _get_shapes_for(
-        *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
+    new_shapes = _get_shapes_for(
+        *jaxpr.outvars,
+        shots=shots_vars,
+        num_device_wires=len(device.wires),
+        batch_shape=batch_shape,
     )
+    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
+
+    eqn = jax.core.new_jaxpr_eqn(
+        invars,
+        [jaxpr_trace.makevar(o) for o in out_tracers],
+        qnode_prim,
+        params,
+        jax.core.no_effects,
+        source_info=source_info,
+    )
+
+    jaxpr_trace.frame.add_eqn(eqn)
+    return out_tracers
+
+
+pe.custom_staging_rules[qnode_prim] = custom_staging_rule
 
 
 # pylint: disable=too-many-arguments
@@ -273,10 +276,10 @@ def _qnode_batching_rule(
     batch_dims,
     *,
     qnode,
-    shots,
     device,
     execution_config,
     qfunc_jaxpr,
+    shots_len,
     n_consts,
 ):
     """
@@ -285,7 +288,7 @@ def _qnode_batching_rule(
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
-    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims, strict=True)):
 
         if _is_scalar_tensor(arg):
             continue
@@ -293,7 +296,7 @@ def _qnode_batching_rule(
         # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
         # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
         # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
-        if idx < n_consts:
+        if idx < (n_consts + shots_len):
             warn(
                 f"Constant argument at index {idx} is not scalar. "
                 "This may lead to unintended behavior or wrong results if the argument is provided "
@@ -314,7 +317,7 @@ def _qnode_batching_rule(
 
     result = qnode_prim.bind(
         *batched_args,
-        shots=shots,
+        shots_len=shots_len,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
@@ -457,8 +460,6 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     """Process the quantum function of a QNode to create a Jaxpr."""
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-    # pylint: disable=protected-access
-    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
 
     try:
@@ -472,8 +473,9 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     ) as exc:
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
-            "variable (a function input). Please ensure that autograph=True or use native control "
-            "flow functions like for_loop, while_loop, etc."
+            "variable (a function input). Please ensure that autograph is being correctly enabled with "
+            "`qml.capture.run_autograph` or disabled with `qml.capture.disable_autograph` or consider using PennyLane native control "
+            "flow functions like `qml.for_loop`, `qml.while_loop`, or `qml.cond`."
         ) from exc
 
     assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
@@ -545,16 +547,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     """
 
-    if "shots" in kwargs:
-        shots = qml.measurements.Shots(kwargs.pop("shots"))
-    else:
-        shots = qnode.device.shots
-
-    if shots.has_partitioned_shots:
-        # Questions over the pytrees and the nested result object shape
-        raise NotImplementedError("shot vectors are not yet supported in plxpr.")
-
-    if not qnode.device.wires:
+    if qnode.device.wires is None:
         raise NotImplementedError(
             "devices must specify wires for integration with program capture."
         )
@@ -585,11 +578,14 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
         qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
 
+    flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
+
     res = qnode_prim.bind(
+        *flat_shots,
         *qfunc_jaxpr.consts,
         *abstract_shapes,
         *flat_dynamic_args,
-        shots=shots,
+        shots_len=len(flat_shots),
         qnode=qnode,
         device=qnode.device,
         execution_config=config,
@@ -597,4 +593,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         n_consts=len(qfunc_jaxpr.consts),
     )
 
+    if len(flat_shots) > 1:
+        shots_struct = jax.tree_util.tree_structure(flat_shots)
+        out_tree = shots_struct.compose(out_tree)
     return jax.tree_util.tree_unflatten(out_tree, res)

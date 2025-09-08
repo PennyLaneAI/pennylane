@@ -15,9 +15,11 @@
 """This submodule defines functions to decompose controlled operations."""
 
 
+from typing import Literal
+
 import numpy as np
 
-from pennylane import control_flow, math, ops, queuing
+from pennylane import allocation, control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -111,7 +113,7 @@ def ctrl_decomp_zyz(
     target_operation: Operator,
     control_wires: Wires,
     work_wires: Wires | None = None,
-    work_wire_type: str | None = "dirty",
+    work_wire_type: str | None = "borrowed",
 ) -> list[Operation]:
     """Decompose the controlled version of a target single-qubit operation
 
@@ -124,7 +126,7 @@ def ctrl_decomp_zyz(
         target_operation (~.operation.Operator): the target operation or matrix to decompose
         control_wires (~.wires.Wires): the control wires of the operation.
         work_wires (~.wires.Wires): the work wires available for this decomposition
-        work_wire_type (str): the type of work wires, either "clean" or "dirty".
+        work_wire_type (str): the type of work wires, either "zeroed" or "borrowed".
 
     Returns:
         list[Operation]: the decomposed operations
@@ -237,7 +239,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
                 {},
                 num_control_wires=len_k2,
                 num_work_wires=len_k1,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             ): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
@@ -246,7 +248,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
                 {},
                 num_control_wires=num_control_wires,
                 num_work_wires=1,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             ): 1,
         }
     return {
@@ -257,14 +259,14 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             {},
             num_control_wires=len_k2,
             num_work_wires=len_k1,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 4,
         controlled_resource_rep(
             ops.X,
             {},
             num_control_wires=len_k1,
             num_work_wires=len_k2,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
         ops.Hadamard: 2,
@@ -273,7 +275,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             {},
             num_control_wires=num_control_wires,
             num_work_wires=1,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 1,
     }
 
@@ -299,7 +301,7 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
             )
         ],
     )(U, wires)
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "dirty")
+    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
 def _single_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
@@ -346,7 +348,7 @@ def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wir
             {},
             num_control_wires=num_control_wires,
             num_work_wires=1,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 1,
     }
 
@@ -366,7 +368,7 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "dirty")
+    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
 def _controlled_two_qubit_unitary_resource(
@@ -410,24 +412,24 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
         ops.PauliX(w)
 
 
-def _decompose_mcx_with_many_workers_condition(num_control_wires, num_work_wires, **__):
+def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
     return num_control_wires > 2 and num_work_wires >= num_control_wires - 2
 
 
-def _decompose_mcx_with_many_workers_resource(num_control_wires, work_wire_type, **__):
+def _mcx_many_workers_resource(num_control_wires, work_wire_type, **__):
     return {
         ops.Toffoli: (
             4 * (num_control_wires - 2)
-            if work_wire_type == "dirty"
+            if work_wire_type == "borrowed"
             else 2 * (num_control_wires - 2) + 1
         )
     }
 
 
 # pylint: disable=no-value-for-parameter
-@register_condition(_decompose_mcx_with_many_workers_condition)
-@register_resources(_decompose_mcx_with_many_workers_resource)
-def _decompose_mcx_with_many_workers(wires, work_wires, work_wire_type, **__):
+@register_condition(_mcx_many_workers_condition)
+@register_resources(_mcx_many_workers_resource)
+def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
@@ -443,7 +445,7 @@ def _decompose_mcx_with_many_workers(wires, work_wires, work_wire_type, **__):
     def loop_down(i):
         ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    if work_wire_type == "dirty":
+    if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
         loop_up()
 
@@ -453,34 +455,68 @@ def _decompose_mcx_with_many_workers(wires, work_wires, work_wire_type, **__):
     loop_up()
     ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
-    if work_wire_type == "dirty":
+    if work_wire_type == "borrowed":
         loop_down()
 
 
-decompose_mcx_with_many_workers = flip_zero_control(_decompose_mcx_with_many_workers)
+decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 
 
-def _two_workers_condition(num_control_wires, num_work_wires, **__):
+@register_condition(lambda num_work_wires, **_: not num_work_wires)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(
+    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "zeroed"),
+    work_wires=lambda num_control_wires, **_: {"zeroed": num_control_wires - 2},
+)
+def _mcx_many_zeroed_workers(wires, **kwargs):
+    num_control_wires = len(wires) - 1
+    num_work_wires = num_control_wires - 2
+    with allocation.allocate(num_work_wires, state="zero", restored=True) as work_wires:
+        kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
+        _mcx_many_workers(wires, **kwargs)
+
+
+decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
+
+
+@register_condition(lambda num_work_wires, **_: not num_work_wires)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(
+    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "borrowed"),
+    work_wires=lambda num_control_wires, **_: {"borrowed": num_control_wires - 2},
+)
+def _mcx_many_borrowed_workers(wires, **kwargs):
+    num_control_wires = len(wires) - 1
+    num_work_wires = num_control_wires - 2
+    with allocation.allocate(num_work_wires, state="any", restored=True) as work_wires:
+        kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
+        _mcx_many_workers(wires, **kwargs)
+
+
+decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_workers)
+
+
+def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
     return num_control_wires > 2 and num_work_wires >= 2
 
 
-def _two_workers_resource(num_control_wires, work_wire_type, **__):
-    if work_wire_type == "clean":
+def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
+    if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 3
         return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3 if num_control_wires < 6 else n_ccx - 5}
-    # Otherwise, we assume the work wires are dirty
+    # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
     return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 if num_control_wires < 6 else n_ccx - 8}
 
 
-@register_condition(_two_workers_condition)
-@register_resources(_two_workers_resource)
-def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
+@register_condition(_mcx_two_workers_condition)
+@register_resources(_mcx_two_workers_resource)
+def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
     r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
-    clean ancillae, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
-    ancillae as described in Sec. 5 of [1].
+    zeroed auxiliary qubits, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
+    auxiliary qubits as described in Sec. 5 of [1].
 
     References:
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
@@ -497,48 +533,76 @@ def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
         ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
     else:
         middle_wires = [wires[i] for i in middle_ctrl_indices]
-        _decompose_mcx_with_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
+        _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
 
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
     ops.Toffoli([wires[0], wires[1], work_wires[0]])
 
-    if work_wire_type == "dirty":
-        # Perform toggle-detection of the work wire is dirty
+    if work_wire_type == "borrowed":
+        # Perform toggle-detection of the work wire is borrowed
         middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
         if len(middle_ctrl_indices) == 1:
             ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
         else:
             middle_wires = [wires[i] for i in middle_ctrl_indices]
-            _decompose_mcx_with_one_worker(
-                work_wires[:1] + middle_wires + wires[-1:], work_wires[1:]
-            )
+            _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_with_two_workers = flip_zero_control(_decompose_mcx_with_two_workers)
+decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 
 
-def _decompose_mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
+@register_condition(lambda num_work_wires, **_: not num_work_wires)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(
+    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
+    work_wires={"zeroed": 2},
+)
+def _mcx_two_zeroed_workers(wires, **kwargs):
+    with allocation.allocate(2, state="zero", restored=True) as work_wires:
+        kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
+        _mcx_two_workers(wires, **kwargs)
+
+
+decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
+
+
+@register_condition(lambda num_work_wires, **_: not num_work_wires)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(
+    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
+    work_wires={"borrowed": 2},
+)
+def _mcx_two_borrowed_workers(wires, **kwargs):
+    with allocation.allocate(2, state="any", restored=True) as work_wires:
+        kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
+        _mcx_two_workers(wires, **kwargs)
+
+
+decompose_mcx_two_borrowed_workers = flip_zero_control(_mcx_two_borrowed_workers)
+
+
+def _mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
     return num_control_wires > 2 and num_work_wires == 1
 
 
-def _decompose_mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
-    if work_wire_type == "clean":
+def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
+    if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 3
         return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
-    # Otherwise, we assume the work wire is dirty
+    # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
     return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
 
 
-@register_condition(_decompose_mcx_one_worker_condition)
-@register_resources(_decompose_mcx_one_worker_resource)
-def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **__):
+@register_condition(_mcx_one_worker_condition)
+@register_resources(_mcx_one_worker_resource)
+def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", **__):
     r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
-    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is clean
-    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is dirty as described in
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
+    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
+    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is borrowed as described in
     Sec. 5.1 of [1].
 
     References:
@@ -554,14 +618,44 @@ def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **
     ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
     ops.Toffoli([wires[0], wires[1], work_wires[0]])
 
-    if work_wire_type == "dirty":
-        # Perform toggle-detection of the work wire is dirty
+    if work_wire_type == "borrowed":
+        # Perform toggle-detection of the work wire is borrowed
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_with_one_worker = flip_zero_control(_decompose_mcx_with_one_worker)
+decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
+
+
+@register_condition(lambda num_work_wires, **_: not num_work_wires)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(
+    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "zeroed"),
+    work_wires={"zeroed": 1},
+)
+def _mcx_one_zeroed_worker(wires, **kwargs):
+    with allocation.allocate(1, state="zero", restored=True) as work_wires:
+        kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
+        _mcx_one_worker(wires, **kwargs)
+
+
+decompose_mcx_one_zeroed_worker = flip_zero_control(_mcx_one_zeroed_worker)
+
+
+@register_condition(lambda num_work_wires, **_: not num_work_wires)
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(
+    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "borrowed"),
+    work_wires={"borrowed": 1},
+)
+def _mcx_one_borrowed_worker(wires, **kwargs):
+    with allocation.allocate(1, state="any", restored=True) as work_wires:
+        kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
+        _mcx_one_worker(wires, **kwargs)
+
+
+decompose_mcx_one_borrowed_worker = flip_zero_control(_mcx_one_borrowed_worker)
 
 
 def _decompose_mcx_no_worker_resource(num_control_wires, **__):
@@ -576,7 +670,7 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
                 {},
                 num_control_wires=len_k2,
                 num_work_wires=len_k1,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             ): 4,
             adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
             controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
@@ -589,14 +683,14 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
             {},
             num_control_wires=len_k2,
             num_work_wires=len_k1,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 2,
         controlled_resource_rep(
             ops.X,
             {},
             num_control_wires=len_k1,
             num_work_wires=len_k2,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 2,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
         controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
@@ -653,16 +747,16 @@ def _ctrl_decomp_bisect_general(U, wires):
 
     # The component
     ops.QubitUnitary(c2t, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(c1, wires[-1]))
 
     # Cancel the two identity controlled X gates
     _ctrl_decomp_bisect_od(d, wires, skip_initial_cx=True)
 
     # Adjoint of the component
-    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="dirty")
+    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
     ops.QubitUnitary(c1, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(c2t, wires[-1]))
 
 
@@ -687,14 +781,14 @@ def _ctrl_decomp_bisect_od(U, wires, skip_initial_cx=False):
     ctrl_k2 = wires[mid:-1]
 
     if not skip_initial_cx:
-        _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="dirty")
+        _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
 
     ops.QubitUnitary(a, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
-    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="dirty")
+    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
     ops.QubitUnitary(a, wires[-1])
-    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
 
 
@@ -830,19 +924,19 @@ def _single_control_zyz(phi, theta, omega, wires):
     """Implements Lemma 5.1 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A
-    ops.cond(_not_zero(phi), _RZ)(phi, wires=wires[-1])
-    ops.cond(_not_zero(theta), _RY)(theta / 2, wires=wires[-1])
+    ops.cond(_not_zero(phi), ops.RZ)(phi, wires=wires[-1])
+    ops.cond(_not_zero(theta), ops.RY)(theta / 2, wires=wires[-1])
 
     ops.CNOT(wires)
 
     # Operator B
-    ops.cond(_not_zero(theta), _RY)(-theta / 2, wires=wires[-1])
-    ops.cond(_not_zero(phi + omega), _RZ)(-(phi + omega) / 2, wires=wires[-1])
+    ops.cond(_not_zero(theta), ops.RY)(-theta / 2, wires=wires[-1])
+    ops.cond(_not_zero(phi + omega), ops.RZ)(-(phi + omega) / 2, wires=wires[-1])
 
     ops.CNOT(wires)
 
     # Operator C
-    ops.cond(_not_zero(omega - phi), _RZ)((omega - phi) / 2, wires=wires[-1])
+    ops.cond(_not_zero(omega - phi), ops.RZ)((omega - phi) / 2, wires=wires[-1])
 
 
 def _multi_control_zyz(
@@ -851,42 +945,31 @@ def _multi_control_zyz(
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A
-    ops.cond(_not_zero(phi), _CRZ)(phi, wires=wires[-2:])
-    ops.cond(_not_zero(theta), _CRY)(theta / 2, wires=wires[-2:])
+    ops.cond(_not_zero(phi), ops.CRZ)(phi, wires=wires[-2:])
+    ops.cond(_not_zero(theta), ops.CRY)(theta / 2, wires=wires[-2:])
 
     ops.ctrl(
         ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
     )
 
     # Operator B
-    ops.cond(_not_zero(theta), _CRY)(-theta / 2, wires=wires[-2:])
-    ops.cond(_not_zero(phi + omega), _CRZ)(-(phi + omega) / 2, wires=wires[-2:])
+    ops.cond(_not_zero(theta), ops.CRY)(-theta / 2, wires=wires[-2:])
+    ops.cond(_not_zero(phi + omega), ops.CRZ)(-(phi + omega) / 2, wires=wires[-2:])
 
     ops.ctrl(
         ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
     )
 
     # Operator C
-    ops.cond(_not_zero(omega - phi), _CRZ)((omega - phi) / 2, wires=wires[-2:])
+    ops.cond(_not_zero(omega - phi), ops.CRZ)((omega - phi) / 2, wires=wires[-2:])
 
 
-def _RZ(phi, wires):
-    ops.RZ(phi, wires=wires)
-
-
-def _RY(phi, wires):
-    ops.RY(phi, wires=wires)
-
-
-def _CRZ(phi, wires):
-    ops.CRZ(phi, wires=wires)
-
-
-def _CRY(phi, wires):
-    ops.CRY(phi, wires=wires)
-
-
-def _ctrl_global_phase(phase, control_wires, work_wires=None, work_wire_type="dirty"):
+def _ctrl_global_phase(
+    phase,
+    control_wires,
+    work_wires=None,
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+):
     ops.ctrl(
         ops.GlobalPhase(-phase),
         control=control_wires,
@@ -909,7 +992,7 @@ def _controlled_x(target_wire, control, work_wires, work_wire_type):
 # pylint: disable=no-value-for-parameter
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
     r"""
-    Construct a quantum circuit for creating n-condionally clean ancillae using 3n qubits. This
+    Construct a quantum circuit for creating n-condionally zeroed auxiliary qubits using 3n qubits. This
     implements Fig. 4a of [1]. Each wire is of the same size :math:`n`.
 
     Args:

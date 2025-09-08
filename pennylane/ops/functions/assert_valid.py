@@ -146,6 +146,13 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
     with qml.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qml.tape.QuantumScript.from_queue(q)
+
+    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    if total_work_wires:
+        [tape], _ = qml.transforms.resolve_dynamic_wires(
+            [tape], zeroed=range(len(tape.wires), len(tape.wires) + total_work_wires)
+        )
+
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
@@ -157,7 +164,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         assert all(op in gate_counts for op in actual_gate_counts)
     else:
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        assert non_zero_gate_counts == actual_gate_counts
+        assert (
+            non_zero_gate_counts == actual_gate_counts
+        ), f"{non_zero_gate_counts} != {actual_gate_counts}"
 
     # Add projector to the additional wires (work wires) on the tape
     work_wires = tape.wires - op.wires
@@ -439,10 +448,10 @@ def assert_valid(
     op: qml.operation.Operator,
     *,
     skip_deepcopy=False,
-    skip_pickle=False,
-    skip_wire_mapping=False,
     skip_differentiation=False,
     skip_new_decomp=False,
+    skip_pickle=False,
+    skip_wire_mapping=False,
     heuristic_resources=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
@@ -452,14 +461,13 @@ def assert_valid(
         op (.Operator): an operator instance to validate
 
     Keyword Args:
-        skip_deepcopy=False: If `True`, deepcopy tests are not run.
+        skip_deepcopy=False: If ``True``, deepcopy tests are not run.
+        skip_differentiation=False: If ``True``, differentiation tests are not run.
+        skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
+            defined using the new system.
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
-        skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
-            the operator is parametrized but not differentiable.
-        skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
-            defined using the new system.
         heuristic_resources: If ``True``, the decomposition is not required to match exactly
             with the registered resource estimate.
 

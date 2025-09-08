@@ -15,7 +15,6 @@
 Tests for capturing a qnode into jaxpr.
 """
 from functools import partial
-from itertools import product
 
 # pylint: disable=protected-access
 import pytest
@@ -27,6 +26,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
+
+from pennylane.capture.autograph import run_autograph  # pylint: disable=wrong-import-position
 
 # must be below jax importorskip
 from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
@@ -54,44 +55,10 @@ def get_qnode_output_eqns(jaxpr):
     return qnode_output_eqns
 
 
-def test_error_if_shot_vector():
-    """Test that a NotImplementedError is raised if a shot vector is provided."""
-
-    dev = qml.device("default.qubit", wires=1, shots=(50, 50))
-
-    @qml.qnode(dev)
-    def circuit():
-        return qml.sample()
-
-    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
-        jax.make_jaxpr(circuit)()
-
-    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
-        circuit()
-
-    jax.make_jaxpr(partial(circuit, shots=50))()  # should run fine
-    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-        res = circuit(shots=50)
-        assert qml.math.allclose(res, jnp.zeros((50,)))
-
-
-def test_error_if_overridden_shot_vector():
-    """Test that a NotImplementedError is raised if a shot vector is provided on call."""
-
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev)
-    def circuit():
-        return qml.sample()
-
-    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
-        jax.make_jaxpr(partial(circuit, shots=(1, 1, 1)))()
-
-
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
-    dev = qml.device("default.qubit")
+    dev = qml.device("default.qubit", wires=None)
 
     @qml.qnode(dev)
     def circuit():
@@ -132,7 +99,7 @@ def test_simple_qnode():
 
     assert eqn0.params["device"] == dev
     assert eqn0.params["qnode"] == circuit
-    assert eqn0.params["shots"] == qml.measurements.Shots(None)
+    assert eqn0.params["shots_len"] == 0
     expected_config = qml.devices.ExecutionConfig(
         gradient_method="backprop",
         use_device_gradient=True,
@@ -158,39 +125,10 @@ def test_simple_qnode():
     assert qml.math.allclose(output[0], jnp.cos(0.5))
 
 
-def test_overriding_shots():
-    """Test that the number of shots can be overridden on call."""
-
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev)
-    def circuit():
-        return qml.sample()
-
-    jaxpr = jax.make_jaxpr(partial(circuit, shots=50))()
-    assert len(jaxpr.eqns) == 1
-    eqn0 = jaxpr.eqns[0]
-
-    assert eqn0.primitive == qnode_prim
-    assert eqn0.params["device"] == dev
-    assert eqn0.params["shots"] == qml.measurements.Shots(50)
-    assert (
-        eqn0.params["qfunc_jaxpr"].eqns[0].primitive == qml.measurements.SampleMP._wires_primitive
-    )
-
-    assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
-    )
-
-    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        assert qml.math.allclose(res, jnp.zeros((50,)))
-
-
 def test_providing_keyword_argument():
     """Test that keyword arguments can be provided to the qnode."""
 
-    @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
+    @qml.qnode(qml.device("default.qubit", wires=1))
     def circuit(*, n_iterations=0):
         for _ in range(n_iterations):
             qml.X(0)
@@ -215,7 +153,7 @@ def test_providing_keyword_argument():
 def test_multiple_measurements():
     """Test that the qnode can return multiple measurements."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3, shots=50))
+    @qml.qnode(qml.device("default.qubit", wires=3), shots=50)
     def circuit():
         return qml.sample(), qml.probs(wires=(0, 1)), qml.expval(qml.Z(0))
 
@@ -354,6 +292,121 @@ def test_qnode_pytree_output():
     assert list(out.keys()) == ["a", "b"]
 
 
+class TestShots:
+    """Tests for the number of shots."""
+
+    def test_shot_vector(self):
+        """Test that a shot vector can be captured."""
+
+        @qml.set_shots(shots=(10, 10, 20))
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return qml.sample(wires=0)
+
+        jaxpr = jax.make_jaxpr(c)()
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+        assert eqn0.primitive == qnode_prim
+        assert eqn0.params["shots_len"] == 3
+
+        assert eqn0.invars[0].val == 10
+        assert eqn0.invars[1].val == 10
+        assert eqn0.invars[2].val == 20
+
+        assert len(eqn0.outvars) == 3
+        assert eqn0.outvars[0].aval.shape == (10, 1)
+        assert eqn0.outvars[1].aval.shape == (10, 1)
+        assert eqn0.outvars[2].aval.shape == (20, 1)
+
+    def test_shot_vector_multiple_returns_pytree(self):
+        """Test that shot vectors and multiple returns returns the correct shapes."""
+
+        @qml.set_shots(shots=(10, 11))
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return {"sample": qml.sample(wires=0), "expval": qml.expval(qml.Z(0))}
+
+        def w():
+            out = c()
+            assert isinstance(out, tuple)
+            for i, d in enumerate(out):
+                assert isinstance(d, dict)
+                assert d["sample"].shape == (10 + i, 1)
+                assert d["expval"].shape == ()
+            return out
+
+        jaxpr = jax.make_jaxpr(w)()
+        eqn0 = jaxpr.eqns[0]
+        assert len(eqn0.outvars) == 4
+        # for some reason flattening the pytree puts the expval first
+        assert eqn0.outvars[0].aval.shape == ()
+        assert eqn0.outvars[1].aval.shape == (10, 1)
+        assert eqn0.outvars[2].aval.shape == ()
+        assert eqn0.outvars[3].aval.shape == (11, 1)
+
+    def test_error_dynamic_shots_dynamic_shapes_not_enabled(self):
+        """Test that an error is raised if dynamic shots is not enabled."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return qml.sample(wires=0), qml.expval(qml.Z(0))
+
+        def w(num_shots):
+            return qml.set_shots(c, num_shots)()
+
+        with pytest.raises(ValueError, match=r"requires setting jax.config.update"):
+            jax.make_jaxpr(w)(3)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shots(self):
+        """Test that the shot number can be dynamic."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return qml.sample(wires=0), qml.expval(qml.Z(0))
+
+        def w(num_shots):
+            return qml.set_shots(c, num_shots)()
+
+        jaxpr = jax.make_jaxpr(w)(3)
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+
+        assert eqn0.params["shots_len"] == 1
+        assert not isinstance(eqn0.invars[0], jax.extend.core.Literal)
+
+        assert isinstance(eqn0.outvars[0].aval, jax.core.DShapedArray)
+        assert isinstance(eqn0.outvars[1].aval, jax.core.ShapedArray)
+
+        assert eqn0.outvars[0].aval.shape[0] is eqn0.invars[0]
+        assert eqn0.outvars[1].aval.shape == ()
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shots_shot_vector(self):
+        """Test that a shot vector can be used with a shot vector."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def c():
+            return qml.sample(wires=0)
+
+        def w(shots1, shots2):
+            out = qml.set_shots(c, (shots1, 2, shots2))()
+            return out
+
+        jaxpr = jax.make_jaxpr(w)(5, 6)
+        eqn = jaxpr.eqns[-1]
+        assert eqn.params["shots_len"] == 3
+        assert len(eqn.outvars) == 3
+
+        assert isinstance(eqn.outvars[0].aval, jax.core.DShapedArray)
+        assert eqn.outvars[0].aval.shape[0] is eqn.invars[0]
+        assert isinstance(eqn.outvars[2].aval, jax.core.DShapedArray)
+        assert eqn.outvars[2].aval.shape[0] is eqn.invars[2]
+
+        assert isinstance(eqn.outvars[1].aval, jax.core.ShapedArray)
+        assert eqn.outvars[1].aval.shape == (2, 1)
+
+
 class TestUserTransforms:
     """Integration tests for applying user transforms to a qnode with program capture."""
 
@@ -447,7 +500,7 @@ class TestUserTransforms:
         device_jaxpr = None
 
         def dummy_eval_jaxpr(
-            jaxpr, consts, *args, execution_config
+            jaxpr, consts, *args, execution_config, shots=None
         ):  # pylint: disable=unused-argument
             nonlocal device_jaxpr
             device_jaxpr = jaxpr
@@ -517,10 +570,10 @@ class TestDevicePreprocessing:
     def test_mcms_execution_deferred(self, dev_name, mcm_method, shots, seed):
         """Test that defer_measurements is reflected in the execution results of a device."""
 
-        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=3, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qml.qnode(dev, mcm_method=mcm_method, shots=shots)
         def circuit():
             qml.Hadamard(0)
             qml.CNOT([0, 1])  # |Φ⁺⟩ = (1/√2) (|00⟩ + |11⟩)
@@ -555,10 +608,10 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=3, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
-        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots")
+        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots", shots=shots)
         def circuit():
             qml.Hadamard(0)
             qml.CNOT([0, 1])  # |Φ⁺⟩ = (1/√2) (|00⟩ + |11⟩)
@@ -587,15 +640,19 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=2, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
         n_postselects = 3
 
-        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like")
+        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like", shots=shots)
         def circuit():
-            for _ in range(n_postselects):
+
+            @qml.for_loop(n_postselects)
+            def loop(i):  # pylint: disable=unused-argument
                 qml.Hadamard(0)
                 qml.measure(0, postselect=postselect)
+
+            loop()
             return qml.sample(wires=[0])
 
         res = circuit()
@@ -610,16 +667,16 @@ class TestDevicePreprocessing:
             )
         else:
             assert len(res) == shots
-            counts = qml.numpy.bincount(res)
+            counts = qml.numpy.bincount(qml.math.squeeze(res))
             assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
         """Test that single-branch-statistics works as expected."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=2, seed=seed)
 
-        @qml.qnode(dev, mcm_method="single-branch-statistics")
+        @qml.qnode(dev, mcm_method="single-branch-statistics", shots=shots)
         def circuit():
             qml.Hadamard(0)
             qml.measure(0)
@@ -843,7 +900,7 @@ class TestQNodeVmapIntegration:
     def test_vmap_multiple_measurements(self):
         """Test that JAX can vmap over the QNode primitive with multiple measurements."""
 
-        @qml.qnode(qml.device("default.qubit", wires=4, shots=5))
+        @qml.qnode(qml.device("default.qubit", wires=4), shots=5)
         def circuit(x):
             qml.DoubleExcitation(x, wires=[0, 1, 2, 3])
             return qml.sample(), qml.probs(wires=(0, 1, 2)), qml.expval(qml.Z(0))
@@ -916,26 +973,21 @@ class TestQNodeVmapIntegration:
 
         x = jnp.array([1.0, 2.0, 3.0])
 
-        jaxpr = jax.make_jaxpr(jax.vmap(partial(circuit, shots=50), in_axes=0))(x)
-        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        jaxpr = jax.make_jaxpr(jax.vmap(qml.set_shots(circuit, shots=50), in_axes=0))(x)
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
 
         assert eqn0.primitive == qnode_prim
         assert eqn0.params["device"] == dev
-        assert eqn0.params["shots"] == qml.measurements.Shots(50)
+        assert eqn0.params["shots_len"] == 1
         assert (
             eqn0.params["qfunc_jaxpr"].eqns[0].primitive
             == qml.measurements.SampleMP._wires_primitive
         )
 
-        assert eqn0.outvars[0].aval.shape == (3, 50)
-
-        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-            assert qml.math.allclose(res, jnp.zeros((3, 50)))
+        assert eqn0.outvars[0].aval.shape == (3, 50, 1)
 
     def test_vmap_error_indexing(self):
         """Test that an IndexError is raised when indexing a batched parameter."""
@@ -1415,13 +1467,14 @@ class TestQNodeAutographIntegration:
         """Tests that native Python for loops can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n):
             for i in range(n):
                 qml.H(i)
             return qml.state()
 
         if autograph:
+            circuit = run_autograph(circuit)
             expected_state = [1 / qml.math.sqrt(8)] * (2**3)
             assert qml.math.allclose(circuit(3), expected_state)
         else:
@@ -1439,7 +1492,7 @@ class TestQNodeAutographIntegration:
         """Tests that native Python while loops can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n):
             i = 0
             while i < n:
@@ -1448,6 +1501,7 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         if autograph:
+            circuit = run_autograph(circuit)
             expected_state = [1 / qml.math.sqrt(8)] * (2**3)
             assert qml.math.allclose(circuit(3), expected_state)
         else:
@@ -1465,7 +1519,7 @@ class TestQNodeAutographIntegration:
         """Test that native Python conditional statements can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(x):
             if x > 1:
                 qml.Hadamard(0)
@@ -1474,6 +1528,7 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         if autograph:
+            circuit = run_autograph(circuit)
             assert qml.math.allclose(circuit(0), [1, 0])
             assert qml.math.allclose(circuit(2), [qml.numpy.sqrt(2) / 2, qml.numpy.sqrt(2) / 2])
         else:
@@ -1491,7 +1546,7 @@ class TestQNodeAutographIntegration:
         """Test that a native Pennylane for loop can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n: int):
             @qml.for_loop(n)
             def loop(i):
@@ -1500,6 +1555,7 @@ class TestQNodeAutographIntegration:
             loop()
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
         assert qml.math.allclose(circuit(2), expected_state)
 
@@ -1511,7 +1567,7 @@ class TestQNodeAutographIntegration:
 
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n: int):
             @qml.while_loop(lambda i: i < n)
             def loop(i):
@@ -1521,6 +1577,7 @@ class TestQNodeAutographIntegration:
             loop(0)
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
         assert qml.math.allclose(circuit(2), expected_state)
 
@@ -1529,7 +1586,7 @@ class TestQNodeAutographIntegration:
         """Test that a native Pennylane while loop can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n: int):
             def condition(i):
                 return i < n
@@ -1542,6 +1599,7 @@ class TestQNodeAutographIntegration:
             loop(0)
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
         assert qml.math.allclose(circuit(2), expected_state)
 
@@ -1550,7 +1608,7 @@ class TestQNodeAutographIntegration:
         """Test that a native Pennylane conditional statement can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit():
             qml.X(0)
             m0 = qml.measure(0)
@@ -1558,6 +1616,7 @@ class TestQNodeAutographIntegration:
 
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         assert qml.math.allclose(circuit(), [0, 0, 0, 0, 0, 0, 0, 1])
 
 
@@ -1628,7 +1687,7 @@ class TestStaticArgnums:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev, static_argnums=3, autograph=True)
+        @qml.qnode(dev, static_argnums=3)
         def circuit(x, y, z, n):
 
             if z > 5:
@@ -1652,6 +1711,7 @@ class TestStaticArgnums:
             return qml.state()
 
         args = (1.5, 2.5, 3.5, 5)
+        circuit = run_autograph(circuit)
         res = circuit(*args)
         with qml.capture.pause():
             assert qml.math.allclose(res, circuit(*args))
@@ -2013,41 +2073,3 @@ class TestQNodeCaptureCaching:
 
             with qml.capture.pause():
                 assert qml.math.allclose(res, circuit(*a))
-
-    def test_caching_with_autograph(self):
-        """Test that using autograph works as expected when caching is active."""
-
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev, autograph=True)
-        def circuit(x, y, z, n):
-
-            if z > 5:
-                for i in range(n):
-                    qml.RX(x, i)
-            elif z > 3:
-                for i in range(n):
-                    qml.RY(y, i)
-            else:
-                for i in range(n):
-                    qml.RZ(z, i)
-
-            for i in range(n - 1):
-                qml.CNOT([i, i + 1])
-
-            i = 0
-            while i < x + y + z:
-                qml.Rot(x, y, z, i % 5)
-                i += 1
-
-            return qml.state()
-
-        # Specifying parameters here instead of using @pytest.mark.parametrize
-        # to force usage of cache
-        xs = [1.5, 2.5, 4, 5]
-        ys = [-2, 1.5, 3.5, 2]
-        zs = [1.5, 3.5, 5.5, 2, 4, 6]
-        ns = list(range(5))
-
-        for x, y, z, n in product(xs, ys, zs, ns):
-            self.check_execution_results(circuit, x, y, z, n)

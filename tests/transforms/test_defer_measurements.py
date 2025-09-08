@@ -77,12 +77,13 @@ def test_broadcasted_postselection_with_sample_error():
     tape = qml.tape.QuantumScript(
         [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
     )
-    dev = qml.device("default.qubit", shots=10)
+    dev = qml.device("default.qubit")
 
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         qml.defer_measurements(tape)
 
     @qml.defer_measurements
+    @qml.set_shots(10)
     @qml.qnode(dev)
     def circuit():
         qml.RX([0.1, 0.2], 0)
@@ -126,9 +127,10 @@ def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
     shots = 100
     postselect_value = 1
-    dev = qml.device("default.qubit", shots=shots)
+    dev = qml.device("default.qubit")
     spy = mocker.spy(qml.defer_measurements, "_transform")
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method="deferred")
     def f(x):
         qml.RX(x, 0)
@@ -750,7 +752,7 @@ class TestConditionalOperations:
         assert isinstance(sec_ctrl_op, Controlled)
         qml.assert_equal(sec_ctrl_op.base, qml.RZ(sec_par, 1))
 
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
     def test_correct_ops_in_tape_inversion(self):
         """Test that the underlying tape contains the correct operations if a
@@ -1740,10 +1742,51 @@ def test_custom_wire_labels_allowed_without_reuse():
     qml.assert_equal(tape[2], qml.probs(wires="b"))
 
 
-def test_custom_wire_labels_fails_with_reset():
-    """Test that custom wire labels do not work if any qubits are re-used."""
+def test_integer_wire_labels_with_reset():
+    """Tests that integer wire labels work when qubits are re-used."""
 
     # Reset example
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard(0)
+        ma = qml.measure(0, reset=True)
+        qml.cond(ma, qml.PauliX)(1)
+        qml.probs(wires=0)
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    tapes, _ = qml.defer_measurements(tape)
+    tape = tapes[0]
+
+    assert len(tape) == 5
+    qml.assert_equal(tape[0], qml.Hadamard(0))
+    qml.assert_equal(tape[1], qml.CNOT([0, 2]))
+    qml.assert_equal(tape[2], qml.CNOT([2, 0]))
+    qml.assert_equal(tape[3], qml.CNOT([2, 1]))
+    qml.assert_equal(tape[4], qml.probs(wires=0))
+
+    # Reuse example
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard(0)
+        ma = qml.measure(0)
+        qml.cond(ma, qml.PauliX)(1)
+        qml.Hadamard(0)
+        qml.probs(wires=1)
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    tapes, _ = qml.defer_measurements(tape)
+    tape = tapes[0]
+
+    assert len(tape) == 5
+    qml.assert_equal(tape[0], qml.Hadamard(0))
+    qml.assert_equal(tape[1], qml.CNOT([0, 2]))
+    qml.assert_equal(tape[2], qml.CNOT([2, 1]))
+    qml.assert_equal(tape[3], qml.Hadamard(0))
+    qml.assert_equal(tape[4], qml.probs(wires=1))
+
+
+def test_custom_wire_labels_with_reset():
+    """Test that custom wire labels work if any qubits are re-used."""
+
+    # Reset example (should be the same circuit as in previous test but with wire labels)
     with qml.queuing.AnnotatedQueue() as q:
         qml.Hadamard("a")
         ma = qml.measure("a", reset=True)
@@ -1751,12 +1794,17 @@ def test_custom_wire_labels_fails_with_reset():
         qml.probs(wires="a")
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    with pytest.raises(
-        ValueError, match="qml.defer_measurements does not support custom wire labels"
-    ):
-        _, _ = qml.defer_measurements(tape)
+    tapes, _ = qml.defer_measurements(tape)
+    tape = tapes[0]
 
-    # Reuse example
+    assert len(tape) == 5
+    qml.assert_equal(tape[0], qml.Hadamard("a"))
+    qml.assert_equal(tape[1], qml.CNOT(["a", 0]))
+    qml.assert_equal(tape[2], qml.CNOT([0, "a"]))
+    qml.assert_equal(tape[3], qml.CNOT([0, "b"]))
+    qml.assert_equal(tape[4], qml.probs(wires="a"))
+
+    # Reuse example (should be the same circuit as in previous test but with wire labels)
     with qml.queuing.AnnotatedQueue() as q:
         qml.Hadamard("a")
         ma = qml.measure("a")
@@ -1765,7 +1813,12 @@ def test_custom_wire_labels_fails_with_reset():
         qml.probs(wires="b")
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    with pytest.raises(
-        ValueError, match="qml.defer_measurements does not support custom wire labels"
-    ):
-        _, _ = qml.defer_measurements(tape)
+    tapes, _ = qml.defer_measurements(tape)
+    tape = tapes[0]
+
+    assert len(tape) == 5
+    qml.assert_equal(tape[0], qml.Hadamard("a"))
+    qml.assert_equal(tape[1], qml.CNOT(["a", 0]))
+    qml.assert_equal(tape[2], qml.CNOT([0, "b"]))
+    qml.assert_equal(tape[3], qml.Hadamard("a"))
+    qml.assert_equal(tape[4], qml.probs(wires="b"))

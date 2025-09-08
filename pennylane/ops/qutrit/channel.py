@@ -195,7 +195,9 @@ class QutritDepolarizingChannel(Channel):
         one = 1
         z = 0
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.cast_like(p, 1j)
             w = math.cast_like(w, p)
             one = math.cast_like(one, p)

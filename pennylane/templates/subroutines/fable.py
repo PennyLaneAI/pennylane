@@ -14,13 +14,17 @@
 """
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
+# pylint: disable=no-value-for-parameter
 import warnings
+from collections import Counter
 
 import numpy as np
 
 from pennylane import math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, RY, SWAP, Hadamard
+from pennylane.ops import CNOT, RY, SWAP, Hadamard, cond
 from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
 
@@ -80,6 +84,8 @@ class FABLE(Operation):
     grad_method = None
     """Gradient computation method."""
 
+    resource_keys = {"wires", "thetas", "control_wires", "tol"}
+
     def __init__(self, input_matrix, wires, tol=0, id=None):
         wires = Wires(wires)
 
@@ -126,6 +132,19 @@ class FABLE(Operation):
 
         super().__init__(input_matrix, wires=wires, id=id)
 
+    @property
+    def resource_params(self) -> dict:
+        code = gray_code(int(2 * math.log2(len(self.parameters[0]))))
+        control_wires = np.log2(code ^ np.roll(code, -1)).astype(int)
+        alphas = math.arccos(self.parameters).flatten()
+        thetas = compute_theta(alphas)
+        return {
+            "wires": self.wires,
+            "thetas": thetas,
+            "control_wires": control_wires,
+            "tol": self.hyperparameters["tol"],
+        }
+
     @staticmethod
     def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
         r"""Sequence of gates that represents the efficient circuit produced by the FABLE technique
@@ -141,7 +160,7 @@ class FABLE(Operation):
         alphas = math.arccos(input_matrix).flatten()
         thetas = compute_theta(alphas)
 
-        ancilla = [wires[0]]
+        auxiliary = [wires[0]]
         wires_i = wires[1 : 1 + len(wires) // 2][::-1]
         wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
 
@@ -156,16 +175,16 @@ class FABLE(Operation):
         for theta, control_index in zip(thetas, control_wires):
             if math.is_abstract(theta):
                 for c_wire in nots:
-                    op_list.append(CNOT(wires=[c_wire] + ancilla))
-                op_list.append(RY(2 * theta, wires=ancilla))
+                    op_list.append(CNOT(wires=[c_wire] + auxiliary))
+                op_list.append(RY(2 * theta, wires=auxiliary))
                 nots = {}
                 nots[wire_map[control_index]] = 1
                 continue
 
             if math.abs(2 * theta) > tol:
                 for c_wire in nots:
-                    op_list.append(CNOT(wires=[c_wire] + ancilla))
-                op_list.append(RY(2 * theta, wires=ancilla))
+                    op_list.append(CNOT(wires=[c_wire] + auxiliary))
+                op_list.append(RY(2 * theta, wires=auxiliary))
                 nots = {}
             if wire_map[control_index] in nots:
                 del nots[wire_map[control_index]]
@@ -173,7 +192,7 @@ class FABLE(Operation):
                 nots[wire_map[control_index]] = 1
 
         for c_wire in nots:
-            op_list.append(CNOT([c_wire] + ancilla))
+            op_list.append(CNOT([c_wire] + auxiliary))
 
         for w_i, w_j in zip(wires_i, wires_j):
             op_list.append(SWAP(wires=[w_i, w_j]))
@@ -182,3 +201,117 @@ class FABLE(Operation):
             op_list.append(Hadamard(w))
 
         return op_list
+
+
+def _fable_resources(wires, thetas, control_wires, tol):
+
+    resources = Counter({resource_rep(Hadamard): len(wires) // 2 * 2})
+
+    wires_i = wires[1 : 1 + len(wires) // 2][::-1]
+    wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
+
+    wire_map = dict(enumerate(wires_j + wires_i))
+
+    nots = {}
+    for theta, control_index in zip(thetas, control_wires):
+
+        if math.abs(2 * theta) > tol:
+            for _ in nots:
+                resources[resource_rep(CNOT)] += 1
+            resources[resource_rep(RY)] += 1
+            nots = {}
+
+        if wire_map[control_index] in nots:
+            del nots[wire_map[control_index]]
+        else:
+            nots[wire_map[control_index]] = 1
+
+    for _ in range(len(nots.keys())):
+        resources[resource_rep(CNOT)] += 1
+
+    resources[resource_rep(SWAP)] = min(len(wires_i), len(wires_j))
+
+    return dict(resources)
+
+
+@register_resources(_fable_resources)
+def _fable_decomposition(input_matrix, wires, tol=0):
+    alphas = math.arccos(input_matrix).flatten()
+    thetas = compute_theta(alphas)
+
+    auxilliary = [wires[0]]
+    wires_i = wires[1 : 1 + len(wires) // 2][::-1]
+    wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
+
+    code = gray_code(int(2 * math.log2(len(input_matrix))))
+    control_wires = np.log2(code ^ np.roll(code, -1)).astype(int)
+
+    wire_map = dict(enumerate(wires_j + wires_i))
+
+    @for_loop(len(wires_i))
+    def wires_i_hadamard_loop(i):
+        w = wires_i[i]
+        Hadamard(w)
+
+    wires_i_hadamard_loop()
+
+    nots = {}
+
+    @for_loop(min(len(thetas), len(control_wires)))
+    def theta_controls_loop(j, nots):
+        theta = thetas[j]
+        control_index = control_wires[j]
+
+        def in_tol_branch(nots):
+
+            @for_loop(len(nots.keys()))
+            def concrete_nots_loop(l, nots):
+                c_wire = list(nots.keys())[l]
+                CNOT(wires=[c_wire] + auxilliary)
+                return nots
+
+            concrete_nots_loop(nots)
+
+            RY(2 * theta, wires=auxilliary)
+            nots = {}
+
+            return nots
+
+        def trivial_branch(nots):
+            return nots
+
+        nots = cond(math.abs(2 * theta) > tol, in_tol_branch, trivial_branch)(nots)
+
+        def del_branch(nots):
+            del nots[wire_map[control_index]]
+            return nots
+
+        def add_branch(nots):
+            nots[wire_map[control_index]] = 1
+            return nots
+
+        nots = cond(wire_map[control_index] in nots, del_branch, add_branch)(nots)
+
+        return nots
+
+    nots = theta_controls_loop(nots)
+
+    @for_loop(len(nots.keys()))
+    def outer_nots_loop(m, nots):
+        c_wire = list(nots.keys())[m]
+        CNOT([c_wire] + auxilliary)
+
+    outer_nots_loop(nots)
+
+    @for_loop(min(len(wires_i), len(wires_j)))
+    def swap_loop(n):
+        w_i = wires_i[n]
+        w_j = wires_j[n]
+        SWAP(wires=[w_i, w_j])
+
+    swap_loop()
+
+    wires_i_hadamard_loop()
+
+
+add_decomps(FABLE, _fable_decomposition)

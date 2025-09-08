@@ -60,20 +60,38 @@ def test_ftqc_device_initializes(backend_cls):
 
 
 @pytest.mark.parametrize(
-    "backend, expected_method",
+    "backend, preferred_method",
     [(LightningQubitBackend(), "one-shot"), (NullQubitBackend(), "device")],
 )
-@pytest.mark.parametrize(
-    "initial_config", [ExecutionConfig(mcm_config=MCMConfig(mcm_method="placeholder")), None]
-)
-def test_setup_execution_config(backend, expected_method, initial_config):
-    """Test that setup_execution_config works as expected"""
+@pytest.mark.parametrize("initial_config", (True, False))
+def test_setup_execution_config(backend, preferred_method, initial_config):
+    """Test that setup_execution_config works as expected when the input ExecutionConfig
+    is None or is consistent with the device MCM capabilities"""
 
     dev = FTQCQubit(wires=2, backend=backend)
+    initial_config = (
+        ExecutionConfig(mcm_config=MCMConfig(mcm_method=preferred_method))
+        if initial_config
+        else None
+    )
+
     config = dev.setup_execution_config(initial_config)
 
     assert isinstance(config, ExecutionConfig)
-    assert config.mcm_config.mcm_method == expected_method
+    assert config.mcm_config.mcm_method == preferred_method
+
+
+@pytest.mark.parametrize("backend", [LightningQubitBackend(), NullQubitBackend()])
+def test_invalid_mcm_method_raises_error(backend):
+    """Test that setup_execution_config raises en error for incompatible MCM methods"""
+
+    dev = FTQCQubit(wires=2, backend=backend)
+    with pytest.raises(
+        qml.exceptions.QuantumFunctionError, match='"placeholder" unsupported by the device'
+    ):
+        _ = dev.setup_execution_config(
+            ExecutionConfig(mcm_config=MCMConfig(mcm_method="placeholder"))
+        )
 
 
 @pytest.mark.parametrize("wires", ([0, 1], ["a", "b"]))
@@ -141,13 +159,16 @@ def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls):
 
     # the processed circuit is two tapes (split_non_commuting), returning
     # only samples, and expressed in the MBQC formalism
-    tapes, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
-    assert len(tapes) == 1
-    assert all(isinstance(mp, qml.measurements.SampleMP) for mp in tapes[0].measurements)
-    # CZ, H, MCMs, Conditional MCMs/Pauli corrections, + Adjoint for diagonalizing gates
-    assert all(
-        isinstance(op, (Conditional, CZ, H, MidMeasureMP, Adjoint)) for op in tapes[0].operations
-    )
+    sequences, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
+    assert len(sequences) == 1
+    assert isinstance(sequences[0], QuantumScriptSequence)
+
+    for tape in sequences[0]:
+        assert all(isinstance(mp, qml.measurements.SampleMP) for mp in tape.measurements)
+        # CZ, H, MCMs, Conditional MCMs/Pauli corrections, + Adjoint for diagonalizing gates
+        assert all(
+            isinstance(op, (Conditional, CZ, H, MidMeasureMP, Adjoint)) for op in tape.operations
+        )
 
     # circuit executes
     res = ftqc_circ()
@@ -211,6 +232,42 @@ class TestQuantumScriptSequence:
             assert op_list1 == op_list2
 
         assert repr(sequence) == "<QuantumScriptSequence: wires=[0, 1, 2]>"
+
+    def test_iterator_behaviour(self):
+        """Test that the sequence behaves like an iterator whose elements are the ordered tapes"""
+
+        operations = [[X(0), Y(1)], [Y(0), Z(0)], [H(1), S(0)]]
+        measurements = [[], [], [qml.expval(X(0))]]
+        tapes = [
+            qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
+            for ops, meas in zip(operations, measurements)
+        ]
+        sequence = QuantumScriptSequence(tapes)
+
+        # it has a length
+        assert len(sequence) == 3
+
+        # we can iterate over it and it matches the initial tapes (except for shots)
+        assert [tape.measurements for tape in sequence] == measurements
+        assert [tape.operations for tape in sequence] == operations
+
+        # we can iterate over it in reverse and it also matches initial tapes
+        assert [tape.measurements for tape in reversed(sequence)] == [[qml.expval(X(0))], [], []]
+        assert [tape.operations for tape in reversed(sequence)] == [
+            [H(1), S(0)],
+            [Y(0), Z(0)],
+            [X(0), Y(1)],
+        ]
+
+        # we can use next on it repeatedly and get the tapes out in order
+        for i in range(3):
+            next_tape = next(sequence)
+            assert isinstance(next_tape, qml.tape.QuantumScript)
+            assert next_tape.operations == operations[i]
+            assert next_tape.measurements == measurements[i]
+
+        with pytest.raises(StopIteration):
+            next(sequence)
 
     def test_sequence_copy(self):
         """Test that copying a sequence works as expected with no updates"""
@@ -366,8 +423,6 @@ class TestQuantumScriptSequence:
         tape = qml.workflow.construct_tape(circ)()
         sequence, fn = split_at_non_clifford_gates(tape)
         sequence = fn(sequence)
-        sequence, fn = split_at_non_clifford_gates(tape)
-        sequence = fn(sequence)
 
         assert isinstance(sequence, QuantumScriptSequence)
         assert tape.measurements == sequence.measurements
@@ -407,7 +462,6 @@ class TestQuantumScriptSequence:
 
         shots_circ = qml.set_shots(circ, 5000)
         tape = qml.workflow.construct_tape(shots_circ)()
-        sequence, _ = split_at_non_clifford_gates(tape)
         sequence, _ = split_at_non_clifford_gates(tape)
 
         raw_samples = backend.execute(

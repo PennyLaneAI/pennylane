@@ -9,55 +9,89 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
-  Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
-  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+* Setting shots on a device through the `shots=` kwarg is deprecated.
+  Please use the :func:`pennylane.set_shots` transform on the :class:`~.QNode` instead.
+
+  .. code-block:: python
+  
+    dev = qml.device("default.qubit", wires=2)
+    @qml.set_shots(1000)
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+  - Deprecated in v0.43
+  - Will be removed in a future version
+
+* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+  
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+  
+* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
+  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
+* Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
+  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
+  :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
+  product approximation of a Hamiltonian with the specified number of Trotter steps.
 
   As a concrete example, consider the following case:
 
-  ```python
-  coeffs = [0.5, -0.6]
-  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
-  H_flat = qml.dot(coeffs, ops)
-  ```
+  .. code-block:: python
+
+    coeffs = [0.5, -0.6]
+    ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+    H_flat = qml.dot(coeffs, ops)
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
-  ```pycon
   >>> qml.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
-  ```
 
   The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
-  ```pycon
   >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
   >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
-  ```
   
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
-  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+* ``MeasurementProcess.expand`` is deprecated. The relevant method can be replaced with 
+  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
   
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* ``shots=`` in ``QNode`` calls is deprecated and will be removed in v0.44.
+* The ``shots=`` kwarg in ``QNode`` calls is deprecated and will be removed in v0.44.
   Instead, please use the ``qml.workflow.set_shots`` transform to set the number of shots for a ``QNode``.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are deprecated and will be removed in version v0.44.
   Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
 
   - Deprecated in v0.43
@@ -104,11 +138,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
-
- - Deprecated in v0.40
- - Will be removed in v0.41
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -116,20 +145,20 @@ In PennyLane v0.40, the legacy operator arithmetic system has been removed, and 
 operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
 for details on how to port your legacy code to the new system. The following functionality has been removed:
 
-* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`~pennylane.operation.enable_new_opmath`,
-  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
-  that ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`.
+* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`pennylane.operation.enable_new_opmath`,
+  :func:`pennylane.operation.disable_new_opmath`, :class:`pennylane.ops.Hamiltonian`, and :class:`pennylane.operation.Tensor`. Note
+  that ``qml.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
 
   - Deprecated in v0.39
   - Removed in v0.40
 
-* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` has been removed. Instead, please use
-  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+* :meth:`pennylane.pauli.PauliSentence.hamiltonian` and :meth:`pennylane.pauli.PauliWord.hamiltonian` have been removed. Instead, please use
+  :meth:`pennylane.pauli.PauliSentence.operation` and :meth:`pennylane.pauli.PauliWord.operation` respectively.
 
   - Deprecated in v0.39
   - Removed in v0.40
 
-* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`pennylane.operation.Operator.simplify`.
 
   - Deprecated in v0.39
   - Removed in v0.40

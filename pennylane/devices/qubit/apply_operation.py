@@ -75,7 +75,9 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     # We use this implicit casting strategy as autograd raises ComplexWarnings
     # when backpropagating if casting explicitly. Some type of casting is needed
     # to prevent ComplexWarnings with backpropagation with other interfaces
-    if qml.math.get_interface(state) == "tensorflow":
+    if (
+        qml.math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         mat = qml.math.cast_like(op.matrix(), state)
     else:
         mat = op.matrix() + 0j
@@ -124,7 +126,9 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     # We use this implicit casting strategy as autograd raises ComplexWarnings
     # when backpropagating if casting explicitly. Some type of casting is needed
     # to prevent ComplexWarnings with backpropagation with other interfaces
-    if qml.math.get_interface(state) == "tensorflow":
+    if (
+        qml.math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         mat = qml.math.cast_like(op.matrix(), state)
     else:
         mat = op.matrix() + 0j
@@ -426,7 +430,9 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= 9 and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
@@ -443,7 +449,9 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= 9 and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     axis = op.wires[0] + is_state_batched
@@ -477,7 +485,9 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= 9 and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
@@ -494,7 +504,9 @@ def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= 9 and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
@@ -511,7 +523,9 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
     control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= 9 and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, control_axes, n_dim)
@@ -711,7 +725,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax"
+            "You can install jax via: pip install jax~=0.6.0"
         ) from e
 
     if operation.data is None or operation.t is None:

@@ -77,7 +77,7 @@ def factorize(
     .. note::
 
         Packages JAX and Optax are required when performing CDF with ``compressed=True``.
-        Install them using ``pip install jax optax``.
+        Install them using ``pip install jax~=0.6.0 optax``.
 
     Args:
         two_electron (array[array[float]]): Two-electron integral tensor in the molecular orbital
@@ -248,7 +248,7 @@ def factorize(
 
         # compute the core tensors and leaf tensors from the factors' eigendecomposition
         core_tensors, leaf_tensors = [], []
-        for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs):
+        for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs, strict=True):
             fidx = qml.math.where(qml.math.abs(f_eigval) > tol_eigval)[0]
             core_tensors.append(qml.math.einsum("i,j->ij", f_eigval[fidx], f_eigval[fidx]))
             leaf_tensors.append(f_eigvec[:, fidx])
@@ -262,7 +262,7 @@ def factorize(
         if not has_jax_optax:
             raise ImportError(
                 "Jax and Optax libraries are required for optimizing the factors. Install them via "
-                "pip install jax optax"
+                "pip install jax~=0.6.0 optax"
             )  # pragma: no cover
 
         norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, "LX")

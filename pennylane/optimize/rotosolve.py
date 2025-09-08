@@ -60,7 +60,7 @@ def _validate_inputs(requires_grad, args, nums_frequency, spectra):
             "Found no parameters to optimize. The parameters to optimize "
             "have to be marked as trainable."
         )
-    for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items()):
+    for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items(), strict=True):
         if _requires_grad:
             _nums_frequency = nums_frequency.get(arg_name, {})
             _spectra = spectra.get(arg_name, {})
@@ -422,7 +422,7 @@ class RotosolveOptimizer:
         sign_fn = objective_fn.func if isinstance(objective_fn, QNode) else objective_fn
         arg_names = list(signature(sign_fn).parameters.keys())
         requires_grad = {
-            arg_name: math.requires_grad(arg) for arg_name, arg in zip(arg_names, args)
+            arg_name: math.requires_grad(arg) for arg_name, arg in zip(arg_names, args, strict=True)
         }
         nums_frequency = nums_frequency or {}
         spectra = spectra or {}
@@ -440,7 +440,7 @@ class RotosolveOptimizer:
         fun_at_zero = objective_fn(*args, **kwargs)
         first_substep_in_step = True
 
-        for arg_idx, (arg, arg_name) in enumerate(zip(args, arg_names)):
+        for arg_idx, (arg, arg_name) in enumerate(zip(args, arg_names, strict=True)):
             del after_args[0]
 
             if not requires_grad[arg_name]:

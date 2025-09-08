@@ -21,8 +21,6 @@ The catalyst dialect serves as a standard library for the Catalyst compiler.
 It contains data structures that support core compiler functionality.
 """
 
-# ruff: noqa: F403, F405
-
 # pylint: disable=too-few-public-methods
 
 from typing import ClassVar

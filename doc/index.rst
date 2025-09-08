@@ -69,7 +69,7 @@ Features
 
 - *Best of both worlds*.
   Support for **hybrid quantum and classical** models; connect quantum
-  hardware with PyTorch, TensorFlow, and NumPy.
+  hardware with PyTorch, JAX and NumPy.
 
 ..
 

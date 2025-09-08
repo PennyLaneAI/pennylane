@@ -122,18 +122,39 @@ Templates:
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
+    ~ResourceQPE
+    ~ResourceIterativeQPE
+    ~ResourceControlledSequence
     ~ResourceQFT
     ~ResourceAQFT
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSingleQubitComparator
+    ~ResourceTwoQubitComparator
+    ~ResourceIntegerComparator
+    ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
+    ~ResourceTrotterProduct
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
     ~ResourceTrotterVibronic
     ~ResourceQubitizeTHC
+    ~ResourceSelectTHC
+
+State Preparation:
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceMPSPrep
+    ~ResourceQROMStatePreparation
+    ~ResourceUniformStatePrep
+    ~ResourceAliasSampling
+    ~ResourcePrepTHC
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -218,12 +239,26 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceTwoQubitComparator,
+    ResourceIntegerComparator,
+    ResourceSingleQubitComparator,
+    ResourceRegisterComparator,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
+    ResourceUniformStatePrep,
+    ResourceAliasSampling,
+    ResourceSelectTHC,
+    ResourcePrepTHC,
+    ResourceQPE,
+    ResourceControlledSequence,
+    ResourceIterativeQPE,
 )

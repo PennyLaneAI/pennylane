@@ -498,7 +498,6 @@ class TestCliffordCompile:
         )
 
         import jax
-        import tensorflow as tf
         import torch
 
         funres = []
@@ -515,13 +514,6 @@ class TestCliffordCompile:
             fres_jax = qcirc(A)
             grad_jax = jax.grad(qcirc, argnums=0)(A)
 
-            # Tensorflow Interface
-            A = tf.Variable(qml.numpy.array(coeffs))
-            with tf.GradientTape() as tape:
-                loss = qcirc(A)
-            grad_tflow = tape.gradient(loss, A)
-            fres_tflow = loss
-
             # PyTorch Interface
             A = torch.tensor(coeffs, requires_grad=True)
             result = qcirc(A)
@@ -529,8 +521,8 @@ class TestCliffordCompile:
             grad_torch = A.grad
             fres_torch = result
 
-            funres.append([fres_numpy, fres_jax, fres_torch, fres_tflow])
-            igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
+            funres.append([fres_numpy, fres_jax, fres_torch])
+            igrads.append([grad_numpy, grad_jax, grad_torch])
 
         # Compare results
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
@@ -559,7 +551,7 @@ class TestCliffordCached:
         clt2._CLIFFORD_T_CACHE = None
 
         num_angles = 1
-        rand_angles = qml.math.random.random.rand(num_angles)
+        rand_angles = qml.math.random.rand(num_angles)
         rand_angles = qml.math.concatenate((rand_angles, -rand_angles))
 
         num_repeat = 2
@@ -603,3 +595,49 @@ class TestCliffordCached:
             assert _map_wires(qml.X(0), wire) == qml.X(wire)
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
+
+    # pylint: disable=protected-access, import-outside-toplevel, reimported
+    def test_cached_with_rtol(self):
+        """Test that caches are correctly identified as compatible or
+        incompatible with a relative threshold for epsilon."""
+
+        import pennylane.transforms.decompositions.clifford_t_transform as clt2
+
+        clt2._CLIFFORD_T_CACHE = None
+
+        cache1 = _CachedCallable(method="gridsynth", epsilon=1e-5, cache_size=100)
+
+        assert cache1.compatible(
+            method="gridsynth", epsilon=1e-3, cache_size=100, cache_eps_rtol=99
+        )
+
+        assert not cache1.compatible(
+            method="gridsynth", epsilon=9e-6, cache_size=100, cache_eps_rtol=99
+        )
+
+        assert not cache1.compatible(
+            method="gridsynth", epsilon=1e-4, cache_size=100, cache_eps_rtol=1e-1
+        )
+
+
+class TestCatalyst:
+    """Unit tests for catalyst integration."""
+
+    # pylint: disable=import-outside-toplevel
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_catalyst_integration(self):
+        """Test that the catalyst integration is working correctly."""
+
+        import catalyst
+
+        @qml.qjit()
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.clifford_t_decomposition
+        def circuit():
+            qml.RX(math.pi, [0])
+            qml.RX(2 * math.pi, [1])
+            return (catalyst.measure(0), catalyst.measure(1))
+
+        results = circuit()
+        assert results[0] and not results[1]

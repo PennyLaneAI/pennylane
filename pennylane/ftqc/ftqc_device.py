@@ -21,7 +21,7 @@ from pathlib import Path
 import pennylane as qml
 from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
 from pennylane.devices.device_api import Device, _default_mcm_method
-from pennylane.devices.execution_config import DefaultExecutionConfig, ExecutionConfig, MCMConfig
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.devices.preprocess import (
     measurements_from_samples,
     no_analytic,
@@ -63,7 +63,7 @@ class FTQCQubit(Device):
         self._backend = backend
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
-    def preprocess_transforms(self, execution_config=DefaultExecutionConfig):
+    def preprocess_transforms(self, execution_config=None):
         """Returns the transform program to preprocess a circuit for execution.
 
         Args:
@@ -81,6 +81,9 @@ class FTQCQubit(Device):
         * Decomposition of operations and measurements to the MBQC gate-set
         * Validation of wires, measurements, and observables.
         """
+
+        if execution_config is None:
+            execution_config = ExecutionConfig()
 
         program = qml.transforms.core.TransformProgram()
 
@@ -145,7 +148,7 @@ class FTQCQubit(Device):
 
         return config
 
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config=None):
         """Execute a circuit or a batch of circuits and turn it into results. For this
         device, each circuit is expected to the expressed as QuantumScriptSequence. This
         is ensured by the transform program in device preprocessing.
@@ -158,6 +161,9 @@ class FTQCQubit(Device):
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         return self.backend.execute(circuits, execution_config)
 
 
@@ -215,7 +221,7 @@ class LightningQubitBackend:
         self.device = qml.device("lightning.qubit")
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
-    def execute(self, sequences, execution_config=DefaultExecutionConfig):
+    def execute(self, sequences, execution_config=None):
         """Execute a sequence or a batch of sequences and turn it into results.
 
         Args:
@@ -225,16 +231,22 @@ class LightningQubitBackend:
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
+        
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+            
         preprocess_transforms = self.preprocess_transforms(execution_config)
         sequences, mcm_corrections = convert_to_mbqc_formalism(sequences)
         sequences, postprocess_fns = preprocess_transforms(sequences)
 
         results = []
         for sequence in sequences:
-            assert isinstance(
-                sequence, QuantumScriptSequence
-            ), "something is amiss - this device uses QuantumScriptSequence"
-            results.append(self._execute_sequence(sequence, execution_config))
+            if isinstance(sequence, QuantumScriptSequence):
+                results.append(self._execute_sequence(sequence, execution_config))
+            else:
+                raise TypeError(
+                    f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
+                )
 
         results = mcm_corrections(results)
 
@@ -393,13 +405,14 @@ class NullQubitBackend:
         sequences, postprocess_fns = preprocess_transforms(sequences)
 
         for sequence in sequences:
-            assert isinstance(
-                sequence, QuantumScriptSequence
-            ), "something is amiss - this device uses QuantumScriptSequence"
-
-            shots = sequence.shots.total_shots
-            final_tape = sequence.final_tape
-            tapes_to_execute.append(final_tape.copy(shots=shots))
+            if isinstance(sequence, QuantumScriptSequence):
+                shots = sequence.shots.total_shots
+                final_tape = sequence.final_tape
+                tapes_to_execute.append(final_tape.copy(shots=shots))
+            else:
+                raise TypeError(
+                    f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
+                )
 
         result = tuple(self.device.execute(tapes_to_execute, execution_config))
 

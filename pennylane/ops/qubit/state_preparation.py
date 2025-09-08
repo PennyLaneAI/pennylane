@@ -203,12 +203,9 @@ def _basis_state_decomp(state, wires, **__):
         qml.GlobalPhase(-global_phase)
         return
 
-    def _X(w):
-        qml.X(w)
-
     @qml.for_loop(0, len(wires), 1)
     def _loop(i):
-        qml.cond(qml.math.allclose(state[i], 1), _X)(wires[i])
+        qml.cond(qml.math.allclose(state[i], 1), qml.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -345,6 +342,12 @@ class StatePrep(StatePrepBase):
 
 
     """
+
+    resource_keys = frozenset({"num_wires"})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -581,6 +584,18 @@ class StatePrep(StatePrepBase):
                 "Use 'normalize=True' to automatically normalize."
             )
         return state
+
+
+def _stateprep_resources(num_wires):
+    return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
+
+
+@register_resources(_stateprep_resources)
+def _state_prep_decomp(state, wires, **_):
+    qml.MottonenStatePreparation(state, wires)
+
+
+add_decomps(StatePrep, _state_prep_decomp)
 
 
 class QubitDensityMatrix(Operation):

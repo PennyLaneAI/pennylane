@@ -66,11 +66,12 @@ class CustomizedSparseOp(qml.operation.Operator):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self) -> bool:
         return False
 
-    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument
+    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument, arguments-differ
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -185,7 +186,7 @@ class TestConfigSetup:
         processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy
 
-    @pytest.mark.parametrize("interface", ("autograd", "torch", "tf"))
+    @pytest.mark.parametrize("interface", ("autograd", "torch"))
     def test_convert_to_numpy_non_jax(self, interface):
         """Test that other interfaces are still converted to numpy."""
         config = qml.devices.ExecutionConfig(gradient_method="adjoint", interface=interface)

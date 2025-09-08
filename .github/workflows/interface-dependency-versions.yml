@@ -22,11 +22,6 @@ on:
         required: false
         type: string
         default: '0.6.2'
-      tensorflow_version:
-        description: The version of TensorFlow to use for testing
-        required: false
-        type: string
-        default: '2.18.0'
       torch_version:
         description: The version of PyTorch to use for testing
         required: false
@@ -39,9 +34,6 @@ on:
       catalyst-jax-version:
         description: The version of JAX to use along with Catalyst
         value: ${{ jobs.default-dependency-versions.outputs.catalyst-jax-version }}
-      tensorflow-version:
-        description: The version of TensorFlow to use
-        value: ${{ jobs.default-dependency-versions.outputs.tensorflow-version }}
       pytorch-version:
         description: The version of PyTorch to use
         value: ${{ jobs.default-dependency-versions.outputs.pytorch-version }}
@@ -65,10 +57,6 @@ jobs:
         id: catalyst-jax
         run: echo "version=${{ inputs.catalyst_jax_version }}" >> $GITHUB_OUTPUT
       
-      - name: Default Tensorflow Version
-        id: tensorflow
-        run: echo "version=${{ inputs.tensorflow_version }}" >> $GITHUB_OUTPUT
-      
       - name: Default PyTorch Version
         id: pytorch
         run: echo "version=${{ inputs.torch_version }}" >> $GITHUB_OUTPUT
@@ -84,7 +72,6 @@ jobs:
     outputs:
       catalyst-jax-version: jax==${{ steps.catalyst-jax.outputs.version }} jaxlib==${{ steps.catalyst-jax.outputs.version }}
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
-      tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
       pytorch-version: torch~=${{ steps.pytorch.outputs.version }}
       catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
       pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}
