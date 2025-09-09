@@ -36,20 +36,20 @@ class Resources:
     The resources tracked include number of gates, number of wires, and gate types.
 
     Args:
-        wire_manager (WireResourceManager): A wire tracker class which contains the number of available
+        wire_manager (:class:`~.pennylane.estimator.WireResourceManager`): A wire tracker class which contains the number of available
             work wires, categorized as clean, dirty or algorithmic wires.
-        gate_types (dict): A dictionary storing operations (ResourceOperator) as keys and the number
+        gate_types (dict): A dictionary storing operations (:class:`~.pennylane.estimator.ResourceOperator`) as keys and the number
             of times they are used in the circuit (int) as values.
 
     **Example**
 
-    The resources can be accessed as class attributes. Additionally, the :class:`~.Resources`
+    The resources can be accessed as class attributes. Additionally, the :class:`~.pennylane.estimator.Resources`
     instance can be nicely displayed in the console.
 
     >>> H = plre.resource_rep(plre.Hadamard)
     >>> X = plre.resource_rep(plre.X)
     >>> Y = plre.resource_rep(plre.Y)
-    >>> wm = WireResourceManager(work_wires=3)
+    >>> wm = plre.WireResourceManager(work_wires=3)
     >>> gt = defaultdict(int, {H: 10, X:7, Y:3})
     >>>
     >>> res = plre.Resources(wire_manager=wm, gate_types=gt)
@@ -59,7 +59,7 @@ class Resources:
         algorithmic wires: 0
         allocated wires: 3
                  clean wires: 3
-             dirty wires: 0
+                 dirty wires: 0
      Total gates : 20
       'X': 7,
       'Y': 3,
@@ -68,7 +68,7 @@ class Resources:
     .. details::
         :title: Usage Details
 
-        The :class:`Resources` object supports arithmetic operations which allow for quick addition
+        The :class:`~.pennylane.estimator.Resources` object supports arithmetic operations which allow for quick addition
         and multiplication of resources. When combining resources, we can make a simplifying
         assumption about how they are applied in a quantum circuit (in series or in parallel).
 
@@ -89,8 +89,8 @@ class Resources:
             CNOT = plre.resource_rep(plre.CNOT)
 
             # state of wires:
-            wm1 = WireResourceManager(work_wires={"clean":2, "dirty":1}, algo_wires=3)
-            wm2 = WireResourceManager(work_wires={"clean":1, "dirty":2}, algo_wires=4)
+            wm1 = plre.WireResourceManager(work_wires={"clean":2, "dirty":1}, algo_wires=3)
+            wm2 = plre.WireResourceManager(work_wires={"clean":1, "dirty":2}, algo_wires=4)
 
             # state of gates:
             gt1 = defaultdict(int, {H: 10, X:5, CNOT:2})
@@ -255,17 +255,6 @@ class Resources:
     def __str__(self):
         """Generates a string representation of the Resources object."""
 
-        # --- Resources: ---
-        # Total wires: 29
-        #    algorithmic wires: 20
-        #    allocated wires: 9
-        #         clean wires: 9
-        #   	  dirty wires: 0
-        # Total gates : 96
-        #  'Toffoli': 9,
-        #  'CNOT': 60,
-        #  'Hadamard': 27
-
         wm = self.wire_manager
         total_wires = wm.total_wires
         total_gates = sum(self.gate_counts.values())
@@ -310,17 +299,13 @@ class Resources:
         """Compact string representation of the Resources object"""
         return f"Resources(wire_manager={self.wire_manager}, gate_types={self.gate_types})"
 
-    def _ipython_display_(self):  # pragma: no cover
-        """Displays __str__ in ipython instead of __repr__"""
-        print(str(self))
 
-
-def add_in_series(first: Resources, other) -> Resources:  # +
+def add_in_series(first: Resources, other) -> Resources:
     r"""Add two resources assuming the circuits are executed in series.
 
     Args:
-        first (Resources): first resource object to combine
-        other (Resources): other resource object to combine with
+        first (:class:`~.pennylane.estimator.Resources`): first resource object to combine
+        other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
 
     Returns:
         Resources: combined resources
@@ -341,15 +326,15 @@ def add_in_series(first: Resources, other) -> Resources:  # +
     return Resources(new_wire_manager, new_gate_types)
 
 
-def add_in_parallel(first: Resources, other) -> Resources:  # &
+def add_in_parallel(first: Resources, other) -> Resources:
     r"""Add two resources assuming the circuits are executed in parallel.
 
     Args:
-        first (Resources): first resource object to combine
-        other (Resources): other resource object to combine with
+        first (:class:`~.pennylane.estimator.Resources`): first resource object to combine
+        other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
 
     Returns:
-        Resources: combined resources
+        :class:`~.pennylane.estimator.Resources`: combined resources
     """
     qm1, qm2 = (first.wire_manager, other.wire_manager)
 
@@ -369,15 +354,15 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
     return Resources(new_wire_manager, new_gate_types)
 
 
-def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
+def mul_in_series(first: Resources, scalar: int) -> Resources:
     r"""Multiply the resources by a scalar assuming the circuits are executed in series.
 
     Args:
-        first (Resources): first resource object to scale
+        first (:class:`~.pennylane.estimator.Resources`): first resource object to scale
         scalar (int): integer value to scale the resources by
 
     Returns:
-        Resources: scaled resources
+        :class:`~.pennylane.estimator.Resources`: scaled resources
     """
     qm = first.wire_manager
 
@@ -398,15 +383,15 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     return Resources(new_wire_manager, new_gate_types)
 
 
-def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
+def mul_in_parallel(first: Resources, scalar: int) -> Resources:
     r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
 
     Args:
-        first (Resources): first resource object to scale
+        first (:class:`~.pennylane.estimator.Resources`): first resource object to scale
         scalar (int): integer value to scale the resources by
 
     Returns:
-        Resources: scaled resources
+        :class:`~.pennylane.estimator.Resources`: scaled resources
     """
     qm = first.wire_manager
 
