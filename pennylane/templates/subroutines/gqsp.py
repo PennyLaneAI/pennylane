@@ -117,7 +117,7 @@ class GQSP(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, unitary, angles, control, id=None):
-        return super()._primitive_bind_call(angles, unitary=unitary, wires=control, id=id)
+        return super()._primitive_bind_call(unitary, angles, wires=control, id=id)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -234,5 +234,5 @@ if GQSP._primitive is not None:
 
     @GQSP._primitive.def_impl
     def _(*args, n_wires, **kwargs):
-        (angles,), control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(GQSP, angles=angles, control=control, **kwargs)
+        (unitary, angles), control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(GQSP, unitary, angles, control=control, **kwargs)

@@ -1132,36 +1132,35 @@ class TestModifiedTemplates:
     def test_gqsp(self):
         """Test the primitive bind call of GQSP."""
 
-        kwargs = {
-            "unitary": qml.RX(1, wires=1),
-            "control": 0,
-        }
-
-        def qfunc(angles):
-            qml.GQSP(angles=angles, **kwargs)
+        def qfunc(unitary, angles):
+            qml.GQSP(unitary, angles, control=0)
 
         angles = np.ones([3, 3])
+        unitary = qml.RX(1, wires=1)
         # Validate inputs
-        qfunc(angles)
+        qfunc(unitary, angles)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(angles)
+        jaxpr = jax.make_jaxpr(qfunc)(unitary, angles)
 
-        assert len(jaxpr.eqns) == 1
+        assert len(jaxpr.eqns) == 2
 
-        eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.GQSP._primitive
-        assert eqn.invars[0] == jaxpr.jaxpr.invars[0]
-        assert eqn.invars[1].val == kwargs["control"]
-        assert eqn.params == {"unitary": qml.RX(1, wires=1), "n_wires": 1, "id": None}
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        rx_eqn = jaxpr.eqns[0]
+        assert rx_eqn.primitive == qml.RX._primitive
+        gqps_eqn = jaxpr.eqns[1]
+        assert gqps_eqn.primitive == qml.GQSP._primitive
+        assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
+        assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
+        assert gqps_eqn.invars[2].val == 0  # Control wire
+        assert gqps_eqn.params == {"n_wires": 1, "id": None}
+        assert len(gqps_eqn.outvars) == 1
+        assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, angles)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, unitary.data, angles)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.GQSP(angles=angles, **kwargs))
+        qml.assert_equal(q.queue[0], qml.GQSP(unitary, angles, control=0))
 
     def test_reflection(self):
         """Test the primitive bind call of Reflection."""
