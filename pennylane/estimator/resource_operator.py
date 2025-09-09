@@ -275,12 +275,11 @@ class ResourceOperator(ABC):
     @abstractmethod
     def resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
-        return cls.default_resource_decomp(*args, **kwargs)
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for the adjoint of the operator."""
-        return ResourcesNotDefined
+        raise ResourcesNotDefined
 
     @classmethod
     def controlled_resource_decomp(
@@ -294,7 +293,7 @@ class ResourceOperator(ABC):
             ctrl_num_ctrl_values (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
         """
-        return ResourcesNotDefined
+        raise ResourcesNotDefined
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
@@ -304,7 +303,7 @@ class ResourceOperator(ABC):
         Args:
             pow_z (int): exponent that the operator is being raised to
         """
-        return ResourcesNotDefined
+        raise ResourcesNotDefined
 
     def __repr__(self) -> str:
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
