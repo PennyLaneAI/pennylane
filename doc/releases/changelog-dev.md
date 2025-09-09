@@ -823,6 +823,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Devices preprocess now starts to accept graph decomposition.
+
 * Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
   [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
 
