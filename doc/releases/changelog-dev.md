@@ -748,6 +748,10 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
+* Added a warning to the interfaces documentation that all floating-point inputs are promoted 
+  to `Float64`.
+  [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
+
 <h3>Bug fixes 🐛</h3>
 
 * An error is now raised if sequences of classically processed mid circuit measurements
@@ -824,6 +828,7 @@ Pablo Antonio Moreno Casares
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,
