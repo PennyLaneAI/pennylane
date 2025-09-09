@@ -827,6 +827,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
+  [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
+
 * Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
   [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
 
@@ -969,8 +972,14 @@
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
+* The `mbqc.graph_state_prep` operation is integrated into the `convert_to_mbqc_formalism` pass.
+  [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
+
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
+
+* Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
+  [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
 <h3>Documentation 📝</h3>
 
