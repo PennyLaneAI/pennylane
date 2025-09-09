@@ -24,7 +24,7 @@ class Interface(Enum):
     """Canonical set of interfaces supported."""
 
     AUTOGRAD = "autograd"
-    NUMPY = "numpy", None
+    NUMPY = "numpy"
     TORCH = "torch"
     JAX = "jax"
     JAX_JIT = "jax-jit"
@@ -58,6 +58,10 @@ class Interface(Enum):
         if isinstance(interface, str):
             raise TypeError("Cannot compare Interface with str")
         return super().__eq__(interface)
+
+    def __hash__(self):
+        # pylint: disable=useless-super-delegation
+        return super().__hash__()
 
 
 InterfaceLike = str | Interface | None
