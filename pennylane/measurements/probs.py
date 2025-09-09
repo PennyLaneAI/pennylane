@@ -227,7 +227,7 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
         op (Operator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
-            attribute) that rotates the computational basis, or a  ``MeasurementValue``
+            attribute) that rotates the computational basis, or a ``MeasurementValue``
             corresponding to mid-circuit measurements.
         dtype: The dtype of the samples returned by this measurement process.
 
@@ -275,6 +275,30 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
 
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
+
+    The ``dtype`` argument can be used to specify the precision of the returned probabilities when
+    sampling is used to estimate probabilities and the ``op`` argument does not contain mid-circuit measurements.
+
+    If sampling is not used or if ``op`` contains mid-circuit measurements,
+    the ``dtype`` argument is ignored.
+
+    By default, the dtype is ``float64``.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        @qml.set_shots(10)
+        @qml.qnode(qml.device("default.qubit", wires=2), interface="torch")
+        def circuit():
+            qml.Hadamard(0)
+            return qml.probs(dtype="float32")
+
+    Executing this QNode, we see that the returned samples have the specified dtype:
+
+    >>> samples = circuit()
+    >>> samples.dtype
+    torch.float32
     """
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:
@@ -283,7 +307,7 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
                 "using arithmetic operators. To collect probabilities for multiple mid-circuit "
                 "measurements, use a list of mid-circuit measurements with qml.probs()."
             )
-        return ProbabilityMP(obs=op, dtype=dtype)
+        return ProbabilityMP(obs=op)
 
     if isinstance(op, Sequence):
         if not math.is_abstract(op[0]) and not all(
@@ -295,7 +319,7 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
                 "collecting statistics for a sequence of mid-circuit measurements."
             )
 
-        return ProbabilityMP(obs=op, dtype=dtype)
+        return ProbabilityMP(obs=op)
 
     if isinstance(op, LinearCombination):
         raise QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")

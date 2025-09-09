@@ -60,7 +60,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
-        dtype: The dtype of the samples returned by this measurement process.
     """
 
     _shortname = None
@@ -156,14 +155,12 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
         wires: Wires | None = None,
         eigvals: TensorLike | None = None,
         id: str | None = None,
-        dtype=None,
     ):
         if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
             # Cast sequence of measurement values to list
@@ -177,7 +174,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             self.mv = None
 
         self.id = id
-        self._dtype = dtype
 
         if wires is not None:
             if not capture_enabled() and len(wires) == 0:
@@ -506,6 +502,7 @@ class SampleMeasurement(MeasurementProcess):
     * bin_size (int): Divides the shot range into bins of size ``bin_size``, and
         returns the measurement statistic separately over each bin. If not
         provided, the entire shot range is treated as a single bin.
+    * dtype: The dtype of the samples returned by this measurement process.
 
     **Example:**
 
@@ -530,6 +527,10 @@ class SampleMeasurement(MeasurementProcess):
     """
 
     _shortname = "sample"
+
+    def __init__(self, *args, **kwargs):
+        self._dtype = kwargs.pop("dtype", None)
+        super().__init__(*args, **kwargs)
 
     @abstractmethod
     def process_samples(
