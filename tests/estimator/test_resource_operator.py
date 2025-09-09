@@ -24,15 +24,11 @@ import pytest
 import pennylane as qml
 from pennylane.estimator import (
     CompressedResourceOp,
-    WireResourceManager,
     ResourceOperator,
     Resources,
+    WireResourceManager,
 )
-from pennylane.estimator.resource_operator import (
-    GateCount,
-    _make_hashable,
-    resource_rep,
-)
+from pennylane.estimator.resource_operator import GateCount, _make_hashable, resource_rep
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
@@ -99,12 +95,8 @@ class TestCompressedResourceOp:
 
     def test_hash(self):
         """Test that the hash method behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(
-            DummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
-        )
-        CmprssedQSVT2 = CompressedResourceOp(
-            DummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
-        )
+        CmprssedQSVT1 = CompressedResourceOp(DummyQSVT, 3, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT2 = CompressedResourceOp(DummyQSVT, 3, {"num_wires": 3, "num_angles": 5})
         Other = CompressedResourceOp(DummyQFT, 3, {"num_wires": 3})
 
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT1)  # compare same object
@@ -134,15 +126,9 @@ class TestCompressedResourceOp:
 
     def test_equality(self):
         """Test that the equality methods behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(
-            DummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
-        )
-        CmprssedQSVT2 = CompressedResourceOp(
-            DummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
-        )
-        CmprssedQSVT3 = CompressedResourceOp(
-            DummyQSVT, 3, {"num_angles": 5, "num_wires": 3}
-        )
+        CmprssedQSVT1 = CompressedResourceOp(DummyQSVT, 3, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT2 = CompressedResourceOp(DummyQSVT, 3, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT3 = CompressedResourceOp(DummyQSVT, 3, {"num_angles": 5, "num_wires": 3})
         Other = CompressedResourceOp(DummyQFT, 3, {"num_wires": 3})
 
         assert CmprssedQSVT1 == CmprssedQSVT2  # compare identical instance
@@ -208,7 +194,7 @@ class DummyOp(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -226,7 +212,7 @@ class DummyOp_no_resource_rep(ResourceOperator):
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -244,7 +230,7 @@ class DummyOp_no_resource_params(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -360,7 +346,7 @@ class TestResourceOperator:
         resources = s * op
 
         gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): s})
-        wm = WireResourceManager(clean=0, dirty=0, algo_wires=1)
+        wm = WireResourceManager(clean=0, dirty=0, algo=1)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -371,7 +357,7 @@ class TestResourceOperator:
         resources = s @ op
 
         gt = defaultdict(int, {DummyCmprsRep("CNOT", None): s})
-        wm = WireResourceManager(clean=0, dirty=0, algo_wires=s * 2)
+        wm = WireResourceManager(clean=0, dirty=0, algo=s * 2)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -388,7 +374,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(work_wires=0, algo_wires=2)
+        wm = WireResourceManager(clean=0, algo=2)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -396,7 +382,7 @@ class TestResourceOperator:
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        wm2 = WireResourceManager(clean=0, dirty=0, algo_wires=2)
+        wm2 = WireResourceManager(clean=0, dirty=0, algo=2)
         res2 = Resources(wire_manager=wm2, gate_types=gt2)
         resources = op1 + res2
 
@@ -407,7 +393,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(clean=0, dirty=0, algo_wires=2)
+        wm = WireResourceManager(clean=0, dirty=0, algo=2)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -430,7 +416,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(clean=0, dirty=0, algo_wires=3)
+        wm = WireResourceManager(clean=0, dirty=0, algo=3)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -438,7 +424,7 @@ class TestResourceOperator:
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        wm2 = WireResourceManager(clean=0, dirty=0, algo_wires=2)
+        wm2 = WireResourceManager(clean=0, dirty=0, algo=2)
         res2 = Resources(wire_manager=wm2, gate_types=gt2)
         resources = op1 & res2
 
@@ -449,7 +435,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(work_wires=0, algo_wires=3)
+        wm = WireResourceManager(clean=0, algo=3)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -492,6 +478,7 @@ def test_make_hashable(input_obj, expected_hashable):
     assert result == expected_hashable
     assert isinstance(result, Hashable)
     assert hash(result) is not None
+
 
 class TestGateCount:
     """Tests for the GateCount class."""
@@ -572,7 +559,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, params)
 
         @classmethod
-        def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
+        def resource_decomp(cls, num_wires, continuous_param, bool_param):
             """dummy default resource decomp method"""
             raise NotImplementedError
 
@@ -592,7 +579,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, {})
 
         @classmethod
-        def default_resource_decomp(cls, **kwargs):
+        def resource_decomp(cls, **kwargs):
             """dummy default resource decomp method"""
             raise NotImplementedError
 

@@ -16,17 +16,17 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Callable, Hashable, Iterable
-from inspect import signature
+from collections.abc import Hashable, Iterable
 from typing import Union
 
 import numpy as np
 
-from .wires_manager import WireResourceManager
-from .resources_base import Resources
 from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+from .resources_base import Resources
+from .wires_manager import WireResourceManager
 
 # pylint: disable=unused-argument, no-member
 
@@ -314,14 +314,14 @@ class ResourceOperator(ABC):
     def __mul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        wire_manager = WireResourceManager(0, algo_wires=self.num_wires)
+        wire_manager = WireResourceManager(0, algo=self.num_wires)
 
         return Resources(wire_manager, gate_types)
 
     def __matmul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        wire_manager = WireResourceManager(0, algo_wires=scalar * self.num_wires)
+        wire_manager = WireResourceManager(0, algo=scalar * self.num_wires)
 
         return Resources(wire_manager, gate_types)
 
