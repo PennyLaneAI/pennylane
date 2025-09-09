@@ -1410,7 +1410,7 @@ class ResourceCRX(ResourceOperator):
     Args:
         wires (Sequence[int], optional): the wire the operation acts on
         eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-            The default value is `None` which corresponds to using the epsilon stated in the config.
+            The default value is `None` which corresponds to using the precision stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1464,7 +1464,7 @@ class ResourceCRX(ResourceOperator):
 
         Args:
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1512,7 +1512,7 @@ class ResourceCRX(ResourceOperator):
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
@@ -1541,7 +1541,7 @@ class ResourceCRX(ResourceOperator):
         Args:
             pow_z (int): the power that the operator is being raised to
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
@@ -1561,7 +1561,7 @@ class ResourceCRY(ResourceOperator):
     Args:
         wires (Sequence[int], optional): the wire the operation acts on
         eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-            The default value is `None` which corresponds to using the epsilon stated in the config.
+            The default value is `None` which corresponds to using the precision stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1615,7 +1615,7 @@ class ResourceCRY(ResourceOperator):
 
         Args:
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1661,7 +1661,7 @@ class ResourceCRY(ResourceOperator):
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
@@ -1690,7 +1690,7 @@ class ResourceCRY(ResourceOperator):
         Args:
             pow_z (int): the power that the operator is being raised to
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
@@ -1710,7 +1710,7 @@ class ResourceCRZ(ResourceOperator):
     Args:
         wires (Sequence[int], optional): the wire the operation acts on
         eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-            The default value is `None` which corresponds to using the epsilon stated in the config.
+            The default value is `None` which corresponds to using the precision stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1764,7 +1764,7 @@ class ResourceCRZ(ResourceOperator):
 
         Args:
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1810,7 +1810,7 @@ class ResourceCRZ(ResourceOperator):
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
@@ -1839,7 +1839,7 @@ class ResourceCRZ(ResourceOperator):
         Args:
             pow_z (int): the power that the operator is being raised to
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
@@ -1859,7 +1859,7 @@ class ResourceCRot(ResourceOperator):
     Args:
         wires (Sequence[int], optional): the wire the operation acts on
         eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-            The default value is `None` which corresponds to using the epsilon stated in the config.
+            The default value is `None` which corresponds to using the precision stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1921,7 +1921,7 @@ class ResourceCRot(ResourceOperator):
 
         Args:
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1978,7 +1978,7 @@ class ResourceCRot(ResourceOperator):
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
@@ -2007,7 +2007,7 @@ class ResourceCRot(ResourceOperator):
         Args:
             pow_z (int): the power that the operator is being raised to
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             Taking arbitrary powers of a general single qubit rotation produces a sum of rotations.
@@ -2027,7 +2027,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
     Args:
         wires (Sequence[int], optional): the wire the operation acts on
         eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-            The default value is `None` which corresponds to using the epsilon stated in the config.
+            The default value is `None` which corresponds to using the precision stated in the config.
 
     Resources:
         The resources are derived using the fact that a :class:`~.ResourcePhaseShift` gate is
@@ -2080,7 +2080,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
         Args:
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are derived using the fact that a :class:`~.ResourcePhaseShift` gate is
@@ -2135,7 +2135,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             The resources are expressed using the symbolic :class:`~.ResourceControlled`. The resources
@@ -2164,7 +2164,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
         Args:
             pow_z (int): the power that the operator is being raised to
             eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
-                The default value is `None` which corresponds to using the epsilon stated in the config.
+                The default value is `None` which corresponds to using the precision stated in the config.
 
         Resources:
             Taking arbitrary powers of a phase shift produces a sum of shifts.

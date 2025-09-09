@@ -27,24 +27,24 @@ from pennylane.labs.resource_estimation.resource_operator import (
 # pylint: disable=arguments-differ
 
 
-def _rotation_resources(epsilon=10e-3):
+def _rotation_resources(precision=10e-3):
     r"""An estimate on the number of T gates needed to implement a Pauli rotation.
 
     The expected T-count is taken from (the 'Simulation Results' section) `Efficient
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
     Args:
-        epsilon (float): the acceptable error threshold for the approximation
+        precision (float): the acceptable error threshold for the approximation
 
     Returns:
         list[GateCount]: A list of GateCount objects, where each object
         represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
-    num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
+    num_gates = round(1.149 * np.log2(1 / precision) + 9.2)
     t = resource_rep(plre.ResourceT)
     return [GateCount(t, num_gates)]
 
@@ -54,7 +54,7 @@ class ResourcePhaseShift(ResourceOperator):
 
     Keyword Args:
         eps (float, optional): The error threshold for clifford plus T decomposition of this operation.
-            The default value is `None` which corresponds to using the epsilon stated in the config.
+            The default value is `None` which corresponds to using the precision stated in the config.
         wires (Any or Wires, optional): the wire the operation acts on
 
     Resources:
@@ -79,8 +79,8 @@ class ResourcePhaseShift(ResourceOperator):
     num_wires = 1
     resource_keys = {"eps"}
 
-    def __init__(self, epsilon=None, wires=None) -> None:
-        self.eps = epsilon
+    def __init__(self, precision=None, wires=None) -> None:
+        self.eps = precision
         super().__init__(wires=wires)
 
     @property
@@ -221,7 +221,7 @@ class ResourceRX(ResourceOperator):
         from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RX`
 
@@ -292,10 +292,10 @@ class ResourceRX(ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
         """
-        return _rotation_resources(epsilon=eps)
+        return _rotation_resources(precision=eps)
 
     @classmethod
     def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -400,7 +400,7 @@ class ResourceRY(ResourceOperator):
         from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RY`
 
@@ -469,10 +469,10 @@ class ResourceRY(ResourceOperator):
             from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
         """
-        return _rotation_resources(epsilon=eps)
+        return _rotation_resources(precision=eps)
 
     @classmethod
     def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -577,7 +577,7 @@ class ResourceRZ(ResourceOperator):
         from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RZ`
 
@@ -644,12 +644,12 @@ class ResourceRZ(ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
         Args:
             eps (float): error threshold for clifford plus T decomposition of this operation
         """
-        return _rotation_resources(epsilon=eps)
+        return _rotation_resources(precision=eps)
 
     @classmethod
     def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:

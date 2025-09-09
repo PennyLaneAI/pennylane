@@ -118,24 +118,24 @@ class ResourceTestRZ(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 1
-    resource_keys = {"epsilon"}
+    resource_keys = {"precision"}
 
-    def __init__(self, epsilon=None, wires=None) -> None:
-        self.epsilon = epsilon
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_rep(cls, epsilon=None):
-        return CompressedResourceOp(cls, 1, {"epsilon": epsilon})
+    def resource_rep(cls, precision=None):
+        return CompressedResourceOp(cls, 1, {"precision": precision})
 
     @property
     def resource_params(self):
-        return {"epsilon": self.epsilon}
+        return {"precision": self.precision}
 
     @classmethod
-    def resource_decomp(cls, epsilon):
+    def resource_decomp(cls, precision):
         t = resource_rep(ResourceTestT)
-        t_counts = round(1 / epsilon)
+        t_counts = round(1 / precision)
         return [GateCount(t, count=t_counts)]
 
 
@@ -189,7 +189,7 @@ class ResourceTestAlg2(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_wires, **kwargs):
-        rz = resource_rep(ResourceTestRZ, {"epsilon": 1e-2})
+        rz = resource_rep(ResourceTestRZ, {"precision": 1e-2})
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
         return [
@@ -200,10 +200,10 @@ class ResourceTestAlg2(ResourceOperator):
         ]
 
 
-def mock_rotation_decomp(eps):
+def mock_rotation_decomp(precision):
     """A mock decomposition for rotation gates returning TestT gates for testing."""
     t = resource_rep(ResourceTestT)
-    t_counts = round(1 / eps)
+    t_counts = round(1 / precision)
     return [GateCount(t, count=t_counts)]
 
 
@@ -218,7 +218,7 @@ class TestEstimateResources:
                 ResourceTestHadamard(wires=[w])
             ResourceTestCNOT(wires=[0, 1])
             ResourceTestRZ(wires=[1])
-            ResourceTestRZ(epsilon=1e-2, wires=[2])
+            ResourceTestRZ(precision=1e-2, wires=[2])
             ResourceTestCNOT(wires=[3, 4])
             ResourceTestAlg1(num_iter=5, wires=[5, 6])
 
@@ -235,7 +235,7 @@ class TestEstimateResources:
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
-        custom_config.errors_and_precisions[ResourceTestRZ] = {"epsilon": 1e-9}
+        custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": 1e-9}
         computed_resources = estimate_resources(
             my_circuit, gate_set=gate_set, config=custom_config
         )()
@@ -249,7 +249,7 @@ class TestEstimateResources:
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestRZ, {"epsilon": 1e-2}): 4,
+                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
                 resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
             },
         )
@@ -263,7 +263,7 @@ class TestEstimateResources:
         gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestRZ, {"epsilon": 1e-2}): 4,
+                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
                 resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
             },
         )
@@ -302,7 +302,7 @@ class TestEstimateResources:
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(ResourceTestRZ, {"epsilon": 1e-2}): 4,
+                            resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
                             resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
                             resource_rep(ResourceTestZ): 4,
                         },
@@ -340,9 +340,9 @@ class TestEstimateResources:
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.errors_and_precisions[ResourceTestRZ] = {"epsilon": error_val}
+        custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": error_val}
 
-        op = ResourceTestRZ()  # don't specify epsilon
+        op = ResourceTestRZ()  # don't specify precision
         computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)
 
         expected_resources = Resources(
