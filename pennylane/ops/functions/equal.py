@@ -802,14 +802,14 @@ def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
 @_equal_dispatch.register
 def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
     """Determine whether two QSVT are equal"""
-    if not equal(UA1 := op1.hyperparameters["UA"], UA2 := op2.hyperparameters["UA"]):
+    if not equal(UA1 := op1.hyperparameters["UA"], UA2 := op2.hyperparameters["UA"], **kwargs):
         return f"op1 and op2 have different block encodings UA. Got {UA1} and {UA2}."
     projectors1 = op1.hyperparameters["projectors"]
     projectors2 = op2.hyperparameters["projectors"]
     if len(projectors1) != len(projectors2):
         return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
     for i, (p1, p2) in enumerate(zip(projectors1, projectors2)):
-        if not equal(p1, p2):
+        if not equal(p1, p2, **kwargs):
             return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}."
     return True
 

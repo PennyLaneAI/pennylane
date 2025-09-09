@@ -105,7 +105,7 @@ class GQSP(Operation):
         }
 
     def _flatten(self):
-        return self.parameters, (
+        return self.data, (
             self.hyperparameters["unitary"],
             self.hyperparameters["control"],
         )
