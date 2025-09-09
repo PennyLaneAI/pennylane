@@ -225,7 +225,7 @@ def resources_from_resource(
 def resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set = None,
-    config: ResourceConfig = ResourceConfig(),
+    config: ResourceConfig = None,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
