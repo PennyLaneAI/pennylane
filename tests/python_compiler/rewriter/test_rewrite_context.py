@@ -281,5 +281,26 @@ class TestWireQubitMap:
             wqmap.update_qubit(old_qubit, new_qubit)
 
 
+class TestRewriteContext:
+    """Unit tests for the RewriteContext class."""
+
+    def test_init(self):
+        """Test that the initialization of RewriteContext is correct."""
+
+    @pytest.mark.parametrize("op, updated_keys, updated_values", [])
+    def test_update_from_op_dispatches(self, op, updated_keys, updated_values):
+        """Test that the dispatches for RewriteContext.update_from_op update
+        the context as expected."""
+
+    @pytest.mark.parametrize("op, updated_keys, updated_values", [])
+    def test_update_from_op_default(self, op, updated_keys, updated_values):
+        """Test that the default RewriteContext.update_from_op updates the
+        context as expected."""
+
+    @pytest.mark.parametrize("reverse, region_first", [])
+    def test_walk(self, reverse, region_first):
+        """Test that RewriteContext.walk works as expected."""
+
+
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
