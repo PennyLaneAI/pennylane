@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-A transform for decomposing an RZ rotation using a phase gradient catalyst state
+A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
 import numpy as np
 
@@ -58,19 +58,19 @@ def _rz_phase_gradient(
 def rz_phase_gradient(
     tape: QuantumScript, aux_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""Quantum function transform to decomposes all instances of :class:`~RZ` gates into additions
+    r"""Quantum function transform to decompose all instances of :class:`~RZ` gates into additions
     using a phase gradient resource state.
 
-    This method is described on page 4 in `1709.06648 <https://arxiv.org/abs/1709.06648>`__
-    and Figure 17a in `2211.15465 <https://arxiv.org/abs/2211.15465>`__ (a generalization to
+    This method is described on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
+    and Figure 17a in `arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__ (a generalization to
     multiplexed :class:`~RZ` rotations is provided in Figure 4 in
-    `2409.07332 <https://arxiv.org/abs/2409.07332>`__).
+    `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`__).
 
     The routine looks as follows.
 
     .. code-block::
 
-        alghorithm level
+        algorithm level
           targ: ────╭●──────────────╭●────────┤
          aux_0: ────├|0⟩─╭SemiAdder─├|0⟩──────┤
          aux_1: ────├|1⟩─├SemiAdder─├|1⟩──────┤
@@ -85,7 +85,7 @@ def rz_phase_gradient(
     conditionally load the binary representation of the angle :math:`\phi = (0.010)_2 \pi`. The ``phg`` qubits
     hold a phase gradient state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
     This state is not modified and can be re-used at a later stage. Because we
-    are using :class`~SemiAdder`, we require additional ``work_wires`` wires for the semi-in-place addition
+    are using :class`~SemiAdder`, we require additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{aux} |y\rangle_\text{qft} = |x\rangle_\text{aux} |x + y\rangle_\text{qft}`.
 
     Note that, technically, this circuit realizes :class:`~PhaseShift`, i.e. :math:`R_\phi(\phi) = R_(\phi) e^{\phi/2}`.
