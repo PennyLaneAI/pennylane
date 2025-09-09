@@ -407,16 +407,6 @@ class MPSPrep(Operation):
     # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
     def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None, right_canonicalize=False):
-        if cls._primitive is None:
-            # guard against this being called when primitive is not defined.
-            return type.__call__(
-                cls,
-                mps=mps,
-                wires=wires,
-                work_wires=work_wires,
-                id=id,
-                right_canonicalize=right_canonicalize,
-            )  # pragma: no cover
         return cls._primitive.bind(
             *mps, wires=wires, work_wires=work_wires, id=id, right_canonicalize=right_canonicalize
         )
