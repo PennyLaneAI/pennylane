@@ -491,3 +491,22 @@ def _drop_zeros(
             del terms[commutator]
 
     return term_dicts
+
+def _drop_unimportant(terms, importance, tolerance):
+    delete = []
+    for commutator, coeff in terms.items():
+        if any(isinstance(frag, ProductFormula) for frag in commutator):
+            continue
+
+        if np.abs(coeff) * _commutator_importance(commutator, importance) < tolerance:
+            delete.append(commutator)
+
+    for commutator in delete:
+        del terms[commutator]
+
+
+def _commutator_importance(commutator, importance):
+    """Compute the importance of a commutator from the importance of its fragments"""
+
+    commutator_importance = [importance[x] for x in commutator]
+    return 1 / 2 ** (len(commutator) - 1) * reduce(lambda x, y: x * y, commutator_importance)
