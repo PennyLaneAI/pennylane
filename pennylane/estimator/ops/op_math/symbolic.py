@@ -16,7 +16,7 @@ from collections.abc import Iterable
 from functools import singledispatch
 
 from pennylane.decomposition.resources import CompressedResourceOp, resource_rep
-from pennylane.estimator.ops import Identity, X
+from pennylane.estimator import ops as plre_ops
 from pennylane.estimator.resource_operator import GateCount, ResourceOperator, ResourcesNotDefined
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
@@ -429,7 +429,7 @@ class Controlled(ResourceOperator):
 
         gate_lst = []
         if num_ctrl_values != 0:
-            x = resource_rep(X)
+            x = resource_rep(plre_ops.X)
             gate_lst.append(GateCount(x, 2 * num_ctrl_values))
 
         decomp = base_class.resource_decomp(**base_params, **kwargs)
@@ -650,7 +650,7 @@ class Pow(ResourceOperator):
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
 
         if z == 0:
-            return [GateCount(resource_rep(Identity))]
+            return [GateCount(resource_rep(plre_ops.Identity))]
 
         if z == 1:
             return [GateCount(base_cmpr_op)]
