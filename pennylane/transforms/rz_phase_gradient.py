@@ -49,6 +49,7 @@ def _rz_phase_gradient(
         qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
         qml.SemiAdder(aux_wires, phase_grad_wires, work_wires),
         qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
+        qml.GlobalPhase(-phi / 2),
     ]
     return ops
 
@@ -74,7 +75,7 @@ def rz_phase_gradient(
          aux_0: ────├|0⟩─╭SemiAdder─├|0⟩──────┤
          aux_1: ────├|1⟩─├SemiAdder─├|1⟩──────┤
          aux_2: ────╰|0⟩─├SemiAdder─╰|0⟩──────┤
-         qft_0: ────╭QFT─├SemiAdder───────────┤
+         qft_0: ────╭PG─├SemiAdder───────────┤
          qft_1: ────├QFT─├SemiAdder───────────┤
          qft_2: ──X─╰QFT─├SemiAdder───────────┤
         work_0: ─────────├SemiAdder───────────┤
@@ -86,6 +87,9 @@ def rz_phase_gradient(
     This state is not modified and can be re-used at a later stage. Because we
     are using :class`~SemiAdder`, we require additional ``work_wires`` wires for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{aux} |y\rangle_\text{qft} = |x\rangle_\text{aux} |x + y\rangle_\text{qft}`.
+
+    Note that, technically, this circuit realizes :class:`~PhaseShift`, i.e. :math:`R_\phi(\phi) = R_(\phi) e^{\phi/2}`.
+    The additional global phase is taken into account in the decomposition.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~RZ` gates.
@@ -137,10 +141,8 @@ def rz_phase_gradient(
 
     """
     operations = []
-    n_global_phases = 0
     for op in tape.operations:
         if isinstance(op, qml.RZ):
-            n_global_phases += 1
             with QueuingManager.stop_recording():
                 operations.extend(
                     _rz_phase_gradient(
@@ -153,7 +155,6 @@ def rz_phase_gradient(
         else:
             operations.append(op)
 
-    operations.append(qml.GlobalPhase(n_global_phases * 7 * np.pi / 8))
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):

@@ -64,10 +64,18 @@ def test_units_rz_phase_gradient(p):
     assert ops[2].base.wires == aux_wires
 
 
-def test_integration_rz_phase_gradient():
+@pytest.mark.parametrize(
+    "phi",
+    [
+        (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+        -(1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+        (1 / 8) * 2 * np.pi,
+        -(1 / 2) * 2 * np.pi,
+    ],
+)
+def test_integration_rz_phase_gradient(phi):
     """Test that the transform applies the RZ gate correctly by doing an X rotation via two Hadamards"""
     precision = 3
-    phi = (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi
     wire = "targ"
     aux_wires = qml.wires.Wires([f"aux_{i}" for i in range(precision)])
     phase_grad_wires = qml.wires.Wires([f"qft_{i}" for i in range(precision)])
