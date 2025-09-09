@@ -53,20 +53,19 @@ class TransformFunctionsExt(TransformFunctions):
     then it will try to run this pass in Catalyst.
     """
 
-    def __init__(self, ctx, passes, callback=None, callback_first=False):
+    def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         # The signature of the callback function is assumed to be
-        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass, **kwargs) -> None
+        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass, pass_level=0) -> None
         self.callback = callback
-        self.callback_first = callback_first
         self.pass_level = 0
 
     def _pre_pass_callback(self, previous_pass, module):
         """Callback wrapper to run the callback function before the pass."""
         if not self.callback:
             return
-        if self.pass_level == 0 and self.callback_first:
-            self.callback(previous_pass, module, None)
+        if self.pass_level == 0:
+            self.callback(previous_pass, module, None, pass_level=0)
 
     def _post_pass_callback(self, previous_pass, module):
         """Increment level and run callback if defined."""
@@ -118,14 +117,12 @@ class TransformInterpreterPass(ModulePass):
     passes: dict[str, Callable[[], type[ModulePass]]]
     name = "transform-interpreter"
     callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None
-    callback_first: bool = False
 
     entry_point: str = "__transform_main"
 
-    def __init__(self, passes, callback, callback_first=False):
+    def __init__(self, passes, callback):
         self.passes = passes
         self.callback = callback
-        self.callback_first = callback_first
 
     @staticmethod
     def find_transform_entry_point(root: builtin.ModuleOp, entry_point: str) -> NamedSequenceOp:
@@ -141,8 +138,6 @@ class TransformInterpreterPass(ModulePass):
         """Run the interpreter with op."""
         schedule = TransformInterpreterPass.find_transform_entry_point(op, self.entry_point)
         interpreter = Interpreter(op)
-        interpreter.register_implementations(
-            TransformFunctionsExt(ctx, self.passes, self.callback, self.callback_first)
-        )
+        interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes, self.callback))
         schedule.parent_op().detach()
         interpreter.call_op(schedule, (op,))
