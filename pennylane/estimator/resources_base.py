@@ -46,6 +46,7 @@ class Resources:
     The resources can be accessed as class attributes. Additionally, the :class:`~.pennylane.estimator.Resources`
     instance can be nicely displayed in the console.
 
+    >>> import pennylane.estimator as plre
     >>> H = plre.resource_rep(plre.Hadamard)
     >>> X = plre.resource_rep(plre.X)
     >>> Y = plre.resource_rep(plre.Y)
