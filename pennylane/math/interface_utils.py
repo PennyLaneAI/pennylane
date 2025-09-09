@@ -47,8 +47,11 @@ class Interface(Enum):
             case "tensorflow-autograph":
                 return cls.TF_AUTOGRAPH
 
-        # Returning None from _missing_ tells the Enum machinery to raise a ValueError.
-        return None
+        supported_values = [item.value for item in cls]
+
+        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        custom_addition = f"Please use one of the supported interfaces: {supported_values}."
+        raise ValueError(f"{standard_msg} {custom_addition}")
 
     def get_like(self):
         """Maps canonical set of interfaces to those known by autoray."""

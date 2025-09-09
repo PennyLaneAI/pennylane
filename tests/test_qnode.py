@@ -298,10 +298,10 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
-            QNode(dummyfunc, dev, interface="something")
+            QNode(dummyfunc, dev, interface=test_interface)
 
     def test_changing_invalid_interface(self):
         """Test that an exception is raised for an invalid interface
@@ -315,7 +315,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
