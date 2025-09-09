@@ -255,7 +255,7 @@ class TestProcessSamples:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
         ):
             _ = qml.counts(op=[m0, qml.PauliZ(0)])
 
@@ -268,9 +268,21 @@ class TestProcessSamples:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
         ):
             _ = qml.counts(op=[m0 + m1, m2])
+
+    def test_processed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.counts(op=[2 * m0, m1])
 
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""

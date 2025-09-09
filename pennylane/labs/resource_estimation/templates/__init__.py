@@ -30,6 +30,7 @@ from .subroutines import (
     ResourceIterativeQPE,
 )
 from .trotter import (
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     ResourceTrotterVibrational,
@@ -49,4 +50,5 @@ from .comparators import (
     ResourceTwoQubitComparator,
     ResourceRegisterComparator,
 )
-from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling
+from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling, ResourcePrepTHC
+from .select import ResourceSelectTHC

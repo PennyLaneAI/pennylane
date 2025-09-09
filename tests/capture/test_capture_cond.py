@@ -492,7 +492,7 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     def false_fn_2(arg):
         return qml.RY(0.1, wires=0)
 
-    [dyn_pred_2, _] = qml.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
+    dyn_pred_2, _ = qml.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
     qml.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
     return qml.expval(qml.Z(0))
 

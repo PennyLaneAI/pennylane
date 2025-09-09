@@ -393,7 +393,10 @@ class TestPauliWord:
     @pytest.mark.parametrize("pw, op", tup_pw_operation)
     def test_operation(self, pw, op):
         """Test that a PauliWord can be cast to a PL operation."""
-        pw_op = pw.operation()
+        with qml.queuing.AnnotatedQueue() as q:
+            pw_op = pw.operation()
+        assert len(q.queue) == 0
+
         if len(pw) > 1:
             for pw_factor, op_factor in zip(pw_op.operands, op.operands):
                 assert pw_factor.name == op_factor.name
@@ -404,14 +407,18 @@ class TestPauliWord:
 
     def test_operation_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity."""
-        op = PauliWord({}).operation(wire_order=[0, 1])
+        with qml.queuing.AnnotatedQueue() as q:
+            op = PauliWord({}).operation(wire_order=[0, 1])
+        assert len(q.queue) == 0
         id = qml.Identity(wires=[0, 1])
         assert op.name == id.name
         assert op.wires == id.wires
 
     def test_operation_empty_nowires(self):
         """Test that an empty PauliWord is cast to qml.Identity() operation."""
-        res = pw4.operation()
+        with qml.queuing.AnnotatedQueue() as q:
+            res = pw4.operation()
+        assert len(q.queue) == 0
         assert res == qml.Identity()
 
     def test_pickling(self):
@@ -888,7 +895,9 @@ class TestPauliSentence:
             assert op1.name == op2.name
             assert op1.wires == op2.wires
 
-        ps_op = ps.operation()
+        with qml.queuing.AnnotatedQueue() as q:
+            ps_op = ps.operation()
+        assert len(q.queue) == 0
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
                 assert ps_summand.scalar == op_summand.scalar
@@ -902,7 +911,9 @@ class TestPauliSentence:
     def test_operation_with_identity(self):
         """Test that a PauliSentence with an empty PauliWord can be cast to
         operation correctly."""
-        full_ps_op = ps3.operation()
+        with qml.queuing.AnnotatedQueue() as q:
+            full_ps_op = ps3.operation()
+        assert len(q.queue) == 0
         full_op = qml.sum(
             -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
             qml.s_prod(1, qml.Identity(wires=[0, "b", "c"])),
@@ -924,7 +935,9 @@ class TestPauliSentence:
 
     def test_operation_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
-        op = ps5.operation(wire_order=[0, 1])
+        with qml.queuing.AnnotatedQueue() as q:
+            op = ps5.operation(wire_order=[0, 1])
+        assert len(q.queue) == 0
         id = qml.s_prod(0.0, qml.Identity(wires=[0, 1]))
 
         assert op.name == id.name
@@ -933,9 +946,14 @@ class TestPauliSentence:
     def test_operation_empty_nowires(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
-        res1 = ps4.operation()
+        with qml.queuing.AnnotatedQueue() as q:
+            res1 = ps4.operation()
+        assert len(q.queue) == 0
         assert res1 == qml.Identity()
-        res2 = ps5.operation()
+
+        with qml.queuing.AnnotatedQueue() as q:
+            res2 = ps5.operation()
+        assert len(q.queue) == 0
         assert res2 == qml.s_prod(0, qml.Identity())
 
     def test_operation_wire_order(self):
@@ -1184,6 +1202,29 @@ class TestPauliSentenceMatrix:
         gx, gy = jax.jacobian(f, holomorphic=True, argnums=(0, 1))(x, y)
         assert qml.math.allclose(gx, pw1_mat)
         assert qml.math.allclose(gy, pw2_mat)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_tracer_coefficients_jax(self, use_jit):
+        """Tests that functions with abstract coefficients can be jitted."""
+        import jax
+
+        def f(c1, c2):
+            op = c1 * qml.X(0) + c2 * qml.X(0)
+            return op.simplify()
+
+        if use_jit:
+            f = jax.jit(f)
+            # Need for assert_equal to recognize they are the same.
+            # Complains about mismatching interfaces (numpy vs jax).
+            coeffs = jax.numpy.array(1.0)
+        else:
+            coeffs = 1.0
+
+        qml.assert_equal(
+            f(1.0, 1.0),
+            (coeffs * qml.X(0) + coeffs * qml.X(0)).simplify(),
+        )
 
 
 class TestPaulicomms:

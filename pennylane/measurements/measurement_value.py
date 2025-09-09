@@ -14,12 +14,18 @@
 """
 Defines the MeasurementValue class
 """
+from collections.abc import Callable
 from typing import Generic, TypeVar
 
 from pennylane import math
 from pennylane.wires import Wires
 
 T = TypeVar("T")
+
+
+def no_processing(results):
+    """A postprocessing function with no effect."""
+    return results
 
 
 class MeasurementValue(Generic[T]):
@@ -29,14 +35,26 @@ class MeasurementValue(Generic[T]):
 
     Args:
         measurements (list[.MidMeasureMP]): The measurement(s) that this object depends on.
-        processing_fn (callable): A lazy transformation applied to the measurement values.
+        processing_fn (callable | None): A lazy transformation applied to the measurement values.
     """
 
     name = "MeasurementValue"
 
-    def __init__(self, measurements: list, processing_fn: callable):
+    def __init__(self, measurements: list, processing_fn: Callable | None = None):
         self.measurements = measurements
-        self.processing_fn = processing_fn
+        self._processing_fn = processing_fn
+
+    @property
+    def has_processing(self) -> bool:
+        """Whether or not classical processing is applied to the measurement value."""
+        return self._processing_fn is not None
+
+    @property
+    def processing_fn(self) -> Callable:
+        """A lazy transformation applied to the measurement values."""
+        if self._processing_fn is None:
+            return no_processing
+        return self._processing_fn
 
     def items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
@@ -94,7 +112,7 @@ class MeasurementValue(Generic[T]):
             MeasurementValue: new ``MeasurementValue`` instance with measurement wires mapped
         """
         mapped_measurements = [m.map_wires(wire_map) for m in self.measurements]
-        return MeasurementValue(mapped_measurements, self.processing_fn)
+        return MeasurementValue(mapped_measurements, self._processing_fn)
 
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""

@@ -82,7 +82,7 @@ class TestCond:
         assert ops[3].base.wires == target_wire
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
     @staticmethod
     def tape_with_else(f, g, r, meas):
@@ -158,7 +158,7 @@ class TestCond:
         assert ops[3].meas_val is not ops[4].meas_val
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
     def test_cond_error(self, terminal_measurement):
         """Test that an error is raised when the qfunc has a measurement."""
@@ -251,6 +251,25 @@ class TestAdditionalCond:
         assert cond_op.num_params == op.num_params
         assert cond_op.ndim_params == op.ndim_params
 
+    def test_qfunc_arg_dequeued(self):
+        """Tests that the operators in the quantum function arguments are dequeued."""
+
+        def true_fn(op):
+            qml.apply(op)
+
+        def false_fn(op):
+            qml.apply(op)
+
+        def circuit(x):
+            qml.cond(x > 0, true_fn, false_fn)(qml.X(0))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            circuit(1)
+            circuit(-1)
+
+        assert len(q.queue) == 2
+        assert q.queue == [qml.X(0), qml.X(0)]
+
 
 @pytest.mark.parametrize("op_class", [qml.PauliY, qml.Toffoli, qml.Hadamard, qml.CZ])
 def test_conditional_label(op_class):
@@ -299,9 +318,9 @@ class TestOtherTransforms:
         assert ops[2].base.wires == target_wire
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
-    def test_cond_operationss_with_ctrl(self, terminal_measurement):
+    def test_cond_operations_with_ctrl(self, terminal_measurement):
         """Test that qml.cond operations Conditional operations as expected with
         qml.ctrl."""
         r = 1.234
@@ -326,7 +345,7 @@ class TestOtherTransforms:
         qml.assert_equal(ops[2].base.base, qml.RY(r, wires=2))
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
     def test_ctrl_operations_with_cond(self, terminal_measurement):
         """Test that qml.cond operationss Conditional operations as expected with
@@ -353,7 +372,7 @@ class TestOtherTransforms:
         qml.assert_equal(ops[2].base.base, qml.RY(r, wires=0))
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
     @pytest.mark.parametrize(
         "op_fn, fn_additional_args",

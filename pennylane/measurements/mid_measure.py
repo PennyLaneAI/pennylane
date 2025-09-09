@@ -39,7 +39,7 @@ def _measure_impl(
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
     mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
-    return MeasurementValue([mp], processing_fn=lambda v: v)
+    return MeasurementValue([mp])
 
 
 @lru_cache

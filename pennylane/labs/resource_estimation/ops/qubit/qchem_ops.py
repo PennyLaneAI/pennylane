@@ -143,4 +143,4 @@ class ResourceSingleExcitation(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
