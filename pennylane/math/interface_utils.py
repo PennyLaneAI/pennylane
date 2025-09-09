@@ -37,7 +37,7 @@ class Interface(Enum):
         """Custom lookup to allow None as an alias for NUMPY."""
         if value is None:
             return cls.NUMPY
-        # Returning None from _missing_ tells the Enum machiner
+        # Returning None from _missing_ tells the Enum machinery to raise a ValueError.
         return None
 
     def get_like(self):
