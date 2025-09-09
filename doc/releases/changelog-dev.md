@@ -579,6 +579,19 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
+  If you would like to get the canonical interface you can simply use the `Enum` like,
+
+  ```pycon
+  >>> from pennylane.math.interface_utils import Interface
+  >>> Interface("torch")
+  Interface.TORCH
+  >>> Interface("jax-jit")
+  Interface.JAX_JIT
+  ```
+
+  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
+
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
   and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
@@ -822,9 +835,6 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
-
-* Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
-  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
 
 * Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
   [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
