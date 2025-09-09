@@ -130,7 +130,7 @@ class Resources:
 
         Specifically, users can add together two instances of resources using the :code:`+` and
         :code:`&` operators. These represent combining the resources assuming the circuits were
-        executed in series or parallel respectively.
+        executed in series or parallel, respectively.
 
         .. code-block:: pycon
 
