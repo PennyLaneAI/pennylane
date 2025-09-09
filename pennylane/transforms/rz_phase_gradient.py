@@ -75,15 +75,15 @@ def rz_phase_gradient(
          aux_0: ────├|0⟩─╭SemiAdder─├|0⟩──────┤
          aux_1: ────├|1⟩─├SemiAdder─├|1⟩──────┤
          aux_2: ────╰|0⟩─├SemiAdder─╰|0⟩──────┤
-         qft_0: ────╭PG─├SemiAdder───────────┤
-         qft_1: ────├QFT─├SemiAdder───────────┤
-         qft_2: ──X─╰QFT─├SemiAdder───────────┤
+         phg_0: ──╭|∇Z⟩──├SemiAdder───────────┤
+         phg_1: ──├|∇Z⟩──├SemiAdder───────────┤
+         phg_2: ──╰|∇Z⟩──├SemiAdder───────────┤
         work_0: ─────────├SemiAdder───────────┤
         work_1: ─────────╰SemiAdder───────────┤
 
     The ``targ`` qubit is where :class:`~RZ` is applied. The ``aux`` qubits
-    conditionally load the binary representation of the angle :math:`\phi = (0.010)_2 \pi`. The ``qft`` qubits
-    hold a phase gradient state :math:`\text{QFT}|0..01\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
+    conditionally load the binary representation of the angle :math:`\phi = (0.010)_2 \pi`. The ``phg`` qubits
+    hold a phase gradient state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
     This state is not modified and can be re-used at a later stage. Because we
     are using :class`~SemiAdder`, we require additional ``work_wires`` wires for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{aux} |y\rangle_\text{qft} = |x\rangle_\text{aux} |x + y\rangle_\text{qft}`.
