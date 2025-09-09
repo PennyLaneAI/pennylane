@@ -282,7 +282,7 @@ def register_resources(
 
             :func:`~pennylane.resource_rep`
 
-    .. details:
+    .. details::
        :title: Dynamically Allocated Wires as a Resource
 
        Some decomposition rules make use of work wires, which can be dynamically requested within
