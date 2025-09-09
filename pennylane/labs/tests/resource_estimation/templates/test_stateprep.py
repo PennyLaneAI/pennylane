@@ -306,7 +306,7 @@ class TestPrepTHC:
     def test_resources(self, compact_ham, coeff_prec, selswap_depth, expected_res):
         """Test that the resources are correct."""
 
-        prep_cost = plre.estimate_resources(
+        prep_cost = plre.estimate(
             plre.ResourcePrepTHC(
                 compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth
             )

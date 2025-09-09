@@ -69,7 +69,7 @@ DefaultGateSet = {
 
 
 @singledispatch
-def estimate_resources(
+def estimate(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set = None,
     config: ResourceConfig = None,
@@ -116,7 +116,7 @@ def estimate_resources(
     Note that we are passing a python function NOT a :class:`~.QNode`. The resources for this
     workflow are then obtained by:
 
-    >>> res = plre.estimate_resources(
+    >>> res = plre.estimate(
     ...     my_circuit,
     ...     gate_set = plre.DefaultGateSet,
     ...     single_qubit_rotation_error = 1e-4,
@@ -138,7 +138,7 @@ def estimate_resources(
     )
 
 
-@estimate_resources.register
+@estimate.register
 def resources_from_qfunc(
     obj: Callable,
     gate_set: set = None,
@@ -181,7 +181,7 @@ def resources_from_qfunc(
     return wrapper
 
 
-@estimate_resources.register
+@estimate.register
 def resources_from_resource(
     obj: Resources,
     gate_set: set = None,
@@ -221,7 +221,7 @@ def resources_from_resource(
     return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
 
 
-@estimate_resources.register
+@estimate.register
 def resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set = None,
@@ -242,7 +242,7 @@ def resources_from_resource_ops(
     )
 
 
-@estimate_resources.register
+@estimate.register
 def resources_from_pl_ops(
     obj: Operation,
     gate_set: set = None,

@@ -231,7 +231,7 @@ class ResourceRX(ResourceOperator):
 
     The resources for this operation are computed as:
 
-    >>> op = plre.estimate_resources(plre.ResourceRX)()
+    >>> op = plre.estimate(plre.ResourceRX)()
     >>> print(op)
     --- Resources: ---
      Total qubits: 1
@@ -245,7 +245,7 @@ class ResourceRX(ResourceOperator):
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_rx": 1e-4}
-    >>> op = plre.estimate_resources(plre.ResourceRX, config=config)()
+    >>> op = plre.estimate(plre.ResourceRX, config=config)()
     >>> print(op)
     --- Resources: ---
      Total qubits: 1
@@ -410,7 +410,7 @@ class ResourceRY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> op = plre.estimate_resources(plre.ResourceRY)()
+    >>> op = plre.estimate(plre.ResourceRY)()
     >>> print(op)
     --- Resources: ---
      Total qubits: 1
@@ -424,7 +424,7 @@ class ResourceRY(ResourceOperator):
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_ry": 1e-4}
-    >>> op = plre.estimate_resources(plre.ResourceRY, config=config)()
+    >>> op = plre.estimate(plre.ResourceRY, config=config)()
     --- Resources: ---
      Total qubits: 1
      Total gates : 24
@@ -587,7 +587,7 @@ class ResourceRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> op = plre.estimate_resources(plre.ResourceRZ)()
+    >>> op = plre.estimate(plre.ResourceRZ)()
     >>> op
     --- Resources: ---
      Total qubits: 1
@@ -601,7 +601,7 @@ class ResourceRZ(ResourceOperator):
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_rz": 1e-4}
-    >>> op = plre.estimate_resources(plre.ResourceRZ, config=config)()
+    >>> op = plre.estimate(plre.ResourceRZ, config=config)()
     >>> print(op)
     --- Resources: ---
      Total qubits: 1

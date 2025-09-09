@@ -31,7 +31,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate_resources
+from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate
 from pennylane.labs.resource_estimation.resources_base import Resources
 
 # pylint: disable= no-self-use, arguments-differ
@@ -236,15 +236,13 @@ class TestEstimateResources:
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
         custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": 1e-9}
-        computed_resources = estimate_resources(
-            my_circuit, gate_set=gate_set, config=custom_config
-        )()
+        computed_resources = estimate(my_circuit, gate_set=gate_set, config=custom_config)()
         assert computed_resources == expected_resources
 
     def test_estimate_resources_from_resource_operator(self):
         """Test that we can accurately obtain resources from qfunc"""
         op = ResourceTestAlg2(num_wires=4)
-        actual_resources = estimate_resources(op, gate_set={"TestRZ", "TestAlg1"})
+        actual_resources = estimate(op, gate_set={"TestRZ", "TestAlg1"})
 
         expected_gates = defaultdict(
             int,
@@ -271,7 +269,7 @@ class TestEstimateResources:
         resources = Resources(qubit_manager=qubits, gate_types=gates)
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
-        actual_resources = estimate_resources(resources, gate_set=gate_set)
+        actual_resources = estimate(resources, gate_set=gate_set)
 
         expected_gates = defaultdict(
             int,
@@ -333,7 +331,7 @@ class TestEstimateResources:
             for w in range(num_wires):
                 ResourceTestZ(wires=w)
 
-        actual_resources = estimate_resources(my_circ, gate_set=gate_set)(num_wires=4)
+        actual_resources = estimate(my_circ, gate_set=gate_set)(num_wires=4)
         assert actual_resources == expected_resources
 
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
@@ -343,7 +341,7 @@ class TestEstimateResources:
         custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": error_val}
 
         op = ResourceTestRZ()  # don't specify precision
-        computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)
+        computed_resources = estimate(op, gate_set={"TestT"}, config=custom_config)
 
         expected_resources = Resources(
             qubit_manager=QubitManager(work_wires=0, algo_wires=1),
@@ -367,9 +365,7 @@ class TestEstimateResources:
             ResourceRY(wires=1)
             ResourceRZ(wires=2)
 
-        computed_resources = estimate_resources(
-            my_circuit, gate_set={"TestT"}, config=custom_config
-        )()
+        computed_resources = estimate(my_circuit, gate_set={"TestT"}, config=custom_config)()
 
         expected_t_count = 3 * round(1 / error_val)
         expected_resources = Resources(
