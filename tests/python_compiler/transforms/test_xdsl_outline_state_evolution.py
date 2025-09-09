@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit and integration tests for the Python compiler `outline_state_evolution` transform."""
+"""Unit and integration tests for the Python compiler `outline_state_evolution` transform.
 
+TODO
+~~~~
+
+This file is under heavy development and many parts are incomplete.
+"""
+
+import numpy as np
 import pytest
 
 pytestmark = pytest.mark.external
@@ -21,9 +28,12 @@ pytestmark = pytest.mark.external
 xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
 
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms.outline_state_evolution import (
     OutlineStateEvolutionPass,
+    outline_state_evolution_pass,
 )
 
 
@@ -54,3 +64,78 @@ class TestOutlineStateEvolutionPass:
 
         pipeline = (OutlineStateEvolutionPass(),)
         run_filecheck(program, pipeline)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestOutlineStateEvolutionIntegration:
+    """Integration and system-level tests for the outline-state-evolution pass."""
+
+    def test_integration_1_wire(self, run_filecheck_qjit):
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @outline_state_evolution_pass
+        @qml.qnode(dev, shots=100)
+        def circuit(x: float):
+            # CHECK-LABEL: circuit
+            # CHECK: quantum.device
+            # CHECK: quantum.alloc
+            # CHECK: func.call @evolve_quantum_state
+            # CHECK: quantum.namedobs
+            # CHECK: quantum.expval
+            # CHECK: quantum.insert
+            # CHECK: quantum.dealloc
+            # CHECK: quantum.device_release
+            # CHECK: return
+            # CHECK: func.func public @evolve_quantum_state
+            qml.RX(x, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.Z(0))
+
+        circuit(1)
+
+        run_filecheck_qjit(circuit)
+
+    def test_integration_1_wire_control_flow(self, run_filecheck_qjit):
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)
+        # @outline_state_evolution_pass
+        @qml.qnode(dev, shots=100)
+        def circuit(x: float):
+            # CHECK-LABEL: circuit
+            # CHECK: quantum.device
+            # CHECK: quantum.alloc
+            # CHECK: func.call @evolve_quantum_state
+            # CHECK: quantum.namedobs
+            # CHECK: quantum.expval
+            # CHECK: quantum.insert
+            # CHECK: quantum.dealloc
+            # CHECK: quantum.device_release
+            # CHECK: return
+            # CHECK: func.func public @evolve_quantum_state
+            if x > 0.5:
+                qml.RX(x, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.Z(0))
+
+        circuit(1)
+
+        run_filecheck_qjit(circuit)
+
+    def test_2_wire(self, run_filecheck_qjit):
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        # @outline_state_evolution_pass
+        @qml.qnode(dev, shots=100)
+        def circuit(x: float):
+            qml.RX(x, wires=0)
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.measure(0)
+            return qml.expval(qml.Z(0) @ qml.Z(1)), qml.sample(wires=[0, 1])
+
+        circuit(1)
+
+        run_filecheck_qjit(circuit)

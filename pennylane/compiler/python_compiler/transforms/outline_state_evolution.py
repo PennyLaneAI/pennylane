@@ -14,14 +14,30 @@
 
 """This module contains the implementation of the outline_state_evolution transform,
 written using xDSL.
+
+TODO
+~~~~
+
+This file is under heavy development and many parts are incomplete.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
+from xdsl.ir import Attribute, Region
 
+from ..dialects import quantum
 from .api import compiler_transform
+
+_OBSERVABLE_OPS = (
+    quantum.ComputationalBasisOp,
+    quantum.HamiltonianOp,
+    quantum.HermitianOp,
+    quantum.NamedObsOp,
+    quantum.TensorOp,
+)
 
 
 @dataclass(frozen=True)
@@ -37,9 +53,8 @@ class OutlineStateEvolutionPass(passes.ModulePass):
     # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the outline-state-evolution pass."""
-        pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([OutlineStateEvolutionPattern()])
-        ).rewrite_module(module)
+        walker = pattern_rewriter.PatternRewriteWalker(OutlineStateEvolutionPattern())
+        walker.rewrite_module(module)
 
 
 outline_state_evolution_pass = compiler_transform(OutlineStateEvolutionPass)
@@ -54,7 +69,24 @@ class OutlineStateEvolutionPattern(
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
-        self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+        self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
     ):  # pylint: disable=arguments-differ
         """TODO"""
-        raise NotImplementedError("OutlineStateEvolutionPattern not yet implemented!")
+        state_evolution_region = Region()
+
+        for op in reversed(func_op.body.ops):
+            if any(isinstance(result_type, quantum.QubitType) for result_type in op.result_types):
+                # This op evolves the state
+                op._outline_flag = True
+
+        breakpoint()
+
+        evolve_state_subroutine_op = func.FuncOp(
+            name="evolve_quantum_state",
+            function_type=(
+                (quantum.QuregType, *func_op.function_type.inputs),  # Input types
+                (quantum.QuregType),  # Return types
+            ),
+            region=state_evolution_region,
+            visibility="private",
+        )
