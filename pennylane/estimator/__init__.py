@@ -29,3 +29,5 @@ Qubit Management Classes:
 """
 
 from .wires_manager import Allocate, Deallocate
+from .resource_operator import ResourceOperator, GateCount, ResourcesNotDefined
+from .ops import *
