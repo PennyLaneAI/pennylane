@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig, MCMConfig
-from pennylane.math import get_canonical_interface_name
+from pennylane.math import Interface
 from pennylane.workflow import construct_execution_config
 
 
@@ -46,7 +46,7 @@ def test_unresolved_construction(device_name, interface):
         gradient_method="best",
         gradient_keyword_arguments={},
         device_options={},
-        interface=get_canonical_interface_name(interface),
+        interface=Interface(interface),
         derivative_order=1,
         mcm_config=mcm_config,
         convert_to_numpy=True,
@@ -70,7 +70,7 @@ def test_resolved_construction_lightning_qubit(interface):
         use_device_jacobian_product=False,
         gradient_method="adjoint",
         gradient_keyword_arguments={},
-        interface=get_canonical_interface_name(interface),
+        interface=Interface(interface),
         derivative_order=1,
         mcm_config=mcm_config,
         convert_to_numpy=True,
@@ -95,7 +95,7 @@ def test_resolved_construction_default_qubit(interface):
         use_device_jacobian_product=False,
         gradient_method="backprop",
         gradient_keyword_arguments={},
-        interface=get_canonical_interface_name(interface),
+        interface=Interface(interface),
         derivative_order=1,
         mcm_config=mcm_config,
         convert_to_numpy=True,
@@ -131,7 +131,7 @@ def test_jax_interface(mcm_method, postselect_mode, interface):
         use_device_jacobian_product=False,
         gradient_method=qml.gradients.param_shift,
         gradient_keyword_arguments={},
-        interface=get_canonical_interface_name(interface),
+        interface=Interface(interface),
         derivative_order=1,
         mcm_config=expected_mcm_config,
         convert_to_numpy=True,

@@ -214,26 +214,3 @@ def get_deep_interface(value):
             return "numpy"
         itr = itr[0]
     return _get_interface_of_single_tensor(itr)
-
-
-def get_canonical_interface_name(user_input: InterfaceLike) -> Interface:
-    """Helper function to get the canonical interface name.
-
-    Args:
-        interface (str, Interface): reference interface
-
-    Raises:
-        ValueError: key does not exist in the interface map
-
-    Returns:
-        Interface: canonical interface
-    """
-
-    if isinstance(user_input, Interface) and user_input in SUPPORTED_INTERFACE_NAMES:
-        return user_input
-    try:
-        return INTERFACE_MAP[user_input]
-    except KeyError as exc:
-        raise ValueError(
-            f"Unknown interface {user_input}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        ) from exc
