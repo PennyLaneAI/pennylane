@@ -200,8 +200,8 @@ class ResourceOperator(ABC):
          Total wires: 3
             algorithmic wires: 3
             allocated wires: 0
-            	 clean wires: 0
-            	 dirty wires: 0
+                 clean wires: 0
+                 dirty wires: 0
          Total gates : 7
           'SWAP': 1,
           'ControlledPhaseShift': 3,
@@ -282,7 +282,6 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for the adjoint of the operator."""
         return ResourcesNotDefined
 
-
     @classmethod
     def controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
@@ -355,8 +354,10 @@ class ResourceOperator(ABC):
         r"""Returns the tracking name built with the operator's parameters."""
         return self.__class__.tracking_name(**self.resource_params)
 
+
 class ResourcesNotDefined(Exception):
     r"""Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+
 
 class GateCount:
     r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
