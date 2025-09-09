@@ -528,9 +528,16 @@ class SampleMeasurement(MeasurementProcess):
 
     _shortname = "sample"
 
-    def __init__(self, *args, **kwargs):
-        self._dtype = kwargs.pop("dtype", None)
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
+        wires: Wires | None = None,
+        eigvals: TensorLike | None = None,
+        dtype=None,
+        id: str | None = None,
+    ):
+        self._dtype = dtype
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
     @abstractmethod
     def process_samples(
