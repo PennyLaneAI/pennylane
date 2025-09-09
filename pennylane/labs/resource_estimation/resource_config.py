@@ -41,7 +41,7 @@ from pennylane.labs.resource_estimation.templates import (
 
 
 class ResourceConfig:
-    r"""A container to track the configuration for errors, precisions, and custom decompositions for the
+    """A container to track the configuration for errors, precisions, and custom decompositions for the
     resource estimation pipeline.
     """
 
