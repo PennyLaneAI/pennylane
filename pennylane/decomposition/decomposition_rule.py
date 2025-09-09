@@ -304,7 +304,7 @@ def register_resources(
 
        Here's a decomposition for a multi-controlled ``Rot`` that uses a zeroed work wire:
 
-       .. code-block: python
+       .. code-block:: python
 
           from functools import partial
           import pennylane as qml
