@@ -11,12 +11,7 @@ qml.estimator
     :no-inherited-members:
     :include-all-objects:
     :noindex:
-
-.. automodapi:: pennylane.estimator
-    :no-heading:
-    :no-inherited-members:
-    :include-all-objects:
-    :noindex:
+    :skip: Adjoint, ChangeOpBasis, Pow, Prod
 
 .. automodapi:: pennylane.estimator.ops
     :no-heading:
