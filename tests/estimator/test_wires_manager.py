@@ -105,16 +105,14 @@ class TestWireResourceManager:
         assert str(qm) == expected_string
 
     @pytest.mark.parametrize(
-        "qm, attribute_tup, algo_q",
-        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_wires),
+        "qm, algo_q",
+        zip(copy.deepcopy(qm_quantities), extra_wires),
     )
-    def test_algo_wires(self, qm, attribute_tup, algo_q):
+    def test_algo_wires(self, qm, algo_q):
         """Test that the logic wires are set correctly."""
 
-        logic_wires = attribute_tup[2]
-
         qm.algo_wires = algo_q
-        assert qm.algo_wires == logic_wires
+        assert qm.algo_wires == algo_q
 
     @pytest.mark.parametrize(
         "qm, attribute_tup, algo_q",
