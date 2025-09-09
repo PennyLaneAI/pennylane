@@ -66,13 +66,13 @@ class WireQubitMap:
     """Tuple containing all available static wire labels. None if not provided."""
 
     _wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = field(
-        default={}, init=False
+        default_factory=dict, init=False
     )
     """Map from wire labels to the latest known qubit SSAValues to which
     they correspond."""
 
     _qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire] = field(
-        default={}, init=False
+        default_factory=dict, init=False
     )
     """Map from qubit SSAValues to their corresponding wire labels."""
 
@@ -108,22 +108,23 @@ class WireQubitMap:
         """Update the wire/qubit maps."""
         if isinstance(key, SSAValue):
             if not isinstance(key.type, quantum.QubitType):
-                raise TypeError(
+                raise KeyError(
                     "Expected key to be a QubitType SSAValue, instead got SSAValue "
                     f"with type {key.type}"
                 )
             assert isinstance(val, (int, AbstractWire))
             if isinstance(val, int) and self.wires is not None and val not in self.wires:
-                raise KeyError(f"{key} is not an available wire.")
+                raise ValueError(f"{val} is not an available wire.")
 
             old_wire = self._qubit_to_wire_map.pop(key, None)
             _ = self._wire_to_qubit_map.pop(old_wire, None)
             self._qubit_to_wire_map[key] = val
             self._wire_to_qubit_map[val] = key
+            return
 
-        elif isinstance(key, (int, AbstractWire)):
+        if isinstance(key, (int, AbstractWire)):
             if not isinstance(val, SSAValue) or not isinstance(val.type, quantum.QubitType):
-                raise TypeError(f"Expected value to be a QubitType SSAValue, instead got {val}.")
+                raise ValueError(f"Expected value to be a QubitType SSAValue, instead got {val}.")
             if isinstance(key, int) and self.wires is not None and key not in self.wires:
                 raise KeyError(f"{key} is not an available wire.")
 
@@ -131,8 +132,9 @@ class WireQubitMap:
             _ = self._qubit_to_wire_map.pop(old_qubit, None)
             self._wire_to_qubit_map[key] = val
             self._qubit_to_wire_map[val] = key
+            return
 
-        raise TypeError(f"{key} is not a valid wire label or QubitType SSAValue.")
+        raise KeyError(f"{key} is not a valid wire label or QubitType SSAValue.")
 
     def get(self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None):
         """Return an item from the map without removing it, if it exists. Else, return
