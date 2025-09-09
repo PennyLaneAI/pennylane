@@ -56,7 +56,7 @@ def _catalyst(*args, stdin=None, stderr_return=False):
         raise CompileError(f"catalyst failed with error code {e.returncode}: {e.stderr}") from e
 
 
-def _mlir_graph_callback(pass_instance, module, pass_level):
+def _mlir_graph_callback(pass_instance, module, _, pass_level=0):
     """
     Callback function for MLIR graph generation.
     """
