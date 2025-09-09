@@ -74,7 +74,7 @@ class Resources:
         assumption about how they are applied in a quantum circuit (in series or in parallel).
 
         When assuming the circuits were executed in series, the number of algorithmic wires add
-        together. When assuming the circuits were executed in parallel, the maximum of each set of
+        together. When assuming the circuits were executed in series, the maximum of each set of
         algorithmic wires is used. The clean auxiliary wires can be reused between the circuits,
         and thus we always use the maximum of each set when combining the resources. Finally, the
         dirty wires cannot be reused between circuits, thus we always add them together.
