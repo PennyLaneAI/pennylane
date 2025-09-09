@@ -58,8 +58,8 @@ class Resources:
      Total wires: 3
         algorithmic wires: 0
         allocated wires: 3
-                 clean wires: 3
-                 dirty wires: 0
+             clean wires: 3
+             dirty wires: 0
      Total gates : 20
       'X': 7,
       'Y': 3,
@@ -108,8 +108,8 @@ class Resources:
              Total wires: 6
                 algorithmic wires: 3
                 allocated wires: 3
-                         clean wires: 2
-                         dirty wires: 1
+                     clean wires: 2
+                     dirty wires: 1
              Total gates : 17
               'CNOT': 2,
               'X': 5,
@@ -120,8 +120,8 @@ class Resources:
              Total wires: 7
                 algorithamic wires: 4
                 allocated wires: 3
-                         clean wires: 1
-                         dirty wires: 2
+                     clean wires: 1
+                     dirty wires: 2
              Total gates : 24
               'CNOT': 4,
               'Z': 5,
@@ -140,8 +140,8 @@ class Resources:
              Total wires: 9
                 algorithmic wires: 4
                 allocated wires: 5
-                         clean wires: 2
-                         dirty wires: 3
+                     clean wires: 2
+                     dirty wires: 3
              Total gates : 41
               'CNOT': 6,
               'X': 5,
@@ -154,8 +154,8 @@ class Resources:
              Total wires: 12
                 algorithmic wires: 7
                 allocated wires: 5
-                         clean wires: 2
-                         dirty wires: 3
+                     clean wires: 2
+                     dirty wires: 3
              Total gates : 41
               'CNOT': 6,
               'X': 5,
@@ -174,8 +174,8 @@ class Resources:
              Total wires: 10
                 algorithmic wires: 3
                 allocated wires: 7
-                         clean wires: 2
-                         dirty wires: 5
+                     clean wires: 2
+                     dirty wires: 5
              Total gates : 85
               'CNOT': 10,
               'X': 25,
@@ -187,8 +187,8 @@ class Resources:
              Total wires: 22
                 algorithmic wires: 15
                 allocated wires: 7
-                         clean wires: 2
-                         dirty wires: 5
+                     clean wires: 2
+                     dirty wires: 5
              Total gates : 85
               'CNOT': 10,
               'X': 25,
