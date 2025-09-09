@@ -80,9 +80,8 @@ class TestWireResourceManager:
 
         clean_wires, dirty_wires, logic_wires, tight_budget = attribute_tup
 
-        work_wires_str = repr({"clean": clean_wires, "dirty": dirty_wires})
         expected_string = (
-            f"WireResourceManager(work_wires={work_wires_str}, algo_wires={logic_wires}, "
+            f"WireResourceManager(clean={clean_wires}, dirty={dirty_wires}, algo={logic_wires}, "
             f"tight_budget={tight_budget})"
         )
 

@@ -67,9 +67,8 @@ class WireResourceManager:
         )
 
     def __repr__(self) -> str:
-        work_wires_str = repr({"clean": self.clean_wires, "dirty": self.dirty_wires})
         return (
-            f"WireResourceManager(work_wires={work_wires_str}, algo_wires={self.algo_wires}, "
+            f"WireResourceManager(clean={self.clean_wires}, dirty={self.dirty_wires}, algo={self.algo_wires}, "
             f"tight_budget={self.tight_budget})"
         )
 
