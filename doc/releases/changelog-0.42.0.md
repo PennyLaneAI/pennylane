@@ -6,7 +6,7 @@
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
 * A new decomposition using [unary iteration](https://arxiv.org/pdf/1805.03662) has been added to :class:`~.Select`.
-  This state-of-the-art decomposition reduces the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires,
+  This state-of-the-art decomposition reduces the :class:`~.pennylane.ops.T`-count significantly, and uses :math:`c-1` auxiliary wires,
   where :math:`c` is the number of control wires of the `Select` operator.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
@@ -95,7 +95,7 @@
   ```
 
 * A new template called :class:`~.SemiAdder` has been added, which provides state-of-the-art 
-  resource-efficiency (fewer :class:`~.T` gates) when performing addition on a quantum computer.
+  resource-efficiency (fewer :class:`~.pennylane.ops.T` gates) when performing addition on a quantum computer.
   [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
 
   Based on [arXiv:1709.06648](https://arxiv.org/abs/1709.06648), :class:`~.SemiAdder` performs the plain 
@@ -306,7 +306,7 @@ solver.
   [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
   In the following example, decomposing with `method="gridsynth"` instead of `method="sk"` gives a
-  significant reduction in overall gate counts, specifically the :class:`~.T` count:
+  significant reduction in overall gate counts, specifically the :class:`~.pennylane.ops.T` count:
 
   ```python
   @qml.qnode(qml.device("lightning.qubit", wires=2))

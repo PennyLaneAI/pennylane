@@ -29,7 +29,7 @@ class Identity(ResourceOperator):
         The Identity gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
-    .. seealso:: :class:`~.Identity`
+    .. seealso:: :class:`~pennylane.ops.Identity`
 
     **Example**
 
