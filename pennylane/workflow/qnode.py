@@ -520,7 +520,7 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: str = Interface.AUTO,
+        interface: str | Interface= Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
         shots: ShotsLike = "unset",
