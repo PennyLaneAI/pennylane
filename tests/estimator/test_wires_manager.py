@@ -124,7 +124,7 @@ class TestWireResourceManager:
         """Test that the total wires returned are correct."""
 
         qm.algo_wires = algo_q
-        total_wires = attribute_tup[0] + attribute_tup[1] + attribute_tup[2]
+        total_wires = attribute_tup[0] + attribute_tup[1] + algo_q
         assert qm.total_wires == total_wires
 
     @pytest.mark.parametrize(
