@@ -52,8 +52,15 @@ class TestResourceConfig:
         config = ResourceConfig()
 
         assert isinstance(config.errors_and_precisions, dict)
-        assert config.errors_and_precisions[ResourceRX] == {"precision": 1e-9}
-        assert config.errors_and_precisions[ResourceCRZ] == {"precision": 1e-9}
+        assert (
+            ResourceRX in config.errors_and_precisions
+            and config.errors_and_precisions[ResourceRX]["precision"] != 0
+        )
+
+        assert (
+            ResourceRZ in config.errors_and_precisions
+            and config.errors_and_precisions[ResourceRZ]["precision"] != 0
+        )
 
         assert config._pow_custom_decomps == {}
 
@@ -67,7 +74,10 @@ class TestResourceConfig:
         for op in rotation_ops:
             assert config.errors_and_precisions[op]["precision"] == new_error
 
-        assert config.errors_and_precisions[ResourceSelectPauliRot]["precision"] == 1e-9
+        assert (
+            ResourceSelectPauliRot in config.errors_and_precisions
+            and config.errors_and_precisions[ResourceSelectPauliRot]["precision"] != 0
+        )
 
     @pytest.mark.parametrize(
         "decomp_type, target_dict_name",

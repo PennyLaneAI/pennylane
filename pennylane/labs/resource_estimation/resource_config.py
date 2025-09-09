@@ -39,6 +39,7 @@ from .templates import (
     ResourceSelectTHC,
 )
 
+
 class ResourceConfig:
     """A container to track the configuration for errors, precisions, and custom decompositions for the
     resource estimation pipeline.
