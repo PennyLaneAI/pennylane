@@ -31,7 +31,7 @@ class TestResourceAdjoint:
         "base_type, base_args",
         (
             (plre.ResourceS, {}),
-            (plre.ResourceRZ, {"eps": 1e-3}),
+            (plre.ResourceRZ, {"precision": 1e-3}),
             (plre.ResourceCNOT, {"wires": ["ctrl", "trgt"]}),
         ),
     )
@@ -78,7 +78,7 @@ class TestResourceAdjoint:
         "base_op",
         (
             plre.ResourceS(),
-            plre.ResourceRZ(eps=1e-3),
+            plre.ResourceRZ(precision=1e-3),
             plre.ResourceCNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -99,7 +99,7 @@ class TestResourcePow:
         "base_type, base_args",
         (
             (plre.ResourceS, {}),
-            (plre.ResourceRZ, {"eps": 1e-3}),
+            (plre.ResourceRZ, {"precision": 1e-3}),
             (plre.ResourceCNOT, {"wires": ["ctrl", "trgt"]}),
         ),
     )
@@ -145,7 +145,7 @@ class TestResourcePow:
         "base_op",
         (
             plre.ResourceS(),
-            plre.ResourceRZ(eps=1e-3),
+            plre.ResourceRZ(precision=1e-3),
             plre.ResourceCNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -180,7 +180,7 @@ class TestResourceControlled:
         "base_type, base_args",
         (
             (plre.ResourceS, {}),
-            (plre.ResourceRZ, {"eps": 1e-3}),
+            (plre.ResourceRZ, {"precision": 1e-3}),
             (plre.ResourceCNOT, {"wires": ["ctrl", "trgt"]}),
         ),
     )
@@ -243,7 +243,7 @@ class TestResourceControlled:
         "base_op",
         (
             plre.ResourceS(),
-            plre.ResourceRZ(eps=1e-3),
+            plre.ResourceRZ(precision=1e-3),
             plre.ResourceCNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -274,7 +274,7 @@ class TestResourceProd:
                 plre.ResourceX(wires=0),
                 plre.ResourceCZ(wires=[1, 2]),
                 (plre.ResourceHadamard(), 4),
-                plre.ResourceRX(eps=1e-4, wires=3),
+                plre.ResourceRX(precision=1e-4, wires=3),
                 (plre.ResourceCNOT(), 2),
             ]
             prod_op = plre.ResourceProd(res_ops=ops)
@@ -293,7 +293,7 @@ class TestResourceProd:
             plre.ResourceX(wires=0),
             plre.ResourceCZ(wires=[1, 2]),
             (plre.ResourceHadamard(), 4),
-            plre.ResourceRX(eps=1e-4, wires=3),
+            plre.ResourceRX(precision=1e-4, wires=3),
             (plre.ResourceCNOT(), 2),
         ]
         prod_op = plre.ResourceProd(res_ops=ops)
@@ -302,7 +302,7 @@ class TestResourceProd:
             GateCount(plre.resource_rep(plre.ResourceX)),
             GateCount(plre.resource_rep(plre.ResourceCZ)),
             GateCount(plre.resource_rep(plre.ResourceHadamard), 4),
-            GateCount(plre.resource_rep(plre.ResourceRX, {"eps": 1e-4})),
+            GateCount(plre.resource_rep(plre.ResourceRX, {"precision": 1e-4})),
             GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
         ]
         assert prod_op.resource_decomp(**prod_op.resource_params) == expected_res

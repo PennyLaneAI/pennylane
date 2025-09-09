@@ -644,7 +644,7 @@ class ResourceQPE(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
-    >>> qpe = plre.ResourceQPE(plre.ResourceRX(eps=1e-3), 5)
+    >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5)
     >>> print(plre.estimate_resources(qpe, gate_set))
     --- Resources: ---
      Total qubits: 6
@@ -663,7 +663,7 @@ class ResourceQPE(ResourceOperator):
 
         For example, consider the cost using the default QFT implmentation below:
 
-        >>> qpe = plre.ResourceQPE(plre.ResourceRX(eps=1e-3), 5, adj_qft_op=None)
+        >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5, adj_qft_op=None)
         >>> print(plre.estimate_resources(qpe))
         --- Resources: ---
          Total qubits: 6
@@ -677,7 +677,7 @@ class ResourceQPE(ResourceOperator):
 
         >>> aqft = plre.ResourceAQFT(order=3, num_wires=5)
         >>> adj_aqft = plre.ResourceAdjoint(aqft)
-        >>> qpe = plre.ResourceQPE(plre.ResourceRX(eps=1e-3), 5, adj_qft_op=adj_aqft)
+        >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5, adj_qft_op=adj_aqft)
         >>> print(plre.estimate_resources(qpe))
         --- Resources: ---
          Total qubits: 8
@@ -2054,9 +2054,9 @@ class ResourceQubitUnitary(ResourceOperator):
         """
         gate_lst = []
 
-        one_qubit_decomp_cost = [GateCount(resource_rep(re.ResourceRZ, {"eps": precision}))]
+        one_qubit_decomp_cost = [GateCount(resource_rep(re.ResourceRZ, {"precision": precision}))]
         two_qubit_decomp_cost = [
-            GateCount(resource_rep(re.ResourceRZ, {"eps": precision}), 4),
+            GateCount(resource_rep(re.ResourceRZ, {"precision": precision}), 4),
             GateCount(resource_rep(re.ResourceCNOT), 3),
         ]
 
@@ -2212,7 +2212,7 @@ class ResourceSelectPauliRot(ResourceOperator):
             "Z": re.ResourceRZ,
         }
 
-        gate = resource_rep(rotation_gate_map[rotation_axis], {"eps": precision})
+        gate = resource_rep(rotation_gate_map[rotation_axis], {"precision": precision})
         cnot = resource_rep(re.ResourceCNOT)
 
         gate_lst = [

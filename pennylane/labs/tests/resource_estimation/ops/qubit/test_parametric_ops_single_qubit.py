@@ -60,7 +60,7 @@ class TestPauliRotation:
     def test_resources(self, resource_class, precision):
         """Test the resources method"""
 
-        config = {"eps": precision}
+        config = {"precision": precision}
         op = resource_class(wires=0)
         assert op.resource_decomp(**config) == _rotation_resources(precision=precision)
 
@@ -68,7 +68,7 @@ class TestPauliRotation:
     def test_resource_rep(self, resource_class):
         """Test the compact representation"""
         op = resource_class(wires=0)
-        expected = plre.CompressedResourceOp(resource_class, 1, {"eps": None})
+        expected = plre.CompressedResourceOp(resource_class, 1, {"precision": None})
         assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
@@ -76,7 +76,7 @@ class TestPauliRotation:
     def test_resources_from_rep(self, resource_class, precision):
         """Test the resources can be obtained from the compact representation"""
 
-        op = resource_class(wires=0, eps=precision)
+        op = resource_class(wires=0, precision=precision)
         expected = _rotation_resources(precision=precision)
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -89,7 +89,7 @@ class TestPauliRotation:
     def test_resource_params(self, resource_class, precision):  # pylint: disable=unused-argument
         """Test that the resource params are correct"""
         op = resource_class(precision, wires=0)
-        assert op.resource_params == {"eps": precision}
+        assert op.resource_params == {"precision": precision}
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
@@ -141,12 +141,12 @@ class TestPauliRotation:
         c = controlled_class(wires=[0, 1])
 
         config = ResourceConfig()
-        config.errors_and_precisions[plre.ResourceRX]["eps"] = precision
-        config.errors_and_precisions[plre.ResourceRY]["eps"] = precision
-        config.errors_and_precisions[plre.ResourceRZ]["eps"] = precision
-        config.errors_and_precisions[plre.ResourceCRX]["eps"] = precision
-        config.errors_and_precisions[plre.ResourceCRY]["eps"] = precision
-        config.errors_and_precisions[plre.ResourceCRZ]["eps"] = precision
+        config.errors_and_precisions[plre.ResourceRX]["precision"] = precision
+        config.errors_and_precisions[plre.ResourceRY]["precision"] = precision
+        config.errors_and_precisions[plre.ResourceRZ]["precision"] = precision
+        config.errors_and_precisions[plre.ResourceCRX]["precision"] = precision
+        config.errors_and_precisions[plre.ResourceCRY]["precision"] = precision
+        config.errors_and_precisions[plre.ResourceCRZ]["precision"] = precision
 
         r1 = plre.estimate_resources(c, config=config)
         r2 = plre.estimate_resources(c_op, config=config)
@@ -205,7 +205,7 @@ class TestRot:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = plre.ResourceRot(wires=0)
-        expected = plre.CompressedResourceOp(plre.ResourceRot, 1, {"eps": None})
+        expected = plre.CompressedResourceOp(plre.ResourceRot, 1, {"precision": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -223,7 +223,7 @@ class TestRot:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = plre.ResourceRot(wires=0)
-        assert op.resource_params == {"eps": None}
+        assert op.resource_params == {"precision": None}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
@@ -302,7 +302,7 @@ class TestPhaseShift:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = plre.ResourcePhaseShift(wires=0)
-        expected = plre.CompressedResourceOp(plre.ResourcePhaseShift, 1, {"eps": None})
+        expected = plre.CompressedResourceOp(plre.ResourcePhaseShift, 1, {"precision": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -320,7 +320,7 @@ class TestPhaseShift:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = plre.ResourcePhaseShift()
-        assert op.resource_params == {"eps": None}
+        assert op.resource_params == {"precision": None}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""

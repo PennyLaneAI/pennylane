@@ -53,7 +53,7 @@ class ResourcePhaseShift(ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
     Keyword Args:
-        eps (float, optional): The error threshold for clifford plus T decomposition of this operation.
+        precision (float, optional): The error threshold for clifford plus T decomposition of this operation.
             The default value is `None` which corresponds to using the precision stated in the config.
         wires (Any or Wires, optional): the wire the operation acts on
 
@@ -77,10 +77,10 @@ class ResourcePhaseShift(ResourceOperator):
     """
 
     num_wires = 1
-    resource_keys = {"eps"}
+    resource_keys = {"precision"}
 
     def __init__(self, precision=None, wires=None) -> None:
-        self.eps = precision
+        self.precision = precision
         super().__init__(wires=wires)
 
     @property
@@ -89,24 +89,24 @@ class ResourcePhaseShift(ResourceOperator):
 
         Returns:
             A dictionary containing the resource parameters:
-                * eps (Union[float, None]): error threshold for the approximation
+                * precision (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, eps=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
 
-        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
         Keyword Args:
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             The phase shift gate is equivalent to a Z-rotation upto some global phase,
@@ -122,12 +122,12 @@ class ResourcePhaseShift(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        rz = resource_rep(ResourceRZ, {"eps": eps})
+        rz = resource_rep(ResourceRZ, {"precision": precision})
         global_phase = resource_rep(plre.ResourceGlobalPhase)
         return [GateCount(rz), GateCount(global_phase)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -139,14 +139,14 @@ class ResourcePhaseShift(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps=eps))]
+        return [GateCount(cls.resource_rep(precision=precision))]
 
     @classmethod
     def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        eps=None,
+        precision=None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -154,7 +154,7 @@ class ResourcePhaseShift(ResourceOperator):
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             For a single control wire, the cost is a single instance of
@@ -172,14 +172,14 @@ class ResourcePhaseShift(ResourceOperator):
             in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(plre.ResourceControlledPhaseShift, {"eps": eps}))]
+            gate_types = [GateCount(resource_rep(plre.ResourceControlledPhaseShift, {"precision": precision}))]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(plre.ResourceX), 2))
 
             return gate_types
 
-        c_ps = resource_rep(plre.ResourceControlledPhaseShift, {"eps": eps})
+        c_ps = resource_rep(plre.ResourceControlledPhaseShift, {"precision": precision})
         mcx = resource_rep(
             plre.ResourceMultiControlledX,
             {
@@ -190,7 +190,7 @@ class ResourcePhaseShift(ResourceOperator):
         return [AllocWires(1), GateCount(c_ps), GateCount(mcx, 2), FreeWires(1)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -205,14 +205,14 @@ class ResourcePhaseShift(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps=eps))]
+        return [GateCount(cls.resource_rep(precision=precision))]
 
 
 class ResourceRX(ResourceOperator):
     r"""Resource class for the RX gate.
 
     Keyword Args:
-        eps (float): error threshold for clifford plus T decomposition of this operation
+        precision (float): error threshold for clifford plus T decomposition of this operation
         wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
@@ -255,10 +255,10 @@ class ResourceRX(ResourceOperator):
     """
 
     num_wires = 1
-    resource_keys = {"eps"}
+    resource_keys = {"precision"}
 
-    def __init__(self, eps=None, wires=None) -> None:
-        self.eps = eps
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
     @property
@@ -267,24 +267,24 @@ class ResourceRX(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * eps (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (Union[float, None]): the number of qubits the operation is controlled on
         """
-        return {"eps": self.eps}
+        return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, eps=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
 
-        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
         Keyword Args:
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -295,10 +295,10 @@ class ResourceRX(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
         """
-        return _rotation_resources(precision=eps)
+        return _rotation_resources(precision=precision)
 
     @classmethod
-    def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -310,14 +310,14 @@ class ResourceRX(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
     def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        eps=None,
+        precision=None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -325,7 +325,7 @@ class ResourceRX(ResourceOperator):
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRX`.
@@ -350,7 +350,7 @@ class ResourceRX(ResourceOperator):
         """
         if ctrl_num_ctrl_wires == 1:
 
-            gate_types = [GateCount(resource_rep(plre.ResourceCRX, {"eps": eps}))]
+            gate_types = [GateCount(resource_rep(plre.ResourceCRX, {"precision": precision}))]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(plre.ResourceX), 2))
@@ -358,7 +358,7 @@ class ResourceRX(ResourceOperator):
             return gate_types
 
         h = resource_rep(plre.ResourceHadamard)
-        rz = resource_rep(ResourceRZ, {"eps": eps})
+        rz = resource_rep(ResourceRZ, {"precision": precision})
         mcx = resource_rep(
             plre.ResourceMultiControlledX,
             {
@@ -369,7 +369,7 @@ class ResourceRX(ResourceOperator):
         return [GateCount(h, 2), GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -384,14 +384,14 @@ class ResourceRX(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
 
 
 class ResourceRY(ResourceOperator):
     r"""Resource class for the RY gate.
 
     Keyword Args:
-        eps (float): error threshold for clifford plus T decomposition of this operation
+        precision (float): error threshold for clifford plus T decomposition of this operation
         wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
@@ -433,10 +433,10 @@ class ResourceRY(ResourceOperator):
     """
 
     num_wires = 1
-    resource_keys = {"eps"}
+    resource_keys = {"precision"}
 
-    def __init__(self, eps=None, wires=None) -> None:
-        self.eps = eps
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
     @property
@@ -445,23 +445,23 @@ class ResourceRY(ResourceOperator):
 
         Returns:
             A dictionary containing the resource parameters:
-                * eps (Union[float, None]): error threshold for the approximation
+                * precision (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, eps=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
         Keyword Args:
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -472,10 +472,10 @@ class ResourceRY(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
         """
-        return _rotation_resources(precision=eps)
+        return _rotation_resources(precision=precision)
 
     @classmethod
-    def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -487,14 +487,14 @@ class ResourceRY(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
     def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        eps=None,
+        precision=None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -502,7 +502,7 @@ class ResourceRY(ResourceOperator):
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRY`.
@@ -526,14 +526,14 @@ class ResourceRY(ResourceOperator):
             in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(plre.ResourceCRY, {"eps": eps}))]
+            gate_types = [GateCount(resource_rep(plre.ResourceCRY, {"precision": precision}))]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(plre.ResourceX), 2))
 
             return gate_types
 
-        ry = resource_rep(ResourceRY, {"eps": eps})
+        ry = resource_rep(ResourceRY, {"precision": precision})
         mcx = resource_rep(
             plre.ResourceMultiControlledX,
             {
@@ -545,12 +545,12 @@ class ResourceRY(ResourceOperator):
         return [GateCount(ry, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
@@ -561,14 +561,14 @@ class ResourceRY(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
 
 
 class ResourceRZ(ResourceOperator):
     r"""Resource class for the RZ gate.
 
     Keyword Args:
-        eps (float): error threshold for clifford plus T decomposition of this operation
+        precision (float): error threshold for clifford plus T decomposition of this operation
         wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
@@ -611,10 +611,10 @@ class ResourceRZ(ResourceOperator):
     """
 
     num_wires = 1
-    resource_keys = {"eps"}
+    resource_keys = {"precision"}
 
-    def __init__(self, eps=None, wires=None) -> None:
-        self.eps = eps
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
     @property
@@ -623,18 +623,18 @@ class ResourceRZ(ResourceOperator):
 
         Returns:
             A dictionary containing the resource parameters:
-                * eps (Union[float, None]): error threshold for the approximation
+                * precision (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, eps=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -647,12 +647,12 @@ class ResourceRZ(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
 
         Args:
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
         """
-        return _rotation_resources(precision=eps)
+        return _rotation_resources(precision=precision)
 
     @classmethod
-    def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -664,14 +664,14 @@ class ResourceRZ(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
     def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        eps=None,
+        precision=None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -679,7 +679,7 @@ class ResourceRZ(ResourceOperator):
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            eps (float, optional): error threshold for clifford plus T decomposition of this operation
+            precision (float, optional): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRY`.
@@ -702,14 +702,14 @@ class ResourceRZ(ResourceOperator):
             in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(plre.ResourceCRZ, {"eps": eps}))]
+            gate_types = [GateCount(resource_rep(plre.ResourceCRZ, {"precision": precision}))]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(plre.ResourceX), 2))
 
             return gate_types
 
-        rz = resource_rep(ResourceRZ, {"eps": eps})
+        rz = resource_rep(ResourceRZ, {"precision": precision})
         mcx = resource_rep(
             plre.ResourceMultiControlledX,
             {
@@ -721,7 +721,7 @@ class ResourceRZ(ResourceOperator):
         return [GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -736,14 +736,14 @@ class ResourceRZ(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
 
 
 class ResourceRot(ResourceOperator):
     r"""Resource class for the Rot-gate.
 
     Args:
-        eps (float): error threshold for clifford plus T decomposition of this operation
+        precision (float): error threshold for clifford plus T decomposition of this operation
         wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
@@ -762,10 +762,10 @@ class ResourceRot(ResourceOperator):
     """
 
     num_wires = 1
-    resource_keys = {"eps"}
+    resource_keys = {"precision"}
 
-    def __init__(self, eps=None, wires=None) -> None:
-        self.eps = eps
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
     @property
@@ -774,18 +774,18 @@ class ResourceRot(ResourceOperator):
 
         Returns:
             A dictionary containing the resource parameters:
-                * eps (Union[float, None]): error threshold for the approximation
+                * precision (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, eps=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -795,13 +795,13 @@ class ResourceRot(ResourceOperator):
             .. math:: \hat{R}(\omega, \theta, \phi) = \hat{RZ}(\omega) \cdot \hat{RY}(\theta) \cdot \hat{RZ}(\phi).
 
         """
-        ry = resource_rep(ResourceRY, {"eps": eps})
-        rz = resource_rep(ResourceRZ, {"eps": eps})
+        ry = resource_rep(ResourceRY, {"precision": precision})
+        rz = resource_rep(ResourceRZ, {"precision": precision})
 
         return [GateCount(ry), GateCount(rz, 2)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -813,18 +813,18 @@ class ResourceRot(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
     def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, eps=None, **kwargs
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, precision=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            precision (float): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRot`.
@@ -859,15 +859,15 @@ class ResourceRot(ResourceOperator):
             in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(plre.ResourceCRot, {"eps": eps}))]
+            gate_types = [GateCount(resource_rep(plre.ResourceCRot, {"precision": precision}))]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(plre.ResourceX), 2))
 
             return gate_types
 
-        rz = resource_rep(ResourceRZ, {"eps": eps})
-        ry = resource_rep(ResourceRY, {"eps": eps})
+        rz = resource_rep(ResourceRZ, {"precision": precision})
+        ry = resource_rep(ResourceRY, {"precision": precision})
         mcx = resource_rep(
             plre.ResourceMultiControlledX,
             {
@@ -879,7 +879,7 @@ class ResourceRot(ResourceOperator):
         return [GateCount(mcx, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, eps=None, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -894,4 +894,4 @@ class ResourceRot(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(eps))]
+        return [GateCount(cls.resource_rep(precision))]
