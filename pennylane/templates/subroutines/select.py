@@ -368,7 +368,7 @@ class Select(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, ops, control, **kwargs):
-        return super()._primitive_bind_call(ops=ops, wires=control, **kwargs)
+        return super()._primitive_bind_call(*ops, wires=control, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
@@ -808,5 +808,5 @@ if Select._primitive is not None:
 
     @Select._primitive.def_impl
     def _(*args, n_wires, **kwargs):
-        control = args[-n_wires:]
-        return type.__call__(Select, control=control, **kwargs)
+        ops, control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(Select, ops, control=control, **kwargs)

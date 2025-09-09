@@ -1238,31 +1238,39 @@ class TestModifiedTemplates:
         """Test the primitive bind call of Select."""
 
         ops = [qml.X(2), qml.RX(0.2, 3), qml.Y(2), qml.Z(3)]
-        kwargs = {"ops": ops, "control": [0, 1]}
+        kwargs = {"control": [0, 1]}
 
-        def qfunc():
-            qml.Select(**kwargs)
+        def qfunc(ops):
+            qml.Select(ops, **kwargs)
 
         # Validate inputs
-        qfunc()
+        qfunc(ops)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(ops)
 
-        assert len(jaxpr.eqns) == 1
+        assert len(jaxpr.eqns) == 5  # four operator-creating eqns and one for Select itself
 
-        eqn = jaxpr.eqns[0]
+        op_eqns = jaxpr.eqns[:4]
+        op_types = [qml.X, qml.RX, qml.Y, qml.Z]
+        assert all(
+            eqn.primitive == op_type._primitive
+            for eqn, op_type in zip(op_eqns, op_types, strict=True)
+        )
+        eqn = jaxpr.eqns[4]
         assert eqn.primitive == qml.Select._primitive
-        assert [invar.val for invar in eqn.invars] == [0, 1]
-        assert eqn.params == {"ops": ops, "n_wires": 2}
+        assert eqn.invars[:-2] == [eqn.outvars[0] for eqn in op_eqns]
+        assert [invar.val for invar in eqn.invars[-2:]] == [0, 1]
+        assert eqn.params == {"n_wires": 2}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            # Need to pass in angle for RX as argument to jaxpr
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.Select(**kwargs))
+        qml.assert_equal(q.queue[0], qml.Select(ops, **kwargs))
 
     def test_superposition(self):
         """Test the primitive bind call of Superposition."""
