@@ -150,7 +150,7 @@ class ResourceConfig:
 
         .. note::
 
-            The new decomposition function should have the same signature as the one it replaces.
+            The new decomposition function, ``decomp_func``, should have the same signature as the one it replaces.
             Specifically, the signature should match the :code:`resource_keys` of the base resource
             operator class being overriden.
 
