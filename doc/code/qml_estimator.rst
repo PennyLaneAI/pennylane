@@ -4,7 +4,7 @@ qml.estimator
 .. currentmodule:: pennylane.estimator
 
 .. automodule:: pennylane.estimator
-    :noindex:
+    :no-index:
 
 .. currentmodule:: pennylane.estimator.wires_manager
 
