@@ -769,7 +769,9 @@ class TestResourceIterativeQPE:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(plre.ResourceRY.resource_rep(precision=1e-3)),
+                        plre.ResourceAdjoint.resource_rep(
+                            plre.ResourceRY.resource_rep(precision=1e-3)
+                        ),
                     ),
                     GateCount(plre.ResourcePhaseShift.resource_rep(), 3),
                     FreeWires(1),
@@ -1330,7 +1332,8 @@ class TestResourceQubitUnitary:
             plre.ResourceQubitUnitary, num_wires, {"num_wires": num_wires, "precision": precision}
         )
         assert (
-            plre.ResourceQubitUnitary.resource_rep(num_wires=num_wires, precision=precision) == expected
+            plre.ResourceQubitUnitary.resource_rep(num_wires=num_wires, precision=precision)
+            == expected
         )
 
     @pytest.mark.parametrize(

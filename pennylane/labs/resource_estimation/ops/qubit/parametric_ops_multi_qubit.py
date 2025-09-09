@@ -115,7 +115,9 @@ class ResourceMultiRZ(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires, "precision": precision})
+        return CompressedResourceOp(
+            cls, num_wires, {"num_wires": num_wires, "precision": precision}
+        )
 
     @classmethod
     def adjoint_resource_decomp(cls, num_wires, precision=None, **kwargs) -> list[GateCount]:
@@ -364,7 +366,9 @@ class ResourcePauliRot(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         num_wires = len(pauli_string)
-        return CompressedResourceOp(cls, num_wires, {"pauli_string": pauli_string, "precision": precision})
+        return CompressedResourceOp(
+            cls, num_wires, {"pauli_string": pauli_string, "precision": precision}
+        )
 
     @classmethod
     def adjoint_resource_decomp(cls, pauli_string, precision=None, **kwargs) -> list[GateCount]:

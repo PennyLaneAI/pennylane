@@ -172,7 +172,9 @@ class ResourcePhaseShift(ResourceOperator):
             in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(plre.ResourceControlledPhaseShift, {"precision": precision}))]
+            gate_types = [
+                GateCount(resource_rep(plre.ResourceControlledPhaseShift, {"precision": precision}))
+            ]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(plre.ResourceX), 2))

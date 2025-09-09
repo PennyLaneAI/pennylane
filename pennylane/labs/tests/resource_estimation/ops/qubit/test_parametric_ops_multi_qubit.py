@@ -72,8 +72,13 @@ class TestMultiRZ:
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_adjoint_decomp(self, num_wires, precision):
         """Test that the adjoint decomposition is correct."""
-        expected = [re.GateCount(re.ResourceMultiRZ.resource_rep(num_wires=num_wires, precision=precision))]
-        assert re.ResourceMultiRZ.adjoint_resource_decomp(num_wires=num_wires, precision=precision) == expected
+        expected = [
+            re.GateCount(re.ResourceMultiRZ.resource_rep(num_wires=num_wires, precision=precision))
+        ]
+        assert (
+            re.ResourceMultiRZ.adjoint_resource_decomp(num_wires=num_wires, precision=precision)
+            == expected
+        )
 
     ctrl_data = (
         (
@@ -162,7 +167,9 @@ class TestPauliRot:
     def test_resource_rep(self, pauli_string, precision):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(
-            re.ResourcePauliRot, len(pauli_string), {"pauli_string": pauli_string, "precision": precision}
+            re.ResourcePauliRot,
+            len(pauli_string),
+            {"pauli_string": pauli_string, "precision": precision},
         )
         assert re.ResourcePauliRot.resource_rep(pauli_string, precision) == expected
 
@@ -239,10 +246,14 @@ class TestPauliRot:
     def test_adjoint_decomp(self, pauli_word, precision):
         """Test that the adjoint decomposition is correct."""
         expected = [
-            re.GateCount(re.ResourcePauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
+            re.GateCount(
+                re.ResourcePauliRot.resource_rep(pauli_string=pauli_word, precision=precision)
+            )
         ]
         assert (
-            re.ResourcePauliRot.adjoint_resource_decomp(pauli_string=pauli_word, precision=precision)
+            re.ResourcePauliRot.adjoint_resource_decomp(
+                pauli_string=pauli_word, precision=precision
+            )
             == expected
         )
 
@@ -254,7 +265,9 @@ class TestPauliRot:
             [
                 re.GateCount(re.ResourceHadamard.resource_rep(), 6),
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRZ.resource_rep(precision=1e-5), 1, 0),
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRZ.resource_rep(precision=1e-5), 1, 0
+                    ),
                     1,
                 ),
                 re.GateCount(re.ResourceCNOT.resource_rep(), 4),
@@ -267,7 +280,9 @@ class TestPauliRot:
             [
                 re.GateCount(re.ResourceHadamard.resource_rep(), 6),
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRZ.resource_rep(precision=1e-5), 1, 1),
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRZ.resource_rep(precision=1e-5), 1, 1
+                    ),
                     1,
                 ),
                 re.GateCount(re.ResourceCNOT.resource_rep(), 4),
@@ -280,7 +295,9 @@ class TestPauliRot:
             [
                 re.GateCount(re.ResourceHadamard.resource_rep(), 6),
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRZ.resource_rep(precision=1e-5), 2, 0),
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRZ.resource_rep(precision=1e-5), 2, 0
+                    ),
                     1,
                 ),
                 re.GateCount(re.ResourceCNOT.resource_rep(), 4),
@@ -295,7 +312,9 @@ class TestPauliRot:
                 re.GateCount(re.ResourceS.resource_rep(), 1),
                 re.GateCount(re.ResourceAdjoint.resource_rep(re.ResourceS.resource_rep()), 1),
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRZ.resource_rep(precision=1e-5), 1, 0),
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRZ.resource_rep(precision=1e-5), 1, 0
+                    ),
                     1,
                 ),
                 re.GateCount(re.ResourceCNOT.resource_rep(), 6),
@@ -310,7 +329,9 @@ class TestPauliRot:
                 re.GateCount(re.ResourceS.resource_rep(), 1),
                 re.GateCount(re.ResourceAdjoint.resource_rep(re.ResourceS.resource_rep()), 1),
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRZ.resource_rep(precision=1e-5), 1, 1),
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRZ.resource_rep(precision=1e-5), 1, 1
+                    ),
                     1,
                 ),
                 re.GateCount(re.ResourceCNOT.resource_rep(), 6),
@@ -325,7 +346,9 @@ class TestPauliRot:
                 re.GateCount(re.ResourceS.resource_rep(), 1),
                 re.GateCount(re.ResourceAdjoint.resource_rep(re.ResourceS.resource_rep()), 1),
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRZ.resource_rep(precision=1e-5), 2, 0),
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRZ.resource_rep(precision=1e-5), 2, 0
+                    ),
                     1,
                 ),
                 re.GateCount(re.ResourceCNOT.resource_rep(), 6),
@@ -347,7 +370,9 @@ class TestPauliRot:
             1,
             [
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRX.resource_rep(precision=1e-5), 1, 1)
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRX.resource_rep(precision=1e-5), 1, 1
+                    )
                 )
             ],
         ),
@@ -357,7 +382,9 @@ class TestPauliRot:
             0,
             [
                 re.GateCount(
-                    re.ResourceControlled.resource_rep(re.ResourceRY.resource_rep(precision=1e-5), 2, 0)
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRY.resource_rep(precision=1e-5), 2, 0
+                    )
                 )
             ],
         ),
@@ -383,7 +410,9 @@ class TestPauliRot:
         """Test that the pow decomposition is correct."""
         op = re.ResourcePauliRot(pauli_string=pauli_word, precision=precision)
         expected_res = [
-            re.GateCount(re.ResourcePauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
+            re.GateCount(
+                re.ResourcePauliRot.resource_rep(pauli_string=pauli_word, precision=precision)
+            )
         ]
         assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
 
@@ -444,7 +473,9 @@ class TestIsingXX:
                 )
             ),
         ]
-        op = re.ResourceControlled(re.ResourceIsingXX(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
+        op = re.ResourceControlled(
+            re.ResourceIsingXX(precision=precision), num_ctrl_wires=3, num_ctrl_values=2
+        )
         assert op.resource_decomp(**op.resource_params) == expected
 
 
@@ -511,7 +542,9 @@ class TestIsingXY:
                 )
             ),
         ]
-        op = re.ResourceControlled(re.ResourceIsingXY(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
+        op = re.ResourceControlled(
+            re.ResourceIsingXY(precision=precision), num_ctrl_wires=3, num_ctrl_values=2
+        )
         assert op.resource_decomp(**op.resource_params) == expected
 
 
@@ -568,7 +601,9 @@ class TestIsingYY:
                 )
             ),
         ]
-        op = re.ResourceControlled(re.ResourceIsingYY(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
+        op = re.ResourceControlled(
+            re.ResourceIsingYY(precision=precision), num_ctrl_wires=3, num_ctrl_values=2
+        )
         assert op.resource_decomp(**op.resource_params) == expected
 
 
@@ -625,7 +660,9 @@ class TestIsingZZ:
                 )
             ),
         ]
-        op = re.ResourceControlled(re.ResourceIsingZZ(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
+        op = re.ResourceControlled(
+            re.ResourceIsingZZ(precision=precision), num_ctrl_wires=3, num_ctrl_values=2
+        )
         assert op.resource_decomp(**op.resource_params) == expected
 
 
@@ -684,5 +721,7 @@ class TestPSWAP:
                 )
             ),
         ]
-        op = re.ResourceControlled(re.ResourcePSWAP(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
+        op = re.ResourceControlled(
+            re.ResourcePSWAP(precision=precision), num_ctrl_wires=3, num_ctrl_values=2
+        )
         assert op.resource_decomp(**op.resource_params) == expected

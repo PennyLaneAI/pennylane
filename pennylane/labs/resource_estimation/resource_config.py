@@ -68,10 +68,16 @@ class ResourceConfig:
         self._pow_custom_decomps = {}
 
     def __str__(self):
-        return f"ResourceConfig(errors_and_precisions = {self.errors_and_precisions}, custom_decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
+        operators_with_custom_decomps = (
+            list(self._custom_decomps.keys())
+            + list(self._adj_custom_decomps.keys())
+            + list(self._ctrl_custom_decomps.keys())
+            + list(self._pow_custom_decomps.keys())
+        )
+        return f"ResourceConfig(errors and precisions = {self.errors_and_precisions}, custom decomps = [{' '.join(op for op in operators_with_custom_decomps)}])"
 
     def __repr__(self) -> str:
-        return f"ResourceConfig(errors_and_precisions = {self.errors_and_precisions}, custom_decomps = {self._custom_decomps}, {self._adj_custom_decomps}, {self._ctrl_custom_decomps}, {self._pow_custom_decomps})"
+        return f"ResourceConfig(errors_and_precisions = {self.errors_and_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
 
     def set_single_qubit_rotation_error(self, error: float):
         r"""Sets the synthesis error for all single-qubit rotation gates.
