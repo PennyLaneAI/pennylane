@@ -42,9 +42,13 @@ class Interface(Enum):
                 return cls.JAX
             case "pytorch":
                 return cls.TORCH
-            case "tensorflow":
+            case (
+                "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 return cls.TF
-            case "tensorflow-autograph":
+            case (
+                "tensorflow-autograph"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 return cls.TF_AUTOGRAPH
 
         supported_values = [item.value for item in cls]
