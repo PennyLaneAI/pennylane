@@ -96,7 +96,7 @@ class WireResourceManager:
         r"""Setter for algorithmic wires."""
         self._algo_wires = count
 
-    def grab_clean_wires(self, num_wires: int):
+    def grab_clean_wires(self, num_wires: int) -> None:
         r"""Grabs clean wires, and converts them into dirty ones.
 
         Args:
