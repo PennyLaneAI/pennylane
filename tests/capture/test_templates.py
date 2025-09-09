@@ -653,10 +653,11 @@ class TestModifiedTemplates:
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.MPSPrep._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.invars[:4] == jaxpr.jaxpr.invars
+        assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
         assert eqn.params == {
             "id": None,
-            "wires": wires,
+            "n_wires": 3,
             "work_wires": None,
             "right_canonicalize": False,
         }
