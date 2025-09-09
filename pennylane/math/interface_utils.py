@@ -53,7 +53,7 @@ class Interface(Enum):
         custom_addition = f"Please use one of the supported interfaces: {supported_values}."
         raise ValueError(f"{standard_msg} {custom_addition}")
 
-    def get_like(self):
+    def get_like(self) -> str | None:
         """Maps canonical set of interfaces to those known by autoray."""
         mapping = {
             Interface.AUTOGRAD: "autograd",
