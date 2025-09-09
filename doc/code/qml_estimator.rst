@@ -1,6 +1,11 @@
 qml.estimator
 ================
 
+.. currentmodule:: pennylane.estimator
+
+.. automodule:: pennylane.estimator
+    :noindex:
+
 .. currentmodule:: pennylane.estimator.wires_manager
 
 .. automodapi:: pennylane.estimator.wires_manager
@@ -27,6 +32,8 @@ qml.estimator
     ~X
     ~Y
     ~Z
+    ~S
+    ~T
     ~SWAP
     ~CNOT
     ~Adjoint
