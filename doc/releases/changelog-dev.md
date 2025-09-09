@@ -577,6 +577,9 @@
 * Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
+* Perturbation error function now sums over expectation values instead of states.
+  [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
+
 <h3>Breaking changes 💔</h3>
 
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
