@@ -14,13 +14,13 @@
 """A context that maintains state and configuration information for rewriting
 hybrid workflows."""
 
-from collections.abc import Collection, Iterator
-from dataclasses import dataclass
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from functools import singledispatchmethod
 from typing import Any
 from uuid import UUID, uuid4
 
-from xdsl.dialects import arith
+from xdsl.dialects import arith, builtin
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor
 from xdsl.ir import Block, BlockArgument
@@ -30,40 +30,51 @@ from xdsl.ir import Region, SSAValue
 from ..dialects import mbqc, quantum
 
 
+@dataclass(frozen=True)
 class AbstractWire:
     """An abstract wire."""
 
-    id: UUID
+    idx: SSAValue[builtin.I64] | None = None
+    """The SSA integer value that corresponds to the index of the qubit
+    in the quantum register. This is used for qubits that are allocated
+    in the quantum register."""
 
-    def __init__(self):
-        # Create a universally unique identifier
-        self.id = uuid4()
+    id: UUID = field(default_factory=uuid4, init=False)
+    """A universally unique identifier for the abstract wire. Used when
+    qubits are dynamically allocated, since such qubits are not in the
+    quantum register."""
 
-    def __hash__(self):
+    def __hash__(self) -> int:
+        if self.idx:
+            return hash(self.idx)
         return hash(self.id)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, AbstractWire):
+            return False
+
+        if self.idx and other.idx:
+            return self.idx == other.idx
         return self.id == other.id
 
 
+@dataclass
 class WireQubitMap:
     """Class to maintain two-way mapping between wire labels and SSA qubits."""
 
-    wires: tuple[int, ...] | None
+    wires: tuple[int, ...] | None = None
     """Tuple containing all available static wire labels. None if not provided."""
 
-    _wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue]
+    _wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = field(
+        default={}, init=False
+    )
     """Map from wire labels to the latest known qubit SSAValues to which
     they correspond."""
 
-    _qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire]
+    _qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire] = field(
+        default={}, init=False
+    )
     """Map from qubit SSAValues to their corresponding wire labels."""
-
-    def __init__(self, wires: Collection[int, ...] | None = None):
-        if wires is not None:
-            self.wires = tuple(wires)
-        self._wire_to_qubit_map = {}
-        self._qubit_to_wire_map = {}
 
     def __contains__(self, key: int | AbstractWire | quantum.QubitSSAValue) -> bool:
         """Check if the map contains a wire label or qubit."""
@@ -85,15 +96,7 @@ class WireQubitMap:
     ) -> int | AbstractWire | quantum.QubitSSAValue:
         """Get a value from the wire/qubit maps."""
         if isinstance(key, SSAValue):
-            if not isinstance(key.type, quantum.QubitType):
-                raise TypeError(
-                    f"Expected QubitType SSAValue, instead got SSAValue with type {key.type}"
-                )
-
             return self._qubit_to_wire_map[key]
-
-        if self.wires is not None and isinstance(key, int) and key not in self.wires:
-            raise ValueError(f"{key} is not an available wire.")
 
         return self._wire_to_qubit_map[key]
 
@@ -131,14 +134,20 @@ class WireQubitMap:
 
         raise TypeError(f"{key} is not a valid wire label or QubitType SSAValue.")
 
-    def pop(self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None):
-        """Remove and return an item from the map, if it exists. Else, return the provided default value."""
+    def get(self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None):
+        """Return an item from the map without removing it, if it exists. Else, return
+        the provided default value."""
         if isinstance(key, SSAValue):
-            if not isinstance(key.type, quantum.QubitType):
-                raise TypeError(
-                    "Expected key to be a QubitType SSAValue, instead got SSAValue "
-                    f"with type {key.type}"
-                )
+            wire = self._qubit_to_wire_map.get(key, default)
+            return wire
+
+        qubit = self._wire_to_qubit_map.get(key, default)
+        return qubit
+
+    def pop(self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None):
+        """Remove and return an item from the map, if it exists. Else, return the
+        provided default value."""
+        if isinstance(key, SSAValue):
             wire = self._qubit_to_wire_map.pop(key, default)
             _ = self._wire_to_qubit_map.pop(wire, None)
             return wire
@@ -156,7 +165,7 @@ class WireQubitMap:
             old_qubit (SSAValue[QubitType]): The old qubit to remove.
             new_qubit (SSAValue[QubitType]): The new qubit to add.
         """
-        wire = self._qubit_to_wire_map.pop(old_qubit)
+        wire = self._qubit_to_wire_map.pop(old_qubit, None)
         if wire is None:
             raise KeyError(f"{old_qubit} is not in the WireQubitMap.")
 
@@ -193,7 +202,7 @@ class RewriteContext:
     """Number of shots. If not known at compile time, will be None
     or an SSAValue. Else, it will be an integer."""
 
-    wire_qubit_map: WireQubitMap = WireQubitMap()
+    wire_qubit_map: WireQubitMap = field(default_factory=WireQubitMap)
     """Two way map between wire labels and SSA qubits."""
 
     qreg: quantum.QuregSSAValue | None = None
@@ -229,7 +238,7 @@ class RewriteContext:
             ):
                 wire = extract_owner.operands[0].owner.properties["value"].get_values()[0]
             else:
-                wire = AbstractWire()
+                wire = AbstractWire(idx=op.idx)
 
         if wire is not None and update:
             self.wire_qubit_map[wire] = op.qubit
@@ -297,7 +306,7 @@ class RewriteContext:
                     # Shots are static, but created using ``stablehlo.constant``
                     cst_owner = shots_owner.operands[0].owner
                     assert isinstance(cst_owner, xstablehlo.ConstantOp)
-                    self.nqubits = cst_owner.properties["value"].get_values()[0]
+                    self.shots = cst_owner.properties["value"].get_values()[0]
 
     @update_from_op.register
     def _update_from_extract(self, op: quantum.ExtractOp):
@@ -346,7 +355,7 @@ class RewriteContext:
         """Update the context from an ``AllocQubitOp``. The operation is used to update
         qubits."""
         qubit = op.results[0]
-        self[qubit] = AbstractWire()
+        self[qubit] = AbstractWire(idx=None)
 
     @update_from_op.register
     def _update_from_dealloc(self, op: quantum.DeallocOp):
