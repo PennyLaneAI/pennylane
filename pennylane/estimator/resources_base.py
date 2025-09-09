@@ -333,7 +333,7 @@ def add_in_series(first: Resources, other) -> Resources:  # +
     new_logic = max(wm1.algo_wires, wm2.algo_wires)
 
     new_wire_manager = WireResourceManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, tight_budget=new_budget
+        clean=new_clean, dirty=new_dirty, tight_budget=new_budget
     )
 
     new_wire_manager.algo_wires = new_logic
@@ -359,7 +359,8 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
     new_logic = qm1.algo_wires + qm2.algo_wires
 
     new_wire_manager = WireResourceManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty},
+        clean=new_clean,
+        dirty=new_dirty,
         tight_budget=new_budget,
     )
 
@@ -386,7 +387,8 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     new_logic = qm.algo_wires
 
     new_wire_manager = WireResourceManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty},
+        clean=new_clean,
+        dirty=new_dirty,
         tight_budget=new_budget,
     )
 
@@ -414,7 +416,8 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
     new_logic = scalar * qm.algo_wires
 
     new_wire_manager = WireResourceManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty},
+        clean=new_clean,
+        dirty=new_dirty,
         tight_budget=new_budget,
     )
 
