@@ -33,6 +33,7 @@ def _binary_repr_int(phi, precision):
     return int(np.floor(2**precision * phi / (2 * np.pi) + 1e-10))
 
 
+@QueuingManager.stop_recording()
 def _rz_phase_gradient(
     RZ_op: qml.RZ, aux_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -143,15 +144,14 @@ def rz_phase_gradient(
     operations = []
     for op in tape.operations:
         if isinstance(op, qml.RZ):
-            with QueuingManager.stop_recording():
-                operations.extend(
-                    _rz_phase_gradient(
-                        op,
-                        aux_wires=aux_wires,
-                        phase_grad_wires=phase_grad_wires,
-                        work_wires=work_wires,
-                    )
+            operations.extend(
+                _rz_phase_gradient(
+                    op,
+                    aux_wires=aux_wires,
+                    phase_grad_wires=phase_grad_wires,
+                    work_wires=work_wires,
                 )
+            )
         else:
             operations.append(op)
 
