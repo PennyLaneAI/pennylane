@@ -9,3 +9,8 @@ qml.estimator
     :no-heading:
     :no-inherited-members:
     :include-all-objects:
+
+.. automodapi:: pennylane.estimator.ops
+    :no-heading:
+    :no-inherited-members:
+    :include-all-objects:
