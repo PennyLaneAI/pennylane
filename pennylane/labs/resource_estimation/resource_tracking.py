@@ -72,9 +72,9 @@ DefaultGateSet = {
 def estimate(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set = None,
-    config: ResourceConfig = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
+    config: ResourceConfig = None,
 ) -> Resources | Callable:
     r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
     provided in the gateset.
@@ -142,9 +142,9 @@ def estimate(
 def resources_from_qfunc(
     obj: Callable,
     gate_set: set = None,
-    config: ResourceConfig = None,
     work_wires=0,
     tight_budget=False,
+    config: ResourceConfig = None,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
 
@@ -185,9 +185,9 @@ def resources_from_qfunc(
 def resources_from_resource(
     obj: Resources,
     gate_set: set = None,
-    config: ResourceConfig = None,
     work_wires=None,
     tight_budget=None,
+    config: ResourceConfig = None,
 ) -> Resources:
     """Further process resources from a resources object."""
 
@@ -225,9 +225,9 @@ def resources_from_resource(
 def resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set = None,
-    config: ResourceConfig = None,
     work_wires=None,
     tight_budget=None,
+    config: ResourceConfig = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
     if isinstance(obj, Operation):
@@ -236,9 +236,9 @@ def resources_from_resource_ops(
     return resources_from_resource(
         1 * obj,
         gate_set,
-        config,
         work_wires,
         tight_budget,
+        config,
     )
 
 
@@ -246,18 +246,18 @@ def resources_from_resource_ops(
 def resources_from_pl_ops(
     obj: Operation,
     gate_set: set = None,
-    config: ResourceConfig = None,
     work_wires=None,
     tight_budget=None,
+    config: ResourceConfig = None,
 ) -> Resources:
     """Extract resources from a pl operator."""
     obj = map_to_resource_op(obj)
     return resources_from_resource(
         1 * obj,
         gate_set,
-        config,
         work_wires,
         tight_budget,
+        config,
     )
 
 
