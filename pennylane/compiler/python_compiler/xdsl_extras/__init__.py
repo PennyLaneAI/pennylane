@@ -14,9 +14,16 @@
 
 """This module contains additional utilities and functionality not available upstream in xDSL."""
 
-from .constraints import MemRefRankConstraint, TensorRankConstraint
+from .constraints import MemRefConstraint, TensorConstraint, NestedTupleOfConstraint
+from .traits import Elementwise, SameOperandsAndResultShape, SameOperandsElementType
 
 __all__ = [
-    "MemRefRankConstraint",
-    "TensorRankConstraint",
+    # Constraints
+    "NestedTupleOfConstraint",
+    "MemRefConstraint",
+    "TensorConstraint",
+    # Traits
+    "Elementwise",
+    "SameOperandsAndResultShape",
+    "SameOperandsElementType",
 ]

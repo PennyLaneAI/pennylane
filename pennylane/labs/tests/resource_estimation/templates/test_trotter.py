@@ -19,9 +19,100 @@ from collections import defaultdict
 import pytest
 
 import pennylane.labs.resource_estimation as plre
-from pennylane.labs.resource_estimation import QubitManager
+from pennylane.labs.resource_estimation import GateCount, QubitManager, resource_rep
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
+
+
+class TestResourceTrotterProduct:
+    """Test the ResourceTrotterProduct class"""
+
+    # Expected resources were obtained manually using the recursion expression
+    op_data = [  # ops, num_wires, num_steps, order, expected_res
+        (
+            [plre.ResourceX(wires=0), plre.ResourceY(wires=1), plre.ResourceZ(wires=0)],
+            2,
+            2,
+            1,
+            [
+                GateCount(resource_rep(plre.ResourceX), 2),
+                GateCount(resource_rep(plre.ResourceY), 2),
+                GateCount(resource_rep(plre.ResourceZ), 2),
+            ],
+        ),
+        (
+            [plre.ResourceX(), plre.ResourceY()],
+            1,
+            10,
+            2,
+            [
+                GateCount(resource_rep(plre.ResourceX), 11),
+                GateCount(resource_rep(plre.ResourceY), 10),
+            ],
+        ),
+        (
+            [plre.ResourceRX(eps=1e-3), plre.ResourceRY(eps=1e-3), plre.ResourceZ()],
+            1,
+            10,
+            4,
+            [
+                GateCount(resource_rep(plre.ResourceRX, {"eps": 1e-3}), 51),
+                GateCount(resource_rep(plre.ResourceZ), 50),
+                GateCount(resource_rep(plre.ResourceRY, {"eps": 1e-3}), 100),
+            ],
+        ),
+    ]
+
+    @pytest.mark.parametrize("ops, num_wires, num_steps, order, _", op_data)
+    def test_resource_params(self, ops, num_wires, num_steps, order, _):
+        """Test that the resource params are correct"""
+        trotter = plre.ResourceTrotterProduct(ops, num_steps=num_steps, order=order)
+        assert trotter.resource_params == {
+            "first_order_expansion": tuple(op.resource_rep_from_op() for op in ops),
+            "num_steps": num_steps,
+            "order": order,
+            "num_wires": num_wires,
+        }
+
+    @pytest.mark.parametrize("ops, num_wires, num_steps, order, _", op_data)
+    def test_resource_rep(self, ops, num_wires, num_steps, order, _):
+        """Test that the resource params are correct"""
+        cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+        expected = plre.CompressedResourceOp(
+            plre.ResourceTrotterProduct,
+            num_wires,
+            {
+                "first_order_expansion": cmpr_ops,
+                "num_steps": num_steps,
+                "order": order,
+                "num_wires": num_wires,
+            },
+        )
+        assert (
+            plre.ResourceTrotterProduct.resource_rep(cmpr_ops, num_steps, order, num_wires)
+            == expected
+        )
+
+    @pytest.mark.parametrize("ops, num_wires, num_steps, order, expected_res", op_data)
+    def test_resources(self, ops, num_wires, num_steps, order, expected_res):
+        """Test the resources method returns the correct dictionary"""
+        cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+        computed_res = plre.ResourceTrotterProduct.resource_decomp(
+            cmpr_ops, num_steps, order, num_wires
+        )
+        assert computed_res == expected_res
+
+    def test_attribute_error(self):
+        """Test that a AttributeError is raised for unsupported operators."""
+        with pytest.raises(
+            ValueError,
+            match="All components of first_order_expansion must be instances of `ResourceOperator` in order to obtain resources.",
+        ):
+            plre.ResourceTrotterProduct(
+                [plre.ResourceX(), plre.ResourceY(), plre.AllocWires(4)],
+                num_steps=10,
+                order=3,
+            )
 
 
 class TestTrotterCDF:
@@ -111,7 +202,6 @@ class TestTrotterCDF:
             plre.ResourceTrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
         res = plre.estimate_resources(circ)()
-        print(res, expected_res)
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
@@ -297,7 +387,6 @@ class TestTrotterVibrational:
 
         res = plre.estimate_resources(circ)()
 
-        print(res, expected_res)
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 

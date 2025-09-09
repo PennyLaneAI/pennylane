@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
@@ -174,3 +175,44 @@ class TestFlipSign:
         res = circuit()
         jit_res = jit_circuit()
         assert qml.math.allclose(res, jit_res)
+
+    @pytest.mark.parametrize(
+        ("n, wires"),
+        [
+            (0, 0),
+            (1, 3),
+            (2, range(2)),
+            (6, range(3)),
+            (8, range(4)),
+            ([1, 0], [1, 2]),
+            ([1, 1, 0], [4, 1, 2]),
+            ([1, 0, 1, 0], [0, 1, 5, 4]),
+        ],
+    )
+    def test_decomposition_new(self, n, wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.FlipSign(n, wires=wires)
+
+        for rule in qml.list_decomps(qml.FlipSign):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        ("n, wires"),
+        [
+            (0, 0),
+            (1, 3),
+            (2, range(2)),
+            (6, range(3)),
+            (8, range(4)),
+            ([1, 0], [1, 2]),
+            ([1, 1, 0], [4, 1, 2]),
+            ([1, 0, 1, 0], [0, 1, 5, 4]),
+        ],
+    )
+    @pytest.mark.capture
+    def test_decomposition_new_capture(self, n, wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.FlipSign(n, wires=wires)
+
+        for rule in qml.list_decomps(qml.FlipSign):
+            _test_decomposition_rule(op, rule)

@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,70 @@
 """
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
+from __future__ import annotations
+
+from collections.abc import MutableMapping
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
-from pennylane.concurrency.executors.base import RemoteExec
-from pennylane.math import Interface, get_canonical_interface_name
+from pennylane.math.interface_utils import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
+
+if TYPE_CHECKING:
+    from pennylane.concurrency.executors.base import RemoteExec
+
+
+class FrozenMapping(MutableMapping):
+    """
+    Custom immutable mapping.
+    Inherit from MutableMapping to ensure all mutable methods are implemented.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self._data = dict(*args, **kwargs)
+        self._hash = None  # Cache the hash value
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __setitem__(self, key, value):
+        raise TypeError(
+            "FrozenMapping is immutable. To update this field please use `dataclasses.replace`. "
+        )
+
+    def __delitem__(self, key):
+        raise TypeError(
+            "FrozenMapping is immutable. To update this field please use `dataclasses.replace`. "
+        )
+
+    def __repr__(self):
+        return f"{self._data}"
+
+    def __hash__(self):
+        """Makes the object hashable, allowing it to be used in sets and as a dict key."""
+        if self._hash is None:
+            self._hash = hash(frozenset(self._data.items()))
+        return self._hash
+
+    def copy(self):
+        """Returns a standard, mutable shallow copy of the data."""
+        return self._data.copy()
+
+    def __copy__(self):
+        """Supports copy.copy() by returning a mutable dict."""
+        return self.copy()
+
+    def __deepcopy__(self, memo=None):
+        """Supports copy.deepcopy() by returning a mutable dict with deep-copied contents."""
+        return deepcopy(self._data, memo)
 
 
 @dataclass(frozen=True)
@@ -85,13 +142,13 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | None = None
+    gradient_keyword_arguments: dict = field(default_factory=FrozenMapping)
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | None = None
+    device_options: dict = field(default_factory=FrozenMapping)
     """Various options for the device executing a quantum circuit"""
 
-    interface: Interface = Interface.NUMPY
+    interface: str | Interface | None = Interface.NUMPY
     """The machine learning framework to use"""
 
     derivative_order: int = 1
@@ -125,11 +182,17 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        if self.device_options is None:
-            object.__setattr__(self, "device_options", {})
+        def _validate_and_freeze_dict(field_name: str):
+            value = getattr(self, field_name)
+            if not isinstance(value, (dict, FrozenMapping)):
+                raise TypeError(f"Got invalid type {type(value)} for '{field_name}'")
+            # This handles the case when `dataclasses.replace` is used and
+            # the field is not being modified.
+            if isinstance(value, dict):
+                object.__setattr__(self, field_name, FrozenMapping(value))
 
-        if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", {})
+        _validate_and_freeze_dict("device_options")
+        _validate_and_freeze_dict("gradient_keyword_arguments")
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
