@@ -377,6 +377,9 @@
 
 <h4>Other improvements</h4>
 
+* The Python `Quantum` dialect now has more strict constraints for operands and results.
+  [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
+
 * Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
   [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
 
@@ -820,6 +823,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
+  [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
+
 * Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
   [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
 
@@ -838,6 +844,9 @@
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
+
+* A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.  
+  [(#8105)](https://github.com/PennyLaneAI/pennylane/pull/8105)
 
 * The `autograph` keyword argument has been removed from the `QNode` constructor. 
   To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
@@ -961,6 +970,9 @@
 
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
+
+* Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
+  [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
 <h3>Documentation 📝</h3>
 
