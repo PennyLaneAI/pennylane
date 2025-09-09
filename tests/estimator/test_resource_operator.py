@@ -28,7 +28,12 @@ from pennylane.estimator import (
     Resources,
     WireResourceManager,
 )
-from pennylane.estimator.resource_operator import GateCount, _make_hashable, resource_rep
+from pennylane.estimator.resource_operator import (
+    GateCount,
+    ResourcesNotDefined,
+    _make_hashable,
+    resource_rep,
+)
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
@@ -253,6 +258,38 @@ class DummyOp_no_resource_decomp(ResourceOperator):
         return DummyCmprsRep({"x": self.x})
 
 
+class DummyOp_no_resource_keys(ResourceOperator):
+    """A dummy class to test ResourceOperator instantiation."""
+
+    def __init__(self, x=None, wires=None):
+        self.x = x
+        super().__init__(wires=wires)
+
+    def __eq__(self, other: object) -> bool:
+        return (self.__class__.__name__ == other.__class__.__name__) and (self.x == other.x)
+
+    @property
+    def resource_params(self):
+        """dummy resource params method"""
+        return {}
+
+    @classmethod
+    def resource_rep(cls, x):
+        """dummy resource rep method"""
+        return DummyCmprsRep(cls.__name__, param={})
+
+    @classmethod
+    def resource_decomp(cls, x) -> list:
+        """dummy resources"""
+        return [x]
+
+
+class X(DummyOp_no_resource_keys):
+    """Dummy op representing X"""
+
+    num_wires = 1
+
+
 class RX(DummyOp):
     """Dummy op representing RX"""
 
@@ -445,6 +482,31 @@ class TestResourceOperator:
             op1 = RX(1.23)
             _ = op1 & True
 
+    def test_default_resource_keys(self):
+        """Test that default resource keys returns the correct result."""
+        op1 = X
+        assert op1.resource_keys == set()
+
+    def test_adjoint_resource_decomp(self):
+        """Test that default adjoint operator returns the correct error."""
+        with pytest.raises(ResourcesNotDefined):
+            X.adjoint_resource_decomp()
+
+    def test_controlled_resource_decomp(self):
+        """Test that default controlled operator returns the correct error."""
+        with pytest.raises(ResourcesNotDefined):
+            X.controlled_resource_decomp(ctrl_num_ctrl_wires=2, ctrl_num_ctrl_values=0)
+
+    def test_pow_resource_decomp(self):
+        """Test that default power operator returns the correct error."""
+        with pytest.raises(ResourcesNotDefined):
+            X.pow_resource_decomp(2)
+
+    def test_tracking_name(self):
+        """Test that correct tracking name is returned."""
+        assert X.tracking_name() == "X"
+
+
 @pytest.mark.parametrize(
     "input_obj, expected_hashable",
     [
@@ -478,10 +540,15 @@ def test_make_hashable(input_obj, expected_hashable):
     assert isinstance(result, Hashable)
     assert hash(result) is not None
 
+
 def test_make_hashable_error():
     """Test that _make_hashable raises the correct error"""
-    with pytest.raises(TypeError, match="Object of type <class 'dict_keys'> is not hashable and cannot be converted."):
-        _make_hashable({'a':1}.keys())
+    with pytest.raises(
+        TypeError,
+        match="Object of type <class 'dict_keys'> is not hashable and cannot be converted.",
+    ):
+        _make_hashable({"a": 1}.keys())
+
 
 class TestGateCount:
     """Tests for the GateCount class."""
@@ -509,6 +576,7 @@ class TestGateCount:
         assert gc1 == gc2
         assert gc1 != gc3
         assert gc1 != gc4
+        assert gc1 != op
 
     def test_add_method(self):
         """Test that the arithmetic methods work as expected"""
@@ -532,6 +600,13 @@ class TestGateCount:
 
         with pytest.raises(NotImplementedError):
             _ = gc * 0.5
+
+    def test_repr(self):
+        """Test that the repr works as expected"""
+        cr_op = CompressedResourceOp(DummyX, 1, {"num_wires": 1}, None)
+        gc = GateCount(cr_op, count=3)
+
+        assert repr(gc) == "(3 x DummyX)"
 
 
 def test_resource_rep():
