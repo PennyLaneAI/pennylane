@@ -334,7 +334,8 @@ def sample(
     .. details::
             :title: Setting the precision of the samples
 
-            The ``dtype`` argument can be used to set the type and precision of the samples returned by this measurement process.
+            The ``dtype`` argument can be used to set the type and precision of the samples returned by this measurement process
+            when the ``op`` argument does not contain mid-circuit measurements. Otherwise, the ``dtype`` argument is ignored.
 
             By default, the samples will be returned as floating point numbers if an observable is provided,
             and as integers if no observable is provided. The ``dtype`` argument can be used to override this default behavior,
