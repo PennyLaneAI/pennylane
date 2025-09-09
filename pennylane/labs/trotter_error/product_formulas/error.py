@@ -233,13 +233,12 @@ def perturbation_error(
     if importance:
         commutator_lists = [
             sorted(
-                commutator_list[: importance.top_k.get(order+2, 0)],
+                commutator_list[: importance.top_k.get(order + 2, 0)],
                 key=lambda x: _commutator_importance(x, importance.importance_scores),
                 reverse=True,
             )
             for order, commutator_list in enumerate(commutator_lists)
         ]
-
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
