@@ -864,18 +864,18 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
      :         :
      :            :
     wp: ──────────╰──
-    t0: ─────────────
+    t1: ─────────────
      :
     tn: ─────────────
     ```
 
-    Here, the ``p`` in ``wp`` is the number of work wires, and ``n+1`` is the number of target
+    Here, the ``p`` in ``wp`` is the number of work wires, and ``n`` is the number of target
     wires.
     Then we iterate over the target operators and perform the following steps for each, except
     for the last operator.
 
     1. Apply the operator, controlled on the last wire ``"wp"`` of the control structure, to the
-       target wires ``["t0", ... "tn"]``.
+       target wires ``["t1", ... "tn"]``.
     2. For the ``k``-th operator (in 0-based indexing), find the position ``a`` of the most
        significant bit that flips when incrementing ``k`` to ``k+1``. It will be the position of
        the last bit that is ``0`` in the bit string of ``k``.
@@ -886,7 +886,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     5. Apply left elbows corresponding to the right elbows applied in step 3, but starting at
        position ``a`` (exclusive).
 
-    As an example, let ``c=4`` and the operator ``SWAP(["t0", "t1"])`` be the ``k=3``-rd operator
+    As an example, let ``c=4`` and the operator ``SWAP(["t1", "t2"])`` be the ``k=3``-rd operator
     that is applied, the following subcircuit is appended (using that ``k=0011_2`` and
     ``k+1=0100_2``, so that ``a=1`` is the position of the most significant flipped bit)
 
@@ -898,8 +898,8 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     w1: ───────●╮──╯─────╰──╭●───
     c3: ───────●┤───────────├○───
     w2: ─╭●─────╯───────────╰────
-    t0: ─├SWAP───────────────────
-    t1: ─╰SWAP───────────────────
+    t1: ─├SWAP───────────────────
+    t2: ─╰SWAP───────────────────
          1.      3.  4.   5.
     ```
 
@@ -916,7 +916,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
      :       :
      :    :
     wp: ──╯───────────
-    t0: ──────────────
+    t1: ──────────────
      :
     tn: ──────────────
     ```
