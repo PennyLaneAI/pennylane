@@ -59,9 +59,9 @@ gate_types_data = (
     ),
 )
 
-wm1 = WireResourceManager(work_wires=5)
-wm2 = WireResourceManager(work_wires={"clean": 8753, "dirty": 2347}, algo_wires=22)
-wm3 = WireResourceManager(work_wires={"clean": 400, "dirty": 222}, algo_wires=108)
+wm1 = WireResourceManager(clean=5)
+wm2 = WireResourceManager(clean=8753, dirty=2347, algo=22)
+wm3 = WireResourceManager(clean=400, dirty=222, algo=108)
 
 wire_manager_data = (wm1, wm2, wm3)
 
@@ -203,10 +203,8 @@ class TestResources:
         res2 = Resources(wire_manager=wm2, gate_types=gate_types_data[1])
 
         expected_wm_add = WireResourceManager(
-            work_wires={
-                "clean": 8753,  # max(clean1, clean2)
-                "dirty": 2569,  # dirty1 + dirty2
-            }
+            clean=8753,  # max(clean1, clean2)
+            dirty=2569,  # dirty1 + dirty2
         )
         expected_wm_add.algo_wires = 108  # max(algo1, algo2)
         expected_gt_add = defaultdict(
@@ -224,10 +222,8 @@ class TestResources:
         res2 = Resources(wire_manager=wm2, gate_types=gate_types_data[1])
 
         expected_wm_and = WireResourceManager(
-            work_wires={
-                "clean": 8753,  # max(clean1, clean2)
-                "dirty": 2569,  # dirty1 + dirty2
-            }
+            clean=8753,  # max(clean1, clean2)
+            dirty=2569,  # dirty1 + dirty2
         )
         expected_wm_and.algo_wires = 130  # algo1 + algo2
         expected_gt_and = defaultdict(
@@ -245,10 +241,8 @@ class TestResources:
         res = Resources(wire_manager=wm3, gate_types=gate_types_data[2])
 
         expected_wm_mul = WireResourceManager(
-            work_wires={
-                "clean": 400,  # clean
-                "dirty": 222 * k,  # k * dirty1
-            }
+            clean=400,  # clean
+            dirty=222 * k,  # k * dirty1
         )
         expected_wm_mul.algo_wires = 108  # algo
         expected_gt_mul = defaultdict(
@@ -268,10 +262,8 @@ class TestResources:
         res = Resources(wire_manager=wm3, gate_types=gate_types_data[2])
 
         expected_wm_matmul = WireResourceManager(
-            work_wires={
-                "clean": 400,  # clean
-                "dirty": 222 * k,  # k * dirty1
-            }
+            clean=400,  # clean
+            dirty=222 * k,  # k * dirty1
         )
         expected_wm_matmul.algo_wires = 108 * k  # k * algo
         expected_gt_matmul = defaultdict(
