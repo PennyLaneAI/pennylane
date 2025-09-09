@@ -11,23 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-This module contains tools for logical resource estimation.
-
-.. currentmodule:: pennylane.estimator
-
-Qubit Management Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Allocate
-    ~Deallocate
-
-
-"""
+"""Module for the logical resource estimation workflow."""
 
 from .wires_manager import Allocate, Deallocate
 from .resource_operator import ResourceOperator, GateCount, ResourcesNotDefined
-from .ops import *
+from .ops.identity import GlobalPhase, Identity
+from .ops.op_math import Adjoint, ChangeOpBasis, Pow, Prod
+from .ops.qubit import *
