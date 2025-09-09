@@ -31,7 +31,7 @@ class Adjoint(ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+        base_op (~.pennylane.estimator.ResourceOperator): The operator that we
             want the adjoint of.
 
     Resources:
@@ -43,7 +43,7 @@ class Adjoint(ResourceOperator):
         Otherwise, the adjoint resources are given as the adjoint of each operation in the
         base operation's resources.
 
-    .. seealso:: :class:`~.ops.op_math.adjoint.AdjointOperation`
+    .. seealso:: :class:`~pennylane.ops.op_math.adjoint.Adjoint`
 
     **Example**
 
@@ -100,7 +100,7 @@ class Adjoint(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+            * base_cmpr_op (~.pennylane.estimator.ResourceOperator): The operator
             that we want the adjoint of.
 
         """
@@ -112,7 +112,7 @@ class Adjoint(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+            base_cmpr_op (~.pennylane.estimator.ResourceOperator): The operator
                 that we want the adjoint of.
 
         Returns:
@@ -127,7 +127,7 @@ class Adjoint(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+            base_cmpr_op (~.pennylane.decomposition.resources.CompressedResourceOp): A
                 compressed resource representation for the operator we want the adjoint of.
             wires (Sequence[int], optional): the wires the operation acts on
 
@@ -145,7 +145,7 @@ class Adjoint(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
-        .. seealso:: :class:`~.ops.op_math.adjoint.AdjointOperation`
+        .. seealso:: :class:`~pennylane.ops.op_math.adjoint.Adjoint`
 
         **Example**
 
@@ -200,7 +200,7 @@ class Adjoint(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+            base_cmpr_op (CompressedResourceOp): A
                 compressed resource representation for the operator we want the adjoint of.
 
         Resources:
@@ -228,7 +228,7 @@ class Controlled(ResourceOperator):
     state of some control qubits.
 
     Args:
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The base operator to be
+        base_op (ResourceOperator): The base operator to be
             controlled.
         num_ctrl_wires (int): the number of qubits the operation is controlled on
         num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -310,7 +310,7 @@ class Controlled(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+            * base_cmpr_op (~.pennylane.decomposition.resources.CompressedResourceOp): The base
             operator to be controlled.
             * num_ctrl_wires (int): the number of qubits the operation is controlled on
             * num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -334,7 +334,7 @@ class Controlled(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+            base_cmpr_op (CompressedResourceOp): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -362,7 +362,7 @@ class Controlled(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+            base_cmpr_op (CompressedResourceOp): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -465,7 +465,7 @@ class Controlled(ResourceOperator):
                 controlled operation upon.
             ctrl_num_ctrl_values (int): The subset of those control qubits, which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
-            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+            base_cmpr_op (~.pennylane.decomposition.resources.CompressedResourceOp): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
@@ -508,7 +508,7 @@ class Pow(ResourceOperator):
     A symbolic class used to represent some base operation raised to a power.
 
     Args:
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+        base_op (~.pennylane.estimator.resource_operator.ResourceOperator): The operator that we
             want to exponentiate.
         z (float): the exponent (default value is 1)
 
@@ -569,7 +569,7 @@ class Pow(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_class (Type[~.pennylane.labs.resource_estimation.ResourceOperator]): The class type of the base operator to be raised to some power.
+                * base_class (Type[~.pennylane.estimator.resource_operator.ResourceOperator]): The class type of the base operator to be raised to some power.
                 * base_params (dict): the resource parameters required to extract the cost of the base operator
                 * z (int): the power that the operator is being raised to
         """
@@ -584,7 +584,7 @@ class Pow(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.pennylane.labs.resource_estimation.ResourceOperator]): The class type of the base operator to be raised to some power.
+            base_class (Type[~.pennylane.estimator.resource_operator.ResourceOperator]): The class type of the base operator to be raised to some power.
             base_params (dict): the resource parameters required to extract the cost of the base operator
             z (int): the power that the operator is being raised to
 
@@ -600,7 +600,7 @@ class Pow(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+            base_cmpr_op (~.pennylane.decomposition.resources.CompressedResourceOp): A
                 compressed resource representation for the operator we want to exponentiate.
             z (float): the exponent (default value is 1)
 
@@ -667,7 +667,7 @@ class Pow(ResourceOperator):
 
         Args:
             pow_z (int): the exponent that the pow-operator is being raised to
-            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+            base_cmpr_op (~.pennylane.decomposition.resources.CompressedResourceOp): A
                 compressed resource representation for the operator we want to exponentiate.
             z (float): the exponent that the base operator is being raised to (default value is 1)
 
@@ -696,7 +696,7 @@ class Prod(ResourceOperator):
     A symbolic class used to represent a product of some base operations.
 
     Args:
-        res_ops (tuple[~.pennylane.labs.resource_estimation.ResourceOperator]): A tuple of
+        res_ops (tuple[~.pennylane.estimator.ResourceOperator]): A tuple of
             resource operators or a nested tuple of resource operators and counts.
         wires (Sequence[int], optional): the wires the operation acts on
 
@@ -710,7 +710,7 @@ class Prod(ResourceOperator):
 
     The product of operations can be constructed from a list of operations or
     a nested tuple where each operator is accompanied with the number of counts.
-    Note, each operation in the product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+    Note, each operation in the product must be a valid :class:`~.pennylane.estimator.ResourceOperator`
 
     We can construct a product operator as follows:
 
@@ -793,7 +793,7 @@ class Prod(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of wires this operator acts upon
-                * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+                * cmpr_factors_and_counts (Tuple[Tuple[~.pennylane.decomposition.resources.CompressedResourceOp, int]]):
                   A sequence of tuples containing the operations, in the compressed representation, and
                   a count for how many times they are repeated corresponding to the factors in the product.
 
@@ -809,7 +809,7 @@ class Prod(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+            cmpr_factors_and_counts (Tuple[Tuple[~.pennylane.decomposition.resources.CompressedResourceOp, int]]):
                 A sequence of tuples containing the operations, in the compressed representation, and
                 a count for how many times they are repeated corresponding to the factors in the product.
             num_wires (int): an optional integer representing the number of wires this operator acts upon
@@ -832,7 +832,7 @@ class Prod(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+            cmpr_factors_and_counts (Tuple[Tuple[~.pennylane.decomposition.resources.CompressedResourceOp, int]]):
                 A sequence of tuples containing the operations, in the compressed representation, and
                 a count for how many times they are repeated corresponding to the factors in the product.
             num_wires (int): the number of wires this operator acts upon
@@ -851,7 +851,7 @@ class Prod(ResourceOperator):
         **Example**
 
         The product of operations can be constructed as follows. Note, each operation in the
-        product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+        product must be a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`
 
         >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
         >>> prod_xyz = plre.ResourceProd(factors)
@@ -892,11 +892,11 @@ class ChangeOpBasis(ResourceOperator):
     provided then the adjoint of the :code:`compute_op` is used by default.
 
     Args:
-        compute_op (~.pennylane.labs.resource_estimation.ResourceOperator): A resource operator
+        compute_op (~.pennylane.estimator.resource_operator.ResourceOperator): A resource operator
             representing the basis change operation.
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): A resource operator
+        base_op (~.pennylane.estimator.resource_operator.ResourceOperator): A resource operator
             representing the base operation.
-        uncompute_op (~.pennylane.labs.resource_estimation.ResourceOperator, optional): An optional
+        uncompute_op (~.pennylane.estimator.resource_operator.ResourceOperator, optional): An optional
             resource operator representing the inverse of the basis change operation.
         wires (Sequence[int], optional): the wires the operation acts on
 
@@ -908,7 +908,7 @@ class ChangeOpBasis(ResourceOperator):
 
     **Example**
 
-    Note, each operation in the product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+    Note, each operation in the product must be a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`
     The change of basis operation can be constructed as follows:
 
     >>> compute_u = plre.ResourceS()
@@ -1072,7 +1072,7 @@ class ChangeOpBasis(ResourceOperator):
 
         **Example**
 
-        Note, each operation in the product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+        Note, each operation in the product must be a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`
         The change of basis operation can be constructed as follows:
 
         >>> compute_u = plre.ResourceS()

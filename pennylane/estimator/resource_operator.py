@@ -32,12 +32,12 @@ class ResourceOperator(ABC):
     r"""Base class to represent quantum operators according to the set of information
     required for resource estimation.
 
-    A :class:`~.pennylane.labs.resource_estimation.ResourceOperator` is uniquely defined by its
+    A :class:`~.pennylane.estimator.ResourceOperator` is uniquely defined by its
     name (the class type) and its resource parameters (:code:`op.resource_params`).
 
     **Example**
 
-    This example shows how to create a custom :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+    This example shows how to create a custom :class:`~.pennylane.estimator.ResourceOperator`
     class for resource estimation. We use :class:`~.pennylane.QFT` as a well known gate for
     simplicity.
 
@@ -342,7 +342,7 @@ class GateCount:
     r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
 
     Args:
-        gate (CompressedResourceOp): a compressed resource representation of the gate being counted
+        gate (`~.pennylane.decomposition.resources.CompressedResourceOp`): a compressed resource representation of the gate being counted
         counts (int, optional): The number of occurances of the quantum gate in the circuit or
             decomposition. Defaults to 1.
 

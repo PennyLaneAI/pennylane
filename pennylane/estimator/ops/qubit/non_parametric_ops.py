@@ -75,7 +75,7 @@ class Hadamard(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

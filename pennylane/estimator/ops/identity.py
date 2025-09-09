@@ -78,7 +78,7 @@ class Identity(ResourceOperator):
             This operation is self-adjoint, so the resources of the adjoint operation is the base operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -101,7 +101,7 @@ class Identity(ResourceOperator):
             the original (un-controlled) operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -119,7 +119,7 @@ class Identity(ResourceOperator):
             operation are the original operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -185,7 +185,7 @@ class GlobalPhase(ResourceOperator):
             the resources of the adjoint operation is the original operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -203,7 +203,7 @@ class GlobalPhase(ResourceOperator):
             The resources simplify to just one total global phase operator.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -230,7 +230,7 @@ class GlobalPhase(ResourceOperator):
             case, we sandwich the phase shift operation with two multi-controlled X gates.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
