@@ -335,7 +335,7 @@ def skip_estimator_index(app, what, name, obj, skip, options):
     Prevent estimator ops from generating cross-ref targets.
     """
     module = getattr(obj, "__module__", "")
-    if module.startswith("pennylane.estimator"):
+    if module and module.startswith("pennylane.estimator"):
         return True  # skip indexing
     return skip
 
