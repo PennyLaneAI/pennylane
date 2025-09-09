@@ -11,24 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains the base class for qubit management"""
+r"""This module contains the ResourceConfig class, which tracks the configuration for resource estimation"""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from pennylane.labs.resource_estimation.ops.op_math.controlled_ops import (
+from .ops.op_math.controlled_ops import (
     ResourceCRX,
     ResourceCRY,
     ResourceCRZ,
 )
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+from .ops.qubit.parametric_ops_single_qubit import (
     ResourceRX,
     ResourceRY,
     ResourceRZ,
 )
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
-from pennylane.labs.resource_estimation.templates import (
+from .resource_operator import ResourceOperator
+from .templates import (
     ResourceAliasSampling,
     ResourceMPSPrep,
     ResourcePrepTHC,
@@ -38,7 +38,6 @@ from pennylane.labs.resource_estimation.templates import (
     ResourceSelectPauliRot,
     ResourceSelectTHC,
 )
-
 
 class ResourceConfig:
     """A container to track the configuration for errors, precisions, and custom decompositions for the
