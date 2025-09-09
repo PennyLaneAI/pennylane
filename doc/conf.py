@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # PennyLane documentation build configuration file, created by
 # sphinx-quickstart on Tue Apr 17 11:43:51 2018.
@@ -330,3 +329,15 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
+
+def skip_estimator_index(app, what, name, obj, skip, options):
+    """
+    Prevent estimator ops from generating cross-ref targets.
+    """
+    module = getattr(obj, "__module__", "")
+    if module.startswith("pennylane.estimator"):
+        return True  # skip indexing
+    return skip
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip_estimator_index)
