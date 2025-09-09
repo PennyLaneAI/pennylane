@@ -36,6 +36,7 @@ from pennylane.measurements import (
     MidMeasureMP,
     SampleMeasurement,
     ShadowExpvalMP,
+    Shots,
     StateMeasurement,
     StateMP,
 )
@@ -53,6 +54,7 @@ from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
+    device_resolve_dynamic_wires,
     mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
@@ -83,13 +85,12 @@ def stopping_condition(op: Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
-    if op.name == "Snapshot":
+    if op.name in {"Snapshot", "Allocate", "Deallocate"}:
         return True
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
     if op.name == "FromBloq" and len(op.wires) > 3:
         return False
-
     return (
         (isinstance(op, Conditional) and stopping_condition(op.base))
         or isinstance(op, MidMeasureMP)
@@ -578,16 +579,16 @@ class DefaultQubit(Device):
         if config.interface == math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
         transform_program.add_transform(
-            mid_circuit_measurements, device=self, mcm_config=config.mcm_config
-        )
-        # validate_device_wires needs to be after defer_measurement has added more wires.
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
+        transform_program.add_transform(device_resolve_dynamic_wires, wires=self.wires)
+        transform_program.add_transform(
+            mid_circuit_measurements, device=self, mcm_config=config.mcm_config
+        )
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             validate_measurements,
             analytic_measurements=accepted_analytic_measurement,
@@ -1009,7 +1010,12 @@ class DefaultQubit(Device):
     # pylint: disable=import-outside-toplevel
     @debug_logger
     def eval_jaxpr(
-        self, jaxpr: Jaxpr, consts: list[TensorLike], *args, execution_config=None
+        self,
+        jaxpr: Jaxpr,
+        consts: list[TensorLike],
+        *args,
+        execution_config=None,
+        shots=Shots(None),
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -1026,7 +1032,8 @@ class DefaultQubit(Device):
 
         if self.wires is None:
             raise DeviceError("Device wires are required for jaxpr execution.")
-        if self.shots.has_partitioned_shots:
+        shots = Shots(shots)
+        if shots.has_partitioned_shots:
             raise DeviceError("Shot vectors are unsupported with jaxpr execution.")
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
@@ -1037,7 +1044,7 @@ class DefaultQubit(Device):
 
         interpreter = DefaultQubitInterpreter(
             num_wires=len(self.wires),
-            shots=self.shots.total_shots,
+            shots=shots.total_shots,
             key=key,
             execution_config=execution_config,
         )

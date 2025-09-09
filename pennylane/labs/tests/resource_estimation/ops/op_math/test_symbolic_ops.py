@@ -340,6 +340,7 @@ class TestResourceChangeBasisOp:
                     plre.ResourceProd,
                     {
                         "cmpr_factors_and_counts": ((plre.ResourceZ.resource_rep(), 3),),
+                        "num_wires": 3,
                     },
                 ),
             ),

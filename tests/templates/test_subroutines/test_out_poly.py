@@ -155,7 +155,7 @@ class TestOutPoly:
         def f(x, y):
             return 2.5 * x + 2 * y
 
-        @qml.qnode(qml.device("default.qubit", shots=1))
+        @qml.qnode(qml.device("default.qubit"), shots=1)
         def circuit():
 
             qml.OutPoly(
