@@ -33,9 +33,8 @@ class WireResourceManager:
       clean wires when they are freed.
 
     Args:
-        work_wires (int or dict[Literal["clean", "dirty"], int]): Number of work wires or a dictionary containing
-            number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
-            ``int`` is provided.
+        clean (int): Number of clean work wires.
+        dirty (int): Number of dirty work wires, default is ``0``.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
         tight_budget (bool): Determines whether extra clean wires can be allocated when they
             exceed the available amount. The default is ``False``.
@@ -43,7 +42,8 @@ class WireResourceManager:
     **Example**
 
     >>> q = WireResourceManager(
-    ...             work_wires={"clean": 2, "dirty": 2},
+    ...             clean=2,
+    ...             dirty=2,
     ...             tight_budget=False,
     ...     )
     >>> print(q)
@@ -52,19 +52,13 @@ class WireResourceManager:
     """
 
     def __init__(
-        self, work_wires: int | dict, algo_wires: int = 0, tight_budget: bool = False
+        self, clean: int, dirty: int = 0, algo: int = 0, tight_budget: bool = False
     ) -> None:
 
-        clean_wires, dirty_wires = (
-            (work_wires["clean"], work_wires["dirty"])
-            if isinstance(work_wires, dict)
-            else (work_wires, 0)
-        )
-
         self.tight_budget = tight_budget
-        self._algo_wires = algo_wires
-        self.clean_wires = clean_wires
-        self.dirty_wires = dirty_wires
+        self._algo_wires = algo
+        self.clean_wires = clean
+        self.dirty_wires = dirty
 
     def __str__(self) -> str:
         return (
