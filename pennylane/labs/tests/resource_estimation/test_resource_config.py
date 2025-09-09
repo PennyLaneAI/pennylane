@@ -30,6 +30,8 @@ from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.labs.resource_estimation.templates import ResourceSelectPauliRot
 
+# pylint: disable=protected-access, unused-argument
+
 
 class DummyOp(ResourceOperator):
     """Dummy ResourceOperator for testing."""
