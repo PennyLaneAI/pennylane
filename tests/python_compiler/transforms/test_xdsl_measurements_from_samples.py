@@ -516,9 +516,7 @@ class TestMeasurementsFromSamplesIntegration:
             initial_op(wires=0)
             return mp(obs(wires=0))
 
-        qml.capture.disable()
         assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
-        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -548,11 +546,9 @@ class TestMeasurementsFromSamplesIntegration:
             initial_op(wires=0)
             return qml.probs(wires=0)
 
-        qml.capture.disable()
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -562,9 +558,6 @@ class TestMeasurementsFromSamplesIntegration:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.skip(
-        "Temp skip in https://github.com/PennyLaneAI/pennylane/pull/8161 should be bring back after CI fixed"
-    )
     @pytest.mark.xfail(
         reason="Counts not supported in Catalyst with program capture",
         strict=True,
@@ -665,9 +658,7 @@ class TestMeasurementsFromSamplesIntegration:
             initial_ops[1](wires=1)
             return mp(obs(wires=0)), mp(obs(wires=1))
 
-        qml.capture.disable()
         assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
-        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -742,11 +733,9 @@ class TestMeasurementsFromSamplesIntegration:
             initial_ops[1](wires=1)
             return qml.probs()
 
-        qml.capture.disable()
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -778,11 +767,9 @@ class TestMeasurementsFromSamplesIntegration:
             initial_ops[1](wires=1)
             return qml.probs(wires=0), qml.probs(wires=1)
 
-        qml.capture.disable()
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
