@@ -19,6 +19,7 @@ import numpy as np
 
 from pennylane.decomposition import (
     add_decomps,
+    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
@@ -234,14 +235,7 @@ class Multiplier(Operation):
             ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
         )
 
-        target_op = prod(
-            *reversed(
-                [
-                    SWAP(wires=[x_wire, aux_wire])
-                    for x_wire, aux_wire in zip(x_wires, wires_aux_swap)
-                ]
-            )
-        )
+        target_op = prod(*reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap)]))
 
         inv_k = pow(k, -1, mod)
         uncompute_op = change_op_basis(
@@ -270,6 +264,7 @@ def _multiplier_decomposition_resources(
     else:
         num_wires_aux = num_x_wires
 
+    # Base params for ControlledSequence
     cs_base_params = {
         "base_class": PhaseAdder,
         "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
@@ -280,24 +275,18 @@ def _multiplier_decomposition_resources(
         "compute_op_params": {
             "compute_op": resource_rep(QFT, num_wires=num_wires_aux),
             "target_op": resource_rep(ControlledSequence, **cs_base_params),
-            "uncompute_op": resource_rep(
-                Adjoint, base_class=QFT, base_params={"num_wires": num_wires_aux}
-            ),
-        },
-        "target_op_params": {
-            "resources": {resource_rep(SWAP): num_x_wires},
+            "uncompute_op": adjoint_resource_rep(QFT, base_params={"num_wires": num_wires_aux}),
         },
         "uncompute_op_params": {
             "compute_op": resource_rep(QFT, num_wires=num_wires_aux),
             "target_op": resource_rep(
                 Adjoint, base_class=ControlledSequence, base_params=cs_base_params
             ),
-            "uncompute_op": resource_rep(
-                Adjoint, base_class=QFT, base_params={"num_wires": num_wires_aux}
-            ),
+            "uncompute_op": adjoint_resource_rep(QFT, base_params={"num_wires": num_wires_aux}),
         },
     }
     if num_x_wires > 1:
+        params["target_op_params"] = {"resources": {resource_rep(SWAP): num_x_wires}}
         resources = {
             change_op_basis_resource_rep(ChangeOpBasis, Prod, ChangeOpBasis, params=params): 1,
         }

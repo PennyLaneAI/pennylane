@@ -160,16 +160,9 @@ class TestMultiplier:
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
-        _multiplier_decomposition = (
-            qml.Multiplier(k, x_wires, mod, work_wires)
-            .compute_decomposition(k, x_wires, mod, work_wires)[0]
-            .decomposition()
-        )
-        multiplier_decomposition = [
-            *_multiplier_decomposition[0].decomposition(),
-            *_multiplier_decomposition[1].decomposition(),
-            *_multiplier_decomposition[2].decomposition(),
-        ]
+        multiplier_decomposition = qml.transforms.decompose(
+            qml.tape.QuantumScript([qml.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=3
+        )[0][0].operations
 
         op_list = []
         if mod != 2 ** len(x_wires):

@@ -424,22 +424,26 @@ def change_op_basis_resource_rep(
     uncompute_op: type[Operator] = None,
     params: dict = None,
 ):
-    """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern of operators.
+    """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern
+    :class:`~.ChangeOpBasis` of operators.
 
     Args:
         compute_op: the compute operator type
         target_op: the target operator type
         uncompute_op: the uncompute operator type
         params: the resource params of the compute, target, and uncompute operators.
-           This will have three keys: ``"compute_op_params"``, ``"target_op_params"``, and
-           ``"uncompute_op_params"``, with the values being their respective resource parameters.
+           This is expected to have three keys: ``"compute_op_params"``, ``"target_op_params"``,
+           and ``"uncompute_op_params"``, with the values being their respective resource parameters
+           given as ``dict``s.
     """
     compute_op_resource_rep = resource_rep(compute_op, **params["compute_op_params"])
     target_op_resource_rep = resource_rep(target_op, **params["target_op_params"])
+
+    uncompute_op_params = params.get("uncompute_op_params", params["compute_op_params"])
     if uncompute_op is None:
-        uncompute_op_resource_rep = adjoint_resource_rep(compute_op, params["compute_op_params"])
+        uncompute_op_resource_rep = adjoint_resource_rep(compute_op, uncompute_op_params)
     else:
-        uncompute_op_resource_rep = resource_rep(uncompute_op, **params["uncompute_op_params"])
+        uncompute_op_resource_rep = resource_rep(uncompute_op, **uncompute_op_params)
 
     return CompressedResourceOp(
         qml.ops.ChangeOpBasis,

@@ -212,7 +212,7 @@ class TestAdder:
 
     @pytest.mark.parametrize("mod", [2, 4])
     def test_controlled_decomposition(self, mod):
-        """Tests the decomposition work for the controlled adder."""
+        """Tests the decomposition works for the controlled adder."""
 
         k = 4
         x_wires = [2, 3]

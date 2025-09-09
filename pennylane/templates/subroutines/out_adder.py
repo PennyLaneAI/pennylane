@@ -276,19 +276,11 @@ class OutAdder(Operation):
             qft_new_output_wires = output_wires
             work_wire = ()
 
-        op_list = [
-            change_op_basis(
-                QFT(wires=qft_new_output_wires),
-                (
-                    ControlledSequence(
-                        PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
-                    )
-                    @ ControlledSequence(
-                        PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
-                    )
-                ),
-            ),
-        ]
+        target_op = ControlledSequence(
+            PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
+        ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
+
+        op_list = [change_op_basis(QFT(wires=qft_new_output_wires), target_op)]
 
         return op_list
 
@@ -322,7 +314,6 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
         "target_op_params": {
             "resources": dict(target_resources),
         },
-        "uncompute_op_params": {"num_wires": qft_wires},
     }
 
     return {change_op_basis_resource_rep(QFT, Prod, params=params): 1}

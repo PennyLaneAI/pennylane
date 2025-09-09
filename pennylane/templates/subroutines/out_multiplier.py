@@ -316,7 +316,6 @@ def _out_multiplier_decomposition_resources(
             },
             "num_control_wires": num_y_wires,
         },
-        "uncompute_op_params": {"num_wires": qft_wires},
     }
 
     return {change_op_basis_resource_rep(QFT, ControlledSequence, params=params): 1}
