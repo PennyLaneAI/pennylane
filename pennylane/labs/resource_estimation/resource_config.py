@@ -95,7 +95,7 @@ class ResourceConfig:
         r"""Sets the synthesis error for all single-qubit rotation gates.
 
         This is a convenience method to update the synthesis error tolerance,
-        :math:`\precision`, for all standard single-qubit rotation gates and their
+        :math:`\eps`, for all standard single-qubit rotation gates and their
         controlled versions at once. The synthesis error dictates the precision
         for compiling rotation gates into a discrete gate set, which in turn
         affects the number of gates required.
