@@ -31,7 +31,7 @@ on:
         description: The version of PyTorch to use for testing
         required: false
         type: string
-        default: '2.5.0'
+        default: '2.8.0'
     outputs:
       jax-version:
         description: The version of JAX to use
