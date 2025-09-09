@@ -111,7 +111,7 @@ class WireResourceManager:
 
         Raises:
             ValueError: If tight_budget is `True` and the number of wires to be grabbed is greater than
-            available clean wires.
+                available clean wires.
 
         """
         available_clean = self.clean_wires
@@ -200,7 +200,7 @@ class Allocate(_WireAction):
         >>> print(res.WireResourceManager)
         WireResourceManager(clean wires=0, dirty wires=0, algorithmic wires=4, tight budget=False)
 
-        This decomposition uses a total of `4` wires and doesn't track any work wires.
+        This decomposition uses a total of ``4`` wires and doesn't track any work wires.
 
         Now, if we want to track the allocation of wires using the ``Allocate``, the decomposition
         can be redefined as:
@@ -260,9 +260,9 @@ class Deallocate(_WireAction):
         >>> print(res.WireResourceManager)
         WireResourceManager(clean wires=0, dirty wires=1, algorithmic wires=4, tight budget=False)
 
-        This decomposition uses a total of `4` algorithmic wires and 1 work wire which is returned in the dirty state.
+        This decomposition uses a total of ``4`` algorithmic wires and ``1`` work wire which is returned in the dirty state.
 
-        We can free this wire using the :class:``Deallocate``, allowing it to be reused with more operations.
+        We can free this wire using the ``Deallocate``, allowing it to be reused with more operations.
         The decomposition can be redefined as:
 
         >>> def resource_decomp():
