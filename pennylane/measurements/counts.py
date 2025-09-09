@@ -14,6 +14,7 @@
 """
 This module contains the qml.counts measurement.
 """
+import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -303,25 +304,37 @@ class CountsMP(SampleMeasurement):
                 outcome_counts[outcome_binary] = 0
 
 
+# pylint: disable=protected-access, unused-argument
 if CountsMP._wires_primitive is not None:
 
     CountsMP._wires_primitive.multiple_results = True
 
-    def keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+    @CountsMP._wires_primitive.def_impl
+    def _(*args, **kwargs):
+        raise NotImplementedError("Counts has no execution implementation with program capture.")
+
+    def _keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
         n_wires = n_wires or num_device_wires
         return (2**n_wires,), int
 
-    def values_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+    def _values_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        if shots is None:
+            raise ValueError("finite shots are required to use CountsMP")
         n_wires = n_wires or num_device_wires
         return (2**n_wires,), int
 
     abstract_mp = _get_abstract_measurement()
 
     @CountsMP._wires_primitive.def_abstract_eval
-    def _(*args, has_eigvals=False, **_):
+    def _(*args, has_eigvals=False, all_outcomes=False):
+        if not all_outcomes:
+            warnings.warn(
+                "all_outcomes=True is unsupported with program capture and qjit. Using all_outcomes=False",
+                UserWarning,
+            )
         n_wires = len(args) - 1 if has_eigvals else len(args)
-        keys = abstract_mp(keys_eval, n_wires=n_wires, has_eigvals=has_eigvals)
-        values = abstract_mp(values_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        keys = abstract_mp(_keys_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        values = abstract_mp(_values_eval, n_wires=n_wires, has_eigvals=has_eigvals)
         return keys, values
 
 
