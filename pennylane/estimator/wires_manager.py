@@ -82,7 +82,7 @@ class WireResourceManager:
         )
 
     @property
-    def algo_wires(self) -> int: 
+    def algo_wires(self) -> int:
         r"""Returns the number of algorithmic wires."""
         return self._algo_wires
 
