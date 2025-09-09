@@ -116,7 +116,7 @@ def register_condition(
     def _decorator(_qfunc) -> DecompositionRule:
         if not isinstance(_qfunc, DecompositionRule):
             _qfunc = DecompositionRule(_qfunc)
-        _qfunc.set_condition(condition)
+        _qfunc.add_condition(condition)
         return _qfunc
 
     return _decorator(qfunc) if qfunc else _decorator
@@ -380,7 +380,7 @@ class DecompositionRule:
         else:
             self._compute_resources = resources
 
-        self._condition = None
+        self._conditions = []
         self._work_wire_spec = work_wires or {}
 
     def __call__(self, *args, **kwargs):
@@ -403,9 +403,7 @@ class DecompositionRule:
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
-        if self._condition is None:
-            return True
-        return self._condition(*args, **kwargs)
+        return all(condition(*args, **kwargs) for condition in self._conditions)
 
     def get_work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
         """Gets the work wire requirements of this decomposition rule"""
@@ -413,9 +411,9 @@ class DecompositionRule:
             return WorkWireSpec(**self._work_wire_spec)
         return WorkWireSpec(**self._work_wire_spec(*args, **kwargs))
 
-    def set_condition(self, condition: Callable[..., bool]) -> None:
-        """Sets the condition for this decomposition rule."""
-        self._condition = condition
+    def add_condition(self, condition: Callable[..., bool]) -> None:
+        """Adds a condition for this decomposition rule."""
+        self._conditions.append(condition)
 
     def set_resources(self, resources: Callable | dict) -> None:
         """Sets the resources for this decomposition rule."""
@@ -604,5 +602,29 @@ def has_decomp(op_type: type[Operator] | str) -> bool:
 
 @register_resources({})
 def null_decomp(*_, **__):
-    """A decomposition rule that does nothing."""
+    """A decomposition rule that can be assigned to an operator so that the operator decomposes to nothing.
+
+    **Example**
+
+    .. code-block:: python
+
+        from functools import partial
+        import pennylane as qml
+        from pennylane.decomposition import null_decomp
+
+        qml.decomposition.enable_graph()
+
+        @partial(
+            qml.transforms.decompose,
+            gate_set={qml.RZ},
+            fixed_decomps={qml.GlobalPhase: null_decomp}
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.Z(0)
+
+    >>> print(qml.draw(circuit)())
+    0: ──RZ(3.14)─┤
+
+    """
     return

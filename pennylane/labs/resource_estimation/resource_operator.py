@@ -41,6 +41,8 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
 
     Args:
         op_type (Type): the class object of an operation which inherits from :class:'~.pennylane.labs.resource_estimation.ResourceOperator'
+        num_wires (int): The number of wires that the operation acts upon,
+            excluding any auxiliary wires that are allocated on decomposition.
         params (dict): a dictionary containing the minimal pairs of parameter names and values
             required to compute the resources for the given operator
         name (str, optional): A custom name for the compressed operator. If not
@@ -53,29 +55,36 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
 
     **Example**
 
-    >>> op_tp = plre.CompressedResourceOp(plre.ResourceHadamard, {"num_wires":1})
-    >>> print(op_tp)
-    CompressedResourceOp(ResourceHadamard, params={'num_wires':1})
+    >>> from pennylane.labs import resource_estimation as plre
+    >>> cmpr_op = plre.CompressedResourceOp(plre.ResourceHadamard, num_wires=1)
+    >>> print(cmpr_op)
+    CompressedResourceOp(ResourceHadamard, num_wires=1)
     """
 
     def __init__(
-        self, op_type: type[ResourceOperator], params: dict | None = None, name: str = None
+        self,
+        op_type: type[ResourceOperator],
+        num_wires: int,
+        params: dict | None = None,
+        name: str = None,
     ):
 
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
         self.op_type = op_type
+        self.num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
         self._name = name or op_type.tracking_name(**self.params)
 
     def __hash__(self) -> int:
-        return hash((self.op_type, self._hashable_params))
+        return hash((self.op_type, self.num_wires, self._hashable_params))
 
     def __eq__(self, other: CompressedResourceOp) -> bool:
         return (
             isinstance(other, CompressedResourceOp)
             and self.op_type == other.op_type
+            and self.num_wires == other.num_wires
             and self.params == other.params
         )
 
@@ -83,13 +92,15 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         class_name = self.__class__.__qualname__
         op_type_name = self.op_type.__name__
 
+        num_wires_str = f"num_wires={self.num_wires}"
+
         params_arg_str = ""
         if self.params:
             params = sorted(self.params.items())
             params_str = ", ".join(f"{k!r}:{v!r}" for k, v in params)
             params_arg_str = f", params={{{params_str}}}"
 
-        return f"{class_name}({op_type_name}{params_arg_str})"
+        return f"{class_name}({op_type_name}, {num_wires_str}{params_arg_str})"
 
     @property
     def name(self) -> str:
@@ -195,14 +206,15 @@ class ResourceOperator(ABC):
 
     """
 
-    num_wires = 0
-    _queue_category = "_resource_op"
+    num_wires = 1
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
         if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
+            wires = Wires(wires)
+            if len(wires) != self.num_wires:
+                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
+            self.wires = wires
 
         self.queue()
         super().__init__()
@@ -248,11 +260,11 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def resource_rep(cls, *args, **kwargs):
+    def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to estimate the resources."""
 
-    def resource_rep_from_op(self):
+    def resource_rep_from_op(self) -> CompressedResourceOp:
         r"""Returns a compressed representation directly from the operator"""
         return self.__class__.resource_rep(**self.resource_params)
 

@@ -112,7 +112,7 @@ class TestAnd:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, autograph=False)
+        @qml.qnode(dev)
         def circuit(x: bool, y: bool):
             if x and y:
                 qml.PauliX(0)
@@ -253,7 +253,7 @@ class TestOr:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, autograph=False)
+        @qml.qnode(dev)
         def circuit(x: bool, y: bool):
             if x or y:
                 qml.PauliX(0)
@@ -389,7 +389,7 @@ class TestNot:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, autograph=False)
+        @qml.qnode(dev)
         def circuit(x: bool):
             if not x:
                 qml.PauliX(0)
