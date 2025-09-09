@@ -17,7 +17,10 @@ import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
+from functools import reduce
 from typing import Dict, Optional
+
+import numpy as np
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -44,7 +47,7 @@ class ImportanceConfig:
 
     importance_scores: Dict[Hashable, float] = None
     tolerance: float = 10e-8
-    method: str = "top-k"
+    top_k: Dict[int, int] = None
 
 
 def effective_hamiltonian(
@@ -227,6 +230,17 @@ def perturbation_error(
         )[1:]
     ]
 
+    if importance:
+        commutator_lists = [
+            sorted(
+                commutator_list[: importance.top_k.get(order+2, 0)],
+                key=lambda x: _commutator_importance(x, importance.importance_scores),
+                reverse=True,
+            )
+            for order, commutator_list in enumerate(commutator_lists)
+        ]
+
+
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
@@ -372,7 +386,7 @@ def _op_list(commutator) -> dict[tuple[Hashable], complex]:
 
 def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
     """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
-    two commutators a*[X, A, B] and b*Y[A, B] will be merged into one commutator [a*X + b*Y, A, B].
+    two commutators a*[X, A, B] and b*[Y, A, B] will be merged into one commutator [a*X + b*Y, A, B].
     """
     grouped_comms = defaultdict(set)
     for commutator, coeff in term_dict.items():
@@ -381,3 +395,16 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
+
+
+def _commutator_importance(
+    commutator: tuple[Hashable | set], importance_scores: dict[Hashable, float]
+) -> float:
+    scores = []
+    for fragment in commutator:
+        if isinstance(fragment, frozenset):
+            scores.append(sum(coeff * importance_scores[frag] for frag, coeff in fragment))
+        else:
+            scores.append(importance_scores[fragment])
+
+    return np.abs(1 / 2 ** (len(commutator) - 1) * reduce(lambda x, y: x * y, scores))

@@ -302,7 +302,7 @@ def test_importance_scores():
         ("B", "B", "B", "A", "B"),
     }
 
-    
+
 params = [
     ("serial", 1),
     ("mp_pool", 1),
