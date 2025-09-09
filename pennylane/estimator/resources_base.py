@@ -237,7 +237,7 @@ class Resources:
     __rmatmul__ = __matmul__
 
     @property
-    def gate_counts(self):
+    def gate_counts(self) -> dict:
         r"""Produce a dictionary which stores the gate counts
         using the operator names as keys.
 
