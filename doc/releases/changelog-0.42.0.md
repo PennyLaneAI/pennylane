@@ -1043,7 +1043,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7584)](https://github.com/PennyLaneAI/pennylane/pull/7584)
   [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
 
-* A new function called `qml.labs.estimate` has been added which will be used to perform 
+* A new function called `qml.labs.estimate_resources` has been added which will be used to perform 
   resource estimation on circuits, `qml.labs.ResourceOperator`, and `qml.labs.Resources` objects.
   [(#7407)](https://github.com/PennyLaneAI/pennylane/pull/7407)
 
