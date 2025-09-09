@@ -68,13 +68,25 @@ class ResourceConfig:
         self._pow_custom_decomps = {}
 
     def __str__(self):
-        operators_with_custom_decomps = (
-            list(self._custom_decomps.keys())
-            + list(self._adj_custom_decomps.keys())
-            + list(self._ctrl_custom_decomps.keys())
-            + list(self._pow_custom_decomps.keys())
+        decomps = [op.__name__ for op in self._custom_decomps]
+        adj_decomps = [f"Adjoint({op.__name__})" for op in self._adj_custom_decomps]
+        ctrl_decomps = [f"Controlled({op.__name__})" for op in self._ctrl_custom_decomps]
+        pow_decomps = [f"Pow({op.__name__})" for op in self._pow_custom_decomps]
+
+        all_op_strings = decomps + adj_decomps + ctrl_decomps + pow_decomps
+        op_names = ", ".join(all_op_strings)
+
+        dict_items_str = ",\n".join(
+            f"    {key.__name__}: {value!r}" for key, value in self.errors_and_precisions.items()
         )
-        return f"ResourceConfig(errors and precisions = {self.errors_and_precisions}, custom decomps = [{' '.join(op for op in operators_with_custom_decomps)}])"
+
+        formatted_dict = f"{{\n{dict_items_str}\n}}"
+
+        return (
+            f"ResourceConfig(\n"
+            f"  errors and precisions = {formatted_dict},\n"
+            f"  custom decomps = [{op_names}]\n)"
+        )
 
     def __repr__(self) -> str:
         return f"ResourceConfig(errors_and_precisions = {self.errors_and_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
