@@ -95,7 +95,7 @@ class TestPreprocess:
         assert len(program) == 2
         # pylint: disable=protected-access
         assert program[0].transform == qml.defer_measurements._transform
-        assert program[1].transform == qml.transforms.decompose._transform
+        assert program[1].transform == qml.devices.preprocess.decompose._transform
 
         # mcm_method="deferred"
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
@@ -103,14 +103,14 @@ class TestPreprocess:
         assert len(program) == 2
         # pylint: disable=protected-access
         assert program[0].transform == qml.defer_measurements._transform
-        assert program[1].transform == qml.transforms.decompose._transform
+        assert program[1].transform == qml.devices.preprocess.decompose._transform
 
         # mcm_method="single-branch-statistics"
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="single-branch-statistics"))
         program, _ = dev.preprocess(execution_config=config)
         assert len(program) == 1
         # pylint: disable=protected-access
-        assert program[0].transform == qml.transforms.decompose._transform
+        assert program[0].transform == qml.devices.preprocess.decompose._transform
 
 
 class TestExecution:
