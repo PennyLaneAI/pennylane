@@ -47,12 +47,12 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         self.errors_and_precisions = {
-            ResourceRX: {"eps": 1e-9},
-            ResourceRY: {"eps": 1e-9},
-            ResourceRZ: {"eps": 1e-9},
-            ResourceCRX: {"eps": 1e-9},
-            ResourceCRY: {"eps": 1e-9},
-            ResourceCRZ: {"eps": 1e-9},
+            ResourceRX: {"precision": 1e-9},
+            ResourceRY: {"precision": 1e-9},
+            ResourceRZ: {"precision": 1e-9},
+            ResourceCRX: {"precision": 1e-9},
+            ResourceCRY: {"precision": 1e-9},
+            ResourceCRZ: {"precision": 1e-9},
             ResourceSelectPauliRot: {"precision": 1e-9},
             ResourceQubitUnitary: {"precision": 1e-9},
             ResourceQROMStatePreparation: {"precision": 1e-9},
@@ -77,12 +77,12 @@ class ResourceConfig:
         r"""Sets the synthesis error for all single-qubit rotation gates.
 
         This is a convenience method to update the synthesis error tolerance,
-        :math:`\epsilon`, for all standard single-qubit rotation gates and their
+        :math:`\precision`, for all standard single-qubit rotation gates and their
         controlled versions at once. The synthesis error dictates the precision
         for compiling rotation gates into a discrete gate set, which in turn
         affects the number of gates required.
 
-        This method updates the ``eps`` value for the following operators:
+        This method updates the ``precision`` value for the following operators:
         - :class:`~.ResourceRX`
         - :class:`~.ResourceRY`
         - :class:`~.ResourceRZ`
@@ -103,22 +103,22 @@ class ResourceConfig:
             from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import ResourceRX
 
             config = ResourceConfig()
-            print(f"Default RX error: {config.errors_and_precisions[ResourceRX]['eps']}")
+            print(f"Default RX error: {config.errors_and_precisions[ResourceRX]['precision']}")
 
             config.set_single_qubit_rotation_error(1e-5)
-            print(f"Updated RX error: {config.errors_and_precisions[ResourceRX]['eps']}")
+            print(f"Updated RX error: {config.errors_and_precisions[ResourceRX]['precision']}")
 
         .. code-block:: pycon
 
             Default RX error: 1e-09
             Updated RX error: 1e-05
         """
-        self.errors_and_precisions[ResourceRX]["eps"] = error
-        self.errors_and_precisions[ResourceCRX]["eps"] = error
-        self.errors_and_precisions[ResourceRY]["eps"] = error
-        self.errors_and_precisions[ResourceCRY]["eps"] = error
-        self.errors_and_precisions[ResourceRZ]["eps"] = error
-        self.errors_and_precisions[ResourceCRZ]["eps"] = error
+        self.errors_and_precisions[ResourceRX]["precision"] = error
+        self.errors_and_precisions[ResourceCRX]["precision"] = error
+        self.errors_and_precisions[ResourceRY]["precision"] = error
+        self.errors_and_precisions[ResourceCRY]["precision"] = error
+        self.errors_and_precisions[ResourceRZ]["precision"] = error
+        self.errors_and_precisions[ResourceCRZ]["precision"] = error
 
     def set_decomp(
         self, op_type: type[ResourceOperator], decomp_func: Callable, type: str = None
