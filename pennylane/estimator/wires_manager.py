@@ -120,7 +120,7 @@ class WireResourceManager:
             self.clean_wires -= num_wires
         self.dirty_wires += num_wires
 
-    def free_wires(self, num_wires: int):
+    def free_wires(self, num_wires: int) -> None:
         r"""Frees dirty wires and converts them into clean wires.
 
         Args:
