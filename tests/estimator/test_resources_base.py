@@ -43,6 +43,7 @@ x = DummyResOp("X")
 y = DummyResOp("Y")
 z = DummyResOp("Z")
 cnot = DummyResOp("CNOT")
+phase_shift = DummyResOp("PhaseShift")
 
 gate_types_data = (
     defaultdict(
@@ -51,7 +52,7 @@ gate_types_data = (
     ),
     defaultdict(
         int,
-        {h: 467, cnot: 791},
+        {h: 467, cnot: 791, phase_shift: 2},
     ),
     defaultdict(
         int,
@@ -101,7 +102,8 @@ class TestResources:
             + "    allocated wires: 11100\n"
             + "\t clean wires: 8753\n"
             + "\t dirty wires: 2347\n"
-            + " Total gates : 1.258E+3\n"
+            + " Total gates : 1.260E+3\n"
+            + "  'PhaseShift': 2,\n"
             + "  'CNOT': 791,\n"
             + "  'Hadamard': 467"
         ),
@@ -209,7 +211,7 @@ class TestResources:
         expected_wm_add.algo_wires = 108  # max(algo1, algo2)
         expected_gt_add = defaultdict(
             int,
-            {h: 467, x: 100, y: 120, z: 1000, cnot: 5314},  # add gate counts
+            {h: 467, x: 100, y: 120, z: 1000, cnot: 5314, phase_shift: 2},  # add gate counts
         )
 
         expected_add = Resources(expected_wm_add, expected_gt_add)
@@ -228,7 +230,7 @@ class TestResources:
         expected_wm_and.algo_wires = 130  # algo1 + algo2
         expected_gt_and = defaultdict(
             int,
-            {h: 467, x: 100, y: 120, z: 1000, cnot: 5314},  # add gate counts
+            {h: 467, x: 100, y: 120, z: 1000, cnot: 5314, phase_shift: 2},  # add gate counts
         )
 
         expected_and = Resources(expected_wm_and, expected_gt_and)
