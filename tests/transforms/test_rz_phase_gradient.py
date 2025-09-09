@@ -27,7 +27,7 @@ from pennylane.transforms.rz_phase_gradient import _binary_repr_int, _rz_phase_g
 def test_binary_repr_int(string, p):
     """Test that the binary representation or approximation of the angle is correct
 
-    In particular, this tests that phi = (c1 2^-1 + c2 2^-2 + .. + cp 2^-p + ... + 2^-N) pi
+    In particular, this tests that phi = (c1 2^-1 + c2 2^-2 + .. + cp 2^-p + ... + 2^-N) 2pi
     is correctly represented as (c1, c2, .., cp) for precision p
     """
     phi = np.sum([c * 2 ** (-i - 1) for i, c in enumerate(string)]) * 2 * np.pi
