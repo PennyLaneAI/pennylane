@@ -6,16 +6,19 @@ qml.estimator
 .. automodule:: pennylane.estimator
     :no-index:
 
-.. automodapi:: pennylane.estimator.wires_manager
+.. automodsumm:: pennylane.estimator.wires_manager
+    :toctree: api
     :noindex:
     :no-inherited-members:
     :skip: QueuingManager
 
-.. automodapi:: pennylane.estimator.resource_operator
+.. automodsumm:: pennylane.estimator.resource_operator
+    :toctree: api
     :noindex:
     :no-inherited-members:
     :skip: ABC, Callable, Iterable, QueuingManager, defaultdict, WireResourceManager, annotations, Wires, CompressedResourceOp, Resources
 
-.. automodapi:: pennylane.estimator.ops
+.. automodsumm:: pennylane.estimator.ops
+    :toctree: api
     :noindex:
     :no-inherited-members:
