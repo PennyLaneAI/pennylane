@@ -109,7 +109,6 @@ from .interface_utils import (
     get_deep_interface,
     get_interface,
     Interface,
-    InterfaceLike,
 )
 from .grad import grad, jacobian
 from . import decomposition

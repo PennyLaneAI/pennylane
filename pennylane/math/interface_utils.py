@@ -76,8 +76,6 @@ class Interface(Enum):
         return super().__hash__()
 
 
-InterfaceLike = str | Interface | None
-
 SUPPORTED_INTERFACE_NAMES = list(Interface)
 """list[Interface]: allowed interface names"""
 
