@@ -14,8 +14,8 @@
 """A context that maintains state and configuration information for rewriting
 hybrid workflows."""
 
-from collections.abc import Iterator
-from dataclasses import dataclass, field
+from collections.abc import Collection, Iterator
+from dataclasses import dataclass
 from functools import singledispatchmethod
 from typing import Any
 from uuid import UUID, uuid4
@@ -46,19 +46,24 @@ class AbstractWire:
         return self.id == other.id
 
 
-@dataclass
 class WireQubitMap:
     """Class to maintain two-way mapping between wire labels and SSA qubits."""
 
-    wires: tuple[int, ...] | None = None
+    wires: tuple[int, ...] | None
     """Tuple containing all available static wire labels. None if not provided."""
 
-    _wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = {}
+    _wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue]
     """Map from wire labels to the latest known qubit SSAValues to which
     they correspond."""
 
-    _qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire] = {}
+    _qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire]
     """Map from qubit SSAValues to their corresponding wire labels."""
+
+    def __init__(self, wires: Collection[int, ...] | None = None):
+        if wires is not None:
+            self.wires = tuple(wires)
+        self._wire_to_qubit_map = {}
+        self._qubit_to_wire_map = {}
 
     def __contains__(self, key: int | AbstractWire | quantum.QubitSSAValue) -> bool:
         """Check if the map contains a wire label or qubit."""
@@ -88,7 +93,7 @@ class WireQubitMap:
             return self._qubit_to_wire_map[key]
 
         if self.wires is not None and isinstance(key, int) and key not in self.wires:
-            raise KeyError(f"{key} is not an available wire.")
+            raise ValueError(f"{key} is not an available wire.")
 
         return self._wire_to_qubit_map[key]
 
@@ -165,6 +170,19 @@ class RewriteContext:
 
     This class provides several abstractions for keep track of useful information
     during pattern rewriting.
+
+    Args:
+        nqubits (int | SSAValue | None): The number of qubits. This will be an integer if the
+            value is known at compile time. Otherwise, it will be ``None`` or an ``SSAValue``
+            corresponding to the dynamic number of qubits. ``None`` by default.
+        shots (int | SSAValue | None): The number of shots. This will be an integer if the
+            value is known at compile time. Otherwise, it will be ``None`` or an ``SSAValue``
+            corresponding to the dynamic number of shots. ``None`` by default.
+        wire_qubit_map (WireQubitMap): The bidirectional map between wire labels and SSA qubits.
+            Empty map by default.
+        qreg (QuregSSAValue | None): An ``SSAValue`` of ``QuregType`` if a quantum register has
+            been initialized, or ``None``. ``None`` by default.
+
     """
 
     nqubits: int | SSAValue | None = None
@@ -175,7 +193,7 @@ class RewriteContext:
     """Number of shots. If not known at compile time, will be None
     or an SSAValue. Else, it will be an integer."""
 
-    wire_qubit_map: WireQubitMap = field(default_factory=WireQubitMap)
+    wire_qubit_map: WireQubitMap = WireQubitMap()
     """Two way map between wire labels and SSA qubits."""
 
     qreg: quantum.QuregSSAValue | None = None
