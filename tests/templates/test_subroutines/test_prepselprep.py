@@ -231,11 +231,11 @@ class TestPrepSelPrep:
             qml.assert_equal(op1, exp_op)
 
         # Test that PrepSelPrep de-queues its input
-        with qml.queuing.AnnotatedQueue() as q0:
-            qml.apply(lcu)
-            prepselprep = qml.PrepSelPrep(lcu, control=control)
+        with qml.queuing.AnnotatedQueue() as q2:
+            op = qml.apply(lcu)
+            prepselprep = qml.PrepSelPrep(op, control=control)
 
-        assert len(q0.queue) == 1 and q0.queue[0] == prepselprep
+        assert len(q2.queue) == 1 and q2.queue[0] == prepselprep
 
     def test_copy(self):
         """Test the copy function"""
