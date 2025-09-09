@@ -26,6 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint, prod
+from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires
 
@@ -93,7 +94,7 @@ class PrepSelPrep(Operation):
 
         coeffs, ops = lcu.terms()
         control = Wires(control)
-        self.hyperparameters["lcu"] = LinearCombination(coeffs, ops)
+        self.hyperparameters["lcu"] = lcu
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
@@ -214,6 +215,11 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+    def queue(self, context=QueuingManager):
+        context.remove(self.hyperparameters["lcu"])
+        context.append(self)
+        return self
 
 
 def _prepselprep_resources(op_reps, num_control):
