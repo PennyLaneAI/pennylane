@@ -445,7 +445,6 @@ class TestResourceOperator:
             op1 = RX(1.23)
             _ = op1 & True
 
-
 @pytest.mark.parametrize(
     "input_obj, expected_hashable",
     [
@@ -479,6 +478,10 @@ def test_make_hashable(input_obj, expected_hashable):
     assert isinstance(result, Hashable)
     assert hash(result) is not None
 
+def test_make_hashable_error():
+    """Test that _make_hashable raises the correct error"""
+    with pytest.raises(TypeError, match="Object of type <class 'dict_keys'> is not hashable and cannot be converted."):
+        _make_hashable({'a':1}.keys())
 
 class TestGateCount:
     """Tests for the GateCount class."""
