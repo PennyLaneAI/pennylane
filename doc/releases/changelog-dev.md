@@ -3,7 +3,7 @@
 
 <h3>New features since last release</h3>
 
-* Resource estimation toolkit was migrated from labs to PennyLane as `qml.estimator` module.
+* Resource estimation toolkit was migrated from labs to PennyLane as the `qml.estimator` module.
   
   * `qml.estimator.WireResourceManager`, `qml.estimator.Allocate` and `qml.estimator.Deallocate` classes
     were added to track auxiliary wires for resource estimation.
