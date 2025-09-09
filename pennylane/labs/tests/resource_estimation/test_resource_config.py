@@ -55,10 +55,7 @@ class TestResourceConfig:
         assert config.errors_and_precisions[ResourceRX] == {"precision": 1e-9}
         assert config.errors_and_precisions[ResourceCRZ] == {"precision": 1e-9}
 
-        assert not config._custom_decomps
-        assert not config._adj_custom_decomps
-        assert not config._ctrl_custom_decomps
-        assert not config._pow_custom_decomps
+        assert config._pow_custom_decomps == {}
 
     def test_set_single_qubit_rotation_error(self):
         """Test that the single qubit rotation error is set correctly across all relevant gates."""
