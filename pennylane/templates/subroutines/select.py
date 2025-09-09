@@ -869,7 +869,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     tn: ─────────────
     ```
 
-    Here, the ``p`` in ``wp`` is the number of work wires, and ``n`` is the number of target
+    Here, the ``p`` in ``wp`` is the number of work wires, and ``n+1`` is the number of target
     wires.
     Then we iterate over the target operators and perform the following steps for each, except
     for the last operator.
@@ -1032,7 +1032,11 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
     # Validate number of control wires
     c = len(control)
     min_num_controls = max(_ceil_log(K), 1)
-    assert c >= min_num_controls
+    if c < min_num_controls:
+        raise ValueError(
+            f"At least {min_num_controls} control wires are required to implement Select of "
+            f"{K} operators, but only {c} control wires were provided: {control}."
+        )
 
     if not partial:
         return _select_decomp_unary_not_partial(ops, control, work_wires)

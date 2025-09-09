@@ -791,6 +791,22 @@ class TestUnaryIterator:
                 ops=ops, control=wires["control"], work_wires=wires["work"], partial=partial
             )
 
+    def test_error_too_few_controls(self, partial):
+        """Test that an error is raised if too few control wires are given."""
+
+        too_many_ops = [qml.X(0) for _ in range(9)]
+        exactly_right_ops = [qml.X(0) for _ in range(8)]
+        fewer_ops = [qml.X(0) for _ in range(7)]
+        kwargs = {"control": [1, 2, 3], "work_wires": [4, 5], "partial": partial}
+
+        with pytest.raises(ValueError, match="At least 4 control wires are required"):
+            _select_decomp_unary(ops=too_many_ops, **kwargs)
+
+        # Test that no error is raised for exactly right number of ops for three controls
+        _ = _select_decomp_unary(ops=exactly_right_ops, **kwargs)
+        # Test that no error is raised for fewer than exactly right number of ops
+        _ = _select_decomp_unary(ops=fewer_ops, **kwargs)
+
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_comparison_with_select(self, num_controls, num_ops, seed, partial):
         """Test that the unary iterator is correct by comparing it to the standard Select
