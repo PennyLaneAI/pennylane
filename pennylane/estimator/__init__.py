@@ -33,6 +33,9 @@ Resource Estimation Base Classes:
     :toctree: api
 
     ~Resources
+    ~ResourceOperator
+    ~CompressedResourceOp
+    ~GateCount
 
 """
 
@@ -40,4 +43,10 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 from .resources_base import Resources
 
-from .resource_operator import ResourceOperator, CompressedResourceOp, GateCount
+from .resource_operator import (
+    ResourceOperator,
+    CompressedResourceOp,
+    GateCount,
+    ResourcesNotDefined,
+    resource_rep,
+)
