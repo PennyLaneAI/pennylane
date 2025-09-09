@@ -335,14 +335,14 @@ def _validate_signature(func: Callable, expected_args: set):
 
 
 class ResourcesNotDefined(Exception):
-    r"""Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+    r"""Exception to be raised when a :class:`~.pennylane.estimator.ResourceOperator` does not implement ``_resource_decomp``."""
 
 
 class GateCount:
     r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
 
     Args:
-        gate (`~.pennylane.decomposition.resources.CompressedResourceOp`): a compressed resource representation of the gate being counted
+        gate (:class:`~.pennylane.decomposition.resources.CompressedResourceOp`): a compressed resource representation of the gate being counted
         counts (int, optional): The number of occurances of the quantum gate in the circuit or
             decomposition. Defaults to 1.
 

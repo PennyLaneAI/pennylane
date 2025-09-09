@@ -31,7 +31,7 @@ class Adjoint(ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base_op (~.pennylane.estimator.ResourceOperator): The operator that we
+        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator that we
             want the adjoint of.
 
     Resources:
@@ -100,7 +100,7 @@ class Adjoint(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (~.pennylane.estimator.ResourceOperator): The operator
+            * base_cmpr_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator
             that we want the adjoint of.
 
         """
@@ -127,7 +127,7 @@ class Adjoint(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (~.pennylane.decomposition.resources.CompressedResourceOp): A
+            base_cmpr_op (:class:`~.pennylane.decomposition.CompressedResourceOp`): A
                 compressed resource representation for the operator we want the adjoint of.
             wires (Sequence[int], optional): the wires the operation acts on
 
@@ -141,7 +141,7 @@ class Adjoint(ResourceOperator):
             base operation's resources.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
@@ -208,7 +208,7 @@ class Adjoint(ResourceOperator):
             are given as one instance of the base operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -310,7 +310,7 @@ class Controlled(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (~.pennylane.decomposition.resources.CompressedResourceOp): The base
+            * base_cmpr_op (~.pennylane.decomposition.CompressedResourceOp): The base
             operator to be controlled.
             * num_ctrl_wires (int): the number of qubits the operation is controlled on
             * num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -380,7 +380,7 @@ class Controlled(ResourceOperator):
             variant of each operation in the resources.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
