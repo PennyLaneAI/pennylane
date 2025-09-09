@@ -293,7 +293,7 @@ def register_resources(
        There are four types of work wires:
 
        - "zeroed" wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
-         must be restored to the :math:`|0\rangle>` state before deallocation.
+         must be restored to the :math:`|0\rangle` state before deallocation.
 
        - "borrowed" wires are allocated in an arbitrary state, but they must be restored to the same initial state before deallocation.
 
@@ -302,7 +302,7 @@ def register_resources(
 
        - "garbage" wires can be allocated in any state, and can be deallocated in any state.
 
-       Here's a decomposition for a multi-controlled `Rot` that uses a zeroed work wire:
+       Here's a decomposition for a multi-controlled ``Rot`` that uses a zeroed work wire:
 
        .. code-block: python
 
