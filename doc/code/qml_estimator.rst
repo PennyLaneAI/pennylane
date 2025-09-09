@@ -4,6 +4,7 @@ qml.estimator
 .. currentmodule:: pennylane.estimator
 
 .. automodule:: pennylane.estimator
+    :noindex:
 
 .. automodapi:: pennylane.estimator
     :no-heading:
@@ -11,7 +12,7 @@ qml.estimator
     :include-all-objects:
     :noindex:
 
-.. automodapi:: pennylane.estimator.
+.. automodapi:: pennylane.estimator
     :no-heading:
     :no-inherited-members:
     :include-all-objects:
