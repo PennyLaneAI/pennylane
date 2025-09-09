@@ -1,20 +1,37 @@
 qml.estimator
 ================
 
-.. currentmodule:: pennylane.estimator
+.. currentmodule:: pennylane.estimator.wires_manager
 
-.. automodule:: pennylane.estimator
+.. autosummary::
+    :toctree: api
     :noindex:
 
-.. automodapi:: pennylane.estimator
-    :no-heading:
-    :no-inherited-members:
-    :include-all-objects:
-    :noindex:
-    :skip: Adjoint, ChangeOpBasis, Pow, Prod
+    ~Allocate
+    ~Deallocate
 
-.. automodapi:: pennylane.estimator.ops
-    :no-heading:
-    :no-inherited-members:
-    :include-all-objects:
+.. currentmodule:: pennylane.estimator.ops
+
+.. autosummary::
+    :toctree: api
     :noindex:
+
+    ~X
+    ~Y
+    ~Z
+    ~SWAP
+    ~CNOT
+    ~Adjoint
+    ~ChangeOpBasis
+    ~GlobalPhase
+    ~Identity
+    ~Pow
+    ~Prod
+
+.. automodapi:: pennylane.estimator.resource_operator
+    :toctree: api
+    :noindex:
+
+    ~ResourceOperator
+    ~ResourcesNotDefined
+    ~GateCount
