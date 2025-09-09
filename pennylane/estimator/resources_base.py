@@ -164,7 +164,7 @@ class Resources:
 
         Similarly, users can scale up the resources for an operator by some integer factor using
         the :code:`*` and :code:`@` operators. These represent scaling the resources assuming the
-        circuits were executed in series or parallel respectively.
+        circuits were executed in series or parallel, respectively.
 
         .. code-block:: pycon
 
