@@ -39,3 +39,5 @@ Resource Estimation Base Classes:
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 from .resources_base import Resources
+
+from .resource_operator import ResourceOperator, CompressedResourceOp, GateCount
