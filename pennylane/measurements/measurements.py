@@ -528,6 +528,7 @@ class SampleMeasurement(MeasurementProcess):
 
     _shortname = "sample"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
@@ -546,6 +547,7 @@ class SampleMeasurement(MeasurementProcess):
         wire_order: Wires,
         shot_range: None | tuple[int] = None,
         bin_size: None | int = None,
+        dtype=None,
     ):
         """Process the given samples.
 
@@ -557,6 +559,7 @@ class SampleMeasurement(MeasurementProcess):
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
+            dtype: The dtype of the samples returned by this measurement process.
         """
 
     @abstractmethod

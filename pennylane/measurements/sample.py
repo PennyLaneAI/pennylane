@@ -56,7 +56,7 @@ class SampleMP(SampleMeasurement):
     def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
 
         if isinstance(obs, MeasurementValue):
-            super().__init__(obs=obs, dtype=dtype)
+            super().__init__(obs=obs)
             return
 
         if isinstance(obs, Sequence):

@@ -63,6 +63,8 @@ class TestExpandTransformsInterpreter:
             in ExpandTransformsInterpreter._primitive_registrations
         )
 
+    # The jaxpr now also includes {'dtype': None} in the params
+    # xfail as plxpr_transforms are no longer supported
     @pytest.mark.xfail
     def test_expand_transforms_interpreter_plxpr_transform(self):
         """Test that transforms that have a valid ``plxpr_transform`` are handled
@@ -271,6 +273,8 @@ class TestExpandPlxprTransforms:
             transformed_jaxpr.eqns[6].outvars[0],
         ]
 
+    # The jaxpr now also includes {'dtype': None} in the params
+    # xfail as plxpr_transforms are no longer supported
     @pytest.mark.xfail
     def test_expand_function_with_no_transforms(self):
         """Test that using expand_plxpr_transforms on a function with no transforms does
