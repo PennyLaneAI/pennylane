@@ -218,7 +218,7 @@ def perturbation_error(
 
                 order = len(commutators[0])
                 for commutator in commutators:
-                    expectation += _apply_commutator(commutator, fragments, state)
+                    expectation += _compute_expectation(commutator, fragments, state)
 
                 expectations.append({order: (1j * timestep) ** order * expectation})
 
@@ -241,13 +241,13 @@ def perturbation_error(
         for state in states:
             with executor(max_workers=num_workers) as ex:
                 applied_commutators = ex.starmap(
-                    _apply_commutator_track_order,
+                    _compute_expectation_track_order,
                     [(commutator, fragments, state) for commutator in commutators],
                 )
 
             expectations = defaultdict(int)
-            for applied_state, order in applied_commutators:
-                expectations[order] += state.dot(applied_state)
+            for expectation, order in applied_commutators:
+                expectations[order] += expectation
 
             errors.append(
                 {
@@ -265,21 +265,18 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     expectations = {}
-    new_state = _AdditiveIdentity()
     for commutators in commutator_lists:
         if len(commutators) == 0:
             continue
 
         order = len(commutators[0])
-        for commutator in commutators:
-            new_state += _apply_commutator(commutator, fragments, state)
-
-        expectations[order] = (1j * timestep) ** order * state.dot(new_state)
+        expectation = sum(_compute_expectation(commutator, fragments, state) for commutator in commutators)
+        expectations[order] = (1j * timestep) ** order * expectation
 
     return expectations
 
 
-def _apply_commutator(
+def _compute_expectation(
     commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
 ) -> complex:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
@@ -303,7 +300,7 @@ def _apply_commutator(
     return state.dot(new_state)
 
 
-def _apply_commutator_track_order(
+def _compute_expectation_track_order(
     commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
 ) -> tuple[complex, int]:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
