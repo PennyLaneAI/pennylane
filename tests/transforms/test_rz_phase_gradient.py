@@ -96,9 +96,9 @@ def test_integration_rz_phase_gradient(phi):
 
     res, fn = qml.transforms.rz_phase_gradient(rz_circ, aux_wires, phase_grad_wires, work_wires)
     tapes = fn(res)
-    output = qml.matrix(tapes, wire_order=wire_order) @ np.eye(2 ** len(wire_order))[0]
+    output = qml.matrix(tapes, wire_order=wire_order)[:, 0]
 
-    output_expected = qml.matrix(qml.RX(phi, 0)) @ np.eye(2)[0]
+    output_expected = qml.matrix(qml.RX(phi, 0))[:, 0]
     output_expected = np.kron(output_expected, np.eye(2 ** (len(wire_order) - 1))[0])
 
     assert np.allclose(output, output_expected)
