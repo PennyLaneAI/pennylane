@@ -32,7 +32,7 @@ class Interface(Enum):
     AUTO = "auto"
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value) -> "Interface":
         """Custom lookup to allow users to pass in None or common
         variants of the interface names."""
         match value:
@@ -67,12 +67,12 @@ class Interface(Enum):
         }
         return mapping[self]
 
-    def __eq__(self, interface):
+    def __eq__(self, interface) -> bool:
         if isinstance(interface, str):
             raise TypeError("Cannot compare Interface with str")
         return super().__eq__(interface)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return super().__hash__()
 
 
