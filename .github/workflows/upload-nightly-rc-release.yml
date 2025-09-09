@@ -14,6 +14,8 @@ jobs:
     steps:
     - name: Checkout PennyLane repo
       uses: actions/checkout@v4
+      with:
+        ref: master
 
     # Sets up Python environment
     - name: Set up Python
