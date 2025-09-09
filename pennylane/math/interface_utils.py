@@ -35,8 +35,18 @@ class Interface(Enum):
     @classmethod
     def _missing_(cls, value):
         """Custom lookup to allow None as an alias for NUMPY."""
-        if value is None:
-            return cls.NUMPY
+        match value:
+            case None | "scipy":
+                return cls.NUMPY
+            case "jax-python" | "JAX":
+                return cls.JAX
+            case "pytorch":
+                return cls.TORCH
+            case "tensorflow":
+                return cls.TF
+            case "tensorflow-autograph":
+                return cls.TF_AUTOGRAPH
+
         # Returning None from _missing_ tells the Enum machinery to raise a ValueError.
         return None
 
@@ -67,17 +77,6 @@ InterfaceLike = str | Interface | None
 
 
 INTERFACE_MAP = {
-    None: Interface.NUMPY,
-    "auto": Interface.AUTO,
-    "autograd": Interface.AUTOGRAD,
-    "numpy": Interface.NUMPY,
-    "scipy": Interface.NUMPY,
-    "jax": Interface.JAX,
-    "jax-jit": Interface.JAX_JIT,
-    "jax-python": Interface.JAX,
-    "JAX": Interface.JAX,
-    "torch": Interface.TORCH,
-    "pytorch": Interface.TORCH,
     "tf": Interface.TF,
     "tensorflow": Interface.TF,
     "tensorflow-autograph": Interface.TF_AUTOGRAPH,
