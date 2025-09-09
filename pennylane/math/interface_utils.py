@@ -15,7 +15,6 @@
 
 import warnings
 from enum import Enum
-from typing import Literal
 
 import autoray as ar
 
@@ -34,7 +33,8 @@ class Interface(Enum):
 
     @classmethod
     def _missing_(cls, value):
-        """Custom lookup to allow None as an alias for NUMPY."""
+        """Custom lookup to allow users to pass in None or common
+        variants of the interface names."""
         match value:
             case None | "scipy":
                 return cls.NUMPY
@@ -74,18 +74,6 @@ class Interface(Enum):
 
 
 InterfaceLike = str | Interface | None
-
-
-INTERFACE_MAP = {
-    "tf": Interface.TF,
-    "tensorflow": Interface.TF,
-    "tensorflow-autograph": Interface.TF_AUTOGRAPH,
-    "tf-autograph": Interface.TF_AUTOGRAPH,
-}
-"""dict[str, str]: maps an allowed interface specification to its canonical name."""
-
-SupportedInterfaceUserInput = Literal[tuple(INTERFACE_MAP.keys())]
-"""list[str]: allowed interface names that the user can input"""
 
 SUPPORTED_INTERFACE_NAMES = list(Interface)
 """list[Interface]: allowed interface names"""

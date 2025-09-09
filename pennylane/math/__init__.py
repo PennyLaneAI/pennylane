@@ -105,7 +105,6 @@ from .utils import (
     binary_finite_reduced_row_echelon,
 )
 from .interface_utils import (
-    SupportedInterfaceUserInput,
     SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,

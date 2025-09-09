@@ -48,7 +48,6 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
-    from pennylane.math import SupportedInterfaceUserInput
     from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
@@ -521,7 +520,7 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput = Interface.AUTO,
+        interface: str = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
         shots: ShotsLike = "unset",
@@ -662,7 +661,7 @@ class QNode:
         return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
-    def interface(self, value: SupportedInterfaceUserInput):
+    def interface(self, value: str):
         self._interface = Interface(value)
 
     @property
