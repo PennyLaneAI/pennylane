@@ -823,6 +823,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
+  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
+
 * Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
   [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
 
