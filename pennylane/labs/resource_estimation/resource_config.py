@@ -11,24 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains the base class for qubit management"""
+r"""This module contains the ResourceConfig class, which tracks the configuration for resource estimation"""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from pennylane.labs.resource_estimation.ops.op_math.controlled_ops import (
+from .ops.op_math.controlled_ops import (
     ResourceCRX,
     ResourceCRY,
     ResourceCRZ,
 )
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+from .ops.qubit.parametric_ops_single_qubit import (
     ResourceRX,
     ResourceRY,
     ResourceRZ,
 )
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
-from pennylane.labs.resource_estimation.templates import (
+from .resource_operator import ResourceOperator
+from .templates import (
     ResourceAliasSampling,
     ResourceMPSPrep,
     ResourcePrepTHC,
@@ -41,7 +41,7 @@ from pennylane.labs.resource_estimation.templates import (
 
 
 class ResourceConfig:
-    r"""A container to track the configuration for errors, precisions, and custom decompositions for the
+    """A container to track the configuration for errors, precisions, and custom decompositions for the
     resource estimation pipeline.
     """
 
@@ -95,7 +95,7 @@ class ResourceConfig:
         r"""Sets the synthesis error for all single-qubit rotation gates.
 
         This is a convenience method to update the synthesis error tolerance,
-        :math:`\precision`, for all standard single-qubit rotation gates and their
+        :math:`\eps`, for all standard single-qubit rotation gates and their
         controlled versions at once. The synthesis error dictates the precision
         for compiling rotation gates into a discrete gate set, which in turn
         affects the number of gates required.
@@ -150,7 +150,7 @@ class ResourceConfig:
 
         .. note::
 
-            The new decomposition function should have the same signature as the one it replaces.
+            The new decomposition function, ``decomp_func``, should have the same signature as the one it replaces.
             Specifically, the signature should match the :code:`resource_keys` of the base resource
             operator class being overriden.
 
