@@ -53,21 +53,21 @@ class WireQubitMap:
     wires: tuple[int, ...] | None = None
     """Tuple containing all available static wire labels. None if not provided."""
 
-    wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = {}
+    _wire_to_qubit_map: dict[int | AbstractWire, quantum.QubitSSAValue] = {}
     """Map from wire labels to the latest known qubit SSAValues to which
     they correspond."""
 
-    qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire] = {}
+    _qubit_to_wire_map: dict[quantum.QubitSSAValue, int | AbstractWire] = {}
     """Map from qubit SSAValues to their corresponding wire labels."""
 
     def __contains__(self, key: int | AbstractWire | quantum.QubitSSAValue) -> bool:
         """Check if the map contains a wire label or qubit."""
-        return key in self.wire_to_qubit_map or key in self.qubit_to_wire_map
+        return key in self._wire_to_qubit_map or key in self._qubit_to_wire_map
 
     def __len__(self):
         """Return the length of the map."""
-        len1 = len(self.wire_to_qubit_map)
-        len2 = len(self.qubit_to_wire_map)
+        len1 = len(self._wire_to_qubit_map)
+        len2 = len(self._qubit_to_wire_map)
         assert (
             len1 == len2
         ), """The lengths of the wire and qubit maps do not match. This could be
@@ -85,12 +85,12 @@ class WireQubitMap:
                     f"Expected QubitType SSAValue, instead got SSAValue with type {key.type}"
                 )
 
-            return self.qubit_to_wire_map[key]
+            return self._qubit_to_wire_map[key]
 
         if self.wires is not None and isinstance(key, int) and key not in self.wires:
             raise KeyError(f"{key} is not an available wire.")
 
-        return self.wire_to_qubit_map[key]
+        return self._wire_to_qubit_map[key]
 
     def __setitem__(
         self,
@@ -108,10 +108,10 @@ class WireQubitMap:
             if isinstance(val, int) and self.wires is not None and val not in self.wires:
                 raise KeyError(f"{key} is not an available wire.")
 
-            old_wire = self.qubit_to_wire_map.pop(key, None)
-            _ = self.wire_to_qubit_map.pop(old_wire, None)
-            self.qubit_to_wire_map[key] = val
-            self.wire_to_qubit_map[val] = key
+            old_wire = self._qubit_to_wire_map.pop(key, None)
+            _ = self._wire_to_qubit_map.pop(old_wire, None)
+            self._qubit_to_wire_map[key] = val
+            self._wire_to_qubit_map[val] = key
 
         elif isinstance(key, (int, AbstractWire)):
             if not isinstance(val, SSAValue) or not isinstance(val.type, quantum.QubitType):
@@ -119,10 +119,10 @@ class WireQubitMap:
             if isinstance(key, int) and self.wires is not None and key not in self.wires:
                 raise KeyError(f"{key} is not an available wire.")
 
-            old_qubit = self.wire_to_qubit_map.pop(key, None)
-            _ = self.qubit_to_wire_map.pop(old_qubit, None)
-            self.wire_to_qubit_map[key] = val
-            self.qubit_to_wire_map[val] = key
+            old_qubit = self._wire_to_qubit_map.pop(key, None)
+            _ = self._qubit_to_wire_map.pop(old_qubit, None)
+            self._wire_to_qubit_map[key] = val
+            self._qubit_to_wire_map[val] = key
 
         raise TypeError(f"{key} is not a valid wire label or QubitType SSAValue.")
 
@@ -134,12 +134,12 @@ class WireQubitMap:
                     "Expected key to be a QubitType SSAValue, instead got SSAValue "
                     f"with type {key.type}"
                 )
-            wire = self.qubit_to_wire_map.pop(key, default)
-            _ = self.wire_to_qubit_map.pop(wire, None)
+            wire = self._qubit_to_wire_map.pop(key, default)
+            _ = self._wire_to_qubit_map.pop(wire, None)
             return wire
 
-        qubit = self.wire_to_qubit_map.pop(key, default)
-        _ = self.qubit_to_wire_map.pop(qubit, None)
+        qubit = self._wire_to_qubit_map.pop(key, default)
+        _ = self._qubit_to_wire_map.pop(qubit, None)
         return qubit
 
     def update_qubit(
@@ -151,12 +151,12 @@ class WireQubitMap:
             old_qubit (SSAValue[QubitType]): The old qubit to remove.
             new_qubit (SSAValue[QubitType]): The new qubit to add.
         """
-        wire = self.qubit_to_wire_map.pop(old_qubit)
+        wire = self._qubit_to_wire_map.pop(old_qubit)
         if wire is None:
             raise KeyError(f"{old_qubit} is not in the WireQubitMap.")
 
-        self.wire_to_qubit_map[wire] = new_qubit
-        self.qubit_to_wire_map[new_qubit] = wire
+        self._wire_to_qubit_map[wire] = new_qubit
+        self._qubit_to_wire_map[new_qubit] = wire
 
 
 @dataclass
