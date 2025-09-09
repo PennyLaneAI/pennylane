@@ -24,13 +24,21 @@ class Interface(Enum):
     """Canonical set of interfaces supported."""
 
     AUTOGRAD = "autograd"
-    NUMPY = "numpy"
+    NUMPY = "numpy", None
     TORCH = "torch"
     JAX = "jax"
     JAX_JIT = "jax-jit"
     TF = "tf"
     TF_AUTOGRAPH = "tf-autograph"
     AUTO = "auto"
+
+    @classmethod
+    def _missing_(cls, value):
+        """Custom lookup to allow None as an alias for NUMPY."""
+        if value is None:
+            return cls.NUMPY
+        # Returning None from _missing_ tells the Enum machiner
+        return None
 
     def get_like(self):
         """Maps canonical set of interfaces to those known by autoray."""
@@ -50,10 +58,6 @@ class Interface(Enum):
         if isinstance(interface, str):
             raise TypeError("Cannot compare Interface with str")
         return super().__eq__(interface)
-
-    def __hash__(self):
-        # pylint: disable=useless-super-delegation
-        return super().__hash__()
 
 
 InterfaceLike = str | Interface | None
