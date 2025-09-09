@@ -185,7 +185,9 @@ def full_dot_products_density_matrix(
     rhoO = math.matmul(rho, O)  # shape: (batch, dim, dim) if batched, else (dim, dim)
 
     # Take the diagonal and sum to get the trace
-    if math.get_interface(rhoO) == "tensorflow":
+    if (
+        math.get_interface(rhoO) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         diag_elements = tf.linalg.diag_part(rhoO)

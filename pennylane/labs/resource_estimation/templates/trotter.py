@@ -27,7 +27,210 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ, too-many-arguments
+# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
+
+
+class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
+    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
+    exponential of a Hamiltonian operator.
+
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+    .. math::
+
+        \begin{align}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            &\vdots \\
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+        \end{align}
+
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m^{\text{th}}` order,
+    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+    .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+    Args:
+        first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators
+            constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
+        num_steps (int): number of Trotter steps to perform
+        order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+        wires (list[int] or optional): The wires on which the operator acts. If provided, these wire
+            labels will be used instead of the wires provided by the ResourceOperators in the 
+            :code:`first_order_expansion`.
+
+    Resources:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
+
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        This reduces the counts for those terms to:
+
+        .. math::
+
+            \begin{align}
+                C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+            \end{align}
+
+    .. seealso:: :class:`~.TrotterProduct`
+
+    The resources can be computed as:
+
+    **Example**
+
+    >>> import pennylane.labs.resource_estimation as plre
+    >>> num_steps, order = (1, 2)
+    >>> first_order_expansion = [plre.ResourceRX(), plre.ResourceRY()] # H = X + Y
+    >>> gate_set = {"RX", "RY"}
+    >>> res = plre.estimate_resources(plre.ResourceTrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
+    >>> print(res)
+    --- Resources: ---
+     Total qubits: 1
+     Total gates : 3
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'RX': 2, 'RY': 1}
+
+    """
+
+    resource_keys = {"first_order_expansion", "num_steps", "order", "num_wires"}
+
+    def __init__(self, first_order_expansion, num_steps, order, wires=None):
+
+        self.dequeue(op_to_remove=first_order_expansion)
+        self.queue()
+
+        try:
+            cmpr_ops = tuple(op.resource_rep_from_op() for op in first_order_expansion)
+        except AttributeError as error:
+            raise ValueError(
+                "All components of first_order_expansion must be instances of `ResourceOperator` in order to obtain resources."
+            ) from error
+
+        self.first_order_expansion = cmpr_ops
+        self.num_steps = num_steps
+        self.order = order
+
+        if wires:  # User defined wires take precedent
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+
+        else:  # Otherwise determine the wires from the ops in the first order expansion
+            ops_wires = Wires.all_wires(
+                [op.wires for op in first_order_expansion if op.wires is not None]
+            )
+            fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+
+            if len(ops_wires) < fewest_unique_wires:  # If the expansion didn't provide enough wire
+                self.wires = None  # labels we assume they all act on the same set
+                self.num_wires = fewest_unique_wires
+
+            else:  # If there are more wire labels, use that as the operator wires
+                self.wires = ops_wires
+                self.num_wires = len(self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * first_order_expansion (list[CompressedResourceOp]): A list of operators,
+                  in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
+                * num_steps (int): number of Trotter steps to perform
+                * order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+                * num_wires (int): the number of wires on which the operator acts
+
+        """
+        return {
+            "first_order_expansion": self.first_order_expansion,
+            "num_steps": self.num_steps,
+            "order": self.order,
+            "num_wires": self.num_wires,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, first_order_expansion, num_steps, order, num_wires
+    ) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            first_order_expansion (list[~pennylane.labs.resource_estimation.CompressedResourceOp]): A list of operators,
+                in the compressed representation, constituting
+                the first order expansion of the Hamiltonian to be approximately exponentiated.
+            num_steps (int): number of Trotter steps to perform
+            order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+            num_wires (int): the number of wires on which the operator acts
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {
+            "first_order_expansion": first_order_expansion,
+            "num_steps": num_steps,
+            "order": order,
+            "num_wires": num_wires,
+        }
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def default_resource_decomp(
+        cls,
+        first_order_expansion,
+        num_steps,
+        order,
+        num_wires,  # pylint: disable=unused-argument
+        **kwargs,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
+
+        Args:
+            first_order_expansion (list[~pennylane.labs.resource_estimation.CompressedResourceOp]): A list of operators,
+                in the compressed representation, constituting
+                the first order expansion of the Hamiltonian to be approximately exponentiated.
+            num_steps (int): number of Trotter steps to perform
+            order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+            num_wires (int): the number of wires on which the operator acts
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        """
+        k = order // 2
+        gate_list = []
+
+        if order == 1:
+            for op in first_order_expansion:
+                gate_list.append(plre.GateCount(op, num_steps))
+            return gate_list
+
+        # For first and last fragment
+        first_frag = first_order_expansion[0]
+        last_frag = first_order_expansion[-1]
+        gate_list.append(plre.GateCount(first_frag, num_steps * (5 ** (k - 1)) + 1))
+        gate_list.append(plre.GateCount(last_frag, num_steps * (5 ** (k - 1))))
+
+        # For rest of the fragments
+        for op in first_order_expansion[1:-1]:
+            gate_list.append(plre.GateCount(op, 2 * num_steps * (5 ** (k - 1))))
+
+        return gate_list
 
 
 class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
@@ -64,13 +267,14 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in a single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        This reduces the counts for those terms to:
 
         .. math::
 
@@ -78,6 +282,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
                 C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
                 C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
+
 
         The resources for a single step expansion of compressed double factorized Hamiltonian are calculated
         based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
@@ -116,12 +321,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         self.order = order
         self.compact_ham = compact_ham
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = None
-            self.num_wires = 2 * compact_ham.params["num_orbitals"]
+        self.num_wires = 2 * compact_ham.params["num_orbitals"]
         super().__init__(wires=wires)
 
     @property
@@ -161,7 +361,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
             "num_steps": num_steps,
             "order": order,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = 2 * compact_ham.params["num_orbitals"]
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
@@ -288,7 +489,6 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         basis_rot = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
 
         if order == 1:
-            print("Basis rot: ", num_frags * num_steps)
             gate_list.append(plre.GateCount(basis_rot, 2 * num_frags * num_steps))
 
             gate_list.append(plre.GateCount(op_onebody, num_steps))
@@ -345,13 +545,14 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in the single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        This reduces the counts for those terms to:
 
         .. math::
 
@@ -359,6 +560,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                 C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
                 C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
+
 
         The resources for a single step expansion of tensor hypercontracted Hamiltonian are calculated
         based on `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_
@@ -397,12 +599,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         self.order = order
         self.compact_ham = compact_ham
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = None
-            self.num_wires = compact_ham.params["tensor_rank"] * 2
+        self.num_wires = compact_ham.params["tensor_rank"] * 2
         super().__init__(wires=wires)
 
     @property
@@ -442,7 +639,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             "num_steps": num_steps,
             "order": order,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = compact_ham.params["tensor_rank"] * 2
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
@@ -624,13 +822,14 @@ class ResourceTrotterVibrational(ResourceOperator):
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in a single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        This reduces the counts for those terms to:
 
         .. math::
 
@@ -685,13 +884,7 @@ class ResourceTrotterVibrational(ResourceOperator):
         self.phase_grad_precision = phase_grad_precision
         self.coeff_precision = coeff_precision
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
-            self.wires = None
-
+        self.num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
         super().__init__(wires=wires)
 
     @property
@@ -745,7 +938,8 @@ class ResourceTrotterVibrational(ResourceOperator):
             "phase_grad_precision": phase_grad_precision,
             "coeff_precision": coeff_precision,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
@@ -988,13 +1182,14 @@ class ResourceTrotterVibronic(ResourceOperator):
         wires (list[int] or optional): the wires on which the operator acts.
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in a single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        This reduces the counts for those terms to:
 
         .. math::
 
@@ -1050,15 +1245,10 @@ class ResourceTrotterVibronic(ResourceOperator):
         self.phase_grad_precision = phase_grad_precision
         self.coeff_precision = coeff_precision
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.num_wires = (
-                int(np.ceil(np.log2(compact_ham.params["num_states"])))
-                + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
-            )
-            self.wires = None
+        self.num_wires = (
+            int(np.ceil(np.log2(compact_ham.params["num_states"])))
+            + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        )
         super().__init__(wires=wires)
 
     @property
@@ -1112,7 +1302,11 @@ class ResourceTrotterVibronic(ResourceOperator):
             "phase_grad_precision": phase_grad_precision,
             "coeff_precision": coeff_precision,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = (
+            int(np.ceil(np.log2(compact_ham.params["num_states"])))
+            + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        )
+        return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
     def _cached_terms(
@@ -1311,7 +1505,6 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         phase_grad_wires = abs(np.floor(np.log2(phase_grad_precision)))
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
-        print("coeff_wires:", coeff_wires, "phase_grad_wires:", phase_grad_wires)
 
         x = plre.ResourceX.resource_rep()
 

@@ -243,7 +243,7 @@ def test_overriding_measurements():
             return qml.sample(wires=measurement.wires)
 
     @MeasurementsToSample()
-    @qml.qnode(qml.device("default.qubit", wires=2, shots=5))
+    @qml.qnode(qml.device("default.qubit", wires=2), shots=5)
     def circuit():
         return qml.expval(qml.Z(0)), qml.probs(wires=(0, 1))
 
@@ -501,7 +501,8 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr = jax.make_jaxpr(f)(True)
 
-        assert jaxpr.eqns[0].params["jaxpr_branches"][-1] is None  # no false branch
+        false_branch = jaxpr.eqns[0].params["jaxpr_branches"][-1]
+        assert len(false_branch.eqns) == 0
 
         with qml.queuing.AnnotatedQueue() as q_true:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True)

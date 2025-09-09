@@ -280,10 +280,10 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     if isinstance(op, Sequence):
         if not math.is_abstract(op[0]) and not all(
-            isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
+            isinstance(o, MeasurementValue) and not o.has_processing for o in op
         ):
             raise QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "Only sequences of unprocessed MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
             )

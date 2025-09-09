@@ -31,6 +31,7 @@ from pennylane import kernels
 from pennylane import math
 from pennylane import operation
 from pennylane import allocation
+from pennylane.allocation import allocate, deallocate
 from pennylane import decomposition
 from pennylane.decomposition import (
     register_resources,
@@ -92,7 +93,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod
 from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *

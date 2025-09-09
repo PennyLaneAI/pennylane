@@ -17,8 +17,9 @@ This submodule contains the template for Qubitization.
 
 import copy
 
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import I, prod
+from pennylane.ops import I, Prod, prod
 from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
@@ -75,6 +76,8 @@ class Qubitization(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_control_wires", "hamiltonian"}
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
@@ -88,6 +91,13 @@ class Qubitization(Operation):
         }
 
         super().__init__(*hamiltonian.data, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_control_wires": len(self.hyperparameters["control"]),
+            "hamiltonian": self.hyperparameters["hamiltonian"],
+        }
 
     def _flatten(self):
         data = (self.hyperparameters["hamiltonian"],)
@@ -164,3 +174,32 @@ class Qubitization(Operation):
         decomp_ops.append(PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops
+
+
+def _qubitization_resources(num_control_wires, hamiltonian):
+    return {
+        resource_rep(
+            Reflection,
+            base_class=Prod,
+            base_params={"resources": {resource_rep(I): num_control_wires}},
+            num_wires=1,
+            num_reflection_wires=1,
+        ): 1,
+        resource_rep(
+            PrepSelPrep,
+            op_reps=(resource_rep(type(hamiltonian), **hamiltonian.resource_params),),
+            num_control=num_control_wires,
+        ): 1,
+    }
+
+
+@register_resources(_qubitization_resources)
+def _qubitization_decomposition(*_, **kwargs):
+    hamiltonian = kwargs["hamiltonian"]
+    control = kwargs["control"]
+
+    Reflection(Prod(*[I(wire) for wire in control]))
+    PrepSelPrep(hamiltonian, control=control)
+
+
+add_decomps(Qubitization, _qubitization_decomposition)

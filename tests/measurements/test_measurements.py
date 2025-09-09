@@ -529,8 +529,9 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
@@ -598,8 +599,9 @@ class TestStateMeasurement:
             def shape(self):
                 return ()
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             return MyMeasurement()
@@ -639,13 +641,14 @@ class TestMeasurementTransform:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             return CountTapesMP(wires=[0])
 
-        assert circuit() == 1
+        assert circuit() == [True]
 
 
 class TestMeasurementProcess:

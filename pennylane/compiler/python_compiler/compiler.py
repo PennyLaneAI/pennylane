@@ -21,8 +21,11 @@ from jaxlib.mlir.dialects import stablehlo
 from jaxlib.mlir.ir import Context as jaxContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jaxModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xContext
-from xdsl.passes import PassPipeline
+from xdsl.dialects.builtin import ModuleOp
+from xdsl.passes import ModulePass, PassPipeline
 from xdsl.printer import Printer
+
+from pennylane.typing import Callable
 
 from .jax_utils import QuantumParser
 from .transforms.api import ApplyTransformSequence
@@ -33,7 +36,9 @@ class Compiler:
     """Compiler namespace"""
 
     @staticmethod
-    def run(jmod: jaxModule) -> jaxModule:
+    def run(
+        jmod: jaxModule, callback: Callable[[ModulePass, ModuleOp, ModulePass], None] | None = None
+    ) -> jaxModule:
         """Runs the apply-transform-sequence pass.
 
         The apply-transform-sequence pass is a "meta-pass". In other words,
@@ -46,7 +51,7 @@ class Compiler:
         ctx = xContext(allow_unregistered=True)
         parser = QuantumParser(ctx, gentxtmod)
         xmod = parser.parse_module()
-        pipeline = PassPipeline((ApplyTransformSequence(),))
+        pipeline = PassPipeline((ApplyTransformSequence(callback=callback),))
         # xmod is modified in place
         pipeline.apply(ctx, xmod)
 

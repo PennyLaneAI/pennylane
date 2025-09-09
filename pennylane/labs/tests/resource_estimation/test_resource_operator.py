@@ -38,9 +38,8 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 from pennylane.queuing import AnnotatedQueue
-from pennylane.wires import Wires
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself
+# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
 
 
 class ResourceDummyX(ResourceOperator):
@@ -68,16 +67,17 @@ class TestCompressedResourceOp:
 
     test_hamiltonian = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
     compressed_ops_and_params_lst = (
-        ("DummyX", ResourceDummyX, {"num_wires": 1}, None),
-        ("DummyQFT", ResourceDummyQFT, {"num_wires": 5}, None),
-        ("DummyQSVT", ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5}, None),
+        ("DummyX", ResourceDummyX, 1, {"num_wires": 1}, None),
+        ("DummyQFT", ResourceDummyQFT, 5, {"num_wires": 5}, None),
+        ("DummyQSVT", ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}, None),
         (
             "DummyTrotterProduct",
             ResourceDummyTrotterProduct,
+            2,
             {"Hamiltonian": test_hamiltonian, "num_steps": 5, "order": 2},
             None,
         ),
-        ("X", ResourceDummyX, {"num_wires": 1}, "X"),
+        ("X", ResourceDummyX, 1, {"num_wires": 1}, "X"),
     )
 
     compressed_op_names = (
@@ -88,21 +88,28 @@ class TestCompressedResourceOp:
         "X",
     )
 
-    @pytest.mark.parametrize("name, op_type, parameters, name_param", compressed_ops_and_params_lst)
-    def test_init(self, name, op_type, parameters, name_param):
+    @pytest.mark.parametrize(
+        "name, op_type, num_wires, parameters, name_param", compressed_ops_and_params_lst
+    )
+    def test_init(self, name, op_type, parameters, num_wires, name_param):
         """Test that we can correctly instantiate CompressedResourceOp"""
-        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
+        cr_op = CompressedResourceOp(op_type, num_wires, parameters, name=name_param)
 
         assert cr_op._name == name
         assert cr_op.op_type is op_type
+        assert cr_op.num_wires == num_wires
         assert cr_op.params == parameters
         assert sorted(cr_op._hashable_params) == sorted(tuple(parameters.items()))
 
     def test_hash(self):
         """Test that the hash method behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT2 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        Other = CompressedResourceOp(ResourceDummyQFT, {"num_wires": 3})
+        CmprssedQSVT1 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        CmprssedQSVT2 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        Other = CompressedResourceOp(ResourceDummyQFT, 3, {"num_wires": 3})
 
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT1)  # compare same object
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT2)  # compare identical instance
@@ -110,13 +117,19 @@ class TestCompressedResourceOp:
 
         # test dictionary as parameter
         CmprssedAdjoint1 = CompressedResourceOp(
-            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}}
+            ResourceDummyAdjoint,
+            1,
+            {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}},
         )
         CmprssedAdjoint2 = CompressedResourceOp(
-            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}}
+            ResourceDummyAdjoint,
+            1,
+            {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}},
         )
         Other = CompressedResourceOp(
-            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 2}}
+            ResourceDummyAdjoint,
+            2,
+            {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 2}},
         )
 
         assert hash(CmprssedAdjoint1) == hash(CmprssedAdjoint1)
@@ -125,10 +138,16 @@ class TestCompressedResourceOp:
 
     def test_equality(self):
         """Test that the equality methods behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT2 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT3 = CompressedResourceOp(ResourceDummyQSVT, {"num_angles": 5, "num_wires": 3})
-        Other = CompressedResourceOp(ResourceDummyQFT, {"num_wires": 3})
+        CmprssedQSVT1 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        CmprssedQSVT2 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        CmprssedQSVT3 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_angles": 5, "num_wires": 3}
+        )
+        Other = CompressedResourceOp(ResourceDummyQFT, 3, {"num_wires": 3})
 
         assert CmprssedQSVT1 == CmprssedQSVT2  # compare identical instance
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
@@ -137,29 +156,29 @@ class TestCompressedResourceOp:
     @pytest.mark.parametrize("args, name", zip(compressed_ops_and_params_lst, compressed_op_names))
     def test_name(self, args, name):
         """Test that the name method behaves as expected."""
-        _, op_type, parameters, name_param = args
-        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
+        _, op_type, num_wires, parameters, name_param = args
+        cr_op = CompressedResourceOp(op_type, num_wires, parameters, name=name_param)
 
         assert cr_op.name == name
 
     @pytest.mark.parametrize("args", compressed_ops_and_params_lst)
     def test_repr(self, args):
         """Test that the name method behaves as expected."""
-        _, op_type, parameters, name_param = args
+        _, op_type, num_wires, parameters, name_param = args
 
-        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
+        cr_op = CompressedResourceOp(op_type, num_wires, parameters, name=name_param)
 
         op_name = op_type.__name__
         expected_params_str_parts = [f"{k!r}:{v!r}" for k, v in sorted(parameters.items())]
         expected_params_str = ", ".join(expected_params_str_parts)
 
-        expected_repr_string = f"CompressedResourceOp({op_name}, params={{{expected_params_str}}})"
+        expected_repr_string = f"CompressedResourceOp({op_name}, num_wires={num_wires}, params={{{expected_params_str}}})"
         assert str(cr_op) == expected_repr_string
 
     def test_type_error(self):
         """Test that an error is raised if wrong type is provided for op_type."""
         with pytest.raises(TypeError, match="op_type must be a subclass of ResourceOperator."):
-            CompressedResourceOp(int)
+            CompressedResourceOp(int, num_wires=2)
 
 
 @dataclass(frozen=True)
@@ -322,21 +341,21 @@ class TestResourceOperator:
         for op_to_remove, expected_queue in zip(ops_to_remove, expected_queues):
             with AnnotatedQueue() as q:
                 for op in self.ops_to_queue:
-                    qml.apply(op)
+                    op.queue()
 
                 ResourceOperator.dequeue(op_to_remove)
 
             assert q.queue == expected_queue
 
-    def test_init_wire_override(self):
-        """Test that setting the wires correctly overrides the num_wires argument."""
+    def test_wire_error(self):
+        """Test that providing a different number of wire labels than the operator's
+        num_wires aregument leads to an error."""
         dummy_op1 = DummyOp()
         assert dummy_op1.wires is None
-        assert dummy_op1.num_wires == 0
+        assert dummy_op1.num_wires == 1
 
-        dummy_op2 = DummyOp(wires=[0, 1, 2])
-        assert dummy_op2.wires == Wires([0, 1, 2])
-        assert dummy_op2.num_wires == 3
+        with pytest.raises(ValueError, match="Expected 1 wires, got"):
+            dummy_op2 = DummyOp(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mul(self, s):

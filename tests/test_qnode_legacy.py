@@ -138,13 +138,14 @@ class TestValidation:
         on QNode construction when the device has finite shots
         """
 
-        dev = DefaultQubitLegacy(wires=1, shots=1)
+        dev = DefaultQubitLegacy(wires=1)
 
         with pytest.raises(
             QuantumFunctionError,
             match="does not support adjoint with requested circuit.",
         ):
 
+            @qml.set_shots(1)
             @qnode(dev, diff_method="adjoint")
             def circ():
                 return qml.expval(qml.PauliZ(0))
@@ -155,7 +156,7 @@ class TestValidation:
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
-        dev = DefaultQubitLegacy(wires=2, shots=None)
+        dev = DefaultQubitLegacy(wires=2)
 
         @qnode(dev, diff_method="backprop")
         def circuit(param):
@@ -180,14 +181,14 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == "<QNode: wires=1, device='default.qubit.legacy', interface='auto', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='auto', diff_method='best', shots='Shots(total=None)'>"
         )
 
         qn = QNode(func, dev, interface="autograd")
 
         assert (
             repr(qn)
-            == "<QNode: wires=1, device='default.qubit.legacy', interface='autograd', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='autograd', diff_method='best', shots='Shots(total=None)'>"
         )
 
         # QNode can still be executed
@@ -368,7 +369,7 @@ class TestTapeConstruction:
         jitting raises an error."""
         import jax
 
-        dev = DefaultQubitLegacy(wires=2, shots=5)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit1(param):
             qml.Hadamard(0)
@@ -376,7 +377,7 @@ class TestTapeConstruction:
             qml.CNOT([1, 0])
             return qml.counts()
 
-        qn = qml.QNode(circuit1, dev)
+        qn = qml.set_shots(qml.QNode(circuit1, dev), shots=5)
         jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
@@ -465,7 +466,7 @@ class TestIntegration:
         assert dev.num_executions == 5
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_correct_number_of_executions_tf(self, interface):
         """Test that number of executions are tracked in the tf interface."""
 
@@ -629,10 +630,11 @@ class TestIntegration:
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
         returns the expected results."""
-        dev = DefaultQubitLegacy(wires=3, shots=1000)
+        dev = DefaultQubitLegacy(wires=3)
 
         first_par = np.pi
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
@@ -640,6 +642,7 @@ class TestIntegration:
             qml.CRY(x, wires=[0, 1])
             return qml.sample(qml.PauliZ(1))
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
@@ -656,7 +659,7 @@ class TestIntegration:
         spy.assert_called()
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_conditional_ops_tensorflow(self, interface):
         """Test conditional operations with TensorFlow."""
         import tensorflow as tf
@@ -795,27 +798,32 @@ class TestShots:
     # pylint: disable=unexpected-keyword-arg
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
-        dev = DefaultQubitLegacy(wires=1, shots=10)
-
-        @qnode(dev)
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(wires=0))
-
-        assert len(circuit(0.8)) == 10
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
+            match="shots on device is deprecated",
         ):
-            assert len(circuit(0.8, shots=2)) == 2
-            assert len(circuit(0.8, shots=3178)) == 3178
-        assert len(circuit(0.8)) == 10
+            dev = DefaultQubitLegacy(wires=1, shots=10)
+
+            @qnode(dev)
+            @qml.qnode(dev)
+            def circuit(a):
+                qml.RX(a, wires=0)
+                return qml.sample(qml.PauliZ(wires=0))
+
+            assert len(circuit(0.8)) == 10
+            with pytest.warns(
+                PennyLaneDeprecationWarning,
+                match="'shots' specified on call to a QNode is deprecated",
+            ):
+                assert len(circuit(0.8, shots=2)) == 2
+                assert len(circuit(0.8, shots=3178)) == 3178
+            assert len(circuit(0.8)) == 10
 
     # pylint: disable=unexpected-keyword-arg, protected-access
     def test_specify_shots_per_call_expval(self):
         """Tests that shots can be set per call for an expectation value.
         Note: this test has a vanishingly small probability to fail."""
-        dev = DefaultQubitLegacy(wires=1, shots=None)
+        dev = DefaultQubitLegacy(wires=1)
 
         @qnode(dev)
         def circuit():
@@ -852,9 +860,13 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         with pytest.warns(
-            UserWarning, match="The 'shots' argument name is reserved for overriding"
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
         ):
-            circuit = QNode(circuit, dev)
+            with pytest.warns(
+                UserWarning, match="The 'shots' argument name is reserved for overriding"
+            ):
+                circuit = QNode(circuit, dev)
 
         assert len(circuit(0.8)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8)
@@ -865,7 +877,11 @@ class TestShots:
             match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(circuit(0.8, shots=1)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
         with pytest.warns(
@@ -873,14 +889,18 @@ class TestShots:
             match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(circuit(0.8, shots=0)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
-        dev = DefaultQubitLegacy(wires=[0, 1], shots=10)
+        dev = DefaultQubitLegacy(wires=[0, 1])
 
         def ansatz0(a, shots):
             qml.RX(a, wires=shots)
@@ -890,19 +910,19 @@ class TestShots:
         with pytest.warns(
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
-            circuit = QNode(ansatz0, dev)
+            circuit = QNode(ansatz0, dev, shots=10)
 
         assert len(circuit(0.8, 1)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 1)
         assert tape.operations[0].wires.labels == (1,)
 
-        dev = DefaultQubitLegacy(wires=2, shots=10)
+        dev = DefaultQubitLegacy(wires=2)
 
         with pytest.warns(
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
 
-            @qnode(dev)
+            @qnode(dev, shots=10)
             def ansatz1(a, shots):
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
@@ -920,11 +940,15 @@ class TestShots:
         """Tests that per-call shots setting does not change the number of shots in the device."""
 
         dev = DefaultQubitLegacy(wires=1, shots=3)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
 
-        @qnode(dev)
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(wires=0))
+            @qnode(dev)
+            def circuit(a):
+                qml.RX(a, wires=0)
+                return qml.sample(qml.PauliZ(wires=0))
 
         assert dev.shots == 3
         with pytest.warns(
@@ -938,11 +962,15 @@ class TestShots:
     def test_warning_finite_shots_dev(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = DefaultQubitLegacy(wires=1, shots=5)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
 
-        @qml.qnode(dev, cache={})
-        def circuit(x):
-            qml.RZ(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            @qml.qnode(dev, cache={})
+            def circuit(x):
+                qml.RZ(x, wires=0)
+                return qml.expval(qml.PauliZ(0))
 
         # no warning on the first execution
         circuit(0.3)
@@ -952,8 +980,9 @@ class TestShots:
     # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = DefaultQubitLegacy(wires=1, shots=5)
+        dev = DefaultQubitLegacy(wires=1)
 
+        @qml.set_shots(5)
         @qml.qnode(dev, cache={})
         def circuit(x):
             qml.RZ(x, wires=0)
@@ -966,7 +995,7 @@ class TestShots:
 
     def test_warning_finite_shots_tape(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = DefaultQubitLegacy(wires=1, shots=5)
+        dev = DefaultQubitLegacy(wires=1)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(0.3, wires=0)
@@ -996,8 +1025,9 @@ class TestShots:
     @pytest.mark.autograd
     def test_no_warning_internal_cache_reuse(self):
         """Tests that no warning is raised when only the internal cache is reused."""
-        dev = DefaultQubitLegacy(wires=1, shots=5)
+        dev = DefaultQubitLegacy(wires=1)
 
+        @qml.set_shots(5)
         @qml.qnode(dev, cache=True)
         def circuit(x):
             qml.RZ(x, wires=0)
@@ -1026,30 +1056,48 @@ class TestShots:
             qml.RY(y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        qn = QNode(func, dev)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+
+            qn = QNode(func, dev)
 
         # No override
         tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
         assert tape.shots.total_shots == 5
 
         # Override
-        tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
         # Decorator syntax
-        @qnode(dev)
-        def qn2(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return qml.expval(qml.PauliZ(0))
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+
+            @qnode(dev)
+            def qn2(x, y):
+                qml.RX(x, wires=0)
+                qml.RY(y, wires=1)
+                return qml.expval(qml.PauliZ(0))
 
         # No override
         tape = qml.workflow.construct_tape(qn2)(0.1, 0.2)
         assert tape.shots.total_shots == 5
 
         # Override
-        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
@@ -1355,7 +1403,7 @@ class TestTapeExpansion:
     def test_hamiltonian_expansion_finite_shots(self, mocker):
         """Test that the Hamiltonian is expanded if there
         are non-commuting groups and the number of shots is finite"""
-        dev = DefaultQubitLegacy(wires=3, shots=50000)
+        dev = DefaultQubitLegacy(wires=3)
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
@@ -1364,6 +1412,7 @@ class TestTapeExpansion:
 
         assert len(H.grouping_indices) == 2
 
+        @qml.set_shots(50000)
         @qnode(dev)
         def circuit():
             return qml.expval(H)
@@ -1381,7 +1430,7 @@ class TestTapeExpansion:
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
 
-        dev = DefaultQubitLegacy(wires=3, shots=50000)
+        dev = DefaultQubitLegacy(wires=3)
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
@@ -1391,6 +1440,7 @@ class TestTapeExpansion:
             H.compute_grouping()
             assert len(H.grouping_indices) == 2
 
+        @qml.set_shots(50000)
         @qnode(dev)
         def circuit():
             return qml.expval(H), qml.expval(H)
@@ -1506,15 +1556,17 @@ class TestDefaultQubitLegacySeeding:
 
         # Create two separate devices with the same seed
         # Each will start fresh, so their counters should start from 0
-        dev1 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
-        dev2 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+        dev1 = DefaultQubitLegacy(wires=2, seed=seed)
+        dev2 = DefaultQubitLegacy(wires=2, seed=seed)
 
+        @qml.set_shots(num_shots)
         @qml.qnode(dev1)
         def circuit1():
             qml.Hadamard(0)
             qml.CNOT([0, 1])
             return qml.sample(wires=[0, 1])
 
+        @qml.set_shots(num_shots)
         @qml.qnode(dev2)
         def circuit2():
             qml.Hadamard(0)
@@ -1538,15 +1590,17 @@ class TestDefaultQubitLegacySeeding:
 
         # Create a circuit that performs classical shadow measurement
         # This internally calls reset() multiple times
-        dev1 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
-        dev2 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+        dev1 = DefaultQubitLegacy(wires=2, seed=seed)
+        dev2 = DefaultQubitLegacy(wires=2, seed=seed)
 
+        @qml.set_shots(num_shots)
         @qml.qnode(dev1)
         def circuit1():
             qml.Hadamard(0)
             qml.CNOT([0, 1])
             return qml.classical_shadow(wires=[0, 1], seed=seed)
 
+        @qml.set_shots(num_shots)
         @qml.qnode(dev2)
         def circuit2():
             qml.Hadamard(0)
@@ -1645,8 +1699,9 @@ class TestDefaultQubitLegacySeeding:
         seed = 42
         num_shots = 100
 
-        dev = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+        dev = DefaultQubitLegacy(wires=2, seed=seed)
 
+        @qml.set_shots(num_shots)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)

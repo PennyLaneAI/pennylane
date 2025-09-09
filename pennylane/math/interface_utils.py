@@ -125,7 +125,9 @@ def get_interface(*values):
 
     interfaces = {_get_interface_of_single_tensor(v) for v in values}
 
-    if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
+    if (
+        len(interfaces - {"numpy", "scipy", "autograd"}) > 1
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)# pragma: no cover (TensorFlow tests were disabled during deprecation)
         # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 

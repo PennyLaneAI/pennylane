@@ -301,3 +301,45 @@ def test_importance_scores():
         ("B", "A", "B", "A", "B"),
         ("B", "B", "B", "A", "B"),
     }
+
+    
+params = [
+    ("serial", 1),
+    ("mp_pool", 1),
+    ("mp_pool", 2),
+    ("cf_procpool", 1),
+    ("cf_procpool", 2),
+    ("cf_threadpool", 1),
+    ("cf_threadpool", 2),
+    ("mpi4py_pool", 1),
+    ("mpi4py_pool", 2),
+    ("mpi4py_comm", 1),
+    ("mpi4py_comm", 2),
+]
+
+
+@pytest.mark.parametrize("backend, num_workers", params)
+def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
+    """Test that effective_hamiltonian function runs without errors for different backends."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
+    r, delta = 1, 0.5
+
+    fragments = {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))}
+    n_frags = len(fragments)
+
+    first_order = ProductFormula(list(range(n_frags)), coeffs=[delta / r] * n_frags) ** r
+    actual = effective_hamiltonian(
+        first_order, fragments, order=2, num_workers=num_workers, backend=backend
+    )
+
+    ham = sum(fragments.values(), np.zeros(shape=(3, 3)))
+    expected = np.zeros(shape=(3, 3), dtype=np.complex128)
+    for j in range(n_frags - 1):
+        for k in range(j + 1, n_frags):
+            expected += (1 / 2) * nested_commutator([fragments[j], fragments[k]])
+    expected *= 1j / r * delta
+
+    assert np.allclose(1j * delta * (expected + ham), actual)

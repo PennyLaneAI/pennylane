@@ -16,12 +16,14 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 
 import abc
+import warnings
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
 from typing import overload
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -187,6 +189,11 @@ class Device(abc.ABC):
     def __init__(self, wires=None, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
+        if shots is not None and shots != Shots():
+            warnings.warn(
+                "Setting shots on device is deprecated. Please use the `set_shots` transform on the respective QNode instead.",
+                PennyLaneDeprecationWarning,
+            )
         self._shots = Shots(shots)
 
         if wires is not None:
@@ -983,6 +990,7 @@ class Device(abc.ABC):
         consts: list[TensorLike],
         *args,
         execution_config: ExecutionConfig | None = None,
+        shots: Shots = Shots(None),
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
@@ -993,6 +1001,7 @@ class Device(abc.ABC):
 
         Keyword Args:
             execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
+            shots (Shots): the number of shots to use for the evaluation
 
         Returns:
             list[TensorLike]: the result of evaluating the jaxpr with the given parameters.

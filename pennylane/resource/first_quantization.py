@@ -38,7 +38,7 @@ class FirstQuantization(Operation):
         omega (float): unit cell volume
         error (float): target error in the algorithm
         charge (int): total electric charge of the system
-        br (int): number of bits for ancilla qubit rotation
+        br (int): number of bits for auxiliary qubit rotation
         vectors (array[float]): lattice vectors
 
     **Example**
@@ -191,7 +191,7 @@ class FirstQuantization(Operation):
 
         Args:
             n (int): number of basis states to create an equal superposition for state preparation
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
 
         Returns:
             float: probability of success for state preparation
@@ -231,7 +231,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -430,7 +430,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
 
         Returns:
@@ -516,7 +516,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -564,7 +564,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -623,7 +623,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -712,7 +712,7 @@ class FirstQuantization(Operation):
             n (int): number of plane waves
             eta (int): number of electrons
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             vectors (array[float]): lattice vectors
 
@@ -831,7 +831,7 @@ class FirstQuantization(Operation):
             n (int): number of plane waves
             eta (int): number of electrons
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             vectors (array[float]): lattice vectors
 
@@ -932,7 +932,7 @@ class FirstQuantization(Operation):
             n (int): number of plane waves
             eta (int): number of electrons
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             vectors (array[float]): lattice vectors
 

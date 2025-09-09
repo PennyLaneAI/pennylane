@@ -31,7 +31,7 @@ from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name
-from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
     from pennylane.math import SupportedInterfaceUserInput
@@ -51,7 +53,7 @@ if TYPE_CHECKING:
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
 
-    SupportedDeviceAPIs = LegacyDevice | Device
+    SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
 
 def _convert_to_interface(result, interface: Interface):
@@ -119,7 +121,10 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) 
     return pytrees.unflatten(results, qfunc_output_structure)
 
 
-def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
+def _validate_mcm_config(
+    postselect_mode: Literal["hw-like", "fill-shots"] | None,
+    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None,
+) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
@@ -153,7 +158,9 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
 
     terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
 
-    if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
+    if any(
+        ret is not m for ret, m in zip(measurement_processes, terminal_measurements, strict=True)
+    ):
         raise QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
@@ -290,21 +297,19 @@ class QNode:
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
-            to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
-            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
-            ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
-            as the name suggests. If not provided,
-            the device will determine the best choice automatically. For usage details, please refer to the
-            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+        mcm_method (str): The strategy for applying mid-circuit measurements.
+            Available methods include ``"deferred"`` (to use the deferred
+            measurement principle), ``"one-shot"`` (to execute the circuit
+            for each shot separately when using finite shots), and
+            ``"tree-traversal"`` (visits the tree of possible MCM sequences,
+            only supported on ``default.qubit`` and ``lightning.qubit``).
+            If not provided, the device will select the method automatically.
+            For usage details, refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
         static_argnums (int | Sequence[int]): *Only applicable when the experimental capture mode is enabled.*
             An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
-        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
-            convert Python control flow to native PennyLane control flow. For more information, refer to
-            :doc:`Autograph </development/autograph>`. Defaults to ``True``.
         executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
@@ -519,6 +524,7 @@ class QNode:
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
+        shots: ShotsLike = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
@@ -528,7 +534,6 @@ class QNode:
         mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
-        autograph: bool = True,
         executor_backend: ExecBackends | str | None = None,
     ):
         self._init_args = locals()
@@ -572,7 +577,6 @@ class QNode:
             self._qfunc_uses_shots_arg = False
 
         # input arguments
-        self._autograph = autograph
         self.func = func
         self.device = device
         self._interface = get_canonical_interface_name(interface)
@@ -581,7 +585,7 @@ class QNode:
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
 
-        self.capture_cache = LRUCache(maxsize=1000)
+        self.capture_cache: LRUCache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
             static_argnums = (static_argnums,)
         self.static_argnums = sorted(static_argnums)
@@ -605,7 +609,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = device.shots
+        self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
@@ -626,14 +630,30 @@ class QNode:
     def __repr__(self) -> str:
         """String representation."""
         if not isinstance(self.device, qml.devices.LegacyDeviceFacade):
-            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
+            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}', shots='{self.shots}'>"
 
-        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}', shots='{}'>"
         return detail.format(
             self.device.num_wires,
             self.device.short_name,
             self.interface,
             self.diff_method,
+            self.shots,
+        )
+
+    @property
+    def shots(self) -> Shots:
+        """Default shots for execution workflows.
+
+        Note that this property is not able to be set directly; only `set_shots` can modify it.
+
+        """
+        return self._shots
+
+    @shots.setter
+    def shots(self, _):
+        raise AttributeError(
+            "Shots cannot be set on a qnode instance. You can set shots with `qml.set_shots`."
         )
 
     @property
@@ -727,12 +747,11 @@ class QNode:
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
         # nested dictionary update
         new_gradient_kwargs = kwargs.pop("gradient_kwargs", {})
-        old_gradient_kwargs = original_init_args.get("gradient_kwargs").copy()
+        old_gradient_kwargs = (original_init_args.get("gradient_kwargs", {})).copy()
         old_gradient_kwargs.update(new_gradient_kwargs)
         kwargs["gradient_kwargs"] = old_gradient_kwargs
 
-        # pylint: disable=protected-access
-        old_shots = self._shots
+        old_shots = self.shots
         # set shots issue
         if "device" in kwargs:
             if old_shots != kwargs["device"].shots:
@@ -745,7 +764,7 @@ class QNode:
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         # pylint: disable=protected-access
-        if updated_qn._shots != old_shots:
+        if updated_qn.shots != old_shots:
             updated_qn._set_shots(old_shots)
         if self._shots_override_device:
             updated_qn._shots_override_device = True
@@ -803,10 +822,10 @@ class QNode:
                     stacklevel=2,
                 )
 
-        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
-            shots = self._shots
+        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode.shots precedency:
+            shots = self.shots
         else:
-            shots = kwargs.pop("shots", self._shots)
+            shots = kwargs.pop("shots", self.shots)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
