@@ -70,17 +70,17 @@ wire_manager_data = (wm1, wm2, wm3)
 class TestResources:
     """Test the Resources class"""
 
-    @pytest.mark.parametrize("gt", gate_types_data + (None,))
+    @pytest.mark.parametrize("gate_types", gate_types_data + (None,))
     @pytest.mark.parametrize("wm", wire_manager_data)
-    def test_init(self, wm, gt):
+    def test_init(self, wm, gate_types):
         """Test that the class is correctly initialized"""
-        resources = Resources(wire_manager=wm, gate_types=gt)
+        resources = Resources(wire_manager=wm, gate_types=gate_types)
 
         expected_wm = wm
-        expected_gt = defaultdict(int, {}) if gt is None else gt
+        expected_gate_types = defaultdict(int, {}) if gate_types is None else gate_types
 
         assert resources.wire_manager == expected_wm
-        assert resources.gate_types == expected_gt
+        assert resources.gate_types == expected_gate_types
 
     str_data = (
         (
@@ -125,7 +125,10 @@ class TestResources:
     @pytest.mark.parametrize(
         "resources, expected_str",
         zip(
-            tuple(Resources(wm, gt) for wm, gt in zip(wire_manager_data, gate_types_data)),
+            tuple(
+                Resources(wm, gate_types)
+                for wm, gate_types in zip(wire_manager_data, gate_types_data)
+            ),
             str_data,
         ),
     )
@@ -133,15 +136,18 @@ class TestResources:
         """Test that the str method correctly displays the information."""
         assert str(resources) == expected_str
 
-    @pytest.mark.parametrize("gt", gate_types_data + (None,))
+    @pytest.mark.parametrize("gate_types", gate_types_data + (None,))
     @pytest.mark.parametrize("wm", wire_manager_data)
-    def test_repr_method(self, gt, wm):
+    def test_repr_method(self, gate_types, wm):
         """Test that the repr method correctly represents the class."""
-        resources = Resources(wire_manager=wm, gate_types=gt)
+        resources = Resources(wire_manager=wm, gate_types=gate_types)
 
         expected_wm = wm
-        expected_gt = defaultdict(int, {}) if gt is None else gt
-        assert repr(resources) == f"Resources(wire_manager={expected_wm}, gate_types={expected_gt})"
+        expected_gate_types = defaultdict(int, {}) if gate_types is None else gate_types
+        assert (
+            repr(resources)
+            == f"Resources(wire_manager={expected_wm}, gate_types={expected_gate_types})"
+        )
 
     def test_gate_counts(self):
         """Test that this function correctly simplifies the gate types
@@ -173,11 +179,11 @@ class TestResources:
 
     def test_equality(self):
         """Test that the equality method works as expected."""
-        gt1, gt2 = (gate_types_data[0], gate_types_data[1])
+        gate_types1, gate_types2 = (gate_types_data[0], gate_types_data[1])
 
-        res1 = Resources(wire_manager=wm1, gate_types=gt1)
-        res1_copy = Resources(wire_manager=wm1, gate_types=gt1)
-        res2 = Resources(wire_manager=wm2, gate_types=gt2)
+        res1 = Resources(wire_manager=wm1, gate_types=gate_types1)
+        res1_copy = Resources(wire_manager=wm1, gate_types=gate_types1)
+        res2 = Resources(wire_manager=wm2, gate_types=gate_types2)
 
         assert res1 == res1
         assert res1 == res1_copy
@@ -209,12 +215,12 @@ class TestResources:
             dirty=2569,  # dirty1 + dirty2
         )
         expected_wm_add.algo_wires = 108  # max(algo1, algo2)
-        expected_gt_add = defaultdict(
+        expected_gate_types_add = defaultdict(
             int,
             {h: 467, x: 100, y: 120, z: 1000, cnot: 5314, phase_shift: 2},  # add gate counts
         )
 
-        expected_add = Resources(expected_wm_add, expected_gt_add)
+        expected_add = Resources(expected_wm_add, expected_gate_types_add)
         assert (res1 + res2) == expected_add
         assert add_in_series(res1, res2) == expected_add
 
@@ -228,12 +234,12 @@ class TestResources:
             dirty=2569,  # dirty1 + dirty2
         )
         expected_wm_and.algo_wires = 130  # algo1 + algo2
-        expected_gt_and = defaultdict(
+        expected_gate_types_and = defaultdict(
             int,
             {h: 467, x: 100, y: 120, z: 1000, cnot: 5314, phase_shift: 2},  # add gate counts
         )
 
-        expected_and = Resources(expected_wm_and, expected_gt_and)
+        expected_and = Resources(expected_wm_and, expected_gate_types_and)
         assert (res1 & res2) == expected_and
         assert add_in_parallel(res1, res2) == expected_and
 
@@ -247,12 +253,12 @@ class TestResources:
             dirty=222 * k,  # k * dirty1
         )
         expected_wm_mul.algo_wires = 108  # algo
-        expected_gt_mul = defaultdict(
+        expected_gate_types_mul = defaultdict(
             int,
             {x: 100 * k, y: 120 * k, z: 1000 * k, cnot: 4523 * k},  # multiply gate counts
         )
 
-        expected_mul = Resources(expected_wm_mul, expected_gt_mul)
+        expected_mul = Resources(expected_wm_mul, expected_gate_types_mul)
 
         assert (k * res) == expected_mul
         assert (res * k) == expected_mul
@@ -268,12 +274,12 @@ class TestResources:
             dirty=222 * k,  # k * dirty1
         )
         expected_wm_matmul.algo_wires = 108 * k  # k * algo
-        expected_gt_matmul = defaultdict(
+        expected_gate_types_matmul = defaultdict(
             int,
             {x: 100 * k, y: 120 * k, z: 1000 * k, cnot: 4523 * k},  # multiply gate counts
         )
 
-        expected_matmul = Resources(expected_wm_matmul, expected_gt_matmul)
+        expected_matmul = Resources(expected_wm_matmul, expected_gate_types_matmul)
         assert (k @ res) == expected_matmul
         assert (res @ k) == expected_matmul
         assert mul_in_parallel(res, k) == expected_matmul
