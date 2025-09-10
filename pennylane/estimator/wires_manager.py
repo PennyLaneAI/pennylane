@@ -195,7 +195,7 @@ class Allocate(_WireAction):
 
         This decomposition uses a total of ``4`` wires and doesn't track the work wires.
 
-        Now, if we want to track the allocation of wires using the ``Allocate``, the decomposition
+        Now, if we want to track the allocation of wires using ``Allocate``, the decomposition
         can be redefined as:
 
         >>> def resource_decomp():
