@@ -37,7 +37,7 @@ from pennylane.wires import Wires
 # pylint: disable=protected-access,too-many-arguments
 
 # user-friendly gateset for visual checks and initial compilation
-StandardGateSet = {
+StandardGateSet = frozenset({
     "X",
     "Y",
     "Z",
@@ -53,10 +53,10 @@ StandardGateSet = {
     "RY",
     "RZ",
     "PhaseShift",
-}
+})
 
 # realistic gateset for useful compilation of circuits
-DefaultGateSet = {
+DefaultGateSet = frozenset({
     "X",
     "Y",
     "Z",
@@ -65,7 +65,7 @@ DefaultGateSet = {
     "S",
     "T",
     "Toffoli",
-}
+})
 
 
 @singledispatch
