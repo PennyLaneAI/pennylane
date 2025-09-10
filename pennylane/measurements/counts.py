@@ -314,6 +314,8 @@ if CountsMP._wires_primitive is not None:
         raise NotImplementedError("Counts has no execution implementation with program capture.")
 
     def _keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        if shots is None:
+            raise ValueError("finite shots are required to use CountsMP")
         n_wires = n_wires or num_device_wires
         return (2**n_wires,), int
 
