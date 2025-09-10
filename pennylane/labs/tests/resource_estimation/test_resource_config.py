@@ -57,9 +57,9 @@ class TestResourceConfig:
         """Test that the custom decomposition dictionaries initialize as empty."""
         config = ResourceConfig()
         assert config._pow_custom_decomps == {}
-        assert not config._custom_decomps
-        assert not config._adj_custom_decomps
-        assert not config._ctrl_custom_decomps
+        assert config._custom_decomps == {}
+        assert config._adj_custom_decomps == {}
+        assert config._ctrl_custom_decomps == {}
 
     @pytest.mark.parametrize(
         "op_with_precision",
