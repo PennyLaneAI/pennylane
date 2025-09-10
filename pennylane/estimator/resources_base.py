@@ -81,6 +81,7 @@ class Resources:
         """Add two resources objects in series.
 
         When combining resources for serial execution, the following rules apply:
+
         * Zeroed wires: The total ``zeroed`` auxiliary wires are the maximum of the ``zeroed``
           wires in each circuit, as they can be reused.
         * Any state wires: The ``any_state`` wires are added together, as they cannot be reused.
@@ -138,6 +139,7 @@ class Resources:
         """Add two resources objects in parallel.
 
         When combining resources for parallel execution, the following rules apply:
+
         * Zeroed wires: The maximum of the ``zeroed`` auxiliary wires is used, as they can
           be reused across parallel circuits.
         * Any state wires: The ``any_state`` wires are added together, as they cannot be
@@ -172,6 +174,7 @@ class Resources:
           'Z': 2,
           'S': 3,
           'Hadamard': 9
+
         """
         if not isinstance(other, self.__class__):
             raise TypeError(f"Cannot add {self.__class__.__name__} object to {type(other)}.")
