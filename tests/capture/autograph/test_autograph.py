@@ -163,6 +163,7 @@ class TestPennyLaneTransformer:
         assert transformer.get_cached_function(fn)(1.7) == fn(1.7)
 
 
+# pylint: disable=too-many-public-methods
 class TestIntegration:
     """Test that the autograph transformations trigger correctly in different settings."""
 
@@ -322,6 +323,32 @@ class TestIntegration:
         plxpr = qml.capture.make_plxpr(circ)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
+    def test_adjoint_no_argument(self):
+        """Test that passing no argument to qml.adjoint raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.adjoint()
+            return qml.probs(wires=0)
+
+        with pytest.raises(ValueError, match="adjoint requires at least one argument"):
+            _ = qml.capture.make_plxpr(circ)()
+
+    def test_adjoint_wrong_argument(self):
+        """Test that passing an invalid argument to qml.adjoint raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.adjoint(3)
+            return qml.probs(wires=0)
+
+        with pytest.raises(
+            ValueError, match="First argument to adjoint must be callable or an Operation"
+        ):
+            _ = qml.capture.make_plxpr(circ)()
+
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
 
@@ -349,6 +376,32 @@ class TestIntegration:
         expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
         result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
         assert jax.numpy.allclose(result, expected_state)
+
+    def test_ctrl_no_argument(self):
+        """Test that passing no argument to qml.ctrl raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.ctrl()
+            return qml.probs(wires=0)
+
+        with pytest.raises(ValueError, match="ctrl requires at least one argument"):
+            _ = qml.capture.make_plxpr(circ)()
+
+    def test_ctrl_wrong_argument(self):
+        """Test that passing an invalid argument to qml.ctrl raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.ctrl(3)
+            return qml.probs(wires=0)
+
+        with pytest.raises(
+            ValueError, match="First argument to ctrl must be callable or an Operation"
+        ):
+            _ = qml.capture.make_plxpr(circ)()
 
     def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
