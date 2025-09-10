@@ -29,9 +29,7 @@ def dummycircuit():
     return qml.expval(qml.Z(0))
 
 
-@pytest.mark.all_interfaces
 @pytest.mark.parametrize("device_name", ["default.qubit", "lightning.qubit"])
-@pytest.mark.parametrize("interface", ["autograd", "torch", "jax", "jax-jit"])
 def test_unresolved_construction(device_name, interface):
     """Test that an unresolved execution config is created correctly."""
     qn = qml.QNode(dummycircuit, qml.device(device_name, wires=1), interface=interface)
@@ -55,8 +53,6 @@ def test_unresolved_construction(device_name, interface):
     assert config == expected_config
 
 
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "jax", "jax-jit"])
 def test_resolved_construction_lightning_qubit(interface):
     """Test that an resolved execution config is created correctly."""
     qn = qml.QNode(dummycircuit, qml.device("lightning.qubit", wires=1), interface=interface)
@@ -80,8 +76,6 @@ def test_resolved_construction_lightning_qubit(interface):
     assert replace(config, device_options={}) == replace(expected_config, device_options={})
 
 
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "jax", "jax-jit"])
 def test_resolved_construction_default_qubit(interface):
     """Test that an resolved execution config is created correctly."""
     qn = qml.QNode(dummycircuit, qml.device("default.qubit", wires=1), interface=interface)
