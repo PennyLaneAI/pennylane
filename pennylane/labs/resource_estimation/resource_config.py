@@ -163,7 +163,7 @@ class ResourceConfig:
         self,
         op_type: type[ResourceOperator],
         decomp_func: Callable,
-        decomp_type: DecompositionType | None = "base",
+        decomp_type: DecompositionType | None = DecompositionType.BASE,
     ) -> None:
         """Set a custom function to override the default resource decomposition.
 
