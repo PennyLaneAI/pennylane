@@ -83,6 +83,7 @@ def phase_polynomial(
 
     We look at the circuit in Figure 1 in `arXiv:2104.00934 <https://arxiv.org/abs/2104.00934>`__.
 
+    >>> import pennylane as qml
     >>> tape = qml.tape.QuantumScript([
     ...     qml.CNOT((1, 0)),
     ...     qml.RZ(1, 0),
@@ -101,6 +102,7 @@ def phase_polynomial(
     The phase polynomial representation consisting of the parity matrix, parity table and associated
     angles are computed by ``phase_polynomial``.
 
+    >>> from pennylane.transforms import phase_polynomial
     >>> pmat, ptab, angles = phase_polynomial(tape, wire_order=range(4))
     >>> pmat
     array([[1, 1, 1, 0],
