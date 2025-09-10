@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""PennyLane-xDSL transformations API specifically for the MBQC formalism."""
+"""PennyLane-xDSL transformations API specifically for the MBQC transform."""
+
 from .graph_state_utils import (
     get_num_aux_wires,
     get_graph_state_edges,
