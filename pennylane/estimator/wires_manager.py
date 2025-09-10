@@ -232,7 +232,7 @@ class Deallocate(_WireAction):
         :title: Usage Details
 
         The ``Deallocate`` class is typically used within a decomposition function to track the
-        allocation of auxiliary wires. This allows us to accurately determine the wire overhead
+        allocation of auxiliary wires. This allows to accurately determine the wire overhead
         of a circuit. In this example, we show the decomposition for a
         3-controlled ``X`` gate, which requires one work wire that is returned in a zeroed state.
 
