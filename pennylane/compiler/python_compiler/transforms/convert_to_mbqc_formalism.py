@@ -17,7 +17,6 @@ written using xDSL."""
 
 import math
 from dataclasses import dataclass
-from enum import Enum
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
@@ -33,7 +32,7 @@ from ..dialects.mbqc import (
     MeasurementPlaneEnum,
 )
 from ..dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
-from ..mbqc import NumAuxWires, generate_adj_matrix
+from ..mbqc import generate_adj_matrix, get_num_aux_wires
 from .api import compiler_transform
 
 
@@ -84,11 +83,7 @@ class ConvertToMBQCFormalismPattern(
             graph_qubits_dict : A dictionary of auxiliary qubits in the graph state. The keys represents
             the indices of qubits described in the [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
         """
-        num_aux_wres = (
-            NumAuxWires.CNOT.value
-            if op.gate_name.data == "CNOT"
-            else NumAuxWires.SINGLE_QUBIT.value
-        )
+        num_aux_wres = get_num_aux_wires(op.gate_name.data)
 
         graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
         rewriter.insert_op(graph_state_prep_op, InsertPoint.before(op))

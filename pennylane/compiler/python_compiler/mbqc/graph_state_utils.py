@@ -16,7 +16,6 @@
 
 import math
 from collections.abc import Sequence
-from enum import Enum
 from typing import Generator, TypeAlias
 
 from pennylane.exceptions import CompileError
@@ -24,85 +23,105 @@ from pennylane.exceptions import CompileError
 DenselyPackedAdjMatrix: TypeAlias = Sequence[int] | Sequence[bool]
 
 
-class NumAuxWires(Enum):
+_MBQC_GATE_SET = {"Hadamard", "S", "RZ", "RotXZX", "CNOT"}
+
+
+def get_num_aux_wires(gate_name: str) -> int:
     """
-    Specify the number of auxiliary wires required for gates from the MBQC gate set.
+    Return the number of auxiliary wires required for gates from the MBQC gate set.
     The number of auxiliary qubits for a single qubit gate is 4, while it is 13 for a
     CNOT gate.
+
+    Args:
+        gate_name (str): The name of a gate.
+
+    Returns:
+        The number of auxiliary wires.
+    """
+    if gate_name == "CNOT":
+        return 13
+    if gate_name in _MBQC_GATE_SET:
+        return 4
+    raise ValueError(f"{gate_name} is not supported in the MBQC formalism.")
+
+
+def get_graph_state_edges(gate_name: str) -> list[tuple[int, int]]:
+    """
+    Return a list of edges information in the graph state of a gate.
+
+    -  The connectivity of the target qubits in the register and auxiliary qubits for a single-qubit gate is:
+
+        tgt --  0  --  1  --  2  --  3
+
+        Note that the target qubit is not in the adjacency matrix and the connectivity
+        of the auxiliary qubits is:
+        edges_in_adj_matrix = [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        ]
+
+        Wire 1 in the above isn't the target wire described in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_],
+        1 in the above maps to 3 in the figure.
+
+    - The connectivity of the ctrl/target qubits in the register and auxiliary qubits for a CNOT gate is:
+
+        ctl --  0  --  1  --  2  --  3  --  4  -- 5
+                            |
+                            6
+                            |
+        tgt --  7  --  8  --  9  -- 10  -- 11  -- 12
+
+        Note that both ctrl and target qubits are not in the adjacency matrix and the connectivity
+        of the auxiliary qubits is:
+        edges_in_adj_matrix = [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (2, 6),
+            (7, 8),
+            (6, 9),
+            (8, 9),
+            (9, 10),
+            (10, 11),
+            (11, 12),
+        ]
+
+        This graph is labelled based on the rows and columns of the adjacent matrix, but maps on to the graph described in
+        the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_], where wire 1 is the control and
+        wire 9 is the target.
+
+        Args:
+            gate_name (str): The name of a gate.
+
+        Returns:
+            A list of edges information in the graph state for the given gate.
     """
 
-    SINGLE_QUBIT = 4
-    CNOT = 13
-
-
-"""
-A dictionary stores the edges information in the graph state. 
-
--  The connectivity of the target qubits in the register and auxiliary qubits for a single-qubit gate is:
-
-    tgt --  0  --  1  --  2  --  3
-
-    Note that the target qubit is not in the adjacency matrix and the connectivity
-    of the auxiliary qubits is:
-    edges_in_adj_matrix = [
-       (0, 1),
-       (1, 2),
-       (2, 3),
-    ]
-
-    Wire 1 in the above isn't the target wire described in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_],
-    1 in the above maps to 3 in the figure.
-
-- The connectivity of the ctrl/target qubits in the register and auxiliary qubits for a CNOT gate is:
-
-    ctl --  0  --  1  --  2  --  3  --  4  -- 5
-                          |
-                          6
-                          |
-    tgt --  7  --  8  --  9  -- 10  -- 11  -- 12
-
-    Note that both ctrl and target qubits are not in the adjacency matrix and the connectivity
-    of the auxiliary qubits is:
-    edges_in_adj_matrix = [
-        (0, 1),
-        (1, 2),
-        (2, 3),
-        (3, 4),
-        (4, 5),
-        (2, 6),
-        (7, 8),
-        (6, 9),
-        (8, 9),
-        (9, 10),
-        (10, 11),
-        (11, 12),
-    ]
-
-    This graph is labelled based on the rows and columns of the adjacent matrix, but maps on to the graph described in
-    the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_], where wire 1 is the control and
-    wire 9 is the target.
-"""
-GateGraphEdgeDict = {
-    NumAuxWires.SINGLE_QUBIT: [
-        (0, 1),
-        (1, 2),
-        (2, 3),
-    ],
-    NumAuxWires.CNOT: [
-        (0, 1),
-        (1, 2),
-        (2, 3),
-        (3, 4),
-        (4, 5),
-        (2, 6),
-        (7, 8),
-        (6, 9),
-        (8, 9),
-        (9, 10),
-        (10, 11),
-        (11, 12),
-    ],
-}
+    if gate_name == "CNOT":
+        return [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (2, 6),
+            (7, 8),
+            (6, 9),
+            (8, 9),
+            (9, 10),
+            (10, 11),
+            (11, 12),
+        ]
+    if gate_name in _MBQC_GATE_SET:
+        return [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+        ]
+    raise ValueError(f"{gate_name} is not supported in the MBQC formalism.")
 
 
 def n_vertices_from_packed_adj_matrix(adj_matrix: DenselyPackedAdjMatrix) -> int:
@@ -230,34 +249,6 @@ def generate_adj_matrix(op_name: str) -> list:
     Returns:
         An adjacent matrix represents the connectivity of auxiliary qubits.
     """
-    if op_name in ["RotXZX", "RZ", "Hadamard", "S"]:
-        return _generate_one_wire_op_adj_matrix()
-    if op_name == "CNOT":
-        return _generate_cnot_adj_matrix()
-    raise NotImplementedError(f"{op_name} is not supported in the MBQC gate set.")
-
-
-def _generate_cnot_adj_matrix() -> list:
-    """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in
-    the graph state for a CNOT gate operation based on the textbook MBQC formalism.
-
-    Returns:
-        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a CNOT gate operation.
-    """
-
-    return _adj_matrix_generation_helper(
-        NumAuxWires.CNOT.value, GateGraphEdgeDict[NumAuxWires.CNOT]
-    )
-
-
-def _generate_one_wire_op_adj_matrix() -> list:
-    """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in the graph state for
-    a single-qubit gate based on the textbook MBQC formalism.
-
-    Returns:
-        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a single-qubit gate.
-    """
-
-    return _adj_matrix_generation_helper(
-        NumAuxWires.SINGLE_QUBIT.value, GateGraphEdgeDict[NumAuxWires.SINGLE_QUBIT]
-    )
+    num_aux_wires = get_num_aux_wires(op_name)
+    edges_list = get_graph_state_edges(op_name)
+    return _adj_matrix_generation_helper(num_aux_wires, edges_list)

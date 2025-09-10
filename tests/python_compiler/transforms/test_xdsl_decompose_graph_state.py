@@ -30,9 +30,8 @@ pytestmark = pytest.mark.external
 xdsl = pytest.importorskip("xdsl")
 
 from pennylane.compiler.python_compiler.mbqc.graph_state_utils import (
-    GateGraphEdgeDict,
-    NumAuxWires,
     edge_iter,
+    get_graph_state_edges,
     n_vertices_from_packed_adj_matrix,
 )
 from pennylane.compiler.python_compiler.transforms import (
@@ -648,7 +647,7 @@ class TestAdjMatrixHelpers:
         """
         edges_observed = list(edge_iter(mbqc_single_qubit_graph))
 
-        assert edges_observed == GateGraphEdgeDict[NumAuxWires.SINGLE_QUBIT]
+        assert edges_observed == get_graph_state_edges("RZ")
 
     def test_edge_iter_mbqc_cnot(self, mbqc_cnot_graph):
         """Test that the ``_edge_iter`` generator function applied to the densely packed adjacency
@@ -664,4 +663,4 @@ class TestAdjMatrixHelpers:
             7 -- 8 -- 9 -- 10 - 11 - 12
         """
         edges_observed = list(edge_iter(mbqc_cnot_graph))
-        assert edges_observed == GateGraphEdgeDict[NumAuxWires.CNOT]
+        assert edges_observed == get_graph_state_edges("CNOT")

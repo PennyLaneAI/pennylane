@@ -13,7 +13,8 @@
 # limitations under the License.
 """PennyLane-xDSL transformations API specifically for the MBQC formalism."""
 from .graph_state_utils import (
-    NumAuxWires,
+    get_num_aux_wires,
+    get_graph_state_edges,
     n_vertices_from_packed_adj_matrix,
     edge_iter,
     generate_adj_matrix,
@@ -21,7 +22,8 @@ from .graph_state_utils import (
 
 
 __all__ = [
-    "NumAuxWires",
+    "get_num_aux_wires",
+    "get_graph_state_edges",
     "n_vertices_from_packed_adj_matrix",
     "edge_iter",
     "generate_adj_matrix",
