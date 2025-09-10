@@ -85,7 +85,7 @@ class TestWireResourceManager:
         zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
 
         expected_string = (
-            f"WireResourceManager(zeroed={zeroed_wires}, any={any_wires}, algo={logic_wires}, "
+            f"WireResourceManager(zeroed={zeroed_wires}, any={any_wires}, algo={algo_q}, "
             f"tight_budget={tight_budget})"
         )
 
