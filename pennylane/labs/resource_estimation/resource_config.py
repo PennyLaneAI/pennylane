@@ -78,7 +78,7 @@ class ResourceConfig:
         self._ctrl_custom_decomps = {}
         self._pow_custom_decomps = {}
 
-    def __str__(self):
+    def __str__(self) -> str:
         decomps = [op.__name__ for op in self._custom_decomps]
         adj_decomps = [f"Adjoint({op.__name__})" for op in self._adj_custom_decomps]
         ctrl_decomps = [f"Controlled({op.__name__})" for op in self._ctrl_custom_decomps]
