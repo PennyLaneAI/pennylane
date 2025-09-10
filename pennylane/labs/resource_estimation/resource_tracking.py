@@ -265,7 +265,7 @@ def _update_counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
     qbit_mngr,
-    gate_set: set = None,
+    gate_set: set | None = None,
     scalar: int = 1,
     config: ResourceConfig = None,
 ) -> None:
