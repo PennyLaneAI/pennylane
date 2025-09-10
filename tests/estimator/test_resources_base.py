@@ -54,9 +54,9 @@ gate_types_data = (
     ),
 )
 
-wm1 = WireResourceManager(clean=5)
-wm2 = WireResourceManager(clean=8753, dirty=2347, algo=22)
-wm3 = WireResourceManager(clean=400, dirty=222, algo=108)
+wm1 = WireResourceManager(zeroed=5)
+wm2 = WireResourceManager(zeroed=8753, any=2347, algo=22)
+wm3 = WireResourceManager(zeroed=400, any=222, algo=108)
 
 wire_manager_data = (wm1, wm2, wm3)
 
@@ -82,8 +82,8 @@ class TestResources:
             + " Total wires: 5\n"
             + "    algorithmic wires: 0\n"
             + "    allocated wires: 5\n"
-            + "\t clean wires: 5\n"
-            + "\t dirty wires: 0\n"
+            + "\t zero state: 5\n"
+            + "\t any state: 0\n"
             + " Total gates : 4\n"
             + "  'X': 1,\n"
             + "  'Z': 1,\n"
@@ -94,8 +94,8 @@ class TestResources:
             + " Total wires: 1.112E+4\n"
             + "    algorithmic wires: 22\n"
             + "    allocated wires: 11100\n"
-            + "\t clean wires: 8753\n"
-            + "\t dirty wires: 2347\n"
+            + "\t zero state: 8753\n"
+            + "\t any state: 2347\n"
             + " Total gates : 1.260E+3\n"
             + "  'PhaseShift': 2,\n"
             + "  'CNOT': 791,\n"
@@ -106,8 +106,8 @@ class TestResources:
             + " Total wires: 730\n"
             + "    algorithmic wires: 108\n"
             + "    allocated wires: 622\n"
-            + "\t clean wires: 400\n"
-            + "\t dirty wires: 222\n"
+            + "\t zero state: 400\n"
+            + "\t any state: 222\n"
             + " Total gates : 5.743E+3\n"
             + "  'CNOT': 4.523E+3,\n"
             + "  'X': 100,\n"
@@ -205,8 +205,8 @@ class TestResources:
         res2 = Resources(wire_manager=wm2, gate_types=gate_types_data[1])
 
         expected_wm_add = WireResourceManager(
-            clean=8753,  # max(clean1, clean2)
-            dirty=2569,  # dirty1 + dirty2
+            zeroed=8753,  # max(zeroed1, zeroed2)
+            any=2569,  # any1 + any2
         )
         expected_wm_add.algo_wires = 108  # max(algo1, algo2)
         expected_gate_types_add = defaultdict(
@@ -223,8 +223,8 @@ class TestResources:
         res2 = Resources(wire_manager=wm2, gate_types=gate_types_data[1])
 
         expected_wm_and = WireResourceManager(
-            clean=8753,  # max(clean1, clean2)
-            dirty=2569,  # dirty1 + dirty2
+            zeroed=8753,  # max(zeroed1, zeroed2)
+            any=2569,  # any1 + any2
         )
         expected_wm_and.algo_wires = 130  # algo1 + algo2
         expected_gate_types_and = defaultdict(
@@ -241,8 +241,8 @@ class TestResources:
         res = Resources(wire_manager=wm3, gate_types=gate_types_data[2])
 
         expected_wm_mul = WireResourceManager(
-            clean=400,  # clean
-            dirty=222 * k,  # k * dirty1
+            zeroed=400,  # zeroed
+            any=222 * k,  # k * any1
         )
         expected_wm_mul.algo_wires = 108  # algo
         expected_gate_types_mul = defaultdict(
@@ -260,8 +260,8 @@ class TestResources:
         res = Resources(wire_manager=wm3, gate_types=gate_types_data[2])
 
         expected_wm_matmul = WireResourceManager(
-            clean=400,  # clean
-            dirty=222 * k,  # k * dirty1
+            zeroed=400,  # zeroed
+            any=222 * k,  # k * any1
         )
         expected_wm_matmul.algo_wires = 108 * k  # k * algo
         expected_gate_types_matmul = defaultdict(

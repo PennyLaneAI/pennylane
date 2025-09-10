@@ -37,7 +37,7 @@ class Resources:
 
     Args:
         wire_manager (:class:`~.pennylane.estimator.WireResourceManager`): A wire tracker class which contains the number of available
-            work wires, categorized as clean, dirty or algorithmic wires.
+            work wires, categorized as zero state and any state wires, and algorithmic wires.
         gate_types (dict): A dictionary storing operations (:class:`~.pennylane.estimator.ResourceOperator`) as keys and the number
             of times they are used in the circuit (int) as values.
 
@@ -59,8 +59,8 @@ class Resources:
      Total wires: 3
         algorithmic wires: 0
         allocated wires: 3
-             clean wires: 3
-             dirty wires: 0
+             zero state: 3
+             any state: 0
      Total gates : 20
       'X': 7,
       'Y': 3,
@@ -75,9 +75,9 @@ class Resources:
 
         When assuming the circuits were executed in parallel, the number of algorithmic wires add
         together. When assuming the circuits were executed in series, the maximum of each set of
-        algorithmic wires is used. The clean auxiliary wires can be reused between the circuits,
+        algorithmic wires is used. The zeroed auxiliary wires can be reused between the circuits,
         and thus we always use the maximum of each set when combining the resources. Finally, the
-        dirty wires cannot be reused between circuits, thus we always add them together.
+        any state wires cannot be reused between circuits, thus we always add them together.
 
         .. code-block::
 
@@ -90,8 +90,8 @@ class Resources:
             CNOT = plre.resource_rep(plre.CNOT)
 
             # state of wires:
-            wm1 = plre.WireResourceManager(work_wires={"clean":2, "dirty":1}, algo_wires=3)
-            wm2 = plre.WireResourceManager(work_wires={"clean":1, "dirty":2}, algo_wires=4)
+            wm1 = plre.WireResourceManager(zeroed=2, any=1, algo_wires=3)
+            wm2 = plre.WireResourceManager(zeroed=1, any=2, algo_wires=4)
 
             # state of gates:
             gt1 = defaultdict(int, {H: 10, X:5, CNOT:2})
@@ -109,8 +109,8 @@ class Resources:
              Total wires: 6
                 algorithmic wires: 3
                 allocated wires: 3
-                     clean wires: 2
-                     dirty wires: 1
+                     zero state: 2
+                     any state: 1
              Total gates : 17
               'CNOT': 2,
               'X': 5,
@@ -121,8 +121,8 @@ class Resources:
              Total wires: 7
                 algorithmic wires: 4
                 allocated wires: 3
-                     clean wires: 1
-                     dirty wires: 2
+                     zero state: 1
+                     any state: 2
              Total gates : 24
               'CNOT': 4,
               'Z': 5,
@@ -141,8 +141,8 @@ class Resources:
              Total wires: 9
                 algorithmic wires: 4
                 allocated wires: 5
-                     clean wires: 2
-                     dirty wires: 3
+                     zero state: 2
+                     any state: 3
              Total gates : 41
               'CNOT': 6,
               'X': 5,
@@ -155,8 +155,8 @@ class Resources:
              Total wires: 12
                 algorithmic wires: 7
                 allocated wires: 5
-                     clean wires: 2
-                     dirty wires: 3
+                     zero state: 2
+                     any state: 3
              Total gates : 41
               'CNOT': 6,
               'X': 5,
@@ -175,8 +175,8 @@ class Resources:
              Total wires: 10
                 algorithmic wires: 3
                 allocated wires: 7
-                     clean wires: 2
-                     dirty wires: 5
+                     zero state: 2
+                     any state: 5
              Total gates : 85
               'CNOT': 10,
               'X': 25,
@@ -188,8 +188,8 @@ class Resources:
              Total wires: 22
                 algorithmic wires: 15
                 allocated wires: 7
-                     clean wires: 2
-                     dirty wires: 5
+                     zero state: 2
+                     any state: 5
              Total gates : 85
               'CNOT': 10,
               'X': 25,
@@ -223,16 +223,15 @@ class Resources:
         wm1 = self.wire_manager
         wm2 = other.wire_manager
 
-        new_clean = max(wm1.clean_wires, wm2.clean_wires)
-        new_dirty = wm1.dirty_wires + wm2.dirty_wires
+        new_zeroed = max(wm1.zeroed_wires, wm2.zeroed_wires)
+        new_any = wm1.any_wires + wm2.any_wires
         new_budget = wm1.tight_budget or wm2.tight_budget
         new_logic = max(wm1.algo_wires, wm2.algo_wires)
 
         new_wire_manager = WireResourceManager(
-            clean=new_clean, dirty=new_dirty, tight_budget=new_budget
+            zeroed=new_zeroed, any=new_any, algo=new_logic, tight_budget=new_budget
         )
 
-        new_wire_manager.algo_wires = new_logic
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(new_wire_manager, new_gate_types)
 
@@ -249,18 +248,18 @@ class Resources:
         qm1 = self.wire_manager
         qm2 = other.wire_manager
 
-        new_clean = max(qm1.clean_wires, qm2.clean_wires)
-        new_dirty = qm1.dirty_wires + qm2.dirty_wires
+        new_zeroed = max(qm1.zeroed_wires, qm2.zeroed_wires)
+        new_any = qm1.any_wires + qm2.any_wires
         new_budget = qm1.tight_budget or qm2.tight_budget
         new_logic = qm1.algo_wires + qm2.algo_wires
 
         new_wire_manager = WireResourceManager(
-            clean=new_clean,
-            dirty=new_dirty,
+            zeroed=new_zeroed,
+            any=new_any,
+            algo=new_logic,
             tight_budget=new_budget,
         )
 
-        new_wire_manager.algo_wires = new_logic
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(new_wire_manager, new_gate_types)
 
@@ -280,8 +279,8 @@ class Resources:
         assert isinstance(scalar, int)
 
         new_wire_manager = WireResourceManager(
-            clean=self.wire_manager.clean_wires,
-            dirty=scalar * self.wire_manager.dirty_wires,
+            zeroed=self.wire_manager.zeroed_wires,
+            any=scalar * self.wire_manager.any_wires,
             algo=self.wire_manager.algo_wires,
             tight_budget=self.wire_manager.tight_budget,
         )
@@ -302,8 +301,8 @@ class Resources:
         assert isinstance(scalar, int)
 
         new_wire_manager = WireResourceManager(
-            clean=self.wire_manager.clean_wires,
-            dirty=scalar * self.wire_manager.dirty_wires,
+            zeroed=self.wire_manager.zeroed_wires,
+            any=scalar * self.wire_manager.any_wires,
             algo=scalar * self.wire_manager.algo_wires,
             tight_budget=self.wire_manager.tight_budget,
         )
@@ -341,7 +340,7 @@ class Resources:
         items = "--- Resources: ---\n"
         items += f" Total wires: {total_wires_str}\n"
 
-        qubit_breakdown_str = f"    algorithmic wires: {wm.algo_wires}\n    allocated wires: {wm.clean_wires+wm.dirty_wires}\n\t clean wires: {wm.clean_wires}\n\t dirty wires: {wm.dirty_wires}\n"
+        qubit_breakdown_str = f"    algorithmic wires: {wm.algo_wires}\n    allocated wires: {wm.zeroed_wires+wm.any_wires}\n\t zero state: {wm.zeroed_wires}\n\t any state: {wm.any_wires}\n"
         items += qubit_breakdown_str
 
         items += f" Total gates : {total_gates_str}\n  "
