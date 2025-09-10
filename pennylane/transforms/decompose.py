@@ -260,15 +260,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     subfuns, params = eq.primitive.get_bind_params(eq.params)
                     outvals = eq.primitive.bind(*subfuns, *invals, **params)
 
-                    if (
-                        self._max_work_wires is not None
-                        and eq.primitive.name == "allocate"
-                    ):
+                    if self._max_work_wires is not None and eq.primitive.name == "allocate":
                         self._max_work_wires -= params["num_wires"]
-                    if (
-                        self._max_work_wires is not None
-                        and eq.primitive.name == "deallocate"
-                    ):
+                    if self._max_work_wires is not None and eq.primitive.name == "deallocate":
                         self._max_work_wires += len(invals)
 
                 if not eq.primitive.multiple_results:
