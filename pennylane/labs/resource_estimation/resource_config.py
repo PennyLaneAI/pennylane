@@ -55,21 +55,23 @@ class ResourceConfig:
     """
 
     def __init__(self) -> None:
+        DEFAULT_PRECISION = 1e-9
+        DEFAULT_BIT_PRECISION = 15
         self.resource_op_precisions = {
-            ResourceRX: {"precision": 1e-9},
-            ResourceRY: {"precision": 1e-9},
-            ResourceRZ: {"precision": 1e-9},
-            ResourceCRX: {"precision": 1e-9},
-            ResourceCRY: {"precision": 1e-9},
-            ResourceCRZ: {"precision": 1e-9},
-            ResourceSelectPauliRot: {"precision": 1e-9},
-            ResourceQubitUnitary: {"precision": 1e-9},
-            ResourceQROMStatePreparation: {"precision": 1e-9},
-            ResourceMPSPrep: {"precision": 1e-9},
-            ResourceAliasSampling: {"precision": 1e-9},
-            ResourceQubitizeTHC: {"rotation_precision": 15, "coeff_precision": 15},
-            ResourceSelectTHC: {"rotation_precision": 15, "coeff_precision": 15},
-            ResourcePrepTHC: {"rotation_precision": 15, "coeff_precision": 15},
+            ResourceRX: {"precision": DEFAULT_PRECISION},
+            ResourceRY: {"precision": DEFAULT_PRECISION},
+            ResourceRZ: {"precision": DEFAULT_PRECISION},
+            ResourceCRX: {"precision": DEFAULT_PRECISION},
+            ResourceCRY: {"precision": DEFAULT_PRECISION},
+            ResourceCRZ: {"precision": DEFAULT_PRECISION},
+            ResourceSelectPauliRot: {"precision": DEFAULT_PRECISION},
+            ResourceQubitUnitary: {"precision": DEFAULT_PRECISION},
+            ResourceQROMStatePreparation: {"precision": DEFAULT_PRECISION},
+            ResourceMPSPrep: {"precision": DEFAULT_PRECISION},
+            ResourceAliasSampling: {"precision": DEFAULT_PRECISION},
+            ResourceQubitizeTHC: {"rotation_precision": DEFAULT_BIT_PRECISION, "coeff_precision": DEFAULT_BIT_PRECISION},
+            ResourceSelectTHC: {"rotation_precision": DEFAULT_BIT_PRECISION, "coeff_precision": DEFAULT_BIT_PRECISION},
+            ResourcePrepTHC: {"rotation_precision": DEFAULT_BIT_PRECISION, "coeff_precision": DEFAULT_BIT_PRECISION},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
