@@ -18,7 +18,6 @@
 Data movement operations for the StableHLO dialect.
 """
 
-from dataclasses import dataclass
 from typing import ClassVar, TypeVar
 
 from xdsl.dialects import stablehlo as xstablehlo
@@ -41,50 +40,14 @@ from xdsl.irdl.operations import SameVariadicOperandSize
 from xdsl.traits import (
     ConditionallySpeculatable,
     NoMemoryEffect,
-    OpTrait,
     RecursiveMemoryEffect,
     SingleBlockImplicitTerminator,
 )
-from xdsl.utils.exceptions import VerifyException
+
+from pennylane.compiler.python_compiler.xdsl_extras.traits import AllMatchSameOperatorTrait
 
 from .attributes import GatherDimensionNumbers, ScatterDimensionNumbers
 from .types import HLO_AnyIntegerOrIndexTensor, HLO_AnyTensor, HLO_IntTensor, HLO_Tensor
-
-
-@dataclass(frozen=True)
-class SliceArraysSameSizeTrait(OpTrait):
-    """
-    Trait that ensures start_indices, limit_indices, and strides arrays
-    all have the same size (equivalent to MLIR's AllMatchSameOperatorTrait).
-    """
-
-    def verify(self, op) -> None:
-        """Verify that all three slice arrays have the same size."""
-        # Access the attributes from the operation
-        start_indices = getattr(op, "start_indices", None)
-        limit_indices = getattr(op, "limit_indices", None)
-        strides = getattr(op, "strides", None)
-
-        if start_indices is None or limit_indices is None or strides is None:
-            return
-
-        if not (
-            isinstance(start_indices, DenseArrayBase)
-            and isinstance(limit_indices, DenseArrayBase)
-            and isinstance(strides, DenseArrayBase)
-        ):
-            return
-
-        # Use the built-in __len__ method of DenseArrayBase
-        start_size = len(start_indices)
-        limit_size = len(limit_indices)
-        strides_size = len(strides)
-
-        if not start_size == limit_size == strides_size:
-            raise VerifyException(
-                f"all of {{start_indices, limit_indices, strides}} have same size: "
-                f"got sizes {start_size}, {limit_size}, {strides_size}"
-            )
 
 
 @irdl_op_definition
@@ -329,7 +292,5 @@ class SliceOp(IRDLOperation):
     traits = traits_def(
         NoMemoryEffect(),
         ConditionallySpeculatable(),
-        SliceArraysSameSizeTrait(),
-        # TODO: HLO_SpeculatableIfStaticDimInOutputIsStaticInInput,
-        # TODO: InferTypeOpInterface(),
+        AllMatchSameOperatorTrait(("start_indices", "limit_indices", "strides"), len, "size"),
     )

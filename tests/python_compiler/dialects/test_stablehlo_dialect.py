@@ -427,7 +427,7 @@ def test_data_movement_operations(run_filecheck):
 def test_invalid_data_movement_operations(run_filecheck):
     """Test invalid data movement operations that should fail verification."""
 
-    # Test SliceOp with mismatched array sizes (SliceArraysSameSizeTrait violation)
+    # Test SliceOp with mismatched array sizes
     program_slice_mismatch = r"""
     // CHECK: %input = "test.op"() : () -> tensor<3x8xi64>
     %input = "test.op"() : () -> tensor<3x8xi64>
