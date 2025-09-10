@@ -3,11 +3,13 @@
 
 <h3>New features since last release</h3>
 
-* Resource estimation toolkit was migrated from labs to PennyLane as `qml.estimator` module.
+* Resource estimation toolkit was migrated from labs to PennyLane as the `qml.estimator` module.
   
   * `qml.estimator.WireResourceManager`, `qml.estimator.Allocate` and `qml.estimator.Deallocate` classes
     were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+  * `qml.estimator.Resources` class was added as a container class for resources.
+    [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
