@@ -76,3 +76,17 @@ class TestParityMatrix:
 
         with pytest.raises(TypeError, match="parity_matrix requires all input circuits"):
             _ = parity_matrix(circ)
+
+    def test_qfunc_input(self):
+        """Test parity_matrix correctly handles a qfunc input"""
+
+        def qfunc():
+            qml.CNOT((0, 1))
+            qml.CNOT((1, 2))
+            qml.CNOT((2, 0))
+
+        tape = qml.tape.make_qscript(qfunc)()
+
+        _P1 = parity_matrix(qfunc, wire_order=range(3))
+        _P2 = parity_matrix(tape, wire_order=range(3))
+        assert np.allclose(_P1, _P2)

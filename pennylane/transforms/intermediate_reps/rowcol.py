@@ -351,8 +351,7 @@ def rowcol(
     ...     for (i, j) in [(0, 4), (3, 0), (0, 2), (3, 1), (2, 4)]:
     ...         qml.CNOT((i, j))
 
-    >>> tape = qml.tape.make_qscript(qfunc)()
-    >>> print(qml.drawer.tape_text(tape, wire_order=range(5)))
+    >>> print(qml.draw(qfunc, wire_order=range(5))())
     0: ─╭●──────────╭●─╭X─╭●───────┤  
     1: ─╰X─╭●───────│──│──│──╭X────┤  
     2: ────╰X─╭●────│──│──╰X─│──╭●─┤  
@@ -363,8 +362,8 @@ def rowcol(
     We import ``rowcol`` and then run the algorithm:
 
     >>> from pennylane.transforms import rowcol
-    >>> (new_tape,), _ = rowcol(tape, G)
-    >>> print(qml.drawer.tape_text(new_tape, wire_order=range(5)))
+    >>> new_qfunc = rowcol(qfunc)
+    >>> print(qml.draw(new_qfunc, wire_order=range(5))())
     0: ───────────────────╭●───────╭X─┤  
     1: ─╭X────╭X─╭●────╭X─│────────│──┤  
     2: ─╰●─╭X─╰●─╰X─╭●─╰●─│─────╭X─│──┤  
@@ -374,7 +373,10 @@ def rowcol(
     We can confirm that this circuit indeed implements the original parity matrix:
 
     >>> from pennylane.transforms import parity_matrix
-    >>> np.allclose(parity_matrix(new_tape, wire_order=range(5)), parity_matrix(tape, wire_order=range(5)))
+    >>> import numpy as np
+    >>> P1 = parity_matrix(new_qfunc, wire_order=range(5))
+    >>> P2 = parity_matrix(qfunc, wire_order=range(5))
+    >>> np.allclose(P1, P2)
     True
 
     .. details::

@@ -158,6 +158,9 @@ def phase_polynomial(
         True
 
     """
+    if callable(tape):
+        tape = qml.tape.make_qscript(tape)()
+
     wires = tape.wires
 
     if wire_order is None:
