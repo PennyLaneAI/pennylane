@@ -50,15 +50,3 @@ from .resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-
-from .ops.identity import Identity, GlobalPhase
-
-from .ops.qubit import (
-    X,
-    Y,
-    Z,
-    SWAP,
-    Hadamard,
-    S,
-    T,
-)
