@@ -580,6 +580,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `MidMeasureMP` now inherits from `Operator` instead of `MeasurementProcess`.
+  [(#8166)](https://github.com/PennyLaneAI/pennylane/pull/8166)
+
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
   and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
