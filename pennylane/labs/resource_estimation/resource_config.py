@@ -212,7 +212,7 @@ class ResourceConfig:
             Gate breakdown:
               {'S': 1, 'Hadamard': 2}
         """
-
+        decomp_type = DecompositionType(decomp_type)
         if decomp_type == DecompositionType.ADJOINT:
             self._adj_custom_decomps[op_type] = decomp_func
         elif decomp_type == DecompositionType.CONTROLLED:
