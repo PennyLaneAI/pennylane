@@ -19,7 +19,7 @@ from decimal import Decimal
 
 from .wires_manager import WireResourceManager
 
-DefaultGateSet = {
+DefaultGateSet = frozenset({
     "Toffoli",
     "T",
     "CNOT",
@@ -28,7 +28,7 @@ DefaultGateSet = {
     "Z",
     "S",
     "Hadamard",
-}
+})
 
 
 class Resources:
