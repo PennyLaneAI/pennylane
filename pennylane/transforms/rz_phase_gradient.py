@@ -72,7 +72,7 @@ def rz_phase_gradient(
     .. code-block::
 
         algorithm level
-          targ: ────╭●──────────────╭●────────┤
+        target: ────╭●──────────────╭●────────┤
          aux_0: ────├|0⟩─╭SemiAdder─├|0⟩──────┤
          aux_1: ────├|1⟩─├SemiAdder─├|1⟩──────┤
          aux_2: ────╰|0⟩─├SemiAdder─╰|0⟩──────┤
@@ -82,7 +82,7 @@ def rz_phase_gradient(
         work_0: ─────────├SemiAdder───────────┤
         work_1: ─────────╰SemiAdder───────────┤
 
-    The ``targ`` qubit is where :class:`~RZ` is applied. The ``aux`` qubits
+    The ``target`` qubit is where :class:`~RZ` is applied. The ``aux`` qubits
     conditionally load the binary representation of the angle :math:`\phi = (0.010)_2 \pi`. The ``phg`` qubits
     hold a phase gradient state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
     This state is not modified and can be re-used at a later stage. Because we
@@ -97,7 +97,7 @@ def rz_phase_gradient(
         aux_wires (Wires): The auxiliary qubits that conditionally load the angle :math:`\phi` of the :class:`~RZ` gate.
         phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them
         work wires (Wires): Additional work wires to realize the :class`~SemiAdder` between the ``aux_wires`` and
-            ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b`` is the number of aux wires and
+            ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b`` is the number of
             phase gradient wires, hence the precision of the angle :math:`\phi`.
 
     Returns:
