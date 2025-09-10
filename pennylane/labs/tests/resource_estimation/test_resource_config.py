@@ -56,6 +56,7 @@ def dummy_decomp_func(**kwargs):
 class TestResourceConfig:
     """Test the ResourceConfig class and its methods."""
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_initialization_of_custom_decomps(self):
         """Test that the custom decomposition dictionaries initialize as empty."""
         config = ResourceConfig()
@@ -143,6 +144,7 @@ class TestResourceConfig:
             and config.errors_and_precisions[ResourceSelectPauliRot]["precision"] == new_error
         )
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     @pytest.mark.parametrize(
         "decomp_type, target_dict_name",
         [
