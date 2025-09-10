@@ -35,7 +35,7 @@ class Hadamard(ResourceOperator):
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.Hadamard`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Hadamard`.
 
     """
 
@@ -125,7 +125,7 @@ class S(ResourceOperator):
     Resources:
         The S-gate decomposes into two T-gates.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.S`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.S`.
 
     **Example**
 
@@ -258,7 +258,7 @@ class SWAP(ResourceOperator):
                     0 & 0 & 1 & 0
             \end{bmatrix}.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.SWAP`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.SWAP`.
 
     **Example**
 
@@ -380,7 +380,7 @@ class T(ResourceOperator):
         The T-gate is treated as a fundamental gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.T`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.T`.
 
     """
 
@@ -505,7 +505,7 @@ class X(ResourceOperator):
 
         Thus the resources for an X-gate are two ``S`` gates and two ``Hadamard`` gates.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.X`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.X`.
 
     **Example**
 
@@ -614,12 +614,13 @@ class Y(ResourceOperator):
             \begin{align}
                 \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
                 \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
+                \hat{S}^{\dagger} &= \cdot \hat{Z} \cdot \hat{S}, \\
             \end{align}
 
-        Thus the resources for a Y-gate are one S-gate, one Adjoint(S)-gate, one Z-gate
+        Thus the resources for a Y-gate are two S-gates, two Z-gates
         and two Hadamard gates.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.Y`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Y`.
 
     **Example**
 
@@ -646,14 +647,14 @@ class Y(ResourceOperator):
                     \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
                 \end{align}
 
-            Thus the resources for a Y-gate are one S-gate, one Adjoint(S)-gate, one Z-gate
+            Thus the resources for a Y-gate are two S-gates, two Z-gates
             and two Hadamard gates.
         """
         z = resource_rep(Z)
         s = resource_rep(S)
         h = resource_rep(Hadamard)
 
-        return [GateCount(s, 1), GateCount(z, 2), GateCount(h, 2)]
+        return [GateCount(s, 2), GateCount(z, 2), GateCount(h, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -726,7 +727,7 @@ class Z(ResourceOperator):
 
         thus the resources for a Z-gate are two ``S`` gates.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.Z`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Z`.
 
     **Example**
 

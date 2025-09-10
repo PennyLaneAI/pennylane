@@ -31,19 +31,6 @@ Resource Estimation Base Classes:
     ~resource_operator.ResourcesNotDefined
     ~resource_operator.resource_rep
 
-.. .. automodsumm:: pennylane.estimator.resource_operator
-..     :toctree: api
-..     :no-inherited-members:
-..     :classes-only:
-..     :skip: ABC, Hashable, Iterable, QueuingManager, Resources, Wires, WireResourceManager, defaultdict
-
-
-.. .. automodsumm:: pennylane.estimator.resources_base
-..     :toctree: api
-..     :no-inherited-members:
-..     :classes-only:
-..     :skip: Counter, Decimal, WireResourceManager, defaultdict
-
 
 Resource Operators:
 -------------------

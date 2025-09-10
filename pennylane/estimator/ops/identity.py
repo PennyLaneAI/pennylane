@@ -29,7 +29,7 @@ class Identity(ResourceOperator):
         The Identity gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~pennylane.ops.Identity`
+    .. seealso:: The corresponding PennyLane operation :class:`~pennylane.Identity`.
 
     **Example**
 
@@ -136,7 +136,7 @@ class GlobalPhase(ResourceOperator):
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
-    .. seealso:: The corresponding PennyLane operation: :class:`~.pennylane.ops.GlobalPhase`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.GlobalPhase`.
 
     **Example**
 
