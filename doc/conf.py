@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # PennyLane documentation build configuration file, created by
 # sphinx-quickstart on Tue Apr 17 11:43:51 2018.
@@ -15,7 +14,9 @@
 import os
 import re
 import sys
+from docutils import nodes
 from datetime import datetime
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -330,3 +331,109 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
+
+# def skip_estimator_index(app, what, name, obj, skip, options):
+#     """
+#     Prevent estimator ops from generating cross-ref targets.
+#     """
+#     print(what, name, obj, skip, options)
+#     module = getattr(obj, "__module__", "")
+#     print(module)
+#     # if module and module.startswith("pennylane.estimator"):
+#     #     return True  # skip indexing
+#     return skip
+
+# def setup(app):
+#     app.connect("autodoc-skip-member", skip_estimator_index)
+
+# from sphinx.ext.autosummary import Autosummary
+
+# class EstimatorAutosummary(Autosummary):
+#     option_spec = Autosummary.option_spec.copy()
+#     option_spec["noindex"] = lambda arg: True  # force noindex
+
+#     def run(self):
+#         # inject `:noindex:` into every entry
+#         self.options["noindex"] = True
+#         return super().run()
+
+# def setup(app):
+#     app.add_directive("estimatorautosummary", EstimatorAutosummary)
+
+# from sphinx_automodapi.automodsumm import Automodsumm
+
+# class EstimatorAutomodsumm(Automodsumm):
+#     """
+#     A variant of automodsumm that forces :noindex: into generated stubs
+#     for estimator modules, to avoid duplicate cross-reference warnings.
+#     """
+#     def run(self):
+#         # This is the key part. We need to modify the ':autosummary-options:'
+#         # that automodsumm will use to generate the underlying autosummary directive.
+
+#         # Get any options the user might have already provided.
+#         existing_options = self.options.get("autosummary-options", "")
+
+#         # Add :noindex: if it's not already there to avoid duplication.
+#         if ":noindex:" not in existing_options:
+#             self.options["autosummary-options"] = f":noindex: {existing_options}".strip()
+
+#         return super().run()
+
+# def setup(app):
+#     # Register the custom directive
+#     app.add_directive("estimatorautomodsumm", EstimatorAutomodsumm)
+
+
+def patch_estimator_stubs(app):
+    """Only patch stubs for the `pennylane.estimator` module."""
+    stubs_dir = os.path.join(app.srcdir, "code", "api")
+    if not os.path.isdir(stubs_dir):
+        return
+
+    for root, _, files in os.walk(stubs_dir):
+        for fname in files:
+            if not fname.endswith(".rst"):
+                continue
+            fpath = os.path.join(root, fname)
+
+            with open(fpath, encoding="utf-8") as f:
+                content = f.read()
+
+            # Only modify if stub is for pennylane.estimator.ops
+            if not re.search(r"\bpennylane\.estimator\.ops\b", content):
+                continue
+
+            # TODO: Replace with :no-index-entry: when support for sphinx >=8.2 is available.
+            new_content = re.sub(
+                r"(\.\.\s+auto(?:class|function|module)::[^\n]+)",
+                r"\1\n   :noindex:",
+                content,
+            )
+            if new_content != content:
+                with open(fpath, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                print(f"[patch_estimator_stubs] Patched {fpath}")
+
+from docutils import nodes
+
+def link_estimator_table_to_stubs(app, doctree, fromdocname):
+    """
+    Replace literal names in automodsumm tables with links to stub HTML files.
+    """
+    if "qml_estimator" in fromdocname:
+        for table in doctree.traverse(nodes.table)[2:]:
+            for literal in table.traverse(nodes.literal):
+                name = literal.astext()
+                url = f"code/api/pennylane.estimator.ops.{name}"
+                refuri = app.builder.get_relative_uri(fromdocname, url)
+
+                refnode = nodes.reference('', refuri=refuri)
+                refnode += nodes.literal(text=name)                
+                literal.parent.replace(literal, refnode)
+                print(f"[patch_estimator_links] Linked pennylane.estimator.ops.{name} to {refuri}")
+
+
+def setup(app):
+    app.connect("builder-inited", patch_estimator_stubs)
+    app.connect("doctree-resolved", link_estimator_table_to_stubs)

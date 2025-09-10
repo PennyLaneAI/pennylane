@@ -48,7 +48,7 @@ Summary of the update
   >>> X(0)
   X(0)
 
-  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`, but
+  The original long-form names :class:`~.pennylane.ops.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`, but
   use of the short-form names is now recommended.
 
 * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
