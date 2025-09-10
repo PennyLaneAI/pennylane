@@ -274,7 +274,7 @@ class Deallocate(_WireAction):
         >>> print(res.WireResourceManager)
         WireResourceManager(zeroed wires=1, any wires=0, algorithmic wires=4, tight budget=False)
 
-        Now, auxiliary wire is freed and is returned in the zeroed state after the decomposition, and can
+        Now, the auxiliary wire is freed and is returned in the zeroed state after the decomposition, and can
         be used for other operators which require zeroed auxiliary wires.
 
     """
