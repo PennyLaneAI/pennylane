@@ -56,7 +56,6 @@ class TestResourceConfig:
     def test_initialization_of_custom_decomps(self):
         """Test that the custom decomposition dictionaries initialize as empty."""
         config = ResourceConfig()
-        # Note: the check for config._pow_custom_decomps was duplicated in the original test.
         assert config._pow_custom_decomps == {}
         assert not config._custom_decomps
         assert not config._adj_custom_decomps
