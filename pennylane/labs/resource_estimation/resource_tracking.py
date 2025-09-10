@@ -90,6 +90,12 @@ def estimate_resources(
             counts for throughout the quantum workflow.
         config (ResourceConfig, optional): A ResourceConfig object of additional parameters which sets default values
             when they are not specified on the operator.
+        work_wires (int | dict | optional): The number of available zeroed and/or any_state ancilla
+            qubits. If an integer is provided, it specifies the number of zeroed ancillas. If a
+            dictionary is provided, it should have the keys ``"zeroed"`` and ``"any_state"``.
+            Defaults to ``0``.
+        tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
+            exceed the available amount. The default is ``False``.
 
     Returns:
         Resources: the quantum resources required to execute the circuit
