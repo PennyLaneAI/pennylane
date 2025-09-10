@@ -64,68 +64,6 @@ class Resources:
       'Y': 3,
       'Hadamard': 10
 
-    .. details::
-        :title: Usage Details
-
-        The :class:`~.pennylane.estimator.Resources` object supports arithmetic operations which allow for quick addition
-        and multiplication of resources. When combining resources, we can make a simplifying
-        assumption about how they are applied in a quantum circuit: in series or in parallel.
-
-        When assuming the circuits are executed in parallel, the number of algorithmic wires add
-        together. When assuming the circuits are executed in series, the maximum of each set of
-        algorithmic wires is used. The ``zeroed`` auxiliary wires can be reused between the circuits,
-        and thus we always use the maximum of each set when combining the resources. Finally, the
-        ``any_state`` wires cannot be reused between circuits, thus we always add them together.
-
-        .. code-block::
-
-            from collections import defaultdict
-
-            # Resource reps for each operator:
-            H = plre.resource_rep(plre.Hadamard)
-            X = plre.resource_rep(plre.X)
-            Z = plre.resource_rep(plre.Z)
-            CNOT = plre.resource_rep(plre.CNOT)
-
-            # state of wires:
-            wm1 = plre.WireResourceManager(zeroed=2, any_state=1, algo_wires=3)
-            wm2 = plre.WireResourceManager(zeroed=1, any_state=2, algo_wires=4)
-
-            # state of gates:
-            gt1 = defaultdict(int, {H: 10, X:5, CNOT:2})
-            gt2 = defaultdict(int, {H: 15, Z:5, CNOT:4})
-
-            # resources:
-            res1 = plre.Resources(wire_manager=wm1, gate_types=gt1)
-            res2 = plre.Resources(wire_manager=wm2, gate_types=gt2)
-
-
-        .. code-block:: pycon
-
-            >>> print(res1)
-            --- Resources: ---
-             Total wires: 6
-                algorithmic wires: 3
-                allocated wires: 3
-                     zero state: 2
-                     any state: 1
-             Total gates : 17
-              'CNOT': 2,
-              'X': 5,
-              'Hadamard': 10
-
-            >>> print(res2)
-            --- Resources: ---
-             Total wires: 7
-                algorithmic wires: 4
-                allocated wires: 3
-                     zero state: 1
-                     any state: 2
-             Total gates : 24
-              'CNOT': 4,
-              'Z': 5,
-              'Hadamard': 15
-
     """
 
     def __init__(self, wire_manager: WireResourceManager, gate_types: dict | None = None):
