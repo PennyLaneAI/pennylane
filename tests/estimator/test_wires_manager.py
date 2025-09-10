@@ -103,7 +103,7 @@ class TestWireResourceManager:
 
         expected_string = (
             f"WireResourceManager(zeroed wires={zeroed_wires}, any wires={any_wires}, "
-            f"algorithmic wires={logic_wires}, tight budget={tight_budget})"
+            f"algorithmic wires={algo_q}, tight budget={tight_budget})"
         )
         wire_manager.algo_wires = algo_q
         assert str(wire_manager) == expected_string
