@@ -224,8 +224,8 @@ def resources_from_resource(
 @estimate_resources.register
 def resources_from_resource_ops(
     obj: ResourceOperator,
-    gate_set: set = None,
-    config: ResourceConfig = None,
+    gate_set: set | None = None,
+    config: ResourceConfig | None = None,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
