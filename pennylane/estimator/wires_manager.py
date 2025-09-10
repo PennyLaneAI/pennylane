@@ -30,52 +30,52 @@ class WireResourceManager:
     * Zeroed State wires: Auxiliary wires that are in the :math:`|0\rangle` state. They are converted
       to an unknown state upon allocation.
     * Any State wires: Auxiliary wires that are in an unknown state. They are converted to
-      zeroed_state wires when they are freed.
+      zeroed wires when they are freed.
 
     Args:
-        zeroed_state (int): Number of zeroed_state work wires.
+        zeroed (int): Number of zeroed state work wires.
         any_state (int): Number of work wires in an unknown state, default is ``0``.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
-        tight_budget (bool): Determines whether extra zeroed_state wires can be allocated when they
+        tight_budget (bool): Determines whether extra zeroed state wires can be allocated when they
             exceed the available amount. The default is ``False``.
 
     **Example**
 
     >>> q = WireResourceManager(
-    ...             zeroed_state=2,
+    ...             zeroed=2,
     ...             any_state=2,
     ...             tight_budget=False,
     ...     )
     >>> print(q)
-    WireResourceManager(zeroed state wires=2, any state wires=2, algorithmic wires=0, tight budget=False)
+    WireResourceManager(zeroed wires=2, any state wires=2, algorithmic wires=0, tight budget=False)
 
     """
 
     def __init__(
-        self, zeroed_state: int, any_state: int = 0, algo: int = 0, tight_budget: bool = False
+        self, zeroed: int, any_state: int = 0, algo: int = 0, tight_budget: bool = False
     ) -> None:
 
         self.tight_budget = tight_budget
         self._algo_wires = algo
-        self.zeroed_state = zeroed_state
+        self.zeroed = zeroed
         self.any_state = any_state
 
     def __str__(self) -> str:
         return (
-            f"WireResourceManager(zeroed_state wires={self.zeroed_state}, any_state wires={self.any_state}, "
+            f"WireResourceManager(zeroed wires={self.zeroed}, any_state wires={self.any_state}, "
             f"algorithmic wires={self.algo_wires}, tight budget={self.tight_budget})"
         )
 
     def __repr__(self) -> str:
         return (
-            f"WireResourceManager(zeroed_state={self.zeroed_state}, any_state={self.any_state}, algo={self.algo_wires}, "
+            f"WireResourceManager(zeroed={self.zeroed}, any_state={self.any_state}, algo={self.algo_wires}, "
             f"tight_budget={self.tight_budget})"
         )
 
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, self.__class__)
-            and (self.zeroed_state == other.zeroed_state)
+            and (self.zeroed == other.zeroed)
             and (self.any_state == other.any_state)
             and (self.algo_wires == other.algo_wires)
             and (self.tight_budget == other.tight_budget)
@@ -89,39 +89,39 @@ class WireResourceManager:
     @property
     def total_wires(self) -> int:
         r"""Returns the number of total wires."""
-        return self.zeroed_state + self.any_state + self.algo_wires
+        return self.zeroed + self.any_state + self.algo_wires
 
     @algo_wires.setter
     def algo_wires(self, count: int):  # these get set manually, the rest are dynamically updated
         r"""Setter for algorithmic wires."""
         self._algo_wires = count
 
-    def grab_zeroed_state(self, num_wires: int) -> None:
-        r"""Grabs zeroed_state wires, and moves them to an arbitrary state; incrementing the number of any_state wires.
+    def grab_zeroed(self, num_wires: int) -> None:
+        r"""Grabs zeroed wires, and moves them to an arbitrary state; incrementing the number of any_state wires.
 
         Args:
-            num_wires(int) : number of zeroed_state wires to be grabbed
+            num_wires(int) : number of zeroed wires to be grabbed
 
         Raises:
             ValueError: If tight_budget is `True` and the number of wires to be grabbed is greater than
-                available zeroed_state wires.
+                available zeroed wires.
 
         """
-        available_zeroed_state = self.zeroed_state
+        available_zeroed = self.zeroed
 
-        if num_wires > available_zeroed_state:
+        if num_wires > available_zeroed:
             if self.tight_budget:
                 raise ValueError(
-                    f"Grabbing more wires than available zeroed_state wires."
-                    f"Number of zeroed_state wires available is {available_zeroed_state}, while {num_wires} are being grabbed."
+                    f"Grabbing more wires than available zeroed wires."
+                    f"Number of zeroed wires available is {available_zeroed}, while {num_wires} are being grabbed."
                 )
-            self.zeroed_state = 0
+            self.zeroed = 0
         else:
-            self.zeroed_state -= num_wires
+            self.zeroed -= num_wires
         self.any_state += num_wires
 
     def free_wires(self, num_wires: int) -> None:
-        r"""Frees any_state wires and converts them into zeroed_state wires.
+        r"""Frees any_state wires and converts them into zeroed wires.
 
         Args:
             num_wires(int) : number of wires to be freed
@@ -137,7 +137,7 @@ class WireResourceManager:
             )
 
         self.any_state -= num_wires
-        self.zeroed_state += num_wires
+        self.zeroed += num_wires
 
 
 class _WireAction:
@@ -191,7 +191,7 @@ class Allocate(_WireAction):
         >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
         >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed_state wires =0, any_state wires=0, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires =0, any_state wires=0, algorithmic wires=4, tight budget=False)
 
         This decomposition uses a total of ``4`` wires and doesn't track the work wires.
 
@@ -212,7 +212,7 @@ class Allocate(_WireAction):
         >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
         >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed_state wires=1, any_state wires=0, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires=1, any_state wires=0, algorithmic wires=4, tight budget=False)
 
         Now, the one extra auxiliary wire is being tracked.
 
@@ -251,7 +251,7 @@ class Deallocate(_WireAction):
         >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
         >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed_state wires=0, any_state wires=1, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires=0, any_state wires=1, algorithmic wires=4, tight budget=False)
 
         This decomposition uses a total of ``4`` algorithmic wires and ``1`` work wire which is returned in an arbitrary state.
 
@@ -272,10 +272,10 @@ class Deallocate(_WireAction):
         >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
         >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed_state wires=1, any_state wires=0, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires=1, any_state wires=0, algorithmic wires=4, tight budget=False)
 
         Now, the auxiliary wire is freed and is returned in the zeroed state after the decomposition, and can
-        be used for other operators which require zeroed_state auxiliary wires.
+        be used for other operators which require zeroed auxiliary wires.
 
     """
 
