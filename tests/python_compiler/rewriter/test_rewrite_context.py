@@ -297,8 +297,10 @@ class TestRewriteContext:
         """Test that the default RewriteContext.update_from_op updates the
         context as expected."""
 
-    @pytest.mark.parametrize("reverse, region_first", [])
-    def test_walk(self, reverse, region_first):
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("region_first", [False, True])
+    @pytest.mark.parametrize("update", [False, True])
+    def test_walk(self, reverse, region_first, update):
         """Test that RewriteContext.walk works as expected."""
 
 

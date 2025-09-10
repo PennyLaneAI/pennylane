@@ -388,7 +388,11 @@ class RewriteContext:
         self.wire_qubit_map.update_qubit(op.in_qubit, op.out_qubit)
 
     def walk(
-        self, obj: xOperation | Block | Region, reverse: bool = False, region_first: bool = False
+        self,
+        obj: xOperation | Block | Region,
+        reverse: bool = False,
+        region_first: bool = False,
+        update: bool = True,
     ) -> Iterator[xOperation]:
         """Walk over the body of the provided object.
 
@@ -401,10 +405,13 @@ class RewriteContext:
                 by default.
             region_first (bool): Whether to traverse the regions of an operation before the operation
                 itself. ``False`` by default.
+            update (bool): Whether or not to update the context while walking. If ``True``, the update
+                will happen *after* the operation has been yielded. ``True`` by default.
         """
 
         for op in obj.walk(reverse=reverse, region_first=region_first):
             yield op
 
             # Update the context
-            self.update_from_op(op)
+            if update:
+                self.update_from_op(op)
