@@ -25,7 +25,6 @@ from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
     ExpectationMP,
-    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
@@ -246,7 +245,6 @@ creation_funcs = [
     lambda: qml.purity(wires=(0, 1)),
     lambda: qml.mutual_info(wires0=(1, 3), wires1=(2, 4), log_base=2),
     lambda: qml.classical_shadow(wires=(0, 1), seed=84),
-    lambda: MidMeasureMP(qml.wires.Wires((0, 1))),
 ]
 
 
@@ -260,31 +258,6 @@ def test_capture_and_eval(func):
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
 
     qml.assert_equal(mp, out)
-
-
-def test_mid_measure():
-    """Test that mid circuit measurements can be captured and executed."""
-
-    def f(w):
-        return MidMeasureMP(qml.wires.Wires((w,)), reset=True, postselect=1)
-
-    jaxpr = jax.make_jaxpr(f)(2)
-
-    assert len(jaxpr.eqns) == 1
-    assert jaxpr.eqns[0].primitive == MidMeasureMP._wires_primitive
-    assert jaxpr.eqns[0].params == {"reset": True, "postselect": 1, "id": None}
-    mp = jaxpr.eqns[0].outvars[0].aval
-    assert isinstance(mp, AbstractMeasurement)
-    assert mp.n_wires == 1
-    assert mp._abstract_eval == MidMeasureMP._abstract_eval
-
-    shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(1))
-    assert shapes[0] == jax.core.ShapedArray(
-        (), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-    )
-
-    mp = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)[0]
-    assert mp == f(1)
 
 
 @pytest.mark.parametrize("state_wires, shape", [(None, 16), (qml.wires.Wires((0, 1, 2, 3, 4)), 32)])

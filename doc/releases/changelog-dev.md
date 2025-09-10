@@ -501,6 +501,7 @@
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+  [(#8228)](https://github.com/PennyLaneAI/pennylane/pull/8228)
 
   * The :func:`~.transforms.decompose` transform now accepts a `num_available_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
@@ -582,6 +583,9 @@
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
 <h3>Breaking changes 💔</h3>
+
+* `MidMeasureMP` now inherits from `Operator` instead of `MeasurementProcess`.
+  [(#8166)](https://github.com/PennyLaneAI/pennylane/pull/8166)
 
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
   and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
