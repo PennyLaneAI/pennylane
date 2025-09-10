@@ -55,7 +55,7 @@ class ResourceConfig:
     """
 
     def __init__(self) -> None:
-        self.errors_and_precisions = {
+        self.resource_op_precisions = {
             ResourceRX: {"precision": 1e-9},
             ResourceRY: {"precision": 1e-9},
             ResourceRZ: {"precision": 1e-9},
