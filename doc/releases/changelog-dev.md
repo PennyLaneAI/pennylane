@@ -3,6 +3,13 @@
 
 <h3>New features since last release</h3>
 
+* The Resource estimation toolkit was upgraded and has migrated from
+  :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
+  
+  * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
+    classes were added to track auxiliary wires for resource estimation.
+    [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
 
@@ -987,6 +994,9 @@
 
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
+
+* Add a `mbqc` submodule to the `python_compiler` module for common utils of MBQC workflows.
+  [(#8219)](https://github.com/PennyLaneAI/pennylane/pull/8219)
 
 * Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)

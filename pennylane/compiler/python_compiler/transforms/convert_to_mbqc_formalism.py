@@ -17,7 +17,6 @@ written using xDSL."""
 
 import math
 from dataclasses import dataclass
-from enum import Enum
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
@@ -33,149 +32,8 @@ from ..dialects.mbqc import (
     MeasurementPlaneEnum,
 )
 from ..dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
+from ..mbqc import generate_adj_matrix, get_num_aux_wires
 from .api import compiler_transform
-
-
-class _NumAuxWires(Enum):
-    """
-    Specify the number of auxiliary wires required for gates from the MBQC gate set.
-    The number of auxiliary qubits for a single qubit gate is 4, while it is 13 for a
-    CNOT gate.
-    """
-
-    SINGLE_QUBIT = 4
-    CNOT = 13
-
-
-def _generate_adj_matrix(op_name: str) -> list:
-    """Generate an adjacency matrix represents the connectivity of auxiliary qubits in a
-    graph state for a gate operation.
-    Args:
-        op_name (str): The gate name. Note that only a gate in the MBQC gate set is supported.
-    Returns:
-        An adjacency matrix representing the connectivity of auxiliary qubits.
-    """
-    if op_name in ["RotXZX", "RZ", "Hadamard", "S"]:
-        return _generate_one_wire_op_adj_matrix()
-    if op_name == "CNOT":
-        return _generate_cnot_adj_matrix()
-    raise NotImplementedError(f"{op_name} is not supported in the MBQC gate set.")
-
-
-def _adj_matrix_generation_helper(
-    num_vertices: int, edges_in_adj_matrix: list[tuple[int, int]]
-) -> list:
-    """Helper function to generate an adjacency matrix to represent the connectivity of auxiliary qubits in
-    a graph state for a gate operation with the number of vertices and edges information.
-    Note that the adjacency matrix here means the lower triangular part of the full adjacency matrix.
-    It can be represented as below and `x` marks here denotes the matrix diagonal.
-    x
-    + x
-    + + x
-    .
-    ........
-    .
-    + + + + + x
-
-    Args:
-      num_vertices (int) : Number of vertices in the adjacency matrix.
-      edges_in_adj_matrix (list[tuple[int, int]]): List of edges in the adjacency matrix.
-
-    Return:
-      An adjacency matrix represents the connectivity of vertices.
-    """
-    adj_matrix_length = num_vertices * (num_vertices - 1) // 2
-    adj_matrix = [0] * adj_matrix_length
-    for edge in edges_in_adj_matrix:
-        row, col = edge
-        n = col + (row - 1) * row // 2
-        adj_matrix[n] = 1
-
-    return adj_matrix
-
-
-def _generate_cnot_adj_matrix() -> list:
-    """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in
-    the graph state for a CNOT gate operation based on the textbook MBQC formalism. The
-    connectivity of the ctrl/target qubits in the register and auxiliary qubits is:
-
-    ctl --  0  --  1  --  2  --  3  --  4  -- 5
-                          |
-                          6
-                          |
-    tgt --  7  --  8  --  9  -- 10  -- 11  -- 12
-
-    Note that both ctrl and target qubits are not in the adjacency matrix and the connectivity
-    of the auxiliary qubits is:
-    edges_in_adj_matrix = [
-        (0, 1),
-        (1, 2),
-        (2, 3),
-        (3, 4),
-        (4, 5),
-        (2, 6),
-        (7, 8),
-        (6, 9),
-        (8, 9),
-        (9, 10),
-        (10, 11),
-        (11, 12),
-    ]
-
-    This graph is labelled based on the rows and columns of the adjacent matrix, but maps on to the graph described in
-    the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_], where wire 1 is the control and
-    wire 9 is the target.
-
-    Returns:
-        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a CNOT gate operation.
-    """
-    num_vertices = _NumAuxWires.CNOT.value
-    edges_in_adj_matrix = [
-        (1, 0),
-        (2, 1),
-        (3, 2),
-        (4, 3),
-        (5, 4),
-        (6, 2),
-        (8, 7),
-        (9, 6),
-        (9, 8),
-        (10, 9),
-        (11, 10),
-        (12, 11),
-    ]
-
-    return _adj_matrix_generation_helper(num_vertices, edges_in_adj_matrix)
-
-
-def _generate_one_wire_op_adj_matrix() -> list:
-    """Generate an adjacency matrix to represent the connectivity of auxiliary qubits in the graph state for
-    a single-qubit gate based on the textbook MBQC formalism. The connectivity of the target qubits in the register
-    and auxiliary qubits is:
-
-    tgt --  0  --  1  --  2  --  3
-
-    Note that the target qubit is not in the adjacency matrix and the connectivity
-    of the auxiliary qubits is:
-    edges_in_adj_matrix = [
-       (1, 0),
-       (2, 1),
-       (3, 2),
-    ]
-
-    Wire 1 in the above isn't the target wire described in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_],
-    1 in the above maps to 3 in the figure.
-
-    Returns:
-        An adjacency matrix represents the connectivity of auxiliary qubits in the graph state for a single-qubit gate.
-    """
-    num_vertices = _NumAuxWires.SINGLE_QUBIT.value
-    edges_in_adj_matrix = [
-        (1, 0),
-        (2, 1),
-        (3, 2),
-    ]
-    return _adj_matrix_generation_helper(num_vertices, edges_in_adj_matrix)
 
 
 @dataclass(frozen=True)
@@ -225,11 +83,7 @@ class ConvertToMBQCFormalismPattern(
             graph_qubits_dict : A dictionary of auxiliary qubits in the graph state. The keys represents
             the indices of qubits described in the [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
         """
-        num_aux_wres = (
-            _NumAuxWires.CNOT.value
-            if op.gate_name.data == "CNOT"
-            else _NumAuxWires.SINGLE_QUBIT.value
-        )
+        num_aux_wres = get_num_aux_wires(op.gate_name.data)
 
         graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
         rewriter.insert_op(graph_state_prep_op, InsertPoint.before(op))
@@ -709,7 +563,7 @@ class ConvertToMBQCFormalismPattern(
                 ]:
                     # Allocate auxiliary qubits and entangle them
                     if one_wire_adj_matrix_op is None:
-                        adj_matrix = _generate_adj_matrix(op.gate_name.data)
+                        adj_matrix = generate_adj_matrix(op.gate_name.data)
                         one_wire_adj_matrix_op = arith.ConstantOp(
                             builtin.DenseIntOrFPElementsAttr.from_list(
                                 type=builtin.TensorType(
@@ -754,7 +608,7 @@ class ConvertToMBQCFormalismPattern(
                 elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
                     # Allocate auxiliary qubits and entangle them
                     if two_wire_adj_matrix_op is None:
-                        adj_matrix = _generate_adj_matrix(op.gate_name.data)
+                        adj_matrix = generate_adj_matrix(op.gate_name.data)
                         two_wire_adj_matrix_op = arith.ConstantOp(
                             builtin.DenseIntOrFPElementsAttr.from_list(
                                 type=builtin.TensorType(
