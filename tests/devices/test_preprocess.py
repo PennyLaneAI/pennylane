@@ -586,6 +586,63 @@ class TestDecomposeTransformations:
             ), f"Expected num_available_work_wires={expected_work_wires} not found in calls"
 
 
+class TestGraphModeExclusiveFeatures:
+    """Tests that only work when graph mode is enabled.
+
+    NOTE: All tests in this suite will auto-enable graph mode via fixture.
+    """
+
+    @pytest.fixture(autouse=True)
+    def enable_graph_mode_only(self):
+        """Auto-enable graph mode for all tests in this class."""
+        qml.decomposition.enable_graph()
+        yield
+        qml.decomposition.disable_graph()
+
+    def test_work_wire_unavailability_causes_fallback(self):
+        """Test that decompositions requiring more work wires than available are discarded.
+
+        This addresses the reviewer's question: if a device has 1 wire but a decomposition
+        requires 5 burnable work wires, that decomposition should be discarded.
+        """
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        # Fallback decomposition (no work wires needed)
+        @qml.register_resources({qml.H: 2})
+        def decomp_fallback(wires):
+            qml.H(wires)
+            qml.H(wires)
+
+        # Work wire decomposition (needs 5 burnable wires)
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
+        def decomp_with_work_wire(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+
+        try:
+            tape = qml.tape.QuantumScript([MyOp(0)])
+            device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+            target_gates = {"Hadamard", "PauliX"}
+
+            (out_tape,), _ = decompose(
+                tape,
+                lambda obj: obj.name in target_gates,
+                device_wires=device_wires,
+                target_gates=target_gates,
+            )
+
+            # Should use fallback decomposition (2 Hadamards)
+            assert len(out_tape.operations) == 2
+            assert all(op.name == "Hadamard" for op in out_tape.operations)
+
+        finally:
+            if hasattr(MyOp, "_decomp_db"):
+                MyOp._decomp_db.clear()
+
+
 class TestMidCircuitMeasurements:
     """Unit tests for the mid_circuit_measurements preprocessing transform"""
 

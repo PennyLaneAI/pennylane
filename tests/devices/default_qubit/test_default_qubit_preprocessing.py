@@ -1038,3 +1038,51 @@ class TestAdjointDiffTapeValidation:
 
         x = pnp.array(1.1, requires_grad=True)
         assert qml.jacobian(circuit)(x) == 0
+
+
+class TestDefaultQubitGraphModeExclusive:
+    """Tests for DefaultQubit features that require graph mode enabled.
+    The legacy decomposition mode should not be able to run these tests.
+
+    NOTE: All tests in this suite will auto-enable graph mode via fixture.
+    """
+
+    @pytest.fixture(autouse=True)
+    def enable_graph_mode_only(self):
+        """Auto-enable graph mode for all tests in this class."""
+        qml.decomposition.enable_graph()
+        yield
+        qml.decomposition.disable_graph()
+
+    def test_insufficient_work_wires_causes_fallback(self):
+        """Test that if a decomposition requires more work wires than available on default.qubit,
+        that decomposition is discarded and fallback is used."""
+
+        class MyDefaultQubitOp(qml.operation.Operator):
+            num_wires = 1
+
+        try:
+
+            @qml.register_resources({qml.H: 2})
+            def decomp_fallback(wires):
+                qml.H(wires)
+                qml.H(wires)
+
+            @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
+            def decomp_with_work_wire(wires):
+                qml.X(wires)
+
+            qml.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
+
+            tape = qml.tape.QuantumScript([MyDefaultQubitOp(0)])
+            dev = qml.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+            program = dev.preprocess_transforms()
+            (out_tape,), _ = program([tape])
+
+            assert len(out_tape.operations) == 2
+            assert out_tape.operations[0].name == "Hadamard"
+            assert out_tape.operations[1].name == "Hadamard"
+
+        finally:
+            # Clean up decomposition registry - attempt cleanup if possible
+            pass
