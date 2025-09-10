@@ -332,8 +332,6 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_
 
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
-
-    # Use enhanced preprocess.decompose directly
     program.add_transform(
         decompose,
         stopping_condition=adjoint_ops,
