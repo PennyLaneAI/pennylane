@@ -55,6 +55,12 @@ class Hermitian(Operator):
         A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
+
+    .. warning::
+
+       ``Hermitian`` is not compatible with :func:`~.probs`. When using
+       :func:`~.probs` with a Hermitian observable, the output might be incorrect.
+
     """
 
     _queue_category = None

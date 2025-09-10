@@ -268,6 +268,12 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
+
+    .. warning::
+
+       ``qml.probs`` is not compatible with :class:`~.Hermitian`. When using
+       ``qml.probs`` with a Hermitian observable, the output might be incorrect.
+
     """
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:

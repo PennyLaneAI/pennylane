@@ -983,6 +983,10 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
+  to guard users from an incompatibility that currently exists between the two.
+  [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
+
 * Rename `ancilla` to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
