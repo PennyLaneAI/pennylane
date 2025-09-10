@@ -54,26 +54,30 @@ gate_types_data = (
     ),
 )
 
-wire_manager1 = WireResourceManager(zeroed=5)
-wire_manager2 = WireResourceManager(zeroed=8753, any_state=2347, algo=22)
-wire_manager3 = WireResourceManager(zeroed=400, any_state=222, algo=108)
+wire_info1 = {"zeroed": 5}
+wire_info2 = {"zeroed": 8753, "any_state": 2347, "algo": 22}
+wire_info3 = {"zeroed": 400, "any_state": 222, "algo": 108}
 
-wire_manager_data = (wire_manager1, wire_manager2, wire_manager3)
+wire_data = (wire_info1, wire_info2, wire_info3)
 
 
 class TestResources:
     """Test the Resources class"""
 
     @pytest.mark.parametrize("gate_types", gate_types_data + (None,))
-    @pytest.mark.parametrize("wire_manager", wire_manager_data)
-    def test_init(self, wire_manager, gate_types):
+    @pytest.mark.parametrize("wire_info", wire_data)
+    def test_init(self, wire_info, gate_types):
         """Test that the class is correctly initialized"""
-        resources = Resources(wire_manager=wire_manager, gate_types=gate_types)
+        zeroed = wire_info.get("zeroed", 0)
+        any_state = wire_info.get("any_state", 0)
+        algo = wire_info.get("algo", 0)
+        resources = Resources(zeroed, any_state, algo, gate_types=gate_types)
 
-        expected_wire_manager = wire_manager
         expected_gate_types = defaultdict(int, {}) if gate_types is None else gate_types
 
-        assert resources.wire_manager == expected_wire_manager
+        assert resources.zeroed == zeroed
+        assert resources.any_state == any_state
+        assert resources.algo_wires == algo
         assert resources.gate_types == expected_gate_types
 
     str_data = (
@@ -120,8 +124,13 @@ class TestResources:
         "resources, expected_str",
         zip(
             tuple(
-                Resources(wire_manager, gate_types)
-                for wire_manager, gate_types in zip(wire_manager_data, gate_types_data)
+                Resources(
+                    wire_info.get("zeroed", 0),
+                    wire_info.get("any_state", 0),
+                    wire_info.get("algo", 0),
+                    gate_types,
+                )
+                for wire_info, gate_types in zip(wire_data, gate_types_data)
             ),
             str_data,
         ),
@@ -131,16 +140,18 @@ class TestResources:
         assert str(resources) == expected_str
 
     @pytest.mark.parametrize("gate_types", gate_types_data + (None,))
-    @pytest.mark.parametrize("wire_manager", wire_manager_data)
-    def test_repr_method(self, gate_types, wire_manager):
+    @pytest.mark.parametrize("wire_info", wire_data)
+    def test_repr_method(self, gate_types, wire_info):
         """Test that the repr method correctly represents the class."""
-        resources = Resources(wire_manager=wire_manager, gate_types=gate_types)
+        zeroed = wire_info.get("zeroed", 0)
+        any_state = wire_info.get("any_state", 0)
+        algo = wire_info.get("algo", 0)
+        resources = Resources(zeroed, any_state, algo, gate_types=gate_types)
 
-        expected_wire_manager = wire_manager
         expected_gate_types = defaultdict(int, {}) if gate_types is None else gate_types
         assert (
             repr(resources)
-            == f"Resources(wire_manager={expected_wire_manager}, gate_types={expected_gate_types})"
+            == f"Resources(zeroed={zeroed}, any_state={any_state}, algo={algo}, gate_types={expected_gate_types})"
         )
 
     def test_gate_counts(self):
@@ -166,7 +177,7 @@ class TestResources:
         ry2 = DummyResOp2("RY", parameter=3.14 / 4)
 
         gate_types = {rx1: 1, ry1: 2, cnots: 3, rx2: 4, ry2: 5}
-        res = Resources(wire_manager=wire_manager1, gate_types=gate_types)
+        res = Resources(5, 0, 0, gate_types=gate_types)
 
         expected_gate_counts = {"RX": 5, "RY": 7, "CNOT": 3}
         assert res.gate_counts == expected_gate_counts
@@ -175,9 +186,12 @@ class TestResources:
         """Test that the equality method works as expected."""
         gate_types1, gate_types2 = (gate_types_data[0], gate_types_data[1])
 
-        res1 = Resources(wire_manager=wire_manager1, gate_types=gate_types1)
-        res1_copy = Resources(wire_manager=wire_manager1, gate_types=gate_types1)
-        res2 = Resources(wire_manager=wire_manager2, gate_types=gate_types2)
+        zeroed = wire_info1.get("zeroed", 0)
+        any_state = wire_info1.get("any_state", 0)
+        algo = wire_info1.get("algo", 0)
+        res1 = Resources(zeroed, any_state, algo, gate_types=gate_types1)
+        res1_copy = Resources(zeroed, any_state, algo, gate_types=gate_types1)
+        res2 = Resources(5, 4, 3, gate_types=gate_types2)
 
         assert res1 == res1
         assert res1 == res1_copy
@@ -185,7 +199,7 @@ class TestResources:
 
     def test_equality_error(self):
         """Test that the equality method raises an error."""
-        res1 = Resources(wire_manager=wire_manager1, gate_types=gate_types_data[0])
+        res1 = Resources(3, 0, 2, gate_types=gate_types_data[0])
         with pytest.raises(
             TypeError,
             match="Cannot compare Resources with object of type <class 'collections.defaultdict'>.",
@@ -194,7 +208,7 @@ class TestResources:
 
     def test_arithmetic_raises_error(self):
         """Test that an assertion error is raised when arithmetic methods are used"""
-        res = Resources(wire_manager=wire_manager1, gate_types=gate_types_data[0])
+        res = Resources(4, 0, 0, gate_types=gate_types_data[0])
 
         with pytest.raises(TypeError, match="Cannot add Resources object to <class 'int'>."):
             res.add_series(2)  # Can only add two Resources instances
@@ -216,14 +230,20 @@ class TestResources:
 
     def test_add_in_series(self):
         """Test that we can add two resources assuming the gates occur in series"""
-        res1 = Resources(wire_manager=wire_manager3, gate_types=gate_types_data[2])
-        res2 = Resources(wire_manager=wire_manager2, gate_types=gate_types_data[1])
+        zeroed1 = wire_info3.get("zeroed", 0)
+        any_state1 = wire_info3.get("any_state", 0)
+        algo1 = wire_info3.get("algo", 0)
 
-        expected_wire_manager_add = WireResourceManager(
-            zeroed=max(wire_manager3.zeroed, wire_manager2.zeroed),
-            any_state=wire_manager2.any_state + wire_manager3.any_state,
-            algo=max(wire_manager3.algo_wires, wire_manager2.algo_wires),
-        )
+        zeroed2 = wire_info2.get("zeroed", 0)
+        any_state2 = wire_info2.get("any_state", 0)
+        algo2 = wire_info2.get("algo", 0)
+
+        res1 = Resources(zeroed1, any_state1, algo1, gate_types=gate_types_data[2])
+        res2 = Resources(zeroed2, any_state2, algo2, gate_types=gate_types_data[1])
+
+        zeroed = max(zeroed1, zeroed2)
+        any_state = any_state1 + any_state2
+        algo = max(algo1, algo2)
         expected_gate_types_add = defaultdict(
             int,
             {
@@ -232,19 +252,26 @@ class TestResources:
             },
         )
 
-        expected_add = Resources(expected_wire_manager_add, expected_gate_types_add)
+        expected_add = Resources(zeroed, any_state, algo, expected_gate_types_add)
         assert res1.add_series(res2) == expected_add
 
     def test_add_in_parallel(self):
         """Test that we can add two resources assuming the gates occur in parallel"""
-        res1 = Resources(wire_manager=wire_manager3, gate_types=gate_types_data[2])
-        res2 = Resources(wire_manager=wire_manager2, gate_types=gate_types_data[1])
+        zeroed1 = wire_info3.get("zeroed", 0)
+        any_state1 = wire_info3.get("any_state", 0)
+        algo1 = wire_info3.get("algo", 0)
 
-        expected_wire_manager_and = WireResourceManager(
-            zeroed=max(wire_manager3.zeroed, wire_manager2.zeroed),
-            any_state=wire_manager3.any_state + wire_manager2.any_state,
-            algo=wire_manager3.algo_wires + wire_manager2.algo_wires,
-        )
+        zeroed2 = wire_info2.get("zeroed", 0)
+        any_state2 = wire_info2.get("any_state", 0)
+        algo2 = wire_info2.get("algo", 0)
+
+        res1 = Resources(zeroed1, any_state1, algo1, gate_types=gate_types_data[2])
+        res2 = Resources(zeroed2, any_state2, algo2, gate_types=gate_types_data[1])
+
+        zeroed = max(zeroed1, zeroed2)
+        any_state = any_state1 + any_state2
+        algo = algo1 + algo2
+
         expected_gate_types_and = defaultdict(
             int,
             {
@@ -253,41 +280,37 @@ class TestResources:
             },
         )
 
-        expected_and = Resources(expected_wire_manager_and, expected_gate_types_and)
+        expected_and = Resources(zeroed, any_state, algo, expected_gate_types_and)
         assert (res1.add_parallel(res2)) == expected_and
 
     def test_mul_in_series(self):
         """Test that we can scale resources by an integer assuming the gates occur in series"""
         k = 3
-        res = Resources(wire_manager=wire_manager3, gate_types=gate_types_data[2])
+        zeroed = wire_info3.get("zeroed", 0)
+        any_state = wire_info3.get("any_state", 0)
+        algo = wire_info3.get("algo", 0)
+        res = Resources(zeroed, any_state, algo, gate_types=gate_types_data[2])
 
-        expected_wire_manager_mul = WireResourceManager(
-            zeroed=wire_manager3.zeroed,
-            any_state=wire_manager3.any_state * k,
-            algo=wire_manager3.algo_wires,
-        )
         expected_gate_types_mul = defaultdict(
             int, {key: value * k for key, value in gate_types_data[2].items()}
         )
 
-        expected_mul = Resources(expected_wire_manager_mul, expected_gate_types_mul)
+        expected_mul = Resources(zeroed, any_state * k, algo, expected_gate_types_mul)
 
         assert (res.multiply_series(k)) == expected_mul
 
     def test_mul_in_parallel(self):
         """Test that we can scale resources by an integer assuming the gates occur in parallel"""
         k = 3
-        res = Resources(wire_manager=wire_manager3, gate_types=gate_types_data[2])
+        zeroed = wire_info3.get("zeroed", 0)
+        any_state = wire_info3.get("any_state", 0)
+        algo = wire_info3.get("algo", 0)
+        res = Resources(zeroed, any_state, algo, gate_types=gate_types_data[2])
 
-        expected_wire_manager_matmul = WireResourceManager(
-            zeroed=wire_manager3.zeroed,
-            any_state=wire_manager3.any_state * k,
-            algo=wire_manager3.algo_wires * k,
-        )
         expected_gate_types_matmul = defaultdict(
             int, {key: value * k for key, value in gate_types_data[2].items()}
         )
 
-        expected_matmul = Resources(expected_wire_manager_matmul, expected_gate_types_matmul)
+        expected_matmul = Resources(zeroed, any_state * k, algo * k, expected_gate_types_matmul)
 
         assert (res.multiply_parallel(k)) == expected_matmul

@@ -17,18 +17,18 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from decimal import Decimal
 
-from .wires_manager import WireResourceManager
-
-DefaultGateSet = frozenset({
-    "Toffoli",
-    "T",
-    "CNOT",
-    "X",
-    "Y",
-    "Z",
-    "S",
-    "Hadamard",
-})
+DefaultGateSet = frozenset(
+    {
+        "Toffoli",
+        "T",
+        "CNOT",
+        "X",
+        "Y",
+        "Z",
+        "S",
+        "Hadamard",
+    }
+)
 
 
 class Resources:
@@ -37,8 +37,9 @@ class Resources:
     The resources tracked include number of gates, number of wires, and gate types.
 
     Args:
-        wire_manager (:class:`~.pennylane.estimator.WireResourceManager`): A wire tracker class which contains the number of available
-            work wires, categorized as zero state and any state wires, and algorithmic wires.
+        zeroed (int): Number of zeroed state work wires.
+        any_state (int): Number of work wires in an unknown state, default is ``0``.
+        algo_wires (int): Number of algorithmic wires, default value is ``0``.
         gate_types (dict): A dictionary storing operations (:class:`~.pennylane.estimator.ResourceOperator`) as keys and the number
             of times they are used in the circuit (``int``) as values.
 
@@ -48,10 +49,9 @@ class Resources:
     >>> H = qre.resource_rep(qre.Hadamard)
     >>> X = qre.resource_rep(qre.X)
     >>> Y = qre.resource_rep(qre.Y)
-    >>> wm = qre.WireResourceManager(work_wires=3)
     >>> gt = defaultdict(int, {H: 10, X:7, Y:3})
     >>>
-    >>> res = qre.Resources(wire_manager=wm, gate_types=gt)
+    >>> res = qre.Resources(zeroed=3, gate_types=gt)
     >>> print(res)
     --- Resources: ---
      Total wires: 3
@@ -66,11 +66,15 @@ class Resources:
 
     """
 
-    def __init__(self, wire_manager: WireResourceManager, gate_types: dict | None = None):
+    def __init__(
+        self, zeroed: int, any_state: int = 0, algo: int = 0, gate_types: dict | None = None
+    ):
         """Initialize the Resources class."""
         gate_types = gate_types or {}
 
-        self.wire_manager = wire_manager
+        self.zeroed = zeroed
+        self.any_state = any_state
+        self.algo_wires = algo
         self.gate_types = (
             gate_types
             if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int))
@@ -120,20 +124,14 @@ class Resources:
         if not isinstance(other, self.__class__):
             raise TypeError(f"Cannot add {self.__class__.__name__} object to {type(other)}.")
 
-        wm1 = self.wire_manager
-        wm2 = other.wire_manager
-
-        new_zeroed = max(wm1.zeroed, wm2.zeroed)
-        new_any = wm1.any_state + wm2.any_state
-        new_budget = wm1.tight_budget or wm2.tight_budget
-        new_logic = max(wm1.algo_wires, wm2.algo_wires)
-
-        new_wire_manager = WireResourceManager(
-            zeroed=new_zeroed, any_state=new_any, algo=new_logic, tight_budget=new_budget
-        )
+        new_zeroed = max(self.zeroed, other.zeroed)
+        new_any = self.any_state + other.any_state
+        new_logic = max(self.algo_wires, other.algo_wires)
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
-        return Resources(new_wire_manager, new_gate_types)
+        return Resources(
+            zeroed=new_zeroed, any_state=new_any, algo=new_logic, gate_types=new_gate_types
+        )
 
     def add_parallel(self, other: "Resources") -> "Resources":
         """Add two resources objects in parallel.
@@ -179,23 +177,14 @@ class Resources:
         if not isinstance(other, self.__class__):
             raise TypeError(f"Cannot add {self.__class__.__name__} object to {type(other)}.")
 
-        qm1 = self.wire_manager
-        qm2 = other.wire_manager
-
-        new_zeroed = max(qm1.zeroed, qm2.zeroed)
-        new_any = qm1.any_state + qm2.any_state
-        new_budget = qm1.tight_budget or qm2.tight_budget
-        new_logic = qm1.algo_wires + qm2.algo_wires
-
-        new_wire_manager = WireResourceManager(
-            zeroed=new_zeroed,
-            any_state=new_any,
-            algo=new_logic,
-            tight_budget=new_budget,
-        )
+        new_zeroed = max(self.zeroed, other.zeroed)
+        new_any = self.any_state + other.any_state
+        new_logic = self.algo_wires + other.algo_wires
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
-        return Resources(new_wire_manager, new_gate_types)
+        return Resources(
+            zeroed=new_zeroed, any_state=new_any, algo=new_logic, gate_types=new_gate_types
+        )
 
     def __eq__(self, other: Resources) -> bool:
         """Determine if two resources objects are equal"""
@@ -203,7 +192,12 @@ class Resources:
             raise TypeError(
                 f"Cannot compare {self.__class__.__name__} with object of type {type(other)}."
             )
-        return (self.gate_types == other.gate_types) and (self.wire_manager == other.wire_manager)
+        return (
+            (self.gate_types == other.gate_types)
+            and (self.zeroed == other.zeroed)
+            and (self.any_state == other.any_state)
+            and (self.algo_wires == other.algo_wires)
+        )
 
     def multiply_series(self, scalar: int) -> Resources:
         """Scale a resources object in series
@@ -240,16 +234,14 @@ class Resources:
                 f"Cannot multiply {self.__class__.__name__} object with {type(scalar)}."
             )
 
-        new_wire_manager = WireResourceManager(
-            zeroed=self.wire_manager.zeroed,
-            any_state=scalar * self.wire_manager.any_state,
-            algo=self.wire_manager.algo_wires,
-            tight_budget=self.wire_manager.tight_budget,
-        )
-
         new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
 
-        return Resources(new_wire_manager, new_gate_types)
+        return Resources(
+            zeroed=self.zeroed,
+            any_state=self.any_state * scalar,
+            algo=self.algo_wires,
+            gate_types=new_gate_types,
+        )
 
     def multiply_parallel(self, scalar: int) -> Resources:
         """Scale a resources object in parallel
@@ -286,16 +278,14 @@ class Resources:
                 f"Cannot multiply {self.__class__.__name__} object with {type(scalar)}."
             )
 
-        new_wire_manager = WireResourceManager(
-            zeroed=self.wire_manager.zeroed,
-            any_state=scalar * self.wire_manager.any_state,
-            algo=scalar * self.wire_manager.algo_wires,
-            tight_budget=self.wire_manager.tight_budget,
-        )
-
         new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
 
-        return Resources(new_wire_manager, new_gate_types)
+        return Resources(
+            zeroed=self.zeroed,
+            any_state=self.any_state * scalar,
+            algo=self.algo_wires * scalar,
+            gate_types=new_gate_types,
+        )
 
     @property
     def gate_counts(self) -> dict:
@@ -316,8 +306,7 @@ class Resources:
     def __str__(self):
         """Generates a string representation of the Resources object."""
 
-        wm = self.wire_manager
-        total_wires = wm.total_wires
+        total_wires = self.algo_wires + self.zeroed + self.any_state
         total_gates = sum(self.gate_counts.values())
 
         total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
@@ -326,7 +315,7 @@ class Resources:
         items = "--- Resources: ---\n"
         items += f" Total wires: {total_wires_str}\n"
 
-        qubit_breakdown_str = f"    algorithmic wires: {wm.algo_wires}\n    allocated wires: {wm.zeroed+wm.any_state}\n\t zero state: {wm.zeroed}\n\t any state: {wm.any_state}\n"
+        qubit_breakdown_str = f"    algorithmic wires: {self.algo_wires}\n    allocated wires: {self.zeroed+self.any_state}\n\t zero state: {self.zeroed}\n\t any state: {self.any_state}\n"
         items += qubit_breakdown_str
 
         items += f" Total gates : {total_gates_str}\n  "
@@ -356,56 +345,59 @@ class Resources:
 
         return items
 
-    def gate_breakdown(self, gate_types=None):
-        """
-        Generates a string breakdown of gate counts, optionally for a specific set of gates.
+    def gate_breakdown(self, gate_set=None):
+        """Generates a string breakdown of gate counts based on the parameters.
 
         Args:
-            gate_types (list, optional): A list of gate names to break down.
-                If None, all gates in DefaultGateSet will be broken down.
+            gate_set (list): A list of gate names to break down.
+
+        **Example**
+
+        >>> from pennylane import estimator as qre
+        >>> res1 = qre.estimate(qre.SemiAdder(10))
+        >>> print(res1.gate_breakdown())
+        Toffoli total: 9
+            Toffoli {'elbow': 'left'}: 9
+        CNOT total: 60
+        Hadamard total: 27
+
         """
-        breakdown_str = ""
+        output_lines = []
 
-        if gate_types is None:
-            unique_gate_names = []
-            for op in self.gate_types.keys():
-                if op.name not in unique_gate_names:
-                    unique_gate_names.append(op.name)
-            gate_types = unique_gate_names
+        if gate_set is None:
+            gate_set = ["Toffoli", "T", "CNOT", "X", "Y", "Z", "S", "Hadamard"]
 
-        for gate_name in gate_types:
+        for gate_name in gate_set:
             total_count = 0
             parameter_counts = defaultdict(int)
 
             for op, count in self.gate_types.items():
                 if op.name == gate_name:
                     total_count += count
-                    parameter_counts[op.params_tuple] = count
+                    params_tuple = tuple(sorted(op.params.items()))
+                    parameter_counts[params_tuple] += count
 
-            # If the gate is not found in the counts, skip it
             if total_count == 0:
                 continue
 
-            # Format the total count
-            total_count_str = str(total_count) if total_count <= 999 else f"{Decimal(total_count):.3E}"
+            total_count_str = (
+                str(total_count) if total_count <= 999 else f"{Decimal(total_count):.3E}"
+            )
 
-            # Append the total count for the current gate type
-            breakdown_str += f"{gate_name} total: {total_count_str}\n"
+            output_lines.append(f"{gate_name} total: {total_count_str}")
 
-            # Sort the parameter counts for deterministic output
-            sorted_params = sorted(parameter_counts.keys())
+            if parameter_counts.keys() != {()}:
+                for params_tuple in parameter_counts.keys():
+                    params_dict = dict(params_tuple)
 
-            # Append the counts for each parameter set
-            for params_tuple in sorted_params:
-                params_dict = dict(zip(op.param_names, params_tuple)) if hasattr(op, 'param_names') else params_tuple
+                    count = parameter_counts[params_tuple]
 
-                count = parameter_counts[params_tuple]
-                count_str = str(count) if count <= 999 else f"{Decimal(count):.3E}"
+                    if count > 0:
+                        count_str = str(count) if count <= 999 else f"{Decimal(count):.3E}"
+                        output_lines.append(f"    {gate_name} {params_dict}: {count_str}")
 
-                breakdown_str += f"    {gate_name} {params_dict}: {count_str}\n"
-
-        return breakdown_str
+        return "\n".join(output_lines)
 
     def __repr__(self):
         """Compact string representation of the Resources object"""
-        return f"Resources(wire_manager={self.wire_manager}, gate_types={self.gate_types})"
+        return f"Resources(zeroed={self.zeroed}, any_state={self.any_state}, algo={self.algo_wires}, gate_types={self.gate_types})"
