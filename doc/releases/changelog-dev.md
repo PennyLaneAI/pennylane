@@ -1028,6 +1028,7 @@
 
 * `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
   in the circuit with the `ctrl` happens.
+  [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
 * Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
   [(#8190)](https://github.com/PennyLaneAI/pennylane/pull/8190)
