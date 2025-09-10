@@ -823,7 +823,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Devices preprocess now starts to accept graph decomposition.
+* `qml.devices.preprocess.decompose` now works in graph decomposition mode
+   when a gateset is provided. `default.qubit` and `null.qubit` can now use 
+   graph decomposition mode.
   [(#8225)](https://github.com/PennyLaneAI/pennylane/pull/8225)
 
 * Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
