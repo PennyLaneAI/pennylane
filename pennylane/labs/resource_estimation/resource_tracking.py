@@ -37,41 +37,45 @@ from pennylane.wires import Wires
 # pylint: disable=protected-access,too-many-arguments
 
 # user-friendly gateset for visual checks and initial compilation
-StandardGateSet = frozenset({
-    "X",
-    "Y",
-    "Z",
-    "Hadamard",
-    "SWAP",
-    "CNOT",
-    "S",
-    "T",
-    "Adjoint(S)",
-    "Adjoint(T)",
-    "Toffoli",
-    "RX",
-    "RY",
-    "RZ",
-    "PhaseShift",
-})
+StandardGateSet = frozenset(
+    {
+        "X",
+        "Y",
+        "Z",
+        "Hadamard",
+        "SWAP",
+        "CNOT",
+        "S",
+        "T",
+        "Adjoint(S)",
+        "Adjoint(T)",
+        "Toffoli",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+    }
+)
 
 # realistic gateset for useful compilation of circuits
-DefaultGateSet = frozenset({
-    "X",
-    "Y",
-    "Z",
-    "Hadamard",
-    "CNOT",
-    "S",
-    "T",
-    "Toffoli",
-})
+DefaultGateSet = frozenset(
+    {
+        "X",
+        "Y",
+        "Z",
+        "Hadamard",
+        "CNOT",
+        "S",
+        "T",
+        "Toffoli",
+    }
+)
 
 
 @singledispatch
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set | None= None,
+    gate_set: set | None = None,
     config: ResourceConfig | None = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
