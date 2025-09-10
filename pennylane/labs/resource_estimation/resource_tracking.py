@@ -184,8 +184,8 @@ def resources_from_qfunc(
 @estimate_resources.register
 def resources_from_resource(
     obj: Resources,
-    gate_set: set = None,
-    config: ResourceConfig = None,
+    gate_set: set | None = None,
+    config: ResourceConfig | None = None,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
