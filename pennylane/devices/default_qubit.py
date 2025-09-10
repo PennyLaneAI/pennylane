@@ -105,15 +105,6 @@ allow_mcms_stopping_condition = partial(stopping_condition, allow_mcms=True)
 no_mcms_stopping_condition = partial(stopping_condition, allow_mcms=False)
 
 
-def stopping_condition_shots(op: Operator, allow_mcms=True) -> bool:
-    """Specify whether or not an Operator object is supported by the device with shots."""
-    return (
-        (isinstance(op, Conditional) and stopping_condition_shots(op.base, allow_mcms=allow_mcms))
-        or isinstance(op, MidMeasureMP)
-        or stopping_condition(op, allow_mcms=allow_mcms)
-    )
-
-
 def observable_accepts_sampling(obs: Operator) -> bool:
     """Verifies whether an observable supports sample measurement"""
 
@@ -693,13 +684,12 @@ class DefaultQubit(Device):
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
 
-        mcm_config = self._setup_mcm_config(config, circuit)
+        mcm_config = self._setup_mcm_config(config.mcm_config, circuit)
 
         updated_values["mcm_config"] = mcm_config
         return replace(config, **updated_values)
 
-    def _setup_mcm_config(self, config: ExecutionConfig, tape: QuantumScript) -> MCMConfig:
-        mcm_config = config.mcm_config
+    def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
 
         if capture.enabled():
             return self._capture_setup_mcm_config(mcm_config)
