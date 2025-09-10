@@ -295,7 +295,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     skip_initial_state_prep: bool = True,
     decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     graph_solution: DecompGraphSolution | None = None,
-    num_available_work_wires: int | None = 0,
+    max_work_wires: int | None = 0,
     name: str = "device",
     error: type[Exception] | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -392,7 +392,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                num_available_work_wires=num_available_work_wires,
+                max_work_wires=max_work_wires,
                 graph_solution=graph_solution,
                 custom_decomposer=decomposer,
                 strict=True,

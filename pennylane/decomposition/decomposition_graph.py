@@ -557,7 +557,7 @@ class DecompGraphSolution:
             )
 
         def _is_feasible(op_node: _OperatorNode):
-            if visitor.num_available_work_wires is None or num_work_wires is None:
+            if visitor.max_work_wires is None or num_work_wires is None:
                 return True
             op_node_idx = self._all_op_indices[op_node]
             return num_work_wires >= visitor.num_work_wires_used[op_node_idx]
@@ -682,7 +682,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         graph: rx.PyDiGraph,
         gate_set: dict,
         original_op_indices: set[int],
-        num_available_work_wires: int | None = None,
+        max_work_wires: int | None = None,
         lazy: bool = True,
     ):
         self._graph = graph
@@ -696,7 +696,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         self._n_edges_examined: dict[int, int] = defaultdict(int)
         self._gate_weights = gate_set
         # work wire related attributes
-        self.num_available_work_wires = num_available_work_wires
+        self.max_work_wires = max_work_wires
         # the minimum number of work wires consumed along the path that
         # reaches each node in the graph.
         self.num_work_wires_used: dict[int, int] = defaultdict(int)
@@ -731,7 +731,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
             return  # special case for when the decomposition produces nothing
 
         # Check if this decomposition is feasible under the work wire constraint
-        if not target_node.is_feasible(self.num_available_work_wires):
+        if not target_node.is_feasible(self.max_work_wires):
             raise PruneSearch
 
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node.op)
