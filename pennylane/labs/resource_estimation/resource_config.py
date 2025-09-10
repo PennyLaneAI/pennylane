@@ -174,6 +174,9 @@ class ResourceConfig:
                 "adj", "pow", "controlled",
                 and "base". Default is "base".
 
+        Raises:
+            ValueError: If ``decomp_type`` is not a valid decomposition type.
+
         .. note::
 
             The new decomposition function, ``decomp_func``, should have the same signature as the one it replaces.
@@ -221,3 +224,8 @@ class ResourceConfig:
             self._pow_custom_decomps[op_type] = decomp_func
         elif decomp_type is None or decomp_type == DecompositionType.BASE:
             self._custom_decomps[op_type] = decomp_func
+        else:
+            raise ValueError(
+                f"Invalid decomposition type: '{decomp_type}'. Valid options are "
+                "'base', 'adj', 'pow', and 'controlled'."
+            )
