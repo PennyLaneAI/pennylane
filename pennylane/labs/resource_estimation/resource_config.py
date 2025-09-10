@@ -100,7 +100,7 @@ class ResourceConfig:
     def __repr__(self) -> str:
         return f"ResourceConfig(precisions = {self.errors_and_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
 
-    def set_single_qubit_rotation_error(self, error: float):
+    def set_single_qubit_rotation_error(self, error: float) -> None:
         r"""Sets the synthesis error for all single-qubit rotation gates.
 
         This is a convenience method to update the synthesis error tolerance,
