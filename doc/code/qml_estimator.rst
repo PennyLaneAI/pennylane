@@ -22,11 +22,16 @@ qml.estimator
 ..    :no-inherited-members:
 ..    :noindex:
 
+.. .. estimatorautomodsumm:: pennylane.estimator.ops
+..     :toctree: api
+..     :no-inherited-members:
+..     :classes-only:
+..     :noindex:
+
 .. automodsumm:: pennylane.estimator.ops
     :toctree: api
     :no-inherited-members:
     :noindex:
-    :classes-only:
 
 .. .. automodsumm:: pennylane.estimator.ops
 ..     :no-inherited-members:

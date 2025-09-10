@@ -14,7 +14,9 @@
 import os
 import re
 import sys
+from docutils import nodes
 from datetime import datetime
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -412,5 +414,41 @@ def patch_estimator_stubs(app):
                     f.write(new_content)
                 print(f"[patch_estimator_stubs] Patched {fpath}")
 
+from docutils import nodes
+
+# def link_table_to_stubs(app, doctree, fromdocname):
+#     for node in doctree.traverse(nodes.reference):
+#         # detect table entry pointing to noindex object
+#         if "pennylane.estimator.ops" in node.get("reftitle", ""):
+#             print(node)
+#         if "pennylane.estimator.ops" in node.get("refuri", ""):
+            
+#             obj_name = node.astext()
+#             # point to stub HTML
+#             node["refuri"] = app.builder.get_relative_uri(
+#                 fromdocname, f"api/{obj_name}.html"
+#             )
+#             node["refid"] = None
+#             print(f"[link_table_to_stubs] Linked {obj_name} to {node['refuri']}")
+
+
+def link_estimator_table_to_stubs(app, doctree, fromdocname):
+    """
+    Replace literal names in automodsumm tables with links to stub HTML files.
+    """
+    if "qml_estimator" in fromdocname:
+        for table in doctree.traverse(nodes.table)[2:]:
+            for literal in table.traverse(nodes.literal):
+                name = literal.astext()
+                url = f"code/api/pennylane.estimator.ops.{name}"
+                refuri = app.builder.get_relative_uri(fromdocname, url)
+
+                refnode = nodes.reference('', refuri=refuri)
+                refnode += nodes.literal(text=name)                
+                literal.parent.replace(literal, refnode)
+                print(f"[link_estimator_table_to_stubs] Linked pennylane.estimator.ops.{name} to {refuri}")
+
+
 def setup(app):
     app.connect("builder-inited", patch_estimator_stubs)
+    app.connect("doctree-resolved", link_estimator_table_to_stubs)
