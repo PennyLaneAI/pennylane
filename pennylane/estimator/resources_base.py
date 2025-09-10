@@ -129,8 +129,8 @@ class Resources:
               'Hadamard': 15
 
 
-        Specifically, users can add together two instances of resources using the :code:`+` and
-        :code:`&` operators. These represent combining the resources assuming the circuits were
+        Specifically, users can add together two instances of resources using the :code:`add_series` and
+        :code:`add_parallel` functions. These represent combining the resources assuming the circuits were
         executed in series or parallel, respectively.
 
         .. code-block:: pycon
@@ -164,7 +164,7 @@ class Resources:
               'Hadamard': 25
 
         Similarly, users can scale up the resources for an operator by some integer factor using
-        the :code:`*` and :code:`@` operators. These represent scaling the resources assuming the
+        the :code:`multiply_series` and :code:`multiply_parallel` functions. These represent scaling the resources assuming the
         circuits were executed in series or parallel, respectively.
 
         .. code-block:: pycon
