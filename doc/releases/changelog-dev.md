@@ -988,6 +988,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
+  [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
+
 * Rename `ancilla` to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
