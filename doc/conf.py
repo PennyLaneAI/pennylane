@@ -365,6 +365,12 @@ class EstimatorAutomodsumm(Automodsumm):
     A variant of automodsumm that forces :noindex: into generated stubs
     for estimator modules, to avoid duplicate cross-reference warnings.
     """
+    def get_items(self, names):
+        items = super().get_items(names)
+
+        # Each "item" is a tuple (name, signature, summary, real_name)
+        # Sphinx will use this to generate the stub files.
+        return items
 
     def run(self):
         # Inject the noindex option so all generated stubs use it
