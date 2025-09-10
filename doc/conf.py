@@ -398,8 +398,8 @@ def patch_estimator_stubs(app):
             with open(fpath, encoding="utf-8") as f:
                 content = f.read()
 
-            # Only modify if stub is for pennylane.estimator
-            if not re.search(r"\bpennylane\.estimator\b", content):
+            # Only modify if stub is for pennylane.estimator.ops
+            if not re.search(r"\bpennylane\.estimator\.ops\b", content):
                 continue
 
             new_content = re.sub(
@@ -410,7 +410,7 @@ def patch_estimator_stubs(app):
             if new_content != content:
                 with open(fpath, "w", encoding="utf-8") as f:
                     f.write(new_content)
-                app.logger.info(f"[patch_estimator_stubs] Patched {fpath}")
+                print(f"[patch_estimator_stubs] Patched {fpath}")
 
 def setup(app):
     app.connect("builder-inited", patch_estimator_stubs)
