@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the graph state utils"""
+
+# pylint: disable=wrong-import-position
+
 import pytest
 
 pytestmark = pytest.mark.external
