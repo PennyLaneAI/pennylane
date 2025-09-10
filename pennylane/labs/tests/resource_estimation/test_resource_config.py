@@ -29,9 +29,12 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
 from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.labs.resource_estimation.templates import ResourceSelectPauliRot
+from pennylane.labs.resource_estimation.templates.qubitize import ResourceQubitizeTHC
+from pennylane.labs.resource_estimation.templates.select import ResourceSelectTHC
 from pennylane.labs.resource_estimation.templates.stateprep import (
     ResourceAliasSampling,
     ResourceMPSPrep,
+    ResourcePrepTHC,
     ResourceQROMStatePreparation,
 )
 from pennylane.labs.resource_estimation.templates.subroutines import ResourceQubitUnitary
@@ -82,6 +85,33 @@ class TestResourceConfig:
         config = ResourceConfig()
         assert op_with_precision in config.errors_and_precisions
         assert config.errors_and_precisions[op_with_precision].get("precision") > 0
+
+    @pytest.mark.parametrize(
+        "op_with_rotation_and_coeff_precision",
+        [
+            ResourceQubitizeTHC,
+            ResourceSelectTHC,
+            ResourcePrepTHC,
+        ],
+    )
+    def test_initialization_sets_default_rotation_precision(
+        self, op_with_rotation_and_coeff_precision
+    ):
+        """Test that default precision is set for standard operations on initialization."""
+        config = ResourceConfig()
+        assert op_with_rotation_and_coeff_precision in config.errors_and_precisions
+        assert (
+            config.errors_and_precisions[op_with_rotation_and_coeff_precision].get(
+                "rotation_precision"
+            )
+            > 0
+        )
+        assert (
+            config.errors_and_precisions[op_with_rotation_and_coeff_precision].get(
+                "coeff_precision"
+            )
+            > 0
+        )
 
     @pytest.mark.parametrize(
         "rotation_op",
