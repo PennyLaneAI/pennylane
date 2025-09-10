@@ -339,11 +339,6 @@ class ResourceOperator(ABC):
 
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
-    __radd__ = __add__
-    __rand__ = __and__
-    __rmul__ = __mul__
-    __rmatmul__ = __matmul__
-
     @classmethod
     def tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""

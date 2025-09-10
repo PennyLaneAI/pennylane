@@ -383,7 +383,7 @@ class TestResourceOperator:
         resources = s * op
 
         gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): s})
-        wm = WireResourceManager(clean=0, dirty=0, algo=1)
+        wm = WireResourceManager(zeroed=0, any=0, algo=1)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -394,7 +394,7 @@ class TestResourceOperator:
         resources = s @ op
 
         gt = defaultdict(int, {DummyCmprsRep("CNOT", None): s})
-        wm = WireResourceManager(clean=0, dirty=0, algo=s * 2)
+        wm = WireResourceManager(zeroed=0, any=0, algo=s * 2)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -411,7 +411,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(clean=0, algo=2)
+        wm = WireResourceManager(zeroed=0, algo=2)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -419,7 +419,7 @@ class TestResourceOperator:
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        wm2 = WireResourceManager(clean=0, dirty=0, algo=2)
+        wm2 = WireResourceManager(zeroed=0, any=0, algo=2)
         res2 = Resources(wire_manager=wm2, gate_types=gt2)
         resources = op1 + res2
 
@@ -430,7 +430,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(clean=0, dirty=0, algo=2)
+        wm = WireResourceManager(zeroed=0, any=0, algo=2)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -453,7 +453,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(clean=0, dirty=0, algo=3)
+        wm = WireResourceManager(zeroed=0, any=0, algo=3)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
@@ -461,7 +461,7 @@ class TestResourceOperator:
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        wm2 = WireResourceManager(clean=0, dirty=0, algo=2)
+        wm2 = WireResourceManager(zeroed=0, any=0, algo=2)
         res2 = Resources(wire_manager=wm2, gate_types=gt2)
         resources = op1 & res2
 
@@ -472,7 +472,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(clean=0, algo=3)
+        wm = WireResourceManager(zeroed=0, algo=3)
         expected_resources = Resources(wire_manager=wm, gate_types=gt)
         assert resources == expected_resources
 
