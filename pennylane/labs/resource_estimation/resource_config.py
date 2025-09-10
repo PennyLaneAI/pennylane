@@ -56,31 +56,31 @@ class ResourceConfig:
     """
 
     def __init__(self) -> None:
-        DEFAULT_PRECISION = 1e-9
-        DEFAULT_BIT_PRECISION = 15
+        _DEFAULT_PRECISION = 1e-9
+        _DEFAULT_BIT_PRECISION = 15
         self.resource_op_precisions = {
-            ResourceRX: {"precision": DEFAULT_PRECISION},
-            ResourceRY: {"precision": DEFAULT_PRECISION},
-            ResourceRZ: {"precision": DEFAULT_PRECISION},
-            ResourceCRX: {"precision": DEFAULT_PRECISION},
-            ResourceCRY: {"precision": DEFAULT_PRECISION},
-            ResourceCRZ: {"precision": DEFAULT_PRECISION},
-            ResourceSelectPauliRot: {"precision": DEFAULT_PRECISION},
-            ResourceQubitUnitary: {"precision": DEFAULT_PRECISION},
-            ResourceQROMStatePreparation: {"precision": DEFAULT_PRECISION},
-            ResourceMPSPrep: {"precision": DEFAULT_PRECISION},
-            ResourceAliasSampling: {"precision": DEFAULT_PRECISION},
+            ResourceRX: {"precision": _DEFAULT_PRECISION},
+            ResourceRY: {"precision": _DEFAULT_PRECISION},
+            ResourceRZ: {"precision": _DEFAULT_PRECISION},
+            ResourceCRX: {"precision": _DEFAULT_PRECISION},
+            ResourceCRY: {"precision": _DEFAULT_PRECISION},
+            ResourceCRZ: {"precision": _DEFAULT_PRECISION},
+            ResourceSelectPauliRot: {"precision": _DEFAULT_PRECISION},
+            ResourceQubitUnitary: {"precision": _DEFAULT_PRECISION},
+            ResourceQROMStatePreparation: {"precision": _DEFAULT_PRECISION},
+            ResourceMPSPrep: {"precision": _DEFAULT_PRECISION},
+            ResourceAliasSampling: {"precision": _DEFAULT_PRECISION},
             ResourceQubitizeTHC: {
-                "rotation_precision": DEFAULT_BIT_PRECISION,
-                "coeff_precision": DEFAULT_BIT_PRECISION,
+                "rotation_precision": _DEFAULT_BIT_PRECISION,
+                "coeff_precision": _DEFAULT_BIT_PRECISION,
             },
             ResourceSelectTHC: {
-                "rotation_precision": DEFAULT_BIT_PRECISION,
-                "coeff_precision": DEFAULT_BIT_PRECISION,
+                "rotation_precision": _DEFAULT_BIT_PRECISION,
+                "coeff_precision": _DEFAULT_BIT_PRECISION,
             },
             ResourcePrepTHC: {
-                "rotation_precision": DEFAULT_BIT_PRECISION,
-                "coeff_precision": DEFAULT_BIT_PRECISION,
+                "rotation_precision": _DEFAULT_BIT_PRECISION,
+                "coeff_precision": _DEFAULT_BIT_PRECISION,
             },
         }
         self._custom_decomps = {}
