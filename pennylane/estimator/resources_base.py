@@ -20,14 +20,14 @@ from decimal import Decimal
 from .wires_manager import WireResourceManager
 
 DefaultGateSet = {
+    "Toffoli",
+    "T",
+    "CNOT",
     "X",
     "Y",
     "Z",
-    "Hadamard",
-    "CNOT",
     "S",
-    "T",
-    "Toffoli",
+    "Hadamard",
 }
 
 
@@ -46,14 +46,14 @@ class Resources:
     The resources can be accessed as class attributes. Additionally, the :class:`~.pennylane.estimator.Resources`
     instance can be nicely displayed in the console.
 
-    >>> import pennylane.estimator as plre
-    >>> H = plre.resource_rep(plre.Hadamard)
-    >>> X = plre.resource_rep(plre.X)
-    >>> Y = plre.resource_rep(plre.Y)
-    >>> wm = plre.WireResourceManager(work_wires=3)
+    >>> from pennylane import estimator as qre
+    >>> H = qre.resource_rep(qre.Hadamard)
+    >>> X = qre.resource_rep(qre.X)
+    >>> Y = qre.resource_rep(qre.Y)
+    >>> wm = qre.WireResourceManager(work_wires=3)
     >>> gt = defaultdict(int, {H: 10, X:7, Y:3})
     >>>
-    >>> res = plre.Resources(wire_manager=wm, gate_types=gt)
+    >>> res = qre.Resources(wire_manager=wm, gate_types=gt)
     >>> print(res)
     --- Resources: ---
      Total wires: 3
@@ -218,7 +218,8 @@ class Resources:
             :class:`~.pennylane.estimator.Resources`: combined resources
 
         """
-        assert isinstance(other, self.__class__)
+        if not isinstance(other, self.__class__):
+            raise TypeError(f"Cannot add resources object to {type(other)}.")
 
         wm1 = self.wire_manager
         wm2 = other.wire_manager
@@ -244,7 +245,9 @@ class Resources:
         Returns:
             :class:`~.pennylane.estimator.Resources`: combined resources
         """
-        assert isinstance(other, self.__class__)
+        if not isinstance(other, self.__class__):
+            raise TypeError(f"Cannot add resources object to {type(other)}.")
+
         qm1 = self.wire_manager
         qm2 = other.wire_manager
 
@@ -265,6 +268,8 @@ class Resources:
 
     def __eq__(self, other: Resources) -> bool:
         """Determine if two resources objects are equal"""
+        if not isinstance(other, self.__class__):
+            raise TypeError(f"Cannot compare {self.__class__.__name__} with object of type {type(other)}.")
         return (self.gate_types == other.gate_types) and (self.wire_manager == other.wire_manager)
 
     def multiply_series(self, scalar: int) -> Resources:
@@ -276,7 +281,8 @@ class Resources:
         Returns:
             :class:`~.pennylane.estimator.Resources`: scaled resources
         """
-        assert isinstance(scalar, int)
+        if not isinstance(scalar, int):
+            raise TypeError(f"Cannot multiply resources object with {type(scalar)}.")
 
         new_wire_manager = WireResourceManager(
             zeroed=self.wire_manager.zeroed,
@@ -298,7 +304,9 @@ class Resources:
         Returns:
             :class:`~.pennylane.estimator.Resources`: scaled resources
         """
-        assert isinstance(scalar, int)
+
+        if not isinstance(scalar, int):
+            raise TypeError(f"Cannot multiply resources object with {type(scalar)}.")
 
         new_wire_manager = WireResourceManager(
             zeroed=self.wire_manager.zeroed,
