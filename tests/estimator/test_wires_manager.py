@@ -27,140 +27,142 @@ from pennylane.queuing import AnnotatedQueue
 class TestWireResourceManager:
     """Test the methods and attributes of the WireResourceManager class"""
 
-    qm_quantities = (
-        WireResourceManager(clean=2),
-        WireResourceManager(clean=4, dirty=2, algo=20),
-        WireResourceManager(clean=2, dirty=2, algo=10, tight_budget=True),
+    wire_manager_quantities = (
+        WireResourceManager(zeroed=2),
+        WireResourceManager(zeroed=4, any=2, algo=20),
+        WireResourceManager(zeroed=2, any=2, algo=10, tight_budget=True),
     )
 
-    qm_parameters = (
+    wire_manager_parameters = (
         (2, 0, 0, False),
         (4, 2, 20, False),
         (2, 2, 10, True),
     )
 
-    @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
-    def test_init(self, qm, attribute_tup):
+    @pytest.mark.parametrize(
+        "wire_manager, attribute_tup", zip(wire_manager_quantities, wire_manager_parameters)
+    )
+    def test_init(self, wire_manager, attribute_tup):
         """Test that the WireResourceManager class is instantiated as expected."""
-        clean_wires, dirty_wires, logic_wires, tight_budget = attribute_tup
+        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
 
-        assert qm.clean_wires == clean_wires
-        assert qm.dirty_wires == dirty_wires
-        assert qm.algo_wires == logic_wires
-        assert qm.tight_budget == tight_budget
+        assert wire_manager.zeroed_wires == zeroed_wires
+        assert wire_manager.any_wires == any_wires
+        assert wire_manager.algo_wires == logic_wires
+        assert wire_manager.tight_budget == tight_budget
 
-    @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
-    def test_equality(self, qm, attribute_tup):
+    @pytest.mark.parametrize(
+        "wire_manager, attribute_tup", zip(wire_manager_quantities, wire_manager_parameters)
+    )
+    def test_equality(self, wire_manager, attribute_tup):
         """Test that the equality methods behaves as expected"""
 
-        clean_wires, dirty_wires, algo_wires, tight_budget = attribute_tup
+        zeroed_wires, any_wires, algo_wires, tight_budget = attribute_tup
 
-        qm2 = WireResourceManager(
-            clean=clean_wires,
-            dirty=dirty_wires,
+        wire_manager2 = WireResourceManager(
+            zeroed=zeroed_wires,
+            any=any_wires,
             algo=algo_wires,
             tight_budget=tight_budget,
         )
-        assert qm == qm2
+        assert wire_manager == wire_manager2
 
     extra_wires = (0, 2, 4)
 
-    qm_parameters_algo = (
+    wire_manager_parameters_algo = (
         (2, 0, 0, False),
         (4, 2, 2, False),
         (2, 2, 4, True),
     )
 
     @pytest.mark.parametrize(
-        "qm, attribute_tup, algo_q",
-        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_wires),
+        "wire_manager, attribute_tup, algo_q",
+        zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires),
     )
-    def test_repr(self, qm, attribute_tup, algo_q):
+    def test_repr(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager representation is correct."""
 
-        clean_wires, dirty_wires, logic_wires, tight_budget = attribute_tup
+        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
 
         expected_string = (
-            f"WireResourceManager(clean={clean_wires}, dirty={dirty_wires}, algo={logic_wires}, "
+            f"WireResourceManager(zeroed={zeroed_wires}, any={any_wires}, algo={logic_wires}, "
             f"tight_budget={tight_budget})"
         )
 
-        qm.algo_wires = algo_q
-        assert repr(qm) == expected_string
+        wire_manager.algo_wires = algo_q
+        assert repr(wire_manager) == expected_string
 
     @pytest.mark.parametrize(
-        "qm, attribute_tup, algo_q",
-        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_wires),
+        "wire_manager, attribute_tup, algo_q",
+        zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires),
     )
-    def test_str(self, qm, attribute_tup, algo_q):
+    def test_str(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager string is correct."""
 
-        clean_wires, dirty_wires, logic_wires, tight_budget = attribute_tup
+        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
 
         expected_string = (
-            f"WireResourceManager(clean wires={clean_wires}, dirty wires={dirty_wires}, "
+            f"WireResourceManager(zeroed wires={zeroed_wires}, any wires={any_wires}, "
             f"algorithmic wires={logic_wires}, tight budget={tight_budget})"
         )
-        qm.algo_wires = algo_q
-        assert str(qm) == expected_string
+        wire_manager.algo_wires = algo_q
+        assert str(wire_manager) == expected_string
 
     @pytest.mark.parametrize(
-        "qm, attribute_tup, algo_q",
-        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_wires),
+        "wire_manager, algo_q",
+        zip(copy.deepcopy(wire_manager_quantities), extra_wires),
     )
-    def test_algo_wires(self, qm, attribute_tup, algo_q):
+    def test_algo_wires(self, wire_manager, algo_q):
         """Test that the logic wires are set correctly."""
 
-        logic_wires = attribute_tup[2]
-
-        qm.algo_wires = algo_q
-        assert qm.algo_wires == logic_wires
+        wire_manager.algo_wires = algo_q
+        assert wire_manager.algo_wires == algo_q
 
     @pytest.mark.parametrize(
-        "qm, attribute_tup, algo_q",
-        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_wires),
+        "wire_manager, attribute_tup, algo_q",
+        zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires),
     )
-    def test_total_wires(self, qm, attribute_tup, algo_q):
+    def test_total_wires(self, wire_manager, attribute_tup, algo_q):
         """Test that the total wires returned are correct."""
 
-        qm.algo_wires = algo_q
-        total_wires = attribute_tup[0] + attribute_tup[1] + attribute_tup[2]
-        assert qm.total_wires == total_wires
+        wire_manager.algo_wires = algo_q
+        total_wires = attribute_tup[0] + attribute_tup[1] + algo_q
+        assert wire_manager.total_wires == total_wires
 
     @pytest.mark.parametrize(
-        ("wires", "clean_wires", "dirty_wires"), [(2, 2, 4), (4, 0, 6), (6, 0, 8)]
+        ("wires", "zeroed_wires", "any_wires"), [(2, 2, 4), (4, 0, 6), (6, 0, 8)]
     )
-    def test_grab_clean_wires(self, wires, clean_wires, dirty_wires):
-        """Test that the clean wires are grabbed and converted to dirty wires."""
+    def test_grab_zeroed_wires(self, wires, zeroed_wires, any_wires):
+        """Test that the zeroed wires are grabbed and converted to any wires."""
 
-        qm = WireResourceManager(clean=4, dirty=2, tight_budget=False)
-        qm.grab_clean_wires(wires)
-        assert qm.clean_wires == clean_wires
-        assert qm.dirty_wires == dirty_wires
+        wire_manager = WireResourceManager(zeroed=4, any=2, tight_budget=False)
+        wire_manager.grab_zeroed_wires(wires)
+        assert wire_manager.zeroed_wires == zeroed_wires
+        assert wire_manager.any_wires == any_wires
 
-    def test_error_grab_clean_wires(self):
-        """Test that an error is raised when the number of clean wires required is greater
+    def test_error_grab_zeroed_wires(self):
+        """Test that an error is raised when the number of zeroed wires required is greater
         than the available wires."""
 
-        qm = WireResourceManager(clean=4, dirty=2, tight_budget=True)
-        with pytest.raises(ValueError, match="Grabbing more wires than available clean wires."):
-            qm.grab_clean_wires(6)
+        wire_manager = WireResourceManager(zeroed=4, any=2, tight_budget=True)
+        with pytest.raises(ValueError, match="Grabbing more wires than available zeroed wires."):
+            wire_manager.grab_zeroed_wires(6)
 
     def test_free_wires(self):
-        """Test that the dirty wires are freed properly."""
+        """Test that the any wires are freed properly."""
 
-        qm = WireResourceManager(clean=4, dirty=2)
-        qm.free_wires(2)
-        assert qm.clean_wires == 6
-        assert qm.dirty_wires == 0
+        wire_manager = WireResourceManager(zeroed=4, any=2)
+        wire_manager.free_wires(2)
+        assert wire_manager.zeroed_wires == 6
+        assert wire_manager.any_wires == 0
 
     def test_error_free_wires(self):
         """Test that an error is raised when the number of wires being freed is greater
-        than the available dirty wires."""
+        than the available any wires."""
 
-        qm = WireResourceManager(clean=4, dirty=2, tight_budget=True)
-        with pytest.raises(ValueError, match="Freeing more wires than available dirty wires."):
-            qm.free_wires(6)
+        wire_manager = WireResourceManager(zeroed=4, any=2, tight_budget=True)
+        with pytest.raises(ValueError, match="Freeing more wires than available any wires."):
+            wire_manager.free_wires(6)
 
 
 class TestAllocate:
