@@ -169,7 +169,7 @@ class TestResourceConfig:
         ]
         for dict_name in all_dicts:
             if dict_name != target_dict_name:
-                assert not getattr(config, dict_name)
+                assert getattr(config, dict_name) == {}
 
     def test_str_representation(self):
         """Test the user-friendly string representation of the ResourceConfig class."""
