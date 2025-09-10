@@ -63,6 +63,8 @@ def parity_matrix(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
         x_2: ─╭X─╰X─╰●─╭X─│──╰X─┤  x_2 ⊕ x_3
         x_3: ─╰●───────╰●─╰●────┤  x_3
 
+    For more details, see the `compilation page <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ on the parity matrix intermediate representation.
+
     """
     wires = tape.wires
 

@@ -20,7 +20,7 @@ import pennylane as qml
 
 
 def phase_polynomial(
-    circ: qml.tape.QuantumScript, wire_order: Sequence = None, verbose: bool = False
+    tape: qml.tape.QuantumScript, wire_order: Sequence = None, verbose: bool = False
 ):
     r"""
     Phase polynomial intermediate representation for circuits consisting of CNOT and RZ gates.
@@ -52,13 +52,13 @@ def phase_polynomial(
 
     .. code-block:: python
 
-        def compute_phase_polynomial(circ, verbose=False):
-            wires = circ.wires
+        def compute_phase_polynomial(tape, verbose=False):
+            wires = tape.wires
             parity_matrix = np.eye(len(wires), dtype=int)
             parity_table = []
             angles = []
 
-            for op in circ.operations:
+            for op in tape.operations:
 
                 if op.name == "CNOT":
                     control, target = op.wires
@@ -71,8 +71,8 @@ def phase_polynomial(
             return parity_matrix, np.array(parity_table).T, angles
 
     Args:
-        circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT and RZ gates.
-        wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``circ.wires``).
+        tape (qml.tape.QuantumScript): Quantum circuit containing only CNOT and RZ gates.
+        wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
         verbose (bool): Whether or not progress should be printed during computation.
 
     Returns:
@@ -82,7 +82,7 @@ def phase_polynomial(
 
     We look at the circuit in Figure 1 in `arXiv:2104.00934 <https://arxiv.org/abs/2104.00934>`__.
 
-    >>> circ = qml.tape.QuantumScript([
+    >>> tape = qml.tape.QuantumScript([
     ...     qml.CNOT((1, 0)),
     ...     qml.RZ(1, 0),
     ...     qml.CNOT((2, 0)),
@@ -91,7 +91,7 @@ def phase_polynomial(
     ...     qml.CNOT((3, 1)),
     ...     qml.RZ(3, 1)
     ... ])
-    >>> print(qml.drawer.tape_text(circ, decimals=0, wire_order=range(4)))
+    >>> print(qml.drawer.tape_text(tape, decimals=0, wire_order=range(4)))
     0: ─╭X──RZ(1)─╭X──RZ(2)─╭●───────────┤
     1: ─╰●────────│─────────╰X─╭X──RZ(3)─┤
     2: ───────────╰●───────────│─────────┤
@@ -100,7 +100,7 @@ def phase_polynomial(
     The phase polynomial representation consisting of the parity matrix, parity table and associated
     angles are computed by ``phase_polynomial``.
 
-    >>> pmat, ptab, angles = phase_polynomial(circ, wire_order=range(4))
+    >>> pmat, ptab, angles = phase_polynomial(tape, wire_order=range(4))
     >>> pmat
     array([[1, 1, 1, 0],
            [1, 0, 1, 1],
@@ -128,7 +128,7 @@ def phase_polynomial(
                 return qml.BasisState(np.array(basis_state), range(4)).state_vector().reshape(-1)
 
             input_wf = comp_basis_to_wf(input)
-            output_wf = qml.matrix(circ, wire_order=range(4)) @ input_wf
+            output_wf = qml.matrix(tape, wire_order=range(4)) @ input_wf
 
         The output wavefunction is given by :math:`e^{2i} * |1 1 1 1\rangle`, which we can confirm:
 
@@ -154,7 +154,7 @@ def phase_polynomial(
         True
 
     """
-    wires = circ.wires
+    wires = tape.wires
 
     if wire_order is None:
         wire_order = wires
@@ -165,7 +165,7 @@ def phase_polynomial(
     parity_table = []
     angles = []
     i = 0
-    for op in circ.operations:
+    for op in tape.operations:
 
         if op.name == "CNOT":
             control, target = op.wires
