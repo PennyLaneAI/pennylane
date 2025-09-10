@@ -696,7 +696,7 @@ class DefaultQubit(Device):
 
         final_mcm_method = mcm_config.mcm_method
         if mcm_config.mcm_method is None:
-            final_mcm_method = "one-shot" if tape is not None and tape.shots else "deferred"
+            final_mcm_method = "one-shot" if getattr(tape, shots, None) else "deferred"
         elif mcm_config.mcm_method == "device":
             final_mcm_method = "tree-traversal"
         return replace(mcm_config, mcm_method=final_mcm_method)
