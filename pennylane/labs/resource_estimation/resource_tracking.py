@@ -267,7 +267,7 @@ def _update_counts_from_compressed_res_op(
     qbit_mngr,
     gate_set: set | None = None,
     scalar: int = 1,
-    config: ResourceConfig = None,
+    config: ResourceConfig | None = None,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
