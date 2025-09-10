@@ -17,6 +17,7 @@ written using xDSL."""
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
