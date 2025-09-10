@@ -23,7 +23,7 @@ def phase_polynomial(
     tape: qml.tape.QuantumScript, wire_order: Sequence = None, verbose: bool = False
 ):
     r"""
-    Phase polynomial intermediate representation for circuits consisting of CNOT and RZ gates.
+    `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of CNOT and RZ gates.
 
     The action of such circuits can be described by a phase polynomial :math:`p(\boldsymbol{x})` and a :func:`~parity_matrix` :math:`P` acting on a computational basis state :math:`|\boldsymbol{x}\rangle = |x_1, x_2, .., x_n\rangle` in the following way:
 
@@ -128,12 +128,13 @@ def phase_polynomial(
             input = np.array([1, 1, 1, 1]) # computational basis state
 
             def comp_basis_to_wf(basis_state):
-                return qml.BasisState(np.array(basis_state), range(4)).state_vector().reshape(-1)
+                basis_state = qml.BasisState(np.array(basis_state), range(4))
+                return basis_state.state_vector().reshape(-1)
 
             input_wf = comp_basis_to_wf(input)
             output_wf = qml.matrix(tape, wire_order=range(4)) @ input_wf
 
-        The output wavefunction is given by :math:`e^{2i} * |1 1 1 1\rangle`, which we can confirm:
+        The output wavefunction is given by :math:`e^{2i} |1 1 1 1\rangle`, which we can confirm:
 
         >>> np.allclose(output_wf, np.exp(2j) * input_wf)
         True
