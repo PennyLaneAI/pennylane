@@ -65,8 +65,9 @@ class ResourceSingleQubitComparator(ResourceOperator):
       {'Toffoli': 1, 'CNOT': 4, 'X': 3}
     """
 
+    num_wires = 4
+
     def __init__(self, wires=None):
-        self.num_wires = 4
         super().__init__(wires=wires)
 
     @property
@@ -86,7 +87,7 @@ class ResourceSingleQubitComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
     def default_resource_decomp(cls, **kwargs):
@@ -165,8 +166,9 @@ class ResourceTwoQubitComparator(ResourceOperator):
       {'Toffoli': 2, 'CNOT': 7, 'X': 1}
     """
 
+    num_wires = 4
+
     def __init__(self, wires=None):
-        self.num_wires = 4
         super().__init__(wires=wires)
 
     @property
@@ -186,7 +188,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
     def default_resource_decomp(cls, **kwargs):
@@ -354,8 +356,9 @@ class ResourceIntegerComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_wires = register_size + 1
         return CompressedResourceOp(
-            cls, {"value": value, "register_size": register_size, "geq": geq}
+            cls, num_wires, {"value": value, "register_size": register_size, "geq": geq}
         )
 
     @classmethod
@@ -563,8 +566,11 @@ class ResourceRegisterComparator(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_wires = first_register + second_register + 1
         return CompressedResourceOp(
-            cls, {"first_register": first_register, "second_register": second_register, "geq": geq}
+            cls,
+            num_wires,
+            {"first_register": first_register, "second_register": second_register, "geq": geq},
         )
 
     @classmethod
