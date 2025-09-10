@@ -16,6 +16,7 @@ r"""This module contains the ResourceConfig class, which tracks the configuratio
 from __future__ import annotations
 
 from collections.abc import Callable
+from enum import StrEnum
 
 from .ops.op_math.controlled_ops import (
     ResourceCRX,
@@ -38,6 +39,14 @@ from .templates import (
     ResourceSelectPauliRot,
     ResourceSelectTHC,
 )
+
+
+class DecompositionType(StrEnum):
+    """Specifies the type of decomposition to override."""
+
+    ADJOINT = "adj"
+    CONTROLLED = "ctrl"
+    POW = "pow"
 
 
 class ResourceConfig:
@@ -139,7 +148,10 @@ class ResourceConfig:
         self.errors_and_precisions[ResourceCRZ]["precision"] = error
 
     def set_decomp(
-        self, op_type: type[ResourceOperator], decomp_func: Callable, type: str = None
+        self,
+        op_type: type[ResourceOperator],
+        decomp_func: Callable,
+        decomp_type: DecompositionType | None = None,
     ) -> None:
         """Set a custom function to override the default resource decomposition.
 
@@ -187,11 +199,11 @@ class ResourceConfig:
               {'S': 1, 'Hadamard': 2}
         """
 
-        if type == "adj":
+        if decomp_type == DecompositionType.ADJOINT:
             self._adj_custom_decomps[op_type] = decomp_func
-        elif type == "ctrl":
+        elif decomp_type == DecompositionType.CONTROLLED:
             self._ctrl_custom_decomps[op_type] = decomp_func
-        elif type == "pow":
+        elif decomp_type == DecompositionType.POW:
             self._pow_custom_decomps[op_type] = decomp_func
         else:
             self._custom_decomps[op_type] = decomp_func
