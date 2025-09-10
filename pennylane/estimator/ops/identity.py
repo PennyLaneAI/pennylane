@@ -13,7 +13,12 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
+from pennylane.estimator.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    ResourcesNotDefined,
+)
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
 # pylint: disable=unused-argument
@@ -57,12 +62,12 @@ class Identity(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The Identity gate is treated as a free gate and thus it cannot be decomposed
+            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
             further. Requesting the resources of this gate returns an empty list.
 
         Returns:
@@ -71,7 +76,7 @@ class Identity(ResourceOperator):
         return []
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -85,7 +90,7 @@ class Identity(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
@@ -108,7 +113,7 @@ class Identity(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -127,7 +132,7 @@ class Identity(ResourceOperator):
 
 
 class GlobalPhase(ResourceOperator):
-    r"""Resource class for the GlobalPhase gate.
+    r"""Resource class for the :class:`~.pennylane.GlobalPhase` gate.
 
     Args:
         wires (Iterable[Any], optional): the wires the operator acts on
@@ -163,7 +168,7 @@ class GlobalPhase(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -177,7 +182,7 @@ class GlobalPhase(ResourceOperator):
         return []
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -192,7 +197,7 @@ class GlobalPhase(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -210,7 +215,7 @@ class GlobalPhase(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
@@ -234,4 +239,4 @@ class GlobalPhase(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return []
+        raise ResourcesNotDefined

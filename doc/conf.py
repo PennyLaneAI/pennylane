@@ -333,7 +333,7 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
 
 def patch_estimator_stubs(app):
-    """Only patch stubs for the `pennylane.estimator` module."""
+    """Patch operator stubs in the `pennylane.estimator` module with ``:noindex:``."""
     stubs_dir = os.path.join(app.srcdir, "code", "api")
     if not os.path.isdir(stubs_dir):
         return
@@ -363,10 +363,8 @@ def patch_estimator_stubs(app):
                 print(f"[patch_estimator_stubs] Patched {fpath}")
 
 def link_estimator_table_to_stubs(app, doctree, fromdocname):
-    """
-    Replace literal names in automodsumm tables with links to stub HTML files.
-    """
-    if "qml_estimator" in fromdocname:
+    """Replace literal names in automodsumm tables with links to stub HTML files."""
+    if "qml_estimator" in fromdocname: # Ensures no other tables are modified.
         for table in doctree.traverse(nodes.table)[2:]:
             for literal in table.traverse(nodes.literal):
                 name = literal.astext()
@@ -374,7 +372,7 @@ def link_estimator_table_to_stubs(app, doctree, fromdocname):
                 refuri = app.builder.get_relative_uri(fromdocname, url)
 
                 refnode = nodes.reference('', refuri=refuri)
-                refnode += nodes.literal(text=name)                
+                refnode += nodes.literal(text=name) # This helps preserve the code style.   
                 literal.parent.replace(literal, refnode)
                 print(f"[patch_estimator_links] Linked pennylane.estimator.ops.{name} to {refuri}")
 
