@@ -47,6 +47,7 @@ def dummy_decomp_func(**kwargs):
 class TestResourceConfig:
     """Test the ResourceConfig class and its methods."""
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_initialization(self):
         """Test that the ResourceConfig class initializes correctly with default values."""
         config = ResourceConfig()
