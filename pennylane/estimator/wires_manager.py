@@ -175,7 +175,6 @@ class Allocate(_WireAction):
 
         The ``Allocate`` class is typically used within a decomposition function to track the
         allocation of auxiliary wires. This allows determination of a circuit's wire overhead.
-
         In this example, we show the decomposition for a
         3-controlled ``X`` gate, which requires one work wire.
 
