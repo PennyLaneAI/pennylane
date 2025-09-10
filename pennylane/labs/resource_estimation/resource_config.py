@@ -47,6 +47,7 @@ class DecompositionType(StrEnum):
     ADJOINT = "adj"
     CONTROLLED = "ctrl"
     POW = "pow"
+    BASE = "base"
 
 
 class ResourceConfig:
@@ -162,7 +163,7 @@ class ResourceConfig:
         self,
         op_type: type[ResourceOperator],
         decomp_func: Callable,
-        decomp_type: DecompositionType | None = None,
+        decomp_type: DecompositionType | None = "base",
     ) -> None:
         """Set a custom function to override the default resource decomposition.
 
@@ -170,8 +171,8 @@ class ResourceConfig:
             cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
-                ``DecompositionType.ADJOINT``, ``DecompositionType.POW``, ``DecompositionType.CONTROLLED``,
-                and ``None``.
+                "adj", "pow", "controlled",
+                and "base". Default is "base".
 
         .. note::
 
