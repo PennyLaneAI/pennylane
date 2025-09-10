@@ -1029,7 +1029,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Autograph will now be run correctly on nested functions of `qml.adjoint` and `qml.ctrl`.
+* Autograph will now be correctly applied to nested functions of `qml.adjoint` and `qml.ctrl`.
   [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
 
 * Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
