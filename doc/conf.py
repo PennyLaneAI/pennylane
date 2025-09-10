@@ -360,21 +360,24 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
 from sphinx_automodapi.automodsumm import Automodsumm
 
+from sphinx_automodapi.automodsumm import Automodsumm
+
 class EstimatorAutomodsumm(Automodsumm):
     """
     A variant of automodsumm that forces :noindex: into generated stubs
     for estimator modules, to avoid duplicate cross-reference warnings.
     """
-    def get_items(self, names):
-        items = super().get_items(names)
-
-        # Each "item" is a tuple (name, signature, summary, real_name)
-        # Sphinx will use this to generate the stub files.
-        return items
-
     def run(self):
-        # Inject the noindex option so all generated stubs use it
-        self.options["noindex"] = True
+        # This is the key part. We need to modify the ':autosummary-options:'
+        # that automodsumm will use to generate the underlying autosummary directive.
+
+        # Get any options the user might have already provided.
+        existing_options = self.options.get("autosummary-options", "")
+
+        # Add :noindex: if it's not already there to avoid duplication.
+        if ":noindex:" not in existing_options:
+            self.options["autosummary-options"] = f":noindex: {existing_options}".strip()
+
         return super().run()
 
 def setup(app):
