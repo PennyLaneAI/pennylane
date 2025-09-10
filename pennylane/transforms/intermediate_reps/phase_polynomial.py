@@ -66,7 +66,8 @@ def phase_polynomial(
 
                 elif op.name == "RZ":
                     angles.append(op.data[0]) # append theta_i
-                    parity_table.append(parity_matrix[op.wires[0]].copy()) # append _current_ parity (hence the copy)
+                    # append _current_ parity (hence the copy)
+                    parity_table.append(parity_matrix[op.wires[0]].copy())
 
             return parity_matrix, np.array(parity_table).T, angles
 
