@@ -107,8 +107,8 @@ class Resources:
          Total wires: 6
             algorithmic wires: 4
             allocated wires: 2
-                 clean wires: 2
-                 dirty wires: 0
+                 zero state: 2
+                 any state: 0
          Total gates : 838
           'T': 796,
           'CNOT': 28,
@@ -166,8 +166,8 @@ class Resources:
          Total wires: 9
             algorithmic wires: 7
             allocated wires: 2
-                 clean wires: 2
-                 dirty wires: 0
+                 zero state: 2
+                 any state: 0
          Total gates : 838
           'T': 796,
           'CNOT': 28,
@@ -225,8 +225,8 @@ class Resources:
          Total wires: 5
             algorithmic wires: 3
             allocated wires: 2
-                 clean wires: 2
-                 dirty wires: 0
+                 zero state: 2
+                 any state: 0
          Total gates : 72
           'T': 12,
           'CNOT': 30,
@@ -271,8 +271,8 @@ class Resources:
          Total wires: 11
             algorithmic wires: 9
             allocated wires: 2
-                 clean wires: 2
-                 dirty wires: 0
+                 zero state: 2
+                 any state: 0
          Total gates : 72
           'T': 12,
           'CNOT': 30,
@@ -355,6 +355,56 @@ class Resources:
         items += gate_type_str
 
         return items
+
+    def gate_breakdown(self, gate_types=None):
+        """
+        Generates a string breakdown of gate counts, optionally for a specific set of gates.
+
+        Args:
+            gate_types (list, optional): A list of gate names to break down.
+                If None, all gates in DefaultGateSet will be broken down.
+        """
+        breakdown_str = ""
+
+        if gate_types is None:
+            unique_gate_names = []
+            for op in self.gate_types.keys():
+                if op.name not in unique_gate_names:
+                    unique_gate_names.append(op.name)
+            gate_types = unique_gate_names
+
+        for gate_name in gate_types:
+            total_count = 0
+            parameter_counts = defaultdict(int)
+
+            for op, count in self.gate_types.items():
+                if op.name == gate_name:
+                    total_count += count
+                    parameter_counts[op.params_tuple] = count
+
+            # If the gate is not found in the counts, skip it
+            if total_count == 0:
+                continue
+
+            # Format the total count
+            total_count_str = str(total_count) if total_count <= 999 else f"{Decimal(total_count):.3E}"
+
+            # Append the total count for the current gate type
+            breakdown_str += f"{gate_name} total: {total_count_str}\n"
+
+            # Sort the parameter counts for deterministic output
+            sorted_params = sorted(parameter_counts.keys())
+
+            # Append the counts for each parameter set
+            for params_tuple in sorted_params:
+                params_dict = dict(zip(op.param_names, params_tuple)) if hasattr(op, 'param_names') else params_tuple
+
+                count = parameter_counts[params_tuple]
+                count_str = str(count) if count <= 999 else f"{Decimal(count):.3E}"
+
+                breakdown_str += f"    {gate_name} {params_dict}: {count_str}\n"
+
+        return breakdown_str
 
     def __repr__(self):
         """Compact string representation of the Resources object"""
