@@ -112,7 +112,7 @@ class TestWireResourceManager:
         "wire_manager, algo_q",
         zip(copy.deepcopy(wire_manager_quantities), extra_wires),
     )
-    def test_algo_wires(self, wire_manager, algo_q):
+    def test_setting_algo_wires(self, wire_manager, algo_q):
         """Test that the logic wires are set correctly."""
 
         wire_manager.algo_wires = algo_q
