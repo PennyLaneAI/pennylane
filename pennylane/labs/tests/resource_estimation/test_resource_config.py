@@ -29,6 +29,12 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
 from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.labs.resource_estimation.templates import ResourceSelectPauliRot
+from pennylane.labs.resource_estimation.templates.stateprep import (
+    ResourceAliasSampling,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
+)
+from pennylane.labs.resource_estimation.templates.subroutines import ResourceQubitUnitary
 
 # pylint: disable=protected-access, unused-argument
 
@@ -47,37 +53,62 @@ def dummy_decomp_func(**kwargs):
 class TestResourceConfig:
     """Test the ResourceConfig class and its methods."""
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
-    def test_initialization(self):
-        """Test that the ResourceConfig class initializes correctly with default values."""
+
+    def test_initialization_of_custom_decomps(self):
+        """Test that the custom decomposition dictionaries initialize as empty."""
         config = ResourceConfig()
-
-        assert isinstance(config.errors_and_precisions, dict)
-        assert (
-            ResourceRX in config.errors_and_precisions
-            and config.errors_and_precisions[ResourceRX]["precision"] != 0
-        )
-
-        assert (
-            ResourceRZ in config.errors_and_precisions
-            and config.errors_and_precisions[ResourceRZ]["precision"] != 0
-        )
-
+        # Note: the check for config._pow_custom_decomps was duplicated in the original test.
         assert config._pow_custom_decomps == {}
         assert not config._custom_decomps
         assert not config._adj_custom_decomps
         assert not config._ctrl_custom_decomps
-        assert not config._pow_custom_decomps
 
-    def test_set_single_qubit_rotation_error(self):
-        """Test that the single qubit rotation error is set correctly across all relevant gates."""
+    @pytest.mark.parametrize(
+        "op_with_precision",
+        [
+            ResourceRX,
+            ResourceRY,
+            ResourceRZ,
+            ResourceCRX,
+            ResourceCRY,
+            ResourceCRZ,
+            ResourceSelectPauliRot,
+            ResourceQubitUnitary,
+            ResourceQROMStatePreparation,
+            ResourceMPSPrep,
+            ResourceAliasSampling,
+        ],
+    )
+    def test_initialization_sets_default_precision(self, op_with_precision):
+        """Test that default precision is set for standard operations on initialization."""
+        config = ResourceConfig()
+        assert op_with_precision in config.errors_and_precisions
+        assert config.errors_and_precisions[op_with_precision].get("precision") > 0
+
+    @pytest.mark.parametrize(
+        "rotation_op",
+        [
+            ResourceRX,
+            ResourceRY,
+            ResourceRZ,
+            ResourceCRX,
+            ResourceCRY,
+            ResourceCRZ,
+        ],
+    )
+    def test_set_single_qubit_rotation_error_for_rotation_ops(self, rotation_op):
+        """Test that the single qubit rotation error is set correctly for a given rotation gate."""
         config = ResourceConfig()
         new_error = 1e-5
         config.set_single_qubit_rotation_error(new_error)
 
-        rotation_ops = [ResourceRX, ResourceRY, ResourceRZ, ResourceCRX, ResourceCRY, ResourceCRZ]
-        for op in rotation_ops:
-            assert config.errors_and_precisions[op]["precision"] == new_error
+        assert config.errors_and_precisions[rotation_op]["precision"] == new_error
+
+    def test_set_single_qubit_rotation_error_updates_select_pauli_rot(self):
+        """Test that setting the single qubit rotation error also updates ResourceSelectPauliRot."""
+        config = ResourceConfig()
+        new_error = 1e-5
+        config.set_single_qubit_rotation_error(new_error)
 
         assert (
             ResourceSelectPauliRot in config.errors_and_precisions
