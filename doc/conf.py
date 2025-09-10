@@ -14,7 +14,6 @@
 import os
 import re
 import sys
-from docutils import nodes
 from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
