@@ -8,7 +8,7 @@
   * `qml.estimator.WireResourceManager`, `qml.estimator.Allocate` and `qml.estimator.Deallocate` classes
     were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
-  * `qml.estimator.Resources` class was added as a container class for resources.
+  * The :class:`~.estimator.Resources` class was added as a container class for resources.
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
