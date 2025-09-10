@@ -54,9 +54,9 @@ gate_types_data = (
     ),
 )
 
-wire_manager1 = WireResourceManager(zeroed_state=5)
-wire_manager2 = WireResourceManager(zeroed_state=8753, any_state=2347, algo=22)
-wire_manager3 = WireResourceManager(zeroed_state=400, any_state=222, algo=108)
+wire_manager1 = WireResourceManager(zeroed=5)
+wire_manager2 = WireResourceManager(zeroed=8753, any_state=2347, algo=22)
+wire_manager3 = WireResourceManager(zeroed=400, any_state=222, algo=108)
 
 wire_manager_data = (wire_manager1, wire_manager2, wire_manager3)
 
@@ -205,7 +205,7 @@ class TestResources:
         res2 = Resources(wire_manager=wire_manager2, gate_types=gate_types_data[1])
 
         expected_wire_manager_add = WireResourceManager(
-            zeroed_state=max(wire_manager3.zeroed_state, wire_manager2.zeroed_state),
+            zeroed=max(wire_manager3.zeroed, wire_manager2.zeroed),
             any_state=wire_manager2.any_state + wire_manager3.any_state,
             algo=max(wire_manager3.algo_wires, wire_manager2.algo_wires),
         )
@@ -226,7 +226,7 @@ class TestResources:
         res2 = Resources(wire_manager=wire_manager2, gate_types=gate_types_data[1])
 
         expected_wire_manager_and = WireResourceManager(
-            zeroed_state=max(wire_manager3.zeroed_state, wire_manager2.zeroed_state),
+            zeroed=max(wire_manager3.zeroed, wire_manager2.zeroed),
             any_state=wire_manager3.any_state + wire_manager2.any_state,
             algo=wire_manager3.algo_wires + wire_manager2.algo_wires,
         )
@@ -247,7 +247,7 @@ class TestResources:
         res = Resources(wire_manager=wire_manager3, gate_types=gate_types_data[2])
 
         expected_wire_manager_mul = WireResourceManager(
-            zeroed_state=wire_manager3.zeroed_state,
+            zeroed=wire_manager3.zeroed,
             any_state=wire_manager3.any_state * k,
             algo=wire_manager3.algo_wires,
         )
@@ -265,7 +265,7 @@ class TestResources:
         res = Resources(wire_manager=wire_manager3, gate_types=gate_types_data[2])
 
         expected_wire_manager_matmul = WireResourceManager(
-            zeroed_state=wire_manager3.zeroed_state,
+            zeroed=wire_manager3.zeroed,
             any_state=wire_manager3.any_state * k,
             algo=wire_manager3.algo_wires * k,
         )

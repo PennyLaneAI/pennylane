@@ -90,8 +90,8 @@ class Resources:
             CNOT = plre.resource_rep(plre.CNOT)
 
             # state of wires:
-            wm1 = plre.WireResourceManager(zeroed_state=2, any_state=1, algo_wires=3)
-            wm2 = plre.WireResourceManager(zeroed_state=1, any_state=2, algo_wires=4)
+            wm1 = plre.WireResourceManager(zeroed=2, any_state=1, algo_wires=3)
+            wm2 = plre.WireResourceManager(zeroed=1, any_state=2, algo_wires=4)
 
             # state of gates:
             gt1 = defaultdict(int, {H: 10, X:5, CNOT:2})
@@ -223,13 +223,13 @@ class Resources:
         wm1 = self.wire_manager
         wm2 = other.wire_manager
 
-        new_zeroed = max(wm1.zeroed_state, wm2.zeroed_state)
+        new_zeroed = max(wm1.zeroed, wm2.zeroed)
         new_any = wm1.any_state + wm2.any_state
         new_budget = wm1.tight_budget or wm2.tight_budget
         new_logic = max(wm1.algo_wires, wm2.algo_wires)
 
         new_wire_manager = WireResourceManager(
-            zeroed_state=new_zeroed, any_state=new_any, algo=new_logic, tight_budget=new_budget
+            zeroed=new_zeroed, any_state=new_any, algo=new_logic, tight_budget=new_budget
         )
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
@@ -248,13 +248,13 @@ class Resources:
         qm1 = self.wire_manager
         qm2 = other.wire_manager
 
-        new_zeroed = max(qm1.zeroed_state, qm2.zeroed_state)
+        new_zeroed = max(qm1.zeroed, qm2.zeroed)
         new_any = qm1.any_state + qm2.any_state
         new_budget = qm1.tight_budget or qm2.tight_budget
         new_logic = qm1.algo_wires + qm2.algo_wires
 
         new_wire_manager = WireResourceManager(
-            zeroed_state=new_zeroed,
+            zeroed=new_zeroed,
             any_state=new_any,
             algo=new_logic,
             tight_budget=new_budget,
@@ -279,7 +279,7 @@ class Resources:
         assert isinstance(scalar, int)
 
         new_wire_manager = WireResourceManager(
-            zeroed_state=self.wire_manager.zeroed_state,
+            zeroed=self.wire_manager.zeroed,
             any_state=scalar * self.wire_manager.any_state,
             algo=self.wire_manager.algo_wires,
             tight_budget=self.wire_manager.tight_budget,
@@ -301,7 +301,7 @@ class Resources:
         assert isinstance(scalar, int)
 
         new_wire_manager = WireResourceManager(
-            zeroed_state=self.wire_manager.zeroed_state,
+            zeroed=self.wire_manager.zeroed,
             any_state=scalar * self.wire_manager.any_state,
             algo=scalar * self.wire_manager.algo_wires,
             tight_budget=self.wire_manager.tight_budget,
@@ -340,7 +340,7 @@ class Resources:
         items = "--- Resources: ---\n"
         items += f" Total wires: {total_wires_str}\n"
 
-        qubit_breakdown_str = f"    algorithmic wires: {wm.algo_wires}\n    allocated wires: {wm.zeroed_state+wm.any_state}\n\t zero state: {wm.zeroed_state}\n\t any state: {wm.any_state}\n"
+        qubit_breakdown_str = f"    algorithmic wires: {wm.algo_wires}\n    allocated wires: {wm.zeroed+wm.any_state}\n\t zero state: {wm.zeroed}\n\t any state: {wm.any_state}\n"
         items += qubit_breakdown_str
 
         items += f" Total gates : {total_gates_str}\n  "
