@@ -24,9 +24,6 @@ from catalyst.ftqc import mbqc_pipeline
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
-from pennylane.compiler.python_compiler.mbqc.graph_state_utils import (
-    _adj_matrix_generation_helper,
-)
 from pennylane.compiler.python_compiler.transforms import (
     ConvertToMBQCFormalismPass,
     convert_to_mbqc_formalism_pass,
@@ -38,13 +35,6 @@ from pennylane.ftqc import RotXZX
 
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
-
-    def test_adj_matrix_generation_helper(self):
-        """Test that error raised for unsupported gates."""
-        num_vertices = 4
-        edges = [(0, 1), (1, 2), (2, 3)]
-        adj_matrix = _adj_matrix_generation_helper(num_vertices, edges)
-        assert adj_matrix == [1, 0, 1, 0, 0, 1]
 
     def test_hadamard_gate(self, run_filecheck):
         """Test for lowering a Hadamard gate to a MBQC formalism."""
