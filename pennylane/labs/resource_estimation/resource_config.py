@@ -219,5 +219,5 @@ class ResourceConfig:
             self._ctrl_custom_decomps[op_type] = decomp_func
         elif decomp_type == DecompositionType.POW:
             self._pow_custom_decomps[op_type] = decomp_func
-        else:
+        elif decomp_type is None or decomp_type == DecompositionType.BASE:
             self._custom_decomps[op_type] = decomp_func
