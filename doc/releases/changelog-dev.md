@@ -579,10 +579,9 @@
 
 <h3>Breaking changes 💔</h3>
 
-* :class:`~.PrepSelPrep` now de-queues its input ``lcu``, making it consistent with other
-  PennyLane operators. In addition, the attributes ``coeffs`` and ``ops`` are now derived from
-  the property ``lcu``, instead of storing them independently. This avoids redundant
-  information storage, which is less memory-efficient and can lead to multiple sources of truth.
+* :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing 
+  them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
+  input ``lcu``. 
   [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
 
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
