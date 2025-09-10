@@ -297,7 +297,7 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
 def rowcol(
     tape: QuantumScript, connectivity: nx.Graph = None, verbose: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""CNOT routing algorithm ROWCOL.
+    r"""CNOT routing algorithm `ROWCOL <https://pennylane.ai/compilation/rowcol-algorithm>`__.
 
     This algorithm was introduced by `Wu et al. <https://arxiv.org/abs/1910.14478>`__ and is
     detailed in the `compilation hub <https://pennylane.ai/compilation/rowcol-algorithm>`__,
@@ -341,7 +341,7 @@ def rowcol(
     >>> import networkx as nx
     >>> G = nx.Graph([(0, 3), (1, 2), (2, 3), (3, 4)])
 
-    Further we define the circuit in Fig. 6 therein.
+    Further we define the following circuit:
 
     >>> import pennylane as qml
     >>> def qfunc():
