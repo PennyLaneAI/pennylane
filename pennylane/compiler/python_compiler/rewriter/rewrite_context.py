@@ -258,11 +258,11 @@ class RewriteContext:
                 the RewriteContext.
         """
 
-        # If any operations, including operations NOT part of the Quantum dialect,
-        # return quantum registers, we should update it.
         in_qubits = []
         out_qubits = []
 
+        # TODO: What to do if operation is an mbqc.GraphStatePrepOp? It returns a quantum
+        # register, but this register is independent from the main quantum register.
         for result in op.results:
             if isinstance(result.type, quantum.QuregType):
                 # We assume that _only one_ of the results is a QuregType
@@ -270,15 +270,17 @@ class RewriteContext:
             elif isinstance(result.type, quantum.QubitType):
                 out_qubits.append(result)
 
-        if type(op) not in quantum.Quantum.operations:
-            # Qubits are only updated if they are returned by operations in
-            # the Quantum dialect.
+        if not out_qubits:
+            # Nothing to update if there are no qubit outs
             return
 
         for operand in op.operands:
             if isinstance(operand.type, quantum.QubitType):
                 in_qubits.append(operand)
 
+        # We only update the wire_qubit_map if an operation has the same number of qubit
+        # operands and results, and assume that at any given index, the input and output
+        # qubits correspond to the same wire label.
         assert len(in_qubits) == len(out_qubits)
         for iq, oq in zip(in_qubits, out_qubits, strict=True):
             self.wire_qubit_map.update_qubit(iq, oq)
