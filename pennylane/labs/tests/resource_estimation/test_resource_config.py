@@ -140,7 +140,7 @@ class TestResourceConfig:
 
         assert (
             ResourceSelectPauliRot in config.errors_and_precisions
-            and config.errors_and_precisions[ResourceSelectPauliRot]["precision"] != 0
+            and config.errors_and_precisions[ResourceSelectPauliRot]["precision"] == new_error
         )
 
     @pytest.mark.parametrize(
