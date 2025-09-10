@@ -404,6 +404,7 @@ def patch_estimator_stubs(app):
             if not re.search(r"\bpennylane\.estimator\.ops\b", content):
                 continue
 
+            # TODO: Replace with :no-index-entry: when support for sphinx >=8.2 is available.
             new_content = re.sub(
                 r"(\.\.\s+auto(?:class|function|module)::[^\n]+)",
                 r"\1\n   :noindex:",
@@ -415,22 +416,6 @@ def patch_estimator_stubs(app):
                 print(f"[patch_estimator_stubs] Patched {fpath}")
 
 from docutils import nodes
-
-# def link_table_to_stubs(app, doctree, fromdocname):
-#     for node in doctree.traverse(nodes.reference):
-#         # detect table entry pointing to noindex object
-#         if "pennylane.estimator.ops" in node.get("reftitle", ""):
-#             print(node)
-#         if "pennylane.estimator.ops" in node.get("refuri", ""):
-            
-#             obj_name = node.astext()
-#             # point to stub HTML
-#             node["refuri"] = app.builder.get_relative_uri(
-#                 fromdocname, f"api/{obj_name}.html"
-#             )
-#             node["refid"] = None
-#             print(f"[link_table_to_stubs] Linked {obj_name} to {node['refuri']}")
-
 
 def link_estimator_table_to_stubs(app, doctree, fromdocname):
     """
@@ -446,7 +431,7 @@ def link_estimator_table_to_stubs(app, doctree, fromdocname):
                 refnode = nodes.reference('', refuri=refuri)
                 refnode += nodes.literal(text=name)                
                 literal.parent.replace(literal, refnode)
-                print(f"[link_estimator_table_to_stubs] Linked pennylane.estimator.ops.{name} to {refuri}")
+                print(f"[patch_estimator_links] Linked pennylane.estimator.ops.{name} to {refuri}")
 
 
 def setup(app):
