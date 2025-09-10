@@ -503,6 +503,7 @@
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
   [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
   [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
+  [(#8236)](https://github.com/PennyLaneAI/pennylane/pull/8236)
 
   * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
   [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
