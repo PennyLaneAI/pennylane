@@ -166,7 +166,7 @@ class Allocate(_WireAction):
     r"""Allows allocation of work wires through :class:`~pennylane.estimator.WireResourceManager`.
 
     Args:
-        num_wires (int): number of work wires to be allocated.
+        num_wires (int): number of work wires to be allocated
 
 
     .. details::
