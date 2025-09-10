@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # PennyLane documentation build configuration file, created by
 # sphinx-quickstart on Tue Apr 17 11:43:51 2018.
@@ -15,6 +14,7 @@
 import os
 import re
 import sys
+from docutils import nodes
 from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -330,3 +330,55 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
+
+
+def patch_estimator_stubs(app):
+    """Only patch stubs for the `pennylane.estimator` module."""
+    stubs_dir = os.path.join(app.srcdir, "code", "api")
+    if not os.path.isdir(stubs_dir):
+        return
+
+    for root, _, files in os.walk(stubs_dir):
+        for fname in files:
+            if not fname.endswith(".rst"):
+                continue
+            fpath = os.path.join(root, fname)
+
+            with open(fpath, encoding="utf-8") as f:
+                content = f.read()
+
+            # Only modify if stub is for pennylane.estimator.ops
+            if not re.search(r"\bpennylane\.estimator\.ops\b", content):
+                continue
+
+            # TODO: Replace with :no-index-entry: when support for sphinx >=8.2 is available.
+            new_content = re.sub(
+                r"(\.\.\s+auto(?:class|function|module)::[^\n]+)",
+                r"\1\n   :noindex:",
+                content,
+            )
+            if new_content != content:
+                with open(fpath, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                print(f"[patch_estimator_stubs] Patched {fpath}")
+
+def link_estimator_table_to_stubs(app, doctree, fromdocname):
+    """
+    Replace literal names in automodsumm tables with links to stub HTML files.
+    """
+    if "qml_estimator" in fromdocname:
+        for table in doctree.traverse(nodes.table)[2:]:
+            for literal in table.traverse(nodes.literal):
+                name = literal.astext()
+                url = f"code/api/pennylane.estimator.ops.{name}"
+                refuri = app.builder.get_relative_uri(fromdocname, url)
+
+                refnode = nodes.reference('', refuri=refuri)
+                refnode += nodes.literal(text=name)                
+                literal.parent.replace(literal, refnode)
+                print(f"[patch_estimator_links] Linked pennylane.estimator.ops.{name} to {refuri}")
+
+
+def setup(app):
+    app.connect("builder-inited", patch_estimator_stubs)
+    app.connect("doctree-resolved", link_estimator_table_to_stubs)
