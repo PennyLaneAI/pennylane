@@ -226,7 +226,7 @@ class Deallocate(_WireAction):
     r"""Allows freeing any_state work wires through :class:`~pennylane.estimator.WireResourceManager`.
 
     Args:
-        num_wires (int): number of any_state work wires to be freed.
+        num_wires (int): number of ``any_state`` work wires to be freed.
 
     .. details::
         :title: Usage Details
