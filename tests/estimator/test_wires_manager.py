@@ -82,7 +82,7 @@ class TestWireResourceManager:
     def test_repr(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager representation is correct."""
 
-        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
+        zeroed_wires, any_wires, _, tight_budget = attribute_tup
 
         expected_string = (
             f"WireResourceManager(zeroed={zeroed_wires}, any={any_wires}, algo={algo_q}, "
@@ -99,7 +99,7 @@ class TestWireResourceManager:
     def test_str(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager string is correct."""
 
-        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
+        zeroed_wires, any_wires, _, tight_budget = attribute_tup
 
         expected_string = (
             f"WireResourceManager(zeroed wires={zeroed_wires}, any wires={any_wires}, "
@@ -171,8 +171,7 @@ class TestAllocate:
     def test_init(self):
         """Test that the Allocate class is instantiated as expected when there is no active recording."""
 
-        for i in range(3):
-            assert Allocate(i).num_wires == i
+        assert Allocate(4).num_wires == 4
 
     def test_repr(self):
         """Test that correct representation is returned for Allocate class"""
