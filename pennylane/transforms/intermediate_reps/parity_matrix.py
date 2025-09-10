@@ -20,12 +20,12 @@ import numpy as np
 import pennylane as qml
 
 
-def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
+def parity_matrix(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
     r"""Compute the `parity matrix intermediate representation <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ of a CNOT circuit.
 
     Args:
-        circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
-        wire_order (Sequence): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``circ.wires``).
+        tape (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
+        wire_order (Sequence): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:
         np.ndarray: :math:`n \times n` Parity matrix for :math:`n` qubits.
@@ -37,7 +37,7 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
         import pennylane as qml
         from pennylane.labs.intermediate_reps import parity_matrix
 
-        circ = qml.tape.QuantumScript([
+        tape = qml.tape.QuantumScript([
             qml.CNOT((3, 2)),
             qml.CNOT((0, 2)),
             qml.CNOT((2, 1)),
@@ -46,13 +46,13 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
             qml.CNOT((0, 2)),
         ], [])
 
-        P = parity_matrix(circ, wire_order=range(4))
+        P = parity_matrix(tape, wire_order=range(4))
 
     >>> P
-    array([[1., 0., 0., 1.],
-           [1., 1., 1., 1.],
-           [0., 0., 1., 1.],
-           [0., 0., 0., 1.]])
+    array([[1, 0, 0, 1],
+           [1, 1, 1, 1],
+           [0, 0, 1, 1],
+           [0, 0, 0, 1]])
 
     The corresponding circuit is the following, with output values of the qubits denoted at the right end.
 
@@ -64,7 +64,7 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
         x_3: ─╰●───────╰●─╰●────┤  x_3
 
     """
-    wires = circ.wires
+    wires = tape.wires
 
     if wire_order is None:
         wire_order = wires
@@ -74,15 +74,15 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
             f"The provided wire_order {wire_order} does not contain all wires of the circuit {wires}"
         )
 
-    if any(op.name != "CNOT" for op in circ.operations):
+    if any(op.name != "CNOT" for op in tape.operations):
         raise TypeError(
-            f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {circ.operations}"
+            f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {tape.operations}"
         )
 
     wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
 
     P = np.eye(len(wire_order), dtype=int)
-    for op in circ.operations:
+    for op in tape.operations:
 
         control, target = op.wires
         P[wire_map[target]] += P[wire_map[control]]
