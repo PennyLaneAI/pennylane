@@ -183,20 +183,35 @@ class TestResources:
         assert res1 == res1_copy
         assert res1 != res2
 
+    def test_equality_error(self):
+        """Test that the equality method raises an error."""
+        res1 = Resources(wire_manager=wire_manager1, gate_types=gate_types_data[0])
+        with pytest.raises(
+            TypeError,
+            match="Cannot compare Resources with object of type <class 'collections.defaultdict'>.",
+        ):
+            assert res1 == gate_types_data[0]
+
     def test_arithmetic_raises_error(self):
         """Test that an assertion error is raised when arithmetic methods are used"""
         res = Resources(wire_manager=wire_manager1, gate_types=gate_types_data[0])
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError, match="Cannot add Resources object to <class 'int'>."):
             res.add_series(2)  # Can only add two Resources instances
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError, match="Cannot add Resources object to <class 'int'>."):
             res.add_parallel(2)  # Can only add two Resources instances
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(
+            TypeError,
+            match="Cannot multiply Resources object with <class 'pennylane.estimator.resources_base.Resources'>.",
+        ):
             res.multiply_series(res)  # Can only multiply a Resources instance with an int
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(
+            TypeError,
+            match="Cannot multiply Resources object with <class 'pennylane.estimator.resources_base.Resources'>.",
+        ):
             res.multiply_parallel(res)  # Can only multiply a Resources instance with an int
 
     def test_add_in_series(self):

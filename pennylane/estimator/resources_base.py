@@ -33,18 +33,16 @@ DefaultGateSet = {
 
 class Resources:
     r"""A container to track and update the resources used throughout a quantum circuit.
+
     The resources tracked include number of gates, number of wires, and gate types.
 
     Args:
         wire_manager (:class:`~.pennylane.estimator.WireResourceManager`): A wire tracker class which contains the number of available
             work wires, categorized as zero state and any state wires, and algorithmic wires.
         gate_types (dict): A dictionary storing operations (:class:`~.pennylane.estimator.ResourceOperator`) as keys and the number
-            of times they are used in the circuit (int) as values.
+            of times they are used in the circuit (``int``) as values.
 
     **Example**
-
-    The resources can be accessed as class attributes. Additionally, the :class:`~.pennylane.estimator.Resources`
-    instance can be nicely displayed in the console.
 
     >>> from pennylane import estimator as qre
     >>> H = qre.resource_rep(qre.Hadamard)
@@ -71,13 +69,13 @@ class Resources:
 
         The :class:`~.pennylane.estimator.Resources` object supports arithmetic operations which allow for quick addition
         and multiplication of resources. When combining resources, we can make a simplifying
-        assumption about how they are applied in a quantum circuit (in series or in parallel).
+        assumption about how they are applied in a quantum circuit: in series or in parallel.
 
         When assuming the circuits are executed in parallel, the number of algorithmic wires add
         together. When assuming the circuits are executed in series, the maximum of each set of
-        algorithmic wires is used. The zeroed auxiliary wires can be reused between the circuits,
+        algorithmic wires is used. The ``zeroed`` auxiliary wires can be reused between the circuits,
         and thus we always use the maximum of each set when combining the resources. Finally, the
-        any state wires cannot be reused between circuits, thus we always add them together.
+        ``any_state`` wires cannot be reused between circuits, thus we always add them together.
 
         .. code-block::
 
@@ -128,73 +126,6 @@ class Resources:
               'Z': 5,
               'Hadamard': 15
 
-
-        Specifically, users can add together two instances of resources using the :code:`add_series` and
-        :code:`add_parallel` functions. These represent combining the resources assuming the circuits were
-        executed in series or parallel, respectively.
-
-        .. code-block:: pycon
-
-            >>> res_in_series = res1.add_series(res2)
-            >>> print(res_in_series)
-            --- Resources: ---
-             Total wires: 9
-                algorithmic wires: 4
-                allocated wires: 5
-                     zero state: 2
-                     any state: 3
-             Total gates : 41
-              'CNOT': 6,
-              'X': 5,
-              'Z': 5,
-              'Hadamard': 25
-
-            >>> res_in_parallel = res1.add_parallel(res2)
-            >>> print(res_in_parallel)
-            --- Resources: ---
-             Total wires: 12
-                algorithmic wires: 7
-                allocated wires: 5
-                     zero state: 2
-                     any state: 3
-             Total gates : 41
-              'CNOT': 6,
-              'X': 5,
-              'Z': 5,
-              'Hadamard': 25
-
-        Similarly, users can scale up the resources for an operator by some integer factor using
-        the :code:`multiply_series` and :code:`multiply_parallel` functions. These represent scaling the resources assuming the
-        circuits were executed in series or parallel, respectively.
-
-        .. code-block:: pycon
-
-            >>> res_in_series = res1.multiply_series(5)
-            >>> print(res_in_series)
-            --- Resources: ---
-             Total wires: 10
-                algorithmic wires: 3
-                allocated wires: 7
-                     zero state: 2
-                     any state: 5
-             Total gates : 85
-              'CNOT': 10,
-              'X': 25,
-              'Hadamard': 50
-
-            >>> res_in_parallel = res1.multiply_parallel(5)
-            >>> print(res_in_parallel)
-            --- Resources: ---
-             Total wires: 22
-                algorithmic wires: 15
-                allocated wires: 7
-                     zero state: 2
-                     any state: 5
-             Total gates : 85
-              'CNOT': 10,
-              'X': 25,
-              'Hadamard': 50
-
     """
 
     def __init__(self, wire_manager: WireResourceManager, gate_types: dict | None = None):
@@ -211,15 +142,44 @@ class Resources:
     def add_series(self, other: "Resources") -> "Resources":
         """Add two resources objects in series.
 
+        When combining resources for serial execution, the following rules apply:
+        * Zeroed wires: The total ``zeroed`` auxiliary wires are the maximum of the ``zeroed``
+          wires in each circuit, as they can be reused.
+        * Any state wires: The ``any_state`` wires are added together, as they cannot be reused.
+        * Algorithmic wires: The total ``algo_wires`` are the maximum of the ``algo_wires``
+          from each circuit.
+        * Gates: The gates from each circuit are added together.
+
         Args:
             other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
 
         Returns:
             :class:`~.pennylane.estimator.Resources`: combined resources
 
+        **Example**
+
+        >>> from pennylane import estimator as qre
+        >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
+        >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
+        >>> res2 = qre.estimate(qre.QFT(num_wires=4), gate_set)
+        >>> res_in_series = res1.add_series(res2)
+        >>> print(res_in_series)
+        --- Resources: ---
+         Total wires: 6
+            algorithmic wires: 4
+            allocated wires: 2
+                 clean wires: 2
+                 dirty wires: 0
+         Total gates : 838
+          'T': 796,
+          'CNOT': 28,
+          'Z': 2,
+          'S': 3,
+          'Hadamard': 9
+
         """
         if not isinstance(other, self.__class__):
-            raise TypeError(f"Cannot add resources object to {type(other)}.")
+            raise TypeError(f"Cannot add {self.__class__.__name__} object to {type(other)}.")
 
         wm1 = self.wire_manager
         wm2 = other.wire_manager
@@ -239,14 +199,44 @@ class Resources:
     def add_parallel(self, other: "Resources") -> "Resources":
         """Add two resources objects in parallel.
 
+        When combining resources for parallel execution, the following rules apply:
+        * Zeroed wires: The maximum of the ``zeroed`` auxiliary wires is used, as they can
+          be reused across parallel circuits.
+        * Any state wires: The ``any_state`` wires are added together, as they cannot be
+          reused between circuits.
+        * Algorithmic wires: The ``algo_wires`` are added together, as each circuit is a
+          separate unit running simultaneously.
+        * Gates: The gates from each circuit are added together.
+
         Args:
             other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
 
         Returns:
             :class:`~.pennylane.estimator.Resources`: combined resources
+
+        **Example**
+
+        >>> from pennylane import estimator as qre
+        >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
+        >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
+        >>> res2 = qre.estimate(qre.QFT(num_wires=4), gate_set)
+        >>> res_in_parallel = res1.add_parallel(res2)
+        >>> print(res_in_parallel)
+        --- Resources: ---
+         Total wires: 9
+            algorithmic wires: 7
+            allocated wires: 2
+                 clean wires: 2
+                 dirty wires: 0
+         Total gates : 838
+          'T': 796,
+          'CNOT': 28,
+          'Z': 2,
+          'S': 3,
+          'Hadamard': 9
         """
         if not isinstance(other, self.__class__):
-            raise TypeError(f"Cannot add resources object to {type(other)}.")
+            raise TypeError(f"Cannot add {self.__class__.__name__} object to {type(other)}.")
 
         qm1 = self.wire_manager
         qm2 = other.wire_manager
@@ -269,7 +259,9 @@ class Resources:
     def __eq__(self, other: Resources) -> bool:
         """Determine if two resources objects are equal"""
         if not isinstance(other, self.__class__):
-            raise TypeError(f"Cannot compare {self.__class__.__name__} with object of type {type(other)}.")
+            raise TypeError(
+                f"Cannot compare {self.__class__.__name__} with object of type {type(other)}."
+            )
         return (self.gate_types == other.gate_types) and (self.wire_manager == other.wire_manager)
 
     def multiply_series(self, scalar: int) -> Resources:
@@ -280,9 +272,32 @@ class Resources:
 
         Returns:
             :class:`~.pennylane.estimator.Resources`: scaled resources
+
+        **Example**
+
+        >>> from pennylane import estimator as qre
+        >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
+        >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
+        >>> res_in_series = res1.multiply_series(3)
+        >>> print(res_in_series)
+        --- Resources: ---
+         Total wires: 5
+            algorithmic wires: 3
+            allocated wires: 2
+                 clean wires: 2
+                 dirty wires: 0
+         Total gates : 72
+          'T': 12,
+          'CNOT': 30,
+          'Z': 6,
+          'S': 9,
+          'Hadamard': 15
+
         """
         if not isinstance(scalar, int):
-            raise TypeError(f"Cannot multiply resources object with {type(scalar)}.")
+            raise TypeError(
+                f"Cannot multiply {self.__class__.__name__} object with {type(scalar)}."
+            )
 
         new_wire_manager = WireResourceManager(
             zeroed=self.wire_manager.zeroed,
@@ -303,10 +318,32 @@ class Resources:
 
         Returns:
             :class:`~.pennylane.estimator.Resources`: scaled resources
+
+        **Example**
+
+        >>> from pennylane import estimator as qre
+        >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
+        >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
+        >>> res_in_parallel = res1.multiply_parallel(3)
+        >>> print(res_in_parallel)
+        --- Resources: ---
+         Total wires: 11
+            algorithmic wires: 9
+            allocated wires: 2
+                 clean wires: 2
+                 dirty wires: 0
+         Total gates : 72
+          'T': 12,
+          'CNOT': 30,
+          'Z': 6,
+          'S': 9,
+          'Hadamard': 15
         """
 
         if not isinstance(scalar, int):
-            raise TypeError(f"Cannot multiply resources object with {type(scalar)}.")
+            raise TypeError(
+                f"Cannot multiply {self.__class__.__name__} object with {type(scalar)}."
+            )
 
         new_wire_manager = WireResourceManager(
             zeroed=self.wire_manager.zeroed,
