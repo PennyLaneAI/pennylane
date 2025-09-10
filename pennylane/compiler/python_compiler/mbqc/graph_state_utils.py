@@ -24,6 +24,8 @@ DenselyPackedAdjMatrix: TypeAlias = Sequence[int] | Sequence[bool]
 
 
 _MBQC_GATE_SET = {"Hadamard", "S", "RZ", "RotXZX", "CNOT"}
+_SINGLE_QUBIT_AUX_WIRE_NUM = 4
+_CNOT_AUX_WIRE_NUM = 13
 
 
 def get_num_aux_wires(gate_name: str) -> int:
@@ -39,9 +41,9 @@ def get_num_aux_wires(gate_name: str) -> int:
         The number of auxiliary wires.
     """
     if gate_name == "CNOT":
-        return 13
+        return _CNOT_AUX_WIRE_NUM
     if gate_name in _MBQC_GATE_SET:
-        return 4
+        return _SINGLE_QUBIT_AUX_WIRE_NUM
     raise ValueError(f"{gate_name} is not supported in the MBQC formalism.")
 
 
