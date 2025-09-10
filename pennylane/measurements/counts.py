@@ -331,7 +331,7 @@ if CountsMP._wires_primitive is not None:
     def _(*args, has_eigvals=False, all_outcomes=False):
         if not all_outcomes:
             warnings.warn(
-                "all_outcomes=True is unsupported with program capture and qjit. Using all_outcomes=False",
+                "all_outcomes=False is unsupported with program capture and qjit. Using all_outcomes=True",
                 UserWarning,
             )
         n_wires = len(args) - 1 if has_eigvals else len(args)
