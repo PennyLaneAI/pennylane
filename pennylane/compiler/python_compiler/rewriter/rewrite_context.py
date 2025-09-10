@@ -210,42 +210,6 @@ class RewriteContext:
     qreg: quantum.QuregSSAValue | None = None
     """Most up-to-date quantum register."""
 
-    # TODO: Figure out if this method should be removed.
-    def get_wire_from_extract_op(self, op: quantum.ExtractOp, update=True) -> int | AbstractWire:
-        """Get the wire label to which a qubit extraction corresponds.
-
-        Args:
-            op (quantum.ExtractOp): ``ExtractOp`` from which we want to get the wire label.
-                If the wire is dynamic, then an ``AbstractWire`` will be returned.
-            update (bool): Whether or not to update the wire/qubit mapping. ``True`` by default.
-
-        Returns:
-            int | AbstractWire: Wire label corresponding to the qubit being extracted. If dynamic,
-            an ``AbstractWire`` is returned.
-        """
-        wire = None
-        if (idx_attr := getattr(op, "idx_attr", None)) is not None:
-            wire = idx_attr.value.data
-
-        else:
-            extract_owner = op.idx.owner
-
-            if isinstance(extract_owner, arith.ConstantOp):
-                wire = extract_owner.properties["value"].data
-
-            elif (
-                isinstance(extract_owner, tensor.ExtractOp)
-                and len(extract_owner.operand[0].type.shape) == 0
-                and isinstance(extract_owner.operands[0].owner, xstablehlo.ConstantOp)
-            ):
-                wire = extract_owner.operands[0].owner.properties["value"].get_values()[0]
-            else:
-                wire = AbstractWire(idx=op.idx)
-
-        if wire is not None and update:
-            self.wire_qubit_map[wire] = op.qubit
-        return wire
-
     @singledispatchmethod
     def update_from_op(self, op: xOperation):
         """Update the context using an operation's outputs.
@@ -316,7 +280,31 @@ class RewriteContext:
     def _update_from_extract(self, op: quantum.ExtractOp):
         """Update the context from an ``ExtractOp``. The operation is used to update qubits."""
         # Update wires and qubits
-        _ = self.get_wire_from_extract_op(op, update=True)
+        wire = None
+        if (idx_attr := getattr(op, "idx_attr", None)) is not None:
+            # Index is static
+            wire = idx_attr.value.data
+
+        else:
+            # Index is an SSAValue. Figure out if it's a constant or not.
+            extract_owner = op.idx.owner
+
+            if isinstance(extract_owner, arith.ConstantOp):
+                # Index is defined using arith.constant. The value is static
+                wire = extract_owner.properties["value"].data
+
+            elif (
+                isinstance(extract_owner, tensor.ExtractOp)
+                and len(extract_owner.operand[0].type.shape) == 0
+                and isinstance(extract_owner.operands[0].owner, xstablehlo.ConstantOp)
+            ):
+                # Index is defined using stablehlo.constant. The value is static
+                wire = extract_owner.operands[0].owner.properties["value"].get_values()[0]
+            else:
+                # The wire is dynamic
+                wire = AbstractWire(idx=op.idx)
+
+        self.wire_qubit_map[wire] = op.qubit
 
     @update_from_op.register
     def _update_from_insert(self, op: quantum.InsertOp):
