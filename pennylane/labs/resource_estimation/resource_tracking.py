@@ -72,7 +72,7 @@ DefaultGateSet = {
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set | None= None,
-    config: ResourceConfig = None,
+    config: ResourceConfig | None = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
 ) -> Resources | Callable:
