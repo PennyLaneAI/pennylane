@@ -141,8 +141,8 @@ def estimate_resources(
 @estimate_resources.register
 def resources_from_qfunc(
     obj: Callable,
-    gate_set: set = None,
-    config: ResourceConfig = None,
+    gate_set: set | None = None,
+    config: ResourceConfig | None = None,
     work_wires=0,
     tight_budget=False,
 ) -> Callable:
