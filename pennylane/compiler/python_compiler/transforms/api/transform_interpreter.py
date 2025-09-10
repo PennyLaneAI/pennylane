@@ -141,4 +141,6 @@ class TransformInterpreterPass(ModulePass):
         interpreter = Interpreter(op)
         interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes, self.callback))
         schedule.parent_op().detach()
+        if self.callback:
+            self.callback(None, op, None, pass_level=0)
         interpreter.call_op(schedule, (op,))
