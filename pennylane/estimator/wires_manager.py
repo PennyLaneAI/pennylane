@@ -34,7 +34,7 @@ class WireResourceManager:
 
     Args:
         zeroed (int): Number of zeroed work wires.
-        any (int): Number of work wires in an arbitrary states, default is ``0``.
+        any (int): Number of work wires in an unknown state, default is ``0``.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
         tight_budget (bool): Determines whether extra zeroed wires can be allocated when they
             exceed the available amount. The default is ``False``.
