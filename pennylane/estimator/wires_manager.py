@@ -234,7 +234,7 @@ class Deallocate(_WireAction):
         The Deallocate class is typically used within a decomposition function to track the
         allocation of auxiliary wires. This allows us to accurately determine the wire overhead
         of a circuit. In this example, we show the decomposition for a
-        3-controlled X gate, which requires one work wire that is returned in a zeroed state.
+        3-controlled ``X`` gate, which requires one work wire that is returned in a zeroed state.
 
         First, we define a custom decomposition which allocates the work wire but doesn't free it.
 
