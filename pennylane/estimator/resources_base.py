@@ -271,7 +271,7 @@ class Resources:
         """Scale a resources object in series
 
         Args:
-            scalar (int): integer value to scale the resources by
+            scalar (int): integer value by which to scale the resources
 
         Returns:
             :class:`~.pennylane.estimator.Resources`: scaled resources
