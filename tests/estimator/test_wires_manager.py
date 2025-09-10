@@ -145,7 +145,9 @@ class TestWireResourceManager:
         than the available wires."""
 
         wire_manager = WireResourceManager(zeroed_state=4, any_state=2, tight_budget=True)
-        with pytest.raises(ValueError, match="Grabbing more wires than available zeroed_state wires."):
+        with pytest.raises(
+            ValueError, match="Grabbing more wires than available zeroed_state wires."
+        ):
             wire_manager.grab_zeroed_state(6)
 
     def test_free_wires(self):
