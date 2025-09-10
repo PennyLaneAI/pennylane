@@ -255,7 +255,7 @@ class Deallocate(_WireAction):
 
         This decomposition uses a total of ``4`` algorithmic wires and ``1`` work wire which is returned in an arbitrary state.
 
-        We can free this wire using the ``Deallocate``, allowing it to be reused with more operations.
+        We can free this wire using ``Deallocate``, allowing it to be reused with more operations.
         The decomposition can be redefined as:
 
         >>> def resource_decomp():
