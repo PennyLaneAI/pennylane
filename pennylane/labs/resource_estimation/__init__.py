@@ -33,6 +33,7 @@ Resource Estimation Base Classes:
     ~ResourceOperator
     ~CompressedResourceOp
     ~GateCount
+    ~ResourceConfig
 
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
