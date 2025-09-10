@@ -20,6 +20,9 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.semi_adder import _semiadder_log_depth, _semiadder
+
+from functools import partial
 
 
 def test_standard_validity_SemiAdder():
@@ -35,33 +38,40 @@ class TestSemiAdder:
     """Test the qml.SemiAdder template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "work_wires", "x", "y"),
+        ("x_wires", "y_wires", "work_wires", "x", "y", "decomposition_rule"),
         [
-            ([0], [1], None, 1, 0),
-            ([0], [1], None, 1, 1),
-            ([0, 1], [2], None, 0, 1),
-            ([0, 1], [2], None, 1, 1),
-            ([0, 1], [2], None, 1, 0),
-            ([0, 1], [2, 3], [4], 2, 0),
-            ([0, 1], [2, 3], [4], 1, 2),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 1, 2),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 5, 6),
-            ([0, 1], [2, 3, 4], [5, 6], 3, 2),
-            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 10),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 7),
-            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5),
-            ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5),
-            ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2),
+            ([0], [1], None, 1, 0, _semiadder_log_depth),
+            ([0], [1], None, 1, 1, _semiadder_log_depth),
+            ([0, 1], [2], None, 0, 1, _semiadder_log_depth),
+            ([0, 1], [2], None, 1, 1, _semiadder_log_depth),
+            ([0, 1], [2], None, 1, 0, _semiadder_log_depth),
+            ([0, 1], [2, 3], [4], 2, 0, _semiadder_log_depth),
+            ([0, 1], [2, 3], [4], 1, 2, _semiadder_log_depth),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 1, 2, _semiadder_log_depth),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 5, 6, _semiadder_log_depth),
+            ([0, 1], [2, 3, 4], [5, 6], 3, 2, _semiadder),
+            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 10, _semiadder),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 7, _semiadder),
+            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5, _semiadder),
+            ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5, _semiadder),
+            ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2, _semiadder),
+            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2, _semiadder),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y
+        self, x_wires, y_wires, work_wires, x, y, decomposition_rule
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the SemiAdder template output."""
         dev = qml.device("default.qubit")
 
+        qml.decomposition.enable_graph()
+
         @qml.set_shots(1)
+        @partial(
+            qml.transforms.decompose,
+            fixed_decomps={qml.SemiAdder: decomposition_rule},
+            max_expansion=1,
+        )
         @qml.qnode(dev)
         def circuit(x, y):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -152,7 +162,17 @@ class TestSemiAdder:
 
         for rule in qml.list_decomps(qml.SemiAdder):
             _test_decomposition_rule(
-                qml.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule, heuristic_resources=True
+                qml.SemiAdder(x_wires, [5, 6], [9, 10, 11]), rule, heuristic_resources=True
+            )
+
+    def test_error_lenght_wires(self):
+        """Test that the decomposition through an error if len(x_wires) < len(y_wires)."""
+
+        with pytest.raises(AssertionError, match="must be greater or equal"):
+            _test_decomposition_rule(
+                qml.SemiAdder([0, 1, 2], [5, 6, 7, 8], [9, 10, 11]),
+                _semiadder_log_depth,
+                heuristic_resources=True,
             )
 
     @pytest.mark.jax
