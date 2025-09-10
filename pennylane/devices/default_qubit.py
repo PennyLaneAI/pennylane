@@ -50,8 +50,8 @@ from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 from .device_api import Device
 from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
-from .preprocess import decompose as preprocess_decompose
 from .preprocess import (
+    decompose,
     device_resolve_dynamic_wires,
     mid_circuit_measurements,
     no_sampling,
@@ -334,7 +334,7 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_
 
     # Use enhanced preprocess.decompose directly
     program.add_transform(
-        preprocess_decompose,
+        decompose,
         stopping_condition=adjoint_ops,
         device_wires=device_wires,
         target_gates=ALL_DQ_GATE_SET,
@@ -626,7 +626,7 @@ class DefaultQubit(Device):
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
             # Use enhanced preprocess.decompose directly for capture mode too
             transform_program.add_transform(
-                preprocess_decompose,
+                decompose,
                 device_wires=self.wires,
                 target_gates=ALL_DQ_GATE_SET,
                 stopping_condition=stopping_condition,
@@ -641,7 +641,7 @@ class DefaultQubit(Device):
 
         # Use enhanced preprocess.decompose directly for regular mode
         transform_program.add_transform(
-            preprocess_decompose,
+            decompose,
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             device_wires=self.wires,
