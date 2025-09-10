@@ -330,16 +330,47 @@ autodoc_typehints = "none"
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
-def skip_estimator_index(app, what, name, obj, skip, options):
+# def skip_estimator_index(app, what, name, obj, skip, options):
+#     """
+#     Prevent estimator ops from generating cross-ref targets.
+#     """
+#     print(what, name, obj, skip, options)
+#     module = getattr(obj, "__module__", "")
+#     print(module)
+#     # if module and module.startswith("pennylane.estimator"):
+#     #     return True  # skip indexing
+#     return skip
+
+# def setup(app):
+#     app.connect("autodoc-skip-member", skip_estimator_index)
+
+# from sphinx.ext.autosummary import Autosummary
+
+# class EstimatorAutosummary(Autosummary):
+#     option_spec = Autosummary.option_spec.copy()
+#     option_spec["noindex"] = lambda arg: True  # force noindex
+
+#     def run(self):
+#         # inject `:noindex:` into every entry
+#         self.options["noindex"] = True
+#         return super().run()
+
+# def setup(app):
+#     app.add_directive("estimatorautosummary", EstimatorAutosummary)
+
+from sphinx_automodapi.automodsumm import Automodsumm
+
+class EstimatorAutomodsumm(Automodsumm):
     """
-    Prevent estimator ops from generating cross-ref targets.
+    A variant of automodsumm that forces :noindex: into generated stubs
+    for estimator modules, to avoid duplicate cross-reference warnings.
     """
-    print(what, name, obj, skip, options)
-    module = getattr(obj, "__module__", "")
-    print(module)
-    # if module and module.startswith("pennylane.estimator"):
-    #     return True  # skip indexing
-    return skip
+
+    def run(self):
+        # Inject the noindex option so all generated stubs use it
+        self.options["noindex"] = True
+        return super().run()
 
 def setup(app):
-    app.connect("autodoc-skip-member", skip_estimator_index)
+    # Register the custom directive
+    app.add_directive("estimatorautomodsumm", EstimatorAutomodsumm)

@@ -15,37 +15,57 @@ qml.estimator
     :no-inherited-members:
     :skip: ABC, Callable, Iterable, QueuingManager, defaultdict, WireResourceManager, annotations, Wires, CompressedResourceOp, Resources, abstractmethod, classproperty, signature
 
+
+.. estimatorautomodsumm:: pennylane.estimator.ops
+   :toctree: api
+   :classes-only:
+   :no-inherited-members:
+   :noindex:
+
+
 .. .. automodsumm:: pennylane.estimator.ops
 ..     :no-inherited-members:
+..     :noindex:
 
-.. currentmodule:: pennylane.estimator.ops
+.. .. currentmodule:: pennylane.estimator.ops
 
-.. autoclass:: Adjoint
-   :members:
-   :undoc-members:
-   :noindex:
+.. Adjoint
+.. -------
 
-.. autoclass:: Pow
-   :members:
-   :undoc-members:
-   :noindex:
+.. .. autoclass:: Adjoint
+..    :members:
+..    :noindex:
 
-.. autoclass:: T
-   :members:
-   :undoc-members:
-   :noindex:
+.. Pow
+.. ---
 
-.. autoclass:: S
-   :members:
-   :undoc-members:
-   :noindex:
+.. .. autoclass:: Pow
+..    :members:
+..    :noindex:
 
-.. autoclass:: Identity
-   :members:
-   :undoc-members:
-   :noindex:
+.. T
+.. -
+.. .. autoclass:: T
+..    :members:
+..    :noindex:
 
-.. autoclass:: Prod
-   :members:
-   :undoc-members:
-   :noindex:
+.. S
+.. -
+
+.. .. autoclass:: S
+..    :members:
+..    :noindex:
+
+.. Identity
+.. --------
+
+.. .. autoclass:: Identity
+..    :members:
+..    :noindex:
+
+.. Prod
+.. ----
+
+.. .. autoclass:: Prod
+..    :members:
+..    :noindex:
