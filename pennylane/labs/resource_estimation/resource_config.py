@@ -93,7 +93,7 @@ class ResourceConfig:
 
         return (
             f"ResourceConfig(\n"
-            f"  errors and precisions = {formatted_dict},\n"
+            f"  precisions = {formatted_dict},\n"
             f"  custom decomps = [{op_names}]\n)"
         )
 
