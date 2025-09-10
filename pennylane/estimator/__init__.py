@@ -34,6 +34,7 @@ Resource Estimation Base Classes:
 
     ~Resources
 
+
 """
 
 from .wires_manager import Allocate, Deallocate, WireResourceManager
