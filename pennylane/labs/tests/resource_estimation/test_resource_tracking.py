@@ -353,10 +353,10 @@ class TestEstimateResources:
         assert computed_resources == expected_resources
 
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
-    def test_varying_single_qubit_rotation_error(self, error_val):
-        """Test that setting the single_qubit_rotation_error correctly updates the resources"""
+    def test_varying_single_qubit_rotation_precision(self, error_val):
+        """Test that setting the single_qubit_rotation_precision correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.set_single_qubit_rotation_error(error_val)
+        custom_config.set_single_qubit_rotation_precision(error_val)
 
         custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
         custom_config.set_decomp(ResourceRY, mock_rotation_decomp)

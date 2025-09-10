@@ -84,7 +84,7 @@ def estimate_resources(
             to obtain resources from.
         gate_set (Set, optional): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        config (ResourceConfig, optional): A dictionary of additional parameters which sets default values
+        config (ResourceConfig, optional): A ResourceConfig object of additional parameters which sets default values
             when they are not specified on the operator.
 
     Returns:
@@ -119,7 +119,7 @@ def estimate_resources(
     >>> res = plre.estimate_resources(
     ...     my_circuit,
     ...     gate_set = plre.DefaultGateSet,
-    ...     single_qubit_rotation_error = 1e-4,
+    ...     single_qubit_rotation_precision = 1e-4,
     ... )()
     ...
     >>> print(res)

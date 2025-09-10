@@ -125,11 +125,11 @@ class TestResourceConfig:
             ResourceCRZ,
         ],
     )
-    def test_set_single_qubit_rotation_error_for_rotation_ops(self, rotation_op):
+    def test_set_single_qubit_rotation_precision_for_rotation_ops(self, rotation_op):
         """Test that the single qubit rotation error is set correctly for a given rotation gate."""
         config = ResourceConfig()
         new_error = 1e-5
-        config.set_single_qubit_rotation_error(new_error)
+        config.set_single_qubit_rotation_precision(new_error)
 
         assert config.resource_op_precisions[rotation_op]["precision"] == new_error
 
@@ -170,7 +170,6 @@ class TestResourceConfig:
         config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="ctrl")
         config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="pow")
 
-        # Recreate the expected formatting from the __str__ method
         dict_items_str = ",\n".join(
             f"    {key.__name__}: {value!r}" for key, value in config.resource_op_precisions.items()
         )
@@ -186,7 +185,7 @@ class TestResourceConfig:
         assert str(config) == expected_str
 
     def test_repr_representation(self):
-        """Test the developer-focused representation of the ResourceConfig class."""
+        """Test the representation of the ResourceConfig class."""
         config = ResourceConfig()
         config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="ctrl")
 

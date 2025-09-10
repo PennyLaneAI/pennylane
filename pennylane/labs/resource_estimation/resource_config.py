@@ -50,7 +50,7 @@ class DecompositionType(StrEnum):
 
 
 class ResourceConfig:
-    """A container to track the configuration for errors, precisions, and custom decompositions for the
+    """A container to track the configuration for precisions, and custom decompositions for the
     resource estimation pipeline.
     """
 
@@ -69,9 +69,18 @@ class ResourceConfig:
             ResourceQROMStatePreparation: {"precision": DEFAULT_PRECISION},
             ResourceMPSPrep: {"precision": DEFAULT_PRECISION},
             ResourceAliasSampling: {"precision": DEFAULT_PRECISION},
-            ResourceQubitizeTHC: {"rotation_precision": DEFAULT_BIT_PRECISION, "coeff_precision": DEFAULT_BIT_PRECISION},
-            ResourceSelectTHC: {"rotation_precision": DEFAULT_BIT_PRECISION, "coeff_precision": DEFAULT_BIT_PRECISION},
-            ResourcePrepTHC: {"rotation_precision": DEFAULT_BIT_PRECISION, "coeff_precision": DEFAULT_BIT_PRECISION},
+            ResourceQubitizeTHC: {
+                "rotation_precision": DEFAULT_BIT_PRECISION,
+                "coeff_precision": DEFAULT_BIT_PRECISION,
+            },
+            ResourceSelectTHC: {
+                "rotation_precision": DEFAULT_BIT_PRECISION,
+                "coeff_precision": DEFAULT_BIT_PRECISION,
+            },
+            ResourcePrepTHC: {
+                "rotation_precision": DEFAULT_BIT_PRECISION,
+                "coeff_precision": DEFAULT_BIT_PRECISION,
+            },
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
@@ -103,11 +112,11 @@ class ResourceConfig:
         return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
 
     def set_single_qubit_rotation_precision(self, precision: float) -> None:
-        r"""Sets the synthesis error for all single-qubit rotation gates.
+        r"""Sets the synthesis precision for all single-qubit rotation gates.
 
-        This is a convenience method to update the synthesis error tolerance,
+        This is a convenience method to update the synthesis precision tolerance,
         :math:`\eps`, for all standard single-qubit rotation gates and their
-        controlled versions at once. The synthesis error dictates the precision
+        controlled versions at once. The synthesis precision dictates the precision
         for compiling rotation gates into a discrete gate set, which in turn
         affects the number of gates required.
 
@@ -120,7 +129,7 @@ class ResourceConfig:
         - :class:`~.ResourceCRZ`
 
         Args:
-            error (float): The desired synthesis error tolerance. A smaller
+            precision (float): The desired synthesis precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
                 increase the required gate counts.
 
@@ -132,22 +141,22 @@ class ResourceConfig:
             from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import ResourceRX
 
             config = ResourceConfig()
-            print(f"Default RX error: {config.resource_op_precisions[ResourceRX]['precision']}")
+            print(f"Default RX precision: {config.resource_op_precisions[ResourceRX]['precision']}")
 
-            config.set_single_qubit_rotation_error(1e-5)
-            print(f"Updated RX error: {config.resource_op_precisions[ResourceRX]['precision']}")
+            config.set_single_qubit_rotation_precision(1e-5)
+            print(f"Updated RX precision: {config.resource_op_precisions[ResourceRX]['precision']}")
 
         .. code-block:: pycon
 
-            Default RX error: 1e-09
-            Updated RX error: 1e-05
+            Default RX precision: 1e-09
+            Updated RX precision: 1e-05
         """
-        self.resource_op_precisions[ResourceRX]["precision"] = error
-        self.resource_op_precisions[ResourceCRX]["precision"] = error
-        self.resource_op_precisions[ResourceRY]["precision"] = error
-        self.resource_op_precisions[ResourceCRY]["precision"] = error
-        self.resource_op_precisions[ResourceRZ]["precision"] = error
-        self.resource_op_precisions[ResourceCRZ]["precision"] = error
+        self.resource_op_precisions[ResourceRX]["precision"] = precision
+        self.resource_op_precisions[ResourceCRX]["precision"] = precision
+        self.resource_op_precisions[ResourceRY]["precision"] = precision
+        self.resource_op_precisions[ResourceCRY]["precision"] = precision
+        self.resource_op_precisions[ResourceRZ]["precision"] = precision
+        self.resource_op_precisions[ResourceCRZ]["precision"] = precision
 
     def set_decomp(
         self,
@@ -160,7 +169,7 @@ class ResourceConfig:
         Args:
             cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
-            type (str): the decomposition type to override e.g. "adj" or "ctrl"
+            decomp_type (StrEnum): the decomposition type to override e.g. "adj" or "ctrl"
 
         .. note::
 
