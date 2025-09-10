@@ -43,7 +43,9 @@ from pennylane.measurements import (
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
-from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters, defer_measurements
+from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
+from pennylane.transforms import decompose as transforms_decompose
+from pennylane.transforms import defer_measurements
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -67,7 +69,6 @@ from .qubit.simulate import get_final_state, measure_final_state, simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
 
 if TYPE_CHECKING:
     # pylint: disable=ungrouped-imports
@@ -624,22 +625,12 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            # Use enhanced preprocess.decompose directly for capture mode too
-            transform_program.add_transform(
-                decompose,
-                device_wires=self.wires,
-                target_gates=ALL_DQ_GATE_SET,
-                stopping_condition=stopping_condition,
-                stopping_condition_shots=stopping_condition_shots,
-                name=self.name,
-            )
+            transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
 
             return transform_program
 
         if config.interface == math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
-
-        # Use enhanced preprocess.decompose directly for regular mode
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,

@@ -20,7 +20,6 @@ import os
 import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
-from functools import partial
 
 import pennylane as qml
 from pennylane.decomposition import enabled_graph
@@ -56,46 +55,6 @@ def null_postprocessing(results):
 
 
 #######################
-
-
-def preprocess_decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
-    """Custom plxpr transform for preprocess.decompose.
-
-    This function creates a DecomposeInterpreter directly, filtering out device-specific
-    parameters that are handled at the tape level rather than the plxpr level.
-    """
-    try:
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        from pennylane.transforms.decompose import DecomposeInterpreter
-    except ImportError as exc:  # pragma: no cover
-        raise ImportError("JAX is required for plxpr decomposition transforms") from exc
-
-    # Filter kwargs to only include those supported by DecomposeInterpreter
-    interpreter_kwargs = {}
-
-    # Core decomposition parameters that DecomposeInterpreter understands
-    supported_params = {
-        "gate_set",
-        "stopping_condition",
-        "max_expansion",
-        "num_available_work_wires",
-        "fixed_decomps",
-        "alt_decomps",
-    }
-
-    for key, value in tkwargs.items():
-        if key in supported_params and value is not None:
-            interpreter_kwargs[key] = value
-
-    # Create the interpreter with filtered arguments
-    interpreter = DecomposeInterpreter(*targs, **interpreter_kwargs)
-
-    def wrapper(*inner_args):
-        return interpreter.eval(jaxpr, consts, *inner_args)
-
-    return jax.make_jaxpr(wrapper)(*args)
 
 
 @transform
@@ -331,7 +290,7 @@ def validate_adjoint_trainable_params(
     return (tape,), null_postprocessing
 
 
-@partial(transform, plxpr_transform=preprocess_decompose_plxpr_to_plxpr)
+@transform
 def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[Operator], bool],
