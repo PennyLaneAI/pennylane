@@ -97,7 +97,7 @@ class WireResourceManager:
         self._algo_wires = count
 
     def grab_zeroed_wires(self, num_wires: int) -> None:
-        r"""Grabs zeroed wires, and moves them to an arbitrary state.
+        r"""Grabs zeroed wires, and moves them to an arbitrary state; incrementing the number of any state wires.
 
         Args:
             num_wires(int) : number of zeroed wires to be grabbed
