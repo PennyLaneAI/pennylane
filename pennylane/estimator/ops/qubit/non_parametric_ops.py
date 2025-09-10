@@ -42,7 +42,7 @@ class Hadamard(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -71,7 +71,7 @@ class Hadamard(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -86,7 +86,7 @@ class Hadamard(ResourceOperator):
         return [GateCount(cls.resource_rep(), 1)]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
@@ -96,7 +96,7 @@ class Hadamard(ResourceOperator):
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -138,7 +138,7 @@ class S(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -164,7 +164,7 @@ class S(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -180,7 +180,7 @@ class S(ResourceOperator):
         return [GateCount(z, 1), GateCount(cls.resource_rep(), 1)]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -190,7 +190,7 @@ class S(ResourceOperator):
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -287,7 +287,7 @@ class SWAP(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -325,7 +325,7 @@ class SWAP(ResourceOperator):
         raise ResourcesNotDefined
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -340,7 +340,7 @@ class SWAP(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -350,7 +350,7 @@ class SWAP(ResourceOperator):
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -387,7 +387,7 @@ class T(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -416,7 +416,7 @@ class T(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -433,14 +433,12 @@ class T(ResourceOperator):
         return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
     @classmethod
-    def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
-    ):
+    def controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs):
         r"""Returns a list representing the resources for a controlled version of the operator."""
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -518,7 +516,7 @@ class X(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -555,7 +553,7 @@ class X(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -570,7 +568,7 @@ class X(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -580,7 +578,7 @@ class X(ResourceOperator):
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -633,7 +631,7 @@ class Y(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -672,7 +670,7 @@ class Y(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -687,14 +685,14 @@ class Y(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -740,7 +738,7 @@ class Z(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -770,7 +768,7 @@ class Z(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -785,7 +783,7 @@ class Z(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -795,7 +793,7 @@ class Z(ResourceOperator):
         raise ResourcesNotDefined
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
