@@ -337,8 +337,8 @@ def skip_estimator_index(app, what, name, obj, skip, options):
     print(what, name, obj, skip, options)
     module = getattr(obj, "__module__", "")
     print(module)
-    if module and module.startswith("pennylane.estimator"):
-        return True  # skip indexing
+    # if module and module.startswith("pennylane.estimator"):
+    #     return True  # skip indexing
     return skip
 
 def setup(app):
