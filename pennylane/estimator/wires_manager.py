@@ -28,7 +28,7 @@ class WireResourceManager:
 
     * Algorithmic wires: The core wires used by the quantum algorithm.
     * Zeroed wires: Auxiliary wires that are in the :math:`|0\rangle` state. They are converted
-      to an arbitrary state upon allocation.
+      to an unknown state upon allocation.
     * Any wires: Auxiliary wires that are in an unknown state. They are converted to
       zeroed wires when they are freed.
 
