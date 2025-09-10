@@ -19,13 +19,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from pennylane.estimator.resources_base import (
-    Resources,
-    add_in_parallel,
-    add_in_series,
-    mul_in_parallel,
-    mul_in_series,
-)
+from pennylane.estimator.resources_base import Resources
 from pennylane.estimator.wires_manager import WireResourceManager
 
 # pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself
@@ -194,16 +188,16 @@ class TestResources:
         res = Resources(wire_manager=wm1, gate_types=gate_types_data[0])
 
         with pytest.raises(AssertionError):
-            _ = res + 2  # Can only add two Resources instances
+            res.add_series(2)  # Can only add two Resources instances
 
         with pytest.raises(AssertionError):
-            _ = res & 2  # Can only add two Resources instances
+            res.add_parallel(2)  # Can only add two Resources instances
 
         with pytest.raises(AssertionError):
-            _ = res * res  # Can only multiply a Resources instance with an int
+            res.multiply_series(res)  # Can only multiply a Resources instance with an int
 
         with pytest.raises(AssertionError):
-            _ = res @ res  # Can only multiply a Resources instance with an int
+            res.multiply_parallel(res)  # Can only multiply a Resources instance with an int
 
     def test_add_in_series(self):
         """Test that we can add two resources assuming the gates occur in series"""
@@ -221,8 +215,7 @@ class TestResources:
         )
 
         expected_add = Resources(expected_wm_add, expected_gate_types_add)
-        assert (res1 + res2) == expected_add
-        assert add_in_series(res1, res2) == expected_add
+        assert res1.add_series(res2) == expected_add
 
     def test_add_in_parallel(self):
         """Test that we can add two resources assuming the gates occur in parallel"""
@@ -240,8 +233,7 @@ class TestResources:
         )
 
         expected_and = Resources(expected_wm_and, expected_gate_types_and)
-        assert (res1 & res2) == expected_and
-        assert add_in_parallel(res1, res2) == expected_and
+        assert (res1.add_parallel(res2)) == expected_and
 
     def test_mul_in_series(self):
         """Test that we can scale resources by an integer assuming the gates occur in series"""
@@ -260,9 +252,7 @@ class TestResources:
 
         expected_mul = Resources(expected_wm_mul, expected_gate_types_mul)
 
-        assert (k * res) == expected_mul
-        assert (res * k) == expected_mul
-        assert mul_in_series(res, k) == expected_mul
+        assert (res.multiply_series(k)) == expected_mul
 
     def test_mul_in_parallel(self):
         """Test that we can scale resources by an integer assuming the gates occur in parallel"""
@@ -280,6 +270,5 @@ class TestResources:
         )
 
         expected_matmul = Resources(expected_wm_matmul, expected_gate_types_matmul)
-        assert (k @ res) == expected_matmul
-        assert (res @ k) == expected_matmul
-        assert mul_in_parallel(res, k) == expected_matmul
+
+        assert (res.multiply_parallel(k)) == expected_matmul

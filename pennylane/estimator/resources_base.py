@@ -119,7 +119,7 @@ class Resources:
             >>> print(res2)
             --- Resources: ---
              Total wires: 7
-                algorithamic wires: 4
+                algorithmic wires: 4
                 allocated wires: 3
                      clean wires: 1
                      dirty wires: 2
@@ -135,7 +135,7 @@ class Resources:
 
         .. code-block:: pycon
 
-            >>> res_in_series = res1 + res2
+            >>> res_in_series = res1.add_series(res2)
             >>> print(res_in_series)
             --- Resources: ---
              Total wires: 9
@@ -149,7 +149,7 @@ class Resources:
               'Z': 5,
               'Hadamard': 25
 
-            >>> res_in_parallel = res1 & res2
+            >>> res_in_parallel = res1.add_parallel(res2)
             >>> print(res_in_parallel)
             --- Resources: ---
              Total wires: 12
@@ -169,7 +169,7 @@ class Resources:
 
         .. code-block:: pycon
 
-            >>> res_in_series = 5 * res1
+            >>> res_in_series = res1.multiply_series(5)
             >>> print(res_in_series)
             --- Resources: ---
              Total wires: 10
@@ -182,7 +182,7 @@ class Resources:
               'X': 25,
               'Hadamard': 50
 
-            >>> res_in_parallel = 5 @ res1
+            >>> res_in_parallel = res1.multiply_parallel(5)
             >>> print(res_in_parallel)
             --- Resources: ---
              Total wires: 22
@@ -208,34 +208,109 @@ class Resources:
             else defaultdict(int, gate_types)
         )
 
-    def __add__(self, other: Resources) -> Resources:
-        """Add two resources objects in series"""
-        assert isinstance(other, self.__class__)
-        return add_in_series(self, other)
+    def add_series(self, other: "Resources") -> "Resources":
+        """Add two resources objects in series.
 
-    def __and__(self, other: Resources) -> Resources:
-        """Add two resources objects in parallel"""
+        Args:
+            other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: combined resources
+
+        """
         assert isinstance(other, self.__class__)
-        return add_in_parallel(self, other)
+
+        wm1 = self.wire_manager
+        wm2 = other.wire_manager
+
+        new_clean = max(wm1.clean_wires, wm2.clean_wires)
+        new_dirty = wm1.dirty_wires + wm2.dirty_wires
+        new_budget = wm1.tight_budget or wm2.tight_budget
+        new_logic = max(wm1.algo_wires, wm2.algo_wires)
+
+        new_wire_manager = WireResourceManager(
+            clean=new_clean, dirty=new_dirty, tight_budget=new_budget
+        )
+
+        new_wire_manager.algo_wires = new_logic
+        new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
+        return Resources(new_wire_manager, new_gate_types)
+
+    def add_parallel(self, other: "Resources") -> "Resources":
+        """Add two resources objects in parallel.
+
+        Args:
+            other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: combined resources
+        """
+        assert isinstance(other, self.__class__)
+        qm1 = self.wire_manager
+        qm2 = other.wire_manager
+
+        new_clean = max(qm1.clean_wires, qm2.clean_wires)
+        new_dirty = qm1.dirty_wires + qm2.dirty_wires
+        new_budget = qm1.tight_budget or qm2.tight_budget
+        new_logic = qm1.algo_wires + qm2.algo_wires
+
+        new_wire_manager = WireResourceManager(
+            clean=new_clean,
+            dirty=new_dirty,
+            tight_budget=new_budget,
+        )
+
+        new_wire_manager.algo_wires = new_logic
+        new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
+        return Resources(new_wire_manager, new_gate_types)
 
     def __eq__(self, other: Resources) -> bool:
         """Determine if two resources objects are equal"""
         return (self.gate_types == other.gate_types) and (self.wire_manager == other.wire_manager)
 
-    def __mul__(self, scalar: int) -> Resources:
-        """Scale a resources object in series"""
-        assert isinstance(scalar, int)
-        return mul_in_series(self, scalar)
+    def multiply_series(self, scalar: int) -> Resources:
+        """Scale a resources object in series
 
-    def __matmul__(self, scalar: int) -> Resources:
-        """Scale a resources object in parallel"""
-        assert isinstance(scalar, int)
-        return mul_in_parallel(self, scalar)
+        Args:
+            scalar (int): integer value to scale the resources by
 
-    __rmul__ = __mul__
-    __radd__ = __add__
-    __rand__ = __and__
-    __rmatmul__ = __matmul__
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: scaled resources
+        """
+        assert isinstance(scalar, int)
+
+        new_wire_manager = WireResourceManager(
+            clean=self.wire_manager.clean_wires,
+            dirty=scalar * self.wire_manager.dirty_wires,
+            algo=self.wire_manager.algo_wires,
+            tight_budget=self.wire_manager.tight_budget,
+        )
+
+        new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
+
+        return Resources(new_wire_manager, new_gate_types)
+
+    def multiply_parallel(self, scalar: int) -> Resources:
+        """Scale a resources object in parallel
+
+        Args:
+            scalar (int): integer value to scale the resources by
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: scaled resources
+        """
+        assert isinstance(scalar, int)
+
+        new_wire_manager = WireResourceManager(
+            clean=self.wire_manager.clean_wires,
+            dirty=scalar * self.wire_manager.dirty_wires,
+            algo=scalar * self.wire_manager.algo_wires,
+            tight_budget=self.wire_manager.tight_budget,
+        )
+
+        new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
+
+        return Resources(new_wire_manager, new_gate_types)
 
     @property
     def gate_counts(self) -> dict:
@@ -299,115 +374,3 @@ class Resources:
     def __repr__(self):
         """Compact string representation of the Resources object"""
         return f"Resources(wire_manager={self.wire_manager}, gate_types={self.gate_types})"
-
-
-def add_in_series(first: Resources, other) -> Resources:
-    r"""Add two resources assuming the circuits are executed in series.
-
-    Args:
-        first (:class:`~.pennylane.estimator.Resources`): first resource object to combine
-        other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
-
-    Returns:
-        Resources: combined resources
-    """
-    wm1, wm2 = (first.wire_manager, other.wire_manager)
-
-    new_clean = max(wm1.clean_wires, wm2.clean_wires)
-    new_dirty = wm1.dirty_wires + wm2.dirty_wires
-    new_budget = wm1.tight_budget or wm2.tight_budget
-    new_logic = max(wm1.algo_wires, wm2.algo_wires)
-
-    new_wire_manager = WireResourceManager(
-        clean=new_clean, dirty=new_dirty, tight_budget=new_budget
-    )
-
-    new_wire_manager.algo_wires = new_logic
-    new_gate_types = defaultdict(int, Counter(first.gate_types) + Counter(other.gate_types))
-    return Resources(new_wire_manager, new_gate_types)
-
-
-def add_in_parallel(first: Resources, other) -> Resources:
-    r"""Add two resources assuming the circuits are executed in parallel.
-
-    Args:
-        first (:class:`~.pennylane.estimator.Resources`): first resource object to combine
-        other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
-
-    Returns:
-        :class:`~.pennylane.estimator.Resources`: combined resources
-    """
-    qm1, qm2 = (first.wire_manager, other.wire_manager)
-
-    new_clean = max(qm1.clean_wires, qm2.clean_wires)
-    new_dirty = qm1.dirty_wires + qm2.dirty_wires
-    new_budget = qm1.tight_budget or qm2.tight_budget
-    new_logic = qm1.algo_wires + qm2.algo_wires
-
-    new_wire_manager = WireResourceManager(
-        clean=new_clean,
-        dirty=new_dirty,
-        tight_budget=new_budget,
-    )
-
-    new_wire_manager.algo_wires = new_logic
-    new_gate_types = defaultdict(int, Counter(first.gate_types) + Counter(other.gate_types))
-    return Resources(new_wire_manager, new_gate_types)
-
-
-def mul_in_series(first: Resources, scalar: int) -> Resources:
-    r"""Multiply the resources by a scalar assuming the circuits are executed in series.
-
-    Args:
-        first (:class:`~.pennylane.estimator.Resources`): first resource object to scale
-        scalar (int): integer value to scale the resources by
-
-    Returns:
-        :class:`~.pennylane.estimator.Resources`: scaled resources
-    """
-    qm = first.wire_manager
-
-    new_clean = qm.clean_wires
-    new_dirty = scalar * qm.dirty_wires
-    new_budget = qm.tight_budget
-    new_logic = qm.algo_wires
-
-    new_wire_manager = WireResourceManager(
-        clean=new_clean,
-        dirty=new_dirty,
-        tight_budget=new_budget,
-    )
-
-    new_wire_manager.algo_wires = new_logic
-    new_gate_types = defaultdict(int, {k: v * scalar for k, v in first.gate_types.items()})
-
-    return Resources(new_wire_manager, new_gate_types)
-
-
-def mul_in_parallel(first: Resources, scalar: int) -> Resources:
-    r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
-
-    Args:
-        first (:class:`~.pennylane.estimator.Resources`): first resource object to scale
-        scalar (int): integer value to scale the resources by
-
-    Returns:
-        :class:`~.pennylane.estimator.Resources`: scaled resources
-    """
-    qm = first.wire_manager
-
-    new_clean = qm.clean_wires
-    new_dirty = scalar * qm.dirty_wires
-    new_budget = qm.tight_budget
-    new_logic = scalar * qm.algo_wires
-
-    new_wire_manager = WireResourceManager(
-        clean=new_clean,
-        dirty=new_dirty,
-        tight_budget=new_budget,
-    )
-
-    new_wire_manager.algo_wires = new_logic
-    new_gate_types = defaultdict(int, {k: v * scalar for k, v in first.gate_types.items()})
-
-    return Resources(new_wire_manager, new_gate_types)
