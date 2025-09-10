@@ -358,28 +358,59 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 # def setup(app):
 #     app.add_directive("estimatorautosummary", EstimatorAutosummary)
 
-from sphinx_automodapi.automodsumm import Automodsumm
+# from sphinx_automodapi.automodsumm import Automodsumm
 
-from sphinx_automodapi.automodsumm import Automodsumm
+# class EstimatorAutomodsumm(Automodsumm):
+#     """
+#     A variant of automodsumm that forces :noindex: into generated stubs
+#     for estimator modules, to avoid duplicate cross-reference warnings.
+#     """
+#     def run(self):
+#         # This is the key part. We need to modify the ':autosummary-options:'
+#         # that automodsumm will use to generate the underlying autosummary directive.
 
-class EstimatorAutomodsumm(Automodsumm):
-    """
-    A variant of automodsumm that forces :noindex: into generated stubs
-    for estimator modules, to avoid duplicate cross-reference warnings.
-    """
-    def run(self):
-        # This is the key part. We need to modify the ':autosummary-options:'
-        # that automodsumm will use to generate the underlying autosummary directive.
+#         # Get any options the user might have already provided.
+#         existing_options = self.options.get("autosummary-options", "")
 
-        # Get any options the user might have already provided.
-        existing_options = self.options.get("autosummary-options", "")
+#         # Add :noindex: if it's not already there to avoid duplication.
+#         if ":noindex:" not in existing_options:
+#             self.options["autosummary-options"] = f":noindex: {existing_options}".strip()
 
-        # Add :noindex: if it's not already there to avoid duplication.
-        if ":noindex:" not in existing_options:
-            self.options["autosummary-options"] = f":noindex: {existing_options}".strip()
+#         return super().run()
 
-        return super().run()
+# def setup(app):
+#     # Register the custom directive
+#     app.add_directive("estimatorautomodsumm", EstimatorAutomodsumm)
+
+
+def patch_estimator_stubs(app):
+    """Only patch stubs for the `pennylane.estimator` module."""
+    stubs_dir = os.path.join(app.srcdir, "code", "api")
+    if not os.path.isdir(stubs_dir):
+        return
+
+    for root, _, files in os.walk(stubs_dir):
+        for fname in files:
+            if not fname.endswith(".rst"):
+                continue
+            fpath = os.path.join(root, fname)
+
+            with open(fpath, encoding="utf-8") as f:
+                content = f.read()
+
+            # Only modify if stub is for pennylane.estimator
+            if not re.search(r"\bpennylane\.estimator\b", content):
+                continue
+
+            new_content = re.sub(
+                r"(\.\.\s+auto(?:class|function|module)::[^\n]+)",
+                r"\1\n   :noindex:",
+                content,
+            )
+            if new_content != content:
+                with open(fpath, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                app.logger.info(f"[patch_estimator_stubs] Patched {fpath}")
 
 def setup(app):
-    # Register the custom directive
-    app.add_directive("estimatorautomodsumm", EstimatorAutomodsumm)
+    app.connect("builder-inited", patch_estimator_stubs)

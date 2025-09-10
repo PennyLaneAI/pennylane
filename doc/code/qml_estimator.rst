@@ -16,12 +16,17 @@ qml.estimator
     :skip: ABC, Callable, Iterable, QueuingManager, defaultdict, WireResourceManager, annotations, Wires, CompressedResourceOp, Resources, abstractmethod, classproperty, signature
 
 
-.. estimatorautomodsumm:: pennylane.estimator.ops
-   :toctree: api
-   :classes-only:
-   :no-inherited-members:
-   :noindex:
+.. .. estimatorautomodsumm:: pennylane.estimator.ops
+..    :toctree: api
+..    :classes-only:
+..    :no-inherited-members:
+..    :noindex:
 
+.. automodsumm:: pennylane.estimator.ops
+    :toctree: api
+    :no-inherited-members:
+    :noindex:
+    :classes-only:
 
 .. .. automodsumm:: pennylane.estimator.ops
 ..     :no-inherited-members:
