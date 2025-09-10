@@ -423,7 +423,7 @@
   [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
 
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
-  qubit allocation. Adds a `allow_resets` keyword argument to `resolve_dynamic_wires`.
+  qubit allocation. Adds an `allow_resets` keyword argument to `resolve_dynamic_wires`.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
   [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
 
