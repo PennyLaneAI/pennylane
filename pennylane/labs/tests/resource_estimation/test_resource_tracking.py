@@ -235,7 +235,7 @@ class TestEstimateResources:
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
-        custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": 1e-9}
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": 1e-9}
         computed_resources = estimate_resources(
             my_circuit, gate_set=gate_set, config=custom_config
         )()
@@ -340,7 +340,7 @@ class TestEstimateResources:
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": error_val}
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": error_val}
 
         op = ResourceTestRZ()  # don't specify precision
         computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)

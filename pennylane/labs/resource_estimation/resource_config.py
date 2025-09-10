@@ -86,7 +86,7 @@ class ResourceConfig:
         op_names = ", ".join(all_op_strings)
 
         dict_items_str = ",\n".join(
-            f"    {key.__name__}: {value!r}" for key, value in self.errors_and_precisions.items()
+            f"    {key.__name__}: {value!r}" for key, value in self.resource_op_precisions.items()
         )
 
         formatted_dict = f"{{\n{dict_items_str}\n}}"
@@ -98,7 +98,7 @@ class ResourceConfig:
         )
 
     def __repr__(self) -> str:
-        return f"ResourceConfig(precisions = {self.errors_and_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
+        return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
 
     def set_single_qubit_rotation_error(self, error: float) -> None:
         r"""Sets the synthesis error for all single-qubit rotation gates.
@@ -130,22 +130,22 @@ class ResourceConfig:
             from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import ResourceRX
 
             config = ResourceConfig()
-            print(f"Default RX error: {config.errors_and_precisions[ResourceRX]['precision']}")
+            print(f"Default RX error: {config.resource_op_precisions[ResourceRX]['precision']}")
 
             config.set_single_qubit_rotation_error(1e-5)
-            print(f"Updated RX error: {config.errors_and_precisions[ResourceRX]['precision']}")
+            print(f"Updated RX error: {config.resource_op_precisions[ResourceRX]['precision']}")
 
         .. code-block:: pycon
 
             Default RX error: 1e-09
             Updated RX error: 1e-05
         """
-        self.errors_and_precisions[ResourceRX]["precision"] = error
-        self.errors_and_precisions[ResourceCRX]["precision"] = error
-        self.errors_and_precisions[ResourceRY]["precision"] = error
-        self.errors_and_precisions[ResourceCRY]["precision"] = error
-        self.errors_and_precisions[ResourceRZ]["precision"] = error
-        self.errors_and_precisions[ResourceCRZ]["precision"] = error
+        self.resource_op_precisions[ResourceRX]["precision"] = error
+        self.resource_op_precisions[ResourceCRX]["precision"] = error
+        self.resource_op_precisions[ResourceRY]["precision"] = error
+        self.resource_op_precisions[ResourceCRY]["precision"] = error
+        self.resource_op_precisions[ResourceRZ]["precision"] = error
+        self.resource_op_precisions[ResourceCRZ]["precision"] = error
 
     def set_decomp(
         self,

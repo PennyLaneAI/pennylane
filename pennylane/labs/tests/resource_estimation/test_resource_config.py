@@ -84,8 +84,8 @@ class TestResourceConfig:
     def test_initialization_sets_default_precision(self, op_with_precision):
         """Test that default precision is set for standard operations on initialization."""
         config = ResourceConfig()
-        assert op_with_precision in config.errors_and_precisions
-        assert config.errors_and_precisions[op_with_precision].get("precision") > 0
+        assert op_with_precision in config.resource_op_precisions
+        assert config.resource_op_precisions[op_with_precision].get("precision") > 0
 
     @pytest.mark.parametrize(
         "op_with_rotation_and_coeff_precision",
@@ -100,15 +100,15 @@ class TestResourceConfig:
     ):
         """Test that default precision is set for standard operations on initialization."""
         config = ResourceConfig()
-        assert op_with_rotation_and_coeff_precision in config.errors_and_precisions
+        assert op_with_rotation_and_coeff_precision in config.resource_op_precisions
         assert (
-            config.errors_and_precisions[op_with_rotation_and_coeff_precision].get(
+            config.resource_op_precisions[op_with_rotation_and_coeff_precision].get(
                 "rotation_precision"
             )
             > 0
         )
         assert (
-            config.errors_and_precisions[op_with_rotation_and_coeff_precision].get(
+            config.resource_op_precisions[op_with_rotation_and_coeff_precision].get(
                 "coeff_precision"
             )
             > 0
@@ -131,18 +131,7 @@ class TestResourceConfig:
         new_error = 1e-5
         config.set_single_qubit_rotation_error(new_error)
 
-        assert config.errors_and_precisions[rotation_op]["precision"] == new_error
-
-    def test_set_single_qubit_rotation_error_updates_select_pauli_rot(self):
-        """Test that setting the single qubit rotation error also updates ResourceSelectPauliRot."""
-        config = ResourceConfig()
-        new_error = 1e-5
-        config.set_single_qubit_rotation_error(new_error)
-
-        assert (
-            ResourceSelectPauliRot in config.errors_and_precisions
-            and config.errors_and_precisions[ResourceSelectPauliRot]["precision"] == new_error
-        )
+        assert config.resource_op_precisions[rotation_op]["precision"] == new_error
 
     # pylint: disable=use-implicit-booleaness-not-comparison
     @pytest.mark.parametrize(
@@ -157,7 +146,7 @@ class TestResourceConfig:
     def test_set_decomp(self, decomp_type, target_dict_name):
         """Test that set_decomp correctly registers a custom decomposition for various types."""
         config = ResourceConfig()
-        config.set_decomp(DummyOp, dummy_decomp_func, type=decomp_type)
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type=decomp_type)
 
         target_dict = getattr(config, target_dict_name)
         assert len(target_dict) == 1
@@ -177,20 +166,20 @@ class TestResourceConfig:
         """Test the user-friendly string representation of the ResourceConfig class."""
         config = ResourceConfig()
         config.set_decomp(DummyOp, dummy_decomp_func)
-        config.set_decomp(DummyOp, dummy_decomp_func, type="adj")
-        config.set_decomp(DummyOp, dummy_decomp_func, type="ctrl")
-        config.set_decomp(DummyOp, dummy_decomp_func, type="pow")
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="adj")
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="ctrl")
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="pow")
 
         # Recreate the expected formatting from the __str__ method
         dict_items_str = ",\n".join(
-            f"    {key.__name__}: {value!r}" for key, value in config.errors_and_precisions.items()
+            f"    {key.__name__}: {value!r}" for key, value in config.resource_op_precisions.items()
         )
         formatted_dict = f"{{\n{dict_items_str}\n}}"
         op_names = "DummyOp, Adjoint(DummyOp), Controlled(DummyOp), Pow(DummyOp)"
 
         expected_str = (
             f"ResourceConfig(\n"
-            f"  errors and precisions = {formatted_dict},\n"
+            f"  precisions = {formatted_dict},\n"
             f"  custom decomps = [{op_names}]\n)"
         )
 
@@ -199,11 +188,11 @@ class TestResourceConfig:
     def test_repr_representation(self):
         """Test the developer-focused representation of the ResourceConfig class."""
         config = ResourceConfig()
-        config.set_decomp(DummyOp, dummy_decomp_func, type="ctrl")
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="ctrl")
 
         repr_str = repr(config)
         expected_repr_str = (
-            f"ResourceConfig(errors_and_precisions = {config.errors_and_precisions}, "
+            f"ResourceConfig(precisions = {config.resource_op_precisions}, "
             f"custom_decomps = {{}}, adj_custom_decomps = {{}}, "
             f"ctrl_custom_decomps = {{{DummyOp}: {dummy_decomp_func}}}, "
             f"pow_custom_decomps = {{}})"

@@ -141,12 +141,12 @@ class TestPauliRotation:
         c = controlled_class(wires=[0, 1])
 
         config = ResourceConfig()
-        config.errors_and_precisions[plre.ResourceRX]["precision"] = precision
-        config.errors_and_precisions[plre.ResourceRY]["precision"] = precision
-        config.errors_and_precisions[plre.ResourceRZ]["precision"] = precision
-        config.errors_and_precisions[plre.ResourceCRX]["precision"] = precision
-        config.errors_and_precisions[plre.ResourceCRY]["precision"] = precision
-        config.errors_and_precisions[plre.ResourceCRZ]["precision"] = precision
+        config.resource_op_precisions[plre.ResourceRX]["precision"] = precision
+        config.resource_op_precisions[plre.ResourceRY]["precision"] = precision
+        config.resource_op_precisions[plre.ResourceRZ]["precision"] = precision
+        config.resource_op_precisions[plre.ResourceCRX]["precision"] = precision
+        config.resource_op_precisions[plre.ResourceCRY]["precision"] = precision
+        config.resource_op_precisions[plre.ResourceCRZ]["precision"] = precision
 
         r1 = plre.estimate_resources(c, config=config)
         r2 = plre.estimate_resources(c_op, config=config)
