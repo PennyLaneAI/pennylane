@@ -18,6 +18,7 @@ from pennylane.compiler.python_compiler.mbqc.graph_state_utils import (
     _adj_matrix_generation_helper,
     edge_iter,
     get_graph_state_edges,
+    get_num_aux_wires,
     n_vertices_from_packed_adj_matrix,
 )
 from pennylane.exceptions import CompileError
@@ -76,6 +77,14 @@ def fixture_mbqc_cnot_graph():
 
 class TestGraphStateUtils:
     """Unit tests for graph state utils."""
+
+    def test_unsupported_gate(self):
+        """Test error raised for unsupported gates"""
+        with pytest.raises(ValueError, match="rotxzx is not supported in the MBQC formalism."):
+            get_graph_state_edges("rotxzx")
+
+        with pytest.raises(ValueError, match="rotXzx is not supported in the MBQC formalism."):
+            get_num_aux_wires("rotXzx")
 
     def test_adj_matrix_generation_helper(self):
         """Test that error raised for unsupported gates."""
