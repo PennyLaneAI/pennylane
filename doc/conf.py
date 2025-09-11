@@ -331,38 +331,37 @@ autodoc_typehints = "none"
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
-
-def patch_estimator_stubs(app):
-    """Patch operator stubs in the `pennylane.estimator` module with ``:noindex:``."""
-    stubs_dir = os.path.join(app.srcdir, "code", "api")
-    if not os.path.isdir(stubs_dir):
+# pylint: disable=unused-argument
+def add_noindex_to_estimator_stubs(app, docname, source):
+    """Dynamically add :noindex: to estimator stubs during the build process."""
+    if not docname.startswith("code/api/"):
         return
 
-    for root, _, files in os.walk(stubs_dir):
-        for fname in files:
-            if not fname.endswith(".rst"):
-                continue
-            fpath = os.path.join(root, fname)
+    content = source[0]
+    if not re.search(r"\bpennylane\.estimator\.ops\b", content):
+        return
 
-            with open(fpath, encoding="utf-8") as f:
-                content = f.read()
+    def _add_noindex_func(match):
+        """Replacement function for re.sub to add :noindex: idempotently."""
+        directive_block = match.group(0)
+        if ":noindex:" in directive_block:
+            return directive_block
+        return f"{match.group(1)}\n   :noindex:{match.group(2)}"
 
-            # Only modify if stub is for pennylane.estimator.ops
-            if not re.search(r"\bpennylane\.estimator\.ops\b", content):
-                continue
+    # TODO: Replace with :no-index-entry: when support for sphinx >=8.2 is available.
+    new_content, num_subs = re.subn(
+        r"(^\s*\.\.\s+auto(?:class|function|method)::.*?)(\n\s*($|\S.*))",
+        _add_noindex_func,
+        content,
+        flags=re.MULTILINE | re.DOTALL,
+    )
 
-            # TODO: Replace with :no-index-entry: when support for sphinx >=8.2 is available.
-            new_content = re.sub(
-                r"(\.\.\s+auto(?:class|function|module)::[^\n]+)",
-                r"\1\n   :noindex:",
-                content,
-            )
-            if new_content != content:
-                with open(fpath, "w", encoding="utf-8") as f:
-                    f.write(new_content)
-                print(f"[patch_estimator_stubs] Patched {fpath}")
+    if num_subs:
+        source[0] = new_content
+        print(f"[add_noindex] Patched {docname} with :noindex: directive.")
 
-def link_estimator_table_to_stubs(app, doctree, fromdocname):
+
+def add_links_to_estimator_table(app, doctree, fromdocname):
     """Replace literal names in automodsumm tables with links to stub HTML files."""
     if "qml_estimator" in fromdocname: # Ensures no other tables are modified.
         for table in doctree.traverse(nodes.table)[2:]:
@@ -372,11 +371,12 @@ def link_estimator_table_to_stubs(app, doctree, fromdocname):
                 refuri = app.builder.get_relative_uri(fromdocname, url)
 
                 refnode = nodes.reference('', refuri=refuri)
-                refnode += nodes.literal(text=name) # This helps preserve the code style.   
+                refnode += nodes.literal(text=name) # This helps preserve the code style.
                 literal.parent.replace(literal, refnode)
-                print(f"[patch_estimator_links] Linked pennylane.estimator.ops.{name} to {refuri}")
+                print(f"[add_noindex_links] Linked pennylane.estimator.ops.{name} to {refuri}")
 
 
 def setup(app):
-    app.connect("builder-inited", patch_estimator_stubs)
-    app.connect("doctree-resolved", link_estimator_table_to_stubs)
+    """Sphinx entry point for this extension."""
+    app.connect('source-read', add_noindex_to_estimator_stubs)
+    app.connect("doctree-resolved", add_links_to_estimator_table)
