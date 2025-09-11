@@ -393,6 +393,7 @@ class _CachedCallable:
         self.method_kwargs = method_kwargs
         self.query = lru_cache(maxsize=cache_size)(self.cached_decompose)
 
+    # pylint: disable=too-many-arguments
     def compatible(self, method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs):
         """Check compatibility based on `method`, `epsilon`, `cache_eps_rtol` and `method_kwargs`."""
         return (
