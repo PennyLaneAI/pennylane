@@ -356,7 +356,7 @@ class TestEstimateResources:
     def test_varying_single_qubit_rotation_precision(self, error_val):
         """Test that setting the single_qubit_rotation_precision correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.set_single_qubit_rotation_precision(error_val)
+        custom_config.set_single_qubit_rot_precision(error_val)
 
         custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
         custom_config.set_decomp(ResourceRY, mock_rotation_decomp)

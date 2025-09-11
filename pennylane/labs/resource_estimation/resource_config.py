@@ -112,7 +112,67 @@ class ResourceConfig:
     def __repr__(self) -> str:
         return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
 
-    def set_single_qubit_rotation_precision(self, precision: float) -> None:
+    def set_precision(self, op_type: type[ResourceOperator], precision: float) -> None:
+        r"""Sets the precision for a given resource operator.
+
+        This method updates the precision value for operators that use a single
+        tolerance parameter (e.g., for synthesis error). It will raise an error
+        if you attempt to set the precision for an operator that is not
+        configurable or uses fixed bit-precisions (like THC-related templates).
+
+        Args:
+            op_type (type[ResourceOperator]): The resource operator class for which
+                to set the precision.
+            precision (float): The precision tolerance value.
+
+        Raises:
+            ValueError: If ``op_type`` is not a configurable operator or if setting
+                the precision for it is not supported.
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.labs.resource_estimation import ResourceConfig
+            from pennylane.labs.resource_estimation.templates import ResourceSelectPauliRot
+
+            config = ResourceConfig()
+
+            # Check the default precision
+            default = config.resource_op_precisions[ResourceSelectPauliRot]['precision']
+            print(f"Default precision for SelectPauliRot: {default}")
+
+            # Set a new precision
+            config.set_precision(ResourceSelectPauliRot, precision=1e-5)
+            new = config.resource_op_precisions[ResourceSelectPauliRot]['precision']
+            print(f"New precision for SelectPauliRot: {new}")
+
+        .. code-block:: pycon
+
+            Default precision for SelectPauliRot: 1e-09
+            New precision for SelectPauliRot: 1e-05
+        """
+        if op_type not in self.resource_op_precisions:
+            configurable_ops = sorted(
+                [
+                    op.__name__
+                    for op, params in self.resource_op_precisions.items()
+                    if "precision" in params
+                ]
+            )
+            raise ValueError(
+                f"{op_type.__name__} is not a configurable operator. "
+                f"Configurable operators are: {', '.join(configurable_ops)}"
+            )
+
+        if "precision" not in self.resource_op_precisions[op_type]:
+            raise ValueError(
+                f"Setting precision for {op_type.__name__} is not supported."
+            )
+
+        self.resource_op_precisions[op_type]["precision"] = precision
+
+    def set_single_qubit_rot_precision(self, precision: float) -> None:
         r"""Sets the synthesis precision for all single-qubit rotation gates.
 
         This is a convenience method to update the synthesis precision tolerance,
@@ -144,7 +204,7 @@ class ResourceConfig:
             config = ResourceConfig()
             print(f"Default RX precision: {config.resource_op_precisions[ResourceRX]['precision']}")
 
-            config.set_single_qubit_rotation_precision(1e-5)
+            config.set_single_qubit_rot_precision(1e-5)
             print(f"Updated RX precision: {config.resource_op_precisions[ResourceRX]['precision']}")
 
         .. code-block:: pycon

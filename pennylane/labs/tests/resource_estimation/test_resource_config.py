@@ -129,7 +129,7 @@ class TestResourceConfig:
         """Test that the single qubit rotation error is set correctly for a given rotation gate."""
         config = ResourceConfig()
         new_error = 1e-5
-        config.set_single_qubit_rotation_precision(new_error)
+        config.set_single_qubit_rot_precision(new_error)
 
         assert config.resource_op_precisions[rotation_op]["precision"] == new_error
 
@@ -212,3 +212,43 @@ class TestResourceConfig:
             ValueError, match=f"'{invalid_type_string}' is not a valid DecompositionType"
         ):
             config.set_decomp(ResourceRX, dummy_decomp, decomp_type=invalid_type_string)
+
+    @pytest.mark.parametrize(
+        "op_type_to_set",
+        [
+            ResourceSelectPauliRot,
+            ResourceRX,
+            ResourceQubitUnitary,
+        ],
+    )
+    def test_set_precision_updates_correctly(self, op_type_to_set):
+        """Test that set_precision correctly updates the precision for a valid operator."""
+        config = ResourceConfig()
+        new_precision = 1e-5
+
+        assert config.resource_op_precisions[op_type_to_set]["precision"] != new_precision
+
+        config.set_precision(op_type_to_set, new_precision)
+        assert config.resource_op_precisions[op_type_to_set]["precision"] == new_precision
+
+    def test_set_precision_raises_error_for_unknown_op(self):
+        """Test that set_precision raises ValueError for an unknown operator."""
+        config = ResourceConfig()
+        match_str = "DummyOp is not a configurable operator. Configurable operators are:"
+        with pytest.raises(ValueError, match=match_str):
+            config.set_precision(DummyOp, 0.123)
+
+    @pytest.mark.parametrize(
+        "unsupported_op",
+        [
+            ResourceQubitizeTHC,
+            ResourceSelectTHC,
+            ResourcePrepTHC,
+        ],
+    )
+    def test_set_precision_raises_error_for_unsupported_op(self, unsupported_op):
+        """Test ValueError for known operators that do not support single-precision setting."""
+        config = ResourceConfig()
+        match_str = f"Setting precision for {unsupported_op.__name__} is not supported."
+        with pytest.raises(ValueError, match=match_str):
+            config.set_precision(unsupported_op, 0.456)
