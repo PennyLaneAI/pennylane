@@ -56,8 +56,8 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     **Example**
 
     >>> from pennylane import estimator as qre
-    >>> cmpr_op = qre.CompressedResourceOp(qre.Hadamard, num_wires=1)
-    >>> print(cmpr_op)
+    >>> compressed_hadamard = qre.CompressedResourceOp(qre.Hadamard, num_wires=1)
+    >>> print(compressed_hadamard)
     CompressedResourceOp(Hadamard, num_wires=1)
     """
 
