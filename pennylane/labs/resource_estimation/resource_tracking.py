@@ -72,7 +72,6 @@ DefaultGateSet = frozenset(
 )
 
 
-@singledispatch
 def estimate_resources(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set | None = None,
@@ -142,13 +141,24 @@ def estimate_resources(
      {'Hadamard': 5, 'CNOT': 10, 'T': 264}
 
     """
+    return _estimate_resources_dispatch(obj, gate_set, config, work_wires, tight_budget)
 
+
+@singledispatch
+def _estimate_resources_dispatch(
+    obj: ResourceOperator | Callable | Resources | list,
+    gate_set: set | None = None,
+    config: ResourceConfig | None = None,
+    work_wires: int | dict = 0,
+    tight_budget: bool = False,
+) -> Resources | Callable:
+    """Internal singledispatch function for resource estimation."""
     raise TypeError(
         f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Resources, Callable or ResourceOperator"
     )
 
 
-@estimate_resources.register
+@_estimate_resources_dispatch.register
 def _resources_from_qfunc(
     obj: Callable,
     gate_set: set | None = None,
@@ -191,7 +201,7 @@ def _resources_from_qfunc(
     return wrapper
 
 
-@estimate_resources.register
+@_estimate_resources_dispatch.register
 def _resources_from_resource(
     obj: Resources,
     gate_set: set | None = None,
@@ -231,7 +241,7 @@ def _resources_from_resource(
     return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
 
 
-@estimate_resources.register
+@_estimate_resources_dispatch.register
 def _resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set | None = None,
@@ -252,7 +262,7 @@ def _resources_from_resource_ops(
     )
 
 
-@estimate_resources.register
+@_estimate_resources_dispatch.register
 def _resources_from_pl_ops(
     obj: Operation,
     gate_set: set | None = None,
