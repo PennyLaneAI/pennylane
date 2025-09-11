@@ -1036,7 +1036,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* JIT compilation of `MottonenStatePrep` can now accept statically defined state-vector arrays.
+* JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
   [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
 
 * Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
