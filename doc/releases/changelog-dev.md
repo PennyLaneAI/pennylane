@@ -117,12 +117,17 @@
 
 <h3>Improvements 🛠</h3>
 
+* The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
+  to guard users from an incompatibility that currently exists between the two.
+  Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
+  [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
+
 * `qml.counts` can now be captured with program capture into plxpr. It still cannot be interpreted or executed
   with program capture.
   [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
-  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
@@ -436,6 +441,7 @@
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -846,6 +852,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `DefaultQubit` now determines the `mcm_method` in `Device.setup_execution_config`,
+  making it easier to tell which mcm method will be used. This also allows `defer_measurements` and `dynamic_one_shot` to be applied at different
+  locations in the preprocessing program.
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
+
 * Remove usage of the `pytest.mark.capture` marker from tests in the `tests/python_compiler` directory.
   [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
 
@@ -1052,6 +1063,10 @@
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
+  in the circuit with the `ctrl` happens.
+  [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
 * JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
   [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
