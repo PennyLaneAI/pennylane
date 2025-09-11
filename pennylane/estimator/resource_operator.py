@@ -136,7 +136,7 @@ def _make_hashable(d: Any) -> tuple:
 
 
 class ResourceOperator(ABC):
-    r"""Base class to represent quantum operators according to the set of information
+    r"""Base class to represent quantum operators according to the fundamental set of information
     required for resource estimation.
 
     A :class:`~.pennylane.estimator.ResourceOperator` is uniquely defined by its
