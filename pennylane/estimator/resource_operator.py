@@ -108,7 +108,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         return self._name
 
 
-def _make_hashable(d) -> tuple:
+def _make_hashable(d: Any) -> tuple:
     r"""Converts a potentially non-hashable object into a hashable tuple.
 
     Args:
