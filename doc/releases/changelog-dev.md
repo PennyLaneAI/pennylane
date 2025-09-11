@@ -7,7 +7,7 @@
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications 
   that rely on smart and efficient handling of wires, such as decompositions of gates that require 
   temporary auxiliary wires and logical patterns in subroutines that benefit from having dynamic 
-  memory management.
+  wire management.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
 
   The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated 
@@ -20,7 +20,7 @@
   * `restored = True/False`: a user-guarantee that the allocated wires will be restored to their 
     original state (`True`) or not (`False`) when those wires are deallocated. 
 
-  The recommended way to safely allocate and deallocate memory is to use :func:`~.allocate` as a 
+  The recommended way to safely allocate and deallocate wires is to use :func:`~.allocate` as a 
   context manager:
 
   ```python

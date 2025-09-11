@@ -122,7 +122,7 @@ class Deallocate(Operator):
 
 def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate:
     """Deallocates wires that have previously been allocated with :func:`~.allocate`.
-    Upon deallocating quantum memory, that memory is available to be allocated thereafter.
+    Upon deallocating, those wires is available to be allocated thereafter.
 
     Args:
         wires (DynamicWire, Wires, Sequence[DynamicWire]): one or more dynamic wires.
