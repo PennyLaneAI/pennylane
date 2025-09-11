@@ -278,7 +278,7 @@ def specs(
         infos = []
         batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
-        # These values don't depend on the tape, so we can just get them once
+        # These values same for whole batch, so we can just get them once
         config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
         gradient_fn = config.gradient_method
 
