@@ -52,7 +52,7 @@ from .types import HLO_AnyIntegerOrIndexTensor, HLO_AnyTensor, HLO_IntTensor, HL
 class BroadcastInDimOp(IRDLOperation):
     """
     Expands the dimensions and/or rank of an input tensor by duplicating the
-    data in the `operand` tensor and produces a `result` tensor.
+    data in the ``operand`` tensor and produces a ``result`` tensor.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#broadcast_in_dim
@@ -85,8 +85,8 @@ class BroadcastInDimOp(IRDLOperation):
 @irdl_op_definition
 class ConcatenateOp(IRDLOperation):
     """
-    Concatenates a variadic number of tensors in `inputs` along `dimension`
-    dimension in the same order as the given arguments and produces a `result`
+    Concatenates a variadic number of tensors in ``inputs`` along ``dimension``
+    dimension in the same order as the given arguments and produces a ``result``
     tensor.
 
     See:
@@ -120,8 +120,8 @@ class ConcatenateOp(IRDLOperation):
 @irdl_op_definition
 class GatherOp(IRDLOperation):
     """
-    Gathers slices from `operand` tensor from offsets specified in
-    `start_indices` and produces a `result` tensor.
+    Gathers slices from ``operand`` tensor from offsets specified in
+    ``start_indices`` and produces a ``result`` tensor.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#gather
@@ -166,7 +166,7 @@ class GatherOp(IRDLOperation):
 @irdl_op_definition
 class ReshapeOp(IRDLOperation):
     """
-    Performs reshape of `operand` tensor to a `result` tensor.
+    Performs reshape of ``operand`` tensor to a ``result`` tensor.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#reshape
@@ -197,9 +197,9 @@ class ReshapeOp(IRDLOperation):
 @irdl_op_definition
 class ScatterOp(IRDLOperation):
     """
-     Produces `results` tensors which are equal to `inputs` tensors except that
-     several slices specified by `scatter_indices` are updated with the values
-     `updates` using `update_computation`.
+     Produces ``results`` tensors which are equal to ``inputs`` tensors except that
+     several slices specified by ``scatter_indices`` are updated with the values
+     ``updates`` using ``update_computation``.
 
      See:
      https://github.com/openxla/stablehlo/blob/main/docs/spec.md#scatter
@@ -248,8 +248,8 @@ class ScatterOp(IRDLOperation):
 @irdl_op_definition
 class SliceOp(IRDLOperation):
     """
-    Extracts a slice from the `operand` using statically-computed starting
-    indices and produces a `result` tensor.
+    Extracts a slice from the ``operand`` using statically-computed starting
+    indices and produces a ``result`` tensor.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#slice
