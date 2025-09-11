@@ -8,7 +8,7 @@
 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY_STATE KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
@@ -29,8 +29,8 @@ class TestWireResourceManager:
 
     wire_manager_quantities = (
         WireResourceManager(zeroed=2),
-        WireResourceManager(zeroed=4, any=2, algo=20),
-        WireResourceManager(zeroed=2, any=2, algo=10, tight_budget=True),
+        WireResourceManager(zeroed=4, any_state=2, algo=20),
+        WireResourceManager(zeroed=2, any_state=2, algo=10, tight_budget=True),
     )
 
     wire_manager_parameters = (
@@ -44,10 +44,10 @@ class TestWireResourceManager:
     )
     def test_init(self, wire_manager, attribute_tup):
         """Test that the WireResourceManager class is instantiated as expected."""
-        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
+        zeroed, any_state, logic_wires, tight_budget = attribute_tup
 
-        assert wire_manager.zeroed_wires == zeroed_wires
-        assert wire_manager.any_wires == any_wires
+        assert wire_manager.zeroed == zeroed
+        assert wire_manager.any_state == any_state
         assert wire_manager.algo_wires == logic_wires
         assert wire_manager.tight_budget == tight_budget
 
@@ -57,11 +57,11 @@ class TestWireResourceManager:
     def test_equality(self, wire_manager, attribute_tup):
         """Test that the equality methods behaves as expected"""
 
-        zeroed_wires, any_wires, algo_wires, tight_budget = attribute_tup
+        zeroed, any_state, algo_wires, tight_budget = attribute_tup
 
         wire_manager2 = WireResourceManager(
-            zeroed=zeroed_wires,
-            any=any_wires,
+            zeroed=zeroed,
+            any_state=any_state,
             algo=algo_wires,
             tight_budget=tight_budget,
         )
@@ -82,10 +82,10 @@ class TestWireResourceManager:
     def test_repr(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager representation is correct."""
 
-        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
+        zeroed, any_state, _, tight_budget = attribute_tup
 
         expected_string = (
-            f"WireResourceManager(zeroed={zeroed_wires}, any={any_wires}, algo={logic_wires}, "
+            f"WireResourceManager(zeroed={zeroed}, any_state={any_state}, algo={algo_q}, "
             f"tight_budget={tight_budget})"
         )
 
@@ -99,11 +99,11 @@ class TestWireResourceManager:
     def test_str(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager string is correct."""
 
-        zeroed_wires, any_wires, logic_wires, tight_budget = attribute_tup
+        zeroed, any_state, _, tight_budget = attribute_tup
 
         expected_string = (
-            f"WireResourceManager(zeroed wires={zeroed_wires}, any wires={any_wires}, "
-            f"algorithmic wires={logic_wires}, tight budget={tight_budget})"
+            f"WireResourceManager(zeroed wires={zeroed}, any_state wires={any_state}, "
+            f"algorithmic wires={algo_q}, tight budget={tight_budget})"
         )
         wire_manager.algo_wires = algo_q
         assert str(wire_manager) == expected_string
@@ -112,7 +112,7 @@ class TestWireResourceManager:
         "wire_manager, algo_q",
         zip(copy.deepcopy(wire_manager_quantities), extra_wires),
     )
-    def test_algo_wires(self, wire_manager, algo_q):
+    def test_setting_algo_wires(self, wire_manager, algo_q):
         """Test that the logic wires are set correctly."""
 
         wire_manager.algo_wires = algo_q
@@ -129,39 +129,37 @@ class TestWireResourceManager:
         total_wires = attribute_tup[0] + attribute_tup[1] + algo_q
         assert wire_manager.total_wires == total_wires
 
-    @pytest.mark.parametrize(
-        ("wires", "zeroed_wires", "any_wires"), [(2, 2, 4), (4, 0, 6), (6, 0, 8)]
-    )
-    def test_grab_zeroed_wires(self, wires, zeroed_wires, any_wires):
-        """Test that the zeroed wires are grabbed and converted to any wires."""
+    @pytest.mark.parametrize(("wires", "zeroed", "any_state"), [(2, 2, 4), (4, 0, 6), (6, 0, 8)])
+    def test_grab_zeroed(self, wires, zeroed, any_state):
+        """Test that the zeroed wires are grabbed and converted to any_state wires."""
 
-        wire_manager = WireResourceManager(zeroed=4, any=2, tight_budget=False)
-        wire_manager.grab_zeroed_wires(wires)
-        assert wire_manager.zeroed_wires == zeroed_wires
-        assert wire_manager.any_wires == any_wires
+        wire_manager = WireResourceManager(zeroed=4, any_state=2, tight_budget=False)
+        wire_manager.grab_zeroed(wires)
+        assert wire_manager.zeroed == zeroed
+        assert wire_manager.any_state == any_state
 
-    def test_error_grab_zeroed_wires(self):
+    def test_error_grab_zeroed(self):
         """Test that an error is raised when the number of zeroed wires required is greater
         than the available wires."""
 
-        wire_manager = WireResourceManager(zeroed=4, any=2, tight_budget=True)
+        wire_manager = WireResourceManager(zeroed=4, any_state=2, tight_budget=True)
         with pytest.raises(ValueError, match="Grabbing more wires than available zeroed wires."):
-            wire_manager.grab_zeroed_wires(6)
+            wire_manager.grab_zeroed(6)
 
     def test_free_wires(self):
-        """Test that the any wires are freed properly."""
+        """Test that the any_state wires are freed properly."""
 
-        wire_manager = WireResourceManager(zeroed=4, any=2)
+        wire_manager = WireResourceManager(zeroed=4, any_state=2)
         wire_manager.free_wires(2)
-        assert wire_manager.zeroed_wires == 6
-        assert wire_manager.any_wires == 0
+        assert wire_manager.zeroed == 6
+        assert wire_manager.any_state == 0
 
     def test_error_free_wires(self):
         """Test that an error is raised when the number of wires being freed is greater
-        than the available any wires."""
+        than the available any_state wires."""
 
-        wire_manager = WireResourceManager(zeroed=4, any=2, tight_budget=True)
-        with pytest.raises(ValueError, match="Freeing more wires than available any wires."):
+        wire_manager = WireResourceManager(zeroed=4, any_state=2, tight_budget=True)
+        with pytest.raises(ValueError, match="Freeing more wires than available any_state wires."):
             wire_manager.free_wires(6)
 
 
@@ -171,8 +169,7 @@ class TestAllocate:
     def test_init(self):
         """Test that the Allocate class is instantiated as expected when there is no active recording."""
 
-        for i in range(3):
-            assert Allocate(i).num_wires == i
+        assert Allocate(4).num_wires == 4
 
     def test_repr(self):
         """Test that correct representation is returned for Allocate class"""

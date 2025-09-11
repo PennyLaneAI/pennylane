@@ -22,12 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.estimator import (
-    CompressedResourceOp,
-    ResourceOperator,
-    Resources,
-    WireResourceManager,
-)
+from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import (
     GateCount,
     ResourcesNotDefined,
@@ -384,8 +379,7 @@ class TestResourceOperator:
         resources = s * op
 
         gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): s})
-        wm = WireResourceManager(zeroed=0, any=0, algo=1)
-        expected_resources = Resources(wire_manager=wm, gate_types=gt)
+        expected_resources = Resources(0, algo=1, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.xfail(reason="Should be fixed in the base branch")
@@ -396,8 +390,7 @@ class TestResourceOperator:
         resources = s @ op
 
         gt = defaultdict(int, {DummyCmprsRep("CNOT", None): s})
-        wm = WireResourceManager(zeroed=0, any=0, algo=s * 2)
-        expected_resources = Resources(wire_manager=wm, gate_types=gt)
+        expected_resources = Resources(0, algo=s * 2, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.xfail(reason="Should be fixed in the base branch")
@@ -405,7 +398,7 @@ class TestResourceOperator:
         """Test addition dunder method between two ResourceOperator classes"""
         op1 = RX(1.23)
         op2 = CNOT()
-        resources = op1 + op2
+        resources = op1.add_series(op2)
 
         gt = defaultdict(
             int,
@@ -414,8 +407,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(zeroed=0, algo=2)
-        expected_resources = Resources(wire_manager=wm, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.xfail(reason="Should be fixed in the base branch")
@@ -423,9 +415,8 @@ class TestResourceOperator:
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        wm2 = WireResourceManager(zeroed=0, any=0, algo=2)
-        res2 = Resources(wire_manager=wm2, gate_types=gt2)
-        resources = op1 + res2
+        res2 = Resources(zeroed=0, algo=2, gate_types=gt2)
+        resources = op1.add_series(res2)
 
         gt = defaultdict(
             int,
@@ -434,8 +425,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(zeroed=0, any=0, algo=2)
-        expected_resources = Resources(wire_manager=wm, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.skip(reason="Should be fixed in the base branch")
@@ -443,14 +433,14 @@ class TestResourceOperator:
         """Test addition dunder method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
             op1 = RX(1.23)
-            _ = op1 + True
+            _ = op1.add_series(True)
 
     @pytest.mark.skip(reason="Should be fixed in the base branch")
     def test_and(self):
         """Test and dunder method between two ResourceOperator classes"""
         op1 = RX(1.23)
         op2 = CNOT()
-        resources = op1 & op2
+        resources = op1.add_parallel(op2)
 
         gt = defaultdict(
             int,
@@ -459,8 +449,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(zeroed=0, any=0, algo=3)
-        expected_resources = Resources(wire_manager=wm, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.xfail(reason="Should be fixed in the base branch")
@@ -468,9 +457,8 @@ class TestResourceOperator:
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        wm2 = WireResourceManager(zeroed=0, any=0, algo=2)
-        res2 = Resources(wire_manager=wm2, gate_types=gt2)
-        resources = op1 & res2
+        res2 = Resources(zeroed=0, any_state=0, algo=2, gate_types=gt2)
+        resources = op1.add_parallel(res2)
 
         gt = defaultdict(
             int,
@@ -479,8 +467,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        wm = WireResourceManager(zeroed=0, algo=3)
-        expected_resources = Resources(wire_manager=wm, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.skip(reason="Should be fixed in the base branch")
@@ -488,7 +475,7 @@ class TestResourceOperator:
         """Test and dunder method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
             op1 = RX(1.23)
-            _ = op1 & True
+            _ = op1.add_parallel(True)
 
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
@@ -512,7 +499,7 @@ class TestResourceOperator:
 
     def test_tracking_name(self):
         """Test that correct tracking name is returned."""
-        assert X().tracking_name_from_op() == "X"
+        assert X().tracking_name() == "X"
 
 
 @pytest.mark.parametrize(

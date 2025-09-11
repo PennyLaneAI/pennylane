@@ -26,7 +26,6 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resources_base import Resources
-from .wires_manager import WireResourceManager
 
 # pylint: disable=unused-argument, no-member
 
@@ -75,7 +74,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         self.num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
-        self._name = name or op_type.tracking_name(**self.params)
+        self._name = name or op_type.make_tracking_name(**self.params)
 
     def __hash__(self) -> int:
         return hash((self.op_type, self.num_wires, self._hashable_params))
@@ -165,8 +164,8 @@ class ResourceOperator(ABC):
                 return {"num_wires": self.num_wires}  # and values obtained from the operator.
 
             @classmethod
-            def resource_rep(cls, num_wires):             # Takes the `resource_keys` as input
-                params = {"num_wires": num_wires}         #   and produces a compressed
+            def resource_rep(cls, num_wires):                                                  # Takes the `resource_keys` as input
+                params = {"num_wires": num_wires}                                          #  and produces a compressed
                 return plre.CompressedResourceOp(cls, num_wires, params)  # representation of the operator
 
             @classmethod
@@ -312,41 +311,44 @@ class ResourceOperator(ABC):
     def __mul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        wire_manager = WireResourceManager(0, algo=self.num_wires)
 
-        return Resources(wire_manager, gate_types)
+        return Resources(zeroed=0, algo=self.num_wires, gate_types=gate_types)
 
     def __matmul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        wire_manager = WireResourceManager(0, algo=scalar * self.num_wires)
 
-        return Resources(wire_manager, gate_types)
+        return Resources(zeroed=0, algo=self.num_wires * scalar, gate_types=gate_types)
 
-    def __add__(self, other):
+    def add_series(self, other):
+        "Adds two ResourceOperators in series"
         if isinstance(other, ResourceOperator):
-            return (1 * self) + (1 * other)
+            return (1 * self).add_series(1 * other)
         if isinstance(other, Resources):
-            return (1 * self) + other
+            return (1 * self).add_series(other)
 
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
-    def __and__(self, other):
+    def add_parallel(self, other):
+        """Add two ResourceOperators in parallel."""
         if isinstance(other, ResourceOperator):
-            return (1 * self) & (1 * other)
+            return (1 * self).add_parallel(1 * other)
         if isinstance(other, Resources):
-            return (1 * self) & other
+            return (1 * self).add_parallel(other)
 
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
+
+    __rmul__ = __mul__
+    __rmatmul__ = __matmul__
 
     @classmethod
-    def tracking_name(cls, *args, **kwargs) -> str:
+    def make_tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
         return cls.__name__.replace("Resource", "")
 
-    def tracking_name_from_op(self) -> str:
+    def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return self.__class__.tracking_name(**self.resource_params)
+        return self.make_tracking_name(**self.resource_params)
 
 
 class ResourcesNotDefined(Exception):
