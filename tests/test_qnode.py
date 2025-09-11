@@ -1340,13 +1340,13 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 1)
         assert tape.operations[0].wires.labels == (1,)
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2)
 
         with pytest.warns(
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
 
-            @qnode(dev)
+            @qnode(dev, shots=10)
             def ansatz1(a, shots):
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))

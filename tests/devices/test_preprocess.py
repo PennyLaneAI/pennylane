@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
+    device_resolve_dynamic_wires,
     measurements_from_counts,
     measurements_from_samples,
     mid_circuit_measurements,
@@ -87,7 +88,9 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
 
@@ -99,7 +102,9 @@ class TestPrivateHelpers:
             return op.has_matrix
 
         op = NoMatOp("a")
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(casted_to_list) == 2
         qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
         qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
@@ -119,23 +124,15 @@ class TestPrivateHelpers:
                 return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
 
         op = RaggedDecompositionOp("a")
-        final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        final_decomp = list(
+            _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
+        )
         assert len(final_decomp) == 5
         qml.assert_equal(final_decomp[0], qml.PauliX("a"))
         qml.assert_equal(final_decomp[1], qml.PauliY("a"))
         qml.assert_equal(final_decomp[2], qml.S("a"))
         qml.assert_equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
         qml.assert_equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
-
-    def test_error_from_unsupported_operation(self):
-        """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
-        op = NoMatNoDecompOp("a")
-        with pytest.raises(DeviceError, match=r"not supported with abc and does"):
-            tuple(
-                _operator_decomposition_gen(
-                    op, lambda op: op.has_matrix, self.decomposer, name="abc"
-                )
-            )
 
 
 def test_no_sampling():
@@ -261,6 +258,15 @@ class TestDecomposeValidation:
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
         with pytest.raises(DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
+
+    def test_error_if_invalid_op_decomposer(self):
+        """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
+
+        tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
+        with pytest.raises(DeviceError, match="not supported with abc"):
+            decompose(
+                tape, lambda op: op.has_matrix, decomposer=lambda op: op.decomposition(), name="abc"
+            )
 
     def test_decompose(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
@@ -808,3 +814,64 @@ def test_validate_multiprocessing_workers_None():
     )
     device = qml.devices.DefaultQubit()
     validate_multiprocessing_workers(qs, None, device)
+
+
+class TestDeviceResolveDynamicWires:
+
+    def test_many_allocations_no_wires(self):
+        """Test that min integer will keep incrementing to higher numbers."""
+
+        allocations = [qml.allocation.Allocate.from_num_wires(1) for _ in range(10)]
+        ops = [qml.X(op.wires) for op in allocations]
+        tape = qml.tape.QuantumScript(allocations + ops)
+
+        [new_tape], fn = device_resolve_dynamic_wires(tape, wires=None)
+
+        assert fn(("a",)) == "a"
+        for op, wire in zip(new_tape.operations, range(0, 10)):
+            qml.assert_equal(op, qml.X(wire))
+
+    def test_error_on_not_enough_available_wires(self):
+        """Test that an error is raised if there are not enough available wires on the device."""
+
+        allocation = qml.allocation.Allocate.from_num_wires(2)
+        ops = [qml.X(w) for w in allocation.wires]
+        tape = qml.tape.QuantumScript([allocation] + ops)
+
+        with pytest.raises(
+            qml.exceptions.AllocationError, match=r"Not enough available wires on device"
+        ):
+            device_resolve_dynamic_wires(tape, wires=qml.wires.Wires([0]))
+
+    def test_many_allocations_device_wires(self):
+        """Test that provided device wires are used properly."""
+
+        allocations = [qml.allocation.Allocate.from_num_wires(1) for _ in range(10)]
+        ops = [qml.X(op.wires) for op in allocations]
+        tape = qml.tape.QuantumScript(allocations + ops)
+
+        wires = qml.wires.Wires(list(range(10)))
+        [new_tape], fn = device_resolve_dynamic_wires(tape, wires=wires)
+
+        assert fn(("a",)) == "a"
+        for op, wire in zip(new_tape.operations, wires):
+            qml.assert_equal(op, qml.X(wire))
+
+    def test_min_int_non_integer_algorithmic_wires(self):
+        """Test that a min int can be calculated when the tape contains non-integer wires."""
+
+        allocation = qml.allocation.Allocate.from_num_wires(1)
+        ops = [qml.Z("a"), qml.Z("b"), qml.Z("my_wire"), qml.X(allocation.wires)]
+        tape = qml.tape.QuantumScript([allocation] + ops)
+
+        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
+        qml.assert_equal(new_tape[-1], qml.X(0))
+
+    def test_min_int_unsorted_wires(self):
+        """Test that the min_int is the smallest integer larger than all integers in operation wires."""
+        allocation = qml.allocation.Allocate.from_num_wires(1)
+        ops = [qml.Z(5), qml.Z(11), qml.Z(4), qml.X(allocation.wires)]
+        tape = qml.tape.QuantumScript([allocation] + ops)
+
+        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
+        qml.assert_equal(new_tape[-1], qml.X(12))

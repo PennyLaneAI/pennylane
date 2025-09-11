@@ -11,27 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-Optimization passes using ZX calculus
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"""PennyLane-xDSL transformations API specifically for the MBQC transform."""
 
-Circuit optimization passes using ZX calculus (i.e., `pyzx <https://github.com/zxcalc/pyzx>`__)
-
-.. currentmodule:: pennylane.labs.zxopt
-
-.. autosummary::
-    :toctree: api
-
-    ~full_optimize
-    ~full_reduce
-    ~todd
-    ~basic_optimization
+from .graph_state_utils import (
+    get_num_aux_wires,
+    get_graph_state_edges,
+    n_vertices_from_packed_adj_matrix,
+    edge_iter,
+    generate_adj_matrix,
+)
 
 
-
-"""
-
-from .full_reduce import full_reduce
-from .full_optimize import full_optimize
-from .basic_optimization import basic_optimization
-from .todd import todd
+__all__ = [
+    "get_num_aux_wires",
+    "get_graph_state_edges",
+    "n_vertices_from_packed_adj_matrix",
+    "edge_iter",
+    "generate_adj_matrix",
+]
