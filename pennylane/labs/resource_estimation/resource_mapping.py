@@ -212,7 +212,8 @@ def _(op: qops.CZ):
 @map_to_resource_op.register
 def _(op: qops.MultiControlledX):
     return re_ops.ResourceMultiControlledX(
-        num_ctrl_wires=len(op.wires) - 1, num_ctrl_values=sum(op.control_values)
+        num_ctrl_wires=len(op.wires) - 1,
+        num_ctrl_values=len(op.control_values) - sum(op.control_values),
     )
 
 

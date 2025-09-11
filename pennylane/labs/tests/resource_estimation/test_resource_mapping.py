@@ -86,7 +86,7 @@ class Test_map_to_resource_op:
             (qml.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.ResourcePauliRot("XYZ")),
             (
                 qml.MultiControlledX(wires=[0, 1, 2]),
-                re_ops.ResourceMultiControlledX(num_ctrl_wires=2, num_ctrl_values=2),
+                re_ops.ResourceMultiControlledX(num_ctrl_wires=2, num_ctrl_values=0),
             ),
             # Custom/Template Gates
             (qtemps.TemporaryAND(wires=[0, 1, 2]), re_ops.ResourceTempAND()),
