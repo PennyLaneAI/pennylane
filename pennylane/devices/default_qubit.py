@@ -122,51 +122,6 @@ ALL_DQ_GATE_SET = (
 )
 
 
-# Base gate set for DefaultQubit
-_BASE_DQ_GATE_SET = {
-    "CNOT",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "CRot",
-    "CSWAP",
-    "CY",
-    "CZ",
-    "ControlledPhaseShift",
-    "GlobalPhase",
-    "Hadamard",
-    "ISWAP",
-    "Identity",
-    "IsingXX",
-    "IsingXY",
-    "IsingYY",
-    "IsingZZ",
-    "MultiControlledX",
-    "MultiRZ",
-    "PSWAP",
-    "PauliX",
-    "PauliY",
-    "PauliZ",
-    "PhaseShift",
-    "RX",
-    "RY",
-    "RZ",
-    "S",
-    "SWAP",
-    "SX",
-    "T",
-    "Toffoli",
-}
-
-
-# Complete gate set including controlled and adjoint variants
-ALL_DQ_GATE_SET = (
-    _BASE_DQ_GATE_SET
-    | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
-    | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
-)
-
-
 _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
