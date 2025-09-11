@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 def bch_expansion(
-        product_formula: ProductFormula, order: int, importance: ImportanceConfig = None
+    product_formula: ProductFormula, order: int, importance: ImportanceConfig = None
 ) -> list[dict[tuple[Hashable], complex]]:
     r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
 
@@ -79,7 +79,10 @@ def bch_expansion(
 
 
 def _bch_expansion(
-        product_formula: ProductFormula, order: int, importance: ImportanceConfig, term_dict: dict[tuple[Hashable], complex]
+    product_formula: ProductFormula,
+    order: int,
+    importance: ImportanceConfig,
+    term_dict: dict[tuple[Hashable], complex],
 ) -> list[dict[tuple[Hashable], complex]]:
     """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
     hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
@@ -120,7 +123,9 @@ def _bch_expansion(
                 merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
     return _remove_redundancies(
-        _apply_exponent(merged_bch, product_formula.exponent), product_formula.ordered_fragments, importance
+        _apply_exponent(merged_bch, product_formula.exponent),
+        product_formula.ordered_fragments,
+        importance,
     )
 
 
@@ -142,7 +147,9 @@ def _bch(
 
     if len(fragments) < 3:
         return _remove_redundancies(
-            [_kth_order_terms(fragments, coeffs, k) for k in range(1, order + 1)], term_order, importance
+            [_kth_order_terms(fragments, coeffs, k) for k in range(1, order + 1)],
+            term_order,
+            importance,
         )
 
     terms = {
@@ -508,6 +515,7 @@ def _drop_zeros(
 
     return term_dicts
 
+
 def _drop_unimportant(terms, importance, tolerance):
     delete = []
     for commutator, coeff in terms.items():
@@ -520,6 +528,7 @@ def _drop_unimportant(terms, importance, tolerance):
     for commutator in delete:
         del terms[commutator]
 
+
 def _commutator_importance(commutator, importance):
     commutator_importance = [importance[x] for x in commutator]
-    return (1/ 2 ** (len(commutator) - 1)) * reduce(lambda x, y: x * y, commutator_importance)
+    return (1 / 2 ** (len(commutator) - 1)) * reduce(lambda x, y: x * y, commutator_importance)

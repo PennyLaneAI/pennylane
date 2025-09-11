@@ -333,10 +333,10 @@ def test_importance_scores():
 
     importance = ImportanceConfig(
         tolerance=1e-8,
-        importance_scores = {
+        importance_scores={
             "A": 0.9,
             "B": 0.1,
-        }
+        },
     )
 
     bch = bch_expansion(pf_fourth, order=5, importance=importance)[4]

@@ -37,6 +37,7 @@ class _AdditiveIdentity:
     def __radd__(self, other):
         return other
 
+
 @dataclass
 class ImportanceConfig:
     """Used to provide parameters for importance sampling."""
@@ -45,13 +46,16 @@ class ImportanceConfig:
     tolerance: float = 10e-8
     top_k: Dict[int, int] = None
 
+
 @dataclass
 class ConvergenceLog:
     """Used to track the convergence history when sampling"""
+
     partial_sums: List[complex]
     means: List[complex]
     medians: List[complex]
     stds: List[complex]
+
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
@@ -223,7 +227,8 @@ def perturbation_error(
         raise ValueError("Fragments do not match product formula")
 
     commutator_lists = [
-        _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order, importance=importance)[1:]
+        _group_sums(commutators)
+        for commutators in bch_expansion(product_formula, max_order, importance=importance)[1:]
     ]
 
     if importance:
@@ -387,6 +392,7 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
+
 
 def _commutator_importance(
     commutator: tuple[Hashable | set], importance_scores: dict[Hashable, float]
