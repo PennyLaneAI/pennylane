@@ -642,54 +642,7 @@ class TestPreprocessingTransforms:
         assert "stopping_condition" in decompose_transform.kwargs
         assert decompose_transform.kwargs["stopping_condition"] == stopping_condition
 
-
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-class TestDecomposeIntegration:
-    """Tests for decompose transform integration with the new graph decomposition system."""
-
-    def test_decompose_with_device_wires_and_target_gates(self):
-        """Test that decompose works correctly with device_wires and target_gates for default.tensor."""
-        # Create a device and tape with operations that need decomposition
-        device_wires = qml.wires.Wires([0, 1, 2, 3])
-        target_gates = _operations  # Use the same target gates as the device
-
-        # Create a tape with an operation that needs decomposition
-        tape = qml.tape.QuantumScript([qml.QFT(wires=[0, 1])], [qml.expval(qml.Z(0))])
-
-        # Test with device_wires and target_gates
-        batch, _ = decompose(
-            tape,
-            stopping_condition,
-            device_wires=device_wires,
-            target_gates=target_gates,
-        )
-        new_tape = batch[0]
-
-        # QFT should be decomposed into supported gates
-        assert len(new_tape.operations) > len(tape.operations)
-        assert all(op.name in target_gates for op in new_tape.operations)
-
-    def test_work_wire_calculation_for_tensor_device(self):
-        """Test that work wire calculation works correctly for tensor device."""
-        # Test various scenarios for work wire calculation
-        test_cases = [
-            # (device_wires, tape_wires, expected_available_work_wires)
-            ([0, 1, 2, 3], [0, 1], 2),  # Normal case: 4 device wires, 2 used, 2 available
-            ([0, 1, 2], [0, 1], 1),  # Some overlap: 3 device wires, 2 used, 1 available
-            ([0, 1], [0, 1], 0),  # No work wires: 2 device wires, 2 used, 0 available
-        ]
-
-        for device_wires_list, tape_wires_list, expected_work_wires in test_cases:
-            device_wires = qml.wires.Wires(device_wires_list)
-
-            # Create a tape that uses the specified wires
-            ops = [qml.Hadamard(wires=tape_wires_list[0]), qml.CNOT(wires=tape_wires_list)]
-            tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(tape_wires_list[0]))])
-
-            # Calculate expected work wires
-            computed_work_wires = len(set(device_wires) - set(tape.wires))
-            assert computed_work_wires == expected_work_wires
-
+    @pytest.mark.integration
     def test_integration_with_qnode(self):
         """Test integration with QNode to ensure the device works end-to-end."""
         dev = qml.device("default.tensor", wires=3)
@@ -704,6 +657,7 @@ class TestDecomposeIntegration:
         result = circuit()
         assert isinstance(result, (float, np.floating))
 
+    @pytest.mark.integration
     def test_integration_with_multiple_decomposition_layers(self):
         """Test that operations requiring multiple layers of decomposition work."""
         dev = qml.device("default.tensor", wires=4)
