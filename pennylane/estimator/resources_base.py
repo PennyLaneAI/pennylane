@@ -375,7 +375,6 @@ class Resources:
         output_lines = []
 
         default_gate_list = ["Toffoli", "T", "CNOT", "X", "Y", "Z", "S", "Hadamard"]
-        default_gate_set_for_lookup = set(default_gate_list)
 
         def add_gate_to_output(gate_name, counts_dict):
             """Formats and adds a single gate breakdown to the output list."""
@@ -388,37 +387,28 @@ class Resources:
             )
             output_lines.append(f"{gate_name} total: {total_count_str}")
 
-            if counts_dict.keys() != {()}:
-                for params_tuple, count in counts_dict.items():
+            if any(params != () for params in counts_dict):
+                for params, count in counts_dict.items():
                     if count > 0:
-                        params_dict = dict(params_tuple)
                         count_str = str(count) if count <= 999 else f"{Decimal(count):.3E}"
-                        output_lines.append(f"    {gate_name} {params_dict}: {count_str}")
+                        output_lines.append(f"    {gate_name} {dict(params)}: {count_str}")
 
         if gate_set is None:
-            processed_gate_names = set()
-
-            other_gate_counts = defaultdict(lambda: defaultdict(int))
+            all_gate_counts = defaultdict(lambda: defaultdict(int))
             for op, count in self.gate_types.items():
-                if op.name not in default_gate_set_for_lookup:
-                    params_tuple = tuple(sorted(op.params.items()))
-                    other_gate_counts[op.name][params_tuple] += count
-                    processed_gate_names.add(op.name)
+                params_tuple = tuple(sorted(op.params.items())) if op.params else ()
+                all_gate_counts[op.name][params_tuple] += count
 
-            for gate_name, gate_count in other_gate_counts.items():
-                add_gate_to_output(gate_name, gate_count)
+            other_gates = sorted(
+                [name for name in all_gate_counts if name not in set(default_gate_list)]
+            )
+
+            for gate_name in other_gates:
+                add_gate_to_output(gate_name, all_gate_counts[gate_name])
 
             for gate_name in default_gate_list:
-                if gate_name in processed_gate_names:
-                    continue
-
-                parameter_counts = defaultdict(int)
-                for op, count in self.gate_types.items():
-                    if op.name == gate_name:
-                        params_tuple = tuple(sorted(op.params.items()))
-                        parameter_counts[params_tuple] += count
-
-                add_gate_to_output(gate_name, parameter_counts)
+                if gate_name in all_gate_counts:
+                    add_gate_to_output(gate_name, all_gate_counts[gate_name])
 
         else:
             for gate_name in gate_set:
