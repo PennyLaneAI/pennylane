@@ -20,7 +20,7 @@ Data movement operations for the StableHLO dialect.
 
 from typing import ClassVar, TypeVar
 
-from xdsl.dialects.builtin import BoolAttr, DenseArrayBase, IntegerAttr, i64
+from xdsl.dialects.builtin import BoolAttr, DenseArrayBase, IntegerAttr, TensorType, i64
 from xdsl.irdl import (
     IRDLOperation,
     attr_def,
@@ -41,6 +41,7 @@ from xdsl.traits import (
     NoMemoryEffect,
     RecursiveMemoryEffect,
 )
+from xdsl.utils.exceptions import VerifyException
 
 from pennylane.compiler.python_compiler.xdsl_extras.traits import AllMatchSameOperatorTrait
 
@@ -79,7 +80,53 @@ class BroadcastInDimOp(IRDLOperation):
         # TODO: HLO_CompatibleOperandsAndResultElementType,
     )
 
-    # TODO: MLIR has a custom verifier for the broadcast_in_dim operation.
+    # pylint: disable=E1101
+    def verify_(self) -> None:
+        """Verify non-quantized broadcast_in_dim constraints."""
+        # Operand and result must be tensors (by construction), assert defensively.
+        o_type = self.operand.type
+        r_type = self.result.type
+        assert isinstance(o_type, TensorType) and isinstance(r_type, TensorType)
+
+        # broadcast_in_dim_c2: broadcast_dimensions size == operand rank
+        dims = tuple(self.broadcast_dimensions.get_values())
+        operand_rank = o_type.get_num_dims()
+        if len(dims) != operand_rank:
+            raise VerifyException(
+                "broadcast_dimensions size ("
+                f"{len(dims)}"
+                ") does not match operand rank ("
+                f"{operand_rank}"
+                ")"
+            )
+
+        # broadcast_in_dim_c4: broadcast_dimensions should not have duplicates
+        if len(set(dims)) != len(dims):
+            raise VerifyException("broadcast_dimensions should not have duplicates")
+
+        # Result rank and per-dimension checks
+        result_rank = r_type.get_num_dims()
+        o_shape = o_type.get_shape()
+        r_shape = r_type.get_shape()
+
+        for i, dim_index in enumerate(dims):
+            # broadcast_in_dim_c3: each dim index in bounds of result rank
+            if dim_index < 0 or dim_index >= result_rank:
+                raise VerifyException(
+                    "broadcast_dimensions contains invalid value "
+                    f"{dim_index} for result with rank {result_rank}"
+                )
+
+            # If operand dim is static, enforce broadcast_in_dim_c5
+            if o_shape[i] != -1:
+                dim_size = o_shape[i]
+                result_dim_size = r_shape[dim_index]
+                if dim_size not in (1, result_dim_size):
+                    raise VerifyException(
+                        "size of operand dimension "
+                        f"{i} ({dim_size}) is not equal to 1 or size of result dimension "
+                        f"{dim_index} ({result_dim_size})"
+                    )
 
 
 @irdl_op_definition
@@ -191,7 +238,37 @@ class ReshapeOp(IRDLOperation):
         # TODO: HLO_CompatibleOperandsAndResultElementType,
     )
 
-    # TODO: MLIR has a custom verifier for the reshape operation.
+    # pylint: disable=E1101
+    def verify_(self) -> None:
+        """Verify that the operation has the same shape for all operands and results."""
+        o_type = self.operand.type
+        r_type = self.result.type
+
+        # These are constrained to tensors by the op definition
+        assert isinstance(o_type, TensorType) and isinstance(r_type, TensorType)
+
+        # If o_type or r_type is dynamically shaped there is nothing to verify.
+        if not o_type.has_static_shape() or not r_type.has_static_shape():
+            return
+
+        # If the operand type is statically shaped (not required) the number of
+        # elements must match that of the result type.
+        num_operand_elements = 1
+        for dim in o_type.get_shape():
+            num_operand_elements *= dim
+
+        num_result_elements = 1
+        for dim in r_type.get_shape():
+            num_result_elements *= dim
+
+        if num_result_elements != num_operand_elements:
+            raise VerifyException(
+                "number of output elements ("
+                f"{num_result_elements}"
+                ") doesn't match expected number of elements ("
+                f"{num_operand_elements}"
+                ")"
+            )
 
 
 @irdl_op_definition
