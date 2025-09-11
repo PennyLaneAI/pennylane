@@ -46,6 +46,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
+from .default_qubit import ALL_DQ_GATE_SET as ALL_NQ_GATE_SET
 from .execution_config import ExecutionConfig
 from .preprocess import decompose
 
@@ -355,12 +356,14 @@ class NullQubit(Device):
         program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
-                original_stopping_condition = t.kwargs["stopping_condition"]
+                # original_stopping_condition = t.kwargs["stopping_condition"]
 
-                def new_stopping_condition(op):
-                    return (not op.has_decomposition) or original_stopping_condition(op)
+                # def new_stopping_condition(op):
+                #     return original_stopping_condition(op)
 
-                t.kwargs["stopping_condition"] = new_stopping_condition
+                # t.kwargs["stopping_condition"] = new_stopping_condition
+                t.kwargs["device_wires"] = self.wires
+                t.kwargs["target_gates"] = ALL_NQ_GATE_SET
 
                 original_shots_stopping_condition = t.kwargs.get("stopping_condition_shots", None)
                 if original_shots_stopping_condition:
