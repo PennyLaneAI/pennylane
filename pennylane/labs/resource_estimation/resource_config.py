@@ -123,7 +123,7 @@ class ResourceConfig:
         Args:
             op_type (type[ResourceOperator]): the operator class for which
                 to set the precision
-           precision (float): The desired synthesis precision tolerance. A smaller
+            precision (float): The desired synthesis precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
                 increase the required gate counts. Must be greater than 0.
 
@@ -237,7 +237,7 @@ class ResourceConfig:
         """Sets a custom function to override the default resource decomposition.
 
         Args:
-            cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
+            op_type (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
                 ``"adj"``, ``"pow"``, ``"controlled"``,
