@@ -36,3 +36,20 @@ from .ops.qubit import (
     S,
     T,
 )
+
+from .ops.op_math import (
+    CCZ,
+    CH,
+    CNOT,
+    ControlledPhaseShift,
+    CRot,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    MultiControlledX,
+    TempAND,
+    Toffoli,
+)
