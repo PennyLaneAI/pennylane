@@ -237,10 +237,10 @@ class ResourceConfig:
         """Sets a custom function to override the default resource decomposition.
 
         Args:
-            op_type (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
+            op_type (type[ResourceOperator]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
-                ``"adj"``, ``"pow"``, ``"controlled"``,
+                ``"adj"``, ``"pow"``, ``"ctrl"``,
                 and ``"base"``. Default is ``"base"``.
 
         Raises:
