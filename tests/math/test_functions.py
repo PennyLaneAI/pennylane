@@ -25,6 +25,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import pennylane as qml
 from pennylane import math as fn
 from pennylane import numpy as np
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.math.single_dispatch import _sparse_matrix_power_bruteforce
 
 pytestmark = pytest.mark.all_interfaces
@@ -1063,6 +1064,33 @@ class TestScipySparse:
 # pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
     """Test the Interface enum class"""
+
+    @pytest.mark.parametrize("user_input", [None, "numpy", "scipy"])
+    def test_numpy(self, user_input):
+        """Test that the numpy interface is correctly returned"""
+        assert get_canonical_interface_name(user_input) == fn.Interface.NUMPY
+
+    def test_autograd(self):
+        """Test that the autograd interface is correctly returned"""
+        assert get_canonical_interface_name("autograd") == fn.Interface.AUTOGRAD
+
+    @pytest.mark.parametrize("user_input", ["torch", "pytorch"])
+    def test_torch(self, user_input):
+        """Test that the torch interface is correctly returned"""
+        assert get_canonical_interface_name(user_input) == fn.Interface.TORCH
+
+    @pytest.mark.parametrize("user_input", ["JAX", "jax", "jax-python"])
+    def test_jax(self, user_input):
+        """Test that the jax interface is correctly returned"""
+        assert get_canonical_interface_name(user_input) == fn.Interface.JAX
+
+    def test_jax_jit(self):
+        """Test that the jax-jit interface is correctly returned"""
+        assert get_canonical_interface_name("jax-jit") == fn.Interface.JAX_JIT
+
+    def test_auto(self):
+        """Test that the auto interface is correctly returned"""
+        assert get_canonical_interface_name("auto") == fn.Interface.AUTO
 
     def test_eq(self):
         """Test that an error is raised if comparing to string"""

@@ -740,7 +740,7 @@ class TestIntegration:
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit", "auto"])
+    @pytest.mark.parametrize("jax_interface", ["jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax

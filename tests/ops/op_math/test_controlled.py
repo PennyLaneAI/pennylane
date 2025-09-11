@@ -1330,7 +1330,7 @@ class TestDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -2299,7 +2299,7 @@ class TestCtrlTransformDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 

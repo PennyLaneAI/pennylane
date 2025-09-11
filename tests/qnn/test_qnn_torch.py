@@ -619,7 +619,7 @@ def test_invalid_interface_error(interface):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("interface", ("auto", "torch", "pytorch"))
+@pytest.mark.parametrize("interface", ("auto", "torch"))
 def test_qnode_interface_not_mutated(interface):
     """Test that the input QNode's interface is not mutated by TorchLayer"""
     dev = qml.device("default.qubit", wires=3)
