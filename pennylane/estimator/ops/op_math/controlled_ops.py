@@ -91,7 +91,7 @@ class CH(ResourceOperator):
             Specifically, the resources are defined as two ``RY``, two ``Hadamard`` and one ``CNOT`` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -109,7 +109,7 @@ class CH(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -137,7 +137,7 @@ class CH(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -163,7 +163,7 @@ class CY(ResourceOperator):
         Specifically, the resources are defined as a ``CNOT`` gate conjugated by a pair of
         ``S`` gates.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.CY`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.CY`.
 
     **Example**
 
@@ -218,7 +218,7 @@ class CY(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -231,22 +231,7 @@ class CY(ResourceOperator):
         ctrl_num_ctrl_values,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator.
-
-        Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-
-        Resources:
-            The resources are expressed using the symbolic :class:`~.Controlled`. The resources
-            are computed according to the :code:`controlled_resource_decomp()` of the base
-            :class:`~.Y` class.
-
-        Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
-            where each object represents a specific quantum gate and the number of times it appears
-            in the decomposition.
-        """
+        r"""Returns a list representing the resources for a controlled version of the operator."""
         raise ResourcesNotDefined
 
     @classmethod
@@ -261,7 +246,7 @@ class CY(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -283,11 +268,11 @@ class CZ(ResourceOperator):
 
         .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
-        By replacing the :class:`~.X` gate with a :class:`~.CNOT` we obtain
-        the controlled decomposition. Specifically, the resources are defined as a
-        :class:`~.CNOT` gate conjugated by a pair of :class:`~.Hadamard` gates.
+        By replacing the ``X`` gate with a ``CNOT`` we obtain the controlled decomposition.
+        Specifically, the resources are defined as a ``CNOT`` gate conjugated by a pair of
+        ``Hadamard`` gates.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.CZ`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.CZ`.
 
     **Example**
 
@@ -328,7 +313,7 @@ class CZ(ResourceOperator):
             ``Hadamard`` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -346,7 +331,7 @@ class CZ(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -374,7 +359,7 @@ class CZ(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -403,7 +388,7 @@ class CSWAP(ResourceOperator):
             1: ─╭X─├●─╭X─┤
             2: ─╰●─╰X─╰●─┤
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.CSWAP`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.CSWAP`.
 
     **Example**
 
@@ -447,7 +432,7 @@ class CSWAP(ResourceOperator):
                 2: ─╰●─╰X─╰●─┤
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -464,7 +449,7 @@ class CSWAP(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -489,7 +474,7 @@ class CSWAP(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -515,7 +500,7 @@ class CCZ(ResourceOperator):
         Specifically, the resources are defined as a ``Toffoli`` gate conjugated by a pair of
         ``Hadamard`` gates.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.CCZ`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.CCZ`.
 
     **Example**
 
@@ -556,7 +541,7 @@ class CCZ(ResourceOperator):
             ``Hadamard`` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -573,7 +558,7 @@ class CCZ(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -601,7 +586,7 @@ class CCZ(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -622,7 +607,7 @@ class CNOT(ResourceOperator):
         The CNOT gate is treated as a fundamental gate and thus it cannot be decomposed further.
         Requesting the resources of this gate raises a ``ResourcesNotDefined`` error.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.CNOT`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.CNOT`.
 
     """
 
@@ -665,7 +650,7 @@ class CNOT(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -678,20 +663,7 @@ class CNOT(ResourceOperator):
         ctrl_num_ctrl_values,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator.
-
-        Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-
-        Resources:
-            The resources are expressed as one general :class:`~.MultiControlledX` gate.
-
-        Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
-            where each object represents a specific quantum gate and the number of times it appears
-            in the decomposition.
-        """
+        r"""Returns a list representing the resources for a controlled version of the operator."""
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
             return [GateCount(resource_rep(Toffoli))]
 
@@ -709,7 +681,7 @@ class CNOT(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -762,7 +734,7 @@ class TempAND(ResourceOperator):
             The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -777,7 +749,7 @@ class TempAND(ResourceOperator):
             The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -852,7 +824,7 @@ class Toffoli(ResourceOperator):
             elbow (str, optional): One of "left" or "right". Defaults to "left".
 
         Returns:
-            list[GateCount]: The resources of decomposing the elbow gates.
+            list[:class:`~.estimator.resource_operator.GateCount`]: The resources of decomposing the elbow gates.
         """
         gate_types = []
         t = resource_rep(T)
@@ -901,7 +873,7 @@ class Toffoli(ResourceOperator):
             one ``CZ`` gate, one ``S`` gate, two ``T`` gates and two adjoint ``T`` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -950,7 +922,7 @@ class Toffoli(ResourceOperator):
             :class:`~.T` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -997,7 +969,7 @@ class Toffoli(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1030,7 +1002,7 @@ class Toffoli(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1106,7 +1078,7 @@ class MultiControlledX(ResourceOperator):
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :c: the operator in a compressed representation
         """
         num_wires = num_ctrl_wires + 1
         return CompressedResourceOp(
@@ -1145,7 +1117,7 @@ class MultiControlledX(ResourceOperator):
             * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1186,7 +1158,7 @@ class MultiControlledX(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1214,11 +1186,11 @@ class MultiControlledX(ResourceOperator):
 
         Resources:
             The resources are derived by combining the control qubits, control-values and
-            into a single instance of :class:`~.MultiControlledX` gate, controlled
+            into a single instance of ``MultiControlledX`` gate, controlled
             on the whole set of control-qubits.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1247,7 +1219,7 @@ class MultiControlledX(ResourceOperator):
             the identity operator and raised to odd powers it produces itself.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1331,7 +1303,7 @@ class CRX(ResourceOperator):
             two ``RZ`` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1350,7 +1322,7 @@ class CRX(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1381,7 +1353,7 @@ class CRX(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1461,7 +1433,7 @@ class CRY(ResourceOperator):
             and two ``RY`` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1478,7 +1450,7 @@ class CRY(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1509,7 +1481,7 @@ class CRY(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1589,7 +1561,7 @@ class CRZ(ResourceOperator):
             and two ``RZ`` gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1606,7 +1578,7 @@ class CRZ(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1637,7 +1609,7 @@ class CRZ(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1733,7 +1705,7 @@ class CRot(ResourceOperator):
                 trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1752,7 +1724,7 @@ class CRot(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1783,7 +1755,7 @@ class CRot(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1863,7 +1835,7 @@ class ControlledPhaseShift(ResourceOperator):
         .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ControlledPhaseShift`.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
@@ -1887,7 +1859,7 @@ class ControlledPhaseShift(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1918,7 +1890,7 @@ class ControlledPhaseShift(ResourceOperator):
             The resources simplify to just one total phase shift operator.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
