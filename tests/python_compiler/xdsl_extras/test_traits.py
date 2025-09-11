@@ -43,6 +43,7 @@ from xdsl.utils.test_value import create_ssa_value
 from pennylane.compiler.python_compiler.xdsl_extras.traits import (
     AllMatchSameOperatorTrait,
     Elementwise,
+    SameOperandsAndResultElementType,
     SameOperandsAndResultShape,
     SameOperandsElementType,
 )
@@ -102,6 +103,37 @@ def test_same_operands_element_type_trait():
     op = ShapeTestOp.create(operands=[operand1, operand3], result_types=[TensorType(f32, [2, 3])])
 
     with pytest.raises(VerifyException, match="requires the same element type for all operands"):
+        op.verify()
+
+
+# Test the SameOperandsAndResultElementType trait
+def test_same_operands_and_result_element_type_trait():
+    """Test the SameOperandsAndResultElementType trait."""
+
+    @irdl_op_definition
+    class ElementTypeTestOp(IRDLOperation):
+        """Test operation for the SameOperandsAndResultElementType trait."""
+
+        name = "test.element_type_test"
+        traits = traits_def(SameOperandsAndResultElementType())
+
+        operand = operand_def(AnyAttr())
+        result = result_def(AnyAttr())
+
+    assert ElementTypeTestOp.has_trait(SameOperandsAndResultElementType)
+
+    op = ElementTypeTestOp.create(
+        operands=[TensorType(i32, [2, 3])], result_types=[TensorType(i32, [2, 3])]
+    )
+    op.verify()
+
+    op = ElementTypeTestOp.create(
+        operands=[TensorType(i32, [2, 3]), TensorType(f32, [2, 3])],
+        result_types=[TensorType(i32, [2, 3])],
+    )
+    with pytest.raises(
+        VerifyException, match="requires the same element type for all operands and results"
+    ):
         op.verify()
 
 

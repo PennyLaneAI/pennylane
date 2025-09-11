@@ -81,6 +81,30 @@ class SameOperandsElementType(OpTrait):
 
 
 @dataclass(frozen=True)
+class SameOperandsAndResultElementType(OpTrait):
+    """Constrain the operation to have the same element type for all operands and results."""
+
+    def verify(self, op: Operation) -> None:
+        """Verify that the operation has the same element type for all operands and results."""
+
+        if len(op.results) < 1 or len(op.operands) < 1:
+            raise VerifyException(f"'{op.name}' requires at least one result or operand")
+
+        # Get the element type of the first operand
+        first_elem_type = get_element_type_or_self(op.operand_types[0])
+
+        all_types = list(op.operand_types) + list(op.result_types)
+
+        # Check that all other operands have the same element type
+        for type_to_check in all_types[1:]:
+            elem_type = get_element_type_or_self(type_to_check)
+            if elem_type != first_elem_type:
+                raise VerifyException(
+                    f"'{op.name}' requires the same element type for all operands and results"
+                )
+
+
+@dataclass(frozen=True)
 class Elementwise(OpTrait):
     """
     The following is the definition of the `Elementwise` trait from MLIR:
