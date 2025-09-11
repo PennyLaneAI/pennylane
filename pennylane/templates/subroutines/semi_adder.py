@@ -13,14 +13,15 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
+from numpy import ceil, log2
+
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, adjoint, X, Toffoli, ctrl
+from pennylane.ops import CNOT, Toffoli, X, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
-from numpy import ceil, log2
 
 
 def _left_operator(wires, ik_is_zero=False):

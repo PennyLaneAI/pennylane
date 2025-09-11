@@ -15,14 +15,21 @@
 Tests for the SemiAdder template.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.semi_adder import _semiadder_log_depth, _semiadder
-
-from functools import partial
+from pennylane.templates.subroutines.semi_adder import (
+    _cnot_ladder,
+    _fanout_1,
+    _fanout_2,
+    _semiadder,
+    _semiadder_log_depth,
+    _toffoli_ladder,
+)
 
 
 def test_standard_validity_SemiAdder():
@@ -204,3 +211,55 @@ class TestSemiAdder:
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
         )
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4]])
+def test_cnot_ladder(wires):
+    """Check the auxiliar function _cnot_ladder."""
+
+    def cnot_ladder(wires):
+        for i in range(len(wires) - 1):
+            qml.CNOT([wires[i], wires[i + 1]])
+
+    target_matrix = qml.matrix(cnot_ladder, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_cnot_ladder, wire_order=wires)(wires)
+    assert np.allclose(target_matrix, generated_matrix)
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4, "c"]])
+def test_toffoli_ladder(wires):
+    """Check the auxiliar function _toffoli_ladder."""
+
+    def toffoli_ladder(wires):
+        for i in range(0, len(wires) - 2, 2):
+            qml.Toffoli([wires[i], wires[i + 1], wires[i + 2]])
+
+    target_matrix = qml.matrix(toffoli_ladder, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_toffoli_ladder, wire_order=wires)(wires)
+    assert np.allclose(target_matrix, generated_matrix)
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4]])
+def test_fanout1_ladder(wires):
+    """Check the auxiliar function _fanout_1."""
+
+    def fanout1(wires):
+        for i in range(1, len(wires)):
+            qml.CNOT([wires[0], wires[i]])
+
+    target_matrix = qml.matrix(fanout1, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_fanout_1, wire_order=wires)(wires)
+    assert np.allclose(target_matrix, generated_matrix)
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2], [2, 3, 4, "a", 6, 7, 8], [0, 4, "c"]])
+def test_fanout_2(wires):
+    """Check the auxiliar function _fanout_2."""
+
+    def fanout_2(wires):
+        for i in range(1, len(wires) - 1, 2):
+            qml.Toffoli([wires[0], wires[i], wires[i + 1]])
+
+    target_matrix = qml.matrix(fanout_2, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_fanout_2, wire_order=wires)(wires[0], wires[1::2], wires[2::2])
+    assert np.allclose(target_matrix, generated_matrix)
