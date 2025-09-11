@@ -18,7 +18,7 @@ from pennylane.estimator.resource_operator import (
     GateCount,
     ResourceOperator,
 )
-from pennylane.exceptions import ResourcesNotDefined
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
 # pylint: disable=unused-argument
@@ -152,6 +152,8 @@ class GlobalPhase(ResourceOperator):
 
     """
 
+    num_wires = 1
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -239,4 +241,4 @@ class GlobalPhase(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError

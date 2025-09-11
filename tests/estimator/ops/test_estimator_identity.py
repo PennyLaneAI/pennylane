@@ -20,8 +20,8 @@ from pennylane.estimator.ops import GlobalPhase, Identity
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
-    ResourcesNotDefined,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
@@ -129,7 +129,7 @@ class TestGlobalPhase:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = GlobalPhase(wires=0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     globalphase_pow_data = (

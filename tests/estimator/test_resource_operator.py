@@ -25,11 +25,11 @@ import pennylane as qml
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import (
     GateCount,
-    ResourcesNotDefined,
     _dequeue,
     _make_hashable,
     resource_rep,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
@@ -367,9 +367,9 @@ class TestResourceOperator:
         num_wires aregument leads to an error."""
         dummy_op1 = DummyOp()
         assert dummy_op1.wires is None
-        assert dummy_op1.num_wires == 1
+        assert dummy_op1.num_wires is None
 
-        with pytest.raises(ValueError, match="Expected 1 wires, got"):
+        with pytest.raises(ValueError, match="Expected None wires, got"):
             dummy_op2 = DummyOp(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("s", [1, 2, 3])
@@ -477,17 +477,17 @@ class TestResourceOperator:
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             X.adjoint_resource_decomp()
 
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             X.controlled_resource_decomp(ctrl_num_ctrl_wires=2, ctrl_num_ctrl_values=0)
 
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             X.pow_resource_decomp(2)
 
     def test_tracking_name(self):

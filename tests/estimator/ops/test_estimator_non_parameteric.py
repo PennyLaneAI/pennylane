@@ -18,8 +18,8 @@ from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
-    ResourcesNotDefined,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
@@ -30,7 +30,7 @@ class TestHadamard:
     def test_resources(self):
         """Test that Hadamard resource operator does not implement a decomposition"""
         op = Hadamard()
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -68,7 +68,7 @@ class TestHadamard:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = Hadamard(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -91,7 +91,7 @@ class TestSWAP:
     def test_resources(self):
         """Test that SWAP decomposes into three CNOTs"""
         op = SWAP([0, 1])
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -135,7 +135,7 @@ class TestSWAP:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = SWAP([0, 1])
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -206,7 +206,7 @@ class TestS:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = S(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -251,7 +251,7 @@ class TestT:
     def test_resources(self):
         """Test that there is no further decomposition of the T gate."""
         op = T(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -285,7 +285,7 @@ class TestT:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = T(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -370,7 +370,7 @@ class TestX:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = X(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -426,7 +426,7 @@ class TestY:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = Y(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -478,7 +478,7 @@ class TestZ:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = Z(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (

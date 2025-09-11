@@ -17,11 +17,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Hashable, Iterable
-from typing import Union
+from typing import Any
 
 import numpy as np
 
-from pennylane.exceptions import ResourcesNotDefined
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -223,7 +223,7 @@ class ResourceOperator(ABC):
         self.queue()
         super().__init__()
 
-    def queue(self, context: QueuingManager = QueuingManager) -> "ResourceOperator":
+    def queue(self, context: QueuingManager = QueuingManager) -> ResourceOperator:
         """Append the operator to the Operator queue."""
         context.append(self)
         return self
@@ -268,7 +268,7 @@ class ResourceOperator(ABC):
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for the adjoint of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def controlled_resource_decomp(
@@ -282,7 +282,7 @@ class ResourceOperator(ABC):
             ctrl_num_ctrl_values (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
@@ -292,7 +292,7 @@ class ResourceOperator(ABC):
         Args:
             pow_z (int): exponent that the operator is being raised to
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     def __repr__(self) -> str:
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
@@ -342,7 +342,7 @@ class ResourceOperator(ABC):
 
 
 def _dequeue(
-    op_to_remove: Union["ResourceOperator", Iterable],
+    op_to_remove: ResourceOperator | Iterable,
     context: QueuingManager = QueuingManager,
 ):
     """Remove the given resource operator(s) from the Operator queue."""

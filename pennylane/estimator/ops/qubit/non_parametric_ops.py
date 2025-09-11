@@ -18,9 +18,9 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     resource_rep,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ, unused-argument, no-name-in-module
 
@@ -33,7 +33,7 @@ class Hadamard(ResourceOperator):
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Hadamard`.
 
@@ -48,12 +48,12 @@ class Hadamard(ResourceOperator):
 
         Resources:
             The ``Hadamard`` gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
         Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+            ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @property
     def resource_params(self) -> dict:
@@ -76,7 +76,7 @@ class Hadamard(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -93,7 +93,7 @@ class Hadamard(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -187,7 +187,7 @@ class S(ResourceOperator):
         **kwargs,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -322,7 +322,7 @@ class SWAP(ResourceOperator):
                         0 & 0 & 1 & 0
                 \end{bmatrix}.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
@@ -347,7 +347,7 @@ class SWAP(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -378,7 +378,7 @@ class T(ResourceOperator):
 
     Resources:
         The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.T`.
 
@@ -393,12 +393,12 @@ class T(ResourceOperator):
 
         Resources:
             The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
         Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+            ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @property
     def resource_params(self) -> dict:
@@ -435,7 +435,7 @@ class T(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs):
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -558,7 +558,7 @@ class X(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -575,7 +575,7 @@ class X(ResourceOperator):
         **kwargs,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -675,7 +675,7 @@ class Y(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -689,7 +689,7 @@ class Y(ResourceOperator):
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -773,7 +773,7 @@ class Z(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -790,7 +790,7 @@ class Z(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
