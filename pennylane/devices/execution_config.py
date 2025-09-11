@@ -94,7 +94,7 @@ class MCM_METHOD(StrEnum):
     def _missing_(cls, value):
         """Custom lookup to allow users to specify None for mcm_method."""
         if value is None:
-            return None
+            return MCM_METHOD.DEVICE
 
         supported_values = [item.value for item in cls]
 
@@ -109,12 +109,13 @@ class POSTSELECT_MODE(StrEnum):
     HW_LIKE = "hw-like"
     FILL_SHOTS = "fill-shots"
     PAD_INVALID_SAMPLES = "pad-invalid-samples"
+    DEVICE = "device"
 
     @classmethod
     def _missing_(cls, value):
         """Custom lookup to allow users to specify None for postselect_mode."""
         if value is None:
-            return None
+            return POSTSELECT_MODE.DEVICE
 
         supported_values = [item.value for item in cls]
 
