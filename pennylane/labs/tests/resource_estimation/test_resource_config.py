@@ -198,3 +198,17 @@ class TestResourceConfig:
         )
 
         assert repr_str == expected_repr_str
+
+    def test_set_decomp_invalid_type_raises_error(self):
+        """Test that set_decomp raises a ValueError for an invalid decomposition type."""
+        config = ResourceConfig()
+        invalid_type_string = "this_is_not_a_valid_type"
+
+        def dummy_decomp(**kwargs):
+            """A placeholder decomposition function."""
+            return []
+
+        with pytest.raises(
+            ValueError, match=f"'{invalid_type_string}' is not a valid DecompositionType"
+        ):
+            config.set_decomp(ResourceRX, dummy_decomp, decomp_type=invalid_type_string)
