@@ -3,9 +3,34 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.specs` function can now support code that has been compiled with `qml.qjit`.
+  This new feature only supports getting circuit specs at the `device` level.
+  [(#8202)](https://github.com/PennyLaneAI/pennylane/pull/8202)
+
+  ```python
+  @qml.qjit
+  @qml.qnode(qml.device("lightning.qubit", wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.Z(0) @ qml.Z(1))
+
+  print(qml.specs(circuit, level="device")())
+  ```
+  ```
+  {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}), gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
+   'num_device_wires': 2,
+   'device_name': 'lightning.qubit',
+   'level': 'device',
+   'gradient_options': {},
+   'interface': 'auto',
+   'diff_method': 'best'}
+  ```
+
+
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
-  
+
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
