@@ -302,13 +302,13 @@ class ResourceOperator(ABC):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo=self.num_wires, gate_types=gate_types)
+        return Resources(zeroed=0, algo_wires=self.num_wires, gate_types=gate_types)
 
     def __matmul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo=self.num_wires * scalar, gate_types=gate_types)
+        return Resources(zeroed=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 
     def add_series(self, other):
         "Adds two ResourceOperators in series"
