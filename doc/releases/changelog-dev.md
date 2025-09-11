@@ -117,12 +117,17 @@
 
 <h3>Improvements 🛠</h3>
 
+* The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
+  to guard users from an incompatibility that currently exists between the two.
+  Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
+  [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
+
 * `qml.counts` can now be captured with program capture into plxpr. It still cannot be interpreted or executed
   with program capture.
   [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
-  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
@@ -1055,6 +1060,10 @@
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
+  in the circuit with the `ctrl` happens.
+  [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
 * JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
   [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
