@@ -14,6 +14,7 @@
 """
 This module contains the qml.probs measurement.
 """
+import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -21,6 +22,7 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import LinearCombination
+from pennylane.ops.qubit.observables import Hermitian
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -311,4 +313,11 @@ def probs(wires=None, op=None) -> ProbabilityMP:
                 "provided. The wires for probs will be determined directly from the observable."
             )
         wires = Wires(wires)
+
+    if isinstance(op, Hermitian):
+        warnings.warn(
+            "Using qml.probs with a Hermitian observable might return incorrect results.",
+            UserWarning,
+        )
+
     return ProbabilityMP(obs=op, wires=wires)
