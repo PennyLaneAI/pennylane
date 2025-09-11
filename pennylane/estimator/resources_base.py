@@ -252,7 +252,7 @@ class Resources:
         )
 
     def multiply_parallel(self, scalar: int) -> Resources:
-        """Scale a resources object in parallel
+        """Scale a Resources object in parallel
 
         Args:
             scalar (int): integer value by which to scale the resources
