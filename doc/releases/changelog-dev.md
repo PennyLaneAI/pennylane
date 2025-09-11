@@ -117,6 +117,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.counts` can now be captured with program capture into plxpr. It still cannot be interpreted or executed
+  with program capture.
+  [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
+
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
 
