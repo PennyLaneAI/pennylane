@@ -240,8 +240,8 @@ class ResourceConfig:
             cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
-                "adj", "pow", "controlled",
-                and "base". Default is "base".
+                ``"adj"``, ``"pow"``, ``"controlled"``,
+                and ``"base"``. Default is ``"base"``.
 
         Raises:
             ValueError: If ``decomp_type`` is not a valid decomposition type.
