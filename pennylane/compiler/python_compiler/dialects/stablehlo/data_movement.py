@@ -18,8 +18,6 @@
 Data movement operations for the StableHLO dialect.
 """
 
-from typing import ClassVar, TypeVar
-
 from xdsl.dialects.builtin import BoolAttr, DenseArrayBase, IntegerAttr, TensorType, i64
 from xdsl.irdl import (
     IRDLOperation,
@@ -42,8 +40,12 @@ from xdsl.traits import (
     RecursiveMemoryEffect,
 )
 from xdsl.utils.exceptions import VerifyException
+from xdsl.utils.type import get_element_type_or_self
 
-from pennylane.compiler.python_compiler.xdsl_extras.traits import AllMatchSameOperatorTrait
+from pennylane.compiler.python_compiler.xdsl_extras.traits import (
+    AllMatchSameOperatorTrait,
+    SameOperandsAndResultElementType,
+)
 
 from .attributes import GatherDimensionNumbers, ScatterDimensionNumbers
 from .types import HLO_AnyIntegerOrIndexTensor, HLO_AnyTensor, HLO_IntTensor, HLO_Tensor
@@ -147,14 +149,14 @@ class ConcatenateOp(IRDLOperation):
 
     name = "stablehlo.concatenate"
 
-    T: ClassVar = TypeVar("T", bound=HLO_Tensor)
-    inputs = var_operand_def(T)
-    result = result_def(T)
+    inputs = var_operand_def(HLO_Tensor)
+    result = result_def(HLO_Tensor)
     dimension = attr_def(IntegerAttr.constr(type=eq(i64), value=AtLeast(0)))
 
     traits = traits_def(
         NoMemoryEffect(),
         ConditionallySpeculatable(),
+        SameOperandsAndResultElementType(),
         # InferTypeOpInterface(),
     )
 
@@ -190,17 +192,19 @@ class GatherOp(IRDLOperation):
     """
 
     name = "stablehlo.gather"
-    T: ClassVar = TypeVar("T", bound=HLO_Tensor)
-    operand = operand_def(T)
+    operand = operand_def(HLO_Tensor)
     start_indices = operand_def(HLO_IntTensor)
     dimension_numbers = attr_def(GatherDimensionNumbers)
     slice_sizes = attr_def(DenseArrayBase.constr(i64))
     indices_are_sorted = opt_attr_def(BoolAttr, default_value=BoolAttr.from_bool(False))
-    result = result_def(T)
+    result = result_def(HLO_Tensor)
 
     traits = traits_def(
         NoMemoryEffect(),
         ConditionallySpeculatable(),
+        AllMatchSameOperatorTrait(
+            ("operand", "result"), lambda x: get_element_type_or_self(x.type), "element type"
+        ),
         # TODO: InferTensorTypeWithReify(),
     )
 
@@ -238,11 +242,10 @@ class ReshapeOp(IRDLOperation):
         # TODO: HLO_CompatibleOperandsAndResultElementType,
     )
 
-    # pylint: disable=E1101
     def verify_(self) -> None:
         """Verify that the operation has the same shape for all operands and results."""
-        o_type = self.operand.type
-        r_type = self.result.type
+        o_type = self.operand_types[0]
+        r_type = self.result_types[0]
 
         # These are constrained to tensors by the op definition
         assert isinstance(o_type, TensorType) and isinstance(r_type, TensorType)
@@ -350,12 +353,11 @@ class SliceOp(IRDLOperation):
 
     name = "stablehlo.slice"
 
-    T: ClassVar = TypeVar("T", bound=HLO_Tensor)
-    operand = operand_def(T)
+    operand = operand_def(HLO_Tensor)
     start_indices = attr_def(DenseArrayBase.constr(i64))
     limit_indices = attr_def(DenseArrayBase.constr(i64))
     strides = attr_def(DenseArrayBase.constr(i64))
-    result = result_def(T)
+    result = result_def(HLO_Tensor)
 
     # TODO: Implement CustomDirective
     # assembly_format = """
@@ -367,4 +369,5 @@ class SliceOp(IRDLOperation):
         NoMemoryEffect(),
         ConditionallySpeculatable(),
         AllMatchSameOperatorTrait(("start_indices", "limit_indices", "strides"), len, "size"),
+        SameOperandsAndResultElementType(),
     )

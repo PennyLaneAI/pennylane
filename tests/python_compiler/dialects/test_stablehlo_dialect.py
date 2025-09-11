@@ -446,6 +446,53 @@ def test_invalid_slice_operations(run_filecheck):
         run_filecheck(program_slice_mismatch, roundtrip=True, verify=True)
 
 
+def test_invalid_slice_element_type_mismatch(run_filecheck):
+    """Test that SliceOp rejects mismatched operand/result element types."""
+    program = r"""
+    %slice_input = "test.op"() : () -> tensor<3x4xi64>
+    // CHECK: %slice_input = "test.op"() : () -> tensor<3x4xi64>
+    // Mismatched element type: operand is i64, result is f32
+    %slice = "stablehlo.slice"(%slice_input) {
+      start_indices = array<i64: 1, 2>,
+      limit_indices = array<i64: 3, 4>,
+      strides = array<i64: 1, 1>
+    } : (tensor<3x4xi64>) -> tensor<2x2xf32>
+    """
+
+    # Expect verification failure due to element type mismatch
+    with pytest.raises(
+        Exception, match="requires the same element type for all operands and results"
+    ):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_gather_element_type_mismatch(run_filecheck):
+    """Test that GatherOp rejects mismatched operand/result element types."""
+    program = r"""
+    %operand = "test.op"() : () -> tensor<2x3x4x2xi32>
+    %start_indices = "test.op"() : () -> tensor<2x2x3x2xi64>
+
+    // Mismatched element type: operand is i32, result is f32
+    %gather_bad = "stablehlo.gather"(%operand, %start_indices) {
+      dimension_numbers = #stablehlo.gather<
+        offset_dims = [3, 4],
+        collapsed_slice_dims = [1],
+        operand_batching_dims = [0],
+        start_indices_batching_dims = [1],
+        start_index_map = [2, 1],
+        index_vector_dim = 3>,
+      slice_sizes = array<i64: 1, 1, 2, 2>,
+      indices_are_sorted = false
+    } : (tensor<2x3x4x2xi32>, tensor<2x2x3x2xi64>) -> tensor<2x2x3x2x2xf32>
+    """
+
+    # Expect verification failure due to element type mismatch between operand and result
+    with pytest.raises(
+        Exception, match=r"all of \{operand, result\} must have the same element type"
+    ):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
 def test_invalid_reshape_operations(run_filecheck):
     """Test invalid reshape operations that should fail verification."""
     program_reshape_mismatch = r"""
