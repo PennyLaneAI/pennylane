@@ -3,6 +3,13 @@
 
 <h3>New features since last release</h3>
 
+* The Resource estimation toolkit was upgraded and has migrated from
+  :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
+  
+  * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
+    classes were added to track auxiliary wires for resource estimation.
+    [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
 
@@ -109,6 +116,10 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.counts` can now be captured with program capture into plxpr. It still cannot be interpreted or executed
+  with program capture.
+  [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
@@ -838,6 +849,9 @@
   locations in the preprocessing program.
   [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
 
+* Remove usage of the `pytest.mark.capture` marker from tests in the `tests/python_compiler` directory.
+  [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
+
 * Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
   [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
 
@@ -989,10 +1003,16 @@
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
 
+* Add a `mbqc` submodule to the `python_compiler` module for common utils of MBQC workflows.
+  [(#8219)](https://github.com/PennyLaneAI/pennylane/pull/8219)
+
 * Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
 <h3>Documentation 📝</h3>
+
+* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
+  [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
@@ -1026,6 +1046,10 @@
 * Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
+
+* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted 
+  to `torch.float64`.
+  [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
 
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
@@ -1142,6 +1166,7 @@ Pablo Antonio Moreno Casares
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,

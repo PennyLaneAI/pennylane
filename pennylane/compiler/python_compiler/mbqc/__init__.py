@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""PennyLane-xDSL transformations API specifically for the MBQC transform."""
 
-"""
-Version number (major.minor.patch[-label])
-"""
+from .graph_state_utils import (
+    get_num_aux_wires,
+    get_graph_state_edges,
+    n_vertices_from_packed_adj_matrix,
+    edge_iter,
+    generate_adj_matrix,
+)
 
-__version__ = "0.43.0-dev54"
+
+__all__ = [
+    "get_num_aux_wires",
+    "get_graph_state_edges",
+    "n_vertices_from_packed_adj_matrix",
+    "edge_iter",
+    "generate_adj_matrix",
+]
