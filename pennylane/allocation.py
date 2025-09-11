@@ -121,7 +121,7 @@ class Deallocate(Operator):
 
 
 def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate:
-    """Deallocates quantum memory that has previously been allocated with :func:`~.allocate`.
+    """Deallocates wires that have previously been allocated with :func:`~.allocate`.
     Upon deallocating quantum memory, that memory is available to be allocated thereafter.
 
     Args:
@@ -140,7 +140,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         import pennylane as qml
     
         @qml.qnode(qml.device("default.qubit"))
-        def c():
+        def circuit():
             qml.H(0)
 
             wire = qml.allocate(1, state="zero", restored=True)[0]
@@ -154,7 +154,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             
             return qml.expval(qml.Z(0))
 
-    >>> print(qml.draw(c)())
+    >>> print(qml.draw(circuit)())
                 0: ──H────────╭●────╭●──────────────────────┤  <Z>
     <DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤     
     <DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤     
@@ -224,7 +224,7 @@ def allocate(
             started in. ``restored=True`` indicates that the user promises to restore the 
             dynamically allocated wires to their original state before being deallocated. 
             ``restored=False`` indicates that the user does not promise to restore the dynamically 
-            allocated wires before before being deallocated. The default value is ``False``.
+            allocated wires before being deallocated. The default value is ``False``.
 
     Returns:
         DynamicRegister: an object, behaving similarly to ``Wires``, that represents the dynamically
@@ -324,7 +324,7 @@ def allocate(
 
         The user-level circuit drawing shows four separate allocations and deallocations (two per 
         loop iteration). However, the circuit that the device receives gets automatically compiled 
-        to only use **two** additional wires (wires labelled ``1`` and ``2`` in the diagram below). The 
+        to only use **two** additional wires (wires labelled ``1`` and ``2`` in the diagram below). This 
         is due to the fact that ``new_qubit1`` and ``new_qubit2`` can both be reused after they've been 
         deallocated in the first iteration of the ``for`` loop:
 

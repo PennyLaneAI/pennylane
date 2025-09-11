@@ -88,7 +88,7 @@
 
   The user-level circuit drawing shows four separate allocations and deallocations (two per loop 
   iteration). However, the circuit that the device receives gets automatically compiled to only use 
-  **two** additional wires (wires labelled `1` and `2` in the diagram below). The is due to the 
+  **two** additional wires (wires labelled `1` and `2` in the diagram below). This is due to the 
   fact that `new_qubit1` and `new_qubit2` can both be reused after they've been deallocated in 
   the first iteration of the `for` loop:
 
