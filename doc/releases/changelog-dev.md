@@ -132,7 +132,6 @@
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
-  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
