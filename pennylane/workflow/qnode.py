@@ -522,8 +522,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: bool | None = False,
-        postselect_mode: str | None = None,
-        mcm_method: str | None = None,
+        postselect_mode: str | None = "device",
+        mcm_method: str | None = "device",
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,
@@ -589,8 +589,8 @@ class QNode:
             "cachesize": cachesize,
             "max_diff": max_diff,
             "device_vjp": device_vjp,
-            "postselect_mode": postselect_mode,
-            "mcm_method": mcm_method,
+            "postselect_mode": postselect_mode or "device",
+            "mcm_method": mcm_method or "device",
             "executor_backend": executor_backend,
         }
 

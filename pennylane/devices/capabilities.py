@@ -434,7 +434,7 @@ def observable_stopping_condition_factory(
 def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots_present: bool):
     """Validates an MCM method against the device's capabilities."""
 
-    if mcm_method is None or mcm_method == "deferred":
+    if mcm_method in {"device", "deferred"}:
         return  # no need to validate if requested deferred or if no method is requested.
 
     if mcm_method == "one-shot" and not shots_present:
@@ -443,7 +443,7 @@ def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots
     if capabilities is None:
         # If the device does not declare its supported mcm methods through capabilities,
         # simply check that the requested mcm method is something we recognize.
-        if mcm_method not in ("deferred", "one-shot", "tree-traversal"):
+        if mcm_method not in {"deferred", "one-shot", "tree-traversal"}:
             raise QuantumFunctionError(
                 f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
                 f'are: "deferred", "one-shot", and "tree-traversal".'
