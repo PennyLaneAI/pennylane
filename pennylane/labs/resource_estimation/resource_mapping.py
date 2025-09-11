@@ -14,9 +14,9 @@
 r"""Mapping PL operations to their ResourceOperator."""
 from __future__ import annotations
 
+import math
 from functools import singledispatch
 
-import math
 import pennylane.labs.resource_estimation.ops as re_ops
 import pennylane.labs.resource_estimation.templates as re_temps
 import pennylane.ops as qops

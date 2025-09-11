@@ -14,9 +14,8 @@
 """
 This module contains tests for class needed to map PennyLane operations to their ResourceOperator.
 """
-import pytest
-
 import numpy as np
+import pytest
 
 import pennylane as qml
 import pennylane.labs.resource_estimation.ops as re_ops
