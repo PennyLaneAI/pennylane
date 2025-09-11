@@ -48,6 +48,5 @@ from .resource_operator import (
     ResourceOperator,
     CompressedResourceOp,
     GateCount,
-    ResourcesNotDefined,
     resource_rep,
 )

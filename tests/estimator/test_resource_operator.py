@@ -26,6 +26,7 @@ from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resource
 from pennylane.estimator.resource_operator import (
     GateCount,
     ResourcesNotDefined,
+    _dequeue,
     _make_hashable,
     resource_rep,
 )
@@ -357,7 +358,7 @@ class TestResourceOperator:
                 for op in self.ops_to_queue:
                     op.queue()
 
-                ResourceOperator.dequeue(op_to_remove)
+                _dequeue(op_to_remove)
 
             assert q.queue == expected_queue
 
