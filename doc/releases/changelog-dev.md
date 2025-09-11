@@ -1061,6 +1061,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
+  in the circuit with the `ctrl` happens.
+  [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
+
 * JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
   [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
 
