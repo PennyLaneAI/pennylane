@@ -703,6 +703,22 @@ class TestProbs:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_warning_hermitian(self):
+        """Test that a warning is raised when using a Hermitian observable."""
+
+        H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+
+        @qml.qnode(device=qml.device("default.qubit", wires=1))
+        def circuit():
+            qml.H(0)
+            return qml.probs(op=qml.Hermitian(H, wires=0))
+
+        with pytest.warns(
+            UserWarning,
+            match="Using qml.probs with a Hermitian observable might return different results than expected",
+        ):
+            circuit()
+
     @pytest.mark.parametrize("operation", [qml.PauliX, qml.PauliY, qml.Hadamard])
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_operation_prob(self, operation, wire, init_state, tol, seed):
