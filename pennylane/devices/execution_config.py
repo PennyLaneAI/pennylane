@@ -96,7 +96,7 @@ class MCM_METHOD(StrEnum):
         if value is None:
             return MCM_METHOD.DEVICE
 
-        supported_values = [item.value for item in cls]
+        supported_values = [item.value for item in cls] + [None]
 
         standard_msg = f"'{value}' is not a valid {cls.__name__}."
         custom_addition = f"Please use one of the supported interfaces: {supported_values}."
@@ -117,7 +117,7 @@ class POSTSELECT_MODE(StrEnum):
         if value is None:
             return POSTSELECT_MODE.DEVICE
 
-        supported_values = [item.value for item in cls]
+        supported_values = [item.value for item in cls] + [None]
 
         standard_msg = f"'{value}' is not a valid {cls.__name__}."
         custom_addition = f"Please use one of the supported interfaces: {supported_values}."
