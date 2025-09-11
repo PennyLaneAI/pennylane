@@ -31,7 +31,7 @@ params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 @pytest.mark.parametrize("epsilon, expected", params)
 def test_rotation_resources(epsilon, expected):
     """Test the hardcoded resources used for RX, RY, RZ"""
-    gate_types = [plre.GateCount(plre.CompressedResourceOp(plre.ResourceT, {}), expected)]
+    gate_types = [plre.GateCount(plre.CompressedResourceOp(plre.ResourceT, 1, {}), expected)]
 
     assert gate_types == _rotation_resources(epsilon=epsilon)
 
@@ -69,7 +69,7 @@ class TestPauliRotation:
     def test_resource_rep(self, resource_class, epsilon):  # pylint: disable=unused-argument
         """Test the compact representation"""
         op = resource_class(wires=0)
-        expected = plre.CompressedResourceOp(resource_class, {"eps": None})
+        expected = plre.CompressedResourceOp(resource_class, 1, {"eps": None})
         assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
@@ -202,7 +202,7 @@ class TestRot:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = plre.ResourceRot(wires=0)
-        expected = plre.CompressedResourceOp(plre.ResourceRot, {"eps": None})
+        expected = plre.CompressedResourceOp(plre.ResourceRot, 1, {"eps": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -299,7 +299,7 @@ class TestPhaseShift:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = plre.ResourcePhaseShift(wires=0)
-        expected = plre.CompressedResourceOp(plre.ResourcePhaseShift, {"eps": None})
+        expected = plre.CompressedResourceOp(plre.ResourcePhaseShift, 1, {"eps": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):

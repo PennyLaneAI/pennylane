@@ -282,7 +282,7 @@ def register_resources(
 
             :func:`~pennylane.resource_rep`
 
-    .. details:
+    .. details::
        :title: Dynamically Allocated Wires as a Resource
 
        Some decomposition rules make use of work wires, which can be dynamically requested within
@@ -293,7 +293,7 @@ def register_resources(
        There are four types of work wires:
 
        - "zeroed" wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
-         must be restored to the :math:`|0\rangle>` state before deallocation.
+         must be restored to the :math:`|0\rangle` state before deallocation.
 
        - "borrowed" wires are allocated in an arbitrary state, but they must be restored to the same initial state before deallocation.
 
@@ -302,9 +302,9 @@ def register_resources(
 
        - "garbage" wires can be allocated in any state, and can be deallocated in any state.
 
-       Here's a decomposition for a multi-controlled `Rot` that uses a zeroed work wire:
+       Here's a decomposition for a multi-controlled ``Rot`` that uses a zeroed work wire:
 
-       .. code-block: python
+       .. code-block:: python
 
           from functools import partial
           import pennylane as qml
@@ -602,5 +602,29 @@ def has_decomp(op_type: type[Operator] | str) -> bool:
 
 @register_resources({})
 def null_decomp(*_, **__):
-    """A decomposition rule that does nothing."""
+    """A decomposition rule that can be assigned to an operator so that the operator decomposes to nothing.
+
+    **Example**
+
+    .. code-block:: python
+
+        from functools import partial
+        import pennylane as qml
+        from pennylane.decomposition import null_decomp
+
+        qml.decomposition.enable_graph()
+
+        @partial(
+            qml.transforms.decompose,
+            gate_set={qml.RZ},
+            fixed_decomps={qml.GlobalPhase: null_decomp}
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.Z(0)
+
+    >>> print(qml.draw(circuit)())
+    0: ──RZ(3.14)─┤
+
+    """
     return
