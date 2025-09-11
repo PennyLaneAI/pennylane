@@ -48,10 +48,6 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
-    from pennylane.devices.mcm_config_utils import (
-        SupportedMCMMethodUserInput,
-        SupportedPostSelectModeUserInput,
-    )
     from pennylane.math import SupportedInterfaceUserInput
     from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
@@ -526,8 +522,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: bool | None = False,
-        postselect_mode: SupportedPostSelectModeUserInput = None,
-        mcm_method: SupportedMCMMethodUserInput = None,
+        postselect_mode: str | None = None,
+        mcm_method: str | None = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,

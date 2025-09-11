@@ -145,23 +145,8 @@ class MCMConfig:
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        if isinstance(self.mcm_method, str):
-            object.__setattr__(self, "mcm_method", MCM_METHOD(self.mcm_method))
-        elif isinstance(self.mcm_method, MCM_METHOD):
-            object.__setattr__(self, "mcm_method", self.mcm_method)
-        elif self.mcm_method and not isinstance(self.mcm_method, MCM_METHOD):
-            raise ValueError(
-                f"'{self.mcm_method}' is not a valid MCM_METHOD. Must be one of {list(MCM_METHOD) + [None]}."
-            )
-
-        if isinstance(self.postselect_mode, str):
-            object.__setattr__(self, "postselect_mode", POSTSELECT_MODE(self.postselect_mode))
-        elif isinstance(self.postselect_mode, POSTSELECT_MODE):
-            object.__setattr__(self, "postselect_mode", self.postselect_mode)
-        elif self.postselect_mode and not isinstance(self.postselect_mode, POSTSELECT_MODE):
-            raise ValueError(
-                f"'{self.postselect_mode}' is not a valid POSTSELECT_MODE. Must be one of {list(POSTSELECT_MODE) + [None]}."
-            )
+        object.__setattr__(self, "mcm_method", MCM_METHOD(self.mcm_method))
+        object.__setattr__(self, "postselect_mode", POSTSELECT_MODE(self.postselect_mode))
 
 
 # pylint: disable=too-many-instance-attributes
