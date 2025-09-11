@@ -79,7 +79,7 @@ class Hadamard(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -107,7 +107,7 @@ class Hadamard(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -172,7 +172,7 @@ class S(ResourceOperator):
             The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -206,7 +206,7 @@ class S(ResourceOperator):
               is equal to three, means one instance of the Z-gate and one instance of S-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -330,10 +330,10 @@ class SWAP(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -361,7 +361,7 @@ class SWAP(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -424,7 +424,7 @@ class T(ResourceOperator):
             The resources are defined as one Z-gate (:math:`Z = T^{4}`), one S-gate (:math:`S = T^{2}`) and one T-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -462,7 +462,7 @@ class T(ResourceOperator):
             - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -561,7 +561,7 @@ class X(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -589,7 +589,7 @@ class X(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -678,7 +678,7 @@ class Y(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -703,7 +703,7 @@ class Y(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -776,7 +776,7 @@ class Z(ResourceOperator):
             in the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -804,7 +804,7 @@ class Z(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
