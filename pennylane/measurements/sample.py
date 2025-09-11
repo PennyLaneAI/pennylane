@@ -133,16 +133,10 @@ class SampleMP(SampleMeasurement):
         wire_order: WiresLike,
         shot_range: None | tuple[int, ...] = None,
         bin_size: None | int = None,
-        dtype=None,
     ) -> TensorLike:
 
         return process_raw_samples(
-            self,
-            samples,
-            wire_order,
-            shot_range=shot_range,
-            bin_size=bin_size,
-            dtype=self._dtype if dtype is None else dtype,
+            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size, dtype=self._dtype
         )
 
     def process_counts(self, counts: dict, wire_order: WiresLike) -> np.ndarray:
