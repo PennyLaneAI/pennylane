@@ -1034,6 +1034,10 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
+* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted 
+  to `torch.float64`.
+  [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
+
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
@@ -1149,6 +1153,7 @@ Pablo Antonio Moreno Casares
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,
