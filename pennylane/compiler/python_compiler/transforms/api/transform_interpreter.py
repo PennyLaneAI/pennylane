@@ -66,7 +66,7 @@ class TransformFunctionsExt(TransformFunctions):
             return
         if self.pass_level == 0:
             # Since this is the first pass, there is no previous pass
-            self.callback(compilation_pass, module, None, pass_level=0)
+            self.callback(None, module, compilation_pass, pass_level=0)
 
     def _post_pass_callback(self, compilation_pass, module):
         """Increment level and run callback if defined."""
