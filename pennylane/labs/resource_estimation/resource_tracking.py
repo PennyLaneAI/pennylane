@@ -125,10 +125,12 @@ def estimate_resources(
     Note that we are passing a python function NOT a :class:`~.QNode`. The resources for this
     workflow are then obtained by:
 
+    >>> config = plre.ResourceConfig()
+    >>> config.set_single_qubit_rot_precision(1e-4)
     >>> res = plre.estimate_resources(
     ...     my_circuit,
     ...     gate_set = plre.DefaultGateSet,
-    ...     single_qubit_rotation_precision = 1e-4,
+    ...     config=config,
     ... )()
     ...
     >>> print(res)
