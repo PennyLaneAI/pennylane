@@ -16,7 +16,7 @@
 import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import reduce
 from typing import Dict, FrozenSet, List, Optional, Tuple, Union
 
@@ -54,10 +54,10 @@ class ImportanceConfig:
 class ConvergenceLog:
     """Used to track the convergence history when sampling"""
 
-    partial_sums: List[complex] = []
-    means: List[complex] = []
-    medians: List[complex] = []
-    stds: List[complex] = []
+    partial_sums: List[complex] = field(default_factory=list)
+    means: List[complex] = field(default_factory=list)
+    medians: List[complex] = field(default_factory=list)
+    stds: List[complex] = field(default_factory=list)
 
 
 def effective_hamiltonian(
