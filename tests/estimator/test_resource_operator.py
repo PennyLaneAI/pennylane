@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import (
     GateCount,
-    ResourcesNotDefined,
+    ResourcesUndefinedError,
     _dequeue,
     _make_hashable,
     resource_rep,
@@ -367,10 +367,10 @@ class TestResourceOperator:
         num_wires aregument leads to an error."""
         dummy_op1 = DummyOp()
         assert dummy_op1.wires is None
-        assert dummy_op1.num_wires == 1
+        assert dummy_op1.num_wires is None
 
-        with pytest.raises(ValueError, match="Expected 1 wires, got"):
-            dummy_op2 = DummyOp(wires=[0, 1, 2])
+        with pytest.raises(ValueError, match="Expected None wires, got"):
+            DummyOp(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mul(self, s):
@@ -392,7 +392,7 @@ class TestResourceOperator:
         expected_resources = Resources(0, algo_wires=s * 2, gate_types=gt)
         assert resources == expected_resources
 
-    def test_add(self):
+    def test_add_series(self):
         """Test addition dunder method between two ResourceOperator classes"""
         op1 = RX(1.23)
         op2 = CNOT()
@@ -408,7 +408,7 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
-    def test_add_resources(self):
+    def test_add_series_resources(self):
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
@@ -425,14 +425,14 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
-    def test_add_error(self):
+    def test_add_series_error(self):
         """Test addition dunder method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
             op1 = RX(1.23)
             _ = op1.add_series(True)
 
-    def test_and(self):
-        """Test and dunder method between two ResourceOperator classes"""
+    def test_add_parallel(self):
+        """Test add_parallel method between two ResourceOperator classes"""
         op1 = RX(1.23)
         op2 = CNOT()
         resources = op1.add_parallel(op2)
@@ -447,7 +447,7 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
-    def test_and_resources(self):
+    def test_add_parallel_resources(self):
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
@@ -464,11 +464,23 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
-    def test_and_error(self):
-        """Test and dunder method raises error when adding with unsupported type"""
+    def test_parallel_add_error(self):
+        """Test add_parallel method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
             op1 = RX(1.23)
             _ = op1.add_parallel(True)
+
+    def test_mul_error(self):
+        """Test multiply dunder method raises error when multiplying with unsupported type"""
+        with pytest.raises(TypeError, match="Cannot multiply resource operator"):
+            op1 = RX(1.23)
+            _ = op1 * 0.2
+
+    def test_matmul_error(self):
+        """Test multiply dunder method raises error when multiplying with unsupported type"""
+        with pytest.raises(TypeError, match="Cannot multiply resource operator"):
+            op1 = RX(1.23)
+            _ = op1 @ 0.2
 
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
@@ -477,17 +489,17 @@ class TestResourceOperator:
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             X.adjoint_resource_decomp()
 
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             X.controlled_resource_decomp(ctrl_num_ctrl_wires=2, ctrl_num_ctrl_values=0)
 
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             X.pow_resource_decomp(2)
 
     def test_tracking_name(self):
