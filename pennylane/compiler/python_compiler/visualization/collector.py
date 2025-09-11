@@ -29,6 +29,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as Ext
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
     MultiRZOp,
+    MeasureOp,
     ProbsOp,
     QubitUnitaryOp,
     SampleOp,
@@ -44,6 +45,7 @@ from .xdsl_conversion import (
     xdsl_to_qml_meas,
     xdsl_to_qml_obs_op,
     xdsl_to_qml_op,
+    xdsl_to_qml_measure_op,
 )
 
 
@@ -78,13 +80,18 @@ class QMLCollector:
         obs_op = xdsl_meas_op.obs.owner
         return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_obs_op(obs_op))
 
+    @handle.register
+    def _(self, xdsl_measure: MeasureOp) -> MeasurementProcess:
+        return xdsl_to_qml_measure_op(xdsl_measure)
+
     ############################################################
     ### Operators
     ############################################################
 
     @handle.register
     def _(
-        self, xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp
+        self,
+        xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp,
     ) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
