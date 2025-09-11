@@ -655,8 +655,7 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
 
     # Basically, we want to do, lambda_a rho_ab lambda_b
     # Use ellipsis to represent the batch dimensions as eigvals.shape = (batch, 2 * len(channel_wires))
-    is_batched_eigvals = eigvals.ndim == 2
-    ellipsis = "..." if is_batched_eigvals else ""
+    ellipsis = "..." if eigvals.ndim == 2 else ""
     einsum_indices = f"{ellipsis}{row_indices},{ellipsis}{state_indices},{ellipsis}{col_indices}->{ellipsis}{state_indices}"
 
     return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
