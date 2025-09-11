@@ -577,3 +577,65 @@ def test_jacobians_with_and_without_jit_match(seed):
 
     for compare in [jac_fd, jac_fd_jit, jac_ps, jac_ps_jit]:
         assert qml.math.allclose(jac_exact, compare, atol=atol)
+
+
+@pytest.mark.jax
+class TestJaxJitSPInputs:
+    """Test that the Mottonen state preparation works with input state-vectors in various forms of abstraction and concretization"""
+
+    def test_state_external_static_input(self):
+        """
+        Test definition of the state-prep operator data external to the JIT context.
+        """
+        import jax
+
+        n_qubits = 3
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        def sp_func():
+            psi = jax.numpy.zeros(2**n_qubits)
+            psi = psi.at[jax.numpy.array(range(1, n_qubits + 1))].set(
+                1 / jax.numpy.sqrt(3), indices_are_sorted=True, unique_indices=True
+            )
+
+            def apply_mottonen(wires):
+                qml.MottonenStatePreparation(psi, wires=wires)
+
+            return apply_mottonen, np.abs(psi) ** 2
+
+        apply_mottonen, res_expected = sp_func()
+
+        @jax.jit
+        @qml.qnode(dev)
+        def mottonen_external():
+            apply_mottonen(wires=range(n_qubits))
+            return qml.probs()
+
+        assert np.allclose(mottonen_external(), res_expected)
+
+    def test_state_internal_static_input(self):
+        """
+        Test definition of the state-prep operator data within the JIT context.
+        """
+        import jax
+
+        n_qubits = 3
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        def psi_gen():
+            psi = jax.numpy.zeros(2**n_qubits)
+            psi = psi.at[jax.numpy.array(range(1, n_qubits + 1))].set(
+                1 / jax.numpy.sqrt(3), indices_are_sorted=True, unique_indices=True
+            )
+            return psi
+
+        @jax.jit
+        @qml.qnode(dev)
+        def mottonen_internal():
+            psi = psi_gen()
+            qml.MottonenStatePreparation(psi, wires=range(n_qubits))
+            return qml.probs()
+
+        assert np.allclose(mottonen_internal(), np.abs(psi_gen()) ** 2)

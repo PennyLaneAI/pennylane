@@ -85,6 +85,11 @@ class TestPreprocess:
             mcm_method="single-branch-statistics", postselect_mode=None
         )
 
+    def test_default_mcm_method_deferred(self):
+        """Test that the default mcm_method is deferred."""
+        config = qml.device("default.qubit").setup_execution_config()
+        assert config.mcm_config.mcm_method == "deferred"
+
     def test_transform_program(self):
         """Test that the transform program returned by preprocess has the correct transforms."""
         dev = qml.device("default.qubit", wires=1)
