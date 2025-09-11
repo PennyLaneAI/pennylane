@@ -415,7 +415,7 @@ def resource_rep(
 
     Args:
         resource_op (Type[ResourceOperator]]): The type of operator we want to get the compact representation for.
-        resource_params (Dict): The required set of parameters to specify the operator.
+        resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
 
     Returns:
         :class:`~.pennylane.estimator.CompressedResourceOp`: A compressed representation of a resource operator
