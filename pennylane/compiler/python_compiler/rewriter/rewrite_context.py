@@ -23,9 +23,9 @@ from uuid import UUID, uuid4
 from xdsl.dialects import arith, builtin
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor
-from xdsl.ir import Block, BlockArgument
+from xdsl.ir import Block
 from xdsl.ir import Operation as xOperation
-from xdsl.ir import Region, SSAValue
+from xdsl.ir import OpResult, Region, SSAValue
 
 from ..dialects import mbqc, quantum
 
@@ -245,7 +245,9 @@ class RewriteContext:
         # We only update the wire_qubit_map if an operation has the same number of qubit
         # operands and results, and assume that at any given index, the input and output
         # qubits correspond to the same wire label.
-        assert len(in_qubits) == len(out_qubits)
+        if len(in_qubits) != len(out_qubits):
+            return
+
         for iq, oq in zip(in_qubits, out_qubits, strict=True):
             self.wire_qubit_map.update_qubit(iq, oq)
 
@@ -260,21 +262,23 @@ class RewriteContext:
         if shots:
             shots_owner = shots.owner
             if isinstance(shots_owner, arith.ConstantOp):
+                # Shots are static
                 self.shots = shots_owner.value.data
             else:
                 assert (
                     isinstance(shots_owner, tensor.ExtractOp)
                     and len(shots_owner.operands[0].type.shape) == 0
                 )
-                if isinstance(shots_owner.operands[0], BlockArgument):
-                    # Shots are dynamic, i.e., a ``BlockArgument``
-                    self.shots = shots
+                shots_tensor = shots_owner.operands[0]
+                if isinstance(shots_tensor, OpResult) and isinstance(
+                    shots_tensor.owner, xstablehlo.ConstantOp
+                ):
+                    # Shots are static, but created using ``stablehlo.constant``
+                    self.shots = shots_tensor.owner.properties["value"].get_values()[0]
 
                 else:
-                    # Shots are static, but created using ``stablehlo.constant``
-                    cst_owner = shots_owner.operands[0].owner
-                    assert isinstance(cst_owner, xstablehlo.ConstantOp)
-                    self.shots = cst_owner.properties["value"].get_values()[0]
+                    # Shots are dynamic
+                    self.shots = shots
 
     @update_from_op.register
     def _update_from_extract(self, op: quantum.ExtractOp):
@@ -330,14 +334,15 @@ class RewriteContext:
         else:
             nqubits_owner = op.nqubits.owner
             assert isinstance(nqubits_owner, tensor.ExtractOp)
-            if isinstance(nqubits_owner.operands[0], BlockArgument):
-                # Number of qubits is dynamic, i.e., ``BlockArgument``
-                self.nqubits = op.nqubits
-            else:
+            nqubits_tensor = nqubits_owner.operands[0]
+            if isinstance(nqubits_tensor, OpResult) and isinstance(
+                nqubits_tensor.owner, xstablehlo.ConstantOp
+            ):
                 # Number of qubits is constant, but created using ``stablehlo.constant``
-                cst_owner = nqubits_owner.operands[0].owner
-                assert isinstance(cst_owner, xstablehlo.ConstantOp)
-                self.nqubits = cst_owner.properties["value"].get_values()[0]
+                self.nqubits = nqubits_tensor.owner.properties["value"].get_values()[0]
+            else:
+                # Number of qubits is dynamic
+                self.nqubits = op.nqubits
 
         # Update quantum register
         self.qreg = op.results[0]
@@ -353,9 +358,8 @@ class RewriteContext:
     def _update_from_dealloc(self, op: quantum.DeallocOp):
         """Update the context from a ``DeallocOp``. The operation is used to delete the
         quantum register."""
-        if isinstance(op, quantum.DeallocOp):
-            assert self.qreg == op.operands[0]
-            self.qreg = None
+        assert self.qreg == op.operands[0]
+        self.qreg = None
 
     @update_from_op.register
     def _update_from_dealloc_qubit(self, op: quantum.DeallocQubitOp):

@@ -16,11 +16,13 @@
 from uuid import UUID
 
 import pytest
-from xdsl.dialects import builtin, test
+from xdsl.dialects import arith, builtin
+from xdsl.dialects import stablehlo as xstablehlo
+from xdsl.dialects import tensor, test
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects import quantum
-from pennylane.compiler.python_compiler.rewriter import AbstractWire, WireQubitMap
+from pennylane.compiler.python_compiler.rewriter import AbstractWire, RewriteContext, WireQubitMap
 
 pytestmark = pytest.mark.external
 
@@ -35,15 +37,33 @@ def _create_populated_wire_qubit_map(wires=None) -> WireQubitMap:
     """Create a populated WireQubitMap instance for testing. If no wires are provided, a mix
     of static and abstract wires are used to initialize the map."""
     default_wires = (0, 1, 2, 3, 4, 5, AbstractWire(), AbstractWire())
-    wire_qubit_map = WireQubitMap(wires=wires)
+    wqmap = WireQubitMap(wires=wires)
 
     # Populate map with qubits
     map_wires = wires or default_wires
     ssa_qubits = _create_ssa_values([quantum.QubitType() for _ in range(len(map_wires))])
     for w, q in zip(map_wires, ssa_qubits, strict=True):
-        wire_qubit_map[w] = q
+        wqmap[w] = q
 
-    return wire_qubit_map
+    return wqmap
+
+
+def _create_arith_constant_int(value) -> SSAValue:
+    """Create a constant SSAValue using arith.constant."""
+    op = arith.ConstantOp(
+        value=builtin.IntegerAttr(value=value, value_type=builtin.IntegerType(64))
+    )
+    return op.results[0]
+
+
+def _create_stablehlo_constant_int(value) -> SSAValue:
+    """Create a constant SSAValue using stablehlo.constant and tensor.extract."""
+    dense_repr = builtin.DenseIntOrFPElementsAttr(
+        type=builtin.TensorType(builtin.IntegerType(64), shape=()), data=[value]
+    )
+    cst_op = xstablehlo.ConstantOp(dense_repr)
+    extract_op = tensor.ExtractOp(tensor=cst_op.results[0], indices=())
+    return extract_op.results[0]
 
 
 class TestAbstractWire:
@@ -281,21 +301,141 @@ class TestWireQubitMap:
             wqmap.update_qubit(old_qubit, new_qubit)
 
 
+in_qubits: list[quantum.QubitSSAValue] = _create_ssa_values(
+    [quantum.QubitType() for _ in range(10)]
+)
+out_qubits: list[quantum.QubitSSAValue] = _create_ssa_values(
+    [quantum.QubitType() for _ in range(10)]
+)
+test_qreg: quantum.QuregSSAValue = _create_ssa_values([quantum.QuregType()])[0]
+
+
+@pytest.fixture(scope="function")
+def wire_qubit_map():
+    wires = list(range(len(in_qubits)))
+    wqmap = WireQubitMap(wires=wires)
+    for w, q in zip(wires, in_qubits):
+        wqmap[w] = q
+
+    yield wqmap
+
+
+# pylint: disable=redefined-outer-name,too-many-arguments
 class TestRewriteContext:
     """Unit tests for the RewriteContext class."""
 
     def test_init(self):
         """Test that the initialization of RewriteContext is correct."""
+        context = RewriteContext()
+        assert context.shots is None
+        assert context.nqubits is None
+        assert context.qreg is None
+        assert context.wire_qubit_map == WireQubitMap()
 
-    @pytest.mark.parametrize("op, updated_keys, updated_values", [])
-    def test_update_from_op_dispatches(self, op, updated_keys, updated_values):
+        wqmap = _create_populated_wire_qubit_map(wires=(0, 1))
+        qreg = _create_ssa_values([quantum.QuregType()])[0]
+        context = RewriteContext(nqubits=4, shots=10, qreg=qreg, wire_qubit_map=wqmap)
+        assert context.shots == 10
+        assert context.nqubits == 4
+        assert context.qreg == qreg
+        assert context.wire_qubit_map == wqmap
+
+    @pytest.mark.parametrize(
+        "op, updated_keys, updated_values, updated_wires_and_qubits",
+        [
+            # DeviceInitOp
+            (),
+            (),
+            (),
+            # ExtractOp
+            (),
+            (),
+            (),
+            (),
+            # InsertOp
+            (),
+            # AllocOp
+            (),
+            (),
+            (),
+            # AllocQubitOp
+            (),
+            # DeallocOp
+            (),
+            # DeallocQubitOp
+            (),
+            # NumQubitsOp
+            (),
+            # MeasureOp
+            (),
+            # MeasureInBasisOp
+            (),
+        ],
+    )
+    def test_update_from_op_dispatches(
+        self, op, updated_keys, updated_values, updated_wires_and_qubits, wire_qubit_map
+    ):
         """Test that the dispatches for RewriteContext.update_from_op update
         the context as expected."""
 
-    @pytest.mark.parametrize("op, updated_keys, updated_values", [])
-    def test_update_from_op_default(self, op, updated_keys, updated_values):
+    def test_update_from_op_default(self):
         """Test that the default RewriteContext.update_from_op updates the
         context as expected."""
+        # pylint: disable=protected-access
+        wires = (0, 1)
+        wqmap = _create_populated_wire_qubit_map(wires=wires)
+        context = RewriteContext(wire_qubit_map=wqmap)
+        old_qubits = [wqmap[0], wqmap[1]]
+
+        op = test.TestOp(
+            operands=old_qubits,
+            result_types=[quantum.QuregType(), quantum.QubitType(), quantum.QubitType()],
+        )
+        qreg, *new_qubits = op.results
+        context.update_from_op(op)
+
+        assert context.wire_qubit_map[0] == new_qubits[0]
+        assert context.wire_qubit_map[1] == new_qubits[1]
+        assert context.qreg == qreg
+        assert context.nqubits is None
+        assert context.shots is None
+
+    def test_update_from_op_default_no_qubit_outs(self):
+        """Test that the default RewriteContext.update_from_op updates the
+        context as expected when the op has no qubit outputs."""
+        # pylint: disable=protected-access
+        wires = (0, 1)
+        wqmap = _create_populated_wire_qubit_map(wires=wires)
+        context = RewriteContext(wire_qubit_map=wqmap)
+        old_qubits = [wqmap[0], wqmap[1]]
+
+        op = test.TestOp(
+            operands=old_qubits,
+        )
+        context.update_from_op(op)
+        assert context.wire_qubit_map[0] == old_qubits[0]
+        assert context.wire_qubit_map[1] == old_qubits[1]
+        assert context.qreg is None
+        assert context.nqubits is None
+        assert context.shots is None
+
+    def test_update_from_op_default_different_qubit_in_out_lengths(self):
+        """Test that the default RewriteContext.update_from_op updates the
+        context as expected when the op has qubit outputs but the number of
+        input and output qubits is different."""
+        # pylint: disable=protected-access
+        wires = (0, 1)
+        wqmap = _create_populated_wire_qubit_map(wires=wires)
+        context = RewriteContext(wire_qubit_map=wqmap)
+        old_qubits = [wqmap[0], wqmap[1]]
+
+        op = test.TestOp(operands=old_qubits, result_types=(quantum.QubitType(),))
+        context.update_from_op(op)
+        assert context.wire_qubit_map[0] == old_qubits[0]
+        assert context.wire_qubit_map[1] == old_qubits[1]
+        assert context.qreg is None
+        assert context.nqubits is None
+        assert context.shots is None
 
     @pytest.mark.parametrize("reverse", [False, True])
     @pytest.mark.parametrize("region_first", [False, True])
