@@ -12,7 +12,7 @@ packaging
 autoray>=0.8.0
 matplotlib~=3.5
 opt_einsum~=3.3
-requests~=2.31.0
+requests~=2.32.4
 typing_extensions>=4.6.0
 tach~=0.28.5
 diastatic-malt
