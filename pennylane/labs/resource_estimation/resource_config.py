@@ -168,9 +168,7 @@ class ResourceConfig:
             )
 
         if "precision" not in self.resource_op_precisions[op_type]:
-            raise ValueError(
-                f"Setting precision for {op_type.__name__} is not supported."
-            )
+            raise ValueError(f"Setting precision for {op_type.__name__} is not supported.")
 
         self.resource_op_precisions[op_type]["precision"] = precision
 
