@@ -274,7 +274,8 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     .. warning::
 
        ``qml.probs`` is not compatible with :class:`~.Hermitian`. When using
-       ``qml.probs`` with a Hermitian observable, the output might be incorrect.
+       ``qml.probs`` with a Hermitian observable, the output might be incorrect
+       as the lexicographical ordering of eigenvalues is not guaranteed.
 
     """
     if isinstance(op, MeasurementValue):
