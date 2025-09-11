@@ -102,7 +102,7 @@ class Resources:
         * Gates: The gates from each circuit are added together.
 
         Args:
-            other (:class:`~.pennylane.estimator.Resources`): other resource object to combine with
+            other (:class:`~.pennylane.estimator.Resources`): the other resource object to add in series with
 
         Returns:
             :class:`~.pennylane.estimator.Resources`: combined resources
