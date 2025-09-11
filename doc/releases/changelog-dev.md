@@ -119,6 +119,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
+  with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
   to guard users from an incompatibility that currently exists between the two.
   Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
