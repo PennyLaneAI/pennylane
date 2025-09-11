@@ -424,10 +424,8 @@ def test_data_movement_operations(run_filecheck):
     run_filecheck(program, roundtrip=True, verify=True)
 
 
-def test_invalid_data_movement_operations(run_filecheck):
-    """Test invalid data movement operations that should fail verification."""
-
-    # Test SliceOp with mismatched array sizes
+def test_invalid_slice_operations(run_filecheck):
+    """Test invalid slice operations that should fail verification."""
     program_slice_mismatch = r"""
     // CHECK: %input = "test.op"() : () -> tensor<3x8xi64>
     %input = "test.op"() : () -> tensor<3x8xi64>
@@ -446,3 +444,66 @@ def test_invalid_data_movement_operations(run_filecheck):
         match="all of \\{start_indices, limit_indices, strides\\} must have the same size: got sizes 2, 3, 2",
     ):
         run_filecheck(program_slice_mismatch, roundtrip=True, verify=True)
+
+
+def test_invalid_reshape_operations(run_filecheck):
+    """Test invalid reshape operations that should fail verification."""
+    program_reshape_mismatch = r"""
+    %reshape_input = "test.op"() : () -> tensor<2xf32>
+
+    // This should fail verification due to element count mismatch (2 != 4)
+    %reshape_bad = "stablehlo.reshape"(%reshape_input) : (tensor<2xf32>) -> tensor<2x2xf32>
+    """
+
+    with pytest.raises(Exception, match="number of output elements"):
+        run_filecheck(program_reshape_mismatch, roundtrip=True, verify=True)
+
+
+def test_invalid_broadcast_in_dim_operations(run_filecheck):
+    """Test invalid broadcast_in_dim operations that should fail verification."""
+    # Test dims size mismatch.
+    program_broadcast_dims_size_mismatch = r"""
+    %broadcast_input = "test.op"() : () -> tensor<1x3xi32>
+
+    // dims has size 1, but operand rank is 2
+    %broadcast_bad = "stablehlo.broadcast_in_dim"(%broadcast_input) {broadcast_dimensions = array<i64: 1>} : (tensor<1x3xi32>) -> tensor<2x3x2xi32>
+    """
+
+    with pytest.raises(Exception, match="broadcast_dimensions size .* does not match operand rank"):
+        run_filecheck(program_broadcast_dims_size_mismatch, roundtrip=True, verify=True)
+
+    # Test duplicate dims.
+    program_broadcast_duplicate_dims = r"""
+    %broadcast_input = "test.op"() : () -> tensor<1x3xi32>
+
+    // duplicate entries in broadcast_dimensions are not allowed
+    %broadcast_bad = "stablehlo.broadcast_in_dim"(%broadcast_input) {broadcast_dimensions = array<i64: 1, 1>} : (tensor<1x3xi32>) -> tensor<2x3x2xi32>
+    """
+
+    with pytest.raises(Exception, match="broadcast_dimensions should not have duplicates"):
+        run_filecheck(program_broadcast_duplicate_dims, roundtrip=True, verify=True)
+
+    # Test dim index out of bounds.
+    program_broadcast_dim_oob = r"""
+    %broadcast_input = "test.op"() : () -> tensor<1x3xi32>
+
+    // result rank is 2, but dims contains 2 (out of bounds)
+    %broadcast_bad = "stablehlo.broadcast_in_dim"(%broadcast_input) {broadcast_dimensions = array<i64: 2, 1>} : (tensor<1x3xi32>) -> tensor<2x3xi32>
+    """
+
+    with pytest.raises(Exception, match="broadcast_dimensions contains invalid value"):
+        run_filecheck(program_broadcast_dim_oob, roundtrip=True, verify=True)
+
+    # Test operand dim not 1 and not equal to result dim.
+    program_broadcast_dim_mismatch = r"""
+    %broadcast_input = "test.op"() : () -> tensor<2x3xi32>
+
+    // operand[0] = 2, result[0] = 4; dims = [0, 2] -> mismatch on dim 0
+    %broadcast_bad = "stablehlo.broadcast_in_dim"(%broadcast_input) {broadcast_dimensions = array<i64: 0, 2>} : (tensor<2x3xi32>) -> tensor<4x3x2xi32>
+    """
+
+    with pytest.raises(
+        Exception,
+        match="size of operand dimension .* is not equal to 1 or size of result dimension",
+    ):
+        run_filecheck(program_broadcast_dim_mismatch, roundtrip=True, verify=True)
