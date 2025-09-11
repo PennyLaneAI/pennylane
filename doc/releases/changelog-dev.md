@@ -839,6 +839,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove usage of the `pytest.mark.capture` marker from tests in the `tests/python_compiler` directory.
+  [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
+
 * Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
   [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
 
