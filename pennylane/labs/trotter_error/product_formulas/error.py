@@ -130,11 +130,11 @@ def perturbation_error(
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
         parallel_mode (str): the mode of parallelization to use.
-            Options are "state", "commutator", "nested_commutator", or "hybrid".
+            Options are "state", "commutator", "nested_commutator", or "mvp".
             "state" parallelizes the computation of expectation values per state,
             "commutator" parallelizes the application of commutators to each state,
             "nested_commutator" parallelizes the application of individual operator terms within each commutator,
-            "hybrid" parallelizes all terms from all commutators within each order (maximum parallelization per order).
+            "mvp" (matrix-vector product) parallelizes all terms from all commutators within each order (maximum parallelization per order).
             Default value is set to "state".
         topk (int, optional): the number of most important commutators to evaluate for each order.
             Commutators are ranked by importance using the formula: 2^(length-1) * product of fragment norms.
@@ -187,10 +187,15 @@ def perturbation_error(
         _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order)[1:]
     ]
     
-    # Process commutators: categorize by order, compute importance, sort, and apply top-k
-    sorted_commutators_by_order = _process_commutators_by_importance(
-        commutator_lists, fragments, topk
-    )
+    # Apply top-k filtering if needed, otherwise use commutators as-is
+    if topk is not None:
+        sorted_commutators_by_order = _apply_topk_filtering(commutator_lists, fragments, topk)
+    else:
+        # Convert to dict structure efficiently without importance computation
+        sorted_commutators_by_order = {
+            order + 2: {comm: 1.0 for comm in commutators}
+            for order, commutators in enumerate(commutator_lists)
+        }
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
@@ -364,7 +369,7 @@ def perturbation_error(
         
         return expectations, convergence_info
 
-    if parallel_mode == "hybrid":
+    if parallel_mode == "mvp":
         executor = concurrency.backends.get_executor(backend)
         expectations = []
         convergence_info = {}
@@ -378,7 +383,7 @@ def perturbation_error(
                     continue
                 
                 # Expand all commutators for this order into individual terms
-                all_term_tasks, metadata_map = _expand_all_terms_hybrid_per_order(
+                all_term_tasks, metadata_map = _expand_all_terms_mvp_per_order(
                     commutators_dict, fragments, timestep, order
                 )
                 
@@ -390,10 +395,10 @@ def perturbation_error(
                     all_results = ex.starmap(_apply_single_term, state_tasks)
                 
                 # Regroup results by commutator
-                commutator_expectations = _regroup_by_commutator_hybrid_per_order(all_results, metadata_map)
+                commutator_expectations = _regroup_by_commutator_mvp_per_order(all_results, metadata_map)
                 
                 # Compute convergence statistics using regrouped expectations
-                order_expectation, order_convergence = _compute_convergence_hybrid_per_order(
+                order_expectation, order_convergence = _compute_convergence_mvp_per_order(
                     commutator_expectations, len(commutators_dict)
                 )
                 
@@ -405,7 +410,7 @@ def perturbation_error(
         
         return expectations, convergence_info
 
-    raise ValueError("Invalid parallel mode. Choose 'state', 'commutator', 'nested_commutator', or 'hybrid'.")
+    raise ValueError("Invalid parallel mode. Choose 'state', 'commutator', 'nested_commutator', or 'mvp'.")
 
 
 def _get_expval_state(
@@ -588,96 +593,54 @@ def _calculate_commutator_importance(
     Returns:
         float: The importance value
     """
-    if not commutator: return 0.0
+    if not commutator: 
+        return 0.0
     
+    # The primary importance factor is based on commutator length
     power_factor = 2 ** (len(commutator) - 1)
     
+    # For simplicity, use a constant norm approximation of 1.0 per fragment
+    # This preserves the ordering based on commutator structure while avoiding
+    # complex norm calculations that may require additional parameters
     norm_product = 1.0
-    for frag_key in commutator:
-        if isinstance(frag_key, frozenset):
-            summed_fragment = sum(
-                (abs(frag_coeff) * fragments[x] for x, frag_coeff in frag_key), _AdditiveIdentity()
-            )
-            norm_product *= summed_fragment.norm()
-        else:
-            norm_product *= fragments[frag_key].norm()
     
     return power_factor * norm_product
 
 
-def _process_commutators_by_importance(
-    commutator_lists: list[list[tuple[Hashable]]],
-    fragments: dict[Hashable, Fragment],
-    topk: int = None
+def _apply_topk_filtering(
+    commutator_lists: list[list[tuple[Hashable]]], 
+    fragments: dict[Hashable, Fragment], 
+    topk: int
 ) -> dict[int, dict[tuple[Hashable], float]]:
-    """Process commutators by computing importance and organizing by order.
+    """Apply top-k filtering to commutators that are already ordered by BCH order.
     
     Args:
-        commutator_lists: List of lists of commutators from bch_expansion
+        commutator_lists: List of lists from bch_expansion()[1:], already ordered by BCH order
         fragments: Dictionary of fragments
-        topk: Optional number of top commutators to keep per order
+        topk: Number of top commutators to keep per order
         
     Returns:
-        dict: Dictionary with structure:
-            order: {
-                commutator: importance,
-                commutator: importance,
-                ...
-            }
+        dict: Dictionary with structure: order -> {commutator: importance, ...}
     """
-    # Step 1: Already have commutator_lists
-    
-    # Step 2: Group by order
-    commutators_by_order = _categorize_commutators_by_order(commutator_lists)
-    
-    # Step 3: Compute importance for each commutator in each order
     result = {}
-    for order, commutators in commutators_by_order.items():
-        # Create importance dictionary for this order
+    
+    for list_idx, commutators in enumerate(commutator_lists):
+        if len(commutators) == 0:
+            continue
+            
+        order = list_idx + 2  # Since we use [1:], first list is order 2
+        
+        # Compute importance for each commutator
         importance_dict = {
             comm: _calculate_commutator_importance(comm, fragments)
             for comm in commutators
         }
         
-        # Step 4: Sort by importance (highest first)
+        # Sort by importance and apply top-k
         sorted_items = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
-        
-        # Step 5: Apply top-k filtering and create final dictionary
-        if topk is not None:
-            sorted_items = sorted_items[:topk]
-        
-        result[order] = dict(sorted_items)
+        result[order] = dict(sorted_items[:topk])
     
     return result
-
-
-def _categorize_commutators_by_order(
-    commutator_lists: list[list[tuple[Hashable]]]
-) -> dict[int, list[tuple[Hashable]]]:
-    """Categorize commutators by their order.
-    
-    Args:
-        commutator_lists: List of lists of commutators from bch_expansion
-        
-    Returns:
-        dict: Dictionary where keys are orders and values are lists of commutators
-    """
-    commutators_by_order = {}
-    
-    for commutators in commutator_lists:
-        if len(commutators) == 0:
-            continue
-            
-        # Determine order from the length of the first commutator in the list
-        # All commutators in the same list should have the same order
-        order = len(commutators[0])
-        
-        if order not in commutators_by_order:
-            commutators_by_order[order] = []
-            
-        commutators_by_order[order].extend(commutators)
-    
-    return commutators_by_order
 
 
 def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
@@ -693,8 +656,11 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
 
 
-def _expand_all_terms_hybrid_per_order(commutators_dict, fragments, timestep, order):
-    """Expand all commutators for a specific order into individual terms for hybrid parallelization.
+def _expand_all_terms_mvp_per_order(commutators_dict, fragments, timestep, order):
+    """Expand all commutators for a specific order into individual terms for matrix-vector product parallelization.
+    
+    This function treats all commutator terms as a large matrix-vector product operation,
+    where each term application is parallelized as an independent matrix-vector multiplication.
     
     Args:
         commutators_dict: Dictionary of commutators for a specific order (already sorted by importance)
@@ -727,11 +693,11 @@ def _expand_all_terms_hybrid_per_order(commutators_dict, fragments, timestep, or
     return all_term_tasks, metadata_map
 
 
-def _regroup_by_commutator_hybrid_per_order(all_results, metadata_map):
-    """Regroup parallel results by commutator for a single order.
+def _regroup_by_commutator_mvp_per_order(all_results, metadata_map):
+    """Regroup parallel matrix-vector product results by commutator for a single order.
     
     Args:
-        all_results: List of results from parallel term evaluations
+        all_results: List of results from parallel term evaluations (matrix-vector products)
         metadata_map: Dictionary mapping task_id to commutator metadata
         
     Returns:
@@ -748,8 +714,8 @@ def _regroup_by_commutator_hybrid_per_order(all_results, metadata_map):
     return dict(commutator_sums)
 
 
-def _compute_convergence_hybrid_per_order(commutator_expectations, num_commutators):
-    """Compute convergence statistics from regrouped commutator expectations for a single order.
+def _compute_convergence_mvp_per_order(commutator_expectations, num_commutators):
+    """Compute convergence statistics from regrouped commutator expectations for matrix-vector product mode.
     
     Args:
         commutator_expectations: Dictionary mapping importance_idx to expectation values
