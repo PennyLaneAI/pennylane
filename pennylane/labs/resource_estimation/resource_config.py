@@ -118,12 +118,14 @@ class ResourceConfig:
         This method updates the precision value for operators that use a single
         tolerance parameter (e.g., for synthesis error). It will raise an error
         if you attempt to set the precision for an operator that is not
-        configurable or uses fixed bit-precisions (like THC-related templates).
+        configurable or uses bit-precisions.
 
         Args:
-            op_type (type[ResourceOperator]): The resource operator class for which
-                to set the precision.
-            precision (float): The precision tolerance value.
+            op_type (type[ResourceOperator]): the operator class for which
+                to set the precision
+           precision (float): The desired synthesis precision tolerance. A smaller
+                value corresponds to a higher precision compilation, which may
+                increase the required gate counts.
 
         Raises:
             ValueError: If ``op_type`` is not a configurable operator or if setting
