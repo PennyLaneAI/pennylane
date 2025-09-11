@@ -59,8 +59,9 @@ class Hermitian(Operator):
     .. warning::
 
        ``Hermitian`` is not compatible with :func:`~.probs`. When using
-       :func:`~.probs` with a Hermitian observable, the output might be incorrect
-       as the lexicographical ordering of eigenvalues is not guaranteed.
+       :func:`~.probs` with a Hermitian observable, the output might be different than
+       expected as the lexicographical ordering of eigenvalues is not guaranteed and
+       the diagonalizing gates may exist in a degenerate subspace.
 
     """
 

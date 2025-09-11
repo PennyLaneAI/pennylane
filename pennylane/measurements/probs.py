@@ -318,7 +318,8 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     if isinstance(op, Hermitian):
         warnings.warn(
-            "Using qml.probs with a Hermitian observable might return incorrect results.",
+            "Using qml.probs with a Hermitian observable might return different results than expected as the "
+            "lexicographical ordering of eigenvalues is not guaranteed.",
             UserWarning,
         )
 

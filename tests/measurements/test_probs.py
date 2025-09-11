@@ -715,7 +715,7 @@ class TestProbs:
 
         with pytest.warns(
             UserWarning,
-            match="Using qml.probs with a Hermitian observable might return incorrect results.",
+            match="Using qml.probs with a Hermitian observable might return different results than expected",
         ):
             _ = circuit()
 
