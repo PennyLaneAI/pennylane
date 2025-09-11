@@ -117,6 +117,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Templates have been made compatible with `qml.capture`.
+  [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
+
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
 
@@ -574,7 +577,7 @@
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
   [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
   [(#8113)](https://github.com/PennyLaneAI/pennylane/pull/8113)
-  
+
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
@@ -861,7 +864,7 @@
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
-* A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.  
+* A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.
   [(#8105)](https://github.com/PennyLaneAI/pennylane/pull/8105)
 
 * The `autograph` keyword argument has been removed from the `QNode` constructor.
@@ -1050,7 +1053,7 @@
   that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
   This enables the new decomposition system with ``Select`` of parametrized target ``ops``.
   [(#8186)](https://github.com/PennyLaneAI/pennylane/pull/8186)
-  
+
 * `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
   more robustly. In particular, the generator is simplified prior to decomposition. Now more
   time evolution ops can be supported on devices that do not natively support them.

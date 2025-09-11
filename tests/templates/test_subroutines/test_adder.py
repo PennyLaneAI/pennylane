@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 def test_standard_validity_Adder():
     """Check the operation using the assert_valid function."""
     k = 6

@@ -115,17 +115,14 @@ class Reflection(Operation):
 
     resource_keys = {"base_class", "base_params", "num_wires", "num_reflection_wires"}
 
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
         return data, (self.hyperparameters["reflection_wires"],)
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
+        return super()._primitive_bind_call(U, alpha, wires=reflection_wires, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -278,3 +275,11 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
 
 
 add_decomps(Reflection, _reflection_decomposition)
+
+# pylint: disable=protected-access
+if Reflection._primitive is not None:
+
+    @Reflection._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        (U, alpha), reflection_wires = args[:-n_wires], args[-n_wires:]
+        return type.__call__(Reflection, U, alpha, reflection_wires=reflection_wires, **kwargs)

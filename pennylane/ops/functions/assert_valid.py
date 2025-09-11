@@ -29,6 +29,8 @@ import pennylane as qml
 from pennylane.decomposition import DecompositionRule
 from pennylane.exceptions import EigvalsUndefinedError
 
+from .equal import assert_equal
+
 
 def _assert_error_raised(func, error, failure_comment):
     def inner_func(*args, **kwargs):
@@ -370,7 +372,7 @@ def _check_capture(op):
 
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-        assert op == new_op
+        assert_equal(op, new_op)
     except Exception as e:
         raise ValueError(
             "The capture of the operation into jaxpr failed somehow."
