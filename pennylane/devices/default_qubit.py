@@ -548,7 +548,7 @@ class DefaultQubit(Device):
             return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
-    def _capture_transform_program(self, config):
+    def _capture_preprocess_transforms(self, config: ExecutionConfig) -> TransformProgram:
         transform_program = TransformProgram()
         if config.mcm_config.mcm_method == "deferred":
             transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
@@ -573,7 +573,7 @@ class DefaultQubit(Device):
         config = execution_config or ExecutionConfig()
 
         if capture.enabled():
-            return self._capture_transform_program(config)
+            return self._capture_preprocess_transforms(config)
 
         transform_program = TransformProgram()
 
