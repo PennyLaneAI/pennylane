@@ -58,8 +58,8 @@ class Resources:
      Total wires: 2
         algorithmic wires: 0
         allocated wires: 2
-	         zero state: 2
-        	 any state: 0
+                 zero state: 2
+                 any state: 0
      Total gates : 21
       'RX': 4,
       'X': 7,
@@ -405,8 +405,8 @@ class Resources:
                     other_gate_counts[op.name][params_tuple] += count
                     processed_gate_names.add(op.name)
 
-            for gate_name in other_gate_counts.keys():
-                add_gate_to_output(gate_name, other_gate_counts[gate_name])
+            for gate_name, gate_count in other_gate_counts.items():
+                add_gate_to_output(gate_name, gate_count)
 
             for gate_name in default_gate_list:
                 if gate_name in processed_gate_names:
