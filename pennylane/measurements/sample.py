@@ -340,7 +340,7 @@ def sample(
             when the ``op`` argument does not contain mid-circuit measurements. Otherwise, the ``dtype`` argument is ignored.
 
             By default, the samples will be returned as floating point numbers if an observable is provided,
-            and as integers if no observable is provided. The ``dtype`` argument can be used to override this default behavior,
+            and as integers if no observable is provided. The ``dtype`` argument can be used to specify further details,
             and set the precision to any valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
 
             We show two examples below using the JAX and PyTorch interfaces.
