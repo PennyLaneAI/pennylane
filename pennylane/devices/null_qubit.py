@@ -52,7 +52,7 @@ from .preprocess import decompose
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-RESOURCES_FNAME_PREFIX = "__pennylane_resources_data_"
+RESOURCES_FILENAME_PREFIX = "__pennylane_resources_data_"
 
 
 @singledispatch
@@ -283,7 +283,7 @@ class NullQubit(Device):
         wires=None,
         shots=None,
         track_resources=False,
-        resources_fname=None,
+        resources_filename=None,
         compute_depth=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
@@ -292,8 +292,8 @@ class NullQubit(Device):
 
         # this is required by Catalyst to toggle the tracker at runtime
         self.device_kwargs = {"track_resources": track_resources}
-        if resources_fname is not None:
-            self.device_kwargs["resources_fname"] = resources_fname
+        if resources_filename is not None:
+            self.device_kwargs["resources_filename"] = resources_filename
         if compute_depth is not None:
             self.device_kwargs["compute_depth"] = compute_depth
 
@@ -303,8 +303,8 @@ class NullQubit(Device):
 
         if self._track_resources:
             timestamp = int(time.time() * 1e9)  # nanoseconds since epoch
-            resources_fname = f"{RESOURCES_FNAME_PREFIX}{timestamp}.json"
-            with open(resources_fname, "x", encoding="utf-8") as f:
+            resources_filename = f"{RESOURCES_FILENAME_PREFIX}{timestamp}.json"
+            with open(resources_filename, "x", encoding="utf-8") as f:
                 _simulate_resource_use(circuit, f)
 
         for s in circuit.shots or [None]:

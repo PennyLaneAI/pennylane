@@ -49,7 +49,7 @@ def _create_tracker_device_class(dev, compute_depth):
             super().__init__(
                 *args,
                 track_resources=True,
-                resources_fname=_RESOURCE_TRACKING_FILEPATH,
+                resources_filename=_RESOURCE_TRACKING_FILEPATH,
                 compute_depth=compute_depth,
                 **kwargs,
             )
@@ -315,13 +315,22 @@ def specs(
 
         return infos[0] if len(infos) == 1 else infos
 
+    # NOTE: Some information is missing from specs_qjit compared to specs_qnode
     def specs_qjit(*args, **kwargs) -> SpecsDict:
         # TODO: Determine if its possible to have batched QJIT code / how to handle it
 
         if not isinstance(qnode.original_function, qml.QNode):
             raise NotImplementedError("qml.specs can only be used on QNodes or qjit'd QNodes")
-        original_device = qnode.device
 
+        try:
+            import catalyst
+        except ImportError as e:
+            raise ImportError(
+                "The Catalyst library is required to use qml.specs on QJIT'd QNodes. "
+                "Please install Catalyst with `pip install pennylane-catalyst`."
+            ) from e
+
+        original_device = qnode.device
         info = qml.resource.resource.SpecsDict()
 
         if level == "device":
@@ -329,7 +338,7 @@ def specs(
             # which will give resource usage information for after all compiler passes have completed
 
             # breakpoint()
-            # TODO: Inherit devices args from input
+            # TODO: Find a way to inherit all devices args from input
             TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
             spoofed_dev = TrackerDevice(
                 wires=original_device.wires,
@@ -340,8 +349,7 @@ def specs(
             new_qnode = copy.copy(qnode.original_function)
             new_qnode.device = spoofed_dev
 
-            # TODO: Inherit correct qjit args from input
-            new_qnode = qml.qjit(new_qnode, autograph=True)
+            new_qnode = catalyst.QJIT(new_qnode, copy.copy(qnode.compile_options))
 
             if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
                 # TODO: Warn that something has gone wrong here
@@ -379,14 +387,6 @@ def specs(
             if callable(qnode.diff_method)
             else qnode.diff_method
         )
-
-        # TODO: Determine if any of this information is possibly incorrect after QJIT'ing
-        config = qml.workflow.construct_execution_config(qnode.original_function)(*args, **kwargs)
-        gradient_fn = config.gradient_method
-        if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
-            info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
-        else:
-            info["gradient_fn"] = gradient_fn
 
         return info
 
