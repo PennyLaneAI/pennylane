@@ -178,8 +178,8 @@ class ResourceConfig:
     def set_single_qubit_rot_precision(self, precision: float) -> None:
         r"""Sets the synthesis precision for all single-qubit rotation gates.
 
-        This is a convenience method to update the synthesis precision tolerance,
-        :math:`\eps`, for all standard single-qubit rotation gates and their
+        This is a convenience method to update the synthesis precision tolerance
+        for all standard single-qubit rotation gates and their
         controlled versions at once. The synthesis precision dictates the precision
         for compiling rotation gates into a discrete gate set, which in turn
         affects the number of gates required.
