@@ -47,6 +47,12 @@ def _scalar(order):
     return (4 - 4**root) ** -1
 
 
+def _separate_op_and_coeff(op, coeff):
+    if isinstance(op, qml_ops.SProd):
+        return _separate_op_and_coeff(op.base, coeff * op.scalar)
+    return op, coeff
+
+
 @QueuingManager.stop_recording()
 def _recursive_expression(x, order, ops):
     """Generate a list of operations using the
@@ -61,10 +67,11 @@ def _recursive_expression(x, order, ops):
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        return [qml_ops.Evolution(op, -x) for op in ops]
+
+        return [qml_ops.Evolution(*_separate_op_and_coeff(op, -x)) for op in ops]
 
     if order == 2:
-        return [qml_ops.Evolution(op, -x * 0.5) for op in ops + ops[::-1]]
+        return [qml_ops.Evolution(*_separate_op_and_coeff(op, -x * 0.5)) for op in ops + ops[::-1]]
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
