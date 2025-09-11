@@ -379,7 +379,7 @@ class TestResourceOperator:
         resources = s * op
 
         gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): s})
-        expected_resources = Resources(0, algo=1, gate_types=gt)
+        expected_resources = Resources(0, algo_wires=1, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.parametrize("s", [1, 2, 3])
@@ -389,7 +389,7 @@ class TestResourceOperator:
         resources = s @ op
 
         gt = defaultdict(int, {DummyCmprsRep("CNOT", None): s})
-        expected_resources = Resources(0, algo=s * 2, gate_types=gt)
+        expected_resources = Resources(0, algo_wires=s * 2, gate_types=gt)
         assert resources == expected_resources
 
     def test_add(self):
@@ -405,14 +405,14 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
     def test_add_resources(self):
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        res2 = Resources(zeroed=0, algo=2, gate_types=gt2)
+        res2 = Resources(zeroed=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_series(res2)
 
         gt = defaultdict(
@@ -422,7 +422,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
     def test_add_error(self):
@@ -444,14 +444,14 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
     def test_and_resources(self):
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        res2 = Resources(zeroed=0, any_state=0, algo=2, gate_types=gt2)
+        res2 = Resources(zeroed=0, any_state=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_parallel(res2)
 
         gt = defaultdict(
@@ -461,7 +461,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
     def test_and_error(self):

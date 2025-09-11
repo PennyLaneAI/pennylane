@@ -32,9 +32,9 @@ from .resources_base import Resources
 
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
-    r"""Instantiate a light weight class corresponding to the operator type and parameters.
+    r"""Defines a lightweight class corresponding to the operator type and its parameters.
 
-    This class provides a minimal representation of an operation, containing
+    This class is a minimal representation of an operation, containing
     only the operator type and the necessary parameters to estimate its resources.
     It is designed for efficient hashing and comparison, allowing it to be used
     effectively in collections where uniqueness and quick lookups are important.
@@ -56,8 +56,8 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     **Example**
 
     >>> from pennylane import estimator as qre
-    >>> cmpr_op = qre.CompressedResourceOp(qre.Hadamard, num_wires=1)
-    >>> print(cmpr_op)
+    >>> compressed_hadamard = qre.CompressedResourceOp(qre.Hadamard, num_wires=1)
+    >>> print(compressed_hadamard)
     CompressedResourceOp(Hadamard, num_wires=1)
     """
 
@@ -66,8 +66,8 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         op_type: type[ResourceOperator],
         num_wires: int,
         params: dict | None = None,
-        name: str = None,
-    ):
+        name: str | None = None,
+    ) -> None:
 
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
@@ -108,7 +108,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         return self._name
 
 
-def _make_hashable(d) -> tuple:
+def _make_hashable(d: Any) -> tuple:
     r"""Converts a potentially non-hashable object into a hashable tuple.
 
     Args:
@@ -136,7 +136,7 @@ def _make_hashable(d) -> tuple:
 
 
 class ResourceOperator(ABC):
-    r"""Base class to represent quantum operators according to the set of information
+    r"""Base class to represent quantum operators according to the fundamental set of information
     required for resource estimation.
 
     A :class:`~.pennylane.estimator.ResourceOperator` is uniquely defined by its
@@ -210,7 +210,7 @@ class ResourceOperator(ABC):
 
     """
 
-    num_wires = 1
+    num_wires: int | None = None
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
@@ -223,7 +223,7 @@ class ResourceOperator(ABC):
         self.queue()
         super().__init__()
 
-    def queue(self, context: QueuingManager = QueuingManager):
+    def queue(self, context: QueuingManager = QueuingManager) -> "ResourceOperator":
         """Append the operator to the Operator queue."""
         context.append(self)
         return self
@@ -302,13 +302,13 @@ class ResourceOperator(ABC):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo=self.num_wires, gate_types=gate_types)
+        return Resources(zeroed=0, algo_wires=self.num_wires, gate_types=gate_types)
 
     def __matmul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo=self.num_wires * scalar, gate_types=gate_types)
+        return Resources(zeroed=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 
     def add_series(self, other):
         "Adds two ResourceOperators in series"
@@ -415,7 +415,7 @@ def resource_rep(
 
     Args:
         resource_op (Type[ResourceOperator]]): The type of operator we want to get the compact representation for.
-        resource_params (Dict): The required set of parameters to specify the operator.
+        resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
 
     Returns:
         :class:`~.pennylane.estimator.CompressedResourceOp`: A compressed representation of a resource operator
