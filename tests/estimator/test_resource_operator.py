@@ -372,7 +372,6 @@ class TestResourceOperator:
         with pytest.raises(ValueError, match="Expected 1 wires, got"):
             dummy_op2 = DummyOp(wires=[0, 1, 2])
 
-    @pytest.mark.xfail(reason="Should be fixed in the base branch")
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mul(self, s):
         """Test multiply dunder method"""
@@ -383,7 +382,6 @@ class TestResourceOperator:
         expected_resources = Resources(0, algo=1, gate_types=gt)
         assert resources == expected_resources
 
-    @pytest.mark.xfail(reason="Should be fixed in the base branch")
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mat_mul(self, s):
         """Test matrix-multiply dunder method"""
@@ -394,7 +392,6 @@ class TestResourceOperator:
         expected_resources = Resources(0, algo=s * 2, gate_types=gt)
         assert resources == expected_resources
 
-    @pytest.mark.xfail(reason="Should be fixed in the base branch")
     def test_add(self):
         """Test addition dunder method between two ResourceOperator classes"""
         op1 = RX(1.23)
@@ -411,7 +408,6 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
         assert resources == expected_resources
 
-    @pytest.mark.xfail(reason="Should be fixed in the base branch")
     def test_add_resources(self):
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
@@ -429,14 +425,12 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
         assert resources == expected_resources
 
-    @pytest.mark.skip(reason="Should be fixed in the base branch")
     def test_add_error(self):
         """Test addition dunder method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
             op1 = RX(1.23)
             _ = op1.add_series(True)
 
-    @pytest.mark.skip(reason="Should be fixed in the base branch")
     def test_and(self):
         """Test and dunder method between two ResourceOperator classes"""
         op1 = RX(1.23)
@@ -453,7 +447,6 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
         assert resources == expected_resources
 
-    @pytest.mark.xfail(reason="Should be fixed in the base branch")
     def test_and_resources(self):
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
@@ -471,7 +464,6 @@ class TestResourceOperator:
         expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
         assert resources == expected_resources
 
-    @pytest.mark.skip(reason="Should be fixed in the base branch")
     def test_and_error(self):
         """Test and dunder method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
