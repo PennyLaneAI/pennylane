@@ -195,7 +195,7 @@ class ResourceConfig:
         Args:
             precision (float): The desired synthesis precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
-                increase the required gate counts. Must be greater than 0.
+                increase the required gate counts. Must be greater than ``0``.
 
         Raises:
             ValueError: If ``precision`` is a negative value.
