@@ -32,7 +32,7 @@ from .resources_base import Resources
 
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
-    r"""Instantiate a light weight class corresponding to the operator type and parameters.
+    r"""Defines a lightweight class corresponding to the operator type and its parameters.
 
     This class provides a minimal representation of an operation, containing
     only the operator type and the necessary parameters to estimate its resources.
