@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Test the base and abstract Resource class
+This submodule tests the base classes for resource operators.
 """
 from collections import defaultdict
 from collections.abc import Hashable
