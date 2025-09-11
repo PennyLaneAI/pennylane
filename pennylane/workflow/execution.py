@@ -40,7 +40,6 @@ logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors import ExecBackends
-    from pennylane.math import InterfaceLike
     from pennylane.tape import QuantumScriptBatch
     from pennylane.transforms.core import TransformDispatcher
     from pennylane.typing import ResultBatch
@@ -53,7 +52,7 @@ def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
     diff_method: Callable | SupportedDiffMethods | TransformDispatcher | None = None,
-    interface: InterfaceLike | None = Interface.AUTO,
+    interface: Interface | str | None = Interface.AUTO,
     *,
     grad_on_execution: bool | Literal["best"] = "best",
     cache: bool | dict | Cache | Literal["auto"] | None = "auto",

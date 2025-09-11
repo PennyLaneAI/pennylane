@@ -606,6 +606,19 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
+  If you would like to get the canonical interface you can simply use the `Enum` like,
+
+  ```pycon
+  >>> from pennylane.math.interface_utils import Interface
+  >>> Interface("torch")
+  Interface.TORCH
+  >>> Interface("jax-jit")
+  Interface.JAX_JIT
+  ```
+
+  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
+
 * :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing 
   them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
   input ``lcu``. 
