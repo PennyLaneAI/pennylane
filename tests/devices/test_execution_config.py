@@ -20,7 +20,13 @@ from dataclasses import replace
 
 import pytest
 
-from pennylane.devices.execution_config import ExecutionConfig, FrozenMapping, MCMConfig
+from pennylane.devices.execution_config import (
+    MCM_METHOD,
+    POSTSELECT_MODE,
+    ExecutionConfig,
+    FrozenMapping,
+    MCMConfig,
+)
 from pennylane.gradients import param_shift
 from pennylane.math import Interface
 
@@ -106,8 +112,8 @@ class TestExecutionConfig:
         assert config.interface == Interface.NUMPY
         assert config.derivative_order == 1
         # Default MCMConfig should be initialized with default values
-        assert config.mcm_config.mcm_method is None
-        assert config.mcm_config.postselect_mode is None
+        assert config.mcm_config.mcm_method is MCM_METHOD.DEVICE
+        assert config.mcm_config.postselect_mode is POSTSELECT_MODE.DEVICE
 
         assert config.convert_to_numpy is True
 
@@ -291,8 +297,8 @@ class TestMCMConfig:
     def test_default_values(self):
         """Tests that the default values are as expected."""
         mcm_config = MCMConfig()
-        assert mcm_config.mcm_method is None
-        assert mcm_config.postselect_mode is None
+        assert mcm_config.mcm_method is MCM_METHOD.DEVICE
+        assert mcm_config.postselect_mode is POSTSELECT_MODE.DEVICE
 
     def test_all_fields_set(self):
         """Test that MCMConfig correctly sets all fields when provided since we are
@@ -308,7 +314,7 @@ class TestMCMConfig:
     def test_valid_mcm_method(self, mcm_method):
         """Test that MCMConfig can be instantiated with valid mcm_method values."""
         config = MCMConfig(mcm_method=mcm_method)
-        assert config.mcm_method == mcm_method
+        assert config.mcm_method == MCM_METHOD(mcm_method)
 
     @pytest.mark.parametrize(
         "postselect_mode",
@@ -322,7 +328,7 @@ class TestMCMConfig:
     def test_valid_postselect_mode(self, postselect_mode):
         """Test that MCMConfig can be instantiated with valid postselect_mode values."""
         config = MCMConfig(postselect_mode=postselect_mode)
-        assert config.postselect_mode == postselect_mode
+        assert config.postselect_mode == POSTSELECT_MODE(postselect_mode)
 
     @pytest.mark.parametrize(
         "invalid_postselect_mode",
