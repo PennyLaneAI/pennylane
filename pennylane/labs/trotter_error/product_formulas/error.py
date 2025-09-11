@@ -134,7 +134,7 @@ def perturbation_error(
             "state" parallelizes the computation of expectation values per state,
             "commutator" parallelizes the application of commutators to each state,
             "nested_commutator" parallelizes the application of individual operator terms within each commutator,
-            "hybrid" parallelizes all terms from all commutators simultaneously (maximum parallelization).
+            "hybrid" parallelizes all terms from all commutators within each order (maximum parallelization per order).
             Default value is set to "state".
         topk (int, optional): the number of most important commutators to evaluate for each order.
             Commutators are ranked by importance using the formula: 2^(length-1) * product of fragment norms.
@@ -369,26 +369,36 @@ def perturbation_error(
         expectations = []
         convergence_info = {}
         
-        # Expand all commutators into individual terms once
-        all_term_tasks, metadata_map = _expand_all_terms_hybrid(
-            sorted_commutators_by_order, fragments, timestep
-        )
-        
         for state_idx, state in enumerate(states):
-            # Update all tasks with the current state
-            state_tasks = [(term, coeff, state, fragments) for term, coeff, fragments in all_term_tasks]
+            state_convergence = {}
+            state_expectations = {}
             
-            # Parallel evaluation of ALL terms from ALL commutators
-            with executor(max_workers=num_workers) as ex:
-                all_results = ex.starmap(_apply_single_term, state_tasks)
-            
-            # Regroup results by commutator
-            commutator_expectations = _regroup_by_commutator_hybrid(all_results, metadata_map)
-            
-            # Compute convergence statistics using regrouped expectations
-            state_expectations, state_convergence = _compute_convergence_hybrid(
-                commutator_expectations, sorted_commutators_by_order
-            )
+            for order, commutators_dict in sorted_commutators_by_order.items():
+                if len(commutators_dict) == 0:
+                    continue
+                
+                # Expand all commutators for this order into individual terms
+                all_term_tasks, metadata_map = _expand_all_terms_hybrid_per_order(
+                    commutators_dict, fragments, timestep, order
+                )
+                
+                # Update all tasks with the current state
+                state_tasks = [(term, coeff, state, fragments) for term, coeff, fragments in all_term_tasks]
+                
+                # Parallel evaluation of ALL terms from ALL commutators in this order
+                with executor(max_workers=num_workers) as ex:
+                    all_results = ex.starmap(_apply_single_term, state_tasks)
+                
+                # Regroup results by commutator
+                commutator_expectations = _regroup_by_commutator_hybrid_per_order(all_results, metadata_map)
+                
+                # Compute convergence statistics using regrouped expectations
+                order_expectation, order_convergence = _compute_convergence_hybrid_per_order(
+                    commutator_expectations, len(commutators_dict)
+                )
+                
+                state_expectations[order] = order_expectation
+                state_convergence[order] = order_convergence
             
             expectations.append(state_expectations)
             convergence_info[state_idx] = state_convergence
@@ -683,13 +693,14 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
 
 
-def _expand_all_terms_hybrid(sorted_commutators_by_order, fragments, timestep):
-    """Expand all commutators into individual terms for hybrid parallelization.
+def _expand_all_terms_hybrid_per_order(commutators_dict, fragments, timestep, order):
+    """Expand all commutators for a specific order into individual terms for hybrid parallelization.
     
     Args:
-        sorted_commutators_by_order: Dictionary of commutators organized by order and importance
+        commutators_dict: Dictionary of commutators for a specific order (already sorted by importance)
         fragments: Dictionary of fragments
         timestep: Time step for simulation
+        order: Order of the commutators
         
     Returns:
         tuple: (all_term_tasks, metadata_map)
@@ -698,99 +709,91 @@ def _expand_all_terms_hybrid(sorted_commutators_by_order, fragments, timestep):
     """
     all_term_tasks = []
     metadata_map = {}
+    timestep_factor = (1j * timestep) ** order
     
-    for order, commutators_dict in sorted_commutators_by_order.items():
-        timestep_factor = (1j * timestep) ** order
+    for importance_idx, commutator in enumerate(commutators_dict.keys()):
+        op_terms = _op_list(commutator)  # Reuse existing function
         
-        for importance_idx, commutator in enumerate(commutators_dict.keys()):
-            op_terms = _op_list(commutator)  # Reuse existing function
+        for term, coeff in op_terms.items():
+            task_id = len(all_term_tasks)
+            all_term_tasks.append((term, coeff, fragments))
             
-            for term, coeff in op_terms.items():
-                task_id = len(all_term_tasks)
-                all_term_tasks.append((term, coeff, fragments))
-                
-                metadata_map[task_id] = {
-                    'order': order,
-                    'importance_idx': importance_idx,
-                    'timestep_factor': timestep_factor,
-                    'commutator': commutator  # Keep for debugging if needed
-                }
+            metadata_map[task_id] = {
+                'importance_idx': importance_idx,
+                'timestep_factor': timestep_factor,
+                'commutator': commutator  # Keep for debugging if needed
+            }
     
     return all_term_tasks, metadata_map
 
 
-def _regroup_by_commutator_hybrid(all_results, metadata_map):
-    """Regroup parallel results by commutator for convergence tracking.
+def _regroup_by_commutator_hybrid_per_order(all_results, metadata_map):
+    """Regroup parallel results by commutator for a single order.
     
     Args:
         all_results: List of results from parallel term evaluations
         metadata_map: Dictionary mapping task_id to commutator metadata
         
     Returns:
-        dict: Dictionary mapping (order, importance_idx) to commutator expectation value
+        dict: Dictionary mapping importance_idx to commutator expectation value
     """
     commutator_sums = defaultdict(float)
     
     for task_id, result in enumerate(all_results):
         metadata = metadata_map[task_id]
-        key = (metadata['order'], metadata['importance_idx'])
+        importance_idx = metadata['importance_idx']
         # Apply timestep factor and accumulate
-        commutator_sums[key] += result * metadata['timestep_factor']
+        commutator_sums[importance_idx] += result * metadata['timestep_factor']
     
     return dict(commutator_sums)
 
 
-def _compute_convergence_hybrid(commutator_expectations, sorted_commutators_by_order):
-    """Compute convergence statistics from regrouped commutator expectations.
+def _compute_convergence_hybrid_per_order(commutator_expectations, num_commutators):
+    """Compute convergence statistics from regrouped commutator expectations for a single order.
     
     Args:
-        commutator_expectations: Dictionary mapping (order, importance_idx) to expectation values
-        sorted_commutators_by_order: Original commutator structure for ordering
+        commutator_expectations: Dictionary mapping importance_idx to expectation values
+        num_commutators: Number of commutators in this order
         
     Returns:
-        tuple: (state_expectations, state_convergence)
+        tuple: (order_expectation, order_convergence)
     """
-    state_expectations = {}
-    state_convergence = {}
+    # Get commutator expectations in importance order
+    order_expectations = []
+    for importance_idx in range(num_commutators):
+        if importance_idx in commutator_expectations:
+            order_expectations.append(commutator_expectations[importance_idx])
     
-    for order in sorted(sorted_commutators_by_order.keys()):
-        if len(sorted_commutators_by_order[order]) == 0:
-            continue
-            
-        # Get commutator expectations for this order in importance order
-        order_expectations = []
-        for importance_idx in range(len(sorted_commutators_by_order[order])):
-            key = (order, importance_idx)
-            if key in commutator_expectations:
-                order_expectations.append(commutator_expectations[key])
-        
-        if not order_expectations:
-            continue
-            
-        # Compute convergence statistics - reuse existing logic
-        current_expectation = 0.0
-        partial_sums = []
-        mean_history = []
-        median_history = []
-        std_history = []
-        
-        for expectation_value in order_expectations:
-            current_expectation += expectation_value
-            partial_sums.append(current_expectation)
-            
-            # Reuse existing convergence function
-            mean_history, median_history, std_history = _update_convergence_histories(
-                partial_sums, mean_history, median_history, std_history
-            )
-        
-        state_expectations[order] = current_expectation
-        state_convergence[order] = {
-            "mean_history": mean_history,
-            "median_history": median_history,
-            "std_history": std_history,
+    if not order_expectations:
+        return 0.0, {
+            "mean_history": [],
+            "median_history": [],
+            "std_history": [],
         }
     
-    return state_expectations, state_convergence
+    # Compute convergence statistics - reuse existing logic
+    current_expectation = 0.0
+    partial_sums = []
+    mean_history = []
+    median_history = []
+    std_history = []
+    
+    for expectation_value in order_expectations:
+        current_expectation += expectation_value
+        partial_sums.append(current_expectation)
+        
+        # Reuse existing convergence function
+        mean_history, median_history, std_history = _update_convergence_histories(
+            partial_sums, mean_history, median_history, std_history
+        )
+    
+    order_convergence = {
+        "mean_history": mean_history,
+        "median_history": median_history,
+        "std_history": std_history,
+    }
+    
+    return current_expectation, order_convergence
 
 
 def _update_convergence_histories(partial_sums, mean_history, median_history, std_history):
