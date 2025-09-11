@@ -149,7 +149,7 @@ def estimate_resources(
 
 
 @estimate_resources.register
-def resources_from_qfunc(
+def _resources_from_qfunc(
     obj: Callable,
     gate_set: set | None = None,
     config: ResourceConfig | None = None,
@@ -192,7 +192,7 @@ def resources_from_qfunc(
 
 
 @estimate_resources.register
-def resources_from_resource(
+def _resources_from_resource(
     obj: Resources,
     gate_set: set | None = None,
     config: ResourceConfig | None = None,
@@ -232,7 +232,7 @@ def resources_from_resource(
 
 
 @estimate_resources.register
-def resources_from_resource_ops(
+def _resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set | None = None,
     config: ResourceConfig | None = None,
@@ -243,7 +243,7 @@ def resources_from_resource_ops(
     if isinstance(obj, Operation):
         obj = map_to_resource_op(obj)
 
-    return resources_from_resource(
+    return _resources_from_resource(
         1 * obj,
         gate_set,
         config,
@@ -253,7 +253,7 @@ def resources_from_resource_ops(
 
 
 @estimate_resources.register
-def resources_from_pl_ops(
+def _resources_from_pl_ops(
     obj: Operation,
     gate_set: set | None = None,
     config: ResourceConfig | None = None,
@@ -262,7 +262,7 @@ def resources_from_pl_ops(
 ) -> Resources:
     """Extract resources from a pl operator."""
     obj = map_to_resource_op(obj)
-    return resources_from_resource(
+    return _resources_from_resource(
         1 * obj,
         gate_set,
         config,
