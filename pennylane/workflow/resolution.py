@@ -231,7 +231,7 @@ def _resolve_diff_method(
         return initial_config
 
     if device.supports_derivatives(initial_config, circuit=tape):
-        new_config = device.setup_execution_config(initial_config)
+        new_config = device.setup_execution_config(initial_config, tape)
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
@@ -318,5 +318,5 @@ def _resolve_execution_config(
     updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
     execution_config = replace(execution_config, **updated_values)
-    execution_config = device.setup_execution_config(execution_config)
+    execution_config = device.setup_execution_config(execution_config, tapes[0])
     return execution_config
