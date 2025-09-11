@@ -119,7 +119,7 @@
 
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
   to guard users from an incompatibility that currently exists between the two.
-  Furtheremore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
+  Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
