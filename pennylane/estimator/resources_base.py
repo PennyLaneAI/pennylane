@@ -424,4 +424,4 @@ class Resources:
 
     def __repr__(self):
         """Compact string representation of the Resources object"""
-        return f"Resources(zeroed={self.zeroed}, any_state={self.any_state}, algo={self.algo_wires}, gate_types={self.gate_types})"
+        return f"Resources(zeroed={self.zeroed}, any_state={self.any_state}, algo_wires={self.algo_wires}, gate_types={self.gate_types})"
