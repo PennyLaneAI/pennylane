@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from collections.abc import Generator, Hashable, Sequence
-from functools import cache
+from functools import cache, reduce
 from itertools import permutations, product
 from typing import Dict, List, Tuple
 

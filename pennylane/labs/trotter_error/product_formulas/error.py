@@ -57,7 +57,6 @@ class ConvergenceLog:
     medians: List[complex]
     stds: List[complex]
 
-
 def effective_hamiltonian(
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
