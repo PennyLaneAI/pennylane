@@ -849,6 +849,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `default.tensor` now supports graph decomposition mode during preprocessing.
+  [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
+
 * `qml.devices.preprocess.decompose` now works in graph decomposition mode
   when a gateset is provided. `default.qubit` and `null.qubit` can now use
   graph decomposition mode.
