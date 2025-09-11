@@ -23,6 +23,7 @@ from scipy.linalg import logm
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
+from pennylane.labs.trotter_error.product_formulas.error import ImportanceConfig
 
 deltas = [0.5, 0.1, 0.01]
 
@@ -319,3 +320,29 @@ def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
     expected *= 1j / r * delta
 
     assert np.allclose(1j * delta * (expected + ham), actual)
+
+
+def test_importance_scores():
+    """Test that unimportant commutators are discarded."""
+
+    u = 1 / (4 - 4 ** (1 / 3))
+    v = 1 - 4 * u
+
+    pf_second = ProductFormula(["A", "B", "A"], [1 / 2, 1, 1 / 2])
+    pf_fourth = pf_second(u) ** 2 @ pf_second(v) @ pf_second(u) ** 2
+
+    importance = ImportanceConfig(
+        tolerance=1e-8,
+        importance_scores = {
+            "A": 0.9,
+            "B": 0.1,
+        }
+    )
+
+    bch = bch_expansion(pf_fourth, order=5, importance=importance)[4]
+    assert set(bch.keys()) == {
+        ("A", "A", "B", "A", "B"),
+        ("A", "A", "A", "A", "B"),
+        ("B", "A", "A", "A", "B"),
+        ("B", "A", "B", "A", "B"),
+    }

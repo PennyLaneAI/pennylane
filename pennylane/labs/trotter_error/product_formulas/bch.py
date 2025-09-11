@@ -18,24 +18,27 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from collections.abc import Generator, Hashable, Sequence
-from functools import cache
+from functools import cache, reduce
 from itertools import permutations, product
 from typing import TYPE_CHECKING
 
 import numpy as np
 
+from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
+
 if TYPE_CHECKING:
-    from pennylane.labs.trotter_error import ProductFormula
+    from pennylane.labs.trotter_error.product_formulas.error import ImportanceConfig
 
 
 def bch_expansion(
-    product_formula: ProductFormula, order: int
+        product_formula: ProductFormula, order: int, importance: ImportanceConfig = None
 ) -> list[dict[tuple[Hashable], complex]]:
     r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
 
     Args:
         product_formula (ProductFormula): The :class:`~.pennylane.labs.trotter_error.ProductFormula` object whose BCH expansion will be computed.
         order (int): The maximum order of the expansion to return.
+        importance (ImportanceConfig): Optional config for importance sampling
     Returns:
         List[Dict[Tuple[Hashable], complex]]: A list of dictionaries. The ``ith`` dictionary contains the ``ith`` order commutators and their coefficients.
 
@@ -65,11 +68,18 @@ def bch_expansion(
                   ('C', 'A', 'C'): (-0.08333333333333333+0j),
                   ('C', 'B', 'C'): (-0.08333333333333333+0j)})]
     """
-    return _drop_zeros(_bch_expansion(product_formula, order, {}))
+
+    if importance:
+        if product_formula.fragments != set(importance.importance_scores.keys()):
+            raise ValueError(
+                "Importance weights must be provided for every fragment in the product formula."
+            )
+
+    return _drop_zeros(_bch_expansion(product_formula, order, importance, {}))
 
 
 def _bch_expansion(
-    product_formula: ProductFormula, order: int, term_dict: dict[tuple[Hashable], complex]
+        product_formula: ProductFormula, order: int, importance: ImportanceConfig, term_dict: dict[tuple[Hashable], complex]
 ) -> list[dict[tuple[Hashable], complex]]:
     """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
     hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
@@ -100,7 +110,7 @@ def _bch_expansion(
     for pf in product_formula.terms:
         if pf in term_dict:
             continue
-        term_dict[pf] = _bch_expansion(pf, order, term_dict)
+        term_dict[pf] = _bch_expansion(pf, order, importance, term_dict)
 
     merged_bch = [defaultdict(complex) for _ in range(order)]
 
@@ -110,7 +120,7 @@ def _bch_expansion(
                 merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
     return _remove_redundancies(
-        _apply_exponent(merged_bch, product_formula.exponent), product_formula.ordered_fragments
+        _apply_exponent(merged_bch, product_formula.exponent), product_formula.ordered_fragments, importance
     )
 
 
@@ -119,6 +129,7 @@ def _bch(
     coeffs: Sequence[complex],
     term_order: dict[Hashable, int],
     order: int,
+    importance: ImportanceConfig = None,
 ) -> list[dict[tuple[Hashable], complex]]:
     """Computes BCH on a list of labels by recursively applying BCH to the head and tail of the list.
     For a list [A, B, C] we compute BCH(A, BCH(B, C)). This is done with the following steps.
@@ -131,12 +142,12 @@ def _bch(
 
     if len(fragments) < 3:
         return _remove_redundancies(
-            [_kth_order_terms(fragments, coeffs, k) for k in range(1, order + 1)], term_order
+            [_kth_order_terms(fragments, coeffs, k) for k in range(1, order + 1)], term_order, importance
         )
 
     terms = {
-        "head": _bch([fragments[0]], [coeffs[0]], term_order, order),
-        "tail": _bch(fragments[1:], coeffs[1:], term_order, order),
+        "head": _bch([fragments[0]], [coeffs[0]], term_order, order, importance),
+        "tail": _bch(fragments[1:], coeffs[1:], term_order, order, importance),
     }
 
     bch = _bch(["head", "tail"], [1, 1], {"head": 0, "tail": 1}, order)
@@ -147,7 +158,7 @@ def _bch(
             for j, merged in enumerate(_merge_commutators(commutator, terms, order, coeff)):
                 merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
-    return _remove_redundancies(merged_bch, term_order)
+    return _remove_redundancies(merged_bch, term_order, importance)
 
 
 def _apply_exponent(bch, exponent):
@@ -291,6 +302,7 @@ def _n_descents(permutation: Sequence[Hashable]) -> int:
 def _remove_redundancies(
     term_dicts: list[dict[tuple[Hashable], float]],
     term_order: dict[Hashable, int],
+    importance: ImportanceConfig,
 ) -> list[dict[tuple[Hashable], float]]:
     """Applies the following identities to the commutators
 
@@ -338,6 +350,10 @@ def _remove_redundancies(
 
     for terms in term_dicts[3:]:
         _fourth_order_simplification(terms)
+
+    if importance:
+        for terms in term_dicts:
+            _drop_unimportant(terms, importance.importance_scores, importance.tolerance)
 
     return term_dicts
 
@@ -491,3 +507,19 @@ def _drop_zeros(
             del terms[commutator]
 
     return term_dicts
+
+def _drop_unimportant(terms, importance, tolerance):
+    delete = []
+    for commutator, coeff in terms.items():
+        if any(isinstance(frag, ProductFormula) for frag in commutator):
+            continue
+
+        if np.abs(coeff) * _commutator_importance(commutator, importance) < tolerance:
+            delete.append(commutator)
+
+    for commutator in delete:
+        del terms[commutator]
+
+def _commutator_importance(commutator, importance):
+    commutator_importance = [importance[x] for x in commutator]
+    return (1/ 2 ** (len(commutator) - 1)) * reduce(lambda x, y: x * y, commutator_importance)
