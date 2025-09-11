@@ -26,7 +26,6 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resources_base import Resources
-from .wires_manager import WireResourceManager
 
 # pylint: disable=unused-argument, no-member
 
@@ -312,18 +311,17 @@ class ResourceOperator(ABC):
     def __mul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        wire_manager = WireResourceManager(0, algo=self.num_wires)
 
-        return Resources(wire_manager, gate_types)
+        return Resources(zeroed=0, algo=self.num_wires, gate_types=gate_types)
 
     def __matmul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        wire_manager = WireResourceManager(0, algo=scalar * self.num_wires)
 
-        return Resources(wire_manager, gate_types)
+        return Resources(zeroed=0, algo=self.num_wires * scalar, gate_types=gate_types)
 
-    def __add__(self, other):
+    def add_series(self, other):
+        "Adds two ResourceOperators in series"
         if isinstance(other, ResourceOperator):
             return (1 * self).add_series(1 * other)
         if isinstance(other, Resources):
@@ -331,7 +329,8 @@ class ResourceOperator(ABC):
 
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
-    def __and__(self, other):
+    def add_parallel(self, other):
+        """Add two ResourceOperators in parallel."""
         if isinstance(other, ResourceOperator):
             return (1 * self).add_parallel(1 * other)
         if isinstance(other, Resources):
@@ -339,8 +338,6 @@ class ResourceOperator(ABC):
 
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
-    __radd__ = __add__
-    __rand__ = __and__
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
