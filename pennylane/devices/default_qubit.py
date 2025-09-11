@@ -45,17 +45,16 @@ from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
 from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import defer_measurements
+from pennylane.transforms import defer_measurements, dynamic_one_shot
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .device_api import Device
-from .execution_config import ExecutionConfig
+from .execution_config import ExecutionConfig, MCMConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     device_resolve_dynamic_wires,
-    mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
     validate_device_wires,
@@ -115,6 +114,7 @@ _BASE_DQ_GATE_SET = {
     "Toffoli",
 }
 
+
 # Complete gate set including controlled and adjoint variants
 ALL_DQ_GATE_SET = (
     _BASE_DQ_GATE_SET
@@ -123,33 +123,31 @@ ALL_DQ_GATE_SET = (
 )
 
 
-def stopping_condition(op: Operator) -> bool:
+_special_operator_support = {
+    "QFT": lambda op: len(op.wires) < 6,
+    "GroverOperator": lambda op: len(op.wires) < 13,
+    "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
+    "Snapshot": lambda _: True,
+    "Allocate": lambda _: True,
+    "Deallocate": lambda _: True,
+}
+"""Map from gates with a special support condition."""
+
+
+def stopping_condition(op: Operator, allow_mcms=True) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
-    if op.name == "QFT" and len(op.wires) >= 6:
-        return False
-    if op.name == "GroverOperator" and len(op.wires) >= 13:
-        return False
-    if op.name in {"Snapshot", "Allocate", "Deallocate"}:
-        return True
+    if constraint := _special_operator_support.get(op.name):
+        return constraint(op)
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
-    if op.name == "FromBloq" and len(op.wires) > 3:
-        return False
-    return (
-        (isinstance(op, Conditional) and stopping_condition(op.base))
-        or isinstance(op, MidMeasureMP)
-        or op.has_matrix
-        or op.has_sparse_matrix
-    )
+    if isinstance(op, MidMeasureMP):
+        return allow_mcms
+    return op.has_matrix or op.has_sparse_matrix
 
 
-def stopping_condition_shots(op: Operator) -> bool:
-    """Specify whether or not an Operator object is supported by the device with shots."""
-    return (
-        (isinstance(op, Conditional) and stopping_condition_shots(op.base))
-        or isinstance(op, MidMeasureMP)
-        or stopping_condition(op)
-    )
+# need to create these once so we can compare in tests
+allow_mcms_stopping_condition = partial(stopping_condition, allow_mcms=True)
+no_mcms_stopping_condition = partial(stopping_condition, allow_mcms=False)
 
 
 def observable_accepts_sampling(obs: Operator) -> bool:
@@ -602,6 +600,14 @@ class DefaultQubit(Device):
             return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
+    def _capture_preprocess_transforms(self, config: ExecutionConfig) -> TransformProgram:
+        transform_program = TransformProgram()
+        if config.mcm_config.mcm_method == "deferred":
+            transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
+        transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
+
+        return transform_program
+
     @debug_logger
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
@@ -617,29 +623,30 @@ class DefaultQubit(Device):
 
         """
         config = execution_config or ExecutionConfig()
-        transform_program = TransformProgram()
 
         if capture.enabled():
+            return self._capture_preprocess_transforms(config)
 
-            if config.mcm_config.mcm_method == "deferred":
-                transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
-
-            return transform_program
+        transform_program = TransformProgram()
 
         if config.interface == math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
+
+        if config.mcm_config.mcm_method == "deferred":
+            transform_program.add_transform(defer_measurements, allow_postselect=True)
+            _stopping_condition = no_mcms_stopping_condition
+        else:
+            _stopping_condition = allow_mcms_stopping_condition
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
-            stopping_condition_shots=stopping_condition_shots,
             device_wires=self.wires,
             target_gates=ALL_DQ_GATE_SET,
             name=self.name,
         )
-        transform_program.add_transform(device_resolve_dynamic_wires, wires=self.wires)
+        _allow_resets = config.mcm_config.mcm_method != "deferred"
         transform_program.add_transform(
-            mid_circuit_measurements, device=self, mcm_config=config.mcm_config
+            device_resolve_dynamic_wires, wires=self.wires, allow_resets=_allow_resets
         )
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
@@ -651,6 +658,11 @@ class DefaultQubit(Device):
         transform_program.add_transform(_conditional_broastcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
             transform_program.add_transform(broadcast_expand)
+
+        if config.mcm_config.mcm_method == "one-shot":
+            transform_program.add_transform(
+                dynamic_one_shot, postselect_mode=config.mcm_config.postselect_mode
+            )
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
@@ -665,7 +677,6 @@ class DefaultQubit(Device):
                 device_vjp=config.use_device_jacobian_product,
                 device_wires=self.wires,
             )
-
         return transform_program
 
     # pylint: disable = too-many-branches
@@ -729,28 +740,37 @@ class DefaultQubit(Device):
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
 
-        mcm_config = config.mcm_config
-
-        if mcm_config.mcm_method == "device":
-            mcm_config = replace(mcm_config, mcm_method="tree-traversal")
-
-        if capture.enabled():
-            mcm_updated_values = {}
-            mcm_method = mcm_config.mcm_method
-
-            if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
-                warnings.warn(
-                    "Setting 'postselect_mode' is not supported with mcm_method='single-branch-"
-                    "statistics'. 'postselect_mode' will be ignored.",
-                    UserWarning,
-                )
-                mcm_updated_values["postselect_mode"] = None
-            if mcm_method is None:
-                mcm_updated_values["mcm_method"] = "deferred"
-            mcm_config = replace(mcm_config, **mcm_updated_values)
+        mcm_config = self._setup_mcm_config(config.mcm_config, circuit)
 
         updated_values["mcm_config"] = mcm_config
         return replace(config, **updated_values)
+
+    def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
+
+        if capture.enabled():
+            return self._capture_setup_mcm_config(mcm_config)
+
+        final_mcm_method = mcm_config.mcm_method
+        if mcm_config.mcm_method is None:
+            final_mcm_method = "one-shot" if getattr(tape, "shots", None) else "deferred"
+        elif mcm_config.mcm_method == "device":
+            final_mcm_method = "tree-traversal"
+        return replace(mcm_config, mcm_method=final_mcm_method)
+
+    def _capture_setup_mcm_config(self, mcm_config):
+        mcm_updated_values = {}
+        mcm_method = mcm_config.mcm_method
+
+        if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
+            warnings.warn(
+                "Setting 'postselect_mode' is not supported with mcm_method='single-branch-"
+                "statistics'. 'postselect_mode' will be ignored.",
+                UserWarning,
+            )
+            mcm_updated_values["postselect_mode"] = None
+        if mcm_method is None:
+            mcm_updated_values["mcm_method"] = "deferred"
+        return replace(mcm_config, **mcm_updated_values)
 
     @debug_logger
     def execute(
