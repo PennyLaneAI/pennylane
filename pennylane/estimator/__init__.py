@@ -37,6 +37,7 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~GateCount
 
+
 """
 
 from .wires_manager import Allocate, Deallocate, WireResourceManager
