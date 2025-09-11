@@ -340,13 +340,13 @@ class ResourceOperator(ABC):
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     @classmethod
-    def tracking_name(cls, *args, **kwargs) -> str:
+    def make_tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
         return cls.__name__.replace("Resource", "")
 
-    def tracking_name_from_op(self) -> str:
+    def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return self.__class__.tracking_name(**self.resource_params)
+        return self.make_tracking_name(**self.resource_params)
 
 
 class ResourcesNotDefined(Exception):
