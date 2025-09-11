@@ -118,7 +118,7 @@ class ResourceConfig:
         This method updates the precision value for operators that use a single
         tolerance parameter (e.g., for synthesis error). It will raise an error
         if you attempt to set the precision for an operator that is not
-        configurable or uses bit-precisions.
+        configurable or uses bit-precisions. A negative precision will also raise an error.
 
         Args:
             op_type (type[ResourceOperator]): the operator class for which
