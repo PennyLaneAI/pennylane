@@ -252,3 +252,17 @@ class TestResourceConfig:
         match_str = f"Setting precision for {unsupported_op.__name__} is not supported."
         with pytest.raises(ValueError, match=match_str):
             config.set_precision(unsupported_op, 0.456)
+
+    def test_set_single_qubit_rot_precision_raises_for_negative_value(self):
+        """Test that set_single_qubit_rot_precision raises a ValueError for a negative precision."""
+        config = ResourceConfig()
+        negative_precision = -0.1
+
+        with pytest.raises(ValueError, match="Precision must be a non-negative value"):
+            config.set_single_qubit_rot_precision(negative_precision)
+
+    def test_set_precision_raises_for_negative_value(self):
+        """Test that set_precision raises a ValueError for a negative precision."""
+        config = ResourceConfig()
+        with pytest.raises(ValueError, match="Precision must be a non-negative value"):
+            config.set_precision(ResourceRX, precision=-1e-5)

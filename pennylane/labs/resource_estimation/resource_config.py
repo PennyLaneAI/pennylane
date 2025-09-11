@@ -125,11 +125,11 @@ class ResourceConfig:
                 to set the precision
            precision (float): The desired synthesis precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
-                increase the required gate counts.
+                increase the required gate counts. Must be greater than 0.
 
         Raises:
             ValueError: If ``op_type`` is not a configurable operator or if setting
-                the precision for it is not supported.
+                the precision for it is not supported, or if ``precision`` is negative.
 
         **Example**
 
@@ -154,6 +154,9 @@ class ResourceConfig:
             Default precision for SelectPauliRot: 1e-09
             New precision for SelectPauliRot: 1e-05
         """
+        if precision < 0:
+            raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
+
         if op_type not in self.resource_op_precisions:
             configurable_ops = sorted(
                 [
@@ -192,7 +195,10 @@ class ResourceConfig:
         Args:
             precision (float): The desired synthesis precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
-                increase the required gate counts.
+                increase the required gate counts. Must be greater than 0.
+
+        Raises:
+            ValueError: If ``precision`` is a negative value.
 
         **Example**
 
@@ -212,6 +218,9 @@ class ResourceConfig:
             Default RX precision: 1e-09
             Updated RX precision: 1e-05
         """
+        if precision < 0:
+            raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
+
         self.resource_op_precisions[ResourceRX]["precision"] = precision
         self.resource_op_precisions[ResourceCRX]["precision"] = precision
         self.resource_op_precisions[ResourceRY]["precision"] = precision
