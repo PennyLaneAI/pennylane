@@ -75,7 +75,7 @@ class Resources:
     """
 
     def __init__(
-        self, zeroed: int, any_state: int = 0, algo: int = 0, gate_types: dict | None = None
+        self, zeroed: int, any_state: int = 0, algo_wires: int = 0, gate_types: dict | None = None
     ):
         """Initialize the Resources class."""
         gate_types = gate_types or {}
