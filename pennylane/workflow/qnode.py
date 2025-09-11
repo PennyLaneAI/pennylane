@@ -801,10 +801,12 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    @debug_logger
-    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
-        """Call the quantum function with a tape context, ensuring the operations get queued."""
-        kwargs = copy.copy(kwargs)
+    def _get_shots(self, kwargs: dict):
+        """
+        Note that this mutates kwargs to remove shots from it.
+        """
+        if self._qfunc_uses_shots_arg:
+            return self.shots
         if "shots" in kwargs:
             # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
@@ -821,10 +823,15 @@ class QNode:
                     stacklevel=2,
                 )
 
-        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode.shots precedency:
-            shots = self.shots
-        else:
-            shots = kwargs.pop("shots", self.shots)
+        if self._shots_override_device:  # QNode.shots precedency:
+            return self.shots
+        return kwargs.pop("shots", self.shots)
+
+    @debug_logger
+    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
+        """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
+        shots = self._get_shots(kwargs)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
