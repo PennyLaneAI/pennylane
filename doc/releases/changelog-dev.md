@@ -1024,8 +1024,8 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
-* Added a warning to the interfaces documentation that all floating-point inputs are promoted 
-  to `Float64`.
+* A warning was added to the interfaces documentation under the Pytorch section saying that all Pytorch floating-point inputs are promoted 
+  to `torch.float64`.
   [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
 
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
