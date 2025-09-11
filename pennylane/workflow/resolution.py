@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the necessary helper functions for setting up the workflow for execution."""
-
 from __future__ import annotations
 
+import itertools
 from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
@@ -108,10 +108,10 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
     interface = get_canonical_interface_name(interface)
 
     if interface == Interface.AUTO:
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = get_interface(*params)
+        all_params_gen = itertools.chain.from_iterable(
+            tape.get_parameters(trainable_only=False) for tape in tapes
+        )
+        interface = get_interface(next(all_params_gen, 0))
         try:
             interface = get_canonical_interface_name(interface)
         except ValueError:
