@@ -41,7 +41,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 
 
 class TestCH:
-    """Test the CH operation"""
+    """Test the Resource CH operation"""
 
     op = CH(wires=[0, 1])
 
@@ -89,7 +89,7 @@ class TestCH:
 
 
 class TestCY:
-    """Test the CY operation"""
+    """Test the Resource CY operation"""
 
     op = CY(wires=[0, 1])
 
@@ -141,7 +141,7 @@ class TestCY:
 
 
 class TestCZ:
-    """Test the CZ operation"""
+    """Test the Resource CZ operation"""
 
     op = CZ(wires=[0, 1])
 
@@ -200,7 +200,7 @@ class TestCZ:
 
 
 class TestCSWAP:
-    """Test the CSWAP operation"""
+    """Test the Resource CSWAP operation"""
 
     op = CSWAP(wires=[0, 1, 2])
 
@@ -248,7 +248,7 @@ class TestCSWAP:
 
 
 class TestCCZ:
-    """Test the CCZ operation"""
+    """Test the ResourceCCZ operation"""
 
     op = CCZ(wires=[0, 1, 2])
 
