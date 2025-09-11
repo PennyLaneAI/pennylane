@@ -1420,6 +1420,9 @@ class TestNullQubitGraphModeExclusive:
         class MyNullQubitOp(qml.operation.Operator):
             num_wires = 1
 
+            def decomposition(self):
+                return NotImplemented
+
         @qml.register_resources({qml.H: 2})
         def decomp_fallback(wires):
             qml.H(wires)
