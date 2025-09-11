@@ -292,7 +292,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     (array([0.5, 0. , 0. , 0.5]), array([0.25, 0.25, 0.25, 0.25]))
 
     Both outputs are in the eigenbasis of the observable, but at different locations in a degenerate subspace.  Both
-    correspond to half in the `-1` eigenvalue and half in the `+1`eigenvalue.
+    correspond to half in the ``-1`` eigenvalue and half in the ``+1`` eigenvalue.
 
     """
     if isinstance(op, MeasurementValue):
