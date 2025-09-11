@@ -132,7 +132,7 @@ class Identity(ResourceOperator):
 
 
 class GlobalPhase(ResourceOperator):
-    r"""Resource class for the :class:`~.pennylane.GlobalPhase` gate.
+    r"""Resource class for the GlobalPhase gate.
 
     Args:
         wires (Iterable[Any], optional): the wires the operator acts on
