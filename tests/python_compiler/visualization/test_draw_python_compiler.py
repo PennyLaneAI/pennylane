@@ -87,10 +87,8 @@ class Testdraw:
     def test_multiple_levels_xdsl(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with xDSL compilation passes."""
 
-        transforms_circuit = qml.compiler.python_compiler.transforms.merge_rotations_pass(
-            qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
-                transforms_circuit
-            )
+        transforms_circuit = qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
+            qml.compiler.python_compiler.transforms.merge_rotations_pass(transforms_circuit)
         )
 
         if qjit:
@@ -124,8 +122,8 @@ class Testdraw:
     def test_multiple_levels_catalyst(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with Catalyst compilation passes."""
 
-        transforms_circuit = qml.transforms.merge_rotations(
-            qml.transforms.cancel_inverses(transforms_circuit)
+        transforms_circuit = qml.transforms.cancel_inverses(
+            qml.transforms.merge_rotations(transforms_circuit)
         )
 
         if qjit:
@@ -159,10 +157,8 @@ class Testdraw:
     def test_multiple_levels_xdsl_catalyst(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with xDSL and Catalyst compilation passes."""
 
-        transforms_circuit = qml.transforms.merge_rotations(
-            qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
-                transforms_circuit
-            )
+        transforms_circuit = qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
+            qml.transforms.merge_rotations(transforms_circuit)
         )
         if qjit:
             transforms_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(
@@ -218,31 +214,27 @@ class Testdraw:
         assert draw(transforms_circuit, level=level)() == expected
 
     @pytest.mark.parametrize(
-        "op, kwargs, expected",
+        "op, expected",
         [
             (
                 lambda: qml.ctrl(qml.RX(0.1, 0), control=(1, 2, 3)),
-                {},
                 "1: ─╭●──┤  State\n2: ─├●──┤  State\n3: ─├●──┤  State\n0: ─╰RX─┤  State",
             ),
             (
                 lambda: qml.ctrl(qml.RX(0.1, 0), control=(1, 2, 3), control_values=(0, 1, 0)),
-                {},
                 "1: ─╭○──┤  State\n2: ─├●──┤  State\n3: ─├○──┤  State\n0: ─╰RX─┤  State",
             ),
             (
                 lambda: qml.adjoint(qml.ctrl(qml.RX(0.1, 0), (1, 2, 3), control_values=(0, 1, 0))),
-                {},
                 "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State",
             ),
             (
                 lambda: qml.ctrl(qml.adjoint(qml.RX(0.1, 0)), (1, 2, 3), control_values=(0, 1, 0)),
-                {},
                 "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State",
             ),
         ],
     )
-    def test_ctrl_adjoint_variants(self, op, kwargs, expected):
+    def test_ctrl_adjoint_variants(self, op, expected):
         """
         Test the visualization of control and adjoint variants.
         """
@@ -252,7 +244,7 @@ class Testdraw:
             op()
             return qml.state()
 
-        assert draw(_)(**kwargs) == expected
+        assert draw(_)() == expected
 
     def test_ctrl_before_custom_op(self):
         """
@@ -427,6 +419,18 @@ class Testdraw:
             return qml.state()
 
         assert draw(circuit)() == expected
+
+    def test_args_warning(self):
+        """Test that a warning is raised when dynamic arguments are used."""
+
+        # pylint: disable=unused-argument
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ(arg):
+            qml.RX(0.1, wires=0)
+            return qml.state()
+
+        with pytest.warns(UserWarning):
+            _ = draw(circ)(0.1)
 
 
 if __name__ == "__main__":

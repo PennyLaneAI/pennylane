@@ -90,13 +90,10 @@ def resolve_measurement(name: str) -> MeasurementProcess:
 ######################################################
 
 
-def _extract_dense_constant_value(op) -> float | int:
-    """Extract the first value from a stablehlo.constant op."""
-    attr = op.properties.get("value")
-    if isinstance(attr, DenseIntOrFPElementsAttr):
-        # TODO: handle multi-value cases if needed
-        return attr.get_values()[0]
-    raise NotImplementedError(f"Unexpected attr type in constant: {type(attr)}")
+def _tensor_shape_from_ssa(ssa: SSAValue) -> list[int]:
+    """Extract the concrete shape from an SSA tensor value."""
+    tensor_abstr_shape = ssa.owner.operand._type.shape.data
+    return [dim.data for dim in tensor_abstr_shape]
 
 
 def _extract(op, attr: str, resolver: Callable, single: bool = False):
@@ -107,10 +104,13 @@ def _extract(op, attr: str, resolver: Callable, single: bool = False):
     return resolver(values) if single else [resolver(v) for v in values if v is not None]
 
 
-def _tensor_shape_from_ssa(ssa: SSAValue) -> list[int]:
-    """Extract the concrete shape from an SSA tensor value."""
-    tensor_abstr_shape = ssa.owner.operand._type.shape.data
-    return [dim.data for dim in tensor_abstr_shape]
+def _extract_dense_constant_value(op) -> float | int:
+    """Extract the first value from a stablehlo.constant op."""
+    attr = op.properties.get("value")
+    if isinstance(attr, DenseIntOrFPElementsAttr):
+        # TODO: handle multi-value cases if needed
+        return attr.get_values()[0]
+    raise NotImplementedError(f"Unexpected attr type in constant: {type(attr)}")
 
 
 def _apply_adjoint_and_ctrls(qml_op: Operator, xdsl_op) -> Operator:
@@ -159,7 +159,7 @@ def dispatch_wires_extract(op: ExtractOpPL):
     return resolve_constant_wire(op.idx)  # used by xDSL
 
 
-def resolve_constant_wire(ssa: SSAValue) -> int:
+def resolve_constant_wire(ssa: SSAValue) -> float | int:
     """Resolve the wire for the given SSA qubit."""
     if isinstance(ssa, IntegerAttr):  # Catalyst
         return ssa.value.data
@@ -194,7 +194,7 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
 
 def ssa_to_qml_params(
     op: CustomOp, control: bool = False, single: bool = False
-) -> list[float | int]:
+) -> list[float | int] | float | int | None:
     """Get the parameters from the operation."""
     return _extract(op, "in_ctrl_values" if control else "params", resolve_constant_params, single)
 
@@ -265,13 +265,10 @@ def xdsl_to_qml_obs_op(op: NamedObsOp | TensorOp | HamiltonianOp) -> Operator:
             coeffs = _extract(op, "coeffs", resolve_constant_params, single=True)
             ops_list = [xdsl_to_qml_obs_op(term.owner) for term in op.terms]
             return qml.Hamiltonian(coeffs, ops_list)
+        case "quantum.compbasis":
+            return _extract(op, "qubits", resolve_constant_wire)
         case _:
             raise NotImplementedError(f"Cannot resolve named op: {op}")
-
-
-def xdsl_to_qml_compbasis_op(op: ComputationalBasisOp) -> list[int] | None:
-    """Convert a ``quantum.compbasis`` xDSL op to a PennyLane operator."""
-    return _extract(op, "qubits", resolve_constant_wire)
 
 
 def xdsl_to_qml_meas(meas, *args, **kwargs) -> MeasurementProcess:

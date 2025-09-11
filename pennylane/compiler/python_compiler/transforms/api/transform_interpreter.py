@@ -53,30 +53,26 @@ class TransformFunctionsExt(TransformFunctions):
     then it will try to run this pass in Catalyst.
     """
 
-    visual_callbacks: list[str] = ["_draw_callback", "_mlir_graph_callback"]
-
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         # The signature of the callback function is assumed to be
-        # def callback(previous_pass: ModulePass, module: ModuleOp, level: int) -> None
-        # This is slightly different from the one used in xDSL:
-        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass) -> None:
+        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass, pass_level=0) -> None
         self.callback = callback
-        self.level = 0
+        self.pass_level = 0
 
-    def _maybe_callback(self, previous_pass, module):
-        """Run callback if defined."""
+    def _pre_pass_callback(self, previous_pass, module):
+        """Callback wrapper to run the callback function before the pass."""
         if not self.callback:
             return
-        if self.level == 0 and self.callback.__name__ in self.visual_callbacks:
-            self.callback(previous_pass, module, self.level)
+        if self.pass_level == 0:
+            self.callback(previous_pass, module, None, pass_level=0)
 
     def _post_pass_callback(self, previous_pass, module):
         """Increment level and run callback if defined."""
         if not self.callback:
             return
-        self.level += 1
-        self.callback(previous_pass, module, self.level)
+        self.pass_level += 1
+        self.callback(previous_pass, module, None, pass_level=self.pass_level)
 
     @impl(ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(
@@ -95,7 +91,7 @@ class TransformFunctionsExt(TransformFunctions):
             pass_class = self.passes[pass_name]()
             pass_instance = pass_class(**op.options.data)
             pipeline = PassPipeline((pass_instance,))
-            self._maybe_callback(pass_instance, module)
+            self._pre_pass_callback(pass_instance, module)
             pipeline.apply(self.ctx, module)
             self._post_pass_callback(pass_instance, module)
             return (module,)
@@ -105,7 +101,7 @@ class TransformFunctionsExt(TransformFunctions):
         Printer(stream=buffer, print_generic_format=True).print_op(module)
 
         schedule = f"--{pass_name}"
-        self._maybe_callback(pass_name, module)
+        self._pre_pass_callback(pass_name, module)
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 
         data = Parser(self.ctx, modified).parse_module()
