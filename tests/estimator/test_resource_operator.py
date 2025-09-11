@@ -504,7 +504,7 @@ class TestResourceOperator:
 
     def test_tracking_name(self):
         """Test that correct tracking name is returned."""
-        assert X().tracking_name_from_op() == "X"
+        assert X().tracking_name() == "X"
 
 
 @pytest.mark.parametrize(

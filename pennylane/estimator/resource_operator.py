@@ -75,7 +75,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         self.num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
-        self._name = name or op_type.tracking_name(**self.params)
+        self._name = name or op_type.make_tracking_name(**self.params)
 
     def __hash__(self) -> int:
         return hash((self.op_type, self.num_wires, self._hashable_params))
@@ -325,19 +325,24 @@ class ResourceOperator(ABC):
 
     def __add__(self, other):
         if isinstance(other, ResourceOperator):
-            return (1 * self) + (1 * other)
+            return (1 * self).add_series(1 * other)
         if isinstance(other, Resources):
-            return (1 * self) + other
+            return (1 * self).add_series(other)
 
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     def __and__(self, other):
         if isinstance(other, ResourceOperator):
-            return (1 * self) & (1 * other)
+            return (1 * self).add_parallel(1 * other)
         if isinstance(other, Resources):
-            return (1 * self) & other
+            return (1 * self).add_parallel(other)
 
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
+
+    __radd__ = __add__
+    __rand__ = __and__
+    __rmul__ = __mul__
+    __rmatmul__ = __matmul__
 
     @classmethod
     def make_tracking_name(cls, *args, **kwargs) -> str:
