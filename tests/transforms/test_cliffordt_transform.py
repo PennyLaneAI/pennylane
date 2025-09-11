@@ -670,15 +670,15 @@ class TestCliffordCached:
         cache1 = _CachedCallable(method="gridsynth", epsilon=1e-5, cache_size=100)
 
         assert cache1.compatible(
-            method="gridsynth", epsilon=1e-3, cache_size=100, cache_eps_rtol=99
+            method="gridsynth", epsilon=1e-3, cache_size=100, cache_eps_rtol=99, is_qjit=False
         )
 
         assert not cache1.compatible(
-            method="gridsynth", epsilon=9e-6, cache_size=100, cache_eps_rtol=99
+            method="gridsynth", epsilon=9e-6, cache_size=100, cache_eps_rtol=99, is_qjit=False
         )
 
         assert not cache1.compatible(
-            method="gridsynth", epsilon=1e-4, cache_size=100, cache_eps_rtol=1e-1
+            method="gridsynth", epsilon=1e-4, cache_size=100, cache_eps_rtol=1e-1, is_qjit=False
         )
 
 
