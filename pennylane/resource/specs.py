@@ -18,6 +18,7 @@ import json
 import os
 from collections import defaultdict
 from collections.abc import Callable
+from dataclasses import replace
 from typing import Any, Literal
 
 import pennylane as qml
@@ -32,8 +33,6 @@ def _get_absolute_import_path(fn):
 
 
 def _create_tracker_device_class(dev, compute_depth):
-    from dataclasses import replace
-
     from pennylane.transforms.core import TransformProgram
 
     from ..devices import NullQubit
@@ -333,49 +332,49 @@ def specs(
         original_device = qnode.device
         info = qml.resource.resource.SpecsDict()
 
-        if level == "device":
-            # When running at the device level, execute on null.qubit directly with resource tracking,
-            # which will give resource usage information for after all compiler passes have completed
-
-            # breakpoint()
-            # TODO: Find a way to inherit all devices args from input
-            TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
-            spoofed_dev = TrackerDevice(
-                wires=original_device.wires,
-                shots=original_device.shots,
-            )
-
-            # Only need a shallow copy here, to prevent replacing the device in the original QNode
-            new_qnode = copy.copy(qnode.original_function)
-            new_qnode.device = spoofed_dev
-
-            new_qnode = catalyst.QJIT(new_qnode, copy.copy(qnode.compile_options))
-
-            if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
-                # TODO: Warn that something has gone wrong here
-                os.remove(_RESOURCE_TRACKING_FILEPATH)
-
-            # Execute on null.qubit with resource tracking
-            new_qnode(*args, **kwargs)
-
-            with open(_RESOURCE_TRACKING_FILEPATH, "r", encoding="utf-8") as f:
-                resource_data = json.load(f)
-
-            info["resources"] = Resources(
-                num_wires=resource_data["num_wires"],
-                num_gates=resource_data["num_gates"],
-                gate_types=defaultdict(int, resource_data["gate_types"]),
-                gate_sizes=defaultdict(
-                    int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
-                ),
-                depth=resource_data["depth"],
-                shots=qnode.original_function.shots,  # TODO: Can this ever be overriden during compilation?
-            )
-
-            # print(resource_data)
-            os.remove(_RESOURCE_TRACKING_FILEPATH)
-        else:
+        if level != "device":
             raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+
+        # When running at the device level, execute on null.qubit directly with resource tracking,
+        # which will give resource usage information for after all compiler passes have completed
+
+        # breakpoint()
+        # TODO: Find a way to inherit all devices args from input
+        TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
+        spoofed_dev = TrackerDevice(
+            wires=original_device.wires,
+            shots=original_device.shots,
+        )
+
+        # Only need a shallow copy here, to prevent replacing the device in the original QNode
+        new_qnode = copy.copy(qnode.original_function)
+        new_qnode.device = spoofed_dev
+
+        new_qnode = catalyst.QJIT(new_qnode, copy.copy(qnode.compile_options))
+
+        if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
+            # TODO: Warn that something has gone wrong here
+            os.remove(_RESOURCE_TRACKING_FILEPATH)
+
+        # Execute on null.qubit with resource tracking
+        new_qnode(*args, **kwargs)
+
+        with open(_RESOURCE_TRACKING_FILEPATH, "r", encoding="utf-8") as f:
+            resource_data = json.load(f)
+
+        info["resources"] = Resources(
+            num_wires=resource_data["num_wires"],
+            num_gates=resource_data["num_gates"],
+            gate_types=defaultdict(int, resource_data["gate_types"]),
+            gate_sizes=defaultdict(
+                int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
+            ),
+            depth=resource_data["depth"],
+            shots=qnode.original_function.shots,  # TODO: Can this ever be overriden during compilation?
+        )
+
+        # print(resource_data)
+        os.remove(_RESOURCE_TRACKING_FILEPATH)
 
         info["num_device_wires"] = len(original_device.wires)
         info["device_name"] = original_device.name
