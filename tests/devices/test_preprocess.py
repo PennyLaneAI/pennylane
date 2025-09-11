@@ -622,25 +622,20 @@ class TestGraphModeExclusiveFeatures:
 
         qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-        try:
-            tape = qml.tape.QuantumScript([MyOp(0)])
-            device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
-            target_gates = {"Hadamard", "PauliX"}
+        tape = qml.tape.QuantumScript([MyOp(0)])
+        device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+        target_gates = {"Hadamard", "PauliX"}
 
-            (out_tape,), _ = decompose(
-                tape,
-                lambda obj: obj.name in target_gates,
-                device_wires=device_wires,
-                target_gates=target_gates,
-            )
+        (out_tape,), _ = decompose(
+            tape,
+            lambda obj: obj.name in target_gates,
+            device_wires=device_wires,
+            target_gates=target_gates,
+        )
 
-            # Should use fallback decomposition (2 Hadamards)
-            assert len(out_tape.operations) == 2
-            assert all(op.name == "Hadamard" for op in out_tape.operations)
-
-        finally:
-            if hasattr(MyOp, "_decomp_db"):
-                MyOp._decomp_db.clear()
+        # Should use fallback decomposition (2 Hadamards)
+        assert len(out_tape.operations) == 2
+        assert all(op.name == "Hadamard" for op in out_tape.operations)
 
 
 class TestMidCircuitMeasurements:

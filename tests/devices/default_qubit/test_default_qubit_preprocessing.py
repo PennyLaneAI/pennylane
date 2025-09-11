@@ -1061,28 +1061,22 @@ class TestDefaultQubitGraphModeExclusive:
         class MyDefaultQubitOp(qml.operation.Operator):
             num_wires = 1
 
-        try:
+        @qml.register_resources({qml.H: 2})
+        def decomp_fallback(wires):
+            qml.H(wires)
+            qml.H(wires)
 
-            @qml.register_resources({qml.H: 2})
-            def decomp_fallback(wires):
-                qml.H(wires)
-                qml.H(wires)
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
+        def decomp_with_work_wire(wires):
+            qml.X(wires)
 
-            @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
-            def decomp_with_work_wire(wires):
-                qml.X(wires)
+        qml.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
 
-            qml.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
+        tape = qml.tape.QuantumScript([MyDefaultQubitOp(0)])
+        dev = qml.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
 
-            tape = qml.tape.QuantumScript([MyDefaultQubitOp(0)])
-            dev = qml.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-            program = dev.preprocess_transforms()
-            (out_tape,), _ = program([tape])
-
-            assert len(out_tape.operations) == 2
-            assert out_tape.operations[0].name == "Hadamard"
-            assert out_tape.operations[1].name == "Hadamard"
-
-        finally:
-            # Clean up decomposition registry - attempt cleanup if possible
-            pass
+        assert len(out_tape.operations) == 2
+        assert out_tape.operations[0].name == "Hadamard"
+        assert out_tape.operations[1].name == "Hadamard"
