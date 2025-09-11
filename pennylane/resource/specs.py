@@ -174,7 +174,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
 
     if not isinstance(qjit.original_function, qml.QNode):
-        raise ValueError("qml.specs can only be used on QNodes or qjit'd QNodes")
+        raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
 
     original_device = qjit.device
     info = SpecsDict()
@@ -392,4 +392,4 @@ def specs(
     except ImportError:
         pass
 
-    raise ValueError("qml.specs can only be used on QNodes or qjit'd QNodes")
+    raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
