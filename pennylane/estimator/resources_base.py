@@ -34,7 +34,7 @@ DefaultGateSet = frozenset(
 class Resources:
     r"""A container for the resources used throughout a quantum circuit.
 
-    The resources tracked include number of wires, number of gates, and their gate types.
+    The resources tracked include: number of wires (by state), and number of gates (by type).
 
     Args:
         zeroed (int): Number of zeroed state work wires.
