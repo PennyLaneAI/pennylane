@@ -33,7 +33,7 @@ class Hadamard(ResourceOperator):
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Hadamard`.
 
@@ -47,8 +47,8 @@ class Hadamard(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+            The ``Hadamard`` gate is treated as a fundamental gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
 
         Raises:
             ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
@@ -123,9 +123,9 @@ class S(ResourceOperator):
         wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
-        The S-gate decomposes into two T-gates.
+        The ``S`` gate decomposes into two ``T`` gates.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.S`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.S`.
 
     **Example**
 
@@ -168,7 +168,7 @@ class S(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of the S-gate is equivalent to :math:`\hat{Z} \cdot \hat{S}`.
+            The adjoint of the ``S`` gate is equivalent to :math:`\hat{Z} \cdot \hat{S}`.
             The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
@@ -229,7 +229,7 @@ class SWAP(ResourceOperator):
 
     Resources:
         The resources come from the following identity expressing SWAP as the product of
-        three :class:`~.CNOT` gates:
+        three ``CNOT`` gates:
 
         .. math::
 
@@ -293,7 +293,7 @@ class SWAP(ResourceOperator):
 
         Resources:
             The resources come from the following identity expressing SWAP as the product of
-            three CNOT gates:
+            three ``CNOT`` gates:
 
             .. math::
 
@@ -357,7 +357,7 @@ class SWAP(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Resources:
-            The SWAP gate raised to even powers produces identity and raised
+            The ``SWAP`` gate raised to even powers produces identity and raised
             to odd powers it produces itself.
 
         Returns:
@@ -377,8 +377,8 @@ class T(ResourceOperator):
         wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
-        The T-gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+        The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.T`.
 
@@ -392,8 +392,8 @@ class T(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The T-gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+            The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
 
         Raises:
             ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
@@ -445,18 +445,18 @@ class T(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Resources:
-            The T-gate, when raised to a power which is a multiple of eight, produces identity.
+            The ``T`` gate, when raised to a power which is a multiple of eight, produces identity.
             Consequently, for any integer power `z`, the effective quantum operation :math:`T^{z}` is equivalent
             to :math:`T^{z \pmod 8}`.
 
 
             The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
 
-            - If `z' = 0`: The operation is equivalent to the Identity gate (`I`).
-            - If `z' = 1`: The operation is equivalent to the T-gate (`T`).
-            - If `z' = 2`: The operation is equivalent to the S-gate (`S`).
+            - If `z' = 0`: The operation is equivalent to the Identity gate (:math:`I`).
+            - If `z' = 1`: The operation is equivalent to the T-gate (:math:`T`).
+            - If `z' = 2`: The operation is equivalent to the S-gate (:math:`S`).
             - If `z' = 3`: The operation is equivalent to a composition of an S-gate and a T-gate (:math:`S \cdot T`).
-            - If `z' = 4` : The operation is equivalent to the Z-gate (`Z`).
+            - If `z' = 4` : The operation is equivalent to the Z-gate (:math:`Z`).
             - If `z' = 5`: The operation is equivalent to a composition of a Z-gate and a T-gate (:math:`Z \cdot T`).
             - If `z' = 6`: The operation is equivalent to a composition of a Z-gate and an S-gate (:math:`Z \cdot S`).
             - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
@@ -492,7 +492,7 @@ class X(ResourceOperator):
         wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
-        The X-gate can be decomposed according to the following identities:
+        The ``X`` gate can be decomposed according to the following identities:
 
         .. math::
 
@@ -503,7 +503,7 @@ class X(ResourceOperator):
 
         Thus the resources for an X-gate are two ``S`` gates and two ``Hadamard`` gates.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.X`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PauliX`.
 
     **Example**
 
@@ -521,7 +521,7 @@ class X(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The X-gate can be decomposed according to the following identities:
+            The ``X`` gate can be decomposed according to the following identities:
 
             .. math::
 
@@ -605,7 +605,7 @@ class Y(ResourceOperator):
         wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
-        The Y-gate can be decomposed according to the following identities:
+        The ``Y`` gate can be decomposed according to the following identities:
 
         .. math::
 
@@ -615,10 +615,10 @@ class Y(ResourceOperator):
                 \hat{S}^{\dagger} &= \cdot \hat{Z} \cdot \hat{S}, \\
             \end{align}
 
-        Thus the resources for a Y-gate are two S-gates, two Z-gates
-        and two Hadamard gates.
+        Thus the resources for a Y-gate are two ``S`` gates, two ``Z`` gates
+        and two ``Hadamard`` gates.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Y`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PauliY`.
 
     **Example**
 
@@ -636,7 +636,7 @@ class Y(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The Y-gate can be decomposed according to the following identities:
+            The ``Y`` gate can be decomposed according to the following identities:
 
             .. math::
 
@@ -645,8 +645,8 @@ class Y(ResourceOperator):
                     \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
                 \end{align}
 
-            Thus the resources for a Y-gate are two S-gates, two Z-gates
-            and two Hadamard gates.
+            Thus the resources for a Y-gate are two ``S`` gates, two ``Z`` gates
+            and two ``Hadamard`` gates.
         """
         z = resource_rep(Z)
         s = resource_rep(S)
@@ -699,7 +699,7 @@ class Y(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Resources:
-            The Y-gate raised to even powers produces identity and raised
+            The ``Y`` gate raised to even powers produces identity and raised
             to odd powers it produces itself.
 
         Returns:
@@ -719,13 +719,13 @@ class Z(ResourceOperator):
         wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
-        The Z-gate can be decomposed according to the following identities:
+        The ``Z`` gate can be decomposed according to the following identities:
 
         .. math:: \hat{Z} = \hat{S}^{2},
 
         thus the resources for a Z-gate are two ``S`` gates.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Z`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PauliZ`.
 
     **Example**
 
@@ -743,11 +743,11 @@ class Z(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The Z-gate can be decomposed according to the following identities:
+            The ``Z`` gate can be decomposed according to the following identities:
 
             .. math:: \hat{Z} = \hat{S}^{2},
 
-            thus the resources for a Z-gate are two :class:`~.pennylane.estimator.ops.S` gates.
+            thus the resources for a Z-gate are two ``S`` gates.
         """
         s = resource_rep(S)
         return [GateCount(s, 2)]
@@ -800,7 +800,7 @@ class Z(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Resources:
-            The Z-gate raised to even powers produces identity and raised
+            The ``Z`` gate raised to even powers produces identity and raised
             to odd powers it produces itself.
 
         Returns:

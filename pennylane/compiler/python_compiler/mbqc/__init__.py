@@ -11,28 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains tools for logical resource estimation."""
+"""PennyLane-xDSL transformations API specifically for the MBQC transform."""
 
-from .wires_manager import Allocate, Deallocate, WireResourceManager
-
-from .resources_base import Resources
-
-from .resource_operator import (
-    ResourceOperator,
-    CompressedResourceOp,
-    GateCount,
-    resource_rep,
+from .graph_state_utils import (
+    get_num_aux_wires,
+    get_graph_state_edges,
+    n_vertices_from_packed_adj_matrix,
+    edge_iter,
+    generate_adj_matrix,
 )
 
 
-from .ops.identity import Identity, GlobalPhase
-
-from .ops.qubit import (
-    X,
-    Y,
-    Z,
-    SWAP,
-    Hadamard,
-    S,
-    T,
-)
+__all__ = [
+    "get_num_aux_wires",
+    "get_graph_state_edges",
+    "n_vertices_from_packed_adj_matrix",
+    "edge_iter",
+    "generate_adj_matrix",
+]
