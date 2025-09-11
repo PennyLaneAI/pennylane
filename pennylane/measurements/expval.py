@@ -20,7 +20,7 @@ from pennylane import math
 from pennylane.operation import Operator
 from pennylane.ops import I
 from pennylane.queuing import QueuingManager
-from pennylane.wires import Wires
+from pennylane.wires import WiresLike
 
 from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement, StateMeasurement
@@ -43,23 +43,28 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        dtype: The dtype of the samples returned by this measurement process.
     """
 
     _shortname = "expval"
 
     @property
     def numeric_type(self):
+        if self._dtype is not None:
+            return self._dtype
         return float
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
+    # pylint: disable=too-many-arguments
     def process_samples(
         self,
         samples: Sequence[complex],
-        wire_order: Wires,
+        wire_order: WiresLike,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
+        dtype=None,
     ):
         if not self.wires:
             return math.squeeze(self.eigvals())
@@ -71,7 +76,11 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
                 eigvals=self._eigvals,
                 wires=self.wires if self._eigvals is not None else None,
             ).process_samples(
-                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+                samples=samples,
+                wire_order=wire_order,
+                shot_range=shot_range,
+                bin_size=bin_size,
+                dtype=self._dtype if dtype is None else dtype,
             )
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
@@ -80,7 +89,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return math.squeeze(math.mean(samples, axis=axis))
 
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: WiresLike):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
@@ -94,14 +103,14 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
         return self._calculate_expectation(probabilities)
 
-    def process_counts(self, counts: dict, wire_order: Wires):
+    def process_counts(self, counts: dict, wire_order: WiresLike):
         with QueuingManager.stop_recording():
             probabilties = probs(wires=self.wires).process_counts(
                 counts=counts, wire_order=wire_order
             )
         return self._calculate_expectation(probabilties)
 
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: WiresLike):
         if not self.wires:
             return math.squeeze(self.eigvals())
         with QueuingManager.stop_recording():
@@ -122,6 +131,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
 
 def expval(
     op: Operator | MeasurementValue,
+    dtype=None,
 ) -> ExpectationMP:
     r"""Expectation value of the supplied observable.
 
@@ -143,17 +153,38 @@ def expval(
     >>> circuit(0.5)
     -0.4794255386042029
 
+    The ``dtype`` argument can be used to specify the precision of the returned expectation value when
+    sampling is used to estimate expectation values. If sampling is not used, the ``dtype`` argument is ignored.
+
+    By default, the dtype is ``float64``.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.set_shots(10)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Y(0), dtype='float32')
+
+    Executing this QNode, we see that the returned samples have the specified dtype:
+
+    >>> samples = circuit(0.5)
+    >>> samples.dtype
+    dtype('float32')
+
     Args:
         op (Union[Operator, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
+        dtype: The dtype of the samples returned by this measurement process.
 
     Returns:
         ExpectationMP: measurement process instance
     """
-    if isinstance(op, MeasurementValue):
-        return ExpectationMP(obs=op)
-
     if isinstance(op, Sequence):
         raise ValueError(
             "qml.expval does not support measuring sequences of measurements or observables"
@@ -166,4 +197,4 @@ def expval(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
 
-    return ExpectationMP(obs=op)
+    return ExpectationMP(obs=op, dtype=dtype)

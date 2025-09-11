@@ -57,18 +57,22 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
     @property
     def numeric_type(self):
+        if self._dtype is not None:
+            return self._dtype
         return float
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int]:
         len_wires = len(self.wires) if self.wires else num_device_wires
         return (2**len_wires,)
 
+    # pylint: disable=too-many-arguments
     def process_samples(
         self,
         samples: TensorLike,
         wire_order: Wires,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
+        dtype=None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
@@ -95,7 +99,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         new_bin_size = bin_size or samples.shape[-2]
         new_shape = (-1, new_bin_size) if batch_size is None else (batch_size, -1, new_bin_size)
         indices = indices.reshape(new_shape)
-        prob = self._count_samples(indices, batch_size, dim)
+        prob = self._count_samples(indices, batch_size, dim, dtype=dtype or self._dtype)
         return math.squeeze(prob) if bin_size is None else prob
 
     def process_state(self, state: TensorLike, wire_order: Wires):
@@ -165,7 +169,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return self.process_state(p_state, wire_order)
 
     @staticmethod
-    def _count_samples(indices, batch_size, dim):
+    def _count_samples(indices, batch_size, dim, dtype=None):
         """Count the occurrences of sampled indices and convert them to relative
         counts in order to estimate their occurrence probability."""
         num_bins, bin_size = indices.shape[-2:]
@@ -182,7 +186,9 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         else:
 
             def _count_samples_core(indices, dim, *_):
-                probabilities = math.zeros((dim, num_bins), dtype="float64")
+                probabilities = math.zeros(
+                    (dim, num_bins), dtype=dtype if dtype is not None else "float64"
+                )
                 for b, idx in enumerate(indices):
                     basis_states, counts = math.unique(idx, return_counts=True)
                     probabilities[basis_states, b] = counts
@@ -201,7 +207,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return probabilities / bin_size
 
 
-def probs(wires=None, op=None) -> ProbabilityMP:
+def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
     r"""Probability of each computational basis state.
 
     This measurement function accepts either a wire specification or
@@ -221,8 +227,9 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
         op (Operator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
-            attribute) that rotates the computational basis, or a  ``MeasurementValue``
+            attribute) that rotates the computational basis, or a ``MeasurementValue``
             corresponding to mid-circuit measurements.
+        dtype: The dtype of the samples returned by this measurement process.
 
     Returns:
         ProbabilityMP: Measurement process instance
@@ -268,6 +275,30 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
+
+    The ``dtype`` argument can be used to specify the precision of the returned probabilities when
+    sampling is used to estimate probabilities and the ``op`` argument does not contain mid-circuit measurements.
+
+    If sampling is not used or if ``op`` contains mid-circuit measurements,
+    the ``dtype`` argument is ignored.
+
+    By default, the dtype is ``float64``.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        @qml.set_shots(10)
+        @qml.qnode(qml.device("default.qubit", wires=2), interface="torch")
+        def circuit():
+            qml.Hadamard(0)
+            return qml.probs(dtype="float32")
+
+    Executing this QNode, we see that the returned samples have the specified dtype:
+
+    >>> samples = circuit()
+    >>> samples.dtype
+    torch.float32
     """
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:
@@ -305,4 +336,4 @@ def probs(wires=None, op=None) -> ProbabilityMP:
                 "provided. The wires for probs will be determined directly from the observable."
             )
         wires = Wires(wires)
-    return ProbabilityMP(obs=op, wires=wires)
+    return ProbabilityMP(obs=op, wires=wires, dtype=dtype)
