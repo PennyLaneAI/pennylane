@@ -11,22 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains experimental resource estimation functionality."""
+r"""This module contains classes which integrate arithemtic operators with
+resource estimation."""
 
-from .non_parametric_ops import (
-    Hadamard,
-    S,
-    T,
-    X,
-    Y,
-    Z,
-    SWAP,
-)
-
-from .parametric_ops_single_qubit import (
-    PhaseShift,
-    RX,
-    RY,
-    RZ,
-    Rot,
+from .controlled_ops import (
+    CCZ,
+    CH,
+    CNOT,
+    ControlledPhaseShift,
+    CRot,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    MultiControlledX,
+    TempAND,
+    Toffoli,
 )

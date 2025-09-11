@@ -15,7 +15,6 @@ r"""Resource operators for parametric single qubit operations."""
 
 import numpy as np
 
-from pennylane.estimator.ops import GlobalPhase, T
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -23,6 +22,9 @@ from pennylane.estimator.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
+
+from ..identity import GlobalPhase
+from .non_parametric_ops import T
 
 # pylint: disable=arguments-differ
 
