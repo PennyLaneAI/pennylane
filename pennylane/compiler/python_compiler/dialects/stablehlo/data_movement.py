@@ -20,7 +20,6 @@ Data movement operations for the StableHLO dialect.
 
 from typing import ClassVar, TypeVar
 
-from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects.builtin import BoolAttr, DenseArrayBase, IntegerAttr, i64
 from xdsl.irdl import (
     IRDLOperation,
@@ -41,7 +40,6 @@ from xdsl.traits import (
     ConditionallySpeculatable,
     NoMemoryEffect,
     RecursiveMemoryEffect,
-    SingleBlockImplicitTerminator,
 )
 
 from pennylane.compiler.python_compiler.xdsl_extras.traits import AllMatchSameOperatorTrait
@@ -110,7 +108,6 @@ class ConcatenateOp(IRDLOperation):
     traits = traits_def(
         NoMemoryEffect(),
         ConditionallySpeculatable(),
-        SingleBlockImplicitTerminator(xstablehlo.ReturnOp),
         # InferTypeOpInterface(),
     )
 
