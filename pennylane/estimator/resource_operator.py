@@ -171,7 +171,7 @@ class ResourceOperator(ABC):
                     return qre.CompressedResourceOp(cls, num_wires, params)  # representation of the operator
 
                 @classmethod
-                def default_resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
+                def resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
 
                     # Get compressed reps for each gate in the decomposition:
 
@@ -262,18 +262,18 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def resource_decomp(cls, *args, **kwargs) -> list:
+    def resource_decomp(cls, *args, **kwargs) -> list[GateCount]:
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
+    def adjoint_resource_decomp(cls, *args, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator."""
         raise ResourcesUndefinedError
 
     @classmethod
     def controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-    ) -> list:
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -285,7 +285,7 @@ class ResourceOperator(ABC):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
+    def pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
