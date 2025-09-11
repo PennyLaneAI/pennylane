@@ -196,7 +196,7 @@ def _resources_from_resource(
     obj: Resources,
     gate_set: set | None = None,
     config: ResourceConfig | None = None,
-    work_wires=None,
+    work_wires=0,
     tight_budget=None,
 ) -> Resources:
     """Further process resources from a resources object."""
@@ -236,7 +236,7 @@ def _resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set | None = None,
     config: ResourceConfig | None = None,
-    work_wires=None,
+    work_wires=0,
     tight_budget=None,
 ) -> Resources:
     """Extract resources from a resource operator."""
@@ -257,7 +257,7 @@ def _resources_from_pl_ops(
     obj: Operation,
     gate_set: set | None = None,
     config: ResourceConfig | None = None,
-    work_wires=None,
+    work_wires=0,
     tight_budget=None,
 ) -> Resources:
     """Extract resources from a pl operator."""
