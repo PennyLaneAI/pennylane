@@ -189,7 +189,10 @@ class Test_map_to_resource_op:
                     np.array([0.25] * 16), wires=[0, 1, 2, 3], precision_wires=[4, 5]
                 ),
                 re_temps.ResourceQROMStatePreparation(
-                    num_state_qubits=6, precision=np.pi / 4, positive_and_real=False, select_swap_depths=1
+                    num_state_qubits=6,
+                    precision=np.pi / 4,
+                    positive_and_real=False,
+                    select_swap_depths=1,
                 ),
             ),
         ],
