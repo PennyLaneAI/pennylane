@@ -19,20 +19,12 @@ from __future__ import annotations
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.math.interface_utils import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
-
-from .mcm_config_utils import (
-    MCM_METHOD,
-    POSTSELECT_MODE,
-    SUPPORTED_MCM_METHODS,
-    SUPPORTED_POSTSELECT_MODES,
-    get_canonical_mcm_method,
-    get_canonical_postselect_mode,
-)
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors.base import RemoteExec
@@ -89,6 +81,48 @@ class FrozenMapping(MutableMapping):
         return deepcopy(self._data, memo)
 
 
+class MCM_METHOD(StrEnum):
+    """Canonical set of mid-circuit measurement methods supported."""
+
+    DEFERRED = "deferred"
+    ONE_SHOT = "one-shot"
+    TREE_TRAVERSAL = "tree-traversal"
+    SINGLE_BRANCH_STATISTICS = "single-branch-statistics"
+    DEVICE = "device"
+
+    @classmethod
+    def _missing_(cls, value):
+        """Custom lookup to allow users to specify None for mcm_method."""
+        if value is None:
+            return None
+
+        supported_values = [item.value for item in cls]
+
+        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        custom_addition = f"Please use one of the supported interfaces: {supported_values}."
+        raise ValueError(f"{standard_msg} {custom_addition}")
+
+
+class POSTSELECT_MODE(StrEnum):
+    """Canonical set of postselection modes supported."""
+
+    HW_LIKE = "hw-like"
+    FILL_SHOTS = "fill-shots"
+    PAD_INVALID_SAMPLES = "pad-invalid-samples"
+
+    @classmethod
+    def _missing_(cls, value):
+        """Custom lookup to allow users to specify None for postselect_mode."""
+        if value is None:
+            return None
+
+        supported_values = [item.value for item in cls]
+
+        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        custom_addition = f"Please use one of the supported interfaces: {supported_values}."
+        raise ValueError(f"{standard_msg} {custom_addition}")
+
+
 @dataclass(frozen=True)
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
@@ -111,23 +145,21 @@ class MCMConfig:
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
         if isinstance(self.mcm_method, str):
-            object.__setattr__(self, "mcm_method", get_canonical_mcm_method(self.mcm_method))
+            object.__setattr__(self, "mcm_method", MCM_METHOD(self.mcm_method))
         elif isinstance(self.mcm_method, MCM_METHOD):
             object.__setattr__(self, "mcm_method", self.mcm_method)
         elif self.mcm_method and not isinstance(self.mcm_method, MCM_METHOD):
             raise ValueError(
-                f"Invalid mid-circuit measurement method '{self.mcm_method}', must be one of {SUPPORTED_MCM_METHODS}."
+                f"'{self.mcm_method}' is not a valid MCM_METHOD. Must be one of {list(MCM_METHOD) + [None]}."
             )
 
         if isinstance(self.postselect_mode, str):
-            object.__setattr__(
-                self, "postselect_mode", get_canonical_postselect_mode(self.postselect_mode)
-            )
+            object.__setattr__(self, "postselect_mode", POSTSELECT_MODE(self.postselect_mode))
         elif isinstance(self.postselect_mode, POSTSELECT_MODE):
             object.__setattr__(self, "postselect_mode", self.postselect_mode)
         elif self.postselect_mode and not isinstance(self.postselect_mode, POSTSELECT_MODE):
             raise ValueError(
-                f"Invalid postselection mode '{self.postselect_mode}', must be one of {SUPPORTED_POSTSELECT_MODES}."
+                f"'{self.postselect_mode}' is not a valid POSTSELECT_MODE. Must be one of {list(POSTSELECT_MODE) + [None]}."
             )
 
 
