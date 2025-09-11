@@ -301,7 +301,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
 
     program = TransformProgram()
     program.add_transform(validate_device_wires, device_wires, name=device_name)
-    _add_adjoint_transforms(program, device_wires=device_wires, device_wires=device_wires)
+    _add_adjoint_transforms(program, device_wires=device_wires)
 
     try:
         program((circuit,))
