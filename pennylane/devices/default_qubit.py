@@ -114,6 +114,7 @@ _BASE_DQ_GATE_SET = {
     "Toffoli",
 }
 
+
 # Complete gate set including controlled and adjoint variants
 ALL_DQ_GATE_SET = (
     _BASE_DQ_GATE_SET
@@ -298,12 +299,12 @@ def _supports_adjoint(circuit, device_wires, device_name):
     if circuit is None:
         return True
 
-    programram = TransformProgram()
-    programram.add_transform(validate_device_wires, device_wires, name=device_name)
-    _add_adjoint_transforms(program, device_wires=device_wiresram, device_wires=device_wires)
+    program = TransformProgram()
+    program.add_transform(validate_device_wires, device_wires, name=device_name)
+    _add_adjoint_transforms(program, device_wires=device_wires, device_wires=device_wires)
 
     try:
-        programram((circuit,))
+        program((circuit,))
     except (
         DecompositionUndefinedError,
         DeviceError,
