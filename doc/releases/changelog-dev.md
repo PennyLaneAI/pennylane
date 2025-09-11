@@ -117,8 +117,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
+  to guard users from an incompatibility that currently exists between the two.
+  A warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
+  [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
+
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
-  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
@@ -994,10 +999,6 @@
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
 <h3>Documentation 📝</h3>
-
-* The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
-  to guard users from an incompatibility that currently exists between the two.
-  [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
