@@ -18,7 +18,7 @@ from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
 from functools import reduce
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -48,6 +48,14 @@ class ImportanceConfig:
     importance_scores: Dict[Hashable, float] = None
     tolerance: float = 10e-8
     top_k: Dict[int, int] = None
+
+@dataclass
+class ConvergenceLog:
+    """Used to track the convergence history when sampling"""
+    partial_sums: List[complex]
+    means: List[complex]
+    medians: List[complex]
+    stds: List[complex]
 
 
 def effective_hamiltonian(
