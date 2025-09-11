@@ -223,7 +223,7 @@ class ResourceOperator(ABC):
         self.queue()
         super().__init__()
 
-    def queue(self, context: QueuingManager = QueuingManager):
+    def queue(self, context: QueuingManager = QueuingManager) -> "ResourceOperator":
         """Append the operator to the Operator queue."""
         context.append(self)
         return self
