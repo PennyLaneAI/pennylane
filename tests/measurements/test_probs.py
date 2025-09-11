@@ -717,7 +717,7 @@ class TestProbs:
             UserWarning,
             match="Using qml.probs with a Hermitian observable might return different results than expected",
         ):
-            _ = circuit()
+            circuit()
 
     @pytest.mark.parametrize("operation", [qml.PauliX, qml.PauliY, qml.Hadamard])
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
