@@ -234,7 +234,7 @@ class ResourceConfig:
         decomp_func: Callable,
         decomp_type: DecompositionType | None = DecompositionType.BASE,
     ) -> None:
-        """Set a custom function to override the default resource decomposition.
+        """Sets a custom function to override the default resource decomposition.
 
         Args:
             cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
