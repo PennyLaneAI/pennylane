@@ -348,6 +348,7 @@ class TestMCMConfig:
     @pytest.mark.parametrize(
         "invalid_mcm_method_mode",
         [
+            "foo",
             123,
             True,
         ],
