@@ -177,7 +177,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:
         raise ValueError("qml.specs can only be used on QNodes or qjit'd QNodes")
 
     original_device = qjit.device
-    info = qml.resource.resource.SpecsDict()
+    info = SpecsDict()
 
     if level != "device":
         raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
@@ -193,11 +193,8 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:
         shots=original_device.shots,
     )
 
-    # Only need a shallow copy here, to prevent replacing the device in the original QNode
-    new_qjit = copy.copy(qjit.original_function)
-    new_qjit.device = spoofed_dev
-
-    new_qjit = QJIT(new_qjit, copy.copy(qjit.compile_options))
+    new_qnode = qjit.original_function.update(device=spoofed_dev)
+    new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
         # TODO: Warn that something has gone wrong here
