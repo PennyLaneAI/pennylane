@@ -138,7 +138,7 @@ class Resources:
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed=new_zeroed, any_state=new_any, algo=new_logic, gate_types=new_gate_types
+            zeroed=new_zeroed, any_state=new_any, algo_wires=new_logic, gate_types=new_gate_types
         )
 
     def add_parallel(self, other: "Resources") -> "Resources":
