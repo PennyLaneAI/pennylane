@@ -17,7 +17,10 @@ import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from functools import reduce
+from typing import Dict, FrozenSet, List, Optional, Tuple, Union
+
+import numpy as np
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -51,15 +54,15 @@ class ImportanceConfig:
 class ConvergenceLog:
     """Used to track the convergence history when sampling"""
 
-    partial_sums: List[complex]
-    means: List[complex]
-    medians: List[complex]
-    stds: List[complex]
+    partial_sums: List[complex] = []
+    means: List[complex] = []
+    medians: List[complex] = []
+    stds: List[complex] = []
 
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
+    fragments: Dict[Hashable, Fragment],
     order: int,
     timestep: float = 1.0,
     num_workers: int = 1,
@@ -145,21 +148,21 @@ def _eval_commutator(commutator, coeff, fragments):
 
 
 def _insert_fragments(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment]
-) -> tuple[Fragment]:
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment]
+) -> Tuple[Fragment]:
     """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
     The function recurses through the nested structure of the tuple replacing each hashable `label` with
     the concrete value `fragments[label]`."""
 
     return tuple(
-        _insert_fragments(term, fragments) if isinstance(term, tuple) else fragments[term]
+        _insert_fragments(term, fragments) if isinstance(term, Tuple) else fragments[term]
         for term in commutator
     )
 
 
 def perturbation_error(
     product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
+    fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
     max_order: int,
     timestep: float = 1.0,
@@ -167,7 +170,7 @@ def perturbation_error(
     backend: str = "serial",
     parallel_mode: str = "state",
     importance: Optional[ImportanceConfig] = None,
-) -> list[float]:
+) -> Union[list[complex], list[Tuple[complex, ConvergenceLog]]]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -313,7 +316,7 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
 
 
 def _compute_expectation(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
 ) -> complex:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
@@ -337,8 +340,8 @@ def _compute_expectation(
 
 
 def _compute_expectation_track_order(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
-) -> tuple[complex, int]:
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
+) -> Tuple[complex, int]:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
     new_state = _AdditiveIdentity()
@@ -360,7 +363,7 @@ def _compute_expectation_track_order(
     return state.dot(new_state), len(commutator)
 
 
-def _op_list(commutator) -> dict[tuple[Hashable], complex]:
+def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     """Returns the operations needed to apply the commutator to a state."""
 
     if not commutator:
@@ -381,7 +384,7 @@ def _op_list(commutator) -> dict[tuple[Hashable], complex]:
     return ops1
 
 
-def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
+def _group_sums(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | FrozenSet]]:
     """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
     two commutators a*[X, A, B] and b*[Y, A, B] will be merged into one commutator [a*X + b*Y, A, B].
     """
@@ -395,7 +398,7 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
 
 
 def _commutator_importance(
-    commutator: tuple[Hashable | set], importance_scores: dict[Hashable, float]
+    commutator: Tuple[Hashable | FrozenSet], importance_scores: Dict[Hashable, float]
 ) -> float:
     scores = []
     for fragment in commutator:
