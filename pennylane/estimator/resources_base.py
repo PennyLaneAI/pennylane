@@ -82,7 +82,7 @@ class Resources:
 
         self.zeroed = zeroed
         self.any_state = any_state
-        self.algo_wires = algo
+        self.algo_wires = algo_wires
         self.gate_types = (
             gate_types
             if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int))
