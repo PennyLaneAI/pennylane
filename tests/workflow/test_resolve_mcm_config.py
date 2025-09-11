@@ -32,7 +32,7 @@ def test_no_finite_shots():
     resolved_mcm_config = _resolve_mcm_config(
         mcm_config, interface=Interface.AUTO, finite_shots=False
     )
-    assert resolved_mcm_config.postselect_mode is None
+    assert resolved_mcm_config.postselect_mode == "device"
 
 
 def test_single_branch_statistics():

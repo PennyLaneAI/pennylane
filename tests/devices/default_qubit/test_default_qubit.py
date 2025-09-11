@@ -2238,7 +2238,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method="deferred")
         def func():
             qml.Hadamard(wires=0)
             qml.measure(0)

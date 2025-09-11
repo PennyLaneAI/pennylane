@@ -69,15 +69,22 @@ def test_mcm_config_validation():
 
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
-    expected_mcm_config = MCMConfig(postselect_mode=None)
+    expected_mcm_config = MCMConfig(mcm_method="tree-traversal", postselect_mode=None)
 
     assert resolved_config.mcm_config == expected_mcm_config
 
 
-@pytest.mark.parametrize("mcm_method", [None, "one-shot"])
-@pytest.mark.parametrize("postselect_mode", [None, "hw-like"])
+@pytest.mark.parametrize(
+    "mcm_method, postselect_mode, expected_mcm_method",
+    [
+        (None, None, "tree-traversal"),
+        ("one-shot", None, "one-shot"),
+        (None, "hw-like", "tree-traversal"),
+        ("one-shot", "hw-like", "one-shot"),
+    ],
+)
 @pytest.mark.jax
-def test_jax_interface(mcm_method, postselect_mode):
+def test_jax_interface(mcm_method, postselect_mode, expected_mcm_method):
     """Test resolving ExecutionConfig with JAX interface and different MCMConfig settings."""
     mcm_config = MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
     execution_config = ExecutionConfig(mcm_config=mcm_config, interface="jax")
@@ -87,7 +94,9 @@ def test_jax_interface(mcm_method, postselect_mode):
 
     resolved_config = _resolve_execution_config(execution_config, device, [tape_with_finite_shots])
 
-    expected_mcm_config = MCMConfig(mcm_method, postselect_mode="pad-invalid-samples")
+    expected_mcm_config = MCMConfig(
+        mcm_method=expected_mcm_method, postselect_mode="pad-invalid-samples"
+    )
 
     assert resolved_config.mcm_config == expected_mcm_config
 

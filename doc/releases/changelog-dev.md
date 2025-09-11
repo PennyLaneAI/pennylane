@@ -924,6 +924,9 @@
 * Improve the pre-commit hook to add gitleaks.
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
+* Added `MCM_METHOD` and `POSTSELECT_MODE` `Enum` objects to improve MCM configuration validation and handling.
+  [(#7161)](https://github.com/PennyLaneAI/pennylane/pull/7161)
+
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)

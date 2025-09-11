@@ -1813,7 +1813,7 @@ class TestMCMConfiguration:
 
         with pytest.raises(
             ValueError,
-            match="Cannot use the 'one-shot' method for mid-circuit measurements with",
+            match=r"Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode.",
         ):
             f(param)
 
@@ -1827,8 +1827,11 @@ class TestMCMConfiguration:
             _ = qml.measure(0, postselect=1)
             return qml.sample(wires=[0, 1])
 
-        with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
-            _ = qml.set_shots(qml.QNode(f, dev, postselect_mode="foo"), shots=shots)
+        # Constructing the QNode with an invalid postselect_mode works
+        qn = qml.set_shots(qml.QNode(f, dev, postselect_mode="foo"), shots=shots)
+
+        with pytest.raises(ValueError, match="'foo' is not a valid POSTSELECT_MODE."):
+            qn(np.pi / 4)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", [None, "best"])
