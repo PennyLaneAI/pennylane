@@ -639,7 +639,7 @@ class DefaultQubit(Device):
             _stopping_condition = allow_mcms_stopping_condition
         transform_program.add_transform(
             decompose,
-            stopping_condition=stopping_condition,
+            stopping_condition=_stopping_condition,
             device_wires=self.wires,
             target_gates=ALL_DQ_GATE_SET,
             name=self.name,
