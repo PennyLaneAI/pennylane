@@ -8,7 +8,7 @@
 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY_STATE KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the base class for wire management."""
@@ -26,57 +26,58 @@ class WireResourceManager:
     circuit.
     The manager tracks the state of three distinct types of wires:
 
-    * Algorithmic wires: The core wires used by the quantum algorithm.
-    * Zeroed wires: Auxiliary wires that are in the :math:`|0\rangle` state. They are converted
-      to an arbitrary state upon allocation.
-    * Any wires: Auxiliary wires that are in an unknown state. They are converted to
+    * Zeroed state wires: Auxiliary wires that are in the :math:`|0\rangle` state. They are converted
+      to an unknown state upon allocation.
+    * Any state wires: Auxiliary wires that are in an unknown state. They are converted to
       zeroed wires when they are freed.
+    * Algorithmic wires: The core wires used by the quantum algorithm.
 
     Args:
-        zeroed (int): Number of zeroed work wires.
-        any (int): Number of work wires in an arbitrary states, default is ``0``.
+        zeroed (int): Number of zeroed state work wires.
+        any_state (int): Number of work wires in an unknown state, default is ``0``.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
-        tight_budget (bool): Determines whether extra zeroed wires can be allocated when they
+        tight_budget (bool): Determines whether extra zeroed state wires can be allocated when they
             exceed the available amount. The default is ``False``.
 
     **Example**
 
-    >>> q = WireResourceManager(
+    >>> from pennylane import estimator as qre
+    >>> q = qre.WireResourceManager(
     ...             zeroed=2,
-    ...             any=2,
+    ...             any_state=2,
     ...             tight_budget=False,
     ...     )
     >>> print(q)
-    WireResourceManager(zeroed wires=2, any wires=2, algorithmic wires=0, tight budget=False)
+    WireResourceManager(zeroed wires=2, any state wires=2, algorithmic wires=0, tight budget=False)
 
     """
 
     def __init__(
-        self, zeroed: int, any: int = 0, algo: int = 0, tight_budget: bool = False
+        self, zeroed: int, any_state: int = 0, algo: int = 0, tight_budget: bool = False
     ) -> None:
 
         self.tight_budget = tight_budget
         self._algo_wires = algo
-        self.zeroed_wires = zeroed
-        self.any_wires = any
+        self.zeroed = zeroed
+        self.any_state = any_state
 
     def __str__(self) -> str:
         return (
-            f"WireResourceManager(zeroed wires={self.zeroed_wires}, any wires={self.any_wires}, "
+            f"WireResourceManager(zeroed wires={self.zeroed}, any_state wires={self.any_state}, "
             f"algorithmic wires={self.algo_wires}, tight budget={self.tight_budget})"
         )
 
     def __repr__(self) -> str:
         return (
-            f"WireResourceManager(zeroed={self.zeroed_wires}, any={self.any_wires}, algo={self.algo_wires}, "
+            f"WireResourceManager(zeroed={self.zeroed}, any_state={self.any_state}, algo={self.algo_wires}, "
             f"tight_budget={self.tight_budget})"
         )
 
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, self.__class__)
-            and (self.zeroed_wires == other.zeroed_wires)
-            and (self.any_wires == other.any_wires)
+            and (self.zeroed == other.zeroed)
+            and (self.any_state == other.any_state)
             and (self.algo_wires == other.algo_wires)
             and (self.tight_budget == other.tight_budget)
         )
@@ -89,15 +90,15 @@ class WireResourceManager:
     @property
     def total_wires(self) -> int:
         r"""Returns the number of total wires."""
-        return self.zeroed_wires + self.any_wires + self.algo_wires
+        return self.zeroed + self.any_state + self.algo_wires
 
     @algo_wires.setter
     def algo_wires(self, count: int):  # these get set manually, the rest are dynamically updated
         r"""Setter for algorithmic wires."""
         self._algo_wires = count
 
-    def grab_zeroed_wires(self, num_wires: int) -> None:
-        r"""Grabs zeroed wires, and moves them to an arbitrary state.
+    def grab_zeroed(self, num_wires: int) -> None:
+        r"""Grabs zeroed wires, and moves them to an arbitrary state; incrementing the number of any_state wires.
 
         Args:
             num_wires(int) : number of zeroed wires to be grabbed
@@ -107,7 +108,7 @@ class WireResourceManager:
                 available zeroed wires.
 
         """
-        available_zeroed = self.zeroed_wires
+        available_zeroed = self.zeroed
 
         if num_wires > available_zeroed:
             if self.tight_budget:
@@ -115,29 +116,29 @@ class WireResourceManager:
                     f"Grabbing more wires than available zeroed wires."
                     f"Number of zeroed wires available is {available_zeroed}, while {num_wires} are being grabbed."
                 )
-            self.zeroed_wires = 0
+            self.zeroed = 0
         else:
-            self.zeroed_wires -= num_wires
-        self.any_wires += num_wires
+            self.zeroed -= num_wires
+        self.any_state += num_wires
 
     def free_wires(self, num_wires: int) -> None:
-        r"""Frees any wires and converts them into zeroed wires.
+        r"""Frees any_state wires and converts them into zeroed wires.
 
         Args:
             num_wires(int) : number of wires to be freed
 
         Raises:
-            ValueError: If number of wires to be freed is greater than available any state wires.
+            ValueError: If number of wires to be freed is greater than available any_state wires.
         """
 
-        if num_wires > self.any_wires:
+        if num_wires > self.any_state:
             raise ValueError(
-                f"Freeing more wires than available any wires."
-                f"Number of any state wires available is {self.any_wires}, while {num_wires} wires are being released."
+                f"Freeing more wires than available any_state wires."
+                f"Number of any_state wires available is {self.any_state}, while {num_wires} wires are being released."
             )
 
-        self.any_wires -= num_wires
-        self.zeroed_wires += num_wires
+        self.any_state -= num_wires
+        self.zeroed += num_wires
 
 
 class _WireAction:
@@ -163,56 +164,60 @@ class _WireAction:
 
 
 class Allocate(_WireAction):
-    r"""Allows users to allocate work wires through :class:`~pennylane.estimator.WireResourceManager`.
+    r"""Allows allocation of work wires through :class:`~pennylane.estimator.WireResourceManager`.
 
     Args:
-        num_wires (int): number of work wires to be allocated.
+        num_wires (int): number of work wires to be allocated
 
 
     .. details::
         :title: Usage Details
 
         The ``Allocate`` class is typically used within a decomposition function to track the
-        allocation of auxiliary wires. This allows us to accurately determine the wire overhead of a circuit.
+        allocation of auxiliary wires. This allows determination of a circuit's wire overhead.
         In this example, we show the decomposition for a
-        3-controlled X gate, which requires one work wire.
+        3-controlled ``X`` gate, which requires one work wire.
 
         First, we define a custom decomposition which doesn't track the extra work wire:
 
+        >>> from pennylane import estimator as qre
+        >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp(num_ctrl_wires=3, num_ctrl_values=0, **kwargs):
         ...     gate_list = []
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Toffoli), 1))
         ...
         ...     return gate_list
-        >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
+        >>> config = qre.ResourceConfig()
+        >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
+        >>> res = qre.estimate(qre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed wires=0, any wires=0, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires =0, any_state wires=0, algorithmic wires=4, tight budget=False)
 
         This decomposition uses a total of ``4`` wires and doesn't track the work wires.
 
-        Now, if we want to track the allocation of wires using the ``Allocate``, the decomposition
+        Now, if we want to track the allocation of wires using ``Allocate``, the decomposition
         can be redefined as:
 
+        >>> from pennylane import estimator as qre
+        >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp():
         ...     gate_list = []
-        ...     gate_list.append(Allocate(num_wires=1))
+        ...     gate_list.append(qre.Allocate(num_wires=1))
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Toffoli), 1))
         ...
-        ...     gate_list.append(Deallocate(num_wires=1))
+        ...     gate_list.append(qre.Deallocate(num_wires=1))
         ...     return gate_list
-        >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
+        >>> config = qre.ResourceConfig()
+        >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
+        >>> res = qre.estimate(qre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed wires=1, any wires=0, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires=1, any_state wires=0, algorithmic wires=4, tight budget=False)
 
         Now, the one extra auxiliary wire is being tracked.
 
@@ -223,58 +228,62 @@ class Allocate(_WireAction):
 
 
 class Deallocate(_WireAction):
-    r"""Allows users to free any work wires through :class:`~pennylane.estimator.WireResourceManager`.
+    r"""Allows freeing ``any_state`` work wires through :class:`~pennylane.estimator.WireResourceManager`.
 
     Args:
-        num_wires (int): number of any work wires to be freed.
+        num_wires (int): number of ``any_state`` work wires to be freed.
 
     .. details::
         :title: Usage Details
 
-        The Deallocate class is typically used within a decomposition function to track the
-        allocation of auxiliary wires. This allows us to accurately determine the wire overhead
+        The ``Deallocate`` class is typically used within a decomposition function to track the
+        allocation of auxiliary wires. This allows to accurately determine the wire overhead
         of a circuit. In this example, we show the decomposition for a
-        3-controlled X gate, which requires one work wire that is returned in a zeroed state.
+        3-controlled ``X`` gate, which requires one work wire that is returned in a zeroed state.
 
         First, we define a custom decomposition which allocates the work wire but doesn't free it.
 
+        >>> from pennylane import estimator as qre
+        >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp(num_ctrl_wires=3, num_ctrl_values=0, **kwargs):
         ...     gate_list = []
-        ...     gate_list.append(Allocate(num_wires=1))
+        ...     gate_list.append(qre.Allocate(num_wires=1))
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Toffoli), 1))
         ...
         ...     return gate_list
-        >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
+        >>> config = qre.ResourceConfig()
+        >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
+        >>> res = qre.estimate(qre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed wires=0, any wires=1, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires=0, any_state wires=1, algorithmic wires=4, tight budget=False)
 
         This decomposition uses a total of ``4`` algorithmic wires and ``1`` work wire which is returned in an arbitrary state.
 
-        We can free this wire using the ``Deallocate``, allowing it to be reused with more operations.
+        We can free this wire using ``Deallocate``, allowing it to be reused with more operations.
         The decomposition can be redefined as:
 
+        >>> from pennylane import estimator as qre
+        >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp():
         ...     gate_list = []
-        ...     gate_list.append(Allocate(num_wires=1))
+        ...     gate_list.append(qre.Allocate(num_wires=1))
         ...
-        ...     gate_list.append(GateCount(resource_rep(plre.TempAND), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Adjoint, {"base_cmpr_op": resource_rep(plre.TempAND)}), 1))
-        ...     gate_list.append(GateCount(resource_rep(plre.Toffoli), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.TempAND), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TempAND)}), 1))
+        ...     gate_list.append(GateCount(resource_rep(qre.Toffoli), 1))
         ...
         ...     gate_list.append(Deallocate(num_wires=1))
         ...     return gate_list
-        >>> config = ResourceConfig()
-        >>> config.set_decomp(plre.MultiControlledX, resource_decomp)
-        >>> res = plre.estimate(plre.MultiControlledX(3, 0), config)
+        >>> config = qre.ResourceConfig()
+        >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
+        >>> res = qre.estimate(qre.MultiControlledX(3, 0), config)
         >>> print(res.WireResourceManager)
-        WireResourceManager(zeroed wires=1, any wires=0, algorithmic wires=4, tight budget=False)
+        WireResourceManager(zeroed wires=1, any_state wires=0, algorithmic wires=4, tight budget=False)
 
-        Now, auxiliary wire is freed and is returned in the zeroed state after the decomposition, and can
+        Now, the auxiliary wire is freed and is returned in the zeroed state after the decomposition, and can
         be used for other operators which require zeroed auxiliary wires.
 
     """

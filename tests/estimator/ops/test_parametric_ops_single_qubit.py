@@ -37,16 +37,16 @@ from pennylane.estimator.resource_operator import (
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 
 
-@pytest.mark.parametrize("epsilon, expected", params)
-def test_rotation_resources(epsilon, expected):
+@pytest.mark.parametrize("precision, expected", params)
+def test_rotation_resources(precision, expected):
     """Test the hardcoded resources used for RX, RY, RZ"""
     gate_types = [GateCount(CompressedResourceOp(T, 1, {}), expected)]
 
-    assert gate_types == _rotation_resources(epsilon=epsilon)
+    assert gate_types == _rotation_resources(precision=precision)
 
 
 class TestPauliRotation:
-    """Test ResourceRX, ResourceRY, and ResourceRZ"""
+    """Test Resource operators for RX, RY, and RZ"""
 
     params_classes = [RX, RY, RZ]
     params_errors = [10e-3, 10e-4, 10e-5]
@@ -64,67 +64,63 @@ class TestPauliRotation:
     ]
 
     @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_resources(self, resource_class, epsilon):
+    @pytest.mark.parametrize("precision", params_errors)
+    def test_resources(self, resource_class, precision):
         """Test the resources method"""
-
-        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
-        config = {label: epsilon}
+        config = {"precision": precision}
         op = resource_class(wires=0)
-        assert op.resource_decomp(config=config) == _rotation_resources(epsilon=epsilon)
+        assert op.resource_decomp(**config) == _rotation_resources(precision=precision)
 
     @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_resource_rep(self, resource_class, epsilon):  # pylint: disable=unused-argument
+    @pytest.mark.parametrize("precision", params_errors)
+    def test_resource_rep(self, resource_class, precision):  # pylint: disable=unused-argument
         """Test the compact representation"""
         op = resource_class(wires=0)
-        expected = CompressedResourceOp(resource_class, 1, {"eps": None})
+        expected = CompressedResourceOp(resource_class, 1, {"precision": None})
         assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_resources_from_rep(self, resource_class, epsilon):
+    @pytest.mark.parametrize("precision", params_errors)
+    def test_resources_from_rep(self, resource_class, precision):
         """Test the resources can be obtained from the compact representation"""
 
-        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
-        config = {label: epsilon}
-        op = resource_class(wires=0)
-        expected = _rotation_resources(epsilon=epsilon)
+        op = resource_class(wires=0, precision=precision)
+        expected = _rotation_resources(precision=precision)
 
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params, config=config) == expected
+        assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_resource_params(self, resource_class, epsilon):  # pylint: disable=unused-argument
+    @pytest.mark.parametrize("precision", params_errors)
+    def test_resource_params(self, resource_class, precision):  # pylint: disable=unused-argument
         """Test that the resource params are correct"""
-        op = resource_class(epsilon, wires=0)
-        assert op.resource_params == {"eps": epsilon}
+        op = resource_class(precision, wires=0)
+        assert op.resource_params == {"precision": precision}
 
     @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_adjoint_decomposition(self, resource_class, epsilon):
+    @pytest.mark.parametrize("precision", params_errors)
+    def test_adjoint_decomposition(self, resource_class, precision):
         """Test that the adjoint decompositions are correct."""
 
-        expected = [GateCount(resource_class(epsilon).resource_rep(), 1)]
-        assert resource_class(epsilon).adjoint_resource_decomp() == expected
+        expected = [GateCount(resource_class(precision).resource_rep(), 1)]
+        assert resource_class(precision).adjoint_resource_decomp() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
+    @pytest.mark.parametrize("precision", params_errors)
     @pytest.mark.parametrize("z", list(range(1, 10)))
-    def test_pow_decomposition(self, resource_class, epsilon, z):
+    def test_pow_decomposition(self, resource_class, precision, z):
         """Test that the pow decompositions are correct."""
 
         expected = [
             (
-                GateCount(resource_class(epsilon).resource_rep(), 1)
+                GateCount(resource_class(precision).resource_rep(), 1)
                 if z
                 else GateCount(CompressedResourceOp(Identity, 1, {}), 1)
             )
         ]
-        assert resource_class(epsilon).pow_resource_decomp(z) == expected
+        assert resource_class(precision).pow_resource_decomp(z) == expected
 
     params_ctrl_classes = (
         (RX),
@@ -133,9 +129,9 @@ class TestPauliRotation:
     )
 
     @pytest.mark.parametrize("resource_class", params_ctrl_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
+    @pytest.mark.parametrize("precision", params_errors)
     def test_controlled_decomposition_single_control(
-        self, resource_class, epsilon
+        self, resource_class, precision
     ):  # pylint: disable=unused-argument
         """Test that the controlled decompositions are correct."""
         with pytest.raises(ResourcesNotDefined):
@@ -168,7 +164,7 @@ class TestRot:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = Rot(wires=0)
-        expected = CompressedResourceOp(Rot, 1, {"eps": None})
+        expected = CompressedResourceOp(Rot, 1, {"precision": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -186,7 +182,7 @@ class TestRot:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = Rot(wires=0)
-        assert op.resource_params == {"eps": None}
+        assert op.resource_params == {"precision": None}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
@@ -237,7 +233,7 @@ class TestPhaseShift:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = PhaseShift(wires=0)
-        expected = CompressedResourceOp(PhaseShift, 1, {"eps": None})
+        expected = CompressedResourceOp(PhaseShift, 1, {"precision": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -255,7 +251,7 @@ class TestPhaseShift:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = PhaseShift()
-        assert op.resource_params == {"eps": None}
+        assert op.resource_params == {"precision": None}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
