@@ -90,7 +90,7 @@ class Resources:
         )
 
     def add_series(self, other: "Resources") -> "Resources":
-        """Add two resources objects in series.
+        """Add two Resources objects in series.
 
         When combining resources for serial execution, the following rules apply:
 
