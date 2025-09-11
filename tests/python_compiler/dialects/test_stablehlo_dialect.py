@@ -442,6 +442,7 @@ def test_invalid_data_movement_operations(run_filecheck):
     """
 
     with pytest.raises(
-        Exception, match="all of \\{start_indices, limit_indices, strides\\} have same size"
+        Exception,
+        match="all of \\{start_indices, limit_indices, strides\\} must have the same size: got sizes 2, 3, 2",
     ):
         run_filecheck(program_slice_mismatch, roundtrip=True, verify=True)
