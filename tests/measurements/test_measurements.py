@@ -278,9 +278,9 @@ class TestProperties:
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qml.measure(0)
-        m0.measurements[0].id = "abc"
+        m0.measurements[0]._id = "abc"  # pylint: disable=protected-access
         m1 = qml.measure(1)
-        m1.measurements[0].id = "def"
+        m1.measurements[0]._id = "def"  # pylint: disable=protected-access
 
         mp1 = qml.sample(op=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
@@ -341,8 +341,8 @@ class TestProperties:
         m1 = qml.measure("b")
         m2 = qml.measure(0)
         m3 = qml.measure(1)
-        m2.measurements[0].id = m0.measurements[0].id
-        m3.measurements[0].id = m1.measurements[0].id
+        m2.measurements[0]._id = m0.measurements[0].id  # pylint: disable=protected-access
+        m3.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
 
         wire_map = {"a": 0, "b": 1}
 
@@ -529,8 +529,9 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
@@ -598,8 +599,9 @@ class TestStateMeasurement:
             def shape(self):
                 return ()
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             return MyMeasurement()
@@ -639,13 +641,14 @@ class TestMeasurementTransform:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             return CountTapesMP(wires=[0])
 
-        assert circuit() == 1
+        assert circuit() == [True]
 
 
 class TestMeasurementProcess:

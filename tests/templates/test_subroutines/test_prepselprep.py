@@ -55,10 +55,7 @@ def test_repr():
 
     op = qml.PrepSelPrep(lcu, control)
     with np.printoptions(legacy="1.21"):
-        assert (
-            repr(op)
-            == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
-        )
+        assert repr(op) == "PrepSelPrep(lcu=0.25 * Z(2) + 0.75 * (X(1) @ X(2)), control=Wires([0]))"
 
 
 def _get_new_terms(lcu):
@@ -87,18 +84,15 @@ def manual_circuit(lcu, control):
     coeffs, ops = _get_new_terms(lcu)
 
     qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
-    qml.Select(ops, control=control)
+    qml.Select(ops, control=control, partial=True)
     qml.adjoint(
         qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
     )
-
-    return qml.state()
 
 
 def prepselprep_circuit(lcu, control):
     """PrepSelPrep circuit used for testing"""
     qml.PrepSelPrep(lcu, control)
-    return qml.state()
 
 
 a_set_of_lcus = [
@@ -133,69 +127,25 @@ class TestPrepSelPrep:
     lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
     lcu8 = qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)])
 
-    dev = qml.device("default.qubit")
-    manual = qml.QNode(manual_circuit, dev)
-    prepselprep = qml.QNode(prepselprep_circuit, dev)
-
     @pytest.mark.parametrize(
-        ("lcu", "control", "produced_matrix", "expected_matrix"),
+        ("lcu", "control", "wire_order"),
         [
-            (
-                lcu1,
-                0,
-                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-                qml.matrix(manual, wire_order=[0, 1, 2]),
-            ),
-            (
-                lcu2,
-                "ancilla",
-                qml.matrix(prepselprep, wire_order=["ancilla", 0]),
-                qml.matrix(manual, wire_order=["ancilla", 0]),
-            ),
-            (
-                lcu3,
-                [0],
-                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-                qml.matrix(manual, wire_order=[0, 1, 2]),
-            ),
-            (
-                lcu4,
-                [0],
-                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-                qml.matrix(manual, wire_order=[0, 1, 2]),
-            ),
-            (
-                lcu5,
-                [0, 1],
-                qml.matrix(prepselprep, wire_order=[0, 1, 2, 3]),
-                qml.matrix(manual, wire_order=[0, 1, 2, 3]),
-            ),
-            (
-                lcu6,
-                [0],
-                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-                qml.matrix(manual, wire_order=[0, 1, 2]),
-            ),
-            (
-                lcu7,
-                [0, 1],
-                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-                qml.matrix(manual, wire_order=[0, 1, 2]),
-            ),
-            (
-                lcu8,
-                [0],
-                qml.matrix(prepselprep, wire_order=[0, 1]),
-                qml.matrix(manual, wire_order=[0, 1]),
-            ),
+            (lcu1, 0, [0, 1, 2]),
+            (lcu2, "aux", ["aux", 0]),
+            (lcu3, [0], [0, 1, 2]),
+            (lcu4, [0], [0, 1, 2]),
+            (lcu5, [0, 1], [0, 1, 2, 3]),
+            (lcu6, [0], [0, 1, 2]),
+            (lcu7, [0, 1], [0, 1, 2]),
+            (lcu8, [0], [0, 1]),
         ],
     )
-    def test_against_manual_circuit(self, lcu, control, produced_matrix, expected_matrix):
+    def test_against_manual_circuit(self, lcu, control, wire_order):
         """Test that the template produces the corrent decomposition"""
 
         assert qml.math.allclose(
-            produced_matrix(lcu, control),
-            expected_matrix(lcu, control),
+            qml.matrix(prepselprep_circuit, wire_order=wire_order)(lcu, control),
+            qml.matrix(manual_circuit, wire_order=wire_order)(lcu, control),
         )
 
     @pytest.mark.parametrize(
@@ -205,7 +155,12 @@ class TestPrepSelPrep:
             (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.3, -0.1], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5j, -0.5j], [qml.Z(2), qml.X(2)]), [0, 1], [0, 1, 2], 2),
-            (qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]), "ancilla", ["ancilla", 0], 2),
+            (
+                qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]),
+                "auxiliary",
+                ["auxiliary", 0],
+                2,
+            ),
             (
                 qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]),
                 [0, 1],
@@ -223,22 +178,25 @@ class TestPrepSelPrep:
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
         """Test that the decomposition is a block-encoding"""
-        dev = qml.device("default.qubit")
-        prepselprep = qml.QNode(prepselprep_circuit, dev)
         matrix = qml.matrix(lcu)
 
         coeffs, _ = _get_new_terms(lcu)
         normalization_factor = qml.math.sum(coeffs)
-        block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
+        block_encoding = qml.matrix(prepselprep_circuit, wire_order=wire_order)(
+            lcu, control=control
+        )
 
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     lcu1 = qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-    ops1 = [qml.Z(2) @ qml.GlobalPhase(0), (qml.X(1) @ qml.X(2)) @ qml.GlobalPhase(0)]
+    ops1 = [
+        qml.Z(2) @ qml.GlobalPhase(0, [2]),
+        qml.prod(qml.X(1) @ qml.X(2), qml.GlobalPhase(0, [1, 2])),
+    ]
     coeffs1 = lcu1.terms()[0]
 
     @pytest.mark.parametrize(
-        ("lcu", "control", "results"),
+        ("lcu", "control", "expected"),
         [
             (
                 lcu1,
@@ -257,16 +215,27 @@ class TestPrepSelPrep:
             )
         ],
     )
-    def test_queuing_ops(self, lcu, control, results):
+    def test_queuing_ops(self, lcu, control, expected):
         """Test that qml.PrepSelPrep queues operations in the correct order."""
-        with qml.tape.QuantumTape() as tape:
-            qml.PrepSelPrep(lcu, control=control)
+        # Test that `compute_decomposition` queues the right ops
+        prepselprep = qml.PrepSelPrep(lcu, control=control)
+        with qml.queuing.AnnotatedQueue() as q0:
+            prepselprep.compute_decomposition(lcu, control)
 
-        for idx, val in enumerate(tape.expand().operations):
-            assert val.name == results[idx].name
-            assert len(val.parameters) == len(results[idx].parameters)
-            for a, b in zip(val.parameters, results[idx].parameters):
-                assert (a == b).all()
+        # Test that `compute_decomposition` queues the right ops
+        with qml.queuing.AnnotatedQueue() as q1:
+            prepselprep.decomposition()
+
+        for op0, op1, exp_op in zip(q0.queue, q1.queue, expected, strict=True):
+            qml.assert_equal(op0, exp_op)
+            qml.assert_equal(op1, exp_op)
+
+        # Test that PrepSelPrep de-queues its input
+        with qml.queuing.AnnotatedQueue() as q2:
+            op = qml.apply(lcu)
+            prepselprep = qml.PrepSelPrep(op, control=control)
+
+        assert len(q2.queue) == 1 and q2.queue[0] == prepselprep
 
     def test_copy(self):
         """Test the copy function"""
@@ -378,7 +347,7 @@ class TestPrepSelPrep:
         assert resource_obj.num_gates == 3
 
         expected_counts = {
-            qml.resource_rep(qml.Select, op_reps=op_reps, num_control_wires=2): 1,
+            qml.resource_rep(qml.Select, op_reps=op_reps, num_control_wires=2, partial=True): 1,
             qml.resource_rep(qml.StatePrep, num_wires=2): 1,
             qml.resource_rep(
                 qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
@@ -413,19 +382,20 @@ class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
-    exp_grad = [0.41177732, -0.21262349, 1.6437038, -0.74256516]
+    # TODO: We really shouldn't be hardcoding the expected derivative here [sc-98529]
+    exp_grad = [-0.57485039, 0.31253535, -0.717947, 0.48489061]
 
     @pytest.mark.torch
     def test_torch(self):
         """Test the torch interface"""
         import torch
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -439,12 +409,12 @@ class TestInterfaces:
     def test_autograd(self):
         """Test the autograd interface"""
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -460,12 +430,12 @@ class TestInterfaces:
         """Test the jax interface"""
         import jax
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -480,13 +450,13 @@ class TestInterfaces:
         """Test that jax jit works"""
         import jax
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @jax.jit
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))

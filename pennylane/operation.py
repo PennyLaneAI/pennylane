@@ -1159,7 +1159,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
-        except ValueError as e:
+        except (
+            ValueError
+        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             # TODO:[dwierichs] When using tf.function with an input_signature that contains
             # an unknown-shaped input, ndim() will not be able to determine the number of
             # dimensions because they are not specified yet. Failing example: Let `fun` be
@@ -1184,7 +1186,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if ndims != self.ndim_params:
             ndims_matches = [
                 (ndim == exp_ndim, ndim == exp_ndim + 1)
-                for ndim, exp_ndim in zip(ndims, self.ndim_params)
+                for ndim, exp_ndim in zip(ndims, self.ndim_params, strict=True)
             ]
             if not all(correct or batched for correct, batched in ndims_matches):
                 raise ValueError(
@@ -1193,7 +1195,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 )
 
             first_dims = [
-                qml.math.shape(p)[0] for (_, batched), p in zip(ndims_matches, params) if batched
+                qml.math.shape(p)[0]
+                for (_, batched), p in zip(ndims_matches, params, strict=True)
+                if batched
             ]
             if not qml.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
@@ -1442,10 +1446,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         {"num_wires": 2}
 
         """
-        # For most operators, this should just be an empty dictionary, but a default
-        # implementation is intentionally not provided so that each operator class is
-        # forced to explicitly define its resource params.
-        raise NotImplementedError(f"{self.__class__.__name__}.resource_params undefined!")
+        return {}
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
@@ -1714,7 +1715,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """The negation operation of an Operator object."""
         return qml.s_prod(scalar=-1, operator=self, lazy=False)
 
-    def __pow__(self, other: TensorLike):
+    def __pow__(self, other: TensorLike) -> "Operator":
         r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qml.pow(self, z=other)

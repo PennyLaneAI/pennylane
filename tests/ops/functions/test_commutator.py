@@ -58,45 +58,54 @@ def test_alias():
 
 def test_no_recording_in_context():
     """Test that commutator is not recorded"""
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q1:
         a = qml.PauliX(0)  # gets recorded
         b = qml.PauliY(0)  # gets recorded
         comm = qml.commutator(a, b)
 
-    with qml.tape.QuantumTape() as tape2:
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(0)
         qml.PauliY(0)
 
-    qml.assert_equal(tape, tape2)
+    expected = [qml.X(0), qml.Y(0)]
+    for op1, op2, exp_op in zip(q1.queue, q2.queue, expected, strict=True):
+        qml.assert_equal(op1, exp_op)
+        qml.assert_equal(op2, exp_op)
 
 
 def test_no_recording_in_context_with_pauli():
     """Test that commutator is not recorded while one of the ops is a Pauli"""
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q1:
         a = qml.PauliX(0)  # gets recorded
         b = PauliWord({0: "Y"})  # does not get recorded
         comm = qml.commutator(a, b)
 
-    with qml.tape.QuantumTape() as tape2:
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(0)
 
-    qml.assert_equal(tape, tape2)
+    expected = [qml.X(0)]
+    for op1, op2, exp_op in zip(q1.queue, q2.queue, expected, strict=True):
+        qml.assert_equal(op1, exp_op)
+        qml.assert_equal(op2, exp_op)
 
 
 def test_recording_wanted():
     """Test that commutator can be correctly recorded with qml.apply still"""
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q1:
         a = qml.PauliX(0)
         b = qml.PauliY(0)
         comm = qml.commutator(a, b)
         qml.apply(comm)
 
-    with qml.tape.QuantumTape() as tape2:
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(0)
         qml.PauliY(0)
         qml.s_prod(2j, qml.PauliZ(0))
 
-    qml.assert_equal(tape, tape2)
+    expected = [qml.X(0), qml.Y(0), 2j * qml.Z(0)]
+    for op1, op2, exp_op in zip(q1.queue, q2.queue, expected, strict=True):
+        qml.assert_equal(op1, exp_op)
+        qml.assert_equal(op2, exp_op)
 
 
 class TestcommPauli:

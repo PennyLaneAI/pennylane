@@ -602,7 +602,7 @@ def test_forward_tuple(num_qubits, weight_shapes):
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tf"])
+@pytest.mark.parametrize("interface", ["autograd", "jax"])
 def test_invalid_interface_error(interface):
     """Test an error gets raised if input QNode has the wrong interface"""
     dev = qml.device("default.qubit", wires=3)

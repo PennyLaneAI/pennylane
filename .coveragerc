@@ -5,12 +5,16 @@ omit =
     pennylane/devices/tests*
     pennylane/labs/*
     pennylane/compiler/python_compiler/*
+    pennylane/workflow/interfaces/tensorflow.py
+    pennylane/workflow/interfaces/tensorflow_autograph.py
 
 [report]
 # Regexes for lines to exclude from consideration
 exclude_lines =
     # Have to re-enable the standard pragma
     pragma: no cover
+
+    pragma: no cover (TensorFlow tests were disabled during deprecation)
     
     # Ignore type checking 
     if TYPE_CHECKING:
@@ -32,7 +36,6 @@ exclude_lines =
 
     # Ignore overload stubs
     @overload
-
 
 ignore_errors = True
 

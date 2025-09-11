@@ -22,7 +22,8 @@ import pennylane as qml
 pytestmark = pytest.mark.all_interfaces
 
 
-@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "tensorflow", "autograd"))
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "autograd"))
 def test_float32_warning(interface):
     """Test that a warning is raised with float32 parameters."""
 
@@ -62,7 +63,7 @@ def test_effect_of_h():
     "kwargs",
     ({"approx_order": 2}, {"strategy": "backward"}, {"approx_order": 2, "strategy": "center"}),
 )
-@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "tensorflow", "autograd"))
+@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "autograd"))
 def test_scalar_in_scalar_out(interface, kwargs):
     """Test using finite_diff_jvp with scalars in and scalars out."""
 
@@ -79,7 +80,7 @@ def test_scalar_in_scalar_out(interface, kwargs):
     assert qml.math.allclose(dres, expected_dres)
 
 
-@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "tensorflow", "autograd"))
+@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "autograd"))
 def test_mutliple_args(interface):
     """Test using finite_diff_jvp with muliple arguments."""
 
@@ -108,7 +109,7 @@ def test_mutliple_args(interface):
     assert qml.math.allclose(dres, dres_expected)
 
 
-@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "tensorflow", "autograd"))
+@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "autograd"))
 def test_array_input(interface):
     """Test that the function can accept multi-dimensional arrays."""
 
@@ -132,7 +133,7 @@ def test_array_input(interface):
     assert qml.math.allclose(dres[0], qml.math.cos(x))
 
 
-@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "tensorflow", "autograd"))
+@pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "autograd"))
 def test_multiple_outputs(interface):
     """Test that finite_diff_jvp can handle multiple outputs."""
 

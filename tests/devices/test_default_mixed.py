@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.devices import DefaultMixed
 from pennylane.math import Interface
 
-ML_INTERFACES = ["numpy", "autograd", "torch", "tensorflow", "jax"]
+ML_INTERFACES = ["numpy", "autograd", "torch", "jax"]
 
 
 def test_execution_with_no_execution_config():

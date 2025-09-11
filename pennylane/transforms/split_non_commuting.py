@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,14 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 
 # pylint: disable=too-many-boolean-expressions
 
+import warnings
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from functools import partial, wraps
+from typing import Literal
+
+import numpy as np
+from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMP
@@ -26,6 +33,69 @@ from pennylane.ops import Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
+
+
+@dataclass
+class SingleTermMP:
+    """A dataclass to represent a single-term observable in a list of measurement processes.
+
+    Args:
+        indices (list[int]): indices of the single-term observable in the list of measurement processes
+        coeffs (list[complex]): coefficients of the single-term observable in the list of measurement processes
+        group_idx (int): index of the commuting group the single-term observable belongs to
+        idx_in_group (int): index of the single-term observable in his own commuting group
+    """
+
+    indices: list[int]
+    coeffs: list[complex]
+    group_idx: int
+    idx_in_group: int
+
+
+ShotDistFunction = Callable[
+    # total_shots, coeffs_per_group, seed -> shots_per_tape
+    [int, list[list[TensorLike]], np.random.Generator | int | None],
+    Sequence[int],
+]
+
+
+def _uniform_deterministic_sampling(total_shots, coeffs_per_group, _):
+    """Uniform deterministic splitting of the total number of shots for each commuting group."""
+    num_groups = len(coeffs_per_group)
+    shots, remainder = divmod(total_shots, num_groups)
+    shots_per_group = np.full(num_groups, shots)
+    shots_per_group[:remainder] += 1
+    return shots_per_group.astype(int)
+
+
+def _weighted_deterministic_sampling(total_shots, coeffs_per_group, _):
+    """Weighted deterministic splitting of the total number of shots for each commuting group.
+    For each group, the weight is proportional to the L1 norm of the group's coefficients.
+    """
+    norm_per_group = [np.linalg.norm(coeffs, ord=1) for coeffs in coeffs_per_group]
+    prob_shots = np.array(norm_per_group) / np.sum(norm_per_group)
+    shots_per_group = np.floor(total_shots * prob_shots)
+    remainder = int(total_shots - np.sum(shots_per_group))
+    shots_per_group[:remainder] += 1
+    return shots_per_group.astype(int)
+
+
+def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
+    """Weighted random sampling of the number of shots for each commuting group.
+    For each group, the weight is proportional to the L1 norm of the group's coefficients.
+    """
+    norm_per_group = [np.linalg.norm(coeffs, ord=1) for coeffs in coeffs_per_group]
+    prob_shots = np.array(norm_per_group) / np.sum(norm_per_group)
+    distribution = multinomial(n=total_shots, p=prob_shots, seed=seed)
+    shots_per_group = distribution.rvs()[0]
+    return shots_per_group.astype(int)
+
+
+shot_dist_str2fn = {
+    "uniform": _uniform_deterministic_sampling,
+    "weighted": _weighted_deterministic_sampling,
+    "weighted_random": _weighted_random_sampling,
+}
 
 
 def null_postprocessing(results):
@@ -40,14 +110,17 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 
     @wraps(initial_postprocessing)
     def shot_vector_postprocessing(results):
-        return tuple(initial_postprocessing(r) for r in zip(*results))
+        return tuple(initial_postprocessing(r) for r in zip(*results, strict=True))
 
     return shot_vector_postprocessing
 
 
 @transform
 def split_non_commuting(
-    tape: QuantumScript, grouping_strategy: str | None = "default"
+    tape: QuantumScript,
+    grouping_strategy: Literal["default", "wires", "qwc"] | None = "default",
+    shot_dist: ShotDistFunction | Literal["uniform", "weighted", "weighted_random"] | None = None,
+    seed: np.random.Generator | int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
@@ -56,9 +129,24 @@ def split_non_commuting(
         grouping_strategy (str): The strategy to use for computing disjoint groups of
             commuting observables, can be ``"default"``, ``"wires"``, ``"qwc"``,
             or ``None`` to disable grouping.
+        shot_dist (str or Callable or None): The strategy to use for shot distribution
+            over the disjoint groups of commuting observables. Values can be ``"uniform"``
+            (evenly distributes the number of ``shots`` across all groups of commuting terms),
+            ``"weighted"`` (distributes the number of ``shots`` according to weights proportional
+            to the L1 norm of the coefficients in each group), ``"weighted_random"`` (same
+            as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution)
+            or a custom callable. ``None`` will disable any shot distribution strategy.
+            See Usage Details for more information.
+        seed (Generator or int or None): A seed-like parameter used only when the shot distribution
+            strategy involves a non-deterministic sampling process (e.g. ``"weighted_random"``).
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
+        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    Raises:
+        TypeError: if ``shot_dist`` is not a str or Callable or None.
+        ValueError: if ``shot_dist`` is a str but not an available strategy.
 
     .. note::
         This transform splits expectation values of sums into separate terms, and also distributes the terms into
@@ -216,6 +304,68 @@ def split_non_commuting(
     .. details::
         :title: Usage Details
 
+        **Shot distribution**
+
+        With finite-shot measurements, the default behaviour of ``split_non_commuting`` is to perform one
+        execution with the total number of ``shots`` for each group of commuting terms. With the
+        ``shot_dist`` argument, this behaviour can be changed. For example,
+        ``shot_dist = "weighted"`` will partition the number of shots performed for
+        each commuting group according to the L1 norm of each group's coefficients:
+
+        .. code-block:: python3
+
+            import pennylane as qml
+            from pennylane.transforms import split_non_commuting
+            from functools import partial
+
+            ham = qml.Hamiltonian(
+                coeffs=[10, 0.1, 20, 100, 0.2],
+                observables=[
+                    qml.X(0) @ qml.Y(1),
+                    qml.Z(0) @ qml.Z(2),
+                    qml.Y(1),
+                    qml.X(1) @ qml.X(2),
+                    qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+                ]
+            )
+
+            dev = qml.device("default.qubit")
+
+            @partial(split_non_commuting, shot_dist="weighted")
+            @qml.qnode(dev, shots=10000)
+            def circuit():
+                return qml.expval(ham)
+
+            with qml.Tracker(dev) as tracker:
+                circuit()
+
+        >>> print(tracker.history["shots"])
+        [2303, 23, 7674]
+
+        The ``shot_dist`` strategy can be also defined by a custom function. For example:
+
+        .. code-block:: python3
+
+            import numpy as np
+
+            def my_shot_dist(total_shots, coeffs_per_group, seed):
+                max_per_group = [np.max(np.abs(coeffs)) for coeffs in coeffs_per_group]
+                prob_shots = np.array(max_per_group) / np.sum(max_per_group)
+                return np.round(total_shots * prob_shots)
+
+            @partial(split_non_commuting, shot_dist=my_shot_dist)
+            @qml.qnode(dev, shots=10000)
+            def circuit():
+                return qml.expval(ham)
+
+            with qml.Tracker(dev) as tracker:
+                circuit()
+
+        >>> print(tracker.history["shots"])
+        [1664, 17, 8319]
+
+        **Internal details**
+
         Internally, this function works with tapes. We can create a tape with multiple
         measurements of non-commuting observables:
 
@@ -271,6 +421,20 @@ def split_non_commuting(
     if len(tape.measurements) == 0:
         return [tape], null_postprocessing
 
+    if shot_dist is None:
+        shot_dist_fn = None
+    elif isinstance(shot_dist, Callable):
+        shot_dist_fn = shot_dist
+    elif isinstance(shot_dist, str):
+        try:
+            shot_dist_fn = shot_dist_str2fn[shot_dist]
+        except KeyError as e:
+            raise ValueError(
+                f"Unknown shot_dist='{shot_dist}'. Available options are {list(shot_dist_str2fn.keys())}."
+            ) from e
+    else:
+        raise TypeError(f"shot_dist must be a callable or str or None, not {type(shot_dist)}.")
+
     # Special case for a single measurement of a Sum, in which case
     # the grouping information can be computed and cached in the observable.
     if (
@@ -285,7 +449,12 @@ def split_non_commuting(
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
-        return _split_ham_with_grouping(tape)
+        return _split_ham_with_grouping(tape, shot_dist_fn=shot_dist_fn, seed=seed)
+
+    if shot_dist is not None:
+        warnings.warn(
+            f"shot_dist='{shot_dist}' is not supported for multiple measurements.", UserWarning
+        )
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
 
@@ -316,64 +485,71 @@ def split_non_commuting(
     return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
 
 
-def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
-    """Splits a tape measuring a single Sum and group commuting observables."""
+def _split_ham_with_grouping(
+    tape: qml.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
+):
+    """Split a tape measuring a single Sum and group commuting observables.
+    It also assigns to each new tape the correct number of shots according to the
+    shot distribution function defining the strategy for shot allocation.
+    """
+    # pylint:disable=too-many-branches
 
     obs = tape.measurements[0].obs
     if obs.grouping_indices is None:
         obs.compute_grouping()
 
-    coeffs, obs_list = obs.terms()
+    coeff_list, obs_list = obs.terms()
 
-    # The constant offset of the Sum, typically arising from Identity terms.
-    offset = 0
+    single_term_obs_mps = {}  # dictionary mapping ExpectationMP to SingleTermMP
+    mps_groups = []  # list of groups of commuting measurement processes
+    coeffs_per_group = []  # list of coefficients for each group
+    offset = 0  # constant offset of the Sum arising from Identity terms
 
-    # A dictionary for measurements of each unique single-term observable, mapped to the
-    # indices of the original measurements it belongs to, its coefficients, the index of
-    # the group it belongs to, and the index of the measurement in the group.
-    single_term_obs_mps = {}
-
-    # A list of lists for each group of commuting measurement processes.
-    mp_groups = []
-
-    # The number of measurements in each group
-    group_sizes = []
-
-    # obs.grouping_indices is a list of lists, where each list contains the indices of
-    # observables that belong in each group.
+    # obs.grouping_indices is a list of lists, where each list contains the indices of obs that belong in each group
     for group_idx, obs_indices in enumerate(obs.grouping_indices):
-        mp_group = []
-        group_size = 0
-        for obs_idx in obs_indices:
-            # Do not measure Identity terms, but track their contribution with the offset.
-            if isinstance(obs_list[obs_idx], qml.Identity):
-                offset += coeffs[obs_idx]
+        mps_group = []
+        coeffs_group = []
+        idx_in_group = 0
+
+        for idx in obs_indices:
+            obs = obs_list[idx]
+            coeff = coeff_list[idx]
+
+            if isinstance(obs, qml.Identity):
+                offset += coeff
             else:
-                new_mp = qml.expval(obs_list[obs_idx])
-                if new_mp in single_term_obs_mps:
-                    # If the Sum contains duplicate observables, it can be reused,
-                    # and the coefficients for each duplicate should be combined.
-                    single_term_obs_mps[new_mp] = (
-                        single_term_obs_mps[new_mp][0],
-                        [single_term_obs_mps[new_mp][1][0] + coeffs[obs_idx]],
-                        single_term_obs_mps[new_mp][2],
-                        single_term_obs_mps[new_mp][3],
-                    )
+                mp = qml.expval(obs)
+                if mp in single_term_obs_mps:
+                    single_term_obs_mps[mp].coeffs[0] += coeff
                 else:
-                    mp_group.append(new_mp)
-                    single_term_obs_mps[new_mp] = (
-                        [0],
-                        [coeffs[obs_idx]],
-                        group_idx,
-                        group_size,  # the index of this measurement in the group
+                    single_term_obs_mps[mp] = SingleTermMP(
+                        indices=[0],
+                        coeffs=[coeff],
+                        group_idx=group_idx,
+                        idx_in_group=idx_in_group,
                     )
-                    group_size += 1
+                    mps_group.append(mp)
+                    coeffs_group.append(coeff)
+                    idx_in_group += 1
 
-        if group_size > 0:
-            mp_groups.append(mp_group)
-            group_sizes.append(group_size)
+        if mps_group:
+            mps_groups.append(mps_group)
+            coeffs_per_group.append(coeffs_group)
 
-    tapes = [tape.copy(measurements=mps) for mps in mp_groups]
+    if tape.shots.total_shots is not None and shot_dist_fn is not None:
+        shots_per_group = shot_dist_fn(tape.shots.total_shots, coeffs_per_group, seed)
+        tapes = []
+        for mps, shots in zip(mps_groups, shots_per_group, strict=True):
+            if int(shots) != 0:
+                tapes.append(tape.copy(measurements=mps, shots=int(shots)))
+            else:
+                for mp in mps:
+                    del single_term_obs_mps[mp]
+    else:
+        tapes = [tape.copy(measurements=mps) for mps in mps_groups]
+
+    group_sizes = [len(mps) for mps in mps_groups]
+
     fn = partial(
         _processing_fn_with_grouping,
         single_term_obs_mps=single_term_obs_mps,
@@ -381,8 +557,10 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
         group_sizes=group_sizes,
         batch_size=tape.batch_size,
     )
+
     if tape.shots.has_partitioned_shots:
         fn = shot_vector_support(fn)
+
     return tapes, fn
 
 
@@ -395,10 +573,10 @@ def _split_using_qwc_grouping(
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[TensorLike]]]): A dictionary
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[TensorLike]): Offsets associated with each original measurement in the tape.
+        offsets (list[TensorLike]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -422,22 +600,24 @@ def _split_using_qwc_grouping(
     for group_idx, obs_indices in enumerate(index_groups):
         group_size = 0
         for obs_idx in obs_indices:
-            new_mp = measurements[obs_idx]
-            mp_groups[group_idx].append(new_mp)
-            single_term_obs_mps_grouped[new_mp] = (
-                *single_term_obs_mps[new_mp],
-                group_idx,
-                group_size,
+            mp = measurements[obs_idx]
+            mp_groups[group_idx].append(mp)
+            single_term_obs_mps_grouped[mp] = SingleTermMP(
+                indices=single_term_obs_mps[mp][0],
+                coeffs=single_term_obs_mps[mp][1],
+                group_idx=group_idx,
+                idx_in_group=group_size,
             )
             group_size += 1
         group_sizes.append(group_size)
 
     for state_mp in state_measurements:
         mp_groups.append([state_mp])
-        single_term_obs_mps_grouped[state_mp] = (
-            *single_term_obs_mps[state_mp],
-            len(mp_groups) - 1,
-            0,
+        single_term_obs_mps_grouped[state_mp] = SingleTermMP(
+            indices=single_term_obs_mps[state_mp][0],
+            coeffs=single_term_obs_mps[state_mp][1],
+            group_idx=len(mp_groups) - 1,
+            idx_in_group=0,
         )
         group_sizes.append(1)
     tapes = [tape.copy(measurements=mps) for mps in mp_groups]
@@ -462,10 +642,10 @@ def _split_using_wires_grouping(
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float | TensorLike]]]): A dictionary
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -485,7 +665,12 @@ def _split_using_wires_grouping(
             mp_groups.append([smp])
             wires_for_each_group.append(tape.wires)
             group_sizes.append(1)
-            single_term_obs_mps_grouped[smp] = (mp_indices, coeffs, num_groups, 0)
+            single_term_obs_mps_grouped[smp] = SingleTermMP(
+                indices=mp_indices,
+                coeffs=coeffs,
+                group_idx=num_groups,
+                idx_in_group=0,
+            )
             num_groups += 1
             continue
 
@@ -496,11 +681,11 @@ def _split_using_wires_grouping(
             if len(wires) != 0 and len(qml.wires.Wires.shared_wires([wires, smp.wires])) == 0:
                 mp_groups[group_idx].append(smp)
                 wires_for_each_group[group_idx] += smp.wires
-                single_term_obs_mps_grouped[smp] = (
-                    mp_indices,
-                    coeffs,
-                    group_idx,
-                    group_sizes[group_idx],
+                single_term_obs_mps_grouped[smp] = SingleTermMP(
+                    indices=mp_indices,
+                    coeffs=coeffs,
+                    group_idx=group_idx,
+                    idx_in_group=group_sizes[group_idx],
                 )
                 group_sizes[group_idx] += 1
                 added_to_existing_group = True
@@ -510,7 +695,12 @@ def _split_using_wires_grouping(
             mp_groups.append([smp])
             wires_for_each_group.append(smp.wires)
             group_sizes.append(1)
-            single_term_obs_mps_grouped[smp] = (mp_indices, coeffs, num_groups, 0)
+            single_term_obs_mps_grouped[smp] = SingleTermMP(
+                indices=mp_indices,
+                coeffs=coeffs,
+                group_idx=num_groups,
+                idx_in_group=0,
+            )
             num_groups += 1
 
     tapes = [tape.copy(measurements=mps) for mps in mp_groups]
@@ -533,10 +723,10 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         tape (~qml.tape.QuantumScript): The tape with measurements to split.
 
     Returns:
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float | TensorLike]]]): A
-            dictionary for measurements of each unique single-term observable, mapped to the
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
+            for measurements of each unique single-term observable, mapped to the
             indices of the original measurements it belongs to, and its coefficients.
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -552,7 +742,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         offset = 0
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Sum, Prod, SProd)):
             # Break the observable into terms, and construct an ExpectationMP with each term.
-            for c, o in zip(*obs.terms()):
+            for c, o in zip(*obs.terms(), strict=True):
                 # If the observable is an identity, track it with a constant offset
                 if isinstance(o, qml.Identity):
                     offset += c
@@ -599,10 +789,10 @@ def _processing_fn_no_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps] [,batch_size])
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float | TensorLike]]]): A dictionary
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
         shots (Shots): The shots settings of the original tape.
 
     """
@@ -611,7 +801,7 @@ def _processing_fn_no_grouping(
     coeffs_for_each_mp = [[] for _ in offsets]
 
     for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
-        for mp_idx, coeff in zip(mp_indices, coeffs):
+        for mp_idx, coeff in zip(mp_indices, coeffs, strict=True):
             res_batch_for_each_mp[mp_idx].append(res[smp_idx])
             coeffs_for_each_mp[mp_idx].append(coeff)
 
@@ -620,7 +810,9 @@ def _processing_fn_no_grouping(
 
     res_for_each_mp = [
         _sum_terms(_sub_res, coeffs, offset, result_shape)
-        for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
+        for _sub_res, coeffs, offset in zip(
+            res_batch_for_each_mp, coeffs_for_each_mp, offsets, strict=True
+        )
     ]
     # res_for_each_mp should have shape (n_mps, [,n_shots] [,batch_size])
     if len(res_for_each_mp) == 1:
@@ -631,9 +823,7 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_obs_mps: dict[
-        MeasurementProcess, tuple[list[int], list[float | TensorLike], int, int]
-    ],
+    single_term_obs_mps: dict[MeasurementProcess, SingleTermMP],
     offsets: list[TensorLike],
     group_sizes: list[int],
     batch_size: int,
@@ -643,12 +833,11 @@ def _processing_fn_with_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps_in_group] [,batch_size])
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float | TensorLike], int, int]]):
-            A dictionary of measurements of each unique single-term observable, mapped to the
-            indices of the original measurements it belongs to, its coefficients, its group
-            index, and the index of the measurement within the group.
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
-        group_sizes (List[int]): The number of tapes in each group.
+        single_term_obs_mps (dict[MeasurementProcess, SingleTermMP]):
+            A dictionary of measurements of each unique single-term observable,
+            mapped to the corresponding single-term observable objects.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        group_sizes (list[int]): The number of tapes in each group.
         shots (Shots): The shots setting of the original tape.
 
     Returns:
@@ -659,17 +848,17 @@ def _processing_fn_with_grouping(
     res_batch_for_each_mp = [[] for _ in offsets]  # ([n_mps] [,n_shots] [,batch_size])
     coeffs_for_each_mp = [[] for _ in offsets]
 
-    for _, (mp_indices, coeffs, group_idx, mp_idx_in_group) in single_term_obs_mps.items():
+    for term in single_term_obs_mps.values():
 
-        res_group = res[group_idx]  # ([n_shots] [,n_mps] [,batch_size])
-        group_size = group_sizes[group_idx]
+        res_group = res[term.group_idx]  # ([n_shots] [,n_mps] [,batch_size])
+        group_size = group_sizes[term.group_idx]
 
         # If there is only one term in the group, the n_mps dimension would have
         # been squeezed out, use the entire result directly.
-        sub_res = res_group if group_size == 1 else res_group[mp_idx_in_group]
+        sub_res = res_group if group_size == 1 else res_group[term.idx_in_group]
 
         # Add this result to the result batch for the corresponding original measurement
-        for mp_idx, coeff in zip(mp_indices, coeffs):
+        for mp_idx, coeff in zip(term.indices, term.coeffs, strict=True):
             res_batch_for_each_mp[mp_idx].append(sub_res)
             coeffs_for_each_mp[mp_idx].append(coeff)
 
@@ -678,7 +867,9 @@ def _processing_fn_with_grouping(
     # Sum up the results for each original measurement
     res_for_each_mp = [
         _sum_terms(_sub_res, coeffs, offset, result_shape)
-        for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
+        for _sub_res, coeffs, offset in zip(
+            res_batch_for_each_mp, coeffs_for_each_mp, offsets, strict=True
+        )
     ]
 
     # res_for_each_mp should have shape (n_mps, [,n_shots] [,batch_size])
@@ -706,7 +897,7 @@ def _sum_terms(
 
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
-    for c, r in zip(coeffs, res):
+    for c, r in zip(coeffs, res, strict=True):
         if qml.math.get_interface(r) == "autograd":
             r = qml.math.array(r)
         if isinstance(r, (list, tuple)):

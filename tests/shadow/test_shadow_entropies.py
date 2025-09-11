@@ -25,8 +25,9 @@ from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     """maximally entangled state preparation circuit"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.Hadamard(wires=0)
@@ -72,8 +73,8 @@ class TestShadowEntropies:
         """Test entropies match roughly with exact solution for a non-constant distribution using other PennyLane functionalities"""
         n_wires = 4
         # exact solution
-        dev_exact = qml.device("default.qubit", wires=range(n_wires), shots=None)
-        dev = qml.device("default.qubit", wires=range(n_wires), shots=100000)
+        dev_exact = qml.device("default.qubit", wires=range(n_wires))
+        dev = qml.device("default.qubit", wires=range(n_wires))
 
         @qml.qnode(dev_exact)
         def qnode_exact(x):
@@ -86,6 +87,7 @@ class TestShadowEntropies:
             return qml.state()
 
         # classical shadow qnode
+        @qml.set_shots(100000)
         @qml.qnode(dev)
         def qnode(x):
             for i in range(n_wires):
@@ -129,11 +131,12 @@ class TestShadowEntropies:
             assert np.allclose(entropies, exact, atol=1e-1)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
     def test_analytic_entropy(self, interface):
         """Test entropies on analytic results"""
-        dev = qml.device("default.qubit", wires=2, shots=100000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(100000)
         @qml.qnode(dev, interface=interface)
         def circuit():
             qml.IsingXX(0.5, wires=[0, 1])

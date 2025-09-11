@@ -389,7 +389,7 @@ def _get_plxpr_defer_measurements():
                 qml.PauliX(wires=wires)
 
         self.state["cur_target"] -= 1
-        return MeasurementValue([meas], lambda x: x)
+        return MeasurementValue([meas])
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
@@ -408,11 +408,6 @@ def _get_plxpr_defer_measurements():
         args = invals[args_slice]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
-            if jaxpr is None:
-                # If a false branch isn't provided, the jaxpr corresponding to the condition
-                # for the false branch will be None. That is the only scenario where we would
-                # reach here.
-                continue
 
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
@@ -519,11 +514,6 @@ def defer_measurements(
         :func:`~.pennylane.counts` can only be used with ``defer_measurements`` if wires
         or an observable are explicitly specified.
 
-    .. warning::
-
-        ``defer_measurements`` does not support using custom wire labels if any measured
-        wires are reused or reset.
-
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
         reduce_postselected (bool): Whether to use postselection information to reduce the number
@@ -540,7 +530,6 @@ def defer_measurements(
             transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ValueError: If custom wire labels are used with qubit reuse or reset
         ValueError: If any measurements with no wires or observable are present
         ValueError: If continuous variable operations or measurements are present
         ValueError: If using the transform with any device other than
@@ -776,16 +765,15 @@ def defer_measurements(
             "must support the Projector gate to apply postselection."
         )
 
-    if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
-        raise ValueError(
-            "qml.defer_measurements does not support custom wire labels with qubit reuse/reset."
-        )
+    integer_wires = [w for w in tape.wires if isinstance(w, int)]
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
     cur_wire = (
-        max(tape.wires) + 1 if reused_measurement_wires or any_repeated_measurements else None
+        (max(integer_wires) + 1 if integer_wires else 0)
+        if reused_measurement_wires or any_repeated_measurements
+        else None
     )
 
     for op in tape.operations:
@@ -836,7 +824,9 @@ def defer_measurements(
                 new_ms = [
                     qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
                 ]
-                new_m = MeasurementValue(new_ms, mp.mv.processing_fn)
+                new_m = MeasurementValue(
+                    new_ms, mp.mv.processing_fn if mp.mv.has_processing else None
+                )
             else:
                 new_m = []
                 for val in mp.mv:
@@ -844,7 +834,9 @@ def defer_measurements(
                         qml.map_wires(m, {m.wires[0]: control_wires[m.id]})
                         for m in val.measurements
                     ]
-                    new_m.append(MeasurementValue(new_ms, val.processing_fn))
+                    new_m.append(
+                        MeasurementValue(new_ms, val.processing_fn if val.has_processing else None)
+                    )
 
             with QueuingManager.stop_recording():
                 new_mp = (
