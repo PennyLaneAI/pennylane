@@ -208,7 +208,7 @@ class Resources:
         )
 
     def multiply_series(self, scalar: int) -> Resources:
-        """Scale a resources object in series
+        """Scale a Resources object in series
 
         Args:
             scalar (int): integer value by which to scale the resources
