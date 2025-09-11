@@ -249,28 +249,6 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     to a :math:`50\%` chance of measuring either :math:`|00\rangle`
     or :math:`|01\rangle`.
 
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Z(0)
-            qml.X(1)
-            return qml.probs(op=qml.Hermitian(H, wires=0))
-
-    >>> circuit()
-    array([0.14644661 0.85355339])
-
-    The returned array is in lexicographic order, so corresponds
-    to a :math:`14.6\%` chance of measuring the rotated :math:`|0\rangle` state
-    and :math:`85.4\%` of measuring the rotated :math:`|1\rangle` state.
-
-    Note that the output shape of this measurement process depends on whether
-    the device simulates qubit or continuous variable quantum systems.
-
     .. warning::
 
        ``qml.probs`` is not compatible with :class:`~.Hermitian`. When using
