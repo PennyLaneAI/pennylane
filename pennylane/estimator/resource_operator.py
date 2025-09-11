@@ -210,7 +210,7 @@ class ResourceOperator(ABC):
 
     """
 
-    num_wires = 1
+    num_wires: int | None = None
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
