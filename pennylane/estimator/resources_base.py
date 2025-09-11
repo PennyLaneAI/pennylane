@@ -142,7 +142,7 @@ class Resources:
         )
 
     def add_parallel(self, other: "Resources") -> "Resources":
-        """Add two resources objects in parallel.
+        """Add two Resources objects in parallel.
 
         When combining resources for parallel execution, the following rules apply:
 
