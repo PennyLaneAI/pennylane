@@ -51,7 +51,7 @@ class DecompositionType(StrEnum):
 
 
 class ResourceConfig:
-    """A container to track the configuration for precisions, and custom decompositions for the
+    """A container to track the configuration for precisions and custom decompositions for the
     resource estimation pipeline.
     """
 
