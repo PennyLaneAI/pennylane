@@ -278,6 +278,44 @@ def probs(wires=None, op=None) -> ProbabilityMP:
        expected as the lexicographical ordering of eigenvalues is not guaranteed and
        the diagonalizing gates may exist in a degenerate subspace.
 
+    **Example:**
+
+    The order of the output might be different when using ``qml.Hermitian``, as in the
+    following example:
+
+    .. code-block:: python3
+
+        H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(wires=0)
+            return qml.probs(op=qml.Hermitian(H, wires=0)), qml.probs(op=qml.Hadamard(wires=0))
+
+    >>> circuit()
+    (array([0.14644661, 0.85355339]), array([0.85355339, 0.14644661]))
+
+    **Example:**
+
+    The output might also be different than expected when using ``qml.Hermitian``,
+    because the probability vector can be expressed in the eigenbasis obtained from
+    diagonalizing the matrix of the observable, as in the following example:
+
+    .. code-block:: python3
+
+        ob = qml.X(0) @ qml.Y(1)
+        h = qml.Hermitian(ob.matrix(), wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.probs(op=h), qml.probs(op=ob)
+
+    >>> circuit()
+    (array([0.5, 0. , 0. , 0.5]), array([0.25, 0.25, 0.25, 0.25]))
+
+    In this case, the outputs are expressed in the eigenbasis of the observable and in the
+    computational basis after Pauli rotations, respectively.
+
     """
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:
