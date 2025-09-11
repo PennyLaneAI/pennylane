@@ -154,7 +154,7 @@ class TestResources:
         ),
         (
             gate_types_data[2],
-            ["X", "Y", "RX"],  # Test with a custom gate set
+            ["X", "Y", "RX", "Toffoli"],  # Test with a custom gate set
             "X total: 100\n"
             + "Y total: 120\n"
             + "RX total: 3\n"
