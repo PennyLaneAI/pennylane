@@ -117,6 +117,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Various decompositions of :class:`~.MultiControlledX` now utilize :class:`~.TemporaryAND` in
+  place of :class:`~.Toffoli` gates, leading to cheaper decompositions.
+  [(#8172)](https://github.com/PennyLaneAI/pennylane/pull/8172)
+  
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
 
