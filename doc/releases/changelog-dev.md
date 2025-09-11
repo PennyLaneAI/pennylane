@@ -580,6 +580,9 @@
 * Perturbation error function now sums over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
+* Added optional importance sampling functionality to Trotter error estimation.
+  [(#8247)](https://github.com/PennyLaneAI/pennylane/pull/8247)
+
 <h3>Breaking changes 💔</h3>
 
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
