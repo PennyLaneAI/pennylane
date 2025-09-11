@@ -105,11 +105,18 @@ def test_resolved_construction_default_qubit(interface):
     assert replace(config, device_options={}) == replace(expected_config, device_options={})
 
 
-@pytest.mark.parametrize("mcm_method", [None, "one-shot"])
-@pytest.mark.parametrize("postselect_mode", [None, "hw-like"])
+@pytest.mark.parametrize(
+    "mcm_method, postselect_mode, expected_mcm_method",
+    [
+        (None, None, "tree-traversal"),
+        ("one-shot", None, "one-shot"),
+        (None, "hw-like", "tree-traversal"),
+        ("one-shot", "hw-like", "one-shot"),
+    ],
+)
 @pytest.mark.parametrize("interface", ["jax", "jax-jit"])
 @pytest.mark.jax
-def test_jax_interface(mcm_method, postselect_mode, interface):
+def test_jax_interface(mcm_method, postselect_mode, expected_mcm_method, interface):
     """Test constructing config with JAX interface and different MCMConfig settings."""
 
     @qml.qnode(
@@ -124,7 +131,7 @@ def test_jax_interface(mcm_method, postselect_mode, interface):
 
     config = construct_execution_config(circuit)(shots=100)
 
-    expected_mcm_config = MCMConfig(mcm_method, postselect_mode="pad-invalid-samples")
+    expected_mcm_config = MCMConfig(expected_mcm_method, postselect_mode="pad-invalid-samples")
     expected_config = ExecutionConfig(
         grad_on_execution=False,
         use_device_gradient=False,
