@@ -180,7 +180,7 @@ class TestResources:
         expected_gate_types = defaultdict(int, {}) if gate_types is None else gate_types
         assert (
             repr(resources)
-            == f"Resources(zeroed={zeroed}, any_state={any_state}, algo={algo}, gate_types={expected_gate_types})"
+            == f"Resources(zeroed={zeroed}, any_state={any_state}, algo_wires={algo}, gate_types={expected_gate_types})"
         )
 
     def test_gate_counts(self):

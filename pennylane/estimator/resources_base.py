@@ -191,7 +191,7 @@ class Resources:
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed=new_zeroed, any_state=new_any, algo=new_logic, gate_types=new_gate_types
+            zeroed=new_zeroed, any_state=new_any, algo_wires=new_logic, gate_types=new_gate_types
         )
 
     def __eq__(self, other: Resources) -> bool:
@@ -247,7 +247,7 @@ class Resources:
         return Resources(
             zeroed=self.zeroed,
             any_state=self.any_state * scalar,
-            algo=self.algo_wires,
+            algo_wires=self.algo_wires,
             gate_types=new_gate_types,
         )
 
@@ -291,7 +291,7 @@ class Resources:
         return Resources(
             zeroed=self.zeroed,
             any_state=self.any_state * scalar,
-            algo=self.algo_wires * scalar,
+            algo_wires=self.algo_wires * scalar,
             gate_types=new_gate_types,
         )
 
