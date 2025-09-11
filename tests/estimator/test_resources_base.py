@@ -15,12 +15,11 @@
 This module contains tests for the Resources container class.
 """
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pytest
 
 from pennylane.estimator.resources_base import Resources
-from pennylane.estimator.wires_manager import WireResourceManager
 
 # pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself
 
@@ -30,6 +29,7 @@ class DummyResOp:
     """A dummy class to populate the gate types dictionary for testing."""
 
     name: str
+    params: dict = field(default_factory=lambda: defaultdict(int), compare=False)
 
 
 h = DummyResOp("Hadamard")
@@ -37,7 +37,9 @@ x = DummyResOp("X")
 y = DummyResOp("Y")
 z = DummyResOp("Z")
 cnot = DummyResOp("CNOT")
-phase_shift = DummyResOp("PhaseShift")
+phase_shift = DummyResOp("PhaseShift", {"precision": 1.57})
+rx = DummyResOp("RX", {"precision": 1e-8})
+rx_2 = DummyResOp("RX", {"precision": 1e-6})
 
 gate_types_data = (
     defaultdict(
@@ -50,7 +52,7 @@ gate_types_data = (
     ),
     defaultdict(
         int,
-        {x: 100, y: 120, z: 1000, cnot: 4523},
+        {x: 100, y: 120, z: 1000, cnot: 4523, rx: 1, rx_2: 3},
     ),
 )
 
@@ -112,7 +114,8 @@ class TestResources:
             + "    allocated wires: 622\n"
             + "\t zero state: 400\n"
             + "\t any state: 222\n"
-            + " Total gates : 5.743E+3\n"
+            + " Total gates : 5.746E+3\n"
+            + "  'RX': 3,\n"
             + "  'CNOT': 4.523E+3,\n"
             + "  'X': 100,\n"
             + "  'Y': 120,\n"
@@ -138,6 +141,32 @@ class TestResources:
     def test_str_method(self, resources, expected_str):
         """Test that the str method correctly displays the information."""
         assert str(resources) == expected_str
+
+    test_data = (
+        (gate_types_data[0], None, "X total: 1\n" + "Z total: 1\n" + "Hadamard total: 2"),
+        (
+            gate_types_data[1],
+            None,  # Test the default behavior
+            "PhaseShift total: 2\n"
+            + "    PhaseShift {'precision': 1.57}: 2\n"
+            + "CNOT total: 791\n"
+            + "Hadamard total: 467",
+        ),
+        (
+            gate_types_data[2],
+            ["X", "Y", "RX"],  # Test with a custom gate set
+            "X total: 100\n"
+            + "Y total: 120\n"
+            + "RX total: 3\n"
+            + "    RX {'precision': 1e-08}: 3",
+        ),
+    )
+
+    @pytest.mark.parametrize("gate_types, gate_set, expected_str", test_data)
+    def test_gate_breakdown(self, gate_types, gate_set, expected_str):
+        """Test that the gate_breakdown method correctly displays the information."""
+        resources = Resources(zeroed=4, gate_types=gate_types)
+        assert resources.gate_breakdown(gate_set=gate_set) == expected_str
 
     @pytest.mark.parametrize("gate_types", gate_types_data + (None,))
     @pytest.mark.parametrize("wire_info", wire_data)
