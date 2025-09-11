@@ -117,6 +117,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.counts` can now be captured with program capture into plxpr. It still cannot be interpreted or executed
+  with program capture.
+  [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
+
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198))
 
@@ -845,6 +849,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove usage of the `pytest.mark.capture` marker from tests in the `tests/python_compiler` directory.
+  [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
+
 * Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
   [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
 
@@ -1040,10 +1047,17 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
+* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted 
+  to `torch.float64`.
+  [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
+
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
+  [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
 
 * Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
   [(#8190)](https://github.com/PennyLaneAI/pennylane/pull/8190)
@@ -1154,8 +1168,10 @@ Korbinian Kottmann,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares
 Erick Ochoa,
+Lee James O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,
