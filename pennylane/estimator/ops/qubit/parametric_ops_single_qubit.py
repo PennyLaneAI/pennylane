@@ -44,8 +44,8 @@ def _rotation_resources(precision=10e-3):
         precision (float): the acceptable error threshold for the approximation
 
     Returns:
-        list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
-        represents a specific quantum gate and the number of times it appears
+        list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+        where each object represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
     num_gates = round(1.149 * np.log2(1 / precision) + 9.2)
@@ -123,7 +123,7 @@ class PhaseShift(ResourceOperator):
                     \end{bmatrix}.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -140,8 +140,8 @@ class PhaseShift(ResourceOperator):
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
         return [GateCount(cls.resource_rep(precision=precision))]
@@ -169,7 +169,7 @@ class PhaseShift(ResourceOperator):
             The resources simplify to just one total phase shift operator.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -244,7 +244,7 @@ class RX(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -259,7 +259,7 @@ class RX(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -288,7 +288,7 @@ class RX(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -362,7 +362,7 @@ class RY(ResourceOperator):
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -377,7 +377,7 @@ class RY(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -407,7 +407,7 @@ class RY(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -481,7 +481,7 @@ class RZ(ResourceOperator):
             precision (float): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -496,8 +496,8 @@ class RZ(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
         return [GateCount(cls.resource_rep(precision))]
@@ -525,9 +525,9 @@ class RZ(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(precision))]
 
@@ -604,8 +604,8 @@ class Rot(ResourceOperator):
             thus the resources of the adjoint operation results in the original operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
         return [GateCount(cls.resource_rep(precision))]
@@ -629,7 +629,7 @@ class Rot(ResourceOperator):
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects,
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
