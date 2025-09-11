@@ -191,6 +191,7 @@ class AllMatchSameOperatorTrait(OpTrait):
     summary: str
 
     def verify(self, op: Operation) -> None:
+        """Verify that the operation attributes all match under the same operator."""
         attributes = []
         for name in self.attr_names:
             value = getattr(op, name, None)
