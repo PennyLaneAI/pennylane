@@ -66,7 +66,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         op_type: type[ResourceOperator],
         num_wires: int,
         params: dict | None = None,
-        name: str = None,
+        name: str | None = None,
     ) -> None:
 
         if not issubclass(op_type, ResourceOperator):
