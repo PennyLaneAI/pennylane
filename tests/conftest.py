@@ -214,6 +214,20 @@ def pytest_generate_tests(metafunc):
         jax.config.update("jax_enable_x64", True)
 
 
+@pytest.fixture(
+    params=[
+        pytest.param("autograd", marks=pytest.mark.autograd),
+        pytest.param("jax", marks=pytest.mark.jax),
+        pytest.param("jax-jit", marks=pytest.mark.jax),
+        pytest.param("torch", marks=pytest.mark.torch),
+    ],
+    scope="function",
+)
+def interface(request):
+    """Automatically parametrize over all interfaces."""
+    yield request.param
+
+
 def pytest_collection_modifyitems(items, config):
     rootdir = pathlib.Path(config.rootdir)
     for item in items:
@@ -283,8 +297,8 @@ def pytest_runtest_setup(item):
     for b in marks:
         if b == "all_interfaces":
             required_interfaces = {"torch", "jax"}
-            for interface in required_interfaces:
-                if interface not in allowed_interfaces:
+            for _interface in required_interfaces:
+                if _interface not in allowed_interfaces:
                     pytest.skip(
                         f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                     )
