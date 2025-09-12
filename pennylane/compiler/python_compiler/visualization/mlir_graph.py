@@ -56,10 +56,10 @@ def _catalyst(*args, stdin=None, stderr_return=False):
         raise CompileError(f"catalyst failed with error code {e.returncode}: {e.stderr}") from e
 
 
-def _mlir_graph_callback(pass_instance, module, _, pass_level=0):
-    """
-    Callback function for MLIR graph generation.
-    """
+def _mlir_graph_callback(previous_pass, module, next_pass, pass_level=0):
+    """Callback function for MLIR graph generation."""
+
+    pass_instance = previous_pass if previous_pass else next_pass
     buffer = io.StringIO()
     Printer(stream=buffer, print_generic_format=True).print_op(module)
     _, dot_graph = _quantum_opt_stderr(
