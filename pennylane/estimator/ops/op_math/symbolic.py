@@ -35,7 +35,7 @@ class Adjoint(ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base_op (~.pennylane.estimator.ResourceOperator): The operator that we
+        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator that we
             want the adjoint of.
 
     Resources:
@@ -103,7 +103,7 @@ class Adjoint(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+            * base_cmpr_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator
             that we want the adjoint of.
 
         """
@@ -115,11 +115,11 @@ class Adjoint(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+            base_cmpr_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator
                 that we want the adjoint of.
 
         Returns:
-            :class:`~.pennylane.estimator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = base_cmpr_op.num_wires
         return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op})
@@ -130,7 +130,7 @@ class Adjoint(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.CompressedResourceOp`): A
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
                 compressed resource representation for the operator we want the adjoint of.
             wires (Sequence[int], optional): the wires the operation acts on
 
@@ -144,7 +144,7 @@ class Adjoint(ResourceOperator):
             base operation's resources.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
@@ -206,7 +206,7 @@ class Adjoint(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.CompressedResourceOp`): A
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
                 compressed resource representation for the operator we want the adjoint of.
 
         Resources:
@@ -214,7 +214,7 @@ class Adjoint(ResourceOperator):
             are given as one instance of the base operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -234,7 +234,7 @@ class Controlled(ResourceOperator):
     state of some control qubits.
 
     Args:
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The base operator to be
+        base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base operator to be
             controlled.
         num_ctrl_wires (int): the number of qubits the operation is controlled on
         num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -247,19 +247,19 @@ class Controlled(ResourceOperator):
 
         Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
         which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
-        to an additional cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`.
+        to an additional cost of two ``X`` gates per :code:`num_ctrl_values`.
         Secondly, the base operation resources are extracted and we add to the cost the controlled
         variant of each operation in the resources.
 
-    .. seealso:: :class:`~.ops.op_math.controlled.ControlledOp`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Controlled`.
 
     **Example**
 
     The controlled operation can be constructed like this:
 
-    >>> x = plre.ResourceX()
-    >>> cx = plre.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
-    >>> ccx = plre.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
+    >>> x = qml.estimator.X()
+    >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
+    >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
 
     We can observe the expected gates when we estimate the resources.
 
@@ -316,7 +316,7 @@ class Controlled(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (:class:`~.pennylane.estimator.CompressedResourceOp`): The base
+            * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
             operator to be controlled.
             * num_ctrl_wires (int): the number of qubits the operation is controlled on
             * num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -340,14 +340,14 @@ class Controlled(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.CompressedResourceOp`): The base
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the
                 :math:`|0\rangle` state
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = num_ctrl_wires + base_cmpr_op.num_wires
         return CompressedResourceOp(
@@ -368,7 +368,7 @@ class Controlled(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.CompressedResourceOp`): The base
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the
@@ -381,28 +381,28 @@ class Controlled(ResourceOperator):
 
             Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
             which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
-            to an additional cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`.
+            to an additional cost of two ``X`` gates per :code:`num_ctrl_values`.
             Secondly, the base operation resources are extracted and we add to the cost the controlled
             variant of each operation in the resources.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
-        .. seealso:: :class:`~.ops.op_math.controlled.ControlledOp`
+        .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Controlled`.
 
         **Example**
 
         The controlled operation can be constructed like this:
 
-        >>> x = plre.ResourceX()
-        >>> cx = plre.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
-        >>> ccx = plre.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
+        >>> x = qml.estimator.X()
+        >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
+        >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
 
         We can observe the expected gates when we estimate the resources.
 
-        >>> print(plre.estimate_resources(cx))
+        >>> print(qml.estimator.estimate(cx))
         --- Resources: ---
         Total qubits: 2
         Total gates : 1
@@ -411,7 +411,7 @@ class Controlled(ResourceOperator):
         Gate breakdown:
         {'CNOT': 1}
         >>>
-        >>> print(plre.estimate_resources(ccx))
+        >>> print(qml.estimator.estimate(ccx))
         --- Resources: ---
         Total qubits: 3
         Total gates : 5
@@ -473,7 +473,7 @@ class Controlled(ResourceOperator):
                 controlled operation upon.
             ctrl_num_ctrl_values (int): The subset of those control qubits, which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
-            base_cmpr_op (:class:`~.pennylane.estimator.CompressedResourceOp`): The base
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
@@ -481,11 +481,11 @@ class Controlled(ResourceOperator):
 
         Resources:
             The resources are derived by simply combining the control qubits, control-values and
-            work qubits into a single instance of :class:`~.Controlled` gate, controlled
+            work qubits into a single instance of ``Controlled`` gate, controlled
             on the whole set of control-qubits.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
