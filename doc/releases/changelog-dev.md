@@ -884,6 +884,7 @@
   when a gateset is provided. `default.qubit` and `null.qubit` can now use
   graph decomposition mode.
   [(#8225)](https://github.com/PennyLaneAI/pennylane/pull/8225)
+  [(#8260)](https://github.com/PennyLaneAI/pennylane/pull/8260)
 
 * `DefaultQubit` now determines the `mcm_method` in `Device.setup_execution_config`,
   making it easier to tell which mcm method will be used. This also allows `defer_measurements` and `dynamic_one_shot` to be applied at different
