@@ -18,6 +18,7 @@ from functools import singledispatchmethod
 from typing import Any, Union
 
 from xdsl.dialects import builtin, func
+from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
@@ -28,8 +29,12 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
+    MeasureOp,
+    MultiRZOp,
     ProbsOp,
+    QubitUnitaryOp,
     SampleOp,
+    SetStateOp,
     StateOp,
     VarianceOp,
 )
@@ -39,6 +44,7 @@ from pennylane.operation import Operator
 from .xdsl_conversion import (
     dispatch_wires_extract,
     xdsl_to_qml_meas,
+    xdsl_to_qml_measure_op,
     xdsl_to_qml_obs_op,
     xdsl_to_qml_op,
 )
@@ -75,17 +81,33 @@ class QMLCollector:
         obs_op = xdsl_meas_op.obs.owner
         return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_obs_op(obs_op))
 
+    @handle.register
+    def _(self, xdsl_measure: MeasureOp) -> MeasurementProcess:
+        return xdsl_to_qml_measure_op(xdsl_measure)
+
     ############################################################
     ### Operators
     ############################################################
 
     @handle.register
-    def _(self, xdsl_op: CustomOp | GlobalPhaseOp) -> Operator:
+    def _(
+        self,
+        xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp,
+    ) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
         if not self.wire_to_ssa_qubits:
             raise NotImplementedError("No wires extracted from the register found.")
         return xdsl_to_qml_op(xdsl_op)
+
+    ############################################################
+    ### Control Flow
+    ############################################################
+
+    # pylint: disable=unused-argument
+    @handle.register
+    def _(self, op: IfOp | WhileOp | ForOp) -> None:
+        raise NotImplementedError("Control flow operations (If, While, For) are not yet supported.")
 
     ############################################################
     ### Internal Methods
@@ -130,10 +152,10 @@ class QMLCollector:
                 self._process_qubit_mapping(op)
                 result = self.handle(op)
 
-                if isinstance(result, MeasurementProcess):
-                    collected_meas.append(result)
-
                 if isinstance(result, Operator):
                     collected_ops.append(result)
+
+                elif isinstance(result, MeasurementProcess):
+                    collected_meas.append(result)
 
         return collected_ops, collected_meas

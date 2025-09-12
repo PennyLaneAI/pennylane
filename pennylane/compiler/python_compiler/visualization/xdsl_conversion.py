@@ -23,7 +23,6 @@ from xdsl.ir import SSAValue
 import pennylane as qml
 from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
-    ComputationalBasisOp,
     CustomOp,
 )
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
@@ -31,13 +30,23 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
     HamiltonianOp,
     MeasureOp,
+    MultiRZOp,
     NamedObsOp,
+    QubitUnitaryOp,
+    SetStateOp,
     TensorOp,
 )
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
 from pennylane.typing import Callable
+
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
 
 from_str_to_PL_gate = {
     name: getattr(ops, name)
@@ -46,15 +55,12 @@ from_str_to_PL_gate = {
 }
 
 from_str_to_PL_measurement = {
-    "quantum.state": qml.state,
-    "quantum.probs": qml.probs,
-    "quantum.sample": qml.sample,
-    "quantum.expval": qml.expval,
-    "quantum.var": qml.var,
-    "quantum.measure": qml.measure,
+    f"quantum.{name}": getattr(qml, name)
+    for name in ("state", "probs", "sample", "expval", "var", "measure")
 }
 
-# pylint: disable=too-many-return-statements
+
+# pylint: disable=too-many-return-statements, protected-access
 
 ######################################################
 ### Gate/Measurement resolution
@@ -81,6 +87,12 @@ def resolve_measurement(name: str) -> MeasurementProcess:
 ######################################################
 ### Helpers
 ######################################################
+
+
+def _tensor_shape_from_ssa(ssa: SSAValue) -> list[int]:
+    """Extract the concrete shape from an SSA tensor value."""
+    tensor_abstr_shape = ssa.owner.operand._type.shape.data
+    return [dim.data for dim in tensor_abstr_shape]
 
 
 def _extract(op, attr: str, resolver: Callable, single: bool = False):
@@ -161,7 +173,7 @@ def resolve_constant_wire(ssa: SSAValue) -> float | int:
             return resolve_constant_wire(op.operands[0])
         case _ if op.name == "stablehlo.constant":
             return _extract_dense_constant_value(op)
-        case CustomOp() | GlobalPhaseOp():
+        case CustomOp() | GlobalPhaseOp() | QubitUnitaryOp() | SetStateOp() | MultiRZOp():
             all_qubits = list(getattr(op, "in_qubits", [])) + list(
                 getattr(op, "in_ctrl_qubits", [])
             )
@@ -203,14 +215,29 @@ def ssa_to_qml_wires_named(op: NamedObsOp) -> int:
 ############################################################
 
 
-def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
+def xdsl_to_qml_op(
+    op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp,
+) -> Operator:
     """Convert an xDSL op to a PennyLane operator."""
 
     match op.name:
 
         case "quantum.gphase":
             gate = qml.GlobalPhase(ssa_to_qml_params(op, single=True), wires=ssa_to_qml_wires(op))
-
+        case "quantum.unitary":
+            gate = qml.QubitUnitary(
+                U=jax.numpy.zeros(_tensor_shape_from_ssa(op.matrix)), wires=ssa_to_qml_wires(op)
+            )
+        case "quantum.set_state":
+            gate = qml.StatePrep(
+                state=jax.numpy.zeros(_tensor_shape_from_ssa(op.in_state)),
+                wires=ssa_to_qml_wires(op),
+            )
+        case "quantum.multirz":
+            gate = qml.MultiRZ(
+                theta=_extract(op, "theta", resolve_constant_params, single=True),
+                wires=ssa_to_qml_wires(op),
+            )
         case _:
             gate_cls = resolve_gate(op.properties.get("gate_name").data)
             gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
@@ -218,9 +245,13 @@ def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
     return _apply_adjoint_and_ctrls(gate, op)
 
 
-def xdsl_to_qml_obs_op(
-    op: NamedObsOp | TensorOp | HamiltonianOp | ComputationalBasisOp,
-) -> Operator | list[int] | None:
+def xdsl_to_qml_measure_op(op: MeasureOp) -> MeasurementProcess:
+    """Convert a ``quantum.measure`` xDSL op to a PennyLane measurement."""
+    postselect = op.postselect.value.data if op.postselect is not None else None
+    return MidMeasureMP([resolve_constant_wire(op.in_qubit)], postselect=postselect)
+
+
+def xdsl_to_qml_obs_op(op: NamedObsOp | TensorOp | HamiltonianOp) -> Operator:
     """Convert an xDSL observable operation to a PennyLane operator."""
 
     match op.name:
