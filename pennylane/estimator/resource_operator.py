@@ -186,7 +186,7 @@ class ResourceOperator(ABC):
                     hadamard_counts = num_wires
                     ctrl_phase_shift_counts = num_wires*(num_wires - 1) // 2
 
-                    return [                                  # Return the decomposition
+                    return [    # Return the decomposition
                         qre.GateCount(swap, swap_counts),
                         qre.GateCount(hadamard, hadamard_counts),
                         qre.GateCount(ctrl_phase_shift, ctrl_phase_shift_counts),
