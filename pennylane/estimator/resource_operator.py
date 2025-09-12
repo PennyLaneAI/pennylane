@@ -351,8 +351,7 @@ def _dequeue(
 ):
     """Remove the given resource operator(s) from the Operator queue."""
     if not isinstance(op_to_remove, Iterable):
-        context.remove(op)
-        return
+        op_to_remove = [op_to_remove]
 
     for op in op_to_remove:
         context.remove(op)
