@@ -25,7 +25,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import pennylane as qml
 from pennylane import math as fn
 from pennylane import numpy as np
-from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.math.single_dispatch import _sparse_matrix_power_bruteforce
 
 pytestmark = pytest.mark.all_interfaces
