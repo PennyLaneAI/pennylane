@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Abstract base class for resource operators."""
+r"""This submodule contains base classes for resource operators."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -40,18 +41,18 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     effectively in collections where uniqueness and quick lookups are important.
 
     Args:
-        op_type (Type): the class object of an operation which inherits from :class:'~.pennylane.estimator.ResourceOperator'
+        op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:'~.pennylane.estimator.ResourceOperator'
         num_wires (int): The number of wires that the operation acts upon,
             excluding any auxiliary wires that are allocated on decomposition.
         params (dict): A dictionary containing the minimal pairs of parameter names and values
             required to compute the resources for the given operator.
-        name (str, optional): A custom name for the compressed operator. If not
+        name (str | None): A custom name for the compressed operator. If not
             provided, a name will be generated using `op_type.make_tracking_name`
             with the given parameters.
 
     .. details::
 
-        This representation is the minimal amount of information required to estimate resources for the operator.
+        This representation is the minimal amount of information required to estimate resources for an operator.
 
     **Example**
 
@@ -112,7 +113,7 @@ def _make_hashable(d: Any) -> tuple:
     r"""Converts a potentially non-hashable object into a hashable tuple.
 
     Args:
-        d : The object to potentially convert to a hashable tuple.
+        d (Any): The object to potentially convert to a hashable tuple.
            This can be a dictionary, list, set, or an array.
 
     Returns:
@@ -254,7 +255,7 @@ class ResourceOperator(ABC):
     @abstractmethod
     def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to estimate the resources."""
+        the operator that are needed to estimate the resources."""
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
         r"""Returns a compressed representation directly from the operator"""
@@ -360,7 +361,7 @@ class GateCount:
 
     Args:
         gate (CompressedResourceOp): a compressed resource representation of the gate being counted
-        counts (int, optional): The number of occurances of the quantum gate in the circuit or
+        counts (int | None): The number of occurances of the quantum gate in the circuit or
             decomposition. Defaults to ``1``.
 
     Returns:
@@ -379,7 +380,7 @@ class GateCount:
 
     """
 
-    def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
+    def __init__(self, gate: CompressedResourceOp, count: int | None = 1) -> None:
         self.gate = gate
         self.count = count
 
@@ -416,7 +417,7 @@ def resource_rep(
     :code:`resource_keys` class property of every :class:`~.pennylane.estimator.ResourceOperator`.
 
     Args:
-        resource_op (Type[ResourceOperator]]): The type of operator we want to get the compact representation for.
+        resource_op (type[ResourceOperator]]): The type of operator we want to get the compact representation for.
         resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
 
     Returns:
@@ -439,7 +440,5 @@ def resource_rep(
 
     """
 
-    if resource_params:
-        return resource_op.resource_rep(**resource_params)
-
-    return resource_op.resource_rep()
+    resource_params = resource_params or {}
+    return resource_op.resource_rep(**resource_params)

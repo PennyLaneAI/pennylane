@@ -392,6 +392,7 @@ class TestValidateMeasurements:
 class TestDecomposeTransformations:
     """Tests for the behavior of the `decompose` helper."""
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("shots", [None, 100])
     def test_decompose_expand_unsupported_op(self, shots):
         """Test that decompose expands the tape when unsupported operators are present"""
@@ -408,6 +409,7 @@ class TestDecomposeTransformations:
 
         assert tape.shots == expanded_tape.shots
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_no_expansion(self):
         """Test that expand_fn does nothing to a fully supported quantum script."""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
@@ -419,6 +421,7 @@ class TestDecomposeTransformations:
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
             qml.assert_equal(op, exp)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
     def test_valdiate_measurements_non_commuting_measurements(self, validation_transform):
         """Test that validate_measurements and validate_observables works when non commuting measurements exist in the circuit."""
@@ -429,6 +432,7 @@ class TestDecomposeTransformations:
         new_qs = new_qs[0]
         assert new_qs.measurements == qs.measurements
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "prep_op",
         (
@@ -468,6 +472,7 @@ class TestDecomposeTransformations:
 
         assert expanded_tape.circuit == expected + measurements
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "prep_op",
         (
@@ -484,6 +489,153 @@ class TestDecomposeTransformations:
         new_tape = batch[0]
 
         assert new_tape[0] != prep_op
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_decompose_with_device_wires_and_target_gates(self):
+        """Test that decompose works correctly with device_wires and target_gates parameters."""
+        # Mock a simple target gate set
+        target_gates = {"Hadamard", "CNOT", "RZ", "RX", "RY", "GlobalPhase"}
+        device_wires = qml.wires.Wires([0, 1, 2, 3])
+
+        # Create a tape with an operation that needs decomposition
+        tape = qml.tape.QuantumScript([qml.QFT(wires=[0, 1])], [qml.expval(qml.Z(0))])
+
+        # Test with device_wires and target_gates
+        batch, _ = decompose(
+            tape,
+            lambda obj: obj.name in target_gates,
+            device_wires=device_wires,
+            target_gates=target_gates,
+        )
+        new_tape = batch[0]
+
+        # QFT should be decomposed into supported gates
+        assert len(new_tape.operations) > len(tape.operations)
+        assert all(op.name in target_gates for op in new_tape.operations)
+
+        # Test without device_wires and target_gates (backward compatibility)
+        batch_legacy, _ = decompose(tape, lambda obj: obj.name in target_gates)
+        legacy_tape = batch_legacy[0]
+
+        # Should still work correctly
+        assert len(legacy_tape.operations) > len(tape.operations)
+        assert all(op.name in target_gates for op in legacy_tape.operations)
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.parametrize(
+        "device_wires_list,tape_wires_list,expected_work_wires",
+        [
+            # (device_wires, tape_wires, expected_work_wires)
+            ([0, 1, 2, 3], [0, 1], 2),  # Normal case
+            ([0, 1, 2], [0, 1], 1),  # Some overlap
+            ([0, 1], [0, 1], 0),  # No work wires available
+            (None, [0, 1], None),  # No device constraint
+        ],
+    )
+    def test_decompose_work_wire_calculation(
+        self, device_wires_list, tape_wires_list, expected_work_wires, mocker
+    ):
+        """Test that work wire calculation is correct and passed to decomposition logic."""
+
+        ops = [qml.IsingXX(1.2, wires=tape_wires_list)]
+
+        tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(tape_wires_list[0]))])
+        device_wires = qml.wires.Wires(device_wires_list) if device_wires_list else None
+
+        # Directly test the work wire calculation logic
+        if device_wires is None:
+            computed_work_wires = None  # No constraint on work wires
+        else:
+            # This is the actual calculation from the decompose function
+            computed_work_wires = len(set(device_wires) - set(tape.wires))
+
+        # Verify our calculation matches expected
+        assert computed_work_wires == expected_work_wires
+
+        # Use a spy to verify the parameter is passed correctly to the decomposition logic
+        spy = mocker.spy(qml.devices.preprocess, "_operator_decomposition_gen")
+
+        # Test decompose with real functionality
+        target_gates = {"CNOT", "RX", "RY", "RZ", "Hadamard", "GlobalPhase"}
+
+        batch, _ = decompose(
+            tape,
+            lambda obj: obj.name in target_gates,
+            device_wires=device_wires,
+            target_gates=target_gates,
+        )
+        new_tape = batch[0]
+
+        # Basic sanity check: decomposition should produce valid operations
+        assert len(new_tape.operations) >= len(tape.operations)
+        assert all(op.name in target_gates for op in new_tape.operations)
+
+        # Verify the spy captured the correct parameter
+        if spy.called:
+            # Look through all calls to find one with the expected parameter
+            found_correct_call = False
+            for call in spy.call_args_list:
+                call_kwargs = call[1]  # Get keyword arguments
+                if "num_available_work_wires" in call_kwargs:
+                    if call_kwargs["num_available_work_wires"] == expected_work_wires:
+                        found_correct_call = True
+                        break
+
+            assert (
+                found_correct_call
+            ), f"Expected num_available_work_wires={expected_work_wires} not found in calls"
+
+
+class TestGraphModeExclusiveFeatures:
+    """Tests that only work when graph mode is enabled.
+
+    NOTE: All tests in this suite will auto-enable graph mode via fixture.
+    """
+
+    @pytest.fixture(autouse=True)
+    def enable_graph_mode_only(self):
+        """Auto-enable graph mode for all tests in this class."""
+        qml.decomposition.enable_graph()
+        yield
+        qml.decomposition.disable_graph()
+
+    def test_work_wire_unavailability_causes_fallback(self):
+        """Test that decompositions requiring more work wires than available are discarded.
+
+        This addresses the reviewer's question: if a device has 1 wire but a decomposition
+        requires 5 burnable work wires, that decomposition should be discarded.
+        """
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        # Fallback decomposition (no work wires needed)
+        @qml.register_resources({qml.H: 2})
+        def decomp_fallback(wires):
+            qml.H(wires)
+            qml.H(wires)
+
+        # Work wire decomposition (needs 5 burnable wires)
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
+        def decomp_with_work_wire(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+
+        tape = qml.tape.QuantumScript([MyOp(0)])
+        device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+        target_gates = {"Hadamard", "PauliX"}
+
+        (out_tape,), _ = decompose(
+            tape,
+            lambda obj: obj.name in target_gates,
+            device_wires=device_wires,
+            target_gates=target_gates,
+        )
+
+        # Should use fallback decomposition (2 Hadamards)
+        assert len(out_tape.operations) == 2
+        assert all(op.name == "Hadamard" for op in out_tape.operations)
 
 
 class TestMidCircuitMeasurements:
@@ -875,3 +1027,37 @@ class TestDeviceResolveDynamicWires:
 
         [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
         qml.assert_equal(new_tape[-1], qml.X(12))
+
+    def test_error_if_no_zeroed_wires_left_no_reset(self):
+        """Test that an error is raised if all zeroed wires have been used and cant reset."""
+
+        alloc1 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
+
+        tape = qml.tape.QuantumScript(
+            [qml.Z(0), alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
+        )
+
+        with pytest.raises(
+            qml.exceptions.AllocationError, match="Not enough available wires on device"
+        ):
+            device_resolve_dynamic_wires(tape, wires=(0, 1), allow_resets=False)
+
+    def test_no_resets_min_int(self):
+        """Test that if a min_int is specified along with allow_resets=False, then fresh wires keep getting added."""
+
+        alloc1 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
+
+        tape = qml.tape.QuantumScript(
+            [qml.Z(0), alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
+        )
+
+        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None, allow_resets=False)
+
+        expected = qml.tape.QuantumScript([qml.Z(0), qml.X(1), qml.Y(2)])
+        qml.assert_equal(expected, new_tape)

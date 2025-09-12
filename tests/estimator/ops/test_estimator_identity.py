@@ -107,7 +107,7 @@ class TestGlobalPhase:
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
-        op = GlobalPhase(wires=0)
+        op = GlobalPhase(wires=[0])
         expected = []
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -117,7 +117,7 @@ class TestGlobalPhase:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        op = GlobalPhase(wires=0)
+        op = GlobalPhase(wires=[0])
         assert op.adjoint_resource_decomp() == [GateCount(GlobalPhase.resource_rep(), 1)]
 
     globalphase_ctrl_data = (([1], [1]),)
