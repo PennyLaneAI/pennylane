@@ -360,12 +360,12 @@ class GateCount:
     r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
 
     Args:
-        gate (CompressedResourceOp): a compressed resource representation of the gate being counted
-        counts (int | None): The number of occurances of the quantum gate in the circuit or
+        gate (CompressedResourceOp): The compressed resource representation of the gate being counted.
+        counts (int | None): The number of occurrences of the quantum gate in the circuit or
             decomposition. Defaults to ``1``.
 
     Returns:
-        GateCount: the container object holding both pieces of information
+        GateCount: The container object holding both pieces of information.
 
     **Example**
 
