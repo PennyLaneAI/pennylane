@@ -35,7 +35,7 @@ from .resources_base import Resources
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Defines a lightweight class corresponding to the operator type and its parameters.
 
-    This class is a minimal representation of an operation, containing
+    This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`, containing
     only the operator type and the necessary parameters to estimate its resources.
     It is designed for efficient hashing and comparison, allowing it to be used
     effectively in collections where uniqueness and quick lookups are important.
