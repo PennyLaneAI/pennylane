@@ -362,7 +362,7 @@ class GateCount:
 
     Args:
         gate (CompressedResourceOp): a compressed resource representation of the gate being counted
-        counts (int, optional): The number of occurances of the quantum gate in the circuit or
+        counts (int | None): The number of occurances of the quantum gate in the circuit or
             decomposition. Defaults to ``1``.
 
     Returns:
