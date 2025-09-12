@@ -572,3 +572,175 @@ def test_invalid_broadcast_in_dim_operations(run_filecheck):
         match="size of operand dimension .* is not equal to 1 or size of result dimension",
     ):
         run_filecheck(program_broadcast_dim_mismatch, roundtrip=True, verify=True)
+
+
+def test_dynamism_operations(run_filecheck):
+    """Test all dynamism operations."""
+    program = r"""
+    ////////////////// Setup //////////////////
+    // CHECK: %[[operand:.*]] = "test.op"() : () -> tensor<1x3xi64>
+    %operand = "test.op"() : () -> tensor<1x3xi64>
+
+    // CHECK: %[[out_dims:.*]] = "test.op"() : () -> tensor<3xi64>
+    %out_dims = "test.op"() : () -> tensor<3xi64>
+
+    ////////////////// Test DynamicBroadcastInDimOp //////////////////
+    // CHECK: %dynamic_bcast = stablehlo.dynamic_broadcast_in_dim %[[operand]], %[[out_dims]], dims = [2, 1] : (tensor<1x3xi64>, tensor<3xi64>) -> tensor<2x3x2xi64>
+    %dynamic_bcast = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out_dims) {
+      broadcast_dimensions = array<i64: 2, 1>
+    } : (tensor<1x3xi64>, tensor<3xi64>) -> tensor<2x3x2xi64>
+    """
+
+    run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_reduction_operations(run_filecheck):
+    """Test all reduction operations."""
+    program = r"""
+    ////////////////// Setup //////////////////
+    // CHECK: %[[input:.*]] = "test.op"() : () -> tensor<1x6xi64>
+    %input = "test.op"() : () -> tensor<1x6xi64>
+
+    // CHECK: %[[init:.*]] = "test.op"() : () -> tensor<i64>
+    %init = "test.op"() : () -> tensor<i64>
+
+    ////////////////// Test ReduceOp //////////////////
+    // CHECK: %reduce = "stablehlo.reduce"(%[[input]], %[[init]]) ({
+    // CHECK:   ^[[bb0:.*]](%arg0 : tensor<i64>, %arg1 : tensor<i64>):
+    // CHECK:     %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+    // CHECK:     "stablehlo.return"(%0) : (tensor<i64>) -> ()
+    // CHECK: }) {dimensions = array<i64: 1>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    %reduce = "stablehlo.reduce"(%input, %init) ({
+      ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
+        %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+        "stablehlo.return"(%0) : (tensor<i64>) -> ()
+    }) {dimensions = array<i64: 1>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    """
+
+    run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_dynamic_broadcast_in_dim_operations(run_filecheck):
+    """Test invalid dynamic_broadcast_in_dim cases that should fail verification."""
+
+    # dims size mismatch (c2)
+    program_dims_size_mismatch = r"""
+    %operand = "test.op"() : () -> tensor<1x3xi64>
+    %out = "test.op"() : () -> tensor<3xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 0>
+    } : (tensor<1x3xi64>, tensor<3xi64>) -> tensor<2x3x2xi64>
+    """
+
+    with pytest.raises(
+        Exception, match=r"broadcast_dimensions size \(1\) does not match operand rank \(2\)"
+    ):
+        run_filecheck(program_dims_size_mismatch, roundtrip=True, verify=True)
+
+    # result rank < operand rank (c3)
+    program_result_rank_too_small = r"""
+    %operand = "test.op"() : () -> tensor<1x3xi64>
+    %out = "test.op"() : () -> tensor<1xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 0, 0>
+    } : (tensor<1x3xi64>, tensor<1xi64>) -> tensor<3xi64>
+    """
+
+    with pytest.raises(Exception, match=r"result rank \(1\) is less than operand rank \(2\)"):
+        run_filecheck(program_result_rank_too_small, roundtrip=True, verify=True)
+
+    # duplicate dims (c4)
+    program_duplicate_dims = r"""
+    %operand = "test.op"() : () -> tensor<1x3xi64>
+    %out = "test.op"() : () -> tensor<2xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 0, 0>
+    } : (tensor<1x3xi64>, tensor<2xi64>) -> tensor<2x3xi64>
+    """
+
+    with pytest.raises(Exception, match=r"broadcast_dimensions should not have duplicates"):
+        run_filecheck(program_duplicate_dims, roundtrip=True, verify=True)
+
+    # dim index out of bounds (c5 bounds)
+    program_dim_oob = r"""
+    %operand = "test.op"() : () -> tensor<1x3xi64>
+    %out = "test.op"() : () -> tensor<2xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 0, 2>
+    } : (tensor<1x3xi64>, tensor<2xi64>) -> tensor<2x3xi64>
+    """
+
+    with pytest.raises(
+        Exception, match=r"broadcast_dimensions contains invalid value 2 for result with rank 2"
+    ):
+        run_filecheck(program_dim_oob, roundtrip=True, verify=True)
+
+    # per-dimension size compatibility (c5 compatibility)
+    program_dim_incompatible = r"""
+    %operand = "test.op"() : () -> tensor<2x3xi32>
+    %out = "test.op"() : () -> tensor<3xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 0, 2>
+    } : (tensor<2x3xi32>, tensor<3xi64>) -> tensor<4x3x2xi32>
+    """
+
+    with pytest.raises(
+        Exception,
+        match=r"size of operand dimension 0 \(2\) is not compatible with size of result dimension 0 \(4\)",
+    ):
+        run_filecheck(program_dim_incompatible, roundtrip=True, verify=True)
+
+    # output_dimensions length incompatible with result rank when static (c7)
+    program_outlen_mismatch = r"""
+    %operand = "test.op"() : () -> tensor<1x3xi64>
+    %out = "test.op"() : () -> tensor<2xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 2, 1>
+    } : (tensor<1x3xi64>, tensor<2xi64>) -> tensor<2x3x2xi64>
+    """
+
+    with pytest.raises(
+        Exception,
+        match=r"length of output_dimensions \(2\) is not compatible with result rank \(3\)",
+    ):
+        run_filecheck(program_outlen_mismatch, roundtrip=True, verify=True)
+
+    # duplicate expansion hints across both lists (c8)
+    program_dup_hints = r"""
+    %operand = "test.op"() : () -> tensor<1x1xi64>
+    %out = "test.op"() : () -> tensor<2xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 1, 0>,
+      known_expanding_dimensions = array<i64: 0>,
+      known_nonexpanding_dimensions = array<i64: 0>
+    } : (tensor<1x1xi64>, tensor<2xi64>) -> tensor<2x1xi64>
+    """
+
+    with pytest.raises(
+        Exception, match=r"duplicate expansion hint for at least one operand dimension"
+    ):
+        run_filecheck(program_dup_hints, roundtrip=True, verify=True)
+
+    # hint refers to invalid operand dimension (c9/c10)
+    program_hint_oob = r"""
+    %operand = "test.op"() : () -> tensor<1x3xi64>
+    %out = "test.op"() : () -> tensor<2xi64>
+
+    %bad = "stablehlo.dynamic_broadcast_in_dim"(%operand, %out) {
+      broadcast_dimensions = array<i64: 0, 1>,
+      known_expanding_dimensions = array<i64: 5>
+    } : (tensor<1x3xi64>, tensor<2xi64>) -> tensor<2x3xi64>
+    """
+
+    with pytest.raises(
+        Exception,
+        match=r"hint for expanding dimension 5 does not refer to a valid operand dimension",
+    ):
+        run_filecheck(program_hint_oob, roundtrip=True, verify=True)

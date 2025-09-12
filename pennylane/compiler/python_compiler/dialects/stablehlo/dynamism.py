@@ -21,6 +21,7 @@ Dynamism operations for the StableHLO dialect.
 from xdsl.dialects.builtin import DenseArrayBase, TensorType, i64
 from xdsl.irdl import (
     IRDLOperation,
+    ParsePropInAttrDict,
     irdl_op_definition,
     operand_def,
     opt_prop_def,
@@ -84,6 +85,8 @@ class DynamicBroadcastInDimOp(IRDLOperation):
         NoMemoryEffect(),
         # TODO: InferShapedTypeOpInterface(),
     )
+
+    irdl_options = [ParsePropInAttrDict()]
 
     # pylint: disable=too-many-branches
     def verify_(self):
