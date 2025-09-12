@@ -123,7 +123,15 @@ class CH(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_h = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceHadamard),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_h)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -232,7 +240,15 @@ class CY(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_y = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceY),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_y)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -343,9 +359,18 @@ class CZ(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
-            return [GateCount(resource_rep(CCZ))]
+            return [GateCount(resource_rep(re.ResourceCCZ))]
 
-        raise ResourcesNotDefined
+        ctrl_z = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceZ),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_z)]
+
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -460,7 +485,15 @@ class CSWAP(ResourceOperator):
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_swap = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceSWAP),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_swap)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -572,7 +605,16 @@ class CCZ(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_z = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceZ),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [GateCount(ctrl_z)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -665,9 +707,19 @@ class CNOT(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
-            return [GateCount(resource_rep(Toffoli))]
+            return [GateCount(resource_rep(ResourceToffoli))]
 
-        raise ResourcesNotDefined
+        mcx = resource_rep(
+            ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [
+            GateCount(mcx),
+        ]
+
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -765,8 +817,14 @@ class TempAND(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
-
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(mcx)]
 
 class Toffoli(ResourceOperator):
     r"""Resource class for the Toffoli gate.
@@ -987,7 +1045,14 @@ class Toffoli(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(mcx)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, elbow=None, **kwargs) -> list[GateCount]:
@@ -1347,7 +1412,15 @@ class CRX(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_rx = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceRX, {"eps": eps}),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_rx)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1475,7 +1548,15 @@ class CRY(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_ry = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceRY, {"eps": eps}),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_ry)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1603,7 +1684,15 @@ class CRZ(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_rz = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.RZ, {"precision": precision}),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_rz)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1749,7 +1838,15 @@ class CRot(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_rot = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Rot, {"precision": precision}),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_rot)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1884,7 +1981,15 @@ class ControlledPhaseShift(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        ctrl_ps = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.PhaseShift, {"precision": precision}),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_ps)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:

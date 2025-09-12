@@ -73,8 +73,17 @@ class TestCH:
 
     def test_resource_controlled(self):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
-            self.op.controlled_resource_decomp(1, 0)
+        num_ctrl_wires = 3
+        num_ctrl_values = 1
+
+        expected_op = qre.ResourceControlled(
+            qre.ResourceHadamard(),
+            num_ctrl_wires=4,
+            num_ctrl_values=1,
+        )
+        expected_res = [GateCount(expected_op.resource_rep_from_op())]
+
+        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -726,13 +735,31 @@ class TestCRot:
         expected_res = [GateCount(self.op.resource_rep(), 1)]
         assert self.op.adjoint_resource_decomp() == expected_res
 
-    ctrl_data = ((1, 0),)
+    ctrl_data = (
+        (
+            1,
+            0,
+            GateCount(qre.Controlled(qre.RZ(), 2, 0).resource_rep_from_op()),
+        ),
+        (
+            2,
+            0,
+            GateCount(qre.Controlled(qre.RZ(), 3, 0).resource_rep_from_op()),
+        ),
+        (
+            3,
+            2,
+            GateCount(qre.Controlled(qre.RZ(), 4, 2).resource_rep_from_op()),
+        ),
+    )
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize(
+        "num_ctrl_wires, num_ctrl_values, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -820,11 +847,30 @@ class TestControlledPhaseShift:
         op = ControlledPhaseShift
         assert op.pow_resource_decomp(z) == expected_res
 
-    ctrl_data = ((1, 0),)
+    ctrl_data = (
+        (
+            1,
+            0,
+            GateCount(qre.Controlled(qre.PhaseShift(), 2, 0).resource_rep_from_op()),
+        ),
+        (
+            2,
+            0,
+            GateCount(qre.Controlled(qre.PhaseShift(), 3, 0).resource_rep_from_op()),
+        ),
+        (
+            3,
+            2,
+            GateCount(qre.Controlled(qre.PhaseShift(), 4, 2).resource_rep_from_op()),
+        ),
+    )
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize(
+        "num_ctrl_wires, num_ctrl_values, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        op = ControlledPhaseShift()
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op = qre.ControlledPhaseShift()
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == [expected_res]
