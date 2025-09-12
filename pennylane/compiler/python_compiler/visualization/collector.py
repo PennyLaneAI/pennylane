@@ -28,8 +28,8 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
-    MultiRZOp,
     MeasureOp,
+    MultiRZOp,
     ProbsOp,
     QubitUnitaryOp,
     SampleOp,
@@ -37,16 +37,15 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     StateOp,
     VarianceOp,
 )
-
-from pennylane.measurements import MeasurementProcess, MidMeasureMP
+from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 
 from .xdsl_conversion import (
     dispatch_wires_extract,
     xdsl_to_qml_meas,
+    xdsl_to_qml_measure_op,
     xdsl_to_qml_obs_op,
     xdsl_to_qml_op,
-    xdsl_to_qml_measure_op,
 )
 
 
@@ -143,7 +142,7 @@ class QMLCollector:
                 self._process_qubit_mapping(op)
                 result = self.handle(op)
 
-                if isinstance(result, (Operator, MidMeasureMP)):
+                if isinstance(result, Operator):
                     collected_ops.append(result)
 
                 elif isinstance(result, MeasurementProcess):
