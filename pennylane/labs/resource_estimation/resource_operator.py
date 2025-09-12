@@ -194,7 +194,7 @@ class ResourceOperator(ABC):
     .. code-block:: pycon
 
         >>> op = ResourceQFT(num_wires=3)
-        >>> print(plre.estimate_resources(op, gate_set={'Hadamard', 'SWAP', 'ControlledPhaseShift'}))
+        >>> print(plre.estimate(op, gate_set={'Hadamard', 'SWAP', 'ControlledPhaseShift'}))
         --- Resources: ---
         Total qubits: 3
         Total gates : 7
