@@ -643,6 +643,8 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     eigvals = op.eigvals()
     eigvals = math.stack(eigvals)
     eigvals = math.reshape(eigvals, [-1, 2 * len(channel_wires)])
+    if eigvals.ndim == 2 and eigvals.shape[0] == 1:
+        eigvals = math.reshape(eigvals, [2] * len(channel_wires))
     eigvals = math.cast_like(eigvals, state)
 
     state_indices = alphabet[: 2 * num_wires + is_state_batched]
