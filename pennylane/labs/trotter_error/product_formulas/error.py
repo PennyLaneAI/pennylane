@@ -438,7 +438,7 @@ def _commutator_importance(
         else:
             scores.append(importance_scores[fragment])
 
-    return np.abs(1 / 2 ** (len(commutator) - 1) * reduce(lambda x, y: x * y, scores))
+    return np.abs(2 ** (len(commutator) - 1) * reduce(lambda x, y: x * y, scores))
 
 
 def _update_convergence_log(expectation: complex, log: ConvergenceLog) -> ConvergenceLog:

@@ -335,7 +335,7 @@ def test_importance_scores():
         tolerance=1e-8,
         importance_scores={
             "A": 0.9,
-            "B": 0.1,
+            "B": 0.01,
         },
     )
 
