@@ -47,7 +47,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         params (dict): A dictionary containing the minimal pairs of parameter names and values
             required to compute the resources for the given operator.
         name (str | None): A custom name for the compressed operator. If not
-            provided, a name will be generated using `op_type.make_tracking_name`
+            provided, a name will be generated using ``op_type.make_tracking_name``
             with the given parameters.
 
     .. details::
