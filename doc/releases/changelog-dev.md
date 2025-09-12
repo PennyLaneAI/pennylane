@@ -99,6 +99,9 @@
   2: ──────────╰X─┤  State
   ```
 
+  The documentation was updated to include its own section on ZX calculus-based passes.
+  [(#8201)](https://github.com/PennyLaneAI/pennylane/pull/8201)
+
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
