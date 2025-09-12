@@ -293,10 +293,10 @@ class TestExecutionConfig:
         )
         str_repr = str(config)
 
-        # Check that it's properly formatted
+        # Check that it's properly formatted using pprint.pformat
         assert "ExecutionConfig(" in str_repr
-        assert "'grad_on_execution': False" in str_repr
-        assert "'gradient_method': 'best'" in str_repr
+        assert "grad_on_execution=False" in str_repr
+        assert "gradient_method='best'" in str_repr
         assert "Interface.JAX" in str_repr
 
         # Check that it's multiline formatted
@@ -308,7 +308,10 @@ class TestExecutionConfig:
             mcm_config=MCMConfig(mcm_method="deferred", postselect_mode="hw-like")
         )
         str_repr_mcm = str(config_with_mcm)
-        assert "MCMConfig(mcm_method='deferred', postselect_mode='hw-like')" in str_repr_mcm
+        # Check that MCMConfig is represented correctly (pprint may format it on multiple lines)
+        assert "MCMConfig" in str_repr_mcm
+        assert "mcm_method='deferred'" in str_repr_mcm
+        assert "postselect_mode='hw-like'" in str_repr_mcm
 
 
 class TestMCMConfig:

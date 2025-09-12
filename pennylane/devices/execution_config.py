@@ -221,27 +221,7 @@ class ExecutionConfig:
     def __str__(self):
         """Return a formatted string representation of the ExecutionConfig using pprint."""
         import pprint
-        from dataclasses import fields
-
-        # Build a dict with field values, preserving MCMConfig object
-        config_dict = {}
-        for field in fields(self):
-            value = getattr(self, field.name)
-            # Keep MCMConfig as an object for its __str__ representation
-            if field.name == "mcm_config" and hasattr(value, "__class__"):
-                config_dict[field.name] = value
-            else:
-                config_dict[field.name] = value
-
-        # Format the dictionary with pprint
-        formatted_attrs = pprint.pformat(config_dict, sort_dicts=False, width=120)[1:-1]
-
-        # Add proper indentation and return
-        indented_attrs = "\n".join(
-            f"    {line}" if i > 0 else line for i, line in enumerate(formatted_attrs.split("\n"))
-        )
-
-        return f"{self.__class__.__name__}({indented_attrs})"
+        return pprint.pformat(self)
 
 
 # pylint: disable=missing-function-docstring, inconsistent-return-statements
