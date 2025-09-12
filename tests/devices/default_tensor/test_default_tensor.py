@@ -685,7 +685,8 @@ class TestGraphModeExclusiveFeatures:
         yield
         qml.decomposition.disable_graph()
 
-    def test_work_wire_constraint_respected(self):
+    @pytest.mark.parametrize(("wires", "expected_program_len"), [(1, 2), (2, 2), (4, 1), (None, 1)])
+    def test_work_wire_constraint_respected(self, wires, expected_program_len):
         """Test that decompositions requiring more work wires than available are discarded."""
 
         # Create a mock operation with different decomposition options
@@ -706,16 +707,11 @@ class TestGraphModeExclusiveFeatures:
         qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
         tape = qml.tape.QuantumScript([MyOp(0)], [qml.expval(qml.Z(0))])
+        dev = qml.device("default.tensor", wires=wires)
         device_wires = qml.wires.Wires([0, 1])  # Only 2 wires, insufficient for 3 burnable
         target_gates = {"Hadamard", "PauliX"}
 
-        (out_tape,), _ = decompose(
-            tape,
-            lambda obj: obj.name in target_gates,
-            device_wires=device_wires,
-            target_gates=target_gates,
-        )
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
 
-        # Should use fallback decomposition (2 Hadamards) due to work wire constraint
-        assert len(out_tape.operations) == 2
-        assert all(op.name == "Hadamard" for op in out_tape.operations)
+        assert len(out_tape.operations) == expected_program_len
