@@ -51,14 +51,14 @@ class TestResourceTrotterProduct:
             ],
         ),
         (
-            [plre.ResourceRX(eps=1e-3), plre.ResourceRY(eps=1e-3), plre.ResourceZ()],
+            [plre.ResourceRX(precision=1e-3), plre.ResourceRY(precision=1e-3), plre.ResourceZ()],
             1,
             10,
             4,
             [
-                GateCount(resource_rep(plre.ResourceRX, {"eps": 1e-3}), 51),
+                GateCount(resource_rep(plre.ResourceRX, {"precision": 1e-3}), 51),
                 GateCount(resource_rep(plre.ResourceZ), 50),
-                GateCount(resource_rep(plre.ResourceRY, {"eps": 1e-3}), 100),
+                GateCount(resource_rep(plre.ResourceRY, {"precision": 1e-3}), 100),
             ],
         ),
     ]

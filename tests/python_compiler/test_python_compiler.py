@@ -211,7 +211,7 @@ def test_integration_for_transform_interpreter(capsys):
 class TestCatalystIntegration:
     """Tests for integration of the Python compiler with Catalyst"""
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_integration_catalyst_no_passes_with_capture(self):
         """Test that the xDSL plugin can be used even when no passes are applied
         when capture is enabled."""
@@ -242,7 +242,7 @@ class TestCatalystIntegration:
         out = f(1.5)
         assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_integration_catalyst_xdsl_pass_with_capture(self, capsys):
         """Test that a pass is run via the transform interpreter when using with a
         qjit workflow and capture is enabled."""
@@ -279,7 +279,7 @@ class TestCatalystIntegration:
         captured = capsys.readouterr()
         assert captured.out.strip() == "hello world"
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_integration_catalyst_mixed_passes_with_capture(self, capsys):
         """Test that both Catalyst and Python compiler passes can be used with qjit
         when capture is enabled."""
@@ -461,14 +461,16 @@ class TestCallbackIntegration:
             len(printed_modules) == 2
         ), "Callback should have been called twice (after each pass)."
 
-        # callback after cancel-inverses
-        assert 'quantum.custom "RX"' in printed_modules[0]
-        assert 'quantum.custom "Hadamard"' not in printed_modules[0]
-
         # callback after merge-rotations
         # We expect an `arith.addf` if rotations were merged
+        assert "arith.addf" in printed_modules[0], "Expected merged RX gates into a single rotation"
+        assert 'quantum.custom "RX"' in printed_modules[0]
+        assert 'quantum.custom "Hadamard"' in printed_modules[0]
+
+        # callback after cancel-inverses
         assert "arith.addf" in printed_modules[1], "Expected merged RX gates into a single rotation"
         assert 'quantum.custom "RX"' in printed_modules[1]
+        assert 'quantum.custom "Hadamard"' not in printed_modules[1]
 
         assert printed_modules[0] != printed_modules[1], "IR should differ between passes"
 
