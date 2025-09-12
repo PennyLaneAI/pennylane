@@ -1105,6 +1105,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Parameter batching now works for Z-basis gates when executing with `default.mixed`. 
+  [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
+
 * `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
   in the circuit with the `ctrl` happens.
   [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
