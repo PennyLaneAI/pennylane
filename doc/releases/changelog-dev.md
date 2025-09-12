@@ -121,6 +121,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
+  one processed by the device.
+  [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)
+
 * The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
