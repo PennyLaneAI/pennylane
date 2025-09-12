@@ -5,7 +5,7 @@
 
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
-  
+
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
@@ -63,6 +63,42 @@
     (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
     [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
+  As an example, consider the following circuit:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.T(0)
+      qml.CNOT([0, 1])
+      qml.S(0)
+      qml.T(0)
+      qml.T(1)
+      qml.CNOT([0, 2])
+      qml.T(1)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──T─╭●──S──T─╭●────┤  State
+  1: ────╰X──T────│───T─┤  State
+  2: ─────────────╰X────┤  State
+  ```
+
+  We can apply the holistic :func:`~.transforms.zx.optimize_t_count` compilation pass to
+  reduce the number of ``T`` gates. In this case, all ``T`` gates can be removed!
+
+  ```pycon
+  >>> print(qml.draw(qml.transforms.zx.optimize_t_count(circuit))())
+  0: ──Z─╭●────╭●─┤  State
+  1: ────╰X──S─│──┤  State
+  2: ──────────╰X─┤  State
+  ```
+
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
@@ -119,7 +155,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
 
@@ -579,7 +615,7 @@
 * Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
   [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
 
-* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
+* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
@@ -597,7 +633,7 @@
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
   [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
   [(#8113)](https://github.com/PennyLaneAI/pennylane/pull/8113)
-  
+
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
@@ -623,9 +659,9 @@
 
   [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
 
-* :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing 
+* :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing
   them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
-  input ``lcu``. 
+  input ``lcu``.
   [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
 
 * `MidMeasureMP` now inherits from `Operator` instead of `MeasurementProcess`.
@@ -910,7 +946,7 @@
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
-* A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.  
+* A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.
   [(#8105)](https://github.com/PennyLaneAI/pennylane/pull/8105)
 
 * The `autograph` keyword argument has been removed from the `QNode` constructor.
@@ -1083,7 +1119,7 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
-* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted 
+* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted
   to `torch.float64`.
   [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
 
@@ -1110,7 +1146,7 @@
   that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
   This enables the new decomposition system with ``Select`` of parametrized target ``ops``.
   [(#8186)](https://github.com/PennyLaneAI/pennylane/pull/8186)
-  
+
 * `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
   more robustly. In particular, the generator is simplified prior to decomposition. Now more
   time evolution ops can be supported on devices that do not natively support them.
