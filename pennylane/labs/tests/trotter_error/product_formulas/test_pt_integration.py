@@ -96,14 +96,19 @@ params = [
     ("serial", 1, "state", 2),
     ("mp_pool", 2, "state", 2),
     ("mp_pool", 2, "commutator", 2),
+    ("mp_pool", 2, "mvp", 2),
     ("cf_procpool", 2, "state", 2),
     ("cf_procpool", 2, "commutator", 2),
+    ("cf_procpool", 2, "mvp", 2),
     ("cf_threadpool", 2, "state", 2),
     ("cf_threadpool", 2, "commutator", 2),
+    ("cf_threadpool", 2, "mvp", 2),
     ("mpi4py_pool", 2, "state", 2),
     ("mpi4py_pool", 2, "commutator", 2),
+    ("mpi4py_pool", 2, "mvp", 2),
     ("mpi4py_comm", 2, "state", 2),
     ("mpi4py_comm", 2, "commutator", 2),
+    ("mpi4py_comm", 2, "mvp", 2),
 ]
 
 
@@ -127,7 +132,6 @@ def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4p
         num_workers=num_workers,
         parallel_mode=parallel_mode,
     )
-    print(actual_dicts)
     actual = [sum(state_dict.values()) for state_dict in actual_dicts]
     expected = np.array([1.5815039950517473e-05j] * n_states)
 

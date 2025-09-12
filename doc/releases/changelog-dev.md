@@ -583,6 +583,9 @@
 * Added optional importance sampling functionality to Trotter error estimation.
   [(#8247)](https://github.com/PennyLaneAI/pennylane/pull/8247)
 
+* New parallel scheme to distribute over individual matrix/vector products in Trotter error estimation.
+  [(#8262)](https://github.com/PennyLaneAI/pennylane/pull/8262)
+
 <h3>Breaking changes 💔</h3>
 
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
@@ -1129,6 +1132,7 @@ David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
+William Maxwell
 Pablo Antonio Moreno Casares
 Erick Ochoa,
 Mudit Pandey,
