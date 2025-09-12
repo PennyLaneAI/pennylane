@@ -167,8 +167,8 @@ class ResourceOperator(ABC):
                     return {"num_wires": self.num_wires}  # and values obtained from the operator.
 
                 @classmethod
-                def resource_rep(cls, num_wires):          # Takes the same input as `resource_keys` and
-                    params = {"num_wires": num_wires}  #  produces a compressed representation 
+                def resource_rep(cls, num_wires):   # Takes the same input as `resource_keys` and
+                    params = {"num_wires": num_wires}  #  produces a compressed representation
                     return qre.CompressedResourceOp(cls, num_wires, params)
 
                 @classmethod
