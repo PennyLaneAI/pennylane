@@ -581,6 +581,9 @@
 * Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
   [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
 
+* Renamed `estimate_resources` to `estimate` for concision. 
+  [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
+
 * Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
