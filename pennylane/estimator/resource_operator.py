@@ -41,7 +41,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     effectively in collections where uniqueness and quick lookups are important.
 
     Args:
-        op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:'~.pennylane.estimator.ResourceOperator'
+        op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:`~.pennylane.estimator.ResourceOperator`
         num_wires (int): The number of wires that the operation acts upon,
             excluding any auxiliary wires that are allocated on decomposition.
         params (dict): A dictionary containing the minimal pairs of parameter names and values
