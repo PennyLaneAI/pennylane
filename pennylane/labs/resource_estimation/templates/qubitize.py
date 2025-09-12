@@ -84,19 +84,13 @@ class ResourceQubitizeTHC(ResourceOperator):
             )
 
         self.compact_ham = compact_ham
-        self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
-        self.select_op = select_op.resource_rep_from_op() if select_op else None
+        self.coeff_precision = coeff_precision
+        self.rotation_precision = rotation_precision
+        self.compare_precision = compare_precision
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
-
-        # Based on section III D, Eq. 43 in arXiv:2011.03494
-        # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
-        self.num_wires = (
-            num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
-        )
+        self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(2 * tensor_rank + 1))) + 1
         super().__init__(wires=wires)
 
     @property
@@ -138,21 +132,16 @@ class ResourceQubitizeTHC(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        if compact_ham.method_name != "thc":
-            raise TypeError(
-                f"Unsupported Hamiltonian representation for ResourceQubitizeTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
-            )
-
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(2 * tensor_rank + 1))) + 1
 
-        # Based on section III D, Eq. 43 in arXiv:2011.03494
-        # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
-        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
-        params = {"compact_ham": compact_ham, "prep_op": prep_op, "select_op": select_op}
+        params = {
+            "compact_ham": compact_ham,
+            "coeff_precision": coeff_precision,
+            "rotation_precision": rotation_precision,
+            "compare_precision": compare_precision,
+        }
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
