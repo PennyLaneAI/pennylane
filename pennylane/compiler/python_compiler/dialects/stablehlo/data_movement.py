@@ -48,7 +48,6 @@ from ...xdsl_extras import (
     SameOperandsAndResultElementType,
     TensorConstraint,
 )
-
 from .attributes import GatherDimensionNumbers, ScatterDimensionNumbers
 from .types import HLO_AnyIntegerOrIndexTensor, HLO_AnyTensor, HLO_Int, HLO_IntTensor, HLO_Tensor
 
