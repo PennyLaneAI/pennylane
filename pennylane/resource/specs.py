@@ -18,7 +18,6 @@ import json
 import os
 from collections import defaultdict
 from collections.abc import Callable
-from dataclasses import replace
 from functools import partial
 from typing import Any, Literal
 
@@ -119,13 +118,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
 
-    # breakpoint()
     # TODO: Find a way to inherit all devices args from input
-    # TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
-    # spoofed_dev = TrackerDevice(
-    #     wires=original_device.wires,
-    #     shots=original_device.shots,
-    # )
     spoofed_dev = NullQubit(
         target_device=original_device,
         wires=original_device.wires,
