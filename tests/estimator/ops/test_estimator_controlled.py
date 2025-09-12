@@ -28,6 +28,7 @@ from pennylane.estimator.ops.op_math.controlled_ops import (
     ControlledPhaseShift,
     CRot,
     MultiControlledX,
+    TempAND,
     Toffoli,
 )
 from pennylane.estimator.resource_operator import (
@@ -323,6 +324,7 @@ class TestCNOT:
 
     ctrl_data = (
         (["c1"], [0]),
+        (["c1"], [1]),
         (["c1", "c2"], [0, 1]),
     )
 
@@ -354,6 +356,42 @@ class TestCNOT:
         assert self.op.pow_resource_decomp(z) == expected_res
 
 
+class TestTempAND:
+    """Test the Resource TempAND operation"""
+
+    op = TempAND(wires=[0, 1, 2])
+
+    def test_resources(self):
+        """Test that the resources method produces the expected resources."""
+        expected_resources = [GateCount(Toffoli.resource_rep(elbow="left"), 1)]
+        assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
+
+    def test_resource_rep(self):
+        """Test the resource_rep produces the correct compressed representation."""
+        expected_rep = CompressedResourceOp(TempAND, 3, {})
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
+
+    def test_resource_params(self):
+        """Test that the resource_params are produced as expected."""
+        expected_params = {}
+        assert self.op.resource_params == expected_params
+
+    def test_resource_adjoint(self):
+        """Test that the adjoint resources are as expected"""
+        expected_res = [GateCount(Hadamard.resource_rep()), GateCount(CZ.resource_rep())]
+        assert self.op.adjoint_resource_decomp() == expected_res
+
+    ctrl_data = ((["c1"], [1]),)
+
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        with pytest.raises(ResourcesUndefinedError):
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+
+
 class TestToffoli:
     """Test the Resource Toffoli operation"""
 
@@ -374,6 +412,36 @@ class TestToffoli:
         ]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
 
+        textbook_expected_resources = [
+            GateCount(CNOT.resource_rep(), 6),
+            GateCount(Hadamard.resource_rep(), 2),
+            GateCount(T.resource_rep(), 7),
+            GateCount(Z.resource_rep(), 3),
+            GateCount(S.resource_rep(), 3),
+        ]
+        assert (
+            self.op.textbook_resource_decomp(**self.op.resource_params)
+            == textbook_expected_resources
+        )
+
+    def test_resource_elbows(self):
+        """Test that the resource_rep produces the correct compressed representation."""
+        expected_rep = [
+            GateCount(T.resource_rep(), 4),
+            GateCount(CNOT.resource_rep(), 3),
+            GateCount(S.resource_rep(), 3),
+            GateCount(Z.resource_rep(), 3),
+        ]
+        assert self.op.resource_decomp(elbow="left") == expected_rep
+        assert self.op.textbook_resource_decomp(elbow="left") == expected_rep
+
+        expected_rep = [
+            GateCount(Hadamard.resource_rep(), 1),
+            GateCount(CZ.resource_rep(), 1),
+        ]
+        assert self.op.resource_decomp(elbow="right") == expected_rep
+        assert self.op.textbook_resource_decomp(elbow="right") == expected_rep
+
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = CompressedResourceOp(Toffoli, 3, {"elbow": None})
@@ -389,6 +457,13 @@ class TestToffoli:
         expected_res = [GateCount(self.op.resource_rep(), 1)]
 
         assert self.op.adjoint_resource_decomp() == expected_res
+
+        expected_elbows_res = [
+            [GateCount(self.op.resource_rep(elbow="left"), 1)],
+            [GateCount(self.op.resource_rep(elbow="right"), 1)],
+        ]
+        assert self.op.adjoint_resource_decomp(elbow="right") == expected_elbows_res[0]
+        assert self.op.adjoint_resource_decomp(elbow="left") == expected_elbows_res[1]
 
     ctrl_data = ((["c1"], [1]),)
 
@@ -458,6 +533,16 @@ class TestMultiControlledX:
         """Test that the resources method produces the expected resources."""
         op_resource_params = self._prep_params(*params)
         assert MultiControlledX.resource_decomp(**op_resource_params) == expected_res
+
+    def test_resource_decomp_min_wires(self):
+        """Test that the resource_decomp raises an error"""
+        assert MultiControlledX.resource_decomp(0, 1) == []
+        assert MultiControlledX.resource_decomp(0, 0) == [GateCount(X.resource_rep())]
+
+    def test_resource_decomp_raise(self):
+        """Test that the controlled resources raise an error"""
+        with pytest.raises(ResourcesUndefinedError):
+            MultiControlledX.resource_decomp(5, 2)
 
     @pytest.mark.parametrize("op, params", zip(res_ops, res_params))
     def test_resource_rep(self, op, params):
