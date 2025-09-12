@@ -15,7 +15,7 @@
 The conversion of a circuit to openqasm
 """
 from collections.abc import Callable
-from functools import wraps
+from functools import singledispatch, wraps
 from typing import Any, overload
 
 from pennylane.devices.preprocess import decompose
@@ -67,30 +67,8 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 
 # pylint: disable=unused-argument
-def _mid_measure_str(op: MidMeasureMP, wires: Wires, bit_map: dict, precision: None | int) -> str:
-    if op.reset:
-        raise NotImplementedError(f"Unable to translate mid circuit measurements with reset {op}.")
-    if op.postselect:
-        raise NotImplementedError(
-            f"Unable to translate mid circuit measurement with postselection {op}"
-        )
-    wire = f"q[{wires.index(op.wires[0])}]"
-    mcm_ind = len(bit_map)
-    bit_map[op] = mcm_ind
-    return f"measure {wire} -> mcms[{mcm_ind}];"
-
-
-def _conditional_str(op: Conditional, wires: Wires, bit_map: dict, precision: None | int) -> str:
-    if op.meas_val.has_processing:
-        raise NotImplementedError(
-            "to_openqasm does not support translating Conditionals with measurement postprocessing."
-        )
-    mcm_name = f"mcms[{bit_map[op.meas_val.measurements[0]]}]"
-    return f"if({mcm_name}==1) {_operator_str(op.base, wires, bit_map, precision)}"
-
-
-# pylint: disable=unused_argument
-def _operator_str(op: Operator, wires: Wires, bit_map: dict, precision: None | int) -> str:
+@singledispatch
+def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int) -> str:
     try:
         gate = OPENQASM_GATES[op.name]
     except KeyError as e:
@@ -109,6 +87,31 @@ def _operator_str(op: Operator, wires: Wires, bit_map: dict, precision: None | i
             params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
     return f"{gate}{params} {wire_labels};"
+
+
+# pylint: disable=unused-argument
+@_obj_string.register
+def _mid_measure_str(op: MidMeasureMP, wires: Wires, bit_map: dict, precision: None | int) -> str:
+    if op.reset:
+        raise NotImplementedError(f"Unable to translate mid circuit measurements with reset {op}.")
+    if op.postselect:
+        raise NotImplementedError(
+            f"Unable to translate mid circuit measurement with postselection {op}"
+        )
+    wire = f"q[{wires.index(op.wires[0])}]"
+    mcm_ind = len(bit_map)
+    bit_map[op] = mcm_ind
+    return f"measure {wire} -> mcms[{mcm_ind}];"
+
+
+@_obj_string.register
+def _conditional_str(op: Conditional, wires: Wires, bit_map: dict, precision: None | int) -> str:
+    if op.meas_val.has_processing:
+        raise NotImplementedError(
+            "to_openqasm does not support translating Conditionals with measurement postprocessing."
+        )
+    mcm_name = f"mcms[{bit_map[op.meas_val.measurements[0]]}]"
+    return f"if({mcm_name}==1) {_obj_string(op.base, wires, bit_map, precision)}"
 
 
 def _tape_openqasm(
@@ -157,12 +160,7 @@ def _tape_openqasm(
 
     # create the QASM code representing the operations
     for op in new_tape.operations:
-        if op.name == "MidMeasureMP":
-            lines.append(_mid_measure_str(op, wires, bit_map, precision))
-        elif isinstance(op, Conditional):
-            lines.append(_conditional_str(op, wires, bit_map, precision))
-        else:
-            lines.append(_operator_str(op, wires, bit_map, precision=precision))
+        lines.append(_obj_string(op, wires, bit_map, precision=precision))
 
     # apply computational basis measurements to each quantum register
     # NOTE: This is not strictly necessary, we could inspect self.observables,
