@@ -11,17 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Python Compiler API for integration of Catalyst with xDSL."""
-
-from .compiler import Compiler
-from .jax_utils import QuantumParser
-from .transforms.api import compiler_transform
-from .visualization import QMLCollector
+"""
+Visualization functions for PennyLane-xDSL transformations.
+"""
 
 
-__all__ = [
-    "Compiler",
-    "compiler_transform",
-    "QuantumParser",
-    "QMLCollector",
-]
+from .collector import QMLCollector
+from .draw import draw
+from .mlir_graph import generate_mlir_graph
+
+__all__ = ["QMLCollector", "draw", "generate_mlir_graph"]
