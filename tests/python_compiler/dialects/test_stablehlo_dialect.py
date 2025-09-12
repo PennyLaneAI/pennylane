@@ -605,11 +605,11 @@ def test_reduction_operations(run_filecheck):
     %init = "test.op"() : () -> tensor<i64>
 
     ////////////////// Test ReduceOp //////////////////
-    // CHECK: %reduce = "stablehlo.reduce"(%[[input]], %[[init]]) ({
+    // CHECK: %reduce = "stablehlo.reduce"(%[[input]], %[[init]]) <{dimensions = array<i64: 1>}> ({
     // CHECK:   ^[[bb0:.*]](%arg0 : tensor<i64>, %arg1 : tensor<i64>):
     // CHECK:     %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<i64>, tensor<i64>) -> tensor<i64>
     // CHECK:     "stablehlo.return"(%0) : (tensor<i64>) -> ()
-    // CHECK: }) {dimensions = array<i64: 1>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    // CHECK: }) : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
     %reduce = "stablehlo.reduce"(%input, %init) ({
       ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
         %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<i64>, tensor<i64>) -> tensor<i64>
@@ -618,6 +618,98 @@ def test_reduction_operations(run_filecheck):
     """
 
     run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_reduction_operations(run_filecheck):
+    """Test invalid cases for ReduceOp verifier."""
+
+    # Duplicate dimensions
+    program_dup_dims = r"""
+    %input = "test.op"() : () -> tensor<1x6xi64>
+    %init = "test.op"() : () -> tensor<i64>
+
+    %reduce = "stablehlo.reduce"(%input, %init) ({
+      ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
+        %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+        "stablehlo.return"(%0) : (tensor<i64>) -> ()
+    }) {dimensions = array<i64: 1, 1>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    """
+
+    with pytest.raises(Exception, match=r"dimensions should not have duplicates"):
+        run_filecheck(program_dup_dims, roundtrip=True, verify=True)
+
+    # Dimension out of range
+    program_dim_oob = r"""
+    %input = "test.op"() : () -> tensor<1x6xi64>
+    %init = "test.op"() : () -> tensor<i64>
+
+    %reduce = "stablehlo.reduce"(%input, %init) ({
+      ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
+        %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+        "stablehlo.return"(%0) : (tensor<i64>) -> ()
+    }) {dimensions = array<i64: 2>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    """
+
+    with pytest.raises(Exception, match=r"dimensions contains an invalid value"):
+        run_filecheck(program_dim_oob, roundtrip=True, verify=True)
+
+    # Input/init element type mismatch
+    program_elem_mismatch = r"""
+    %input = "test.op"() : () -> tensor<1x6xi64>
+    %init = "test.op"() : () -> tensor<f64>
+
+    %reduce = "stablehlo.reduce"(%input, %init) ({
+      ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
+        %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+        "stablehlo.return"(%0) : (tensor<i64>) -> ()
+    }) {dimensions = array<i64: 1>} : (tensor<1x6xi64>, tensor<f64>) -> tensor<1xi64>
+    """
+
+    with pytest.raises(Exception, match=r"input and init_value must have the same element type"):
+        run_filecheck(program_elem_mismatch, roundtrip=True, verify=True)
+
+    # Reducer wrong arity (expects 2 args per input; give 1)
+    program_wrong_arity = r"""
+    %input = "test.op"() : () -> tensor<1x6xi64>
+    %init = "test.op"() : () -> tensor<i64>
+
+    %reduce = "stablehlo.reduce"(%input, %init) ({
+      ^bb0(%acc: tensor<i64>):
+        "stablehlo.return"(%acc) : (tensor<i64>) -> ()
+    }) {dimensions = array<i64: 1>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    """
+
+    with pytest.raises(Exception, match=r"reducer must take 2 arguments, got 1"):
+        run_filecheck(program_wrong_arity, roundtrip=True, verify=True)
+
+    # Reducer arg wrong rank (should be 0D)
+    program_arg_rank = r"""
+    %input = "test.op"() : () -> tensor<1x6xi64>
+    %init = "test.op"() : () -> tensor<i64>
+
+    %reduce = "stablehlo.reduce"(%input, %init) ({
+      ^bb0(%arg0: tensor<2xi64>, %arg1: tensor<2xi64>):
+        %0 = "stablehlo.add"(%arg0, %arg1) : (tensor<2xi64>, tensor<2xi64>) -> tensor<2xi64>
+        "stablehlo.return"(%0) : (tensor<2xi64>) -> ()
+    }) {dimensions = array<i64: 1>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    """
+
+    with pytest.raises(Exception, match=r"reducer arguments must be rank-0 tensors"):
+        run_filecheck(program_arg_rank, roundtrip=True, verify=True)
+
+    # Reducer return wrong count
+    program_return_count = r"""
+    %input = "test.op"() : () -> tensor<1x6xi64>
+    %init = "test.op"() : () -> tensor<i64>
+
+    %reduce = "stablehlo.reduce"(%input, %init) ({
+      ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
+        "stablehlo.return"() : () -> ()
+    }) {dimensions = array<i64: 1>} : (tensor<1x6xi64>, tensor<i64>) -> tensor<1xi64>
+    """
+
+    with pytest.raises(Exception, match=r"reducer must return exactly one value per input"):
+        run_filecheck(program_return_count, roundtrip=True, verify=True)
 
 
 def test_invalid_dynamic_broadcast_in_dim_operations(run_filecheck):
