@@ -18,9 +18,9 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     resource_rep,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ, unused-argument, no-name-in-module
 
@@ -33,7 +33,7 @@ class Hadamard(ResourceOperator):
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Hadamard`.
 
@@ -48,12 +48,12 @@ class Hadamard(ResourceOperator):
 
         Resources:
             The ``Hadamard`` gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
         Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+            ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @property
     def resource_params(self) -> dict:
@@ -76,10 +76,10 @@ class Hadamard(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -158,7 +158,7 @@ class Hadamard(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -223,7 +223,7 @@ class S(ResourceOperator):
             The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -304,7 +304,7 @@ class S(ResourceOperator):
               is equal to three, means one instance of the Z-gate and one instance of S-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -420,7 +420,7 @@ class SWAP(ResourceOperator):
                         0 & 0 & 1 & 0
                 \end{bmatrix}.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
@@ -428,10 +428,10 @@ class SWAP(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -495,7 +495,7 @@ class SWAP(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -512,7 +512,7 @@ class T(ResourceOperator):
 
     Resources:
         The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.T`.
 
@@ -527,12 +527,12 @@ class T(ResourceOperator):
 
         Resources:
             The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
         Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+            ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @property
     def resource_params(self) -> dict:
@@ -558,7 +558,7 @@ class T(ResourceOperator):
             The resources are defined as one Z-gate (:math:`Z = T^{4}`), one S-gate (:math:`S = T^{2}`) and one T-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -633,7 +633,7 @@ class T(ResourceOperator):
             - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -729,10 +729,10 @@ class X(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -797,7 +797,7 @@ class X(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -884,10 +884,10 @@ class Y(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -951,7 +951,7 @@ class Y(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1021,10 +1021,10 @@ class Z(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1096,7 +1096,7 @@ class Z(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

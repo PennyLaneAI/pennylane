@@ -19,11 +19,11 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     _dequeue,
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called,arguments-renamed
@@ -193,7 +193,7 @@ class Adjoint(ResourceOperator):
 
         try:
             return base_class.adjoint_resource_decomp(**base_params, **kwargs)
-        except ResourcesNotDefined:
+        except ResourcesUndefinedError:
             gate_lst = []
             decomp = base_class.resource_decomp(**base_params, **kwargs)
 
@@ -432,7 +432,7 @@ class Controlled(ResourceOperator):
                 **base_params,
                 **kwargs,
             )
-        except ResourcesNotDefined:
+        except ResourcesUndefinedError:
             pass
 
         gate_lst = []

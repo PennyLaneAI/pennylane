@@ -17,7 +17,8 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import GateCount, ResourcesNotDefined
+from pennylane.estimator.resource_operator import GateCount
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=no-self-use, too-few-public-methods
@@ -58,7 +59,7 @@ class TestAdjoint:
             @classmethod
             def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
                 """No default resources"""
-                raise ResourcesNotDefined
+                raise ResourcesUndefinedError
 
         op = ResourceDummyS()  # no default_adjoint_decomp defined
         adj_op = qre.Adjoint(op)
@@ -139,7 +140,7 @@ class TestControlled:
                 cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
-                raise ResourcesNotDefined
+                raise ResourcesUndefinedError
 
         op = ResourceDummyZ()  # no default_ctrl_decomp defined
         ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_ctrl_values=2)

@@ -19,9 +19,9 @@ from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
-    ResourcesNotDefined,
     resource_rep,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
@@ -32,7 +32,7 @@ class TestHadamard:
     def test_resources(self):
         """Test that Hadamard resource operator does not implement a decomposition"""
         op = Hadamard()
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -124,7 +124,7 @@ class TestSWAP:
     def test_resources(self):
         """Test that SWAP decomposes into three CNOTs"""
         op = SWAP([0, 1])
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -359,7 +359,7 @@ class TestT:
     def test_resources(self):
         """Test that there is no further decomposition of the T gate."""
         op = T(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
