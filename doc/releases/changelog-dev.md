@@ -9,6 +9,8 @@
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+  * The :class:`~.estimator.Resources` class was added as a container class for resources.
+    [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
@@ -116,6 +118,10 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
+  with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
 
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
   to guard users from an incompatibility that currently exists between the two.
@@ -393,6 +399,10 @@
 
 <h4>Other improvements</h4>
 
+* A `draw` function has been introduced in the `qml.compiler.python_compiler.visualization` module to visualize circuits
+  with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
+  [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
 
@@ -566,7 +576,10 @@
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
-* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the
+* Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
+  [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
+
+* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
@@ -596,6 +609,19 @@
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
 <h3>Breaking changes 💔</h3>
+
+* Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
+  If you would like to get the canonical interface you can simply use the `Enum` like,
+
+  ```pycon
+  >>> from pennylane.math.interface_utils import Interface
+  >>> Interface("torch")
+  Interface.TORCH
+  >>> Interface("jax-jit")
+  Interface.JAX_JIT
+  ```
+
+  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
 
 * :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing 
   them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
@@ -1178,6 +1204,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
