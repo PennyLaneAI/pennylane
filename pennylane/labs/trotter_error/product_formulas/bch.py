@@ -531,4 +531,4 @@ def _drop_unimportant(terms, importance, tolerance):
 
 def _commutator_importance(commutator, importance):
     commutator_importance = [importance[x] for x in commutator]
-    return (1 / 2 ** (len(commutator) - 1)) * reduce(lambda x, y: x * y, commutator_importance)
+    return 2 ** (len(commutator) - 1) * reduce(lambda x, y: x * y, commutator_importance)
