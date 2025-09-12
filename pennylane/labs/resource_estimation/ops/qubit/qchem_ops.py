@@ -27,7 +27,7 @@ class ResourceSingleExcitation(ResourceOperator):
     r"""Resource class for the SingleExcitation gate.
 
     Args:
-        eps (float, optional): error threshold for clifford plus T decomposition of this operation
+        precision (float, optional): error threshold for clifford plus T decomposition of this operation
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
@@ -54,7 +54,7 @@ class ResourceSingleExcitation(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> se = plre.ResourceSingleExcitation()
-    >>> print(plre.estimate_resources(se, plre.StandardGateSet))
+    >>> print(plre.estimate(se, plre.StandardGateSet))
     --- Resources: ---
     Total qubits: 2
     Total gates : 16
@@ -66,18 +66,18 @@ class ResourceSingleExcitation(ResourceOperator):
     """
 
     num_wires = 2
-    resource_keys = {"eps"}
+    resource_keys = {"precision"}
 
-    def __init__(self, eps=None, wires=None) -> None:
-        self.eps = eps
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs):
+    def resource_decomp(cls, precision=None, **kwargs):
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:
-            eps (float, optional): error threshold for clifford plus T decomposition of this operation
+            precision (float, optional): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             The resources are obtained by decomposing the following matrix into fundamental gates.
@@ -105,8 +105,8 @@ class ResourceSingleExcitation(ResourceOperator):
         s = resource_rep(re.ResourceS)
         s_dag = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
         cnot = resource_rep(re.ResourceCNOT)
-        rz = resource_rep(re.ResourceRZ, {"eps": eps})
-        ry = resource_rep(re.ResourceRY, {"eps": eps})
+        rz = resource_rep(re.ResourceRZ, {"precision": precision})
+        ry = resource_rep(re.ResourceRY, {"precision": precision})
         t = resource_rep(re.ResourceT)
         t_dag = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": t})
 
@@ -128,19 +128,19 @@ class ResourceSingleExcitation(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * eps (float): error threshold for clifford plus T decomposition of this operation
+                * precision (float): error threshold for clifford plus T decomposition of this operation
         """
-        return {"eps": self.eps}
+        return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, eps=None):
+    def resource_rep(cls, precision=None):
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            eps (float, optional): error threshold for clifford plus T decomposition of this operation
+            precision (float, optional): error threshold for clifford plus T decomposition of this operation
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
