@@ -76,6 +76,10 @@ from .data_movement import (
     SliceOp,
 )
 
+from .dynamism import (
+    DynamicBroadcastInDimOp,
+)
+
 from .attributes import (
     GatherDimensionNumbers,
     ResultAccuracyModeAttr,
@@ -135,6 +139,8 @@ __all__ = [
     "ReshapeOp",
     "ScatterOp",
     "SliceOp",
+    # Dynamism operations
+    "DynamicBroadcastInDimOp",
     # Attributes
     "GatherDimensionNumbers",
     "ResultAccuracyModeAttr",

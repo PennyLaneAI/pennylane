@@ -39,6 +39,9 @@ from .data_movement import (
     ScatterOp,
     SliceOp,
 )
+from .dynamism import (
+    DynamicBroadcastInDimOp,
+)
 from .elementwise_binary import (
     ComplexOp,
     DivideOp,
@@ -125,6 +128,8 @@ OPERATIONS = [
     IfOp,
     WhileOp,
     OptimizationBarrierOp,
+    # Dynamism operations
+    DynamicBroadcastInDimOp,
 ]
 
 # Attributes to add to the dialect
