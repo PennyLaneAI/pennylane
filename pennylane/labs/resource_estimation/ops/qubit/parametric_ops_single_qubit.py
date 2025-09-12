@@ -34,7 +34,7 @@ def _rotation_resources(precision=10e-3):
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     Args:
         precision (float): the acceptable error threshold for the approximation
@@ -223,7 +223,7 @@ class ResourceRX(ResourceOperator):
         from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RX`
 
@@ -294,7 +294,7 @@ class ResourceRX(ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
         return _rotation_resources(precision=precision)
@@ -402,7 +402,7 @@ class ResourceRY(ResourceOperator):
         from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RY`
 
@@ -471,7 +471,7 @@ class ResourceRY(ResourceOperator):
             from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
         return _rotation_resources(precision=precision)
@@ -579,7 +579,7 @@ class ResourceRZ(ResourceOperator):
         from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RZ`
 
@@ -646,7 +646,7 @@ class ResourceRZ(ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\precision}) + 9.2)\rceil
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         Args:
             precision (float): error threshold for clifford plus T decomposition of this operation
