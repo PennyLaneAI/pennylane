@@ -252,8 +252,8 @@ def _resources_from_resource_ops(
     tight_budget=None,
 ) -> Resources:
     """Extract resources from a resource operator."""
-    
-    return resources_from_resource(
+
+    return _resources_from_resource(
         1 * obj,
         gate_set,
         config,
