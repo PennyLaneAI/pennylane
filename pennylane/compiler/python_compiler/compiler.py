@@ -54,9 +54,6 @@ class Compiler:
         # xmod is modified in place
         xmod = parser.parse_module()
         pipeline = PassPipeline((ApplyTransformSequence(callback=callback),))
-        # This is needed to ensure that the callback is called when no passes are present
-        if callback:
-            callback(None, xmod, None)
         pipeline.apply(ctx, xmod)
         buffer = io.StringIO()
         Printer(stream=buffer, print_generic_format=True).print_op(xmod)

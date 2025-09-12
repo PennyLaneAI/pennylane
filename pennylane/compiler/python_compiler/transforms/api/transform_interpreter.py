@@ -56,23 +56,24 @@ class TransformFunctionsExt(TransformFunctions):
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         # The signature of the callback function is assumed to be
-        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass, pass_level=0) -> None
+        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass, pass_level=None) -> None
         self.callback = callback
         self.pass_level = 0
 
-    def _pre_pass_callback(self, previous_pass, module):
+    def _pre_pass_callback(self, compilation_pass, module):
         """Callback wrapper to run the callback function before the pass."""
         if not self.callback:
             return
         if self.pass_level == 0:
-            self.callback(previous_pass, module, None, pass_level=0)
+            # Since this is the first pass, there is no previous pass
+            self.callback(None, module, compilation_pass, pass_level=0)
 
-    def _post_pass_callback(self, previous_pass, module):
+    def _post_pass_callback(self, compilation_pass, module):
         """Increment level and run callback if defined."""
         if not self.callback:
             return
         self.pass_level += 1
-        self.callback(previous_pass, module, None, pass_level=self.pass_level)
+        self.callback(compilation_pass, module, None, pass_level=self.pass_level)
 
     @impl(ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(
@@ -140,4 +141,6 @@ class TransformInterpreterPass(ModulePass):
         interpreter = Interpreter(op)
         interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes, self.callback))
         schedule.parent_op().detach()
+        if self.callback:
+            self.callback(None, op, None, pass_level=0)
         interpreter.call_op(schedule, (op,))
