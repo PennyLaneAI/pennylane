@@ -17,8 +17,8 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
 # pylint: disable=unused-argument
@@ -80,10 +80,10 @@ class Identity(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation is the base operation.
+            This operation is self-adjoint, so the resources of the adjoint operation are same as the base operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -102,11 +102,11 @@ class Identity(ResourceOperator):
             num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
 
         Resources:
-            The Identity gate acts trivially when controlled. The resources of this operation are
+            The Identity gate acts trivially when controlled. The resources of this operation are same as
             the original (un-controlled) operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -121,10 +121,10 @@ class Identity(ResourceOperator):
 
         Resources:
             The Identity gate acts trivially when raised to a power. The resources of this
-            operation are the original operation.
+            operation are same as the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -151,6 +151,8 @@ class GlobalPhase(ResourceOperator):
     []
 
     """
+
+    num_wires = 1
 
     @property
     def resource_params(self) -> dict:
@@ -190,7 +192,7 @@ class GlobalPhase(ResourceOperator):
             the resources of the adjoint operation is the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -208,7 +210,7 @@ class GlobalPhase(ResourceOperator):
             The resources simplify to just one total global phase operator.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -235,8 +237,8 @@ class GlobalPhase(ResourceOperator):
             case, we sandwich the phase shift operation with two multi-controlled X gates.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
