@@ -163,6 +163,8 @@ qnode_prim.prim_type = "higher_order"
 @qnode_prim.def_impl
 def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
+    execution_config = device.setup_execution_config(execution_config)
+
     if shots_len == 0:
         shots = None
         non_shots_args = args
@@ -354,7 +356,7 @@ diff_method_map = {"finite-diff": _finite_diff}
 
 @debug_logger
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
-
+    execution_config = device.setup_execution_config(execution_config)
     if execution_config.use_device_gradient:
         return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
 
@@ -567,7 +569,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         config = construct_execution_config(
             qnode, resolve=False
         )()  # no need for args and kwargs as not resolving
-        config = qnode.device.setup_execution_config(config)
 
         if abstracted_axes:
             # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
