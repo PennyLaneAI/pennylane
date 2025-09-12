@@ -170,8 +170,8 @@ class ConcatenateOp(IRDLOperation):
 @irdl_op_definition
 class DynamicSliceOp(IRDLOperation):
     """
-    Extracts a slice from the `operand` using dynamically-computed starting
-    indices and produces a `result` tensor.
+    Extracts a slice from the ``operand`` using dynamically-computed starting
+    indices and produces a ``result`` tensor.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#dynamic_slice
