@@ -63,6 +63,7 @@ Defining Decomposition Rules
     ~controlled_resource_rep
     ~adjoint_resource_rep
     ~pow_resource_rep
+    ~change_op_basis_resource_rep
     ~DecompositionRule
     ~Resources
     ~CompressedResourceOp
