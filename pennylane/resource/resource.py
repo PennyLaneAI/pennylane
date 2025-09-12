@@ -121,6 +121,17 @@ class Resources:
     num_logical_wires: int = 0
     num_auxiliary_wires: int = 0
 
+    def __post_init__(self):
+        """Set intelligent defaults for work wire information when not explicitly provided."""
+        # If work wire information is not provided (both are 0) but we have wires,
+        # assume all wires are logical (common case for manually created Resources)
+        if self.num_logical_wires == 0 and self.num_auxiliary_wires == 0 and self.num_wires > 0:
+            object.__setattr__(self, 'num_logical_wires', self.num_wires)
+            object.__setattr__(self, 'num_auxiliary_wires', 0)
+        
+        if self.num_wires is None:  # no constraints
+            self.num_auxiliary_wires = None
+
     def __add__(self, other: Resources):
         r"""Adds two :class:`~resource.Resources` objects together as if the circuits were executed in series.
 
@@ -747,10 +758,9 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resourc
             num_gates += 1
 
     # Calculate logical vs auxiliary wires
-    # Only compute work wire information if allocation operations were found
     if max_allocated_wires == 0:
-        # No allocation operations detected - maintain backward compatibility
-        num_logical_wires = 0
+        # No allocation operations detected - all wires are logical
+        num_logical_wires = num_wires
         num_auxiliary_wires = 0
     else:
         # Work wire allocation detected - distinguish between logical and auxiliary
