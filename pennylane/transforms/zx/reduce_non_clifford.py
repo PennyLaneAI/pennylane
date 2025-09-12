@@ -29,10 +29,12 @@ from .helper import _needs_pyzx
 @_needs_pyzx
 @transform
 def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Reduce the number of non-Clifford gates by applying a combination of phase gadgetization strategies
-    and Clifford gate simplification rules.
+    """Reduce the number of non-Clifford gates by applying a combination of phase
+    gadgetization strategies and Clifford gate simplification rules.
 
-    This transform performs the following simplification/optimization steps:
+    This transform performs the following simplification/optimization steps, using
+    `ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation>`__
+    under the hood:
 
     - Apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
       simplification pipeline to the ``pyzx`` graph representation (see :func:`~.to_zx`) of the given input circuit.
@@ -41,7 +43,9 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
       function to extract the equivalent sequence of gates and build a new optimized circuit.
 
     - Apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass implemented in :func:`~.transforms.zx.push_hadamards`.
-      to further optimize the phase-polynomial blocks in the circuit.
+      to further optimize the
+      `phase-polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__
+      blocks in the circuit.
 
     This pipeline does not run the Third Order Duplicate and Destroy (TODD) algorithm
     implemented in :func:`~.transforms.zx.todd` and thus is not restricted to

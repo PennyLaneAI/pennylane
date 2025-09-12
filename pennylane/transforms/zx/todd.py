@@ -31,18 +31,22 @@ from .helper import _needs_pyzx
 def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Apply the `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>`__ algorithm to reduce
-    the number of T gates in the given Clifford + T circuit.
+    the number of T gates in a given Clifford + T circuit.
 
-    This transform optimizes a Clifford + T circuit by cutting it into phase-polynomial blocks,
-    and using the TODD algorithm to optimize each of these phase polynomials.
-    Depending on the number of qubits and T gates in the original circuit, it might take a long time to run.
+    This transform optimizes a `Clifford + T circuit <https://pennylane.ai/compilation/clifford-t-gate-set>`__
+    by cutting it into `phase-polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__
+    blocks, and using the TODD algorithm to optimize each of these phase polynomials.
+    Depending on the number of qubits and T gates in the original circuit, it might
+    take a long time to run.
 
     .. note::
 
         The transformed output circuit is equivalent to the input up to a global phase.
 
     The implementation is based on the
-    `pyzx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ pass.
+    `pyzx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ pass, using
+    `ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation>`__
+    under the hood.
     It often is paired with :func:`~.transforms.zx.push_hadamards` into the combined optimization
     pass :func:`~.transforms.zx.optimize_t_count`.
 

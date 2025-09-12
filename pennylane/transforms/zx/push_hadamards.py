@@ -30,8 +30,9 @@ from .helper import _needs_pyzx
 @transform
 def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
-    Push Hadamard gates as far as possible to one side to cancel them and create fewer larger phase-polynomial blocks,
-    improving the effectiveness of phase-polynomial optimization techniques.
+    Push Hadamard gates as far as possible to one side to cancel them and create fewer larger
+    `phase-polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__
+    blocks, improving the effectiveness of phase-polynomial optimization techniques.
 
     This transform optimizes circuits composed of phase-polynomial blocks and Hadamard gates.
     This strategy works by commuting Hadamard gates through the circuit.
@@ -44,7 +45,9 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     gates together when possible (e.g. T^4 = S^2 = Z).
 
     The implementation is based on the
-    `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
+    `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass, using
+    `ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation>`__
+    under the hood.
     It often is paired with :func:`~.transforms.zx.todd` into the combined optimization
     pass :func:`~.transforms.zx.optimize_t_count`.
 
