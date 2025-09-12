@@ -14,6 +14,8 @@
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
   * The :class:`~.estimator.Resources` class was added as a container class for resources.
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
+  * The test files were renamed to avoid the dual definition error with labs module.
+    [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
@@ -583,6 +585,9 @@
 
 * Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
   [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
+
+* Renamed `estimate_resources` to `estimate` for concision. 
+  [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
 
 * Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
   instantiation of resource operators which require resource operators as input.

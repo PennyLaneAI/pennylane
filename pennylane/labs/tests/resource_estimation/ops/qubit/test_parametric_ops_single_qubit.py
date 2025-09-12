@@ -148,8 +148,8 @@ class TestPauliRotation:
         config.resource_op_precisions[plre.ResourceCRY]["precision"] = precision
         config.resource_op_precisions[plre.ResourceCRZ]["precision"] = precision
 
-        r1 = plre.estimate_resources(c, config=config)
-        r2 = plre.estimate_resources(c_op, config=config)
+        r1 = plre.estimate(c, config=config)
+        r2 = plre.estimate(c_op, config=config)
 
         assert r1 == r2
 
