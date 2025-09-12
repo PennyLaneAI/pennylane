@@ -582,6 +582,9 @@
 * Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
   [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
 
+* Renamed `estimate_resources` to `estimate` for concision. 
+  [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
+
 * Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
@@ -878,6 +881,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
+  [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
+
 * `qml.devices.preprocess.decompose` now works in graph decomposition mode
   when a gateset is provided. `default.qubit` and `null.qubit` can now use
   graph decomposition mode.
@@ -1048,6 +1054,9 @@
 * Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
+* Add nightly RC builds script to `.github/workflows`.
+  [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
+  
 <h3>Documentation 📝</h3>
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
@@ -1192,6 +1201,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
