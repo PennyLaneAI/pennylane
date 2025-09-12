@@ -125,3 +125,27 @@ class TestResourceConfig:
 
         with pytest.raises(ValueError, match="Precision must be a non-negative value"):
             config.set_single_qubit_rot_precision(negative_precision)
+
+    def test_set_precision_raises_for_negative_value(self):
+        """Test that set_precision raises a ValueError for a negative precision."""
+        config = ResourceConfig()
+        config.resource_op_precisions[DummyOp] = {"precision": 1e-9}
+        negative_precision = -0.1
+        with pytest.raises(ValueError, match="Precision must be a non-negative value"):
+            config.set_precision(DummyOp, negative_precision)
+
+    def test_set_precision_raises_error_for_unsupported_op(self):
+        """Test that set_precision raises ValueError for an unsupported operator."""
+        config = ResourceConfig()
+        config.resource_op_precisions[DummyOp] = {"bits": 10}
+        match_str = "Setting precision for DummyOp is not supported."
+        with pytest.raises(ValueError, match=match_str):
+            config.set_precision(DummyOp, 0.123)
+
+    def test_set_precision_sets_value(self):
+        """Test that set_precision correctly sets the precision for a supported operator."""
+        config = ResourceConfig()
+        config.resource_op_precisions[DummyOp] = {"precision": 1e-9}
+        new_precision = 1e-5
+        config.set_precision(DummyOp, new_precision)
+        assert config.resource_op_precisions[DummyOp]["precision"] == new_precision
