@@ -113,7 +113,7 @@ def _make_hashable(d: Any) -> tuple:
     r"""Converts a potentially non-hashable object into a hashable tuple.
 
     Args:
-        d : The object to potentially convert to a hashable tuple.
+        d (Any): The object to potentially convert to a hashable tuple.
            This can be a dictionary, list, set, or an array.
 
     Returns:
