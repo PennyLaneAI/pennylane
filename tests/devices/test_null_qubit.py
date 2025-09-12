@@ -106,7 +106,7 @@ def test_resource_tracking_attribute():
     def check_outputs():
         written_files = list(
             filter(
-                lambda fname: fname.startswith(qml.devices.null_qubit.RESOURCES_FNAME_PREFIX),
+                lambda fname: fname.startswith(qml.devices.null_qubit.RESOURCES_FILENAME_PREFIX),
                 os.listdir(os.getcwd()),
             )
         )
