@@ -31,14 +31,14 @@ class Identity(ResourceOperator):
         wires (Iterable[Any], optional): wire label(s) that the identity acts on
 
     Resources:
-        The Identity gate is treated as a free gate and thus it cannot be decomposed
+        The Identity gate does not require any resources and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: The corresponding PennyLane operation :class:`~pennylane.Identity`.
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation can be requested computed using:
 
     >>> qml.estimator.Identity.resource_decomp()
     []
@@ -67,7 +67,7 @@ class Identity(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+            The GlobalPhase gate does not require any resources and thus it cannot be decomposed
             further. Requesting the resources of this gate returns an empty list.
 
         Returns:
@@ -138,14 +138,14 @@ class GlobalPhase(ResourceOperator):
         wires (Iterable[Any], optional): the wires the operator acts on
 
     Resources:
-        The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+        The GlobalPhase gate does not require any resources gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.GlobalPhase`.
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation can be requested using:
 
     >>> qml.estimator.GlobalPhase.resource_decomp()
     []
@@ -175,7 +175,7 @@ class GlobalPhase(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+            The GlobalPhase gate does not require any resources and thus it cannot be decomposed
             further. Requesting the resources of this gate returns an empty list.
 
         Returns:
