@@ -19,7 +19,7 @@ import pytest
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import ResourceOperator
 
-# pylint: disable=protected-access, unused-argument
+# pylint: disable=protected-access, unused-argument, too-few-public-methods
 
 
 class DummyOp(ResourceOperator):
@@ -44,7 +44,6 @@ class TestResourceConfig:
         assert config._custom_decomps == {}
         assert config._adj_custom_decomps == {}
         assert config._ctrl_custom_decomps == {}
-
 
     # pylint: disable=use-implicit-booleaness-not-comparison
     @pytest.mark.parametrize(
@@ -112,14 +111,12 @@ class TestResourceConfig:
 
         assert repr_str == expected_repr_str
 
-
     def test_set_precision_raises_error_for_unknown_op(self):
         """Test that set_precision raises ValueError for an unknown operator."""
         config = ResourceConfig()
         match_str = "DummyOp is not a configurable operator. Configurable operators are:"
         with pytest.raises(ValueError, match=match_str):
             config.set_precision(DummyOp, 0.123)
-
 
     def test_set_single_qubit_rot_precision_raises_for_negative_value(self):
         """Test that set_single_qubit_rot_precision raises a ValueError for a negative precision."""
