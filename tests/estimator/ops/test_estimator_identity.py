@@ -123,6 +123,11 @@ class TestGlobalPhase:
     globalphase_ctrl_data = (
         ([1], [1], [GateCount(qre.PhaseShift.resource_rep(), 1)]),
         (
+            [1],
+            [0],
+            [GateCount(qre.PhaseShift.resource_rep(), 1), GateCount(qre.X.resource_rep(), 2)],
+        ),
+        (
             [1, 2],
             [1, 1],
             [

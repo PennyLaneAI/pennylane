@@ -517,6 +517,11 @@ class TestX:
             ],
         ),
         (
+            [],
+            [],
+            [GateCount(X.resource_rep(), 1)],
+        ),
+        (
             ["c1", "c2"],
             [1, 1],
             [
