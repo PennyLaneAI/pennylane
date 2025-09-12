@@ -35,6 +35,11 @@ from .ops.qubit import (
     Hadamard,
     S,
     T,
+    PhaseShift,
+    RX,
+    RY,
+    RZ,
+    Rot,
 )
 
 from .ops.op_math import (

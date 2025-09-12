@@ -172,7 +172,7 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
     does not have parameter_frequencies"""
 
 
-class ResourcesNotDefined(Exception):
+class ResourcesUndefinedError(Exception):
     r"""Exception to be raised when a ``ResourceOperator`` does not implement resource_decomp"""
 
 
