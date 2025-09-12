@@ -629,8 +629,6 @@ def apply_grover(
 def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bool = False, **_):
     """Apply a diagonal unitary operation to the density matrix state using its eigenvalues.
 
-    This is equivalent to :math:`\rho \\mapsto \\Lambda \rho \\Lambda^\\dagger` where :math:`U` is a diagonal unitary.
-
     Args:
         op (qml.Operation): The diagonal unitary operation to apply.
         state (TensorLike): The density matrix state to apply the operation to.
