@@ -618,6 +618,9 @@
 * Perturbation error function now sums over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
+* Added optional importance sampling functionality to Trotter error estimation.
+  [(#8247)](https://github.com/PennyLaneAI/pennylane/pull/8247)
+
 <h3>Breaking changes 💔</h3>
 
 * Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.

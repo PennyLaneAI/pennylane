@@ -16,6 +16,12 @@
 import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
+from dataclasses import dataclass, field
+from functools import reduce
+from statistics import mean, stdev
+from typing import Dict, FrozenSet, List, Optional, Tuple, Union
+
+import numpy as np
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -23,7 +29,7 @@ from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches
 
 
 class _AdditiveIdentity:
@@ -36,9 +42,29 @@ class _AdditiveIdentity:
         return other
 
 
+@dataclass
+class ImportanceConfig:
+    """Used to provide parameters for importance sampling."""
+
+    importance_scores: Dict[Hashable, float] = None
+    tolerance: float = 10e-8
+    top_k: Dict[int, int] = None
+
+
+@dataclass
+class ConvergenceLog:
+    """Used to track the convergence history when sampling"""
+
+    iterations: int = 0
+    means: List[float] = field(default_factory=list)
+    partial_sums: List[complex] = field(default_factory=list)
+    stdevs: List[float] = field(default_factory=list)
+    total: float = 0.0
+
+
 def effective_hamiltonian(
     product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
+    fragments: Dict[Hashable, Fragment],
     order: int,
     timestep: float = 1.0,
     num_workers: int = 1,
@@ -124,28 +150,29 @@ def _eval_commutator(commutator, coeff, fragments):
 
 
 def _insert_fragments(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment]
-) -> tuple[Fragment]:
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment]
+) -> Tuple[Fragment]:
     """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
     The function recurses through the nested structure of the tuple replacing each hashable `label` with
     the concrete value `fragments[label]`."""
 
     return tuple(
-        _insert_fragments(term, fragments) if isinstance(term, tuple) else fragments[term]
+        _insert_fragments(term, fragments) if isinstance(term, Tuple) else fragments[term]
         for term in commutator
     )
 
 
 def perturbation_error(
     product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
+    fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
     max_order: int,
     timestep: float = 1.0,
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
-) -> list[float]:
+    importance: Optional[ImportanceConfig] = None,
+) -> Union[list[complex], list[Tuple[complex, ConvergenceLog]]]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -166,6 +193,7 @@ def perturbation_error(
             "state" parallelizes the computation of expectation values per state,
             while "commutator" parallelizes the application of commutators to each state.
             Default value is set to "state".
+        importance (Optional[ImportanceConfig]): optinal argument used for importance sampling. See :class:`~.pennylane.labs.trotter_error.ImportanceConfig` for available options.
 
     Returns:
         List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states.
@@ -204,14 +232,28 @@ def perturbation_error(
         raise ValueError("Fragments do not match product formula")
 
     commutator_lists = [
-        _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order)[1:]
+        _group_sums(commutators)
+        for commutators in bch_expansion(product_formula, max_order, importance=importance)[1:]
     ]
+
+    if importance:
+        commutator_lists = [
+            sorted(
+                commutator_list[: importance.top_k.get(order + 2, 0)],
+                key=lambda x: _commutator_importance(x, importance.importance_scores),
+                reverse=True,
+            )
+            for order, commutator_list in enumerate(commutator_lists)
+        ]
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
-        expectations = []
+        state_expectations = []
+        state_logs = []
         for state in states:
             expectation = 0
+            expectations = {}
+            order_logs = defaultdict(ConvergenceLog)
             for commutators in commutator_lists:
                 if len(commutators) == 0:
                     continue
@@ -219,24 +261,39 @@ def perturbation_error(
                 order = len(commutators[0])
                 for commutator in commutators:
                     expectation += _compute_expectation(commutator, fragments, state)
+                    order_logs[order] = _update_convergence_log(expectation, order_logs[order])
 
-                expectations.append({order: (1j * timestep) ** order * expectation})
+                expectations[order] = (1j * timestep) ** order * expectation
 
-        return expectations
+            state_expectations.append(expectations)
+            state_logs.append(order_logs)
+
+        if importance:
+            return state_expectations, state_logs
+
+        return state_expectations
 
     if parallel_mode == "state":
         executor = concurrency.backends.get_executor(backend)
         with executor(max_workers=num_workers) as ex:
-            expectations = ex.starmap(
+            expectations_with_logs = ex.starmap(
                 _get_expval_state,
                 [(commutator_lists, fragments, state, timestep) for state in states],
             )
+
+        expectations, logs = zip(*expectations_with_logs)
+        expectations = list(expectations)
+        logs = list(logs)
+
+        if importance:
+            return expectations, logs
 
         return expectations
 
     if parallel_mode == "commutator":
         executor = concurrency.backends.get_executor(backend)
         errors = []
+        state_logs = []
         commutators = [x for xs in commutator_lists for x in xs]
         for state in states:
             with executor(max_workers=num_workers) as ex:
@@ -246,8 +303,10 @@ def perturbation_error(
                 )
 
             expectations = defaultdict(int)
+            order_logs = defaultdict(ConvergenceLog)
             for expectation, order in applied_commutators:
                 expectations[order] += expectation
+                order_logs[order] = _update_convergence_log(expectation, order_logs[order])
 
             errors.append(
                 {
@@ -255,6 +314,10 @@ def perturbation_error(
                     for order, expectation in expectations.items()
                 }
             )
+            state_logs.append(order_logs)
+
+        if importance:
+            return errors, state_logs
 
         return errors
 
@@ -265,21 +328,26 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     expectations = {}
+    logs = {}
     for commutators in commutator_lists:
         if len(commutators) == 0:
             continue
 
         order = len(commutators[0])
-        expectation = sum(
-            _compute_expectation(commutator, fragments, state) for commutator in commutators
-        )
-        expectations[order] = (1j * timestep) ** order * expectation
+        expectation = 0
+        log = ConvergenceLog()
+        for commutator in commutators:
+            expectation += _compute_expectation(commutator, fragments, state)
+            log = _update_convergence_log(expectation, log)
 
-    return expectations
+        expectations[order] = (1j * timestep) ** order * expectation
+        logs[order] = log
+
+    return expectations, logs
 
 
 def _compute_expectation(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
 ) -> complex:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
@@ -303,8 +371,8 @@ def _compute_expectation(
 
 
 def _compute_expectation_track_order(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
-) -> tuple[complex, int]:
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
+) -> Tuple[complex, int]:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
     new_state = _AdditiveIdentity()
@@ -326,7 +394,7 @@ def _compute_expectation_track_order(
     return state.dot(new_state), len(commutator)
 
 
-def _op_list(commutator) -> dict[tuple[Hashable], complex]:
+def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     """Returns the operations needed to apply the commutator to a state."""
 
     if not commutator:
@@ -347,9 +415,9 @@ def _op_list(commutator) -> dict[tuple[Hashable], complex]:
     return ops1
 
 
-def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
+def _group_sums(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | FrozenSet]]:
     """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
-    two commutators a*[X, A, B] and b*Y[A, B] will be merged into one commutator [a*X + b*Y, A, B].
+    two commutators a*[X, A, B] and b*[Y, A, B] will be merged into one commutator [a*X + b*Y, A, B].
     """
     grouped_comms = defaultdict(set)
     for commutator, coeff in term_dict.items():
@@ -358,3 +426,27 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
+
+
+def _commutator_importance(
+    commutator: Tuple[Hashable | FrozenSet], importance_scores: Dict[Hashable, float]
+) -> float:
+    scores = []
+    for fragment in commutator:
+        if isinstance(fragment, frozenset):
+            scores.append(sum(coeff * importance_scores[frag] for frag, coeff in fragment))
+        else:
+            scores.append(importance_scores[fragment])
+
+    return np.abs(2 ** (len(commutator) - 1) * reduce(lambda x, y: x * y, scores))
+
+
+def _update_convergence_log(expectation: complex, log: ConvergenceLog) -> ConvergenceLog:
+    log.iterations += 1
+    log.partial_sums.append(
+        abs(expectation) if len(log.partial_sums) == 0 else log.partial_sums[-1] + abs(expectation)
+    )
+    log.means.append(mean(log.partial_sums))
+    log.stdevs.append(stdev(log.partial_sums) if len(log.partial_sums) > 1 else 0.0)
+
+    return log
