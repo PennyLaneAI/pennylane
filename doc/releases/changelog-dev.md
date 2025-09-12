@@ -14,6 +14,9 @@
   * The `qml.estimator.ResourceOperator`, `qml.estimator.CompressedResourceOp`, and `qml.estimator.GateCount` classes
     were added as base classes to represent the quantum operators.
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
+  * The resource operators for ``Identity``, ``GlobalPhase`` and non-parametric operators
+    have been added to `qml.estimator.ops`.
+    [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
