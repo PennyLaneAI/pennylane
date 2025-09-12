@@ -16,6 +16,9 @@ import re
 import sys
 from docutils import nodes
 from datetime import datetime
+from sphinx.util import logging
+
+logger = logging.getLogger(__name__)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -358,7 +361,7 @@ def add_noindex_to_estimator_stubs(app, docname, source):
 
     if num_subs:
         source[0] = new_content
-        print(f"[add_noindex] Patched {docname} with :noindex: directive.")
+        logger.info(f"[add_noindex] Patched {docname} with :noindex: directive.")
 
 
 def add_links_to_estimator_table(app, doctree, fromdocname):
@@ -373,7 +376,7 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
                 refnode = nodes.reference('', refuri=refuri)
                 refnode += nodes.literal(text=name) # This helps preserve the code style.
                 literal.parent.replace(literal, refnode)
-                print(f"[add_noindex_links] Linked pennylane.estimator.ops.{name} to {refuri}")
+                logger.info(f"[add_noindex_links] Linked pennylane.estimator.ops.{name} to {refuri}")
 
 
 def setup(app):

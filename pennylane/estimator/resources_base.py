@@ -34,7 +34,7 @@ DefaultGateSet = frozenset(
 class Resources:
     r"""A container for the resources used throughout a quantum circuit.
 
-    The resources tracked include number of wires, number of gates, and their gate types.
+    The resources tracked include: number of wires (by state), and number of gates (by type).
 
     Args:
         zeroed (int): Number of zeroed state work wires.
@@ -90,7 +90,7 @@ class Resources:
         )
 
     def add_series(self, other: "Resources") -> "Resources":
-        """Add two resources objects in series.
+        """Add two Resources objects in series.
 
         When combining resources for serial execution, the following rules apply:
 
@@ -142,7 +142,7 @@ class Resources:
         )
 
     def add_parallel(self, other: "Resources") -> "Resources":
-        """Add two resources objects in parallel.
+        """Add two Resources objects in parallel.
 
         When combining resources for parallel execution, the following rules apply:
 
@@ -208,7 +208,7 @@ class Resources:
         )
 
     def multiply_series(self, scalar: int) -> Resources:
-        """Scale a resources object in series
+        """Scale a Resources object in series
 
         Args:
             scalar (int): integer value by which to scale the resources
@@ -252,7 +252,7 @@ class Resources:
         )
 
     def multiply_parallel(self, scalar: int) -> Resources:
-        """Scale a resources object in parallel
+        """Scale a Resources object in parallel
 
         Args:
             scalar (int): integer value by which to scale the resources
