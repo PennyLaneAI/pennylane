@@ -119,6 +119,7 @@ class CountsMP(SampleMeasurement):
         samples = process_raw_samples(
             dummy_mp, samples, wire_order, shot_range=shot_range, bin_size=bin_size
         )
+        print(samples)
         if bin_size is None:
             return self._samples_to_counts(samples)
 
@@ -178,14 +179,13 @@ class CountsMP(SampleMeasurement):
                     return qml.counts(all_outcomes=True)
 
         """
-
         outcomes = []
 
         # if an observable was provided, batched samples will have shape (batch_size, shots)
         batched_ndims = 2
         shape = math.shape(samples)
 
-        if self.obs is None and not isinstance(self.mv, MeasurementValue):
+        if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
 
@@ -202,18 +202,26 @@ class CountsMP(SampleMeasurement):
 
             new_shape = samples.shape[:-1]
             # Flatten broadcasting axis
-            flattened_samples = np.reshape(samples, (-1, shape[-1])).astype(np.int8)
-            samples = list(map(convert, flattened_samples))
-            samples = np.reshape(np.array(samples), new_shape)
+            flattened_samples = np.reshape(samples, (-1, shape[-1]))
+            if isinstance(self.mv, MeasurementValue):
+                samples = flattened_samples
+            else:
+                flattened_samples = flattened_samples.astype(np.int8)
+                samples = list(map(convert, flattened_samples))
+                samples = np.reshape(np.array(samples), new_shape)
 
             if self.all_outcomes:
 
-                def convert_from_int(x):
-                    # convert int to binary string
-                    return f"{x:0{num_wires}b}"
+                if self.mv is None:
 
-                num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
-                outcomes = list(map(convert_from_int, range(2**num_wires)))
+                    def convert_from_int(x):
+                        # convert int to binary string
+                        return f"{x:0{num_wires}b}"
+
+                    num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
+                    outcomes = list(map(convert_from_int, range(2**num_wires)))
+                else:
+                    _, outcomes = tuple(zip(*self.mv.items()))
 
         elif self.all_outcomes:
             # This also covers statistics for mid-circuit measurements manipulated using
