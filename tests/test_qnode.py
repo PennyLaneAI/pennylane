@@ -298,10 +298,10 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
-            QNode(dummyfunc, dev, interface="something")
+            QNode(dummyfunc, dev, interface=test_interface)
 
     def test_changing_invalid_interface(self):
         """Test that an exception is raised for an invalid interface
@@ -315,7 +315,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
@@ -1048,7 +1048,7 @@ class TestIntegration:
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit", "auto"])
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax
@@ -1292,28 +1292,12 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(circuit(0.8, shots=1)) == 10
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        assert len(circuit(0.8, shots=1)) == 10
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(circuit(0.8, shots=0)) == 10
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        assert len(circuit(0.8, shots=0)) == 10
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
@@ -1351,11 +1335,7 @@ class TestShots:
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(ansatz1(0.8, shots=0)) == 10
+        assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 

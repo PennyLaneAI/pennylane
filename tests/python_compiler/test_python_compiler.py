@@ -55,6 +55,8 @@ from pennylane.compiler.python_compiler.transforms.api import (
 
 @dataclass(frozen=True)
 class HelloWorldPass(passes.ModulePass):
+    """A simple pass that prints 'hello world' when run."""
+
     name = "hello-world"
 
     def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
@@ -209,7 +211,7 @@ def test_integration_for_transform_interpreter(capsys):
 class TestCatalystIntegration:
     """Tests for integration of the Python compiler with Catalyst"""
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_integration_catalyst_no_passes_with_capture(self):
         """Test that the xDSL plugin can be used even when no passes are applied
         when capture is enabled."""
@@ -240,7 +242,7 @@ class TestCatalystIntegration:
         out = f(1.5)
         assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_integration_catalyst_xdsl_pass_with_capture(self, capsys):
         """Test that a pass is run via the transform interpreter when using with a
         qjit workflow and capture is enabled."""
@@ -277,7 +279,7 @@ class TestCatalystIntegration:
         captured = capsys.readouterr()
         assert captured.out.strip() == "hello world"
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_integration_catalyst_mixed_passes_with_capture(self, capsys):
         """Test that both Catalyst and Python compiler passes can be used with qjit
         when capture is enabled."""
@@ -334,7 +336,9 @@ class TestCallbackIntegration:
 
             def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None: ...
 
-        def print_between_passes(*_):
+        def print_between_passes(*_, pass_level=0):
+            if pass_level == 0:
+                return
             print("hello world")
 
         @xdsl_from_docstring
@@ -363,7 +367,9 @@ class TestCallbackIntegration:
         """Test that the callback prints the module after each pass"""
 
         # pylint: disable=redefined-outer-name
-        def print_between_passes(_, module, __):
+        def print_between_passes(_, module, __, pass_level=0):
+            if pass_level == 0:
+                return
             print("=== Between Pass ===")
             print(module)
 
@@ -430,7 +436,9 @@ class TestCallbackIntegration:
         """Test that the callback is integrated into the pass pipeline with the Compiler.run() method"""
 
         # pylint: disable=redefined-outer-name
-        def print_between_passes(_, module, __):
+        def print_between_passes(_, module, __, pass_level=0):
+            if pass_level == 0:
+                return
             print("=== Between Pass ===")
             print(module)
 
@@ -453,14 +461,16 @@ class TestCallbackIntegration:
             len(printed_modules) == 2
         ), "Callback should have been called twice (after each pass)."
 
-        # callback after cancel-inverses
-        assert 'quantum.custom "RX"' in printed_modules[0]
-        assert 'quantum.custom "Hadamard"' not in printed_modules[0]
-
         # callback after merge-rotations
         # We expect an `arith.addf` if rotations were merged
+        assert "arith.addf" in printed_modules[0], "Expected merged RX gates into a single rotation"
+        assert 'quantum.custom "RX"' in printed_modules[0]
+        assert 'quantum.custom "Hadamard"' in printed_modules[0]
+
+        # callback after cancel-inverses
         assert "arith.addf" in printed_modules[1], "Expected merged RX gates into a single rotation"
         assert 'quantum.custom "RX"' in printed_modules[1]
+        assert 'quantum.custom "Hadamard"' not in printed_modules[1]
 
         assert printed_modules[0] != printed_modules[1], "IR should differ between passes"
 
