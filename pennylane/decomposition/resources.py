@@ -434,7 +434,8 @@ def change_op_basis_resource_rep(
         params: the resource params of the compute, target, and uncompute operators.
            This is expected to have three keys: ``"compute_op_params"``, ``"target_op_params"``,
            and ``"uncompute_op_params"``, with the values being their respective resource parameters
-           given as ``dict``s.
+           given as ``dict`` objects.
+
     """
     compute_op_resource_rep = resource_rep(compute_op, **params["compute_op_params"])
     target_op_resource_rep = resource_rep(target_op, **params["target_op_params"])
