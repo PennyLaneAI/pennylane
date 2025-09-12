@@ -117,19 +117,20 @@ def test_same_operands_and_result_element_type_trait():
         name = "test.element_type_test"
         traits = traits_def(SameOperandsAndResultElementType())
 
-        operand = operand_def(AnyAttr())
-        result = result_def(AnyAttr())
+        operand = operand_def(AnyTensorType)
+        result = result_def(AnyTensorType)
 
     assert ElementTypeTestOp.has_trait(SameOperandsAndResultElementType)
 
     op = ElementTypeTestOp.create(
-        operands=[TensorType(i32, [2, 3])], result_types=[TensorType(i32, [2, 3])]
+        operands=[create_ssa_value(TensorType(i32, [2, 3]))],
+        result_types=[TensorType(i32, [2, 3])],
     )
     op.verify()
 
     op = ElementTypeTestOp.create(
-        operands=[TensorType(i32, [2, 3]), TensorType(f32, [2, 3])],
-        result_types=[TensorType(i32, [2, 3])],
+        operands=[create_ssa_value(TensorType(i32, [2, 3]))],
+        result_types=[TensorType(f32, [2, 3])],
     )
     with pytest.raises(
         VerifyException, match="requires the same element type for all operands and results"
