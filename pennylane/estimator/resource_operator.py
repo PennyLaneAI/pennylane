@@ -35,19 +35,19 @@ from .resources_base import Resources
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Defines a lightweight class corresponding to the operator type and its parameters.
 
-    This class is a minimal representation of an operation, containing
+    This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`, containing
     only the operator type and the necessary parameters to estimate its resources.
     It is designed for efficient hashing and comparison, allowing it to be used
     effectively in collections where uniqueness and quick lookups are important.
 
     Args:
-        op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:'~.pennylane.estimator.ResourceOperator'
+        op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:`~.pennylane.estimator.ResourceOperator`
         num_wires (int): The number of wires that the operation acts upon,
             excluding any auxiliary wires that are allocated on decomposition.
         params (dict): A dictionary containing the minimal pairs of parameter names and values
             required to compute the resources for the given operator.
         name (str | None): A custom name for the compressed operator. If not
-            provided, a name will be generated using `op_type.make_tracking_name`
+            provided, a name will be generated using ``op_type.make_tracking_name``
             with the given parameters.
 
     .. details::
@@ -167,9 +167,9 @@ class ResourceOperator(ABC):
                     return {"num_wires": self.num_wires}  # and values obtained from the operator.
 
                 @classmethod
-                def resource_rep(cls, num_wires):                            # Takes the `resource_keys` as input
-                    params = {"num_wires": num_wires}                        #  and produces a compressed
-                    return qre.CompressedResourceOp(cls, num_wires, params)  # representation of the operator
+                def resource_rep(cls, num_wires):          # Takes the same input as `resource_keys` and
+                    params = {"num_wires": num_wires}  #  produces a compressed representation
+                    return qre.CompressedResourceOp(cls, num_wires, params)
 
                 @classmethod
                 def resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
@@ -186,7 +186,7 @@ class ResourceOperator(ABC):
                     hadamard_counts = num_wires
                     ctrl_phase_shift_counts = num_wires*(num_wires - 1) // 2
 
-                    return [                                  # Return the decomposition
+                    return [    # Return the decomposition
                         qre.GateCount(swap, swap_counts),
                         qre.GateCount(hadamard, hadamard_counts),
                         qre.GateCount(ctrl_phase_shift, ctrl_phase_shift_counts),
@@ -314,7 +314,15 @@ class ResourceOperator(ABC):
         return Resources(zeroed=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 
     def add_series(self, other):
-        "Adds two ResourceOperators in series"
+        """Adds a :class:`~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in series.
+
+        Args:
+            other (:class:`~.pennylane.estimator.Resources`|:class:`~.pennylane.estimator.ResourceOperator`): The other object to combine with, it can be
+                another ``ResourceOperator`` or a ``Resources`` object.
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: added ``Resources``
+        """
         if isinstance(other, ResourceOperator):
             return (1 * self).add_series(1 * other)
         if isinstance(other, Resources):
@@ -323,7 +331,15 @@ class ResourceOperator(ABC):
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     def add_parallel(self, other):
-        """Add two ResourceOperators in parallel."""
+        """Adds a :class:`~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in parallel.
+
+        Args:
+            other (:class:`~.pennylane.estimator.Resources`|:class:`~.pennylane.estimator.ResourceOperator`): The other object to combine with, it can be
+                another ``ResourceOperator`` or a ``Resources`` object.
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: added ``Resources``
+        """
         if isinstance(other, ResourceOperator):
             return (1 * self).add_parallel(1 * other)
         if isinstance(other, Resources):
@@ -360,16 +376,16 @@ class GateCount:
     r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
 
     Args:
-        gate (CompressedResourceOp): a compressed resource representation of the gate being counted
-        counts (int | None): The number of occurances of the quantum gate in the circuit or
+        gate (CompressedResourceOp): The compressed resource representation of the gate being counted.
+        counts (int | None): The number of occurrences of the quantum gate in the circuit or
             decomposition. Defaults to ``1``.
 
     Returns:
-        GateCount: the container object holding both pieces of information
+        GateCount: The container object holding both pieces of information.
 
     **Example**
 
-    In this example we create an object to count ``5`` instances of :code:`qre.QFT` acting
+    This example creates an object to count ``5`` instances of :code:`qre.QFT` acting
     on three wires:
 
     >>> from pennylane import estimator as qre
@@ -417,7 +433,7 @@ def resource_rep(
     :code:`resource_keys` class property of every :class:`~.pennylane.estimator.ResourceOperator`.
 
     Args:
-        resource_op (type[ResourceOperator]]): The type of operator we want to get the compact representation for.
+        resource_op (type[ResourceOperator]]): The type of operator for which to retrieve the compact representation.
         resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
 
     Returns:
