@@ -233,6 +233,14 @@ class TestPauliRot:
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
+    @pytest.mark.parametrize(
+        "pauli_string, expected", (("X", qre.RX), ("Y", qre.RY), ("Z", qre.RZ))
+    )
+    def test_resource_decomp_single_pauli_string(self, pauli_string, expected):
+        """Test that the resources method produces the correct result for a single pauli string."""
+        expected = [qre.GateCount(expected.resource_rep(precision=1e-3))]
+        assert qre.PauliRot.resource_decomp(pauli_string=pauli_string, precision=1e-3) == expected
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_word", pauli_words)
     def test_adjoint_decomp(self, pauli_word, precision):
@@ -347,6 +355,12 @@ class TestPauliRot:
             2,
             0,
             [qre.GateCount(qre.Controlled.resource_rep(qre.RY.resource_rep(precision=1e-5), 2, 0))],
+        ),
+        (
+            "Z",
+            2,
+            1,
+            [qre.GateCount(qre.Controlled.resource_rep(qre.RZ.resource_rep(precision=1e-5), 2, 1))],
         ),
     )
 
