@@ -16,11 +16,11 @@ Tests for identity resource operators
 """
 import pytest
 
+import pennylane.estimator as qre
 from pennylane.estimator.ops import GlobalPhase, Identity
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
-    ResourcesNotDefined,
 )
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
@@ -120,17 +120,38 @@ class TestGlobalPhase:
         op = GlobalPhase(wires=0)
         assert op.adjoint_resource_decomp() == [GateCount(GlobalPhase.resource_rep(), 1)]
 
-    globalphase_ctrl_data = (([1], [1]),)
+    globalphase_ctrl_data = (
+        ([1], [1], [GateCount(qre.PhaseShift.resource_rep(), 1)]),
+        (
+            [1, 2],
+            [1, 1],
+            [
+                GateCount(qre.PhaseShift.resource_rep(), 1),
+                GateCount(qre.MultiControlledX.resource_rep(2, 0), 2),
+            ],
+        ),
+        (
+            [1, 2, 3],
+            [1, 0, 0],
+            [
+                GateCount(qre.PhaseShift.resource_rep(), 1),
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 2),
+            ],
+        ),
+    )
 
-    @pytest.mark.parametrize("ctrl_wires, ctrl_values", globalphase_ctrl_data)
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", globalphase_ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = GlobalPhase(wires=0)
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+        assert repr(op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)) == repr(
+            expected_res
+        )
+        assert repr(op2.resource_decomp(**op2.resource_params)) == repr(expected_res)
 
     globalphase_pow_data = (
         (1, [GateCount(GlobalPhase.resource_rep(), 1)]),

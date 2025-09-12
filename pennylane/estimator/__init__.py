@@ -24,32 +24,4 @@ from .resource_operator import (
     resource_rep,
 )
 
-
-from .ops.identity import Identity, GlobalPhase
-
-from .ops.qubit import (
-    X,
-    Y,
-    Z,
-    SWAP,
-    Hadamard,
-    S,
-    T,
-)
-
-from .ops.op_math import (
-    CCZ,
-    CH,
-    CNOT,
-    ControlledPhaseShift,
-    CRot,
-    CRX,
-    CRY,
-    CRZ,
-    CSWAP,
-    CY,
-    CZ,
-    MultiControlledX,
-    TempAND,
-    Toffoli,
-)
+from .ops import *

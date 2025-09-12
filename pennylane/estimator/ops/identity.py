@@ -13,11 +13,12 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
+    resource_rep,
 )
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
@@ -232,11 +233,28 @@ class GlobalPhase(ResourceOperator):
             single qubit is equivalent to a local phase shift on that control qubit.
             This idea can be generalized to a multi-qubit global phase by introducing one
             'clean' auxilliary qubit which gets reset at the end of the computation. In this
-            case, we sandwich the phase shift operation with two multi-controlled X gates.
+            case, we sandwich the phase shift operation with two multi-controlled ``X`` gates.
 
         Returns:
             list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        raise ResourcesNotDefined
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.PhaseShift))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        ps = resource_rep(qre.PhaseShift)
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [GateCount(ps), GateCount(mcx, 2)]

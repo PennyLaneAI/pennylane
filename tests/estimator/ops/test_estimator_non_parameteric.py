@@ -14,11 +14,13 @@
 """Tests for non parametric resource operators."""
 import pytest
 
+import pennylane.estimator as qre
 from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourcesNotDefined,
+    resource_rep,
 )
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
@@ -55,21 +57,52 @@ class TestHadamard:
         (
             ["c1"],
             [1],
+            [
+                GateCount(qre.CH.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                GateCount(qre.CH.resource_rep(), 1),
+                GateCount(qre.X.resource_rep(), 2),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                GateCount(qre.Hadamard.resource_rep(), 2),
+                GateCount(qre.RY.resource_rep(), 2),
+                GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                GateCount(qre.Hadamard.resource_rep(), 2),
+                GateCount(qre.RY.resource_rep(), 2),
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 1),
+            ],
         ),
     )
 
     @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
+        "ctrl_wires, ctrl_values, expected_res",
         ctrl_data,
     )
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = Hadamard(0)
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [GateCount(Hadamard.resource_rep(), 1)]),
@@ -122,21 +155,47 @@ class TestSWAP:
         (
             ["c1"],
             [1],
+            [
+                GateCount(qre.CSWAP.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                GateCount(qre.CSWAP.resource_rep(), 1),
+                GateCount(X.resource_rep(), 2),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                GateCount(qre.CNOT.resource_rep(), 2),
+                GateCount(qre.MultiControlledX.resource_rep(3, 0), 1),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                GateCount(qre.CNOT.resource_rep(), 2),
+                GateCount(qre.MultiControlledX.resource_rep(4, 2), 1),
+            ],
         ),
     )
 
     @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
+        "ctrl_wires, ctrl_values, expected_res",
         ctrl_data,
     )
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = SWAP([0, 1])
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
 
     pow_data = (
         (1, [GateCount(SWAP.resource_rep(), 1)]),
@@ -193,21 +252,70 @@ class TestS:
         (
             ["c1"],
             [1],
+            [
+                GateCount(resource_rep(qre.CNOT), 2),
+                GateCount(resource_rep(T), 2),
+                GateCount(
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(T)}),
+                ),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                GateCount(resource_rep(qre.CNOT), 2),
+                GateCount(resource_rep(T), 2),
+                GateCount(
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(T)}),
+                ),
+                GateCount(X.resource_rep(), 2),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                GateCount(qre.MultiControlledX.resource_rep(2, 0), 2),
+                GateCount(resource_rep(qre.CNOT), 2),
+                GateCount(resource_rep(T), 2),
+                GateCount(
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(T)}),
+                ),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 2),
+                GateCount(resource_rep(qre.CNOT), 2),
+                GateCount(resource_rep(T), 2),
+                GateCount(
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(T)}),
+                ),
+            ],
         ),
     )
 
     @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
+        "ctrl_wires, ctrl_values, expected_res",
         ctrl_data,
     )
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = S(0)
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(
+            op,
+            num_ctrl_wires,
+            num_ctrl_values,
+        )
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [GateCount(S.resource_rep(), 1)]),
@@ -273,20 +381,54 @@ class TestT:
         ]
         assert T.adjoint_resource_decomp() == expected
 
-    ctrl_data = ((["c1"], [1]),)
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [
+                GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
+                GateCount(X.resource_rep(), 2),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
+                GateCount(qre.MultiControlledX.resource_rep(2, 0), 2),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 2),
+            ],
+        ),
+    )
 
     @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
+        "ctrl_wires, ctrl_values, expected_res",
         ctrl_data,
     )
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = T(0)
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [GateCount(T.resource_rep(), 1)]),
@@ -358,20 +500,67 @@ class TestX:
         expected = [GateCount(X.resource_rep(), 1)]
         assert X.adjoint_resource_decomp() == expected
 
-    ctrl_data = ((["c1"], [1]),)
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [
+                GateCount(qre.CNOT.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                GateCount(X.resource_rep(), 2),
+                GateCount(qre.CNOT.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                GateCount(qre.Toffoli.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [0, 0],
+            [
+                GateCount(X.resource_rep(), 4),
+                GateCount(qre.Toffoli.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 1),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3", "c4"],
+            [1, 0, 0, 1],
+            [
+                GateCount(qre.MultiControlledX.resource_rep(4, 2), 1),
+            ],
+        ),
+    )
 
     @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
+        "ctrl_wires, ctrl_values, expected_res",
         ctrl_data,
     )
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = X(0)
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [GateCount(X.resource_rep(), 1)]),
@@ -393,8 +582,9 @@ class TestY:
     def test_resources(self):
         """Test that T does not implement a decomposition"""
         expected = [
-            GateCount(S.resource_rep(), 2),
-            GateCount(Z.resource_rep(), 2),
+            GateCount(S.resource_rep()),
+            GateCount(Z.resource_rep()),
+            GateCount(qre.Adjoint.resource_rep(S.resource_rep())),
             GateCount(Hadamard.resource_rep(), 2),
         ]
         assert Y.resource_decomp() == expected
@@ -414,20 +604,74 @@ class TestY:
         expected = [GateCount(Y.resource_rep(), 1)]
         assert Y.adjoint_resource_decomp() == expected
 
-    ctrl_data = ((["c1"], [1]),)
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [
+                GateCount(qre.CY.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                GateCount(qre.CY.resource_rep(), 1),
+                GateCount(X.resource_rep(), 2),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                GateCount(S.resource_rep(), 1),
+                GateCount(
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": S.resource_rep()}),
+                    1,
+                ),
+                GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [0, 0],
+            [
+                GateCount(S.resource_rep(), 1),
+                GateCount(
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": S.resource_rep()}),
+                    1,
+                ),
+                GateCount(qre.MultiControlledX.resource_rep(2, 2), 1),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                GateCount(S.resource_rep(), 1),
+                GateCount(
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": S.resource_rep()}),
+                    1,
+                ),
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 1),
+            ],
+        ),
+    )
 
     @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
+        "ctrl_wires, ctrl_values, expected_res",
         ctrl_data,
     )
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = Y(0)
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [GateCount(Y.resource_rep())]),
@@ -466,20 +710,61 @@ class TestZ:
         expected = [GateCount(Z.resource_rep(), 1)]
         assert Z.adjoint_resource_decomp() == expected
 
-    ctrl_data = ((["c1"], [1]),)
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [
+                GateCount(qre.CZ.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                GateCount(qre.CZ.resource_rep(), 1),
+                GateCount(X.resource_rep(), 2),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                GateCount(qre.CCZ.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [0, 0],
+            [
+                GateCount(qre.CCZ.resource_rep(), 1),
+                GateCount(X.resource_rep(), 4),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                GateCount(Hadamard.resource_rep(), 2),
+                GateCount(qre.MultiControlledX.resource_rep(3, 2), 1),
+            ],
+        ),
+    )
 
     @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
+        "ctrl_wires, ctrl_values, expected_res",
         ctrl_data,
     )
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = Z(0)
-        with pytest.raises(ResourcesNotDefined):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [GateCount(Z.resource_rep())]),

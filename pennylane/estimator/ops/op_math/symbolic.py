@@ -12,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
+from functools import singledispatch
 
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     ResourcesNotDefined,
+    _dequeue,
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called,arguments-renamed
 
 
 class Adjoint(ResourceOperator):
@@ -50,19 +53,43 @@ class Adjoint(ResourceOperator):
 
     The adjoint operation can be constructed like this:
 
-    >>> qft = qml.estimator.QFT(num_wires=3)
-    >>> print(qft.resource_decomp(num_wires=3))
-    [(3 x Hadamard), (1 x SWAP), (3 x ControlledPhaseShift)]
+        >>> qft = qml.estimator.QFT(num_wires=3)
+        >>> adj_qft = qml.estimator.Adjoint(qft)
 
-    >>> adj_qft = qml.estimator.Adjoint(qft)
-    >>> print(adj_qft.resource_decomp(**adj_qft.resource_params))
-    [(3 x Adjoint(ControlledPhaseShift)), (1 x Adjoint(SWAP)), (3 x Adjoint(Hadamard))]
+    We can see how the resources differ by choosing a suitable gateset and estimating resources:
+
+    >>> gate_set = {
+    ...     "SWAP",
+    ...     "Adjoint(SWAP)",
+    ...     "Hadamard",
+    ...     "Adjoint(Hadamard)",
+    ...     "ControlledPhaseShift",
+    ...     "Adjoint(ControlledPhaseShift)",
+    ... }
+    >>>
+    >>> print(qml.estimator.estimate(qft, gate_set))
+    --- Resources: ---
+    Total qubits: 3
+    Total gates : 7
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+    Gate breakdown:
+    {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+    >>>
+    >>> print(qml.estimator.estimate(adj_qft, gate_set))
+    --- Resources: ---
+    Total qubits: 3
+    Total gates : 7
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+    Gate breakdown:
+    {'Adjoint(ControlledPhaseShift)': 3, 'Adjoint(SWAP)': 1, 'Adjoint(Hadamard)': 3}
     """
 
     resource_keys = {"base_cmpr_op"}
 
     def __init__(self, base_op: ResourceOperator) -> None:
-        self.dequeue(op_to_remove=base_op)
+        _dequeue(op_to_remove=base_op)
         self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
@@ -200,7 +227,7 @@ class Adjoint(ResourceOperator):
         return f"Adjoint({base_name})"
 
 
-class ResourceControlled(ResourceOperator):
+class Controlled(ResourceOperator):
     r"""Resource class for the symbolic Controlled operation.
 
     A symbolic class used to represent the application of some base operation controlled on the
@@ -231,8 +258,8 @@ class ResourceControlled(ResourceOperator):
     The controlled operation can be constructed like this:
 
     >>> x = plre.ResourceX()
-    >>> cx = plre.ResourceControlled(x, num_ctrl_wires=1, num_ctrl_values=0)
-    >>> ccx = plre.ResourceControlled(x, num_ctrl_wires=2, num_ctrl_values=2)
+    >>> cx = plre.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
+    >>> ccx = plre.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
 
     We can observe the expected gates when we estimate the resources.
 
@@ -265,7 +292,7 @@ class ResourceControlled(ResourceOperator):
         num_ctrl_values: int,
         wires=None,
     ) -> None:
-        self.dequeue(op_to_remove=base_op)
+        _dequeue(op_to_remove=base_op)
         self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
@@ -370,8 +397,8 @@ class ResourceControlled(ResourceOperator):
         The controlled operation can be constructed like this:
 
         >>> x = plre.ResourceX()
-        >>> cx = plre.ResourceControlled(x, num_ctrl_wires=1, num_ctrl_values=0)
-        >>> ccx = plre.ResourceControlled(x, num_ctrl_wires=2, num_ctrl_values=2)
+        >>> cx = plre.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
+        >>> ccx = plre.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
 
         We can observe the expected gates when we estimate the resources.
 
@@ -405,12 +432,12 @@ class ResourceControlled(ResourceOperator):
                 **base_params,
                 **kwargs,
             )
-        except re.ResourcesNotDefined:
+        except ResourcesNotDefined:
             pass
 
         gate_lst = []
         if num_ctrl_values != 0:
-            x = resource_rep(re.ResourceX)
+            x = resource_rep(qre.X)
             gate_lst.append(GateCount(x, 2 * num_ctrl_values))
 
         decomp = base_class.resource_decomp(**base_params, **kwargs)
@@ -454,7 +481,7 @@ class ResourceControlled(ResourceOperator):
 
         Resources:
             The resources are derived by simply combining the control qubits, control-values and
-            work qubits into a single instance of :class:`~.ResourceControlled` gate, controlled
+            work qubits into a single instance of :class:`~.Controlled` gate, controlled
             on the whole set of control-qubits.
 
         Returns:
@@ -481,3 +508,24 @@ class ResourceControlled(ResourceOperator):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
         return f"C({base_name}, num_ctrl_wires={num_ctrl_wires},num_ctrl_values={num_ctrl_values})"
+
+
+@singledispatch
+def _apply_adj(action):
+    raise TypeError(f"Unsupported type {action}")
+
+
+@_apply_adj.register
+def _(action: GateCount):
+    gate = action.gate
+    return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
+
+
+@_apply_adj.register
+def _(action: Allocate):
+    return Deallocate(action.num_wires)
+
+
+@_apply_adj.register
+def _(action: Deallocate):
+    return Allocate(action.num_wires)

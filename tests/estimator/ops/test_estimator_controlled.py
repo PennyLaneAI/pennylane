@@ -14,7 +14,8 @@
 """Tests for controlled resource operators."""
 import pytest
 
-from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X, Z
+import pennylane.estimator as qre
+from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X
 from pennylane.estimator.ops.op_math.controlled_ops import (
     CCZ,
     CH,
@@ -98,8 +99,8 @@ class TestCY:
 
         expected_resources = [
             GateCount(CNOT.resource_rep(), 1),
-            GateCount(S.resource_rep(), 2),
-            GateCount(Z.resource_rep(), 1),
+            GateCount(S.resource_rep()),
+            GateCount(qre.Adjoint.resource_rep(S.resource_rep())),
         ]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
 
@@ -366,10 +367,10 @@ class TestToffoli:
             Allocate(2),
             GateCount(CNOT.resource_rep(), 9),
             GateCount(Hadamard.resource_rep(), 3),
-            GateCount(S.resource_rep(), 3),
-            GateCount(CZ.resource_rep(), 1),
-            GateCount(T.resource_rep(), 4),
-            GateCount(Z.resource_rep(), 2),
+            GateCount(S.resource_rep()),
+            GateCount(CZ.resource_rep()),
+            GateCount(T.resource_rep(), 2),
+            GateCount(qre.Adjoint.resource_rep(T.resource_rep()), 2),
             Deallocate(2),
         ]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources

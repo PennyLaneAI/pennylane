@@ -13,18 +13,16 @@
 # limitations under the License.
 r"""Resource operators for parametric single qubit operations."""
 
-import numpy as np
+import math
 
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     resource_rep,
 )
-
-from ..identity import GlobalPhase
-from .non_parametric_ops import T
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 
 # pylint: disable=arguments-differ
 
@@ -48,8 +46,8 @@ def _rotation_resources(precision=10e-3):
         where each object represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
-    num_gates = round(1.149 * np.log2(1 / precision) + 9.2)
-    t = resource_rep(T)
+    num_gates = round(1.149 * math.log2(1 / precision) + 9.2)
+    t = resource_rep(qre.T)
     return [GateCount(t, num_gates)]
 
 
@@ -128,7 +126,7 @@ class PhaseShift(ResourceOperator):
             in the decomposition.
         """
         rz = resource_rep(RZ, {"precision": precision})
-        global_phase = resource_rep(GlobalPhase)
+        global_phase = resource_rep(qre.GlobalPhase)
         return [GateCount(rz), GateCount(global_phase)]
 
     @classmethod
@@ -154,8 +152,47 @@ class PhaseShift(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            precision (float): error threshold for clifford plus T decomposition of this operation
+
+        Resources:
+            For a single control wire, the cost is a single instance of
+            ``ControlledPhaseShift``. Two additional ``X`` gates are used
+            to flip the control qubit if it is zero-controlled.
+
+            In the case where multiple controlled wires are provided, we can collapse the control
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
+            In this case the cost increases by two additional ``MultiControlledX`` gates,
+            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [
+                GateCount(resource_rep(qre.ControlledPhaseShift, {"precision": precision}))
+            ]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        c_ps = resource_rep(qre.ControlledPhaseShift, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [Allocate(1), GateCount(c_ps), GateCount(mcx, 2), Deallocate(1)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -273,8 +310,53 @@ class RX(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            precision (float): error threshold for clifford plus T decomposition of this operation
+
+        Resources:
+            For a single control wire, the cost is a single instance of ``CRX``.
+            Two additional ``X`` gates are used to flip the control qubit if
+            it is zero-controlled.
+
+            In the case where multiple controlled wires are provided, the resources are taken
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+
+            .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
+
+            we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard`
+            gates. The expression for controlled-RZ gates is used as defined in the reference above.
+            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a
+            controlled-version of that identity.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+
+            gate_types = [GateCount(resource_rep(qre.CRX, {"precision": precision}))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        h = resource_rep(qre.Hadamard)
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(h, 2), GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -391,8 +473,52 @@ class RY(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            precision (float): error threshold for clifford plus T decomposition of this operation
+
+        Resources:
+            For a single control wire, the cost is a single instance of ``CRY``.
+            Two additional ``X`` gates are used to flip the control qubit if
+            it is zero-controlled.
+
+            In the case where multiple controlled wires are provided, the resources are taken
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit
+            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the
+            following identity:
+
+            .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
+
+            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a
+            controlled-version of this identity. Thus we are able to constructively or destructively
+            interfere the gates based on the value of the control qubits.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.CRY, {"precision": precision}))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        ry = resource_rep(qre.RY, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [GateCount(ry, 2), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -510,8 +636,51 @@ class RZ(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            precision (float, optional): error threshold for clifford plus T decomposition of this operation
+
+        Resources:
+            For a single control wire, the cost is a single instance of ``CRY``.
+            Two additional ``X`` gates are used to flip the control qubit if
+            it is zero-controlled.
+
+            In the case where multiple controlled wires are provided, the resources are obtained
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
+            <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
+
+            .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
+
+            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a
+            controlled-version of this identity. Thus we are able to constructively or destructively
+            interfere the gates based on the value of the control qubits.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.CRZ, {"precision": precision}))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -614,8 +783,64 @@ class Rot(ResourceOperator):
     def controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, precision=None, **kwargs
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            precision (float): error threshold for clifford plus T decomposition of this operation
+
+        Resources:
+            For a single control wire, the cost is a single instance of ``CRot``.
+            Two additional ``X`` gates are used to flip the control qubit if
+            it is zero-controlled.
+            In the case where multiple controlled wires are provided, the resources are derived
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
+            <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following
+            identities:
+
+            .. math::
+
+                \begin{align}
+                    \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}, \\
+                    \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
+                \end{align}
+
+            This identity is applied along with some clever choices for the angle values to combine
+            rotations; the final circuit takes the form:
+
+            .. code-block:: bash
+
+                ctrl: ─────╭●─────────╭●─────────┤
+                trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
+
+            The :code:`CNOT` gates are replaced with multi-controlled X-gates to generalize to the
+            multi-controlled case.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.CRot, {"precision": precision}))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        ry = resource_rep(qre.RY, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [GateCount(mcx, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
