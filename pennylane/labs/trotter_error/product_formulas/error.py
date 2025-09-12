@@ -18,6 +18,7 @@ from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass, field
 from functools import reduce
+from statistics import mean, stdev
 from typing import Dict, FrozenSet, List, Optional, Tuple, Union
 
 import numpy as np
@@ -54,10 +55,11 @@ class ImportanceConfig:
 class ConvergenceLog:
     """Used to track the convergence history when sampling"""
 
+    iterations: int = 0
+    means: List[float] = field(default_factory=list)
     partial_sums: List[complex] = field(default_factory=list)
-    means: List[complex] = field(default_factory=list)
-    medians: List[complex] = field(default_factory=list)
-    stds: List[complex] = field(default_factory=list)
+    stdevs: List[float] = field(default_factory=list)
+    total: float = 0.0
 
 
 def effective_hamiltonian(
@@ -246,9 +248,12 @@ def perturbation_error(
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
-        expectations = []
+        state_expectations = []
+        state_logs = []
         for state in states:
             expectation = 0
+            expectations = {}
+            order_logs = defaultdict(ConvergenceLog)
             for commutators in commutator_lists:
                 if len(commutators) == 0:
                     continue
@@ -256,24 +261,39 @@ def perturbation_error(
                 order = len(commutators[0])
                 for commutator in commutators:
                     expectation += _compute_expectation(commutator, fragments, state)
+                    order_logs[order] = _update_convergence_log(expectation, order_logs[order])
 
-                expectations.append({order: (1j * timestep) ** order * expectation})
+                expectations[order] = (1j * timestep) ** order * expectation
 
-        return expectations
+            state_expectations.append(expectations)
+            state_logs.append(order_logs)
+
+        if importance:
+            return state_expectations, state_logs
+
+        return state_expectations
 
     if parallel_mode == "state":
         executor = concurrency.backends.get_executor(backend)
         with executor(max_workers=num_workers) as ex:
-            expectations = ex.starmap(
+            expectations_with_logs = ex.starmap(
                 _get_expval_state,
                 [(commutator_lists, fragments, state, timestep) for state in states],
             )
+
+        expectations, logs = zip(*expectations_with_logs)
+        expectations = list(expectations)
+        logs = list(logs)
+
+        if importance:
+            return expectations, logs
 
         return expectations
 
     if parallel_mode == "commutator":
         executor = concurrency.backends.get_executor(backend)
         errors = []
+        state_logs = []
         commutators = [x for xs in commutator_lists for x in xs]
         for state in states:
             with executor(max_workers=num_workers) as ex:
@@ -283,8 +303,10 @@ def perturbation_error(
                 )
 
             expectations = defaultdict(int)
+            order_logs = defaultdict(ConvergenceLog)
             for expectation, order in applied_commutators:
                 expectations[order] += expectation
+                order_logs[order] = _update_convergence_log(expectation, order_logs[order])
 
             errors.append(
                 {
@@ -292,6 +314,10 @@ def perturbation_error(
                     for order, expectation in expectations.items()
                 }
             )
+            state_logs.append(order_logs)
+
+        if importance:
+            return errors, state_logs
 
         return errors
 
@@ -302,17 +328,22 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     expectations = {}
+    logs = {}
     for commutators in commutator_lists:
         if len(commutators) == 0:
             continue
 
         order = len(commutators[0])
-        expectation = sum(
-            _compute_expectation(commutator, fragments, state) for commutator in commutators
-        )
-        expectations[order] = (1j * timestep) ** order * expectation
+        expectation = 0
+        log = ConvergenceLog()
+        for commutator in commutators:
+            expectation += _compute_expectation(commutator, fragments, state)
+            log = _update_convergence_log(expectation, log)
 
-    return expectations
+        expectations[order] = (1j * timestep) ** order * expectation
+        logs[order] = log
+
+    return expectations, logs
 
 
 def _compute_expectation(
@@ -408,3 +439,14 @@ def _commutator_importance(
             scores.append(importance_scores[fragment])
 
     return np.abs(1 / 2 ** (len(commutator) - 1) * reduce(lambda x, y: x * y, scores))
+
+
+def _update_convergence_log(expectation: complex, log: ConvergenceLog) -> ConvergenceLog:
+    log.iterations += 1
+    log.partial_sums.append(
+        abs(expectation) if len(log.partial_sums) == 0 else log.partial_sums[-1] + abs(expectation)
+    )
+    log.means.append(mean(log.partial_sums))
+    log.stdevs.append(stdev(log.partial_sums) if len(log.partial_sums) > 1 else 0.0)
+
+    return log

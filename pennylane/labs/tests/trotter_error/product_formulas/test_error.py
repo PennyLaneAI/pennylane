@@ -18,6 +18,7 @@ import pytest
 
 from pennylane.labs.trotter_error import (
     HOState,
+    ImportanceConfig,
     ProductFormula,
     perturbation_error,
     vibrational_fragments,
@@ -63,6 +64,7 @@ def test_perturbation_error(backend, parallel_mode, mpi4py_support):
         parallel_mode=parallel_mode,
     )
 
+    print(errors)
     assert isinstance(errors, list)
     assert len(errors) == 2
 
@@ -114,3 +116,59 @@ def test_perturbation_error_invalid_parallel_mode():
 def test_group_sums(term_dict, expected):
     """Test the private _group_sums method"""
     assert _group_sums(term_dict) == expected
+
+
+@pytest.mark.parametrize(
+    "backend, parallel_mode",
+    [
+        ("serial", ""),
+        ("mp_pool", "state"),
+        ("mp_pool", "commutator"),
+    ],
+)
+def test_convergence_log(backend, parallel_mode):
+    """Test the structure and content of convergence info."""
+    frag_labels = [0, 1]
+    frag_coeffs = [1 / 3, 1 / 3]
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+        r_state.random(size=(n_modes, n_modes, n_modes)),
+    ]
+
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    gridpoints = 5
+    states = [HOState(n_modes, gridpoints, {(0, 0): 1})]
+
+    importance = ImportanceConfig(
+        importance_scores={i: 1.0 for i in range(len(frags))},
+        top_k={4: 1000},
+    )
+
+    _, convergence_info = perturbation_error(
+        pf,
+        frags,
+        states,
+        max_order=4,
+        importance=importance,
+        backend=backend,
+        parallel_mode=parallel_mode,
+    )
+
+    assert len(convergence_info) == 1
+    state_info = convergence_info[0]
+
+    for _, order_log in state_info.items():
+        assert len(order_log.means) > 0
+        assert len(order_log.stdevs) > 0
+        assert len(order_log.means) == len(order_log.stdevs) == order_log.iterations
+
+        if order_log.iterations > 1:
+            assert order_log.stdevs[0] == 0.0
+            assert all(isinstance(val, (complex, float, int)) for val in order_log.means)
+            assert all(isinstance(val, (float, int)) for val in order_log.stdevs)
