@@ -381,7 +381,7 @@ class GateCount:
 
     """
 
-    def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
+    def __init__(self, gate: CompressedResourceOp, count: int | None = 1) -> None:
         self.gate = gate
         self.count = count
 
