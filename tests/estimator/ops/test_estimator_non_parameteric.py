@@ -121,8 +121,8 @@ class TestHadamard:
 class TestSWAP:
     """Tests for SWAP resource operator"""
 
-    def test_resources(self):
-        """Test that SWAP decomposes into three CNOTs"""
+    def test_resources_raises(self):
+        """Test that decomposition of SWAP is not defined"""
         op = SWAP([0, 1])
         with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
@@ -215,7 +215,7 @@ class TestS:
     """Tests for S resource operator"""
 
     def test_resources(self):
-        """Test that S decomposes into two Ts"""
+        """Test that S decomposes into two T gates"""
         op = S(0)
         expected = [GateCount(T.resource_rep(), 2)]
         assert op.resource_decomp() == expected

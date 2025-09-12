@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
+    CountsMP,
     DensityMatrixMP,
     ExpectationMP,
     MutualInfoMP,
@@ -97,11 +98,110 @@ def test_abstract_measurement():
     assert hash(am) == hash("AbstractMeasurement")
 
 
-def test_counts_no_measure():
-    """Test that counts can't be measured and raises a NotImplementedError."""
+class TestCounts:
 
-    with pytest.raises(NotImplementedError, match=r"CountsMP returns a dictionary"):
-        qml.counts()._abstract_eval()
+    def test_counts_no_implementation(self):
+        """Test that counts can't be measured and raises a NotImplementedError."""
+
+        with pytest.raises(
+            NotImplementedError,
+            match=r"Counts has no execution implementation with program capture.",
+        ):
+            qml.counts()
+
+    def test_warning_about_all_outcomes(self):
+        """Test a warning is raised about all_outcomes=False"""
+
+        def f():
+            return qml.counts(all_outcomes=False)
+
+        with pytest.warns(UserWarning, match="all_outcomes=True"):
+            jax.make_jaxpr(f)()
+
+    def test_counts_capture_jaxpr(self):
+        """Test that counts can be captured into jaxpr."""
+
+        def f():
+            return qml.counts(wires=(0, 1), all_outcomes=True)
+
+        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jaxpr.jaxpr
+
+        assert len(jaxpr.outvars) == 2
+
+        assert jaxpr.eqns[0].primitive == CountsMP._wires_primitive
+        assert len(jaxpr.eqns[0].invars) == 2
+
+        assert isinstance(jaxpr.outvars[0].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[0].aval.abstract_eval(num_device_wires=0, shots=50)
+        assert keys_shape[0] == (2**2,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[0].aval.abstract_eval(num_device_wires=0, shots=None)
+
+        assert isinstance(jaxpr.outvars[1].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[1].aval.abstract_eval(num_device_wires=0, shots=50)
+        assert keys_shape[0] == (2**2,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[1].aval.abstract_eval(num_device_wires=0, shots=None)
+
+    def test_counts_capture_jaxpr_all_wires(self):
+        """Test that counts can be captured into jaxpr."""
+
+        def f():
+            return qml.counts(all_outcomes=True)
+
+        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jaxpr.jaxpr
+
+        assert len(jaxpr.outvars) == 2
+
+        assert jaxpr.eqns[0].primitive == CountsMP._wires_primitive
+        assert len(jaxpr.eqns[0].invars) == 0
+
+        assert isinstance(jaxpr.outvars[0].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[0].aval.abstract_eval(num_device_wires=3, shots=50)
+        assert keys_shape[0] == (2**3,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[0].aval.abstract_eval(num_device_wires=3, shots=None)
+
+        assert isinstance(jaxpr.outvars[1].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[1].aval.abstract_eval(num_device_wires=3, shots=50)
+        assert keys_shape[0] == (2**3,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[1].aval.abstract_eval(num_device_wires=3, shots=None)
+
+    def test_qnode_integration(self):
+        """Test that counts can integrate with capturing a qnode."""
+
+        def w():
+            @qml.qnode(qml.device("default.qubit", wires=2), shots=10)
+            def c():
+                return qml.counts(all_outcomes=True), qml.sample()
+
+            r = c()
+            assert isinstance(r, tuple)
+            assert len(r) == 2
+            assert isinstance(r[0], tuple)
+            assert len(r[0]) == 2
+            for i in (0, 1):
+                assert r[0][i].shape == (4,)
+                assert r[0][i].dtype == jax.numpy.int64
+
+            assert r[1].shape == (10, 2)
+            assert r[1].dtype == jax.numpy.int64
+
+            return r
+
+        jaxpr = jax.make_jaxpr(w)().jaxpr
+        assert len(jaxpr.outvars) == 3
 
 
 def test_primitive_none_behavior():

@@ -32,14 +32,14 @@ class Identity(ResourceOperator):
         wires (Iterable[Any], optional): wire label(s) that the identity acts on
 
     Resources:
-        The Identity gate is treated as a free gate and thus it cannot be decomposed
+        The Identity gate does not require any resources and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: The corresponding PennyLane operation :class:`~pennylane.Identity`.
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation can be requested using:
 
     >>> qml.estimator.Identity.resource_decomp()
     []
@@ -59,7 +59,7 @@ class Identity(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
@@ -68,7 +68,7 @@ class Identity(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+            The Identity gate does not require any resources and thus it cannot be decomposed
             further. Requesting the resources of this gate returns an empty list.
 
         Returns:
@@ -84,7 +84,7 @@ class Identity(ResourceOperator):
             This operation is self-adjoint, so the resources of the adjoint operation are same as the base operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -107,7 +107,7 @@ class Identity(ResourceOperator):
             the original (un-controlled) operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -125,7 +125,7 @@ class Identity(ResourceOperator):
             operation are same as the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -139,14 +139,14 @@ class GlobalPhase(ResourceOperator):
         wires (Iterable[Any], optional): the wires the operator acts on
 
     Resources:
-        The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+        The GlobalPhase gate does not require any resources and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.GlobalPhase`.
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation can be requested using:
 
     >>> qml.estimator.GlobalPhase.resource_decomp()
     []
@@ -154,6 +154,12 @@ class GlobalPhase(ResourceOperator):
     """
 
     num_wires = 1
+
+    def __init__(self, wires=None):
+        """Initializes the ``GlobalPhase`` operator."""
+        if wires is not None and not isinstance(wires, int):
+            self.num_wires = len(wires)
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -167,7 +173,7 @@ class GlobalPhase(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
@@ -176,7 +182,7 @@ class GlobalPhase(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Resources:
-            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+            The GlobalPhase gate does not require any resources and thus it cannot be decomposed
             further. Requesting the resources of this gate returns an empty list.
 
         Returns:
@@ -189,11 +195,11 @@ class GlobalPhase(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of a global phase operator changes the sign of the phase, thus
-            the resources of the adjoint operation is the original operation.
+            The adjoint of GlobalPhase operator changes the sign of the phase, thus
+            the resources of the adjoint operation are same as the original operation.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -211,7 +217,7 @@ class GlobalPhase(ResourceOperator):
             The resources simplify to just one total global phase operator.
 
         Returns:
-            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

@@ -67,7 +67,7 @@ class Hadamard(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -211,7 +211,7 @@ class S(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -381,7 +381,7 @@ class SWAP(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the operator that are needed to compute a resource estimation."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -427,7 +427,7 @@ class SWAP(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation results
+            This operation is self-adjoint, so the resources of the adjoint operation
             are same as the original operation.
 
         Returns:
@@ -546,7 +546,7 @@ class T(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -621,7 +621,7 @@ class T(ResourceOperator):
             to :math:`T^{z \pmod 8}`.
 
 
-            The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+            The decomposition for :math:`T^{z}`, (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
 
             - If `z' = 0`: The operation is equivalent to the Identity gate (:math:`I`).
             - If `z' = 1`: The operation is equivalent to the T-gate (:math:`T`).
@@ -720,7 +720,7 @@ class X(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -749,6 +749,7 @@ class X(ResourceOperator):
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+
         Resources:
             For one or two control wires, the cost is one of ``CNOT`` or ``Toffoli`` respectively.
             Two additional ``X`` gates per control qubit are used to flip the control qubits
@@ -820,7 +821,7 @@ class Y(ResourceOperator):
             \begin{align}
                 \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
                 \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
-                \hat{S}^{\dagger} &= \cdot \hat{Z} \cdot \hat{S}, \\
+                \hat{S}^{\dagger} &= \hat{Z} \cdot \hat{S}. \\
             \end{align}
 
         Thus the resources for a Y-gate are two ``S`` gates, two ``Z`` gates
@@ -833,7 +834,7 @@ class Y(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qml.estimator.Y.resource_decomp()
-    [(1 x S), (1 x Z), (1 x Adjoint(S)), (2 x Hadamard)]
+    [(2 x S), (2 x Z), (2 x Hadamard)]
     """
 
     num_wires = 1
@@ -851,6 +852,7 @@ class Y(ResourceOperator):
                 \begin{align}
                     \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
                     \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
+                    \hat{S}^{\dagger} &= \hat{Z} \cdot \hat{S}. \\
                 \end{align}
 
             Thus the resources for a Y-gate are one S-gate, one Adjoint(S)-gate,
@@ -875,7 +877,7 @@ class Y(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -1012,7 +1014,7 @@ class Z(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
