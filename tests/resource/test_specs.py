@@ -30,35 +30,6 @@ devices_list = [
 ]
 
 
-@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"], autouse=True)
-def enable_and_disable_graph_decomp(request):
-    """
-    A fixture that parametrizes a test to run twice: once with graph
-    decomposition disabled and once with it enabled.
-
-    It automatically handles the setup (enabling/disabling) before the
-    test runs and the teardown (always disabling) after the test completes.
-    """
-    try:
-        use_graph_decomp = request.param
-
-        # --- Setup Phase ---
-        # This code runs before the test function is executed.
-        if use_graph_decomp:
-            qml.decomposition.enable_graph()
-        else:
-            # Explicitly disable to ensure a clean state
-            qml.decomposition.disable_graph()
-
-        # Yield control to the test function
-        yield use_graph_decomp
-
-    finally:
-        # --- Teardown Phase ---
-        # This code runs after the test function has finished,
-        # regardless of whether it passed or failed.
-        qml.decomposition.disable_graph()
-
 def test_error_with_bad_key():
     """Test that a helpful error message is raised if key does not exist."""
 
@@ -71,6 +42,7 @@ def test_error_with_bad_key():
         _ = out["bad_value"]
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
@@ -131,7 +103,7 @@ class TestSpecsTransform:
         assert specs1 == specs2
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
+        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
     )
     def test_empty(self, diff_method, len_info):
         dev = qml.device("default.qubit", wires=1)
@@ -163,7 +135,7 @@ class TestSpecsTransform:
             assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
+        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
     )
     def test_specs(self, diff_method, len_info):
         """Test the specs transforms works in standard situations"""
@@ -224,7 +196,7 @@ class TestSpecsTransform:
         assert info["resources"].depth == (6 if compute_depth else None)
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
+        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
     )
     def test_specs_state(self, diff_method, len_info):
         """Test specs works when state returned"""
@@ -396,387 +368,112 @@ class TestSpecsTransform:
         # we should expect an empty errors dictionary.
         assert dev_specs["errors"] == {}
 
-    def test_specs_with_graph_decomposition_work_wires_concept(self):
-        """Test that qml.specs works correctly when graph decomposition system is enabled, demonstrating work wire concepts."""
-        
-        # Save initial state
-        initial_state = getattr(qml.decomposition, '_enabled_graph', False)
-        
-        try:
-            dev = qml.device("default.qubit", wires=6)
-            
-            @qml.qnode(dev)
-            def circuit_testing_graph_decomposition():
-                # Operations that graph decomposition can handle well
-                qml.Toffoli(wires=[0, 1, 2])  # Should be decomposed by graph system
-                qml.Toffoli(wires=[3, 4, 5])  # Another one to test optimization
-                return qml.expval(qml.Z(5))
-            
-            # Test with graph decomposition disabled first
-            qml.decomposition.disable_graph()
-            specs_disabled = qml.specs(circuit_testing_graph_decomposition, level="device")()
-            
-            # Test with graph decomposition enabled
-            qml.decomposition.enable_graph()
-            specs_enabled = qml.specs(circuit_testing_graph_decomposition, level="device")()
-            
-            # Both should work and provide resource information
-            resources_disabled = specs_disabled["resources"]
-            resources_enabled = specs_enabled["resources"]
-            
-            # Verify basic tracking works in both cases
-            assert resources_disabled.num_gates > 0
-            assert resources_enabled.num_gates > 0
-            assert resources_disabled.num_wires >= 6
-            assert resources_enabled.num_wires >= 6
-            
-            # Gate types should be dictionaries
-            gate_types_disabled = dict(resources_disabled.gate_types)
-            gate_types_enabled = dict(resources_enabled.gate_types)
-            
-            # The default.qubit device supports Toffoli gates natively at device level
-            # So we expect to see Toffoli gates rather than their primitive decomposition
-            # This tests that both graph decomposition modes work correctly
-            
-            # Check that Toffoli gates are preserved (since they're supported by default.qubit)
-            assert "Toffoli" in gate_types_disabled, f"Expected Toffoli gates in disabled mode, got: {gate_types_disabled}"
-            assert "Toffoli" in gate_types_enabled, f"Expected Toffoli gates in enabled mode, got: {gate_types_enabled}"
-            
-            # Both should have the same number of Toffoli gates (2)
-            assert gate_types_disabled["Toffoli"] == 2, f"Expected 2 Toffoli gates in disabled mode, got: {gate_types_disabled['Toffoli']}"
-            assert gate_types_enabled["Toffoli"] == 2, f"Expected 2 Toffoli gates in enabled mode, got: {gate_types_enabled['Toffoli']}"
-            
-            # Total gate counts should be reasonable for two Toffoli gates
-            assert resources_disabled.num_gates == 2  # Exactly 2 Toffoli gates
-            assert resources_enabled.num_gates == 2   # Same for both modes
-            
-        finally:
-            # Restore initial state
-            if initial_state:
-                qml.decomposition.enable_graph()
-            else:
-                qml.decomposition.disable_graph()
 
-    def test_specs_with_graph_decomposition_weighted_gate_sets(self):
-        """Test that qml.specs works with graph decomposition using weighted gate sets for cost optimization."""
-        
-        # Save initial state
-        initial_state = getattr(qml.decomposition, '_enabled_graph', False)
-        
-        try:
-            dev = qml.device("default.qubit", wires=4)
-            
-            @qml.qnode(dev)
-            def circuit_for_optimization():
-                # Use operations that can benefit from weighted gate set optimization
-                qml.Toffoli(wires=[0, 1, 2])  # This is in the default gate set
-                qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1])
-                return qml.expval(qml.Z(3))
-            
-            # Test with graph decomposition enabled
-            qml.decomposition.enable_graph()
-            
-            # Test that weighted gate sets can be used (if configured)
-            # This tests the integration with the DecompositionGraph's weighted optimization
-            specs = qml.specs(circuit_for_optimization, level="device")()
-            
-            # Verify that decomposition occurred
-            resources = specs["resources"]
-            gate_types = dict(resources.gate_types)
-            
-            # Verify the system works correctly - Toffoli is in the default gate set so it may remain
-            # Focus on testing that the graph decomposition system integrates properly
-            
-            # Should contain our expected operations
-            expected_gates = ["Toffoli", "MultiControlledX"]  # These may stay at device level
-            for gate in expected_gates:
-                if gate in gate_types:
-                    assert gate_types[gate] > 0
-            
-            # Total gate count should be reasonable
-            assert resources.num_gates > 0
-            assert resources.num_wires >= 3  # At least the wires we used
-            
-        finally:
-            # Restore initial state
-            if initial_state:
-                qml.decomposition.enable_graph()
-            else:
-                qml.decomposition.disable_graph()
+class TestSpecsGraphModeExclusive:
+    """Tests for qml.specs features that require graph mode enabled.
+    The legacy decomposition mode should not be able to run these tests.
 
-    def test_specs_with_graph_decomposition_resource_registration(self):
-        """Test that qml.specs integrates with @register_resources decorator and work wire specifications."""
-        
-        # Save initial state
-        initial_state = getattr(qml.decomposition, '_enabled_graph', False)
-        
-        try:
-            from pennylane.decomposition.decomposition_rule import register_resources
-            
-            # Create a custom operation that uses the @register_resources decorator
-            @register_resources({qml.Hadamard: 1, qml.T: 1}, work_wires=lambda wires: 2)
-            class CustomWorkWireOp(qml.operation.Operation):
-                num_wires = 1
-                
-                @staticmethod
-                def compute_decomposition(wires, **kwargs):
-                    # Simple decomposition that could benefit from work wires
-                    return [qml.Hadamard(wires[0]), qml.T(wires[0])]
-            
-            dev = qml.device("default.qubit", wires=6)  # Extra wires for work wire allocation
-            
-            @qml.qnode(dev)
-            def circuit_with_registered_resources():
-                qml.Toffoli(wires=[0, 1, 2])  # Standard operation in default gate set
-                CustomWorkWireOp(wires=[3])  # Our custom operation with work wires
-                return qml.expval(qml.Z(3))
-            
-            # Test with graph decomposition enabled
-            qml.decomposition.enable_graph()
-            specs = qml.specs(circuit_with_registered_resources, level="device")()
-            
-            # Verify resource tracking works with registered resources
-            resources = specs["resources"]
-            gate_types = dict(resources.gate_types)
-            
-            # CustomWorkWireOp should be decomposed to its registered gates
-            # (if graph decomposition processes it, otherwise default decomposition should handle it)
-            assert "Hadamard" in gate_types or "T" in gate_types, "Expected decomposition gates from CustomWorkWireOp"
-            
-            # Toffoli should remain as it's in the default gate set
-            assert "Toffoli" in gate_types
-            
-            # Should have reasonable gate count including decompositions
-            assert resources.num_gates >= 2  # At least the gates from our operations
-            
-        finally:
-            # Restore initial state
-            if initial_state:
-                qml.decomposition.enable_graph()
-            else:
-                qml.decomposition.disable_graph()
+    NOTE: All tests in this suite will auto-enable graph mode via fixture.
+    """
 
-    def test_specs_with_graph_decomposition_work_wire_concepts(self):
-        """Test specs with graph decomposition demonstrating work wire concepts through manual wire usage."""
-        
-        # Save initial state
-        initial_state = getattr(qml.decomposition, '_enabled_graph', False)
-        
-        try:
-            dev = qml.device("default.qubit", wires=8)  # Extra wires to simulate work wire availability
-            
-            @qml.qnode(dev)
-            def circuit_simulating_work_wire_usage():
-                # Simulate work wire usage patterns without using qml.allocation.allocate()
-                # to avoid the current limitation with Allocate/Deallocate operations
-                
-                # Main computation on core wires
-                qml.Toffoli(wires=[0, 1, 2])
-                
-                # Use additional wires as if they were allocated work wires
-                # (This simulates the pattern that would occur with work wire allocation)
-                qml.Hadamard(6)  # Initialize a work wire
-                qml.CNOT(wires=[0, 6])  # Use work wire in computation
-                qml.CNOT(wires=[6, 7])  # Chain through work wires
-                qml.CNOT(wires=[7, 3])  # Connect back to main computation
-                
-                # Another pattern using different "work wires"
-                qml.MultiControlledX(wires=[1, 2, 4], control_values=[0, 1])
-                
-                return qml.expval(qml.Z(0) @ qml.Z(1))
-            
-            # Test with graph decomposition enabled
-            qml.decomposition.enable_graph()
-            specs = qml.specs(circuit_simulating_work_wire_usage, level="device")()
-            
-            # Verify that resource tracking handles the work wire patterns
-            resources = specs["resources"]
-            gate_types = dict(resources.gate_types)
-            
-            # Should see our explicit operations
-            assert "Hadamard" in gate_types
-            assert "CNOT" in gate_types
-            assert gate_types["CNOT"] >= 3  # Our 3 explicit CNOTs
-            
-            # Verify the system works without errors and tracks operations correctly
-            # Note: Current graph decomposition may keep some operations at higher level
-            assert resources.num_gates >= 6  # At least our explicit gates
-            assert resources.num_wires >= 5  # Several wires used
-            
-            # Verify that all our operations are tracked
-            expected_operations = ["Toffoli", "Hadamard", "CNOT", "MultiControlledX"]
-            for op in expected_operations:
-                assert op in gate_types, f"Expected operation {op} to be tracked in gate types"
-            
-        finally:
-            # Restore initial state
-            if initial_state:
-                qml.decomposition.enable_graph()
-            else:
-                qml.decomposition.disable_graph()
+    @pytest.fixture(autouse=True)
+    def enable_graph_mode_only(self):
+        """Auto-enable graph mode for all tests in this class."""
+        qml.decomposition.enable_graph()
+        yield
+        qml.decomposition.disable_graph()
 
-    def test_specs_with_decomposition_graph_solver_integration(self):
-        """Test that specs works with DecompositionGraph solver and pathfinding optimization."""
-        
-        # Save initial state
-        initial_state = getattr(qml.decomposition, '_enabled_graph', False)
-        
-        try:
-            dev = qml.device("default.qubit", wires=6)
-            
-            @qml.qnode(dev)
-            def circuit_with_complex_decomposition():
-                # Operations that will trigger DecompositionGraph solver
-                qml.Toffoli(wires=[0, 1, 2])  # In default gate set
-                qml.Toffoli(wires=[3, 4, 5])  # Another Toffoli
-                qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1])  # Multi-controlled gate
-                return qml.expval(qml.Z(5))
-            
-            # Test with graph decomposition enabled
-            qml.decomposition.enable_graph()
-            specs = qml.specs(circuit_with_complex_decomposition, level="device")()
-            
-            # Verify that complex operations are tracked correctly
-            resources = specs["resources"]
-            gate_types = dict(resources.gate_types)
-            
-            # Since Toffoli is in the default gate set, it should remain
-            assert "Toffoli" in gate_types
-            assert gate_types["Toffoli"] == 2  # Our two Toffoli gates
-            
-            # MultiControlledX may or may not be decomposed depending on target gate set
-            assert "MultiControlledX" in gate_types  # Likely stays at device level
-            
-            # Gate count should match our operations
-            assert resources.num_gates >= 3  # At least our 3 operations
-            
-            # Wire count should reflect the circuit requirements
-            assert resources.num_wires >= 6  # All the wires we used
-            
-        finally:
-            # Restore initial state
-            if initial_state:
-                qml.decomposition.enable_graph()
-            else:
-                qml.decomposition.disable_graph()
+    @pytest.mark.parametrize(
+        "num_device_wires, expected_decomp",
+        [
+            (None, "PauliX"),  # unlimited wires: enough for work_wires=5, so use X decomposition
+            (6, "PauliX"),  # 6 wires: enough for work_wires=5, so use X decomposition
+            (4, "Hadamard"),  # 4 wires: insufficient for work_wires=5, so use H fallback
+        ],
+    )
+    def test_specs_max_work_wires_calculation(self, num_device_wires, expected_decomp):
+        """Test that qml.specs correctly calculates max_work_wires and uses appropriate decomposition."""
 
-    def test_specs_graph_decomposition_vs_standard_decomposition_comparison(self):
-        """Test comparison between graph decomposition and standard decomposition resource reporting."""
-        
-        # Save initial state
-        initial_state = getattr(qml.decomposition, '_enabled_graph', False)
-        
-        try:
-            dev = qml.device("default.qubit", wires=5)
-            
-            @qml.qnode(dev)
-            def circuit_for_comparison():
-                qml.Toffoli(wires=[0, 1, 2])  # In default gate set
-                qml.Toffoli(wires=[2, 3, 4])  # Another Toffoli
-                return qml.expval(qml.Z(4))
-            
-            # Test with standard decomposition (graph disabled)
-            qml.decomposition.disable_graph()
-            specs_standard = qml.specs(circuit_for_comparison, level="device")()
-            
-            # Test with graph decomposition enabled
-            qml.decomposition.enable_graph()
-            specs_graph = qml.specs(circuit_for_comparison, level="device")()
-            
-            # Both should successfully handle the operations
-            resources_standard = specs_standard["resources"]
-            resources_graph = specs_graph["resources"]
-            
-            # Since Toffoli is in the default gate set, both should likely keep it
-            gate_types_standard = dict(resources_standard.gate_types)
-            gate_types_graph = dict(resources_graph.gate_types)
-            
-            # Verify basic functionality in both modes
-            assert resources_standard.num_gates >= 2  # At least our 2 Toffoli gates
-            assert resources_graph.num_gates >= 2
-            
-            # Verify that both approaches work without errors
-            assert isinstance(resources_standard.num_gates, int)
-            assert isinstance(resources_graph.num_gates, int)
-            assert isinstance(resources_standard.num_wires, int)
-            assert isinstance(resources_graph.num_wires, int)
-            
-            # Both should track the same basic circuit structure
-            assert resources_standard.num_wires >= 5
-            assert resources_graph.num_wires >= 5
-            
-        finally:
-            # Restore initial state
-            if initial_state:
-                qml.decomposition.enable_graph()
-            else:
-                qml.decomposition.disable_graph()
+        class MyCustomOp(qml.operation.Operator):
+            num_wires = 1
 
-    def test_specs_graph_decomposition_comprehensive_integration(self):
-        """Comprehensive test demonstrating graph decomposition integration with qml.specs across key features."""
-        
-        # Save initial state
-        initial_state = getattr(qml.decomposition, '_enabled_graph', False)
-        
-        try:
-            dev = qml.device("default.qubit", wires=8)
-            
-            @qml.qnode(dev)
-            def comprehensive_circuit():
-                # Test different operation types that exercise graph decomposition features
-                
-                # 1. Operations in default gate set (should remain at device level)
-                qml.Toffoli(wires=[0, 1, 2])
-                qml.Hadamard(3)
-                qml.CNOT(wires=[0, 4])
-                
-                # 2. Operations that may be decomposed by graph system
-                qml.MultiControlledX(wires=[1, 2, 5], control_values=[1, 0])
-                
-                # 3. Simulate work wire patterns (manual wire usage)
-                qml.Hadamard(6)  # "work wire" initialization
-                qml.CNOT(wires=[3, 6])  # Use work wire
-                qml.CNOT(wires=[6, 7])  # Chain work wires
-                
-                return qml.expval(qml.Z(0) @ qml.Z(1))
-            
-            # Test with graph decomposition disabled
-            qml.decomposition.disable_graph()
-            specs_disabled = qml.specs(comprehensive_circuit, level="device")()
-            
-            # Test with graph decomposition enabled  
-            qml.decomposition.enable_graph()
-            specs_enabled = qml.specs(comprehensive_circuit, level="device")()
-            
-            # Verify both modes work correctly
-            resources_disabled = specs_disabled["resources"]
-            resources_enabled = specs_enabled["resources"]
-            
-            # Both should track all our operations
-            assert resources_disabled.num_gates >= 7  # Our 7 explicit operations
-            assert resources_enabled.num_gates >= 7
-            assert resources_disabled.num_wires >= 8
-            assert resources_enabled.num_wires >= 8
-            
-            # Both should contain expected gate types from default gate set
-            for specs in [specs_disabled, specs_enabled]:
-                gate_types = dict(specs["resources"].gate_types)
-                expected_gates = ["Toffoli", "Hadamard", "CNOT"]
-                for gate in expected_gates:
-                    assert gate in gate_types, f"Expected {gate} in gate types: {gate_types}"
-            
-            # Verify system robustness - both approaches should produce consistent basic metrics
-            assert abs(resources_disabled.num_wires - resources_enabled.num_wires) <= 0  # Same wires used
-            
-            # Both should successfully execute without errors
-            assert all(isinstance(val, (int, float)) for val in [
-                resources_disabled.num_gates, resources_disabled.num_wires,
-                resources_enabled.num_gates, resources_enabled.num_wires
-            ])
-            
-        finally:
-            # Restore initial state
-            if initial_state:
-                qml.decomposition.enable_graph()
-            else:
-                qml.decomposition.disable_graph()
+        @qml.register_resources({qml.H: 2})  # Fallback: 2 H gates
+        def decomp_fallback(wires):
+            qml.H(wires)
+            qml.H(wires)
+
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})  # Needs 5 work wires
+        def decomp_with_work_wire(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
+
+        # Test with parametrized number of device wires
+        dev = qml.device("default.qubit", wires=num_device_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            MyCustomOp(0)  # Uses only wire 0
+            return qml.expval(qml.Z(0))
+
+        specs = qml.specs(circuit, level="device")()
+
+        # Work wires calculation should be: device_wires - tape_wires
+        expected_work_wires = num_device_wires - 1  # 1 tape wire used
+        assert specs["max_work_wires"] == expected_work_wires
+        assert specs["num_device_wires"] == num_device_wires
+        assert specs["num_tape_wires"] == 1
+
+        # Check that the correct decomposition was used
+        assert expected_decomp in specs["resources"].gate_types
+
+    def test_specs_max_work_wires_with_insufficient_wires(self):
+        """Test that qml.specs correctly reports work wires when decomposition fallback is used."""
+
+        class MyLimitedOp(qml.operation.Operator):
+            num_wires = 1
+
+        @qml.register_resources({qml.H: 1})  # Fallback that uses 1 H gate
+        def simple_decomp(wires):
+            qml.H(wires)
+
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 10})  # Needs 10 work wires
+        def work_wire_decomp(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
+
+        # Device with only 2 wires - insufficient for the 10 work wires needed
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            MyLimitedOp(0)  # Uses wire 0, fallback should be used
+            return qml.expval(qml.Z(0))
+
+        specs = qml.specs(circuit, level="device")()
+
+        # Should report 1 work wire available (2 device wires - 1 tape wire)
+        assert specs["max_work_wires"] == 1
+        assert specs["num_device_wires"] == 2
+        assert specs["num_tape_wires"] == 1
+        # Fallback decomposition should be used (H gate)
+        assert "Hadamard" in specs["resources"].gate_types
+
+    def test_specs_max_work_wires_no_available_wires(self):
+        """Test qml.specs when all device wires are used by the circuit."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.CNOT([0, 1])  # Uses both available wires
+            return qml.expval(qml.Z(0))
+
+        specs = qml.specs(circuit)()
+
+        # No work wires available (2 device wires - 2 tape wires = 0)
+        assert specs["max_work_wires"] == 0
+        assert specs["num_device_wires"] == 2
+        assert specs["num_tape_wires"] == 2

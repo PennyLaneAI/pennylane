@@ -208,6 +208,11 @@ def specs(
             info = specs_from_tape(tape, compute_depth)
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
+            info["max_work_wires"] = (
+                None
+                if qnode.device.wires is None
+                else len(set(qnode.device.wires) - set(tape.wires))
+            )
             info["device_name"] = qnode.device.name
             info["level"] = level
             info["gradient_options"] = qnode.gradient_kwargs
