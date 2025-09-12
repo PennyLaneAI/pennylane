@@ -25,6 +25,7 @@ from typing import Any
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
+from pennylane.allocation import Allocate, Deallocate
 
 from .error import _compute_algo_error
 
@@ -58,6 +59,8 @@ class Resources:
             as a key-value pair where :math:`n` is the key and the number of occurances is the value
         depth (int): the depth of the circuit defined as the maximum number of non-parallel operations
         shots (Shots): number of samples to generate
+        num_logical_wires (int): number of logical wires (original circuit wires)
+        num_auxiliary_wires (int): number of auxiliary work wires used in decompositions
 
     .. details::
 
@@ -73,6 +76,8 @@ class Resources:
         num_gates: 2
         depth: 2
         shots: Shots(total=None)
+        num_logical_wires: 2
+        num_auxiliary_wires: 0
         gate_types:
         {'Hadamard': 1, 'CNOT': 1}
         gate_sizes:
@@ -88,6 +93,8 @@ class Resources:
         gates: 4
         depth: 4
         shots: Shots(total=None)
+        num_logical_wires: 2
+        num_auxiliary_wires: 0
         gate_types:
         {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
         gate_sizes:
@@ -97,6 +104,8 @@ class Resources:
         gates: 4
         depth: 4
         shots: Shots(total=None)
+        num_logical_wires: 2
+        num_auxiliary_wires: 0
         gate_types:
         {'Hadamard': 2, 'CNOT': 2}
         gate_sizes:
@@ -109,6 +118,8 @@ class Resources:
     gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
     shots: Shots = field(default_factory=Shots)
+    num_logical_wires: int = 0
+    num_auxiliary_wires: int = 0
 
     def __add__(self, other: Resources):
         r"""Adds two :class:`~resource.Resources` objects together as if the circuits were executed in series.
@@ -216,6 +227,8 @@ class Resources:
         items = items.replace(")", "")
 
         items += f"\nshots: {str(self.shots)}"
+        items += f"\nnum_logical_wires: {self.num_logical_wires}"
+        items += f"\nnum_auxiliary_wires: {self.num_auxiliary_wires}"
 
         gate_type_str = ", ".join(
             [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
@@ -332,8 +345,10 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
     new_shots = add_shots(r1.shots, r2.shots)
     new_depth = r1.depth + r2.depth
+    new_logical_wires = max(r1.num_logical_wires, r2.num_logical_wires)
+    new_auxiliary_wires = r1.num_auxiliary_wires + r2.num_auxiliary_wires
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots, new_logical_wires, new_auxiliary_wires)
 
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
@@ -399,8 +414,10 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
     new_shots = add_shots(r1.shots, r2.shots)
     new_depth = max(r1.depth, r2.depth)
+    new_logical_wires = r1.num_logical_wires + r2.num_logical_wires
+    new_auxiliary_wires = max(r1.num_auxiliary_wires, r2.num_auxiliary_wires)
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots, new_logical_wires, new_auxiliary_wires)
 
 
 def mul_in_series(resources: Resources, scalar: int) -> Resources:
@@ -458,8 +475,10 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
     new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
     new_shots = scalar * resources.shots
     new_depth = scalar * resources.depth
+    new_logical_wires = resources.num_logical_wires
+    new_auxiliary_wires = scalar * resources.num_auxiliary_wires
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots, new_logical_wires, new_auxiliary_wires)
 
 
 def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
@@ -515,9 +534,11 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
     new_gate_types = _scale_dict(resources.gate_types, scalar)
     new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
     new_shots = scalar * resources.shots
+    new_logical_wires = scalar * resources.num_logical_wires
+    new_auxiliary_wires = scalar * resources.num_auxiliary_wires
 
     return Resources(
-        new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots
+        new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots, new_logical_wires, new_auxiliary_wires
     )
 
 
@@ -612,7 +633,8 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
             new_wires = initial_resources.num_wires
 
         return Resources(
-            new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, initial_resources.shots
+            new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, initial_resources.shots, 
+            initial_resources.num_logical_wires, initial_resources.num_auxiliary_wires
         )
 
     return initial_resources
@@ -694,7 +716,21 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resourc
     num_gates = 0
     gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
+    
+    # Track work wire allocation
+    allocated_wires = 0
+    max_allocated_wires = 0
+    
     for op in tape.operations:
+        # Track work wire allocation and deallocation
+        if isinstance(op, Allocate):
+            allocated_wires += len(op.wires)
+            max_allocated_wires = max(max_allocated_wires, allocated_wires)
+            continue
+        elif isinstance(op, Deallocate):
+            allocated_wires -= len(op.wires)
+            continue
+            
         if isinstance(op, ResourcesOperation):
             op_resource = op.resources()
             for d in op_resource.gate_types:
@@ -710,4 +746,15 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resourc
             gate_sizes[len(op.wires)] += 1
             num_gates += 1
 
-    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+    # Calculate logical vs auxiliary wires
+    # Only compute work wire information if allocation operations were found
+    if max_allocated_wires == 0:
+        # No allocation operations detected - maintain backward compatibility
+        num_logical_wires = 0
+        num_auxiliary_wires = 0
+    else:
+        # Work wire allocation detected - distinguish between logical and auxiliary
+        num_logical_wires = num_wires - max_allocated_wires
+        num_auxiliary_wires = max_allocated_wires
+
+    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots, num_logical_wires, num_auxiliary_wires)
