@@ -290,6 +290,12 @@ class TestPow:
         ]
         assert pow_pow_op.resource_decomp(**pow_pow_op.resource_params) == expected_res
 
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.Pow.tracking_name(qre.T.resource_rep(), 1) == "Pow(T, 1)"
+        assert qre.Pow.tracking_name(qre.S.resource_rep(), 2) == "Pow(S, 2)"
+        assert qre.Pow.tracking_name(qre.CNOT.resource_rep(), 3) == "Pow(CNOT, 3)"
+
 
 class TestProd:
     """Tests for the Prod resource Op"""
@@ -334,6 +340,20 @@ class TestProd:
         ]
         assert prod_op.resource_decomp(**prod_op.resource_params) == expected_res
 
+    def test_resource_init_wires(self):
+        """Test that the operator initializes correctly with wires."""
+        prod_op = qre.Prod([qre.X(), qre.Y()], wires=[0, 1])
+        assert prod_op.num_wires == 2
+        assert prod_op.wires == Wires([0, 1])
+
+        prod_op = qre.Prod([qre.X(), qre.Y()])
+        assert prod_op.wires is None
+
+    def test_resource_init_raises(self):
+        """Test that the operator raises an error if the resource operator is not a ResourceOperator."""
+        with pytest.raises(ValueError, match="All factors of the Product must be"):
+            qre.Prod([qre.X(), 3])
+
 
 class TestChangeOpBasis:
     """Tests for the ChangeOpBasis resource Op"""
@@ -352,6 +372,20 @@ class TestChangeOpBasis:
 
         assert cb_op.num_wires == 3
         assert cb_op.wires == Wires([0, 1, 2])
+
+    def test_resource_init_raises(self):
+        """Test that the operator raises an error if the resource operator is not a ResourceOperator."""
+        with pytest.raises(ValueError, match="All ops of the ChangeOpBasis must be"):
+            qre.ChangeOpBasis(qre.X(), 3, qre.X())
+
+    def test_resource_init_wires(self):
+        """Test that the operator initializes correctly with wires."""
+        cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.X(), wires=[0, 1])
+        assert cb_op.num_wires == 2
+        assert cb_op.wires == Wires([0, 1])
+
+        cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
+        assert cb_op.wires is None
 
     def test_resource_decomp(self):
         """Test that we can obtain the resources as expected"""
@@ -383,3 +417,24 @@ class TestChangeOpBasis:
         ]
 
         assert cb_op.resource_decomp(**cb_op.resource_params) == expected_res
+
+    def test_resource_rep(self):
+        """Test that the resource_rep method works as expected."""
+        compute_op = qre.S(wires=0)
+        target_op = qre.Prod([(qre.T(), 3)], wires=[0, 1, 2])
+        uncompute_op = qre.Adjoint(qre.S(wires=0))
+
+        cb_op = qre.ChangeOpBasis(compute_op, target_op, uncompute_op)
+        expected_res = qre.CompressedResourceOp(
+            qre.ChangeOpBasis,
+            3,
+            {
+                "cmpr_compute_op": qre.S.resource_rep(),
+                "cmpr_target_op": qre.Prod.resource_rep(
+                    ((qre.T().resource_rep(), 3),), num_wires=3
+                ),
+                "cmpr_uncompute_op": qre.Adjoint.resource_rep(base_cmpr_op=qre.S.resource_rep()),
+                "num_wires": 3,
+            },
+        )
+        assert cb_op.resource_rep(**cb_op.resource_params) == expected_res
