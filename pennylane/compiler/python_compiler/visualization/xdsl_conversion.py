@@ -247,7 +247,7 @@ def xdsl_to_qml_op(
 
 def xdsl_to_qml_measure_op(op: MeasureOp) -> MeasurementProcess:
     """Convert a ``quantum.measure`` xDSL op to a PennyLane measurement."""
-    postselect = op.postselect.value.data if op.postselect else None
+    postselect = op.postselect.value.data if op.postselect is not None else None
     return MidMeasureMP([resolve_constant_wire(op.in_qubit)], postselect=postselect)
 
 

@@ -18,6 +18,7 @@ from functools import singledispatchmethod
 from typing import Any, Union
 
 from xdsl.dialects import builtin, func
+from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
@@ -98,6 +99,15 @@ class QMLCollector:
         if not self.wire_to_ssa_qubits:
             raise NotImplementedError("No wires extracted from the register found.")
         return xdsl_to_qml_op(xdsl_op)
+
+    ############################################################
+    ### Control Flow
+    ############################################################
+
+    # pylint: disable=unused-argument
+    @handle.register
+    def _(self, op: IfOp | WhileOp | ForOp) -> None:
+        raise NotImplementedError("Control flow operations (If, While, For) are not yet supported.")
 
     ############################################################
     ### Internal Methods

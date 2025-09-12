@@ -357,6 +357,29 @@ class Testdraw:
 
         assert draw(_)() == "0: ──┤↗├──────┤  State\n1: ──RX───┤↗├─┤  State"
 
+    @pytest.mark.parametrize(
+        "postselect, mid_measure_label",
+        [
+            (None, "┤↗├"),
+            (0, "┤↗₀├"),
+            (1, "┤↗₁├"),
+        ],
+    )
+    def test_draw_mid_circuit_measurement_postselect(self, postselect, mid_measure_label):
+        """Test that mid-circuit measurements are drawn correctly."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def func():
+            qml.Hadamard(0)
+            qml.measure(0, postselect=postselect)
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = draw(func)()
+        expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
+
+        assert drawing == expected_drawing
+
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "ops, expected",
@@ -431,6 +454,21 @@ class Testdraw:
 
         with pytest.warns(UserWarning):
             draw(circ)(0.1)
+
+    def test_cond_not_implemented(self):
+        """Test that NotImplementedError is raised when cond is used."""
+
+        dev_light = qml.device("lightning.qubit", wires=3)
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(dev_light)
+        def _():
+            m0 = qml.measure(0, reset=False, postselect=0)
+            qml.cond(m0, qml.RX, qml.RY)(1.23, 1)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(_)())
 
 
 if __name__ == "__main__":
