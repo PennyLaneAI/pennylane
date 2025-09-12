@@ -314,7 +314,15 @@ class ResourceOperator(ABC):
         return Resources(zeroed=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 
     def add_series(self, other):
-        "Adds two ResourceOperators in series"
+        """Adds a `~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in series.
+
+        Args:
+            other (:class:`~.pennylane.estimator.Resources|:class:`~.pennylane.estimator.ResourceOperator): The other object to combine with, it can be
+                another ``ResourceOperator`` or a ``Resources`` object.
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources: added ``Resources``
+        """
         if isinstance(other, ResourceOperator):
             return (1 * self).add_series(1 * other)
         if isinstance(other, Resources):
@@ -323,7 +331,15 @@ class ResourceOperator(ABC):
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     def add_parallel(self, other):
-        """Add two ResourceOperators in parallel."""
+        """Adds a `~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in parallel.
+
+        Args:
+            other (:class:`~.pennylane.estimator.Resources|:class:`~.pennylane.estimator.ResourceOperator): The other object to combine with, it can be
+                another ``ResourceOperator`` or a ``Resources`` object.
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources: added ``Resources``
+        """
         if isinstance(other, ResourceOperator):
             return (1 * self).add_parallel(1 * other)
         if isinstance(other, Resources):
