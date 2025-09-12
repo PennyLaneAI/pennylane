@@ -224,7 +224,7 @@ class ResourceOperator(ABC):
         self.queue()
         super().__init__()
 
-    def queue(self, context: QueuingManager = QueuingManager) -> "ResourceOperator":
+    def queue(self, context: QueuingManager = QueuingManager) -> ResourceOperator:
         """Append the operator to the Operator queue."""
         context.append(self)
         return self
@@ -361,7 +361,7 @@ class ResourceOperator(ABC):
 
 
 def _dequeue(
-    op_to_remove: "ResourceOperator" | Iterable,
+    op_to_remove: ResourceOperator | Iterable,
     context: QueuingManager = QueuingManager,
 ):
     """Remove the given resource operator(s) from the Operator queue."""
