@@ -43,10 +43,10 @@ from xdsl.traits import (
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.type import get_element_type_or_self
 
-from pennylane.compiler.python_compiler.xdsl_extras.constraints import TensorConstraint
-from pennylane.compiler.python_compiler.xdsl_extras.traits import (
+from ...xdsl_extras import (
     AllMatchSameOperatorTrait,
     SameOperandsAndResultElementType,
+    TensorConstraint,
 )
 
 from .attributes import GatherDimensionNumbers, ScatterDimensionNumbers
