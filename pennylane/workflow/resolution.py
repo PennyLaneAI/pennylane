@@ -27,7 +27,7 @@ from packaging.version import Version
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, get_canonical_interface_name, get_interface
+from pennylane.math import Interface, get_interface
 from pennylane.transforms.core import TransformDispatcher
 
 SupportedDiffMethods = Literal[
@@ -105,7 +105,7 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
     Returns:
         Interface: resolved interface
     """
-    interface = get_canonical_interface_name(interface)
+    interface = Interface(interface)
 
     if interface == Interface.AUTO:
         params = []
@@ -113,7 +113,7 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
         try:
-            interface = get_canonical_interface_name(interface)
+            interface = Interface(interface)
         except ValueError:
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
@@ -211,7 +211,7 @@ def _resolve_hadamard(
 def _resolve_diff_method(
     initial_config: qml.devices.ExecutionConfig,
     device: qml.devices.Device,
-    tape: qml.tape.QuantumTape = None,
+    tape: qml.tape.QuantumScript | None = None,
 ) -> qml.devices.ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.

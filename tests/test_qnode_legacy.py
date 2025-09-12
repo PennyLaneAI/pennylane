@@ -86,7 +86,7 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = DefaultQubitLegacy(wires=1)
         test_interface = "something"
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
@@ -103,7 +103,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
@@ -740,7 +740,7 @@ class TestIntegration:
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit", "auto"])
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax
