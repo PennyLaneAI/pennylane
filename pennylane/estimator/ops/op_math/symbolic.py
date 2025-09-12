@@ -622,8 +622,8 @@ class Pow(ResourceOperator):
             raising each operation to the same power.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
         .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Pow`.
@@ -689,8 +689,8 @@ class Pow(ResourceOperator):
             the base operator to the power :math:`z + z_{0}`.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
         return [GateCount(cls.resource_rep(base_cmpr_op, pow_z * z))]
@@ -855,11 +855,11 @@ class Prod(ResourceOperator):
             trivially as the counts for each operation in the product.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
-        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+        .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Prod`.
 
         **Example**
 
