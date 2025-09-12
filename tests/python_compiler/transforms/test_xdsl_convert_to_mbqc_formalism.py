@@ -436,7 +436,6 @@ class TestConvertToMBQCFormalismPass:
 
         run_filecheck_qjit(circuit)
 
-
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_e2e(self):
         """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""
