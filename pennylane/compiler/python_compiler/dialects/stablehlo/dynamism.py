@@ -97,7 +97,7 @@ class DynamicBroadcastInDimOp(IRDLOperation):
         assert isinstance(operand_ty, TensorType) and isinstance(result_ty, TensorType)
 
         # dynamic_broadcast_in_dim_c2: broadcast_dimensions size == operand rank
-        bcast_dims = tuple(self.broadcast_dimensions.get_values())  # pylint: disable=E1101
+        bcast_dims = tuple(self.broadcast_dimensions.get_values())  # pylint: disable=no-member
         operand_rank = operand_ty.get_num_dims()
         if len(bcast_dims) != operand_rank:
             raise VerifyException(
@@ -144,7 +144,7 @@ class DynamicBroadcastInDimOp(IRDLOperation):
                     )
 
         # dynamic_broadcast_in_dim_c7: output_dimensions shape compatible with result rank
-        out_dims_ty = self.output_dimensions.type  # pylint: disable=E1101
+        out_dims_ty = self.output_dimensions.type  # pylint: disable=no-member
         assert isinstance(out_dims_ty, TensorType)
         # Must be rank-1 tensor (enforced by type constraint), and length must match result rank when statically known
         out_shape = out_dims_ty.get_shape()
@@ -162,9 +162,11 @@ class DynamicBroadcastInDimOp(IRDLOperation):
         # dynamic_broadcast_in_dim_c8: no duplicate expansion hints across both lists
         hints = []
         if self.known_expanding_dimensions is not None:
-            hints.extend(self.known_expanding_dimensions.get_values())  # pylint: disable=E1101
+            hints.extend(self.known_expanding_dimensions.get_values())  # pylint: disable=no-member
         if self.known_nonexpanding_dimensions is not None:
-            hints.extend(self.known_nonexpanding_dimensions.get_values())  # pylint: disable=E1101
+            hints.extend(
+                self.known_nonexpanding_dimensions.get_values()  # pylint: disable=no-member
+            )
         if len(set(hints)) != len(hints):
             raise VerifyException("duplicate expansion hint for at least one operand dimension")
 

@@ -78,7 +78,7 @@ class ReduceOp(IRDLOperation):
         SingleBlockImplicitTerminator(xstablehlo.ReturnOp),
     )
 
-    # pylint: disable=E1101
+    # pylint: disable=no-member
     # pylint: disable=too-many-branches
     def verify_(self):
         # Gather shaped operand/result types
