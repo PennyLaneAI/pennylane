@@ -37,16 +37,8 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     StateOp,
     VarianceOp,
 )
-from pennylane.measurements import (
-    MeasurementProcess,
-    MidMeasureMP,
-    ProbsOp,
-    SampleOp,
-    StateOp,
-    VarianceOp,
-)
 
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.operation import Operator
 
 from .xdsl_conversion import (
