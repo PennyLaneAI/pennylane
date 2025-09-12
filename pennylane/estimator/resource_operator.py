@@ -255,7 +255,7 @@ class ResourceOperator(ABC):
     @abstractmethod
     def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to estimate the resources."""
+        the operator that are needed to estimate the resources."""
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
         r"""Returns a compressed representation directly from the operator"""
