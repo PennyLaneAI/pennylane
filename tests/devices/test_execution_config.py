@@ -130,7 +130,7 @@ class TestExecutionConfig:
 
     def test_invalid_interface(self):
         """Tests that unknown frameworks raise a ValueError."""
-        with pytest.raises(ValueError, match="Interface must be one of"):
+        with pytest.raises(ValueError, match="'nonsense' is not a valid Interface."):
             _ = ExecutionConfig(interface="nonsense")
 
     @pytest.mark.parametrize("option", (True, False, None))
