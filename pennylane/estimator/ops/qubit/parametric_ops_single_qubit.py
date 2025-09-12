@@ -32,7 +32,7 @@ from .non_parametric_ops import T
 def _rotation_resources(precision=10e-3):
     r"""An estimate on the number of T gates needed to implement a Pauli rotation.
 
-    The expected T-count is taken from (the 'Simulation Results' section) `Efficient
+    The expected T-count is taken from the "Simulation Results" section of `Efficient
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
@@ -63,7 +63,7 @@ class PhaseShift(ResourceOperator):
         wires (Any or Wires, optional): The wires the operation acts on.
 
     Resources:
-        The phase shift gate is equivalent to a Z-rotation upto some global phase,
+        The phase shift gate is equivalent to a Z-rotation up to some global phase,
         as defined from the following identity:
 
         .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -205,7 +205,7 @@ class RX(ResourceOperator):
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
-        from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
+        from the "Simulation Results" section of `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
@@ -262,7 +262,7 @@ class RX(ResourceOperator):
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
             resources are approximating the gate with a series of T gates. The expected T-count is taken
-            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+            from the "Simulation Results" section of `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
@@ -341,7 +341,7 @@ class RY(ResourceOperator):
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
-        from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
+        from the "Simulation Results" section of `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
@@ -397,7 +397,7 @@ class RY(ResourceOperator):
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
             resources are approximating the gate with a series of T gates. The expected T-count is taken
-            from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
+            from the "Simulation Results" section of `Efficient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
@@ -477,7 +477,7 @@ class RZ(ResourceOperator):
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
-        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+        from the "Simulation Results" section of `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
@@ -530,7 +530,7 @@ class RZ(ResourceOperator):
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
             resources are approximating the gate with a series of T gates. The expected T-count is taken
-            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+            from the "Simulation Results" section of `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
             .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
