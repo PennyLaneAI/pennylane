@@ -78,6 +78,51 @@ if TYPE_CHECKING:
     from pennylane.operation import Operator
 
 
+# Base gate set for DefaultQubit
+_BASE_DQ_GATE_SET = {
+    "CNOT",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "CSWAP",
+    "CY",
+    "CZ",
+    "ControlledPhaseShift",
+    "GlobalPhase",
+    "Hadamard",
+    "ISWAP",
+    "Identity",
+    "IsingXX",
+    "IsingXY",
+    "IsingYY",
+    "IsingZZ",
+    "MultiControlledX",
+    "MultiRZ",
+    "PSWAP",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "PhaseShift",
+    "RX",
+    "RY",
+    "RZ",
+    "S",
+    "SWAP",
+    "SX",
+    "T",
+    "Toffoli",
+}
+
+
+# Complete gate set including controlled and adjoint variants
+ALL_DQ_GATE_SET = (
+    _BASE_DQ_GATE_SET
+    | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
+    | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
+)
+
+
 _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
@@ -254,12 +299,12 @@ def _supports_adjoint(circuit, device_wires, device_name):
     if circuit is None:
         return True
 
-    prog = TransformProgram()
-    prog.add_transform(validate_device_wires, device_wires, name=device_name)
-    _add_adjoint_transforms(prog)
+    program = TransformProgram()
+    program.add_transform(validate_device_wires, device_wires, name=device_name)
+    _add_adjoint_transforms(program, device_wires=device_wires)
 
     try:
-        prog((circuit,))
+        program((circuit,))
     except (
         DecompositionUndefinedError,
         DeviceError,
@@ -269,12 +314,14 @@ def _supports_adjoint(circuit, device_wires, device_name):
     return True
 
 
-def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
+def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_wires=None) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
     Args:
         program (TransformProgram): where we will add the adjoint differentiation transforms
+        device_vjp (bool): whether or not to use the device-provided Vector Jacobian Product (VJP).
+        device_wires (Wires): the device wires, used to calculate available work wires
 
     Side Effects:
         Adds transforms to the input program.
@@ -284,7 +331,12 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
-        decompose, stopping_condition=adjoint_ops, name=name, skip_initial_state_prep=False
+        decompose,
+        stopping_condition=adjoint_ops,
+        device_wires=device_wires,
+        target_gates=ALL_DQ_GATE_SET,
+        name=name,
+        skip_initial_state_prep=False,
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
@@ -588,6 +640,8 @@ class DefaultQubit(Device):
         transform_program.add_transform(
             decompose,
             stopping_condition=_stopping_condition,
+            device_wires=self.wires,
+            target_gates=ALL_DQ_GATE_SET,
             name=self.name,
         )
         _allow_resets = config.mcm_config.mcm_method != "deferred"
@@ -619,7 +673,9 @@ class DefaultQubit(Device):
 
         if config.gradient_method == "adjoint":
             _add_adjoint_transforms(
-                transform_program, device_vjp=config.use_device_jacobian_product
+                transform_program,
+                device_vjp=config.use_device_jacobian_product,
+                device_wires=self.wires,
             )
         return transform_program
 

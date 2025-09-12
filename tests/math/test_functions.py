@@ -1068,29 +1068,29 @@ class TestInterfaceEnum:
     @pytest.mark.parametrize("user_input", [None, "numpy", "scipy"])
     def test_numpy(self, user_input):
         """Test that the numpy interface is correctly returned"""
-        assert get_canonical_interface_name(user_input) == fn.Interface.NUMPY
+        assert fn.Interface(user_input) == fn.Interface.NUMPY
 
     def test_autograd(self):
         """Test that the autograd interface is correctly returned"""
-        assert get_canonical_interface_name("autograd") == fn.Interface.AUTOGRAD
+        assert fn.Interface("autograd") == fn.Interface.AUTOGRAD
 
     @pytest.mark.parametrize("user_input", ["torch", "pytorch"])
     def test_torch(self, user_input):
         """Test that the torch interface is correctly returned"""
-        assert get_canonical_interface_name(user_input) == fn.Interface.TORCH
+        assert fn.Interface(user_input) == fn.Interface.TORCH
 
     @pytest.mark.parametrize("user_input", ["JAX", "jax", "jax-python"])
     def test_jax(self, user_input):
         """Test that the jax interface is correctly returned"""
-        assert get_canonical_interface_name(user_input) == fn.Interface.JAX
+        assert fn.Interface(user_input) == fn.Interface.JAX
 
     def test_jax_jit(self):
         """Test that the jax-jit interface is correctly returned"""
-        assert get_canonical_interface_name("jax-jit") == fn.Interface.JAX_JIT
+        assert fn.Interface("jax-jit") == fn.Interface.JAX_JIT
 
     def test_auto(self):
         """Test that the auto interface is correctly returned"""
-        assert get_canonical_interface_name("auto") == fn.Interface.AUTO
+        assert fn.Interface("auto") == fn.Interface.AUTO
 
     def test_eq(self):
         """Test that an error is raised if comparing to string"""
