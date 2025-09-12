@@ -367,10 +367,11 @@ class _CachedCallable:
         method (str): The method to be used for decomposition.
         epsilon (float): The maximum permissible operator norm error for the decomposition.
         cache_size (int): The size of the cache built for the decomposition function based on the angle.
+        is_qjit (bool): Whether the decomposition is being performed with QJIT enabled.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
     """
 
-    def __init__(self, method, epsilon, cache_size, **method_kwargs):
+    def __init__(self, method, epsilon, cache_size, is_qjit=False, **method_kwargs):
         match method:
             case "sk":
                 self.decompose_fn = lru_cache(maxsize=cache_size)(
@@ -378,7 +379,7 @@ class _CachedCallable:
                 )
             case "gridsynth":
                 self.decompose_fn = lru_cache(maxsize=cache_size)(
-                    partial(rs_decomposition, epsilon=epsilon, **method_kwargs)
+                    partial(rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs)
                 )
             case _:
                 raise NotImplementedError(
@@ -388,10 +389,12 @@ class _CachedCallable:
         self.method = method
         self.epsilon = epsilon
         self.cache_size = cache_size
+        self.is_qjit = is_qjit
         self.method_kwargs = method_kwargs
         self.query = lru_cache(maxsize=cache_size)(self.cached_decompose)
 
-    def compatible(self, method, epsilon, cache_size, cache_eps_rtol, **method_kwargs):
+    # pylint: disable=too-many-arguments
+    def compatible(self, method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs):
         """Check compatibility based on `method`, `epsilon`, `cache_eps_rtol` and `method_kwargs`."""
         return (
             self.method == method
@@ -402,20 +405,24 @@ class _CachedCallable:
                 else True
             )
             and self.cache_size <= cache_size
+            and self.is_qjit == is_qjit
             and self.method_kwargs == method_kwargs
         )
 
     def cached_decompose(self, op):
         """Decomposes the angle into a sequence of gates."""
-        f_adj = op.data[0] < 2 * math.pi  # 4 * pi / 2
-        cached_op = op if f_adj else op.adjoint()
+        if not self.is_qjit:
+            f_adj = op.data[0] < 2 * math.pi  # 4 * pi / 2
+            cached_op = op if f_adj else op.adjoint()
 
-        seq = self.decompose_fn(cached_op)
-        if f_adj:
-            return seq
+            seq = self.decompose_fn(cached_op)
+            if f_adj:
+                return seq
 
-        adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
-        return adj[1:] + adj[:1]
+            adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
+            return adj[1:] + adj[:1]
+
+        return self.decompose_fn(op)
 
 
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
@@ -557,12 +564,16 @@ def clifford_t_decomposition(
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
+        is_qjit = qml.compiler.active_compiler() == "catalyst"
+
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
         if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
-            method, epsilon, cache_size, cache_eps_rtol, **method_kwargs
+            method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs
         ):
-            _CLIFFORD_T_CACHE = _CachedCallable(method, epsilon, cache_size, **method_kwargs)
+            _CLIFFORD_T_CACHE = _CachedCallable(
+                method, epsilon, cache_size, is_qjit, **method_kwargs
+            )
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
@@ -571,13 +582,18 @@ def clifford_t_decomposition(
                 # If simplifies to Identity, skip it
                 if not (op_param := op.simplify().data):
                     continue
+                wire = op.wires[0] if is_qjit else 0
                 # Decompose the RZ operation with a default wire
-                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [0]))
-                # Extract the global phase from the last operation
-                phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
-                # Map the operations to the original wires
+                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [wire]))
                 op_wire = op.wires[0]
-                decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
+                # Extract the global phase from the last operation
+                # Map the operations to the original wires
+                if is_qjit:
+                    phase += clifford_ops[-1].data[0]
+                    decomp_ops.extend(clifford_ops[:-1])  # Already mapped
+                else:
+                    phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
+                    decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
             else:
                 decomp_ops.append(op)
 
@@ -591,7 +607,10 @@ def clifford_t_decomposition(
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    [new_tape], _ = cancel_inverses(new_tape)
+    # TODO: Remove this branch after fix https://github.com/PennyLaneAI/pennylane/issues/7803, so
+    # then cancel_inverses can compute with QJIT
+    if not is_qjit:
+        [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
