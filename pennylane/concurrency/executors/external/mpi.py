@@ -41,8 +41,11 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
 
     Args:
-        *args: non keyword arguments to pass through to the executor backend.
-        **kwargs: keyword arguments to pass through to the executor backend.
+        max_workers (int, optional): Maximum number of worker processes to use. If None, defaults to the number of available MPI processes.
+        persist (bool): Whether to persist the executor. Currently not supported and will raise an error if True.
+        use_pkl5 (bool): Whether to use the pkl5 protocol for serialization. Defaults to True
+        profile (bool): Whether to enable profiling of function execution. Defaults to False.
+        **kwargs: Additional keyword arguments to pass through to the executor backend.
 
 
     """
@@ -69,6 +72,9 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
             blocking=True,
         )
 
+        self._profile_fn = kwargs.pop("profile", False)
+        self._use_pkl5 = kwargs.pop("use_pkl5", True)
+
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
         r"""
         dispatch:   the named method to pass the function parameters
@@ -76,7 +82,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         args:       the arguments to pass to ``fn``
         kwargs:     the keyword arguments to pass to ``fn``
         """
-        kwargs.update({"use_pkl5": True})
+        kwargs.update({"use_pkl5": self._use_pkl5})
         return super().__call__(
             dispatch,
             fn,
@@ -89,21 +95,43 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         return self._size
 
     def submit(self, fn: Callable, *args, **kwargs):
-        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
             output_f = executor.submit(fn, *args, **kwargs)
         return output_f.result()
 
     def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
+        if self._profile_fn:
+            self._print_worker_info(fn, args)
+
+            self.call_fn = fn
+
+            with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
+                output_pf = executor.map(self.profile_fn, *args, chunksize=chunksize, **kwargs)
+
+            output_f = self.print_final_profile_info(output_pf)
+            return output_f
+
+        with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
             output_f = executor.map(fn, *args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
     def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
+        if self._profile_fn:
+            self._print_worker_info(fn, args)
+
+            self.call_fn = fn
+
+            with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
+                output_pf = executor.starmap(self.profile_fn, args, chunksize=chunksize, **kwargs)
+
+            output_f = self.print_final_profile_info(output_pf)
+            return output_f
+
+        with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
             output_f = executor.starmap(fn, args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
@@ -112,6 +140,47 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
     def __del__(self):
         self.shutdown()
+
+    def print_profile_info(self, elapsed: float):
+        """
+        Print profiling information about the execution time.
+        """
+        from mpi4py import MPI
+
+        rank = MPI.COMM_WORLD.Get_rank()
+
+        print(
+            f"Rank {rank:<3} | finished: {self.call_fn.__name__} | time: {elapsed:.4f} seconds",
+            flush=True,
+        )
+
+    def print_final_profile_info(self, output_pf: Sequence):
+        """
+        Print final profiling information after all tasks have been executed.
+        """
+        list_output_pf = list(output_pf)
+
+        time_stat, output_f = zip(*list_output_pf)
+        runner_ids, elapsed_times = zip(*time_stat)
+
+        total_elapsed = {i: [0.0, 0] for i in set(runner_ids)}
+        for runner_id, elapsed_time in zip(runner_ids, elapsed_times):
+            total_elapsed[runner_id][0] += elapsed_time
+            total_elapsed[runner_id][1] += 1
+
+        print(f"Worker ID |    Cumulative Time | Count calls")
+        for runner_id, (elapsed_time, count) in total_elapsed.items():
+            print(f"{runner_id:>9} | {elapsed_time:16.4f} s | {count:<10}")
+
+        return output_f
+
+    def get_runner_id(self):
+        """
+        Get the runner id for the executor.
+        """
+        from mpi4py import MPI
+
+        return MPI.COMM_WORLD.Get_rank()
 
     @classmethod
     def _exec_backend(cls):
@@ -137,6 +206,13 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
     .. note::
         All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
+
+    Args:
+        max_workers (int, optional): Maximum number of worker processes to use. If None, defaults to the number of available MPI processes.
+        persist (bool): Whether to persist the executor. Currently not supported and will raise an error if True.
+        use_pkl5 (bool): Whether to use the pkl5 protocol for serialization. Defaults to True
+        profile (bool): Whether to enable profiling of function execution. Defaults to False.
+        **kwargs: Additional keyword arguments to pass through to the executor backend.
     """
 
     def __init__(self, max_workers=None, persist: bool = False, **kwargs):
@@ -148,7 +224,7 @@ class MPICommExec(ExtExec):  # pragma: no cover
         from mpi4py import MPI  # Required to call MPI_Init
 
         self._comm = MPI.COMM_WORLD
-        self._size = MPI.COMM_WORLD.Get_size()
+        self._size = MPI.COMM_WORLD.Get_size() if max_workers is None else max_workers
 
         self._cfg = ExecBackendConfig(
             submit_fn="submit",
@@ -160,6 +236,9 @@ class MPICommExec(ExtExec):  # pragma: no cover
             blocking=False,
         )
 
+        self._profile_fn = kwargs.pop("profile", False)
+        self._use_pkl5 = kwargs.pop("use_pkl5", True)
+
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
         r"""
         dispatch:   the named method to pass the function parameters
@@ -167,7 +246,7 @@ class MPICommExec(ExtExec):  # pragma: no cover
         args:       the arguments to pass to ``fn``
         kwargs:     the keyword arguments to pass to ``fn``
         """
-        kwargs.update({"use_pkl5": True})
+        kwargs.update({"use_pkl5": self._use_pkl5})
         return super().__call__(
             dispatch,
             fn,
@@ -176,21 +255,45 @@ class MPICommExec(ExtExec):  # pragma: no cover
         )
 
     def submit(self, fn: Callable, *args, **kwargs):
-        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
             output_f = executor.submit(fn, *args, **kwargs)
         return output_f.result()
 
     def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
+        if self._profile_fn:
+            self._print_worker_info(fn, args)
+
+            self.call_fn = fn
+
+            with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
+                output_pf = executor.map(self.profile_fn, *args, chunksize=chunksize, **kwargs)
+
+            output_f = self.print_final_profile_info(output_pf)
+
+            return output_f
+
+        with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
             output_f = executor.map(fn, *args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
     def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
+        if self._profile_fn:
+            self.call_fn = fn
+
+            self._print_worker_info(fn, args)
+
+            with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
+                output_pf = executor.starmap(self.profile_fn, args, chunksize=chunksize, **kwargs)
+
+            output_f = self.print_final_profile_info(output_pf)
+
+            return output_f
+
+        with self._exec_backend()(max_workers=self.size, use_pkl5=self._use_pkl5) as executor:
             output_f = executor.starmap(fn, args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
@@ -203,6 +306,47 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
     def __del__(self):
         self.shutdown()
+
+    def print_profile_info(self, elapsed: float):
+        """
+        Print profiling information about the execution time.
+        """
+        from mpi4py import MPI
+
+        rank = MPI.COMM_WORLD.Get_rank()
+
+        print(
+            f"Rank {rank:<3} | finished: {self.call_fn.__name__} | time: {elapsed:.4f} seconds",
+            flush=True,
+        )
+
+    def print_final_profile_info(self, output_pf: Sequence):
+        """
+        Print final profiling information after all tasks have been executed.
+        """
+        list_output_pf = list(output_pf)
+
+        time_stat, output_f = zip(*list_output_pf)
+        runner_ids, elapsed_times = zip(*time_stat)
+
+        total_elapsed = {i: [0.0, 0] for i in set(runner_ids)}
+        for runner_id, elapsed_time in zip(runner_ids, elapsed_times):
+            total_elapsed[runner_id][0] += elapsed_time
+            total_elapsed[runner_id][1] += 1
+
+        print(f"Worker ID |    Cumulative Time | Count calls")
+        for runner_id, (elapsed_time, count) in total_elapsed.items():
+            print(f"{runner_id:>9} | {elapsed_time:16.4f} s | {count:<10}")
+
+        return output_f
+
+    def get_runner_id(self):
+        """
+        Get the runner id for the executor.
+        """
+        from mpi4py import MPI
+
+        return MPI.COMM_WORLD.Get_rank()
 
     @classmethod
     def _exec_backend(cls):
