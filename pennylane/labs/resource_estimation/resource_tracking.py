@@ -72,7 +72,6 @@ DefaultGateSet = frozenset(
 )
 
 
-@singledispatch
 def estimate(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set | None = None,
