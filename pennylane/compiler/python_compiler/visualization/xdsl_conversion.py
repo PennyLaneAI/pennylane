@@ -23,7 +23,6 @@ from xdsl.ir import SSAValue
 import pennylane as qml
 from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
-    ComputationalBasisOp,
     CustomOp,
 )
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
