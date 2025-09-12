@@ -17,6 +17,7 @@ Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 from functools import partial, singledispatch
 
 import networkx as nx
+import numpy as np
 
 from pennylane import PhaseShift, adjoint, math, measure
 from pennylane.decomposition import enabled_graph, register_resources
@@ -72,6 +73,12 @@ def correct_final_samples(results, tape):
         for shot_res in result:
             measurements = shot_res[0]
             mcms = shot_res[1:]
+            ####
+            # hack work-around because null.qubit
+            # nests the MCMs for unknown reasons
+            if np.shape(mcms[0]):
+                mcms = [m[0][0] for m in mcms]
+            ####
             new_measurements = correction_fn(mcms, measurements)
             corrected_samples.append([new_measurements, *mcms])
         corrected_results.append(tuple(corrected_samples))
@@ -165,7 +172,7 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
         ops_queue = get_new_ops(tape.final_tape, wire_map, include_corrections=False)
         new_wires = [wire_map[w] for w in meas_wires]
 
-        # mcms for postprocessing will be added after this using `dynamic_one_shot`, 
+        # mcms for postprocessing will be added after this using `dynamic_one_shot`,
         # because it works, and adding them here creates havoc
         new_tapes.append(
             tape.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
