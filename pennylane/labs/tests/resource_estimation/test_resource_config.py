@@ -125,7 +125,6 @@ class TestResourceConfig:
             ResourceCRZ,
         ],
     )
-
     def test_set_single_qubit_rotation_precision_for_rotation_ops(self, rotation_op):
         """Test that the single qubit rotation error is set correctly for a given rotation gate."""
         config = ResourceConfig()
