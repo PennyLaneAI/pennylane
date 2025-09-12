@@ -30,3 +30,5 @@ from .controlled_ops import (
     TempAND,
     Toffoli,
 )
+
+from .symbolic import Adjoint, Controlled

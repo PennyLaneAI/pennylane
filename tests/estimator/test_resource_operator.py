@@ -22,13 +22,15 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import (
+    CompressedResourceOp,
     GateCount,
+    ResourceOperator,
     _dequeue,
     _make_hashable,
     resource_rep,
 )
+from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 

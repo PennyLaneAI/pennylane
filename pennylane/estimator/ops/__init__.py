@@ -13,36 +13,8 @@
 # limitations under the License.
 r"""This module contains resource operators for PennyLane Operators"""
 
-from .identity import GlobalPhase, Identity
+from .identity import *
 
-from .qubit import (
-    Hadamard,
-    S,
-    SWAP,
-    T,
-    X,
-    Y,
-    Z,
-    PhaseShift,
-    RX,
-    RY,
-    RZ,
-    Rot,
-)
+from .qubit import *
 
-from .op_math import (
-    CCZ,
-    CH,
-    CNOT,
-    ControlledPhaseShift,
-    CRot,
-    CRX,
-    CRY,
-    CRZ,
-    CSWAP,
-    CY,
-    CZ,
-    MultiControlledX,
-    TempAND,
-    Toffoli,
-)
+from .op_math import *
