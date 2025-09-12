@@ -1047,6 +1047,9 @@
 * Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
+* Add nightly RC builds script to `.github/workflows`.
+  [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
+  
 <h3>Documentation 📝</h3>
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
@@ -1194,6 +1197,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
