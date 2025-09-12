@@ -33,9 +33,9 @@ from pennylane.estimator.ops.op_math.controlled_ops import (
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
-    ResourcesNotDefined,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
 
@@ -72,7 +72,7 @@ class TestCH:
 
     def test_resource_controlled(self):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(1, 0)
 
     pow_data = (
@@ -124,7 +124,7 @@ class TestCY:
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
 
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -184,7 +184,7 @@ class TestCZ:
                 self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
             )
         else:
-            with pytest.raises(ResourcesNotDefined):
+            with pytest.raises(ResourcesUndefinedError):
                 self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = [
@@ -232,7 +232,7 @@ class TestCSWAP:
     @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -281,7 +281,7 @@ class TestCCZ:
     @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -303,7 +303,7 @@ class TestCNOT:
 
     def test_resources(self):
         """Test that the resources method is not implemented"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.resource_decomp()
 
     def test_resource_rep(self):
@@ -338,7 +338,7 @@ class TestCNOT:
                 self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
             )
         else:
-            with pytest.raises(ResourcesNotDefined):
+            with pytest.raises(ResourcesUndefinedError):
                 self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -398,7 +398,7 @@ class TestToffoli:
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -570,7 +570,7 @@ class TestCRX:
     @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -624,7 +624,7 @@ class TestCRY:
     @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -677,7 +677,7 @@ class TestCRZ:
     @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -730,7 +730,7 @@ class TestCRot:
     @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     pow_data = (
@@ -825,5 +825,5 @@ class TestControlledPhaseShift:
     def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
         """Test that the controlled resources are as expected"""
         op = ControlledPhaseShift()
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)

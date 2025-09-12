@@ -18,10 +18,10 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments,unused-argument
 
@@ -123,7 +123,7 @@ class CH(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -232,7 +232,7 @@ class CY(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -345,7 +345,7 @@ class CZ(ResourceOperator):
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
             return [GateCount(resource_rep(CCZ))]
 
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -460,7 +460,7 @@ class CSWAP(ResourceOperator):
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -572,7 +572,7 @@ class CCZ(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -605,7 +605,7 @@ class CNOT(ResourceOperator):
 
     Resources:
         The CNOT gate is treated as a fundamental gate and thus it cannot be decomposed further.
-        Requesting the resources of this gate raises a ``ResourcesNotDefined`` error.
+        Requesting the resources of this gate raises a ``ResourcesUndefinedError`` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.CNOT`.
 
@@ -634,12 +634,12 @@ class CNOT(ResourceOperator):
 
         Resources:
             The CNOT gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a ``ResourcesNotDefined`` error.
+            further. Requesting the resources of this gate raises a ``ResourcesUndefinedError`` error.
 
         Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+            ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
@@ -667,7 +667,7 @@ class CNOT(ResourceOperator):
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
             return [GateCount(resource_rep(Toffoli))]
 
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -765,7 +765,7 @@ class TempAND(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
 
 class Toffoli(ResourceOperator):
@@ -988,7 +988,7 @@ class Toffoli(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, elbow=None, **kwargs) -> list[GateCount]:
@@ -1143,7 +1143,7 @@ class MultiControlledX(ResourceOperator):
             gate_lst.append(GateCount(toffoli))
             return gate_lst
 
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def adjoint_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, **kwargs) -> list[GateCount]:
@@ -1337,7 +1337,7 @@ class CRX(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1465,7 +1465,7 @@ class CRY(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1593,7 +1593,7 @@ class CRZ(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1739,7 +1739,7 @@ class CRot(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -1874,7 +1874,7 @@ class ControlledPhaseShift(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
