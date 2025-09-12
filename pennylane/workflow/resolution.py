@@ -211,7 +211,7 @@ def _resolve_hadamard(
 def _resolve_diff_method(
     initial_config: qml.devices.ExecutionConfig,
     device: qml.devices.Device,
-    tape: qml.tape.QuantumTape | None = None,
+    tape: qml.tape.QuantumScript | None = None,
 ) -> qml.devices.ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
