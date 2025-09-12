@@ -48,7 +48,7 @@ class ResourceMultiRZ(ResourceOperator):
     >>> multi_rz = plre.ResourceMultiRZ(num_wires=3)
     >>> gate_set = {"CNOT", "RZ"}
     >>>
-    >>> print(plre.estimate_resources(multi_rz, gate_set))
+    >>> print(plre.estimate(multi_rz, gate_set))
     --- Resources: ---
     Total qubits: 3
     Total gates : 5
@@ -240,7 +240,7 @@ class ResourcePauliRot(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> pr = plre.ResourcePauliRot(pauli_string="XYZ")
-    >>> print(plre.estimate_resources(pr, plre.StandardGate\
+    >>> print(plre.estimate(pr, plre.StandardGate\
     Set))
     --- Resources: ---
     Total qubits: 3
@@ -560,7 +560,7 @@ class ResourceIsingXX(ResourceOperator):
 
     >>> ising_xx = plre.ResourceIsingXX()
     >>> gate_set = {"CNOT", "RX"}
-    >>> print(plre.estimate_resources(ising_xx, gate_set))
+    >>> print(plre.estimate(ising_xx, gate_set))
     --- Resources: ---
     Total qubits: 2
     Total gates : 3
@@ -751,7 +751,7 @@ class ResourceIsingYY(ResourceOperator):
 
     >>> ising_yy = plre.ResourceIsingYY()
     >>> gate_set = {"CY", "RY"}
-    >>> print(plre.estimate_resources(ising_yy, gate_set))
+    >>> print(plre.estimate(ising_yy, gate_set))
     --- Resources: ---
     Total qubits: 2
     Total gates : 3
@@ -936,7 +936,7 @@ class ResourceIsingXY(ResourceOperator):
 
     >>> ising_xy = plre.ResourceIsingXY()
     >>> gate_set = {"Hadamard", "CY", "RY", "RX"}
-    >>> print(plre.estimate_resources(ising_xy, gate_set))
+    >>> print(plre.estimate(ising_xy, gate_set))
     --- Resources: ---
     Total qubits: 2
     Total gates : 6
@@ -1130,7 +1130,7 @@ class ResourceIsingZZ(ResourceOperator):
 
     >>> ising_zz = plre.ResourceIsingZZ()
     >>> gate_set = {"CNOT", "RZ"}
-    >>> print(plre.estimate_resources(ising_zz, gate_set))
+    >>> print(plre.estimate(ising_zz, gate_set))
     --- Resources: ---
     Total qubits: 2
     Total gates : 3
@@ -1318,7 +1318,7 @@ class ResourcePSWAP(ResourceOperator):
 
     >>> pswap = plre.ResourcprecisionWAP()
     >>> gate_set = {"CNOT", "SWAP", "PhaseShift"}
-    >>> print(plre.estimate_resources(pswap, gate_set))
+    >>> print(plre.estimate(pswap, gate_set))
     --- Resources: ---
     Total qubits: 2
     Total gates : 4

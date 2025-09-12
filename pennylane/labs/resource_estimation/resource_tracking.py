@@ -72,12 +72,12 @@ DefaultGateSet = frozenset(
 )
 
 
-def estimate_resources(
+def estimate(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
+    config: ResourceConfig | None = None,
 ) -> Resources | Callable:
     r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
     provided in the gateset.
@@ -87,14 +87,14 @@ def estimate_resources(
             to obtain resources from.
         gate_set (Set, optional): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        config (ResourceConfig, optional): A ResourceConfig object of additional parameters which sets default values
-            when they are not specified on the operator.
         work_wires (int | dict | optional): The number of available zeroed and/or any_state ancilla
             qubits. If an integer is provided, it specifies the number of zeroed ancillas. If a
             dictionary is provided, it should have the keys ``"zeroed"`` and ``"any_state"``.
             Defaults to ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
             exceed the available amount. The default is ``False``.
+        config (ResourceConfig, optional): A ResourceConfig object of additional parameters which sets default values
+            when they are not specified on the operator.
 
     Returns:
         Resources: the quantum resources required to execute the circuit
@@ -127,7 +127,7 @@ def estimate_resources(
 
     >>> config = plre.ResourceConfig()
     >>> config.set_single_qubit_rot_precision(1e-4)
-    >>> res = plre.estimate_resources(
+    >>> res = plre.estimate(
     ...     my_circuit,
     ...     gate_set = plre.DefaultGateSet,
     ...     config=config,
@@ -143,16 +143,16 @@ def estimate_resources(
      {'Hadamard': 5, 'CNOT': 10, 'T': 264}
 
     """
-    return _estimate_resources_dispatch(obj, gate_set, config, work_wires, tight_budget)
+    return _estimate_resources_dispatch(obj, gate_set, work_wires, tight_budget, config)
 
 
 @singledispatch
 def _estimate_resources_dispatch(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
+    config: ResourceConfig | None = None,
 ) -> Resources | Callable:
     """Internal singledispatch function for resource estimation."""
     raise TypeError(
@@ -164,9 +164,9 @@ def _estimate_resources_dispatch(
 def _resources_from_qfunc(
     obj: Callable,
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
     work_wires=0,
     tight_budget=False,
+    config: ResourceConfig | None = None,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
 
@@ -207,9 +207,9 @@ def _resources_from_qfunc(
 def _resources_from_resource(
     obj: Resources,
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
     work_wires=0,
     tight_budget=None,
+    config: ResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a resources object."""
 
@@ -247,9 +247,9 @@ def _resources_from_resource(
 def _resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
     work_wires=0,
     tight_budget=None,
+    config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
     if isinstance(obj, Operation):
@@ -258,9 +258,9 @@ def _resources_from_resource_ops(
     return _resources_from_resource(
         1 * obj,
         gate_set,
-        config,
         work_wires,
         tight_budget,
+        config,
     )
 
 
@@ -268,18 +268,18 @@ def _resources_from_resource_ops(
 def _resources_from_pl_ops(
     obj: Operation,
     gate_set: set | None = None,
-    config: ResourceConfig | None = None,
     work_wires=0,
     tight_budget=None,
+    config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a pl operator."""
     obj = map_to_resource_op(obj)
     return _resources_from_resource(
         1 * obj,
         gate_set,
-        config,
         work_wires,
         tight_budget,
+        config,
     )
 
 

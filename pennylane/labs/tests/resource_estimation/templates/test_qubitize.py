@@ -130,7 +130,7 @@ class TestQubitizeTHC:
     def test_resources(self, compact_ham, prep_op, select_op, expected_res):
         """Test that the resources are correct."""
 
-        wo_cost = plre.estimate_resources(
+        wo_cost = plre.estimate(
             plre.ResourceQubitizeTHC(
                 compact_ham,
                 prep_op=prep_op,

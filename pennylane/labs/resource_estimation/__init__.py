@@ -41,7 +41,7 @@ Resource Estimation Functions:
 .. autosummary::
     :toctree: api
 
-    ~estimate_resources
+    ~estimate
     ~resource_rep
 
 Qubit Management Classes:
@@ -177,7 +177,7 @@ from .resource_tracking import (
     StandardGateSet,
     DefaultGateSet,
     ResourceConfig,
-    estimate_resources,
+    estimate,
 )
 from .ops import (
     ResourceHadamard,
