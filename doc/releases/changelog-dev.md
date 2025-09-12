@@ -399,9 +399,10 @@
 
 <h4>Other improvements</h4>
 
-* A `draw` function has been introduced in the `qml.compiler.python_compiler.visualization` module to visualize circuits
-  with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
+* Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module 
+  to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+  [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
 
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
