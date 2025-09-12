@@ -128,13 +128,10 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
             return op.value.value.data  # Catalyst
         case "stablehlo.convert":
             return resolve_constant_params(op.operands[0])
-        case "builtin.unregistered":
-            if hasattr(op, "attributes"):
-                match op.attributes["op_name__"].data:
-                    case "stablehlo.concatenate":
-                        return [resolve_constant_params(operand) for operand in op.operands]
-                    case "stablehlo.broadcast_in_dim":
-                        return resolve_constant_params(op.operands[0])
+        case "stablehlo.concatenate":
+            return [resolve_constant_params(operand) for operand in op.operands]
+        case "stablehlo.broadcast_in_dim":
+            return resolve_constant_params(op.operands[0])
         case _:
             raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 

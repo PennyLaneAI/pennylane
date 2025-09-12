@@ -66,6 +66,22 @@ from .control_flow import (
     OptimizationBarrierOp,
 )
 
+from .data_movement import (
+    BroadcastInDimOp,
+    ConcatenateOp,
+    DynamicSliceOp,
+    GatherOp,
+    ReshapeOp,
+    ScatterOp,
+    SliceOp,
+)
+
+from .attributes import (
+    GatherDimensionNumbers,
+    ResultAccuracyModeAttr,
+    ScatterDimensionNumbers,
+)
+
 # Import the main StableHLO dialect
 from .dialect import StableHLO
 
@@ -111,4 +127,16 @@ __all__ = [
     "IfOp",
     "WhileOp",
     "OptimizationBarrierOp",
+    # Data movement operations
+    "BroadcastInDimOp",
+    "ConcatenateOp",
+    "DynamicSliceOp",
+    "GatherOp",
+    "ReshapeOp",
+    "ScatterOp",
+    "SliceOp",
+    # Attributes
+    "GatherDimensionNumbers",
+    "ResultAccuracyModeAttr",
+    "ScatterDimensionNumbers",
 ]

@@ -67,7 +67,7 @@ class IfOp(IRDLOperation):
 
     pred = operand_def(HLO_PredTensor)
 
-    results = var_result_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
+    res = var_result_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
 
     true_branch = region_def("single_block")
 
@@ -110,7 +110,7 @@ class WhileOp(IRDLOperation):
 
     operand = var_operand_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
 
-    results = var_result_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
+    res = var_result_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
 
     cond = region_def("single_block")
 
@@ -146,7 +146,7 @@ class OptimizationBarrierOp(IRDLOperation):
 
     operand = var_operand_def(HLO_TensorOrToken)
 
-    results = var_result_def(HLO_TensorOrToken)
+    res = var_result_def(HLO_TensorOrToken)
 
     traits = traits_def(
         Pure(),

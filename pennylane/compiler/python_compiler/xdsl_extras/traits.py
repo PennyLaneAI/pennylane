@@ -19,7 +19,9 @@ This module provides operation traits that can be used to define operation invar
 additional semantic information, or to group operations that have similar properties.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from xdsl.dialects.builtin import TensorType, VectorType
 from xdsl.ir import Attribute, Operation
@@ -75,6 +77,30 @@ class SameOperandsElementType(OpTrait):
             if elem_type != first_elem_type:
                 raise VerifyException(
                     f"'{op.name}' requires the same element type for all operands"
+                )
+
+
+@dataclass(frozen=True)
+class SameOperandsAndResultElementType(OpTrait):
+    """Constrain the operation to have the same element type for all operands and results."""
+
+    def verify(self, op: Operation) -> None:
+        """Verify that the operation has the same element type for all operands and results."""
+
+        if len(op.results) < 1 or len(op.operands) < 1:
+            raise VerifyException(f"'{op.name}' requires at least one result or operand")
+
+        # Get the element type of the first operand
+        first_elem_type = get_element_type_or_self(op.operand_types[0])
+
+        all_types = list(op.operand_types) + list(op.result_types)
+
+        # Check that all other operands have the same element type
+        for type_to_check in all_types[1:]:
+            elem_type = get_element_type_or_self(type_to_check)
+            if elem_type != first_elem_type:
+                raise VerifyException(
+                    f"'{op.name}' requires the same element type for all operands and results"
                 )
 
 
@@ -170,3 +196,45 @@ class Elementwise(OpTrait):
         We should update this when the TODO is resolved.
         """
         return isinstance(attr_type, (VectorType, TensorType))
+
+
+@dataclass(frozen=True)
+class AllMatchSameOperatorTrait(OpTrait):
+    """
+    Verify that a list of operation attributes all match under the same operator
+    (e.g., size, rank, type, shape, element type).
+
+    Parameters:
+    - attr_names: attribute names on the op to compare
+    - operator: callable taking the attribute value and returning a comparable value
+    - summary: human-readable name of the property used in error messages
+    """
+
+    attr_names: tuple[str, ...]
+    operator: Callable[[Any], Any]
+    summary: str
+
+    def verify(self, op: Operation) -> None:
+        """Verify that the operation attributes all match under the same operator."""
+        attributes = []
+        for name in self.attr_names:
+            value = getattr(op, name, None)
+            if value is None:
+                return
+            attributes.append(value)
+
+        if len(attributes) <= 1:
+            return
+
+        names_str = ", ".join(self.attr_names)
+        try:
+            results = [self.operator(attr) for attr in attributes]
+        except (TypeError, ValueError, AttributeError) as e:
+            raise VerifyException(f"cannot compute {self.summary} for {{{names_str}}}: {e}") from e
+
+        first = results[0]
+        if any(res != first for res in results[1:]):
+            results_str = ", ".join(str(r) for r in results)
+            raise VerifyException(
+                f"all of {{{names_str}}} must have the same {self.summary}: got {self.summary}s {results_str}"
+            )
