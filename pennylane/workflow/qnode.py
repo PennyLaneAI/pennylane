@@ -681,7 +681,7 @@ class QNode:
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43. "
+            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44. "
             "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
             PennyLaneDeprecationWarning,
         )
