@@ -575,7 +575,6 @@ class TestMCMs:
         assert qml.math.allclose(res, np.cos(0.5))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestPreprocessingTransforms:
     """Tests for the preprocessing transform pipeline."""
 
@@ -642,6 +641,7 @@ class TestPreprocessingTransforms:
         assert "stopping_condition" in decompose_transform.kwargs
         assert decompose_transform.kwargs["stopping_condition"] == stopping_condition
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.integration
     def test_integration_with_qnode(self):
         """Test integration with QNode to ensure the device works end-to-end."""
@@ -657,6 +657,7 @@ class TestPreprocessingTransforms:
         result = circuit()
         assert isinstance(result, (float, np.floating))
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.integration
     def test_integration_with_multiple_decomposition_layers(self):
         """Test that operations requiring multiple layers of decomposition work."""
