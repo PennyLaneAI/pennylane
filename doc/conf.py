@@ -351,7 +351,6 @@ def add_noindex_to_estimator_stubs(app, docname, source):
             return directive_block
         return f"{match.group(1)}\n   :noindex:{match.group(2)}"
 
-    # TODO: Replace with :no-index-entry: when support for sphinx >=8.2 is available.
     new_content, num_subs = re.subn(
         r"(^\s*\.\.\s+auto(?:class|function|method)::.*?)(\n\s*($|\S.*))",
         _add_noindex_func,
