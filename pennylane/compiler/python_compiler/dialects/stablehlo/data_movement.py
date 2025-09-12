@@ -84,16 +84,16 @@ class BroadcastInDimOp(IRDLOperation):
         # TODO: HLO_CompatibleOperandsAndResultElementType,
     )
 
-    # pylint: disable=E1101
     def verify_(self) -> None:
         """Verify non-quantized broadcast_in_dim constraints."""
-        # Operand and result must be tensors (by construction), assert defensively.
-        o_type = self.operand.type
-        r_type = self.result.type
+        o_type = self.operand_types[0]
+        r_type = self.result_types[0]
+
+        # These are constrained to tensors by the op definition
         assert isinstance(o_type, TensorType) and isinstance(r_type, TensorType)
 
         # broadcast_in_dim_c2: broadcast_dimensions size == operand rank
-        dims = tuple(self.broadcast_dimensions.get_values())
+        dims = tuple(self.broadcast_dimensions.get_values())  # pylint: disable=E1101
         operand_rank = o_type.get_num_dims()
         if len(dims) != operand_rank:
             raise VerifyException(
