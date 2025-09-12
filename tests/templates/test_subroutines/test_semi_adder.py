@@ -15,11 +15,21 @@
 Tests for the SemiAdder template.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.semi_adder import (
+    _cnot_ladder,
+    _fanout_1,
+    _fanout_2,
+    _semiadder,
+    _semiadder_log_depth,
+    _toffoli_ladder,
+)
 
 
 def test_standard_validity_SemiAdder():
@@ -35,33 +45,40 @@ class TestSemiAdder:
     """Test the qml.SemiAdder template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "work_wires", "x", "y"),
+        ("x_wires", "y_wires", "work_wires", "x", "y", "decomposition_rule"),
         [
-            ([0], [1], None, 1, 0),
-            ([0], [1], None, 1, 1),
-            ([0, 1], [2], None, 0, 1),
-            ([0, 1], [2], None, 1, 1),
-            ([0, 1], [2], None, 1, 0),
-            ([0, 1], [2, 3], [4], 2, 0),
-            ([0, 1], [2, 3], [4], 1, 2),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 1, 2),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 5, 6),
-            ([0, 1], [2, 3, 4], [5, 6], 3, 2),
-            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 10),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 7),
-            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5),
-            ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5),
-            ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2),
+            ([0], [1], None, 1, 0, _semiadder_log_depth),
+            ([0], [1], None, 1, 1, _semiadder_log_depth),
+            ([0, 1], [2], None, 0, 1, _semiadder_log_depth),
+            ([0, 1], [2], None, 1, 1, _semiadder_log_depth),
+            ([0, 1], [2], None, 1, 0, _semiadder_log_depth),
+            ([0, 1], [2, 3], [4], 2, 0, _semiadder_log_depth),
+            ([0, 1], [2, 3], [4], 1, 2, _semiadder_log_depth),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 1, 2, _semiadder_log_depth),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 5, 6, _semiadder_log_depth),
+            ([0, 1], [2, 3, 4], [5, 6], 3, 2, _semiadder),
+            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 10, _semiadder),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 7, _semiadder),
+            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5, _semiadder),
+            ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5, _semiadder),
+            ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2, _semiadder),
+            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2, _semiadder),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y
+        self, x_wires, y_wires, work_wires, x, y, decomposition_rule
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the SemiAdder template output."""
         dev = qml.device("default.qubit")
 
+        qml.decomposition.enable_graph()
+
         @qml.set_shots(1)
+        @partial(
+            qml.transforms.decompose,
+            fixed_decomps={qml.SemiAdder: decomposition_rule},
+            max_expansion=1,
+        )
         @qml.qnode(dev)
         def circuit(x, y):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -152,7 +169,17 @@ class TestSemiAdder:
 
         for rule in qml.list_decomps(qml.SemiAdder):
             _test_decomposition_rule(
-                qml.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule, heuristic_resources=True
+                qml.SemiAdder(x_wires, [5, 6], [9, 10, 11]), rule, heuristic_resources=True
+            )
+
+    def test_error_lenght_wires(self):
+        """Test that the decomposition through an error if len(x_wires) < len(y_wires)."""
+
+        with pytest.raises(AssertionError, match="must be greater or equal"):
+            _test_decomposition_rule(
+                qml.SemiAdder([0, 1, 2], [5, 6, 7, 8], [9, 10, 11]),
+                _semiadder_log_depth,
+                heuristic_resources=True,
             )
 
     @pytest.mark.jax
@@ -184,3 +211,55 @@ class TestSemiAdder:
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
         )
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4]])
+def test_cnot_ladder(wires):
+    """Check the auxiliar function _cnot_ladder."""
+
+    def cnot_ladder(wires):
+        for i in range(len(wires) - 1):
+            qml.CNOT([wires[i], wires[i + 1]])
+
+    target_matrix = qml.matrix(cnot_ladder, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_cnot_ladder, wire_order=wires)(wires)
+    assert np.allclose(target_matrix, generated_matrix)
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4, "c"]])
+def test_toffoli_ladder(wires):
+    """Check the auxiliar function _toffoli_ladder."""
+
+    def toffoli_ladder(wires):
+        for i in range(0, len(wires) - 2, 2):
+            qml.Toffoli([wires[i], wires[i + 1], wires[i + 2]])
+
+    target_matrix = qml.matrix(toffoli_ladder, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_toffoli_ladder, wire_order=wires)(wires)
+    assert np.allclose(target_matrix, generated_matrix)
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4]])
+def test_fanout1_ladder(wires):
+    """Check the auxiliar function _fanout_1."""
+
+    def fanout1(wires):
+        for i in range(1, len(wires)):
+            qml.CNOT([wires[0], wires[i]])
+
+    target_matrix = qml.matrix(fanout1, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_fanout_1, wire_order=wires)(wires)
+    assert np.allclose(target_matrix, generated_matrix)
+
+
+@pytest.mark.parametrize(("wires"), [[0, 1, 2], [2, 3, 4, "a", 6, 7, 8], [0, 4, "c"]])
+def test_fanout_2(wires):
+    """Check the auxiliar function _fanout_2."""
+
+    def fanout_2(wires):
+        for i in range(1, len(wires) - 1, 2):
+            qml.Toffoli([wires[0], wires[i], wires[i + 1]])
+
+    target_matrix = qml.matrix(fanout_2, wire_order=wires)(wires)
+    generated_matrix = qml.matrix(_fanout_2, wire_order=wires)(wires[0], wires[1::2], wires[2::2])
+    assert np.allclose(target_matrix, generated_matrix)
