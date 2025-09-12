@@ -14,9 +14,10 @@
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
   * The :class:`~.estimator.Resources` class was added as a container class for resources.
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * The resource operators for ``Identity``, ``GlobalPhase`` and non-parametric operators
-    have been added to `qml.estimator.ops`.
+  * The resource operators for ``Identity``, non-parametric operators and single-qubit
+    parametric operators have been added to `qml.estimator.ops`.
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
+    [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)

@@ -101,7 +101,14 @@ class PhaseShift(ResourceOperator):
     @classmethod
     def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources.
+
+        Args:
+            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+        """
 
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
@@ -154,7 +161,17 @@ class PhaseShift(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
+
+        Raises:
+            ResourcesUndefinedError: Controlled version of this gate is not defined.
+        """
         raise ResourcesUndefinedError
 
     @classmethod
@@ -223,7 +240,14 @@ class RX(ResourceOperator):
     @classmethod
     def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources.
+
+        Args:
+            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+        """
 
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
@@ -273,7 +297,17 @@ class RX(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
+
+        Raises:
+            ResourcesUndefinedError: Controlled version of this gate is not defined.
+        """
         raise ResourcesUndefinedError
 
     @classmethod
@@ -342,7 +376,14 @@ class RY(ResourceOperator):
     @classmethod
     def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources.
+
+        Args:
+            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+        """
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
@@ -391,7 +432,17 @@ class RY(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
+
+        Raises:
+            ResourcesUndefinedError: Controlled version of this gate is not defined.
+        """
         raise ResourcesUndefinedError
 
     @classmethod
@@ -461,7 +512,14 @@ class RZ(ResourceOperator):
     @classmethod
     def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources.
+
+        Args:
+            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+        """
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
@@ -510,7 +568,17 @@ class RZ(ResourceOperator):
         precision=None,
         **kwargs,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
+
+        Raises:
+            ResourcesUndefinedError: Controlled version of this gate is not defined.
+        """
         raise ResourcesUndefinedError
 
     @classmethod
@@ -576,7 +644,14 @@ class Rot(ResourceOperator):
     @classmethod
     def resource_rep(cls, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources.
+
+        Args:
+            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+        """
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
@@ -614,7 +689,17 @@ class Rot(ResourceOperator):
     def controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, precision=None, **kwargs
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator."""
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
+
+        Raises:
+            ResourcesUndefinedError: Controlled version of this gate is not defined.
+        """
         raise ResourcesUndefinedError
 
     @classmethod
