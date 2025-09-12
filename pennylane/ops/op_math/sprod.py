@@ -161,14 +161,23 @@ class SProd(ScalarSymbolicOp):
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
-        """The label produced for the SProd op."""
         scalar_val = (
             f"{self.scalar}"
             if decimals is None
             else format(math.toarray(self.scalar), f".{decimals}f")
         )
-
-        return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
+        base_cache = {"matrices": cache["matrices"]} if cache and "matrices" in cache else None
+        if isinstance(self.base, qml.ops.CompositeOp):
+            default_label = f"{scalar_val}*({self.base.label(decimals=decimals, cache=base_cache)})"
+        else:
+            default_label = f"{scalar_val}*{self.base.label(decimals=decimals, cache=base_cache)}"
+        if cache is None or not isinstance(cache.get("large_ops", None), list):
+            return default_label
+        for i, (obs, _) in enumerate(cache["large_ops"]):
+            if obs == self:
+                return f"H:{i}"
+        cache["large_ops"].append((self, default_label))
+        return f"H{len(cache['large_ops'])-1}"
 
     @property
     @handle_recursion_error

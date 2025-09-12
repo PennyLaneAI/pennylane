@@ -608,6 +608,10 @@
 * Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
+* `Sum`, `Prod`, `SProd`, and `LinearCombination` are now represented by a reference in the text
+  drawer, with a longer label printed underneath.
+  [(#7279)](https://github.com/PennyLaneAI/pennylane/pull/7279)
+
 <h3>Breaking changes 💔</h3>
 
 * Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
