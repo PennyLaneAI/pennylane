@@ -3,6 +3,10 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.sample` function can now receive an optional `dtype` parameter 
+  which sets the type and precision of the samples returned by this measurement process.
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
+  
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
   
@@ -139,7 +143,7 @@
   [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
-  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
+  [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
