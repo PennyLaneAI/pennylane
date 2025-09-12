@@ -52,7 +52,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
 
     .. details::
 
-        This representation is the minimal amount of information required to estimate resources for the operator.
+        This representation is the minimal amount of information required to estimate resources for an operator.
 
     **Example**
 
