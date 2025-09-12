@@ -164,7 +164,9 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
         # new ops and measurement wires for the final tape
         ops_queue = get_new_ops(tape.final_tape, wire_map, include_corrections=False)
         new_wires = [wire_map[w] for w in meas_wires]
-        # new_measurements = [sample(wires=new_wires)] #+ [sample(m) for m in mcms]
+
+        # mcms for postprocessing will be added after this using `dynamic_one_shot`, 
+        # because it works, and adding them here creates havoc
         new_tapes.append(
             tape.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
         )
