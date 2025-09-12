@@ -50,7 +50,7 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> out_square = plre.ResourceOutOfPlaceSquare(register_size=3)
-    >>> print(plre.estimate_resources(out_square))
+    >>> print(plre.estimate(out_square))
     --- Resources: ---
     Total qubits: 9
     Total gates : 7
@@ -139,7 +139,7 @@ class ResourcePhaseGradient(ResourceOperator):
 
     >>> phase_grad = plre.ResourcePhaseGradient(num_wires=5)
     >>> gate_set={"Z", "S", "T", "RZ", "Hadamard"}
-    >>> print(plre.estimate_resources(phase_grad, gate_set))
+    >>> print(plre.estimate(phase_grad, gate_set))
     --- Resources: ---
     Total qubits: 5
     Total gates : 10
@@ -233,7 +233,7 @@ class ResourceOutMultiplier(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> out_mul = plre.ResourceOutMultiplier(4, 4)
-    >>> print(plre.estimate_resources(out_mul))
+    >>> print(plre.estimate(out_mul))
     --- Resources: ---
     Total qubits: 16
     Total gates : 70
@@ -336,7 +336,7 @@ class ResourceSemiAdder(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> semi_add = plre.ResourceSemiAdder(max_register_size=4)
-    >>> print(plre.estimate_resources(semi_add))
+    >>> print(plre.estimate(semi_add))
     --- Resources: ---
     Total qubits: 11
     Total gates : 30
@@ -512,7 +512,7 @@ class ResourceControlledSequence(ResourceOperator):
     ...     num_control_wires = 3,
     ... )
     >>> gate_set={"CRX"}
-    >>> print(plre.estimate_resources(ctrl_seq, gate_set))
+    >>> print(plre.estimate(ctrl_seq, gate_set))
     --- Resources: ---
      Total qubits: 4
      Total gates : 3
@@ -645,7 +645,7 @@ class ResourceQPE(ResourceOperator):
 
     >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
     >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5)
-    >>> print(plre.estimate_resources(qpe, gate_set))
+    >>> print(plre.estimate(qpe, gate_set))
     --- Resources: ---
      Total qubits: 6
      Total gates : 11
@@ -664,7 +664,7 @@ class ResourceQPE(ResourceOperator):
         For example, consider the cost using the default QFT implmentation below:
 
         >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5, adj_qft_op=None)
-        >>> print(plre.estimate_resources(qpe))
+        >>> print(plre.estimate(qpe))
         --- Resources: ---
          Total qubits: 6
          Total gates : 1.586E+3
@@ -678,7 +678,7 @@ class ResourceQPE(ResourceOperator):
         >>> aqft = plre.ResourceAQFT(order=3, num_wires=5)
         >>> adj_aqft = plre.ResourceAdjoint(aqft)
         >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5, adj_qft_op=adj_aqft)
-        >>> print(plre.estimate_resources(qpe))
+        >>> print(plre.estimate(qpe))
         --- Resources: ---
          Total qubits: 8
          Total gates : 321
@@ -827,7 +827,7 @@ class ResourceIterativeQPE(ResourceOperator):
 
     >>> gate_set = {"Hadamard", "CRX", "PhaseShift"}
     >>> iqpe = plre.ResourceIterativeQPE(plre.ResourceRX(), 5)
-    >>> print(plre.estimate_resources(iqpe, gate_set))
+    >>> print(plre.estimate(iqpe, gate_set))
     --- Resources: ---
      Total qubits: 2
      Total gates : 25
@@ -937,7 +937,7 @@ class ResourceQFT(ResourceOperator):
 
     >>> qft = plre.ResourceQFT(3)
     >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
-    >>> print(plre.estimate_resources(qft, gate_set))
+    >>> print(plre.estimate(qft, gate_set))
     --- Resources: ---
      Total qubits: 3
      Total gates : 7
@@ -1089,7 +1089,7 @@ class ResourceAQFT(ResourceOperator):
 
     >>> aqft = plre.ResourceAQFT(order=2, num_wires=3)
     >>> gate_set = {"SWAP", "Hadamard", "T", "CNOT"}
-    >>> print(plre.estimate_resources(aqft, gate_set))
+    >>> print(plre.estimate(aqft, gate_set))
     --- Resources: ---
      Total qubits: 4
      Total gates : 57
@@ -1240,7 +1240,7 @@ class ResourceBasisRotation(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> basis_rot = plre.ResourceBasisRotation(dim_N = 5)
-    >>> print(plre.estimate_resources(basis_rot))
+    >>> print(plre.estimate(basis_rot))
     --- Resources: ---
     Total qubits: 5
     Total gates : 1.740E+3
@@ -1343,7 +1343,7 @@ class ResourceSelect(ResourceOperator):
 
     >>> ops = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
     >>> select_op = plre.ResourceSelect(select_ops=ops)
-    >>> print(plre.estimate_resources(select_op))
+    >>> print(plre.estimate(select_op))
     --- Resources: ---
     Total qubits: 4
     Total gates : 24
@@ -1543,7 +1543,7 @@ class ResourceQROM(ResourceOperator):
     ...     num_bitstrings=10,
     ...     size_bitstring=4,
     ... )
-    >>> print(plre.estimate_resources(qrom))
+    >>> print(plre.estimate(qrom))
     --- Resources: ---
     Total qubits: 11
     Total gates : 178
@@ -1979,7 +1979,7 @@ class ResourceQubitUnitary(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qu = plre.ResourceQubitUnitary(num_wires=3)
-    >>> print(plre.estimate_resources(qu, gate_set))
+    >>> print(plre.estimate(qu, gate_set))
     --- Resources: ---
      Total qubits: 3
      Total gates : 52
@@ -2120,7 +2120,7 @@ class ResourceSelectPauliRot(ResourceOperator):
     ...     num_ctrl_wires = 4,
     ...     precision = 1e-3,
     ... )
-    >>> print(plre.estimate_resources(mltplxr, plre.StandardGateSet))
+    >>> print(plre.estimate(mltplxr, plre.StandardGateSet))
     --- Resources: ---
      Total qubits: 5
      Total gates : 32

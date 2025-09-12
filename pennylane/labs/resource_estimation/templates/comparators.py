@@ -55,7 +55,7 @@ class ResourceSingleQubitComparator(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> single_qubit_compare = plre.ResourceSingleQubitComparator()
-    >>> print(plre.estimate_resources(single_qubit_compare))
+    >>> print(plre.estimate(single_qubit_compare))
     --- Resources: ---
      Total qubits: 4
      Total gates : 8
@@ -156,7 +156,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> two_qubit_compare = plre.ResourceTwoQubitComparator()
-    >>> print(plre.estimate_resources(two_qubit_compare))
+    >>> print(plre.estimate(two_qubit_compare))
     --- Resources: ---
      Total qubits: 5
      Total gates : 10
@@ -308,7 +308,7 @@ class ResourceIntegerComparator(ResourceOperator):
 
 
     >>> integer_compare = plre.ResourceIntegerComparator(value=4, register_size=6)
-    >>> print(plre.estimate_resources(integer_compare))
+    >>> print(plre.estimate(integer_compare))
     --- Resources: ---
      Total qubits: 9
      Total gates : 19
@@ -515,7 +515,7 @@ class ResourceRegisterComparator(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> register_compare = plre.ResourceRegisterComparator(4, 6)
-    >>> print(plre.estimate_resources(register_compare))
+    >>> print(plre.estimate(register_compare))
     --- Resources: ---
      Total qubits: 11
      Total gates : 89
