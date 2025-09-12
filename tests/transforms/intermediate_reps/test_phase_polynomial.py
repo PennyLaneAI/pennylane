@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.labs.intermediate_reps import phase_polynomial
+from pennylane.transforms import phase_polynomial
 
 # trivial example
 circ0 = qml.tape.QuantumScript([])
@@ -46,6 +46,13 @@ angles1 = np.array([1, 2, 3])
 
 class TestPhasePolynomial:
     """Tests for qml.labs.dla.phase_polynomials.phase_polynomial"""
+
+    def test_TypeError_input(self):
+        """Test that a TypeError is raised for the wrong inputs"""
+        with pytest.raises(
+            TypeError, match="phase_polynomial can only handle CNOT and RZ operators"
+        ):
+            _ = phase_polynomial(qml.tape.QuantumScript([qml.RX(0.5, 0)]))
 
     @pytest.mark.parametrize(
         "circ, res",
@@ -83,3 +90,22 @@ class TestPhasePolynomial:
         assert np.allclose(pmat, pmat1)
         assert np.allclose(ptab, ptab1)
         assert np.allclose(angles, angles1)
+
+    def test_qfunc_input(self):
+        """Test phase_polynomial works for qfunc inputs"""
+
+        def qfunc():
+            qml.CNOT((0, 1))
+            qml.RZ(0.5, 1)
+            qml.CNOT((1, 2))
+            qml.CNOT((2, 0))
+            qml.RZ(0.3, 0)
+
+        tape = qml.tape.make_qscript(qfunc)()
+
+        pmat, ptab, angles = phase_polynomial(qfunc, wire_order=range(3))
+        pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
+
+        assert np.allclose(pmat, pmat_exp)
+        assert np.allclose(ptab, ptab_exp)
+        assert np.allclose(angles, angles_exp)
