@@ -86,7 +86,7 @@ def generate_mlir_graph(qnode: QNode) -> Callable:
     the MLIR graph in between compilation passes. The provided QNode is assumed to be decorated with xDSL compilation passes.
     The ``qjit`` decorator is used to recompile the QNode with the passes and the provided arguments.
 
-    If no compilation passes are applied, the MLIR graph will not be generated.
+    If no passes are applied, the original QNode is visualized.
 
     Args:
         qnode (.QNode): the input QNode that is to be visualized.
