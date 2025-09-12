@@ -34,7 +34,7 @@ DefaultGateSet = frozenset(
 class Resources:
     r"""A container for the resources used throughout a quantum circuit.
 
-    The resources tracked include number of wires, number of gates, and their gate types.
+    The resources tracked include: number of wires (by state), and number of gates (by type).
 
     Args:
         zeroed (int): Number of zeroed state work wires.
@@ -75,14 +75,14 @@ class Resources:
     """
 
     def __init__(
-        self, zeroed: int, any_state: int = 0, algo: int = 0, gate_types: dict | None = None
+        self, zeroed: int, any_state: int = 0, algo_wires: int = 0, gate_types: dict | None = None
     ):
         """Initialize the Resources class."""
         gate_types = gate_types or {}
 
         self.zeroed = zeroed
         self.any_state = any_state
-        self.algo_wires = algo
+        self.algo_wires = algo_wires
         self.gate_types = (
             gate_types
             if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int))
@@ -90,7 +90,7 @@ class Resources:
         )
 
     def add_series(self, other: "Resources") -> "Resources":
-        """Add two resources objects in series.
+        """Add two Resources objects in series.
 
         When combining resources for serial execution, the following rules apply:
 
@@ -138,11 +138,11 @@ class Resources:
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed=new_zeroed, any_state=new_any, algo=new_logic, gate_types=new_gate_types
+            zeroed=new_zeroed, any_state=new_any, algo_wires=new_logic, gate_types=new_gate_types
         )
 
     def add_parallel(self, other: "Resources") -> "Resources":
-        """Add two resources objects in parallel.
+        """Add two Resources objects in parallel.
 
         When combining resources for parallel execution, the following rules apply:
 
@@ -191,7 +191,7 @@ class Resources:
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed=new_zeroed, any_state=new_any, algo=new_logic, gate_types=new_gate_types
+            zeroed=new_zeroed, any_state=new_any, algo_wires=new_logic, gate_types=new_gate_types
         )
 
     def __eq__(self, other: Resources) -> bool:
@@ -208,7 +208,7 @@ class Resources:
         )
 
     def multiply_series(self, scalar: int) -> Resources:
-        """Scale a resources object in series
+        """Scale a Resources object in series
 
         Args:
             scalar (int): integer value by which to scale the resources
@@ -247,12 +247,12 @@ class Resources:
         return Resources(
             zeroed=self.zeroed,
             any_state=self.any_state * scalar,
-            algo=self.algo_wires,
+            algo_wires=self.algo_wires,
             gate_types=new_gate_types,
         )
 
     def multiply_parallel(self, scalar: int) -> Resources:
-        """Scale a resources object in parallel
+        """Scale a Resources object in parallel
 
         Args:
             scalar (int): integer value by which to scale the resources
@@ -291,7 +291,7 @@ class Resources:
         return Resources(
             zeroed=self.zeroed,
             any_state=self.any_state * scalar,
-            algo=self.algo_wires * scalar,
+            algo_wires=self.algo_wires * scalar,
             gate_types=new_gate_types,
         )
 
@@ -424,4 +424,4 @@ class Resources:
 
     def __repr__(self):
         """Compact string representation of the Resources object"""
-        return f"Resources(zeroed={self.zeroed}, any_state={self.any_state}, algo={self.algo_wires}, gate_types={self.gate_types})"
+        return f"Resources(zeroed={self.zeroed}, any_state={self.any_state}, algo_wires={self.algo_wires}, gate_types={self.gate_types})"

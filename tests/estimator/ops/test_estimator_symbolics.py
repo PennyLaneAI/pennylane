@@ -17,7 +17,9 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import GateCount, ResourcesNotDefined
+from pennylane.estimator.resource_operator import GateCount
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=no-self-use, too-few-public-methods
@@ -58,7 +60,7 @@ class TestAdjoint:
             @classmethod
             def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
                 """No default resources"""
-                raise ResourcesNotDefined
+                raise ResourcesUndefinedError
 
         op = ResourceDummyS()  # no default_adjoint_decomp defined
         adj_op = qre.Adjoint(op)
@@ -89,6 +91,29 @@ class TestAdjoint:
         expected_res = [GateCount(base_op.resource_rep_from_op())]
         assert adj_adj_op.resource_decomp(**adj_adj_op.resource_params) == expected_res
 
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.Adjoint.tracking_name(qre.T.resource_rep()) == "Adjoint(T)"
+        assert qre.Adjoint.tracking_name(qre.S.resource_rep()) == "Adjoint(S)"
+        assert qre.Adjoint.tracking_name(qre.CNOT.resource_rep()) == "Adjoint(CNOT)"
+
+    # pylint: disable=protected-access, import-outside-toplevel
+    def test_apply_adj(self):
+        """Test that the apply_adj method is working correctly."""
+        from pennylane.estimator.ops.op_math.symbolic import _apply_adj
+
+        assert _apply_adj(Allocate(1)) == Deallocate(1)
+        assert _apply_adj(Deallocate(1)) == Allocate(1)
+
+        expected_res = GateCount(qre.Adjoint.resource_rep(qre.T.resource_rep()), 1)
+        assert _apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
+
+    # pylint: disable=protected-access
+    def test_apply_adj_raises(self):
+        """Test that the apply_adj method is working correctly."""
+        with pytest.raises(TypeError):
+            qre.ops.op_math.symbolic._apply_adj(1)
+
 
 class TestControlled:
     """Tests for the Controlled resource Op"""
@@ -111,9 +136,11 @@ class TestControlled:
     )
     def test_init(self, ctrl_wires, ctrl_values, base_type, base_args):
         """Test that the operator is instantiated correctly"""
+        wires = list(range(ctrl_wires))
+        wires.extend(base_args.get("wires", [ctrl_wires]))
         with AnnotatedQueue() as q:
             base_op = base_type(**base_args)
-            ctrl_base_op = qre.Controlled(base_op, ctrl_wires, ctrl_values)
+            ctrl_base_op = qre.Controlled(base_op, ctrl_wires, ctrl_values, wires=wires)
 
         assert base_op not in q.queue
         assert ctrl_base_op.num_wires == base_op.num_wires + ctrl_wires
@@ -139,7 +166,7 @@ class TestControlled:
                 cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
-                raise ResourcesNotDefined
+                raise ResourcesUndefinedError
 
         op = ResourceDummyZ()  # no default_ctrl_decomp defined
         ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_ctrl_values=2)
@@ -187,3 +214,18 @@ class TestControlled:
             )
         ]
         assert ctrl_ctrl_op.resource_decomp(**ctrl_ctrl_op.resource_params) == expected_res
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert (
+            qre.Controlled.tracking_name(qre.T.resource_rep(), 1, 0)
+            == "C(T, num_ctrl_wires=1,num_ctrl_values=0)"
+        )
+        assert (
+            qre.Controlled.tracking_name(qre.S.resource_rep(), 2, 0)
+            == "C(S, num_ctrl_wires=2,num_ctrl_values=0)"
+        )
+        assert (
+            qre.Controlled.tracking_name(qre.CNOT.resource_rep(), 3, 2)
+            == "C(CNOT, num_ctrl_wires=3,num_ctrl_values=2)"
+        )
