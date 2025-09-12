@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains a transform to apply the
+This module contains a transform ``todd`` to apply the
 `phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
 to a PennyLane Clifford + T circuit.
@@ -43,6 +43,8 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     The implementation is based on the
     `pyzx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ pass.
+    It often is paired with :func:`~.transforms.zx.push_hadamards` into the combined optimization
+    pass :func:`~.transforms.zx.optimize_t_count`.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.

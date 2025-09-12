@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains a transform to apply the
+This module contains a transform ``push_hadamards`` to apply the
 `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
 to a PennyLane phase-polynomial + Hadamard circuit.
@@ -45,6 +45,8 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     The implementation is based on the
     `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
+    It often is paired with :func:`~.transforms.zx.todd` into the combined optimization
+    pass :func:`~.transforms.zx.optimize_t_count`.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.

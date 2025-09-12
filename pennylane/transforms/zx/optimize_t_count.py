@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains a transform to apply the
+This module contains a transform ``optimize_t_coun`` to apply the
 `full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
 to a PennyLane Clifford + T circuit.
@@ -43,7 +43,8 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
         The transformed output circuit is equivalent to the input up to a global phase.
 
     The implementation is based on the
-    `pyzx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ pass.
+    `pyzx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ pass. It combines :func:`~.transforms.zx.push_hadamards` and
+    :func:`~.transforms.zx.todd` into a holistic method.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -55,6 +56,7 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
         TypeError: if the input quantum circuit is not a Clifford + T circuit.
+
 
     **Example:**
 

@@ -65,7 +65,10 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
 
-There is also a set of transforms that use zx calculus to edit circuit.
+Compiltation transforms using ZX calculus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There is a set of transforms that use the ZX calculus to optimize circuits.
 
 .. autosummary::
     :toctree: api
@@ -75,16 +78,26 @@ There is also a set of transforms that use zx calculus to edit circuit.
     ~transforms.zx.reduce_non_clifford
     ~transforms.zx.todd
 
-There are also utility functions and decompositions available that assist with
-both transforms, and decompositions within the larger PennyLane codebase.
+The following utility functions are only required when working explicitly with ZX diagrams,
+for example when writing custom ZX compilation passes.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.to_zx
+    ~transforms.from_zx
+
+Other compilation utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are additional utility functions and decompositions available that assist with
+both transforms and decompositions within the larger PennyLane codebase.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.set_decomposition
     ~transforms.pattern_matching
-    ~transforms.to_zx
-    ~transforms.from_zx
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -347,10 +360,6 @@ from .transpile import transpile
 from .zx import (
     to_zx,
     from_zx,
-    optimize_t_count,
-    push_hadamards,
-    reduce_non_clifford,
-    todd,
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
