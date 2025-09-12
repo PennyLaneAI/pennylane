@@ -877,6 +877,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
+  [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
+
 * `qml.devices.preprocess.decompose` now works in graph decomposition mode
   when a gateset is provided. `default.qubit` and `null.qubit` can now use
   graph decomposition mode.
