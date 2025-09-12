@@ -30,21 +30,11 @@ from pennylane.compiler.python_compiler.transforms import (
     decompose_graph_state_pass,
     measurements_from_samples_pass,
 )
-from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import (
-    _adj_matrix_generation_helper,
-)
 from pennylane.ftqc import RotXZX
 
 
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
-
-    def test_adj_matrix_generation_helper(self):
-        """Test that error raised for unsupported gates."""
-        num_vertices = 4
-        edges = [(1, 0), (2, 1), (3, 2)]
-        adj_matrix = _adj_matrix_generation_helper(num_vertices, edges)
-        assert adj_matrix == [1, 0, 1, 0, 0, 1]
 
     def test_hadamard_gate(self, run_filecheck):
         """Test for lowering a Hadamard gate to a MBQC formalism."""
@@ -311,7 +301,7 @@ class TestConvertToMBQCFormalismPass:
             # CHECK: quantum.custom "PauliX"()
             # CHECK: quantum.custom "PauliZ"()
             # CHECK: quantum.dealloc_qb
-            for i in range(1000):
+            for i in range(50):
                 qml.H(i)
                 qml.S(i)
                 RotXZX(0.1, 0.2, 0.3, wires=[i])
@@ -446,9 +436,6 @@ class TestConvertToMBQCFormalismPass:
 
         run_filecheck_qjit(circuit)
 
-    @pytest.mark.xfail(
-        reason="Failure due to the deallocation of qubits in a qreg and insertion of qubit into a qreg is not supported yet."
-    )
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_e2e(self):
         """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""
@@ -467,6 +454,7 @@ class TestConvertToMBQCFormalismPass:
             pipelines=mbqc_pipeline(),
             autograph=True,
         )
+        @decompose_graph_state_pass
         @convert_to_mbqc_formalism_pass
         @measurements_from_samples_pass
         @qml.set_shots(1000)

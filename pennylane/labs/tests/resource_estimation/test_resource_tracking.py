@@ -235,8 +235,10 @@ class TestEstimateResources:
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
-        custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": 1e-9}
-        computed_resources = estimate(my_circuit, gate_set=gate_set, config=custom_config)()
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": 1e-9}
+        computed_resources = estimate(
+            my_circuit, gate_set=gate_set, config=custom_config
+        )()
         assert computed_resources == expected_resources
 
     def test_estimate_resources_from_resource_operator(self):
@@ -338,7 +340,7 @@ class TestEstimateResources:
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.errors_and_precisions[ResourceTestRZ] = {"precision": error_val}
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": error_val}
 
         op = ResourceTestRZ()  # don't specify precision
         computed_resources = estimate(op, gate_set={"TestT"}, config=custom_config)
@@ -351,10 +353,10 @@ class TestEstimateResources:
         assert computed_resources == expected_resources
 
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
-    def test_varying_single_qubit_rotation_error(self, error_val):
-        """Test that setting the single_qubit_rotation_error correctly updates the resources"""
+    def test_varying_single_qubit_rotation_precision(self, error_val):
+        """Test that setting the single_qubit_rotation_precision correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.set_single_qubit_rotation_error(error_val)
+        custom_config.set_single_qubit_rot_precision(error_val)
 
         custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
         custom_config.set_decomp(ResourceRY, mock_rotation_decomp)
@@ -365,7 +367,9 @@ class TestEstimateResources:
             ResourceRY(wires=1)
             ResourceRZ(wires=2)
 
-        computed_resources = estimate(my_circuit, gate_set={"TestT"}, config=custom_config)()
+        computed_resources = estimate(
+            my_circuit, gate_set={"TestT"}, config=custom_config
+        )()
 
         expected_t_count = 3 * round(1 / error_val)
         expected_resources = Resources(
