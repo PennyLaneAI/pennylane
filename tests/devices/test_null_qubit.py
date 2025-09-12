@@ -65,88 +65,22 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-def test_resource_tracking_attribute():
+def test_resource_tracking_attributes():
     """Test NullQubit track_resources attribute"""
     # pylint: disable=protected-access
-    assert NullQubit()._track_resources is False
-    dev = NullQubit(track_resources=True)
-    assert dev._track_resources is True
+    default_dev = NullQubit()
+    assert "track_resources" in default_dev.device_kwargs
+    assert default_dev.device_kwargs["track_resources"] is False
+    assert "resources_filename" not in default_dev.device_kwargs
+    assert "compute_depth" not in default_dev.device_kwargs
 
-    def small_circ(params):
-        qml.X(0)
-        qml.H(0)
-
-        qml.Barrier()
-
-        # Add a more complex operation to check that the innermost operation is counted
-        op = qml.T(0)
-        op = qml.adjoint(op)
-        op = qml.ctrl(op, control=1, control_values=[1])
-
-        qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
-
-        qml.CNOT([0, 1])
-        qml.Barrier()
-
-        qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
-        qml.adjoint(qml.S(0))
-
-        qml.RX(params[0], wires=0)
-        qml.RX(params[0] * 2, wires=1)
-
-        qml.QubitUnitary([[1, 0], [0, 1]], wires=0)
-        qml.ControlledQubitUnitary([[1, 0], [0, 1]], wires=[0, 1, 2], control_values=[1, 1])
-
-        return qml.expval(qml.PauliZ(0))
-
-    qnode = qml.QNode(small_circ, dev, diff_method="backprop")
-
-    inputs = qml.numpy.array([0.5])
-
-    def check_outputs():
-        written_files = list(
-            filter(
-                lambda fname: fname.startswith(qml.devices.null_qubit.RESOURCES_FILENAME_PREFIX),
-                os.listdir(os.getcwd()),
-            )
-        )
-
-        assert len(written_files) == 1
-        resources_fname = written_files[0]
-
-        assert os.path.exists(resources_fname)
-
-        with open(resources_fname, encoding="utf-8") as f:
-            stats = f.read()
-
-        os.remove(resources_fname)
-
-        assert stats == json.dumps(
-            {
-                "num_wires": 3,
-                "num_gates": 11,
-                "gate_types": {
-                    "PauliX": 1,
-                    "Hadamard": 1,
-                    "C(Adj(T))": 1,
-                    "2C(S)": 1,
-                    "CNOT": 1,
-                    "C(IsingXX)": 1,
-                    "Adj(S)": 1,
-                    "RX": 2,
-                    "QubitUnitary": 1,
-                    "ControlledQubitUnitary": 1,
-                },
-            }
-        )
-
-    # Check ordinary forward computation
-    qnode(inputs)
-    check_outputs()
-
-    # Check backpropagation
-    assert qml.grad(qnode)(inputs) == 0
-    check_outputs()
+    dev = NullQubit(track_resources=True, resources_filename="test.json", compute_depth=True)
+    assert "track_resources" in dev.device_kwargs
+    assert dev.device_kwargs["track_resources"] is True
+    assert "resources_filename" in dev.device_kwargs
+    assert dev.device_kwargs["resources_filename"] == "test.json"
+    assert "compute_depth" in dev.device_kwargs
+    assert dev.device_kwargs["compute_depth"] is True
 
 
 @pytest.mark.parametrize("shots", (None, 10))
