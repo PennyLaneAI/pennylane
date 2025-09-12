@@ -29,7 +29,7 @@ from pennylane.labs.trotter_error.product_formulas.error import _group_sums
 @pytest.mark.parametrize(
     "backend", ["serial", "mp_pool", "cf_procpool", "mpi4py_pool", "mpi4py_comm"]
 )
-@pytest.mark.parametrize("parallel_mode", ["state", "commutator"])
+@pytest.mark.parametrize("parallel_mode", ["state", "commutator", "mvp"])
 def test_perturbation_error(backend, parallel_mode, mpi4py_support):
     """Test that perturbation error function runs without errors for different backends."""
 
@@ -123,6 +123,7 @@ def test_group_sums(term_dict, expected):
         ("serial", ""),
         ("mp_pool", "state"),
         ("mp_pool", "commutator"),
+        ("mp_pool", "mvp"),
     ],
 )
 def test_convergence_log(backend, parallel_mode):

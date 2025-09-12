@@ -191,7 +191,8 @@ def perturbation_error(
         parallel_mode (str): the mode of parallelization to use.
             Options are "state" or "commutator".
             "state" parallelizes the computation of expectation values per state,
-            while "commutator" parallelizes the application of commutators to each state.
+            "commutator" parallelizes the application of commutators to each state,
+            and "mvp" parallelizes the operator/state products within each commutator application.
             Default value is set to "state".
         importance (Optional[ImportanceConfig]): optinal argument used for importance sampling. See :class:`~.pennylane.labs.trotter_error.ImportanceConfig` for available options.
 
@@ -321,7 +322,45 @@ def perturbation_error(
 
         return errors
 
-    raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
+    if parallel_mode == "mvp":
+        executor = concurrency.backends.get_executor(backend)
+        errors = []
+        state_logs = []
+        ops = [
+            (op, coeff, len(commutator))
+            for commutators in commutator_lists
+            for commutator in commutators
+            for op, coeff in _op_list(commutator).items()
+        ]
+        for state in states:
+            with executor(max_workers=num_workers) as ex:
+                expectation_values = ex.starmap(
+                    _compute_expectation_single_op,
+                    [(op, coeff, order, fragments, state) for op, coeff, order in ops],
+                )
+
+            expectations = defaultdict(int)
+            order_logs = defaultdict(ConvergenceLog)
+            for expectation, order in expectation_values:
+                expectations[order] += expectation
+                order_logs[order] = _update_convergence_log(expectation, order_logs[order])
+
+            errors.append(
+                {
+                    order: (1j * timestep) ** order * expectation
+                    for order, expectation in expectations.items()
+                }
+            )
+            state_logs.append(order_logs)
+
+        if importance:
+            return errors, state_logs
+
+        return errors
+
+    raise ValueError(
+        f"Invalid parallel mode '{parallel_mode}'. Choose 'state', 'commutator', or 'mvp'."
+    )
 
 
 def _get_expval_state(commutator_lists, fragments, state: AbstractState, timestep: float) -> float:
@@ -380,7 +419,7 @@ def _compute_expectation_track_order(
     for term, coeff in _op_list(commutator).items():
         tmp_state = copy.copy(state)
         for frag in reversed(term):
-            if isinstance(frag, frozenset):
+            if isinstance(frag, FrozenSet):
                 frag = sum(
                     (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
                 )
@@ -392,6 +431,28 @@ def _compute_expectation_track_order(
         new_state += coeff * tmp_state
 
     return state.dot(new_state), len(commutator)
+
+
+def _compute_expectation_single_op(
+    op: Tuple[Fragment],
+    coeff: complex,
+    order: int,
+    fragments: Dict[Hashable, Fragment],
+    state: AbstractState,
+) -> Tuple[complex, int]:
+    """Returns the expectation value obtained from a single operator/state multiplication"""
+    new_state = state
+    for symbol in op:
+        if isinstance(symbol, FrozenSet):
+            fragment = sum(
+                (frag_coeff * fragments[x] for x, frag_coeff in symbol), _AdditiveIdentity()
+            )
+        else:
+            fragment = fragments[symbol]
+
+        new_state = fragment.apply(new_state)
+
+    return coeff * state.dot(new_state), order
 
 
 def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
