@@ -430,7 +430,7 @@ class Testdraw:
             return qml.state()
 
         with pytest.warns(UserWarning):
-            _ = draw(circ)(0.1)
+            draw(circ)(0.1)
 
 
 if __name__ == "__main__":
