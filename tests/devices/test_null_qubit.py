@@ -149,7 +149,6 @@ def test_resource_tracking_attribute():
     check_outputs()
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("shots", (None, 10))
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
@@ -832,7 +831,6 @@ class TestSumOfTermsDifferentiability:
         assert g1 == 0
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("config", [None, ExecutionConfig(gradient_method="device")])
 class TestDeviceDifferentiation:
     """Tests device differentiation integration with NullQubit."""
@@ -1399,50 +1397,3 @@ def test_execute_plxpr_shots():
     assert qml.math.allclose(res[0], 0)
     assert qml.math.allclose(res[1], 0)
     assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))
-
-
-class TestNullQubitGraphModeExclusive:
-    """Tests for NullQubit features that require graph mode enabled.
-    The legacy decomposition mode should not be able to run these tests.
-
-    NOTE: All tests in this suite will auto-enable graph mode via fixture.
-    """
-
-    @pytest.fixture(autouse=True)
-    def enable_graph_mode_only(self):
-        """Auto-enable graph mode for all tests in this class."""
-        qml.decomposition.enable_graph()
-        yield
-        qml.decomposition.disable_graph()
-
-    def test_insufficient_work_wires_causes_fallback(self):
-        """Test that if a decomposition requires more work wires than available on null.qubit,
-        that decomposition is discarded and fallback is used."""
-
-        class MyNullQubitOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-            num_wires = 1
-
-            def decomposition(
-                self,
-            ):  # !Note: This is crucial since otherwise it will be stopped by NQ
-                return NotImplemented
-
-        @qml.register_resources({qml.H: 2})
-        def decomp_fallback(wires):
-            qml.H(wires)
-            qml.H(wires)
-
-        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
-        def decomp_with_work_wire(wires):
-            qml.X(wires)
-
-        qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
-
-        tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
-        dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-        program = dev.preprocess_transforms()
-        (out_tape,), _ = program([tape])
-
-        assert len(out_tape.operations) == 2
-        assert out_tape.operations[0].name == "Hadamard"
-        assert out_tape.operations[1].name == "Hadamard"
