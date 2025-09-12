@@ -417,7 +417,7 @@ def resource_rep(
     :code:`resource_keys` class property of every :class:`~.pennylane.estimator.ResourceOperator`.
 
     Args:
-        resource_op (type[ResourceOperator]]): The type of operator we want to get the compact representation for.
+        resource_op (type[ResourceOperator]]): The type of operator for which to retrieve the compact representation.
         resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
 
     Returns:
