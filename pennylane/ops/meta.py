@@ -284,10 +284,10 @@ class Snapshot(Operation):
         return []
 
     def _controlled(self, _):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def adjoint(self):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Snapshot":
         new_measurement = self.hyperparameters["measurement"].map_wires(wire_map)
