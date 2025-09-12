@@ -80,6 +80,10 @@ from .dynamism import (
     DynamicBroadcastInDimOp,
 )
 
+from .reduction import (
+    ReduceOp,
+)
+
 from .attributes import (
     GatherDimensionNumbers,
     ResultAccuracyModeAttr,
@@ -141,6 +145,8 @@ __all__ = [
     "SliceOp",
     # Dynamism operations
     "DynamicBroadcastInDimOp",
+    # Reduction operations
+    "ReduceOp",
     # Attributes
     "GatherDimensionNumbers",
     "ResultAccuracyModeAttr",

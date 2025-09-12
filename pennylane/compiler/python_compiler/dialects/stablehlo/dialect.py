@@ -81,6 +81,9 @@ from .elementwise_unary import (
     TanhOp,
     TanOp,
 )
+from .reduction import (
+    ReduceOp,
+)
 from .types import UniformQuantizedPerAxisType, UniformQuantizedType
 
 # Operations to add to the dialect
@@ -130,6 +133,8 @@ OPERATIONS = [
     OptimizationBarrierOp,
     # Dynamism operations
     DynamicBroadcastInDimOp,
+    # Reduction operations
+    ReduceOp,
 ]
 
 # Attributes to add to the dialect
