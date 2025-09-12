@@ -346,7 +346,7 @@ class ResourceOperator(ABC):
 
 
 def _dequeue(
-    op_to_remove: Union["ResourceOperator", Iterable],
+    op_to_remove: "ResourceOperator" | Iterable,
     context: QueuingManager = QueuingManager,
 ):
     """Remove the given resource operator(s) from the Operator queue."""
