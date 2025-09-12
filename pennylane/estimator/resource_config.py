@@ -18,27 +18,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from enum import StrEnum
 
-from .ops.op_math.controlled_ops import (
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-)
-from .ops.qubit.parametric_ops_single_qubit import (
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-)
 from .resource_operator import ResourceOperator
-from .templates import (
-    ResourceAliasSampling,
-    ResourceMPSPrep,
-    ResourcePrepTHC,
-    ResourceQROMStatePreparation,
-    ResourceQubitizeTHC,
-    ResourceQubitUnitary,
-    ResourceSelectPauliRot,
-    ResourceSelectTHC,
-)
 
 
 class DecompositionType(StrEnum):
@@ -58,31 +38,7 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
-        self.resource_op_precisions = {
-            ResourceRX: {"precision": _DEFAULT_PRECISION},
-            ResourceRY: {"precision": _DEFAULT_PRECISION},
-            ResourceRZ: {"precision": _DEFAULT_PRECISION},
-            ResourceCRX: {"precision": _DEFAULT_PRECISION},
-            ResourceCRY: {"precision": _DEFAULT_PRECISION},
-            ResourceCRZ: {"precision": _DEFAULT_PRECISION},
-            ResourceSelectPauliRot: {"precision": _DEFAULT_PRECISION},
-            ResourceQubitUnitary: {"precision": _DEFAULT_PRECISION},
-            ResourceQROMStatePreparation: {"precision": _DEFAULT_PRECISION},
-            ResourceMPSPrep: {"precision": _DEFAULT_PRECISION},
-            ResourceAliasSampling: {"precision": _DEFAULT_PRECISION},
-            ResourceQubitizeTHC: {
-                "rotation_precision": _DEFAULT_BIT_PRECISION,
-                "coeff_precision": _DEFAULT_BIT_PRECISION,
-            },
-            ResourceSelectTHC: {
-                "rotation_precision": _DEFAULT_BIT_PRECISION,
-                "coeff_precision": _DEFAULT_BIT_PRECISION,
-            },
-            ResourcePrepTHC: {
-                "rotation_precision": _DEFAULT_BIT_PRECISION,
-                "coeff_precision": _DEFAULT_BIT_PRECISION,
-            },
-        }
+        self.resource_op_precisions = {}
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
         self._ctrl_custom_decomps = {}
@@ -220,13 +176,6 @@ class ResourceConfig:
         """
         if precision < 0:
             raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
-
-        self.resource_op_precisions[ResourceRX]["precision"] = precision
-        self.resource_op_precisions[ResourceCRX]["precision"] = precision
-        self.resource_op_precisions[ResourceRY]["precision"] = precision
-        self.resource_op_precisions[ResourceCRY]["precision"] = precision
-        self.resource_op_precisions[ResourceRZ]["precision"] = precision
-        self.resource_op_precisions[ResourceCRZ]["precision"] = precision
 
     def set_decomp(
         self,
