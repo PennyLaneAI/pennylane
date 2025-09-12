@@ -26,11 +26,8 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
     Rot,
     _rotation_resources,
 )
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourcesNotDefined,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
 
@@ -134,7 +131,7 @@ class TestPauliRotation:
         self, resource_class, precision
     ):  # pylint: disable=unused-argument
         """Test that the controlled decompositions are correct."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             resource_class.controlled_resource_decomp(1, 0)
 
     ctrl_res_data = (([1, 2], [1, 1]),)
@@ -145,7 +142,7 @@ class TestPauliRotation:
         self, resource_class, ctrl_wires, ctrl_values
     ):
         """Test that the controlled docomposition is correct when controlled on multiple wires."""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             resource_class.controlled_resource_decomp(ctrl_wires, ctrl_values)
 
 
@@ -190,18 +187,14 @@ class TestRot:
         expected = [GateCount(Rot.resource_rep(), 1)]
         assert Rot.adjoint_resource_decomp() == expected
 
-    params_ctrl_classes = (
-        (RX),
-        (RY),
-        (RZ),
-    )
+    params_ctrl_classes = ((Rot),)
     ctrl_data = ([1, 0], [1, 1])
 
     @pytest.mark.parametrize("resource_class", params_ctrl_classes)
     @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
     def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             resource_class.controlled_resource_decomp(ctrl_wires, ctrl_values)
 
     pow_data = (
@@ -259,18 +252,14 @@ class TestPhaseShift:
         expected = [GateCount(PhaseShift.resource_rep(), 1)]
         assert PhaseShift.adjoint_resource_decomp() == expected
 
-    params_ctrl_classes = (
-        (RX),
-        (RY),
-        (RZ),
-    )
+    params_ctrl_classes = ((PhaseShift),)
     ctrl_data = ([1, 0], [1, 1])
 
     @pytest.mark.parametrize("resource_class", params_ctrl_classes)
     @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
     def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             resource_class.controlled_resource_decomp(ctrl_wires, ctrl_values)
 
     pow_data = (

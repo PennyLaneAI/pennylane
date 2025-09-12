@@ -19,9 +19,9 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     resource_rep,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 from ..identity import GlobalPhase
 from .non_parametric_ops import T
@@ -155,7 +155,7 @@ class PhaseShift(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -274,7 +274,7 @@ class RX(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -392,7 +392,7 @@ class RY(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -511,7 +511,7 @@ class RZ(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
@@ -615,7 +615,7 @@ class Rot(ResourceOperator):
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, precision=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, precision=None, **kwargs) -> list[GateCount]:
