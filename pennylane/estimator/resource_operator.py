@@ -18,7 +18,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Hashable, Iterable
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 
