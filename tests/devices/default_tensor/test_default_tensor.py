@@ -688,7 +688,7 @@ class TestGraphModeExclusiveFeatures:
         """Test that decompositions requiring more work wires than available are discarded."""
 
         # Create a mock operation with different decomposition options
-        class MyOp(qml.operation.Operator):
+        class MyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)
