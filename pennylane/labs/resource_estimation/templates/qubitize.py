@@ -156,7 +156,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls,
         compact_ham,
         prep_op=None,
@@ -215,9 +215,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
-        coeff_precision = (
-            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
-        )
+        coeff_precision = prep_op.params["coeff_precision"] or kwargs["coeff_precision"]
 
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
@@ -225,7 +223,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -305,9 +303,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494s
-        coeff_precision = (
-            prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
-        )
+        coeff_precision = prep_op.params["coeff_precision"] or kwargs["coeff_precision"]
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
 
