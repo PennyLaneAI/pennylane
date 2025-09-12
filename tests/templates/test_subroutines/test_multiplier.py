@@ -40,7 +40,6 @@ def test_mul_out_k_mod():
     assert op[0].name == "QFT"
     assert op[1].name == "ControlledSequence"
     assert op[2].name == "Adjoint(QFT)"
-    print(op[1].base)
     qml.assert_equal(op[1].base, qml.PhaseAdder(2, x_wires=[4, 5]))
 
 

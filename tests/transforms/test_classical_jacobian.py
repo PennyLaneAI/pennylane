@@ -562,7 +562,6 @@ class TestJax:
         self, circuit, args, expected_jac, argnum, diff_method, interface
     ):
         r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and JAX."""
-        print(argnum)
         import jax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
@@ -607,8 +606,6 @@ class TestJax:
 
         if len(argnum) > 1:
             expected_jac = expected_jac[-1]
-        print(argnum)
-        print(jac, expected_jac)
         assert len(jac) == len(expected_jac)
         for _jac, _expected_jac in zip(jac, expected_jac):
             assert np.allclose(_jac, _expected_jac)
