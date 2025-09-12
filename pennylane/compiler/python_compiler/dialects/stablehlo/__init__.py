@@ -69,6 +69,7 @@ from .control_flow import (
 from .data_movement import (
     BroadcastInDimOp,
     ConcatenateOp,
+    DynamicSliceOp,
     GatherOp,
     ReshapeOp,
     ScatterOp,
@@ -129,6 +130,7 @@ __all__ = [
     # Data movement operations
     "BroadcastInDimOp",
     "ConcatenateOp",
+    "DynamicSliceOp",
     "GatherOp",
     "ReshapeOp",
     "ScatterOp",
