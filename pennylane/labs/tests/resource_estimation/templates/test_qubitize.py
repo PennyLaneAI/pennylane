@@ -130,22 +130,13 @@ class TestQubitizeTHC:
     def test_resources(self, compact_ham, prep_op, select_op, expected_res):
         """Test that the resources are correct."""
 
-        if prep_op is None:
-            wo_cost = plre.estimate_resources(
-                plre.ResourceQubitizeTHC(
-                    compact_ham,
-                    prep_op=prep_op,
-                    select_op=select_op,
-                )
+        wo_cost = plre.estimate_resources(
+            plre.ResourceQubitizeTHC(
+                compact_ham,
+                prep_op=prep_op,
+                select_op=select_op,
             )
-        else:
-            wo_cost = plre.estimate_resources(
-                plre.ResourceQubitizeTHC(
-                    compact_ham,
-                    prep_op=prep_op,
-                    select_op=select_op,
-                )
-            )
+        )
 
         assert wo_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
         assert (

@@ -18,9 +18,9 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     resource_rep,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ, unused-argument, no-name-in-module
 
@@ -33,7 +33,7 @@ class Hadamard(ResourceOperator):
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Hadamard`.
 
@@ -48,12 +48,12 @@ class Hadamard(ResourceOperator):
 
         Resources:
             The ``Hadamard`` gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
         Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+            ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @property
     def resource_params(self) -> dict:
@@ -67,7 +67,7 @@ class Hadamard(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -76,10 +76,10 @@ class Hadamard(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -158,7 +158,7 @@ class Hadamard(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -211,7 +211,7 @@ class S(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -223,7 +223,7 @@ class S(ResourceOperator):
             The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -304,7 +304,7 @@ class S(ResourceOperator):
               is equal to three, means one instance of the Z-gate and one instance of S-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -381,7 +381,7 @@ class SWAP(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the operator that are needed to compute a resource estimation."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -420,18 +420,18 @@ class SWAP(ResourceOperator):
                         0 & 0 & 1 & 0
                 \end{bmatrix}.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @classmethod
     def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            This operation is self-adjoint, so the resources of the adjoint operation
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -495,7 +495,7 @@ class SWAP(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -512,7 +512,7 @@ class T(ResourceOperator):
 
     Resources:
         The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+        further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.T`.
 
@@ -527,12 +527,12 @@ class T(ResourceOperator):
 
         Resources:
             The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :class:`~.pennylane.estimator.ResourcesNotDefined` error.
+            further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
 
         Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+            ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
     @property
     def resource_params(self) -> dict:
@@ -546,7 +546,7 @@ class T(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -558,7 +558,7 @@ class T(ResourceOperator):
             The resources are defined as one Z-gate (:math:`Z = T^{4}`), one S-gate (:math:`S = T^{2}`) and one T-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -621,7 +621,7 @@ class T(ResourceOperator):
             to :math:`T^{z \pmod 8}`.
 
 
-            The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+            The decomposition for :math:`T^{z}`, (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
 
             - If `z' = 0`: The operation is equivalent to the Identity gate (:math:`I`).
             - If `z' = 1`: The operation is equivalent to the T-gate (:math:`T`).
@@ -633,7 +633,7 @@ class T(ResourceOperator):
             - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -720,7 +720,7 @@ class X(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -729,10 +729,10 @@ class X(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -749,6 +749,7 @@ class X(ResourceOperator):
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+
         Resources:
             For one or two control wires, the cost is one of ``CNOT`` or ``Toffoli`` respectively.
             Two additional ``X`` gates per control qubit are used to flip the control qubits
@@ -797,7 +798,7 @@ class X(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -820,7 +821,7 @@ class Y(ResourceOperator):
             \begin{align}
                 \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
                 \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
-                \hat{S}^{\dagger} &= \cdot \hat{Z} \cdot \hat{S}, \\
+                \hat{S}^{\dagger} &= \hat{Z} \cdot \hat{S}. \\
             \end{align}
 
         Thus the resources for a Y-gate are two ``S`` gates, two ``Z`` gates
@@ -833,7 +834,7 @@ class Y(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qml.estimator.Y.resource_decomp()
-    [(1 x S), (1 x Z), (1 x Adjoint(S)), (2 x Hadamard)]
+    [(2 x S), (2 x Z), (2 x Hadamard)]
     """
 
     num_wires = 1
@@ -851,6 +852,7 @@ class Y(ResourceOperator):
                 \begin{align}
                     \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
                     \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
+                    \hat{S}^{\dagger} &= \hat{Z} \cdot \hat{S}. \\
                 \end{align}
 
             Thus the resources for a Y-gate are one S-gate, one Adjoint(S)-gate,
@@ -875,7 +877,7 @@ class Y(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -884,10 +886,10 @@ class Y(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -951,7 +953,7 @@ class Y(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1012,7 +1014,7 @@ class Z(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources."""
+        the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
@@ -1021,10 +1023,10 @@ class Z(ResourceOperator):
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            are same as the original operation.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1096,7 +1098,7 @@ class Z(ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            list[:class:`~.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

@@ -19,9 +19,9 @@ from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
-    ResourcesNotDefined,
     resource_rep,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
@@ -32,7 +32,7 @@ class TestHadamard:
     def test_resources(self):
         """Test that Hadamard resource operator does not implement a decomposition"""
         op = Hadamard()
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -121,10 +121,10 @@ class TestHadamard:
 class TestSWAP:
     """Tests for SWAP resource operator"""
 
-    def test_resources(self):
-        """Test that SWAP decomposes into three CNOTs"""
+    def test_resources_raises(self):
+        """Test that decomposition of SWAP is not defined"""
         op = SWAP([0, 1])
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -215,7 +215,7 @@ class TestS:
     """Tests for S resource operator"""
 
     def test_resources(self):
-        """Test that S decomposes into two Ts"""
+        """Test that S decomposes into two T gates"""
         op = S(0)
         expected = [GateCount(T.resource_rep(), 2)]
         assert op.resource_decomp() == expected
@@ -359,7 +359,7 @@ class TestT:
     def test_resources(self):
         """Test that there is no further decomposition of the T gate."""
         op = T(0)
-        with pytest.raises(ResourcesNotDefined):
+        with pytest.raises(ResourcesUndefinedError):
             op.resource_decomp()
 
     def test_resource_params(self):
@@ -515,6 +515,11 @@ class TestX:
                 GateCount(X.resource_rep(), 2),
                 GateCount(qre.CNOT.resource_rep(), 1),
             ],
+        ),
+        (
+            [],
+            [],
+            [GateCount(X.resource_rep(), 1)],
         ),
         (
             ["c1", "c2"],

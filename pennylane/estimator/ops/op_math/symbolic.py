@@ -20,11 +20,11 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     _dequeue,
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called,arguments-renamed
@@ -113,7 +113,7 @@ class Adjoint(ResourceOperator):
     @classmethod
     def resource_rep(cls, base_cmpr_op: CompressedResourceOp) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the operator that are needed to compute a resource estimation.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator
@@ -194,7 +194,7 @@ class Adjoint(ResourceOperator):
 
         try:
             return base_class.adjoint_resource_decomp(**base_params, **kwargs)
-        except ResourcesNotDefined:
+        except ResourcesUndefinedError:
             gate_lst = []
             decomp = base_class.resource_decomp(**base_params, **kwargs)
 
@@ -338,7 +338,7 @@ class Controlled(ResourceOperator):
         num_ctrl_values,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the operator that are needed to compute a resource estimation.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
@@ -433,7 +433,7 @@ class Controlled(ResourceOperator):
                 **base_params,
                 **kwargs,
             )
-        except ResourcesNotDefined:
+        except ResourcesUndefinedError:
             pass
 
         gate_lst = []
@@ -452,7 +452,7 @@ class Controlled(ResourceOperator):
                 )
                 gate_lst.append(GateCount(c_gate, action.count))
 
-            else:
+            else:  # pragma: no cover
                 gate_lst.append(action)
 
         return gate_lst
@@ -590,7 +590,7 @@ class Pow(ResourceOperator):
     @classmethod
     def resource_rep(cls, base_cmpr_op: CompressedResourceOp, z) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the operator that are needed to compute a resource estimation.
 
         Args:
             base_class (Type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): The class type of the base operator to be raised to some power.
@@ -669,7 +669,7 @@ class Pow(ResourceOperator):
 
         try:
             return base_class.pow_resource_decomp(pow_z=z, **base_params, **kwargs)
-        except ResourcesNotDefined:
+        except ResourcesUndefinedError:
             return [GateCount(base_cmpr_op, z)]
 
     @classmethod
@@ -819,7 +819,7 @@ class Prod(ResourceOperator):
     @classmethod
     def resource_rep(cls, cmpr_factors_and_counts, num_wires=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the operator that are needed to compute a resource estimation.
 
         Args:
             cmpr_factors_and_counts (Tuple[Tuple[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, int]]):
@@ -1030,7 +1030,7 @@ class ChangeOpBasis(ResourceOperator):
         num_wires: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to estimate the resources.
+        the operator that are needed to estimate the resources.
 
         Args:
             cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
