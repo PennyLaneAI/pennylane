@@ -116,7 +116,7 @@ def _conditional_str(op: Conditional, wires: Wires, bit_map: dict, precision: No
 
 def _tape_openqasm(
     tape: QuantumScript, wires: Wires, rotations: bool, measure_all: bool, precision: None | int
-):
+) -> str:
     """Helper function to serialize a tape as an OpenQASM 2.0 program."""
     wires = wires or tape.wires
 
@@ -165,7 +165,7 @@ def _tape_openqasm(
     # apply computational basis measurements to each quantum register
     # NOTE: This is not strictly necessary, we could inspect self.observables,
     # and then only measure wires which are requested by the user. However,
-    # some devices which consume QASM require all registers be measured, so
+    # some devices which consume QASM require all registers to be measured, so
     # measure all wires by default to be safe.
     if measure_all:
         for wire in range(len(wires)):
@@ -214,7 +214,7 @@ def to_openqasm(
         circuit (QNode or QuantumScript): the quantum circuit to be serialized.
         wires (Wires or None): the wires to use when serializing the circuit.
             Default is ``None``, such that all the wires of the circuit are used for serialization.
-        rotations (bool): if ``True``, add gates that diagonalize the measured wires to the eigenbasis
+        rotations (bool): if ``True``, add gates that rotate the quantum state into the eigenbasis
             of the circuit's observables. Default is ``True``.
         measure_all (bool): if ``True``, add a computational basis measurement on all the qubits.
             Default is ``True``.
@@ -276,7 +276,7 @@ def to_openqasm(
         measure q[1] -> c[1];
 
         If the circuit returns an expectation value of a given observable and ``rotations=True``, the OpenQASM 2.0 program will also
-        include the gates that diagonalize the measured wires such that they are in the eigenbasis of the measured observable.
+        include the gates that rotate the quantum state into the eigenbasis of the measured observable.
 
         .. code-block:: python
 
