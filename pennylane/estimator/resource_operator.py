@@ -263,7 +263,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def resource_decomp(cls, *args, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, num_wires, *args, **kwargs) -> list[GateCount]:
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
