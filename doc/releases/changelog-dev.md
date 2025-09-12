@@ -1097,7 +1097,6 @@
   in the circuit with the `ctrl` happens.
   [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
-
 * JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
   [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
 
