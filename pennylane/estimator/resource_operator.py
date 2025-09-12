@@ -440,7 +440,5 @@ def resource_rep(
 
     """
 
-    if resource_params:
-        return resource_op.resource_rep(**resource_params)
-
-    return resource_op.resource_rep()
+    resource_params = resource_params or {}
+    return resource_op.resource_rep(**resource_params)
