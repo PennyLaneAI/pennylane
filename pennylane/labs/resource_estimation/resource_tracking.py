@@ -128,7 +128,7 @@ def estimate(
 
     >>> config = plre.ResourceConfig()
     >>> config.set_single_qubit_rot_precision(1e-4)
-    >>> res = plre.estimate_resources(
+    >>> res = plre.estimate(
     ...     my_circuit,
     ...     gate_set = plre.DefaultGateSet,
     ...     config=config,
