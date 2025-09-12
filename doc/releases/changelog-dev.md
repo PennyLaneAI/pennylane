@@ -119,7 +119,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The qnode primitive is plxpr program capture now captures the unprocessed `ExecutionConfig`, instead of
+* The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
   one processed by the device.
   [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)
 
