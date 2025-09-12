@@ -257,7 +257,6 @@ class FTQCBackend(ABC):
                     f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
                 )
 
-        print(results)
         results = mcm_corrections(results)
 
         return postprocess_fns(results)
@@ -372,16 +371,6 @@ class LightningQubitBackend(FTQCBackend):
 class NullQubitBackend(FTQCBackend):
     """Wrapper for using null.qubit as a backend for the ftqc.qubit device"""
 
-    # name = "null"
-    # config_filepath = Path(__file__).parent / "null_backend.toml"
-
-    # def __init__(self):
-    #     self.diagonalize_mcms = False
-    #     self.wires = qml.wires.Wires(range(1000))
-    #     self.device = qml.device("null.qubit")
-
-    #     self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
-
     def __init__(self):
         super().__init__(
             name="null",
@@ -390,83 +379,6 @@ class NullQubitBackend(FTQCBackend):
             device=qml.device("null.qubit"),
             config_filepath=Path(__file__).parent / "null_backend.toml",
         )
-
-    # def preprocess_transforms(self, execution_config=None):
-    #     """Returns the transform program to preprocess a circuit for execution on the backend.
-
-    #     Args:
-    #         execution_config (ExecutionConfig): The execution configuration object
-
-    #     Returns:
-    #         TransformProgram: A transform program that is called before execution
-
-    #     The transform program is composed of a list of individual transforms. For this device,
-    #     it assumes the circuit is expressed in the MBQC formalism. Transforms for backend include:
-
-    #     * Any handling needed for the backed to process mid-circuit measurements
-    #     * Decomposition of graph state operations to their component parts
-    #     * Validation of wires
-    #     """
-    #     if execution_config is None:
-    #         execution_config = ExecutionConfig()
-
-    #     program = qml.transforms.core.TransformProgram()
-
-    #     # validate that conversion didn't use too many wires
-    #     program.add_transform(
-    #         validate_device_wires,
-    #         wires=self.wires,
-    #         name=f"{self.name} FTQC backend",
-    #     )
-
-    #     program = qml.transforms.core.TransformProgram()
-    #     program.add_transform(
-    #         qml.devices.preprocess.mid_circuit_measurements,
-    #         device=self,
-    #         mcm_config=execution_config.mcm_config,
-    #     )
-    #     program.add_transform(
-    #         qml.devices.preprocess.decompose,
-    #         stopping_condition=lambda op: not isinstance(op, GraphStatePrep),
-    #         skip_initial_state_prep=True,
-    #         name=self.name,
-    #     )
-
-    #     return program
-
-    # def execute(self, sequences, execution_config):
-    #     """Mock execution of a sequence or a batch of sequences and turn it into null results.
-
-    #     Args:
-    #         sequences (Sequence[QuantumScriptSequence]]): the quantum circuits to be executed
-    #         execution_config (ExecutionConfig): a datastructure with additional information required for execution
-
-    #     Returns:
-    #         TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
-    #     """
-    #     tapes_to_execute = []
-
-    #     preprocess_transforms = self.preprocess_transforms(execution_config)
-    #     sequences, mcm_corrections = convert_to_mbqc_formalism(sequences)
-    #     sequences, postprocess_fns = preprocess_transforms(sequences)
-
-    #     for sequence in sequences:
-    #         if isinstance(sequence, QuantumScriptSequence):
-    #             shots = sequence.shots.total_shots
-    #             final_tape = sequence.final_tape
-    #             tapes_to_execute.append(final_tape.copy(shots=shots))
-    #         else:
-    #             raise TypeError(
-    #                 f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
-    #             )
-
-    #     result = tuple(self.device.execute(tapes_to_execute, execution_config))
-
-    #     # ToDo: this doesn't work yet, I'm getting a shape wrong somewhere
-    #     # fix it or drop the NullQubit backend
-    #     result = mcm_corrections(result)
-
-    #     return postprocess_fns(result)
 
     def _execute_sequence(self, sequence, execution_config):
         """Execute a single QuantumScriptSecuence.
