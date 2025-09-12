@@ -121,6 +121,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
+  [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
+
 * The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)

@@ -446,9 +446,7 @@ class TestQNodeQasmIntegrationTests:
             qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
-        ):
+        with pytest.raises(ValueError, match="not supported with to_openqasm"):
             qml.to_openqasm(qnode)()
 
     def test_unused_wires(self):
@@ -678,6 +676,81 @@ class TestQNodeQasmIntegrationTests:
             """
         )
 
+        assert res == expected
+
+    def test_error_reset_True(self):
+        """Test an error is raised if the mcm has reset"""
+        m0 = qml.measure(0, reset=True)
+        tape = qml.tape.QuantumScript(m0.measurements)
+        with pytest.raises(NotImplementedError):
+            qml.to_openqasm(tape)
+
+    def test_error_postselection(self):
+        """Test that an error is raised if postselection exists."""
+        m0 = qml.measure(0, postselect=1)
+        tape = qml.tape.QuantumScript(m0.measurements)
+        with pytest.raises(NotImplementedError):
+            qml.to_openqasm(tape)
+
+    def test_error_if_mcm_processed(self):
+        """Test a NotImplementedError is raised if the mcm is processed in the conditional."""
+        m0 = qml.measure(0)
+        tape = qml.tape.QuantumScript([m0.measurements[0], qml.ops.Conditional(2 * m0, qml.X(0))])
+        with pytest.raises(NotImplementedError):
+            qml.to_openqasm(tape)
+
+    def test_multiple_mcms(self):
+        """Test that multiple mcms can be translated."""
+
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2 = qml.measure(2)
+
+        tape = qml.tape.QuantumScript(
+            [qml.X(0), *m0.measurements, *m1.measurements, *m2.measurements]
+        )
+
+        expected = dedent(
+            """\
+                            OPENQASM 2.0;
+                            include "qelib1.inc";
+                            qreg q[3];
+                            creg c[3];
+                            creg mcms[3]
+                            x q[0];
+                            measure q[0] -> mcms[0];
+                            measure q[1] -> mcms[1];
+                            measure q[2] -> mcms[2];
+                            measure q[0] -> c[0];
+                            measure q[1] -> c[1];
+                            measure q[2] -> c[2];
+                            """
+        )
+        assert expected == qml.to_openqasm(tape)
+
+    @pytest.mark.parametrize("precision", (None, 2))
+    def test_conditional(self, precision):
+        """Test that a conditional can be translated."""
+
+        m0 = qml.measure(0)
+        tape = qml.tape.QuantumScript(
+            [m0.measurements[0], qml.ops.Conditional(m0, qml.RX(0.123456, 0))]
+        )
+        res = qml.to_openqasm(tape, precision=precision)
+
+        p = f"{0.123456:.{precision}}" if precision else str(0.123456)
+        expected = dedent(
+            f"""\
+                    OPENQASM 2.0;
+                    include "qelib1.inc";
+                    qreg q[1];
+                    creg c[1];
+                    creg mcms[1]
+                    measure q[0] -> mcms[0];
+                    if(mcms[0]==1) rx({p}) q[0];
+                    measure q[0] -> c[0];
+                    """
+        )
         assert res == expected
 
 
