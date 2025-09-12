@@ -18,6 +18,12 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
+from pennylane.labs.resource_estimation.templates.stateprep import (
+    ResourceAliasSampling,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
+)
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -223,11 +229,9 @@ class TestAliasSampling:
     def test_resources(self, num_coeffs, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
-            config = {"precision_alias_sampling": 1e-9}
-            assert (
-                plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision, config=config)
-                == expected_res
-            )
+            config = ResourceConfig()
+            kwargs = config.resource_op_precisions[ResourceAliasSampling]
+            assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, **kwargs) == expected_res
         else:
             assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision) == expected_res
 
@@ -451,11 +455,10 @@ class TestMPSPrep:
     def test_resources(self, num_mps, bond_dim, precision, expected_res):
         "Test that the resources are correct."
         if precision is None:
-            config = {"precision_mps_prep": 1e-9}
+            config = ResourceConfig()
+            kwargs = config.resource_op_precisions[ResourceMPSPrep]
             actual = plre.ResourceMPSPrep.resource_decomp(
-                num_mps_matrices=num_mps,
-                max_bond_dim=bond_dim,
-                config=config,
+                num_mps_matrices=num_mps, max_bond_dim=bond_dim, **kwargs
             )
             assert actual == expected_res
 
@@ -1192,14 +1195,23 @@ class TestQROMStatePrep:
         self, num_state_qubits, precision, positive_and_real, selswap_depths, expected_res
     ):
         """Test that the resources are as expected for the default decomposition"""
-        config = {"precision_qrom_state_prep": 1e-9}
-        actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
-            num_state_qubits=num_state_qubits,
-            precision=precision,
-            positive_and_real=positive_and_real,
-            selswap_depths=selswap_depths,
-            config=config,
-        )
+
+        if precision is None:
+            config = ResourceConfig()
+            kwargs = config.resource_op_precisions[ResourceQROMStatePreparation]
+            actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
+                num_state_qubits=num_state_qubits,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+                **kwargs,
+            )
+        else:
+            actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
+                num_state_qubits=num_state_qubits,
+                precision=precision,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+            )
 
         assert actual_resources == expected_res
 
@@ -1738,13 +1750,21 @@ class TestQROMStatePrep:
         self, num_state_qubits, precision, positive_and_real, selswap_depths, expected_res
     ):
         """Test that the resources are as expected for the controlled-RY decomposition"""
-        config = {"precision_qrom_state_prep": 1e-9}
-        actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
-            num_state_qubits=num_state_qubits,
-            precision=precision,
-            positive_and_real=positive_and_real,
-            selswap_depths=selswap_depths,
-            config=config,
-        )
+        if precision is None:
+            config = ResourceConfig()
+            kwargs = config.resource_op_precisions[ResourceQROMStatePreparation]
+            actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
+                num_state_qubits=num_state_qubits,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+                **kwargs,
+            )
+        else:
+            actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
+                num_state_qubits=num_state_qubits,
+                precision=precision,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+            )
 
         assert actual_resources == expected_res
