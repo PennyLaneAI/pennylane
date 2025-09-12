@@ -388,7 +388,7 @@ class MottonenStatePreparation(Operation):
 
             if not qml.math.is_abstract(state):
                 norm = qml.math.sum(qml.math.abs(state) ** 2)
-                if not qml.math.allclose(norm, 1.0, atol=1e-3):
+                if not (qml.math.is_abstract(norm) or qml.math.allclose(norm, 1.0, atol=1e-3)):
                     raise ValueError(
                         f"State vectors have to be of norm 1.0, vector {i} has squared norm {norm}"
                     )
