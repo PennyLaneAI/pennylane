@@ -2092,7 +2092,7 @@ class TestHamiltonianExpvalGradients:
     def test_trainable_coeffs(self, broadcast, tol):
         """Test trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
-        dev = shots_to_analytic(qml.device("default.qubit", wires=2, shots=shot_vec))
+        dev = shots_to_analytic(qml.device("default.qubit", wires=2))
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = qml.numpy.array([0.1, 0.2, 0.3])

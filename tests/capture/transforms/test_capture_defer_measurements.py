@@ -299,7 +299,6 @@ class TestDeferMeasurementsInterpreter:
             (qml.var, qml.measurements.VarianceMP),
             (qml.sample, qml.measurements.SampleMP),
             (qml.probs, qml.measurements.ProbabilityMP),
-            (qml.counts, qml.measurements.CountsMP),
         ],
     )
     def test_mcm_statistics(self, mp_fn, mp_class):
@@ -334,10 +333,6 @@ class TestDeferMeasurementsInterpreter:
         ]
         if mp_fn not in (qml.expval, qml.var):
             expected_measurements.append(mp_class(wires=Wires([9, 8, 7]), eigvals=None))
-        if mp_fn == qml.counts:
-            expected_measurements.append(
-                mp_class(wires=Wires([9]), eigvals=jnp.arange(2), all_outcomes=True)
-            )
         assert measurements == expected_measurements
 
     def test_arbitrary_mcm_processing(self):
@@ -643,10 +638,10 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
     def test_qnode(self, postselect):
         """Test that a qnode primitive is transformed correctly."""
-        dev = qml.device("default.qubit", wires=10, shots=10)
+        dev = qml.device("default.qubit", wires=10)
 
         @DeferMeasurementsInterpreter(num_wires=10)
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", shots=10)
         def f(x):
             m0 = qml.measure(0, postselect=postselect)
             m1 = qml.measure(

@@ -27,10 +27,6 @@ from pennylane.labs.resource_estimation import (
     QubitManager,
     ResourceOperator,
     Resources,
-    set_adj_decomp,
-    set_ctrl_decomp,
-    set_decomp,
-    set_pow_decomp,
 )
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
@@ -38,9 +34,8 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 from pennylane.queuing import AnnotatedQueue
-from pennylane.wires import Wires
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself
+# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
 
 
 class ResourceDummyX(ResourceOperator):
@@ -68,16 +63,17 @@ class TestCompressedResourceOp:
 
     test_hamiltonian = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
     compressed_ops_and_params_lst = (
-        ("DummyX", ResourceDummyX, {"num_wires": 1}, None),
-        ("DummyQFT", ResourceDummyQFT, {"num_wires": 5}, None),
-        ("DummyQSVT", ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5}, None),
+        ("DummyX", ResourceDummyX, 1, {"num_wires": 1}, None),
+        ("DummyQFT", ResourceDummyQFT, 5, {"num_wires": 5}, None),
+        ("DummyQSVT", ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}, None),
         (
             "DummyTrotterProduct",
             ResourceDummyTrotterProduct,
+            2,
             {"Hamiltonian": test_hamiltonian, "num_steps": 5, "order": 2},
             None,
         ),
-        ("X", ResourceDummyX, {"num_wires": 1}, "X"),
+        ("X", ResourceDummyX, 1, {"num_wires": 1}, "X"),
     )
 
     compressed_op_names = (
@@ -88,21 +84,28 @@ class TestCompressedResourceOp:
         "X",
     )
 
-    @pytest.mark.parametrize("name, op_type, parameters, name_param", compressed_ops_and_params_lst)
-    def test_init(self, name, op_type, parameters, name_param):
+    @pytest.mark.parametrize(
+        "name, op_type, num_wires, parameters, name_param", compressed_ops_and_params_lst
+    )
+    def test_init(self, name, op_type, parameters, num_wires, name_param):
         """Test that we can correctly instantiate CompressedResourceOp"""
-        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
+        cr_op = CompressedResourceOp(op_type, num_wires, parameters, name=name_param)
 
         assert cr_op._name == name
         assert cr_op.op_type is op_type
+        assert cr_op.num_wires == num_wires
         assert cr_op.params == parameters
         assert sorted(cr_op._hashable_params) == sorted(tuple(parameters.items()))
 
     def test_hash(self):
         """Test that the hash method behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT2 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        Other = CompressedResourceOp(ResourceDummyQFT, {"num_wires": 3})
+        CmprssedQSVT1 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        CmprssedQSVT2 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        Other = CompressedResourceOp(ResourceDummyQFT, 3, {"num_wires": 3})
 
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT1)  # compare same object
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT2)  # compare identical instance
@@ -110,13 +113,19 @@ class TestCompressedResourceOp:
 
         # test dictionary as parameter
         CmprssedAdjoint1 = CompressedResourceOp(
-            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}}
+            ResourceDummyAdjoint,
+            1,
+            {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}},
         )
         CmprssedAdjoint2 = CompressedResourceOp(
-            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}}
+            ResourceDummyAdjoint,
+            1,
+            {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}},
         )
         Other = CompressedResourceOp(
-            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 2}}
+            ResourceDummyAdjoint,
+            2,
+            {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 2}},
         )
 
         assert hash(CmprssedAdjoint1) == hash(CmprssedAdjoint1)
@@ -125,10 +134,16 @@ class TestCompressedResourceOp:
 
     def test_equality(self):
         """Test that the equality methods behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT2 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT3 = CompressedResourceOp(ResourceDummyQSVT, {"num_angles": 5, "num_wires": 3})
-        Other = CompressedResourceOp(ResourceDummyQFT, {"num_wires": 3})
+        CmprssedQSVT1 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        CmprssedQSVT2 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_wires": 3, "num_angles": 5}
+        )
+        CmprssedQSVT3 = CompressedResourceOp(
+            ResourceDummyQSVT, 3, {"num_angles": 5, "num_wires": 3}
+        )
+        Other = CompressedResourceOp(ResourceDummyQFT, 3, {"num_wires": 3})
 
         assert CmprssedQSVT1 == CmprssedQSVT2  # compare identical instance
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
@@ -137,29 +152,29 @@ class TestCompressedResourceOp:
     @pytest.mark.parametrize("args, name", zip(compressed_ops_and_params_lst, compressed_op_names))
     def test_name(self, args, name):
         """Test that the name method behaves as expected."""
-        _, op_type, parameters, name_param = args
-        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
+        _, op_type, num_wires, parameters, name_param = args
+        cr_op = CompressedResourceOp(op_type, num_wires, parameters, name=name_param)
 
         assert cr_op.name == name
 
     @pytest.mark.parametrize("args", compressed_ops_and_params_lst)
     def test_repr(self, args):
         """Test that the name method behaves as expected."""
-        _, op_type, parameters, name_param = args
+        _, op_type, num_wires, parameters, name_param = args
 
-        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
+        cr_op = CompressedResourceOp(op_type, num_wires, parameters, name=name_param)
 
         op_name = op_type.__name__
         expected_params_str_parts = [f"{k!r}:{v!r}" for k, v in sorted(parameters.items())]
         expected_params_str = ", ".join(expected_params_str_parts)
 
-        expected_repr_string = f"CompressedResourceOp({op_name}, params={{{expected_params_str}}})"
+        expected_repr_string = f"CompressedResourceOp({op_name}, num_wires={num_wires}, params={{{expected_params_str}}})"
         assert str(cr_op) == expected_repr_string
 
     def test_type_error(self):
         """Test that an error is raised if wrong type is provided for op_type."""
         with pytest.raises(TypeError, match="op_type must be a subclass of ResourceOperator."):
-            CompressedResourceOp(int)
+            CompressedResourceOp(int, num_wires=2)
 
 
 @dataclass(frozen=True)
@@ -193,7 +208,7 @@ class DummyOp(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -211,7 +226,7 @@ class DummyOp_no_resource_rep(ResourceOperator):
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -229,7 +244,7 @@ class DummyOp_no_resource_params(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -322,21 +337,21 @@ class TestResourceOperator:
         for op_to_remove, expected_queue in zip(ops_to_remove, expected_queues):
             with AnnotatedQueue() as q:
                 for op in self.ops_to_queue:
-                    qml.apply(op)
+                    op.queue()
 
                 ResourceOperator.dequeue(op_to_remove)
 
             assert q.queue == expected_queue
 
-    def test_init_wire_override(self):
-        """Test that setting the wires correctly overrides the num_wires argument."""
+    def test_wire_error(self):
+        """Test that providing a different number of wire labels than the operator's
+        num_wires aregument leads to an error."""
         dummy_op1 = DummyOp()
         assert dummy_op1.wires is None
-        assert dummy_op1.num_wires == 0
+        assert dummy_op1.num_wires == 1
 
-        dummy_op2 = DummyOp(wires=[0, 1, 2])
-        assert dummy_op2.wires == Wires([0, 1, 2])
-        assert dummy_op2.num_wires == 3
+        with pytest.raises(ValueError, match="Expected 1 wires, got"):
+            dummy_op2 = DummyOp(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mul(self, s):
@@ -479,109 +494,6 @@ def test_make_hashable(input_obj, expected_hashable):
     assert hash(result) is not None
 
 
-def test_set_decomp():
-    """Test that the set_decomp function works as expected."""
-    op1 = DummyOp(x=5)
-    assert DummyOp.resource_decomp(**op1.resource_params) == [5]
-
-    def custom_res_decomp(x, **kwargs):
-        return [x + 1]
-
-    set_decomp(DummyOp, custom_res_decomp)
-
-    assert DummyOp.resource_decomp(**op1.resource_params) == [6]
-
-    def custom_res_decomp_error(y):  # must match signature of default_resource_decomp
-        return [y + 1]
-
-    with pytest.raises(ValueError):
-        set_decomp(DummyOp, custom_res_decomp_error)
-
-
-def test_set_adj_decomp():
-    """Test that the set_decomp function works as expected."""
-
-    class DummyAdjOp(DummyOp):
-        """Dummy Adjoint Op class"""
-
-        @classmethod
-        def default_adjoint_resource_decomp(cls, x):
-            """dummy adjoint resource decomp method"""
-            return cls.default_resource_decomp(x=x)
-
-    op1 = DummyAdjOp(x=5)
-    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [5]
-
-    def custom_res_decomp(x, **kwargs):
-        return [x + 1]
-
-    set_adj_decomp(DummyAdjOp, custom_res_decomp)
-
-    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [6]
-
-    def custom_res_decomp_error(y):  # must match signature of default_adjoint_resource_decomp
-        return [y + 1]
-
-    with pytest.raises(ValueError):
-        set_adj_decomp(DummyAdjOp, custom_res_decomp_error)
-
-
-def test_set_ctrl_decomp():
-    """Test that the set_decomp function works as expected."""
-
-    class DummyCtrlOp(DummyOp):
-        """Dummy Controlled Op class"""
-
-        @classmethod
-        def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
-            """dummy control resource decomp method"""
-            return cls.default_resource_decomp(x=x + ctrl_num_ctrl_values)
-
-    op1 = DummyCtrlOp(x=5)
-    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [5]
-
-    def custom_res_decomp(ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x, **kwargs):
-        return [x + ctrl_num_ctrl_wires]
-
-    set_ctrl_decomp(DummyCtrlOp, custom_res_decomp)
-
-    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [6]
-
-    def custom_res_decomp_error(x):  # must match signature of default_controlled_resource_decomp
-        return [x + 1]
-
-    with pytest.raises(ValueError):
-        set_ctrl_decomp(DummyCtrlOp, custom_res_decomp_error)
-
-
-def test_set_pow_decomp():
-    """Test that the set_decomp function works as expected."""
-
-    class DummyPowOp(DummyOp):
-        """Dummy Pow Op class"""
-
-        @classmethod
-        def default_pow_resource_decomp(cls, pow_z, x):
-            """dummy adjoint resource decomp method"""
-            return cls.default_resource_decomp(x=x)
-
-    op1 = DummyPowOp(x=5)
-    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [5]
-
-    def custom_res_decomp(pow_z, x, **kwargs):
-        return [x * pow_z]
-
-    set_pow_decomp(DummyPowOp, custom_res_decomp)
-
-    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [15]
-
-    def custom_res_decomp_error(x):  # must match signature of default_pow_resource_decomp
-        return [x + 1]
-
-    with pytest.raises(ValueError):
-        set_pow_decomp(DummyPowOp, custom_res_decomp_error)
-
-
 class TestGateCount:
     """Tests for the GateCount class."""
 
@@ -661,7 +573,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, params)
 
         @classmethod
-        def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
+        def resource_decomp(cls, num_wires, continuous_param, bool_param):
             """dummy default resource decomp method"""
             raise NotImplementedError
 
@@ -681,7 +593,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, {})
 
         @classmethod
-        def default_resource_decomp(cls, **kwargs):
+        def resource_decomp(cls):
             """dummy default resource decomp method"""
             raise NotImplementedError
 

@@ -24,24 +24,26 @@ import pennylane.labs.resource_estimation as plre
 class TestResourceSingleExcitation:
     """Test the SingleExcitation class."""
 
-    @pytest.mark.parametrize("eps", (None, 1e-3))
-    def test_resource_params(self, eps):
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resource_params(self, precision):
         """Test that the resource params are correct."""
-        if eps:
-            op = plre.ResourceSingleExcitation(eps=eps)
+        if precision:
+            op = plre.ResourceSingleExcitation(precision=precision)
         else:
             op = plre.ResourceSingleExcitation()
 
-        assert op.resource_params == {"eps": eps}
+        assert op.resource_params == {"precision": precision}
 
-    @pytest.mark.parametrize("eps", (None, 1e-3))
-    def test_resource_rep(self, eps):
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resource_rep(self, precision):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceSingleExcitation, {"eps": eps})
-        assert plre.ResourceSingleExcitation.resource_rep(eps=eps) == expected
+        expected = plre.CompressedResourceOp(
+            plre.ResourceSingleExcitation, 2, {"precision": precision}
+        )
+        assert plre.ResourceSingleExcitation.resource_rep(precision=precision) == expected
 
-    @pytest.mark.parametrize("eps", (None, 1e-3))
-    def test_resources(self, eps):
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resources(self, precision):
         """Test that the resources are correct."""
         t_dag = plre.ResourceAdjoint.resource_rep(plre.resource_rep(plre.ResourceT))
         s_dag = plre.ResourceAdjoint.resource_rep(plre.resource_rep(plre.ResourceS))
@@ -52,8 +54,8 @@ class TestResourceSingleExcitation:
             plre.GateCount(plre.resource_rep(plre.ResourceS), 2),
             plre.GateCount(s_dag, 2),
             plre.GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
-            plre.GateCount(plre.resource_rep(plre.ResourceRZ, {"eps": eps})),
-            plre.GateCount(plre.resource_rep(plre.ResourceRY, {"eps": eps})),
+            plre.GateCount(plre.resource_rep(plre.ResourceRZ, {"precision": precision})),
+            plre.GateCount(plre.resource_rep(plre.ResourceRY, {"precision": precision})),
             plre.GateCount(plre.resource_rep(plre.ResourceT), 2),
         ]
-        assert plre.ResourceSingleExcitation.resource_decomp(eps=eps) == expected
+        assert plre.ResourceSingleExcitation.resource_decomp(precision=precision) == expected

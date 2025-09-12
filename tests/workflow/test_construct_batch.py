@@ -121,16 +121,21 @@ class TestTransformProgramGetter:
         ):
             p_none = get_transform_program(circuit, None)
         assert p_none == p_dev
-        assert len(p_dev) == 9
-        config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
+        assert len(p_dev) == 10
+        config = qml.devices.ExecutionConfig(
+            interface=getattr(circuit, "interface", None),
+            mcm_config=qml.devices.MCMConfig(mcm_method="deferred"),
+        )
         assert p_dev == p_grad + dev.preprocess_transforms(config)
 
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
         assert p_sliced[0].transform == qml.compile.transform
-        assert p_sliced[1].transform == qml.devices.preprocess.mid_circuit_measurements.transform
-        assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
+        assert (
+            p_sliced[2].transform == qml.devices.preprocess.device_resolve_dynamic_wires.transform
+        )
+        assert p_sliced[1].transform == qml.defer_measurements.transform
 
     def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
@@ -156,13 +161,14 @@ class TestTransformProgramGetter:
             return qml.expval(qml.PauliZ(0))
 
         full_prog = get_transform_program(circuit)
-        assert len(full_prog) == 13
+        assert len(full_prog) == 14
 
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
             gradient_method="adjoint",
             use_device_jacobian_product=False,
         )
+        config = dev.setup_execution_config(config)
         dev_program = dev.preprocess_transforms(config)
 
         expected = TransformProgram()
@@ -219,6 +225,7 @@ class TestTransformProgramGetter:
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
+        config = qml.device("default.qubit").setup_execution_config(config)
         assert len(dev_program) == 4 + len(
             circuit.device.preprocess_transforms(config)
         )  # currently 8
@@ -475,14 +482,7 @@ class TestConstructBatch:
                     qml.S(0)
                 return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="specified on call to a QNode is deprecated",
-        ):
-            with pytest.warns(
-                UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
-            ):
-                batch, fn = construct_batch(circuit, level="device")(shots=2)
+        batch, fn = construct_batch(circuit, level="device")(shots=2)
 
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(

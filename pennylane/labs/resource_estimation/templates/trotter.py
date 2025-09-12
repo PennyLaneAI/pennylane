@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 # pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
 
-class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors
+class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian operator.
 
@@ -61,7 +61,9 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
             constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
         num_steps (int): number of Trotter steps to perform
         order (int): order of the Suzuki-Trotter approximation, must be 1 or even
-        wires (list[int] or optional): the wires on which the operator acts
+        wires (list[int] or optional): The wires on which the operator acts. If provided, these wire
+            labels will be used instead of the wires provided by the ResourceOperators in the 
+            :code:`first_order_expansion`.
 
     Resources:
         The resources are defined according to the recursive formula presented above.
@@ -90,7 +92,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
     >>> num_steps, order = (1, 2)
     >>> first_order_expansion = [plre.ResourceRX(), plre.ResourceRY()] # H = X + Y
     >>> gate_set = {"RX", "RY"}
-    >>> res = plre.estimate_resources(plre.ResourceTrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
+    >>> res = plre.estimate(plre.ResourceTrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
     >>> print(res)
     --- Resources: ---
      Total qubits: 1
@@ -102,7 +104,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
     """
 
-    resource_keys = {"first_order_expansion", "num_steps", "order"}
+    resource_keys = {"first_order_expansion", "num_steps", "order", "num_wires"}
 
     def __init__(self, first_order_expansion, num_steps, order, wires=None):
 
@@ -120,19 +122,23 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         self.num_steps = num_steps
         self.order = order
 
-        if wires:
+        if wires:  # User defined wires take precedent
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
-        else:
-            ops_wires = [op.wires for op in first_order_expansion if op.wires is not None]
-            if len(ops_wires) == 0:
-                self.wires = None
-                self.num_wires = max(op.num_wires for op in first_order_expansion)
-            else:
-                self.wires = Wires.all_wires(ops_wires)
-                max_single_op_wires = max(op.num_wires for op in first_order_expansion)
-                max_all_op_wires = len(self.wires)
-                self.num_wires = max(max_all_op_wires, max_single_op_wires)
+
+        else:  # Otherwise determine the wires from the ops in the first order expansion
+            ops_wires = Wires.all_wires(
+                [op.wires for op in first_order_expansion if op.wires is not None]
+            )
+            fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+
+            if len(ops_wires) < fewest_unique_wires:  # If the expansion didn't provide enough wire
+                self.wires = None  # labels we assume they all act on the same set
+                self.num_wires = fewest_unique_wires
+
+            else:  # If there are more wire labels, use that as the operator wires
+                self.wires = ops_wires
+                self.num_wires = len(self.wires)
 
     @property
     def resource_params(self) -> dict:
@@ -144,16 +150,20 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
                   in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+                * num_wires (int): the number of wires on which the operator acts
 
         """
         return {
             "first_order_expansion": self.first_order_expansion,
             "num_steps": self.num_steps,
             "order": self.order,
+            "num_wires": self.num_wires,
         }
 
     @classmethod
-    def resource_rep(cls, first_order_expansion, num_steps, order) -> CompressedResourceOp:
+    def resource_rep(
+        cls, first_order_expansion, num_steps, order, num_wires
+    ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -163,6 +173,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+            num_wires (int): the number of wires on which the operator acts
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -171,12 +182,18 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
             "first_order_expansion": first_order_expansion,
             "num_steps": num_steps,
             "order": order,
+            "num_wires": num_wires,
         }
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(
-        cls, first_order_expansion, num_steps, order, **kwargs
+    def resource_decomp(
+        cls,
+        first_order_expansion,
+        num_steps,
+        order,
+        num_wires,  # pylint: disable=unused-argument
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -187,6 +204,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+            num_wires (int): the number of wires on which the operator acts
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -279,7 +297,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
     >>> import pennylane.labs.resource_estimation as plre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = plre.CompactHamiltonian.cdf(num_orbitals = 4, num_fragments = 4)
-    >>> res = plre.estimate_resources(plre.ResourceTrotterCDF(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterCDF(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 8
@@ -303,12 +321,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         self.order = order
         self.compact_ham = compact_ham
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = None
-            self.num_wires = 2 * compact_ham.params["num_orbitals"]
+        self.num_wires = 2 * compact_ham.params["num_orbitals"]
         super().__init__(wires=wires)
 
     @property
@@ -348,10 +361,11 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
             "num_steps": num_steps,
             "order": order,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = 2 * compact_ham.params["num_orbitals"]
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -411,7 +425,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         return gate_list
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls, compact_ham, num_steps, order, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
     ):
         """Returns the controlled resource decomposition.
@@ -475,7 +489,6 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         basis_rot = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
 
         if order == 1:
-            print("Basis rot: ", num_frags * num_steps)
             gate_list.append(plre.GateCount(basis_rot, 2 * num_frags * num_steps))
 
             gate_list.append(plre.GateCount(op_onebody, num_steps))
@@ -561,7 +574,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
     >>> import pennylane.labs.resource_estimation as plre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
-    >>> res = plre.estimate_resources(plre.ResourceTrotterTHC(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterTHC(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 8
@@ -586,12 +599,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         self.order = order
         self.compact_ham = compact_ham
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = None
-            self.num_wires = compact_ham.params["tensor_rank"] * 2
+        self.num_wires = compact_ham.params["tensor_rank"] * 2
         super().__init__(wires=wires)
 
     @property
@@ -631,10 +639,11 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             "num_steps": num_steps,
             "order": order,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = compact_ham.params["tensor_rank"] * 2
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -693,7 +702,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         return gate_list
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls, compact_ham, num_steps, order, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
     ):
         """Returns the controlled resource decomposition.
@@ -840,7 +849,7 @@ class ResourceTrotterVibrational(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
-    >>> res = plre.estimate_resources(plre.ResourceTrotterVibrational(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterVibrational(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 83.0
@@ -875,13 +884,7 @@ class ResourceTrotterVibrational(ResourceOperator):
         self.phase_grad_precision = phase_grad_precision
         self.coeff_precision = coeff_precision
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
-            self.wires = None
-
+        self.num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
         super().__init__(wires=wires)
 
     @property
@@ -935,7 +938,8 @@ class ResourceTrotterVibrational(ResourceOperator):
             "phase_grad_precision": phase_grad_precision,
             "coeff_precision": coeff_precision,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
@@ -1072,7 +1076,7 @@ class ResourceTrotterVibrational(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -1206,7 +1210,7 @@ class ResourceTrotterVibronic(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
-    >>> res = plre.estimate_resources(plre.ResourceTrotterVibronic(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterVibronic(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 85.0
@@ -1241,15 +1245,10 @@ class ResourceTrotterVibronic(ResourceOperator):
         self.phase_grad_precision = phase_grad_precision
         self.coeff_precision = coeff_precision
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.num_wires = (
-                int(np.ceil(np.log2(compact_ham.params["num_states"])))
-                + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
-            )
-            self.wires = None
+        self.num_wires = (
+            int(np.ceil(np.log2(compact_ham.params["num_states"])))
+            + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        )
         super().__init__(wires=wires)
 
     @property
@@ -1303,7 +1302,11 @@ class ResourceTrotterVibronic(ResourceOperator):
             "phase_grad_precision": phase_grad_precision,
             "coeff_precision": coeff_precision,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = (
+            int(np.ceil(np.log2(compact_ham.params["num_states"])))
+            + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        )
+        return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
     def _cached_terms(
@@ -1471,7 +1474,7 @@ class ResourceTrotterVibronic(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -1502,7 +1505,6 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         phase_grad_wires = abs(np.floor(np.log2(phase_grad_precision)))
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
-        print("coeff_wires:", coeff_wires, "phase_grad_wires:", phase_grad_wires)
 
         x = plre.ResourceX.resource_rep()
 
