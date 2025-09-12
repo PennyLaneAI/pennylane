@@ -124,9 +124,9 @@ class CH(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         ctrl_h = resource_rep(
-            re.ResourceControlled,
+            qre.Controlled,
             {
-                "base_cmpr_op": resource_rep(re.ResourceHadamard),
+                "base_cmpr_op": resource_rep(qre.Hadamard),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
@@ -241,9 +241,9 @@ class CY(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         ctrl_y = resource_rep(
-            re.ResourceControlled,
+            qre.Controlled,
             {
-                "base_cmpr_op": resource_rep(re.ResourceY),
+                "base_cmpr_op": resource_rep(qre.Y),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
@@ -359,18 +359,17 @@ class CZ(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
-            return [GateCount(resource_rep(re.ResourceCCZ))]
+            return [GateCount(resource_rep(qre.CCZ))]
 
         ctrl_z = resource_rep(
-            re.ResourceControlled,
+            qre.Controlled,
             {
-                "base_cmpr_op": resource_rep(re.ResourceZ),
+                "base_cmpr_op": resource_rep(qre.Z),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
         )
         return [GateCount(ctrl_z)]
-
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -486,9 +485,9 @@ class CSWAP(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         ctrl_swap = resource_rep(
-            re.ResourceControlled,
+            qre.Controlled,
             {
-                "base_cmpr_op": resource_rep(re.ResourceSWAP),
+                "base_cmpr_op": resource_rep(qre.SWAP),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
@@ -606,9 +605,9 @@ class CCZ(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         ctrl_z = resource_rep(
-            re.ResourceControlled,
+            qre.Controlled,
             {
-                "base_cmpr_op": resource_rep(re.ResourceZ),
+                "base_cmpr_op": resource_rep(qre.Z),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
@@ -707,10 +706,10 @@ class CNOT(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
-            return [GateCount(resource_rep(ResourceToffoli))]
+            return [GateCount(resource_rep(Toffoli))]
 
         mcx = resource_rep(
-            ResourceMultiControlledX,
+            MultiControlledX,
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
@@ -719,7 +718,6 @@ class CNOT(ResourceOperator):
         return [
             GateCount(mcx),
         ]
-
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
@@ -818,13 +816,14 @@ class TempAND(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         mcx = resource_rep(
-            re.ResourceMultiControlledX,
+            qre.MultiControlledX,
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
         )
         return [GateCount(mcx)]
+
 
 class Toffoli(ResourceOperator):
     r"""Resource class for the Toffoli gate.
@@ -1041,12 +1040,12 @@ class Toffoli(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        elbow=None,
+        elbow=None,  # pylint: disable=unused-argument
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         mcx = resource_rep(
-            re.ResourceMultiControlledX,
+            qre.MultiControlledX,
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
                 "num_ctrl_values": ctrl_num_ctrl_values,
@@ -1413,9 +1412,9 @@ class CRX(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         ctrl_rx = resource_rep(
-            re.ResourceControlled,
+            qre.Controlled,
             {
-                "base_cmpr_op": resource_rep(re.ResourceRX, {"eps": eps}),
+                "base_cmpr_op": resource_rep(qre.RX, {"precision": precision}),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
@@ -1549,9 +1548,9 @@ class CRY(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator."""
         ctrl_ry = resource_rep(
-            re.ResourceControlled,
+            qre.Controlled,
             {
-                "base_cmpr_op": resource_rep(re.ResourceRY, {"eps": eps}),
+                "base_cmpr_op": resource_rep(qre.RY, {"precision": precision}),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
