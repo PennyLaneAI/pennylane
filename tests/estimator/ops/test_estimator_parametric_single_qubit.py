@@ -190,20 +190,6 @@ class TestRot:
         expected = [GateCount(Rot.resource_rep(), 1)]
         assert Rot.adjoint_resource_decomp() == expected
 
-    params_ctrl_classes = (
-        (RX),
-        (RY),
-        (RZ),
-    )
-    ctrl_data = ([1, 0], [1, 1])
-
-    @pytest.mark.parametrize("resource_class", params_ctrl_classes)
-    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
-    def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
-        """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesNotDefined):
-            resource_class.controlled_resource_decomp(ctrl_wires, ctrl_values)
-
     pow_data = (
         (1, [GateCount(Rot.resource_rep(), 1)]),
         (2, [GateCount(Rot.resource_rep(), 1)]),
@@ -263,6 +249,8 @@ class TestPhaseShift:
         (RX),
         (RY),
         (RZ),
+        (Rot),
+        (PhaseShift),
     )
     ctrl_data = ([1, 0], [1, 1])
 
