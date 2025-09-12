@@ -33,74 +33,6 @@ def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
-def _create_tracker_device_class(dev, compute_depth):
-    from pennylane.transforms.core import TransformProgram
-
-    from ..devices import NullQubit
-    from ..devices.execution_config import ExecutionConfig
-
-    class TrackerDevice(NullQubit):
-        """A device that tracks the resources used by the circuit."""
-
-        config_filepath = dev.config_filepath
-        spoofed_class = dev.__class__
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(
-                *args,
-                track_resources=True,
-                resources_filename=_RESOURCE_TRACKING_FILEPATH,
-                compute_depth=compute_depth,
-                **kwargs,
-            )
-
-        def preprocess(
-            self, execution_config: ExecutionConfig | None = None
-        ) -> tuple[TransformProgram, ExecutionConfig]:
-            program, _ = self.spoofed_class.preprocess(self, execution_config)
-
-            for t in program:
-                if t.transform == qml.devices.preprocess.decompose.transform:
-                    original_stopping_condition = t.kwargs["stopping_condition"]
-
-                    def new_stopping_condition(op):
-                        return (not op.has_decomposition) or original_stopping_condition(op)
-
-                    t.kwargs["stopping_condition"] = new_stopping_condition
-
-                    original_shots_stopping_condition = t.kwargs.get(
-                        "stopping_condition_shots", None
-                    )
-                    if original_shots_stopping_condition:
-
-                        def new_shots_stopping_condition(op):
-                            return (not op.has_decomposition) or original_shots_stopping_condition(
-                                op
-                            )
-
-                        t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
-
-            updated_values = {}
-            if execution_config.gradient_method in ["best", "adjoint"]:
-                updated_values["gradient_method"] = "device"
-            if execution_config.use_device_gradient is None:
-                updated_values["use_device_gradient"] = execution_config.gradient_method in {
-                    "best",
-                    "device",
-                    "adjoint",
-                    "backprop",
-                }
-            if execution_config.use_device_jacobian_product is None:
-                updated_values["use_device_jacobian_product"] = (
-                    execution_config.gradient_method == "device"
-                )
-            if execution_config.grad_on_execution is None:
-                updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
-            return program, replace(execution_config, **updated_values)
-
-    return TrackerDevice
-
-
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict] | SpecsDict:
     """Returns information on the structure and makeup of provided QNode.
 
@@ -171,6 +103,8 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:
     from catalyst.jit import QJIT
 
+    from ..devices import NullQubit
+
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
 
     if not isinstance(qjit.original_function, qml.QNode):
@@ -187,10 +121,18 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:
 
     # breakpoint()
     # TODO: Find a way to inherit all devices args from input
-    TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
-    spoofed_dev = TrackerDevice(
+    # TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
+    # spoofed_dev = TrackerDevice(
+    #     wires=original_device.wires,
+    #     shots=original_device.shots,
+    # )
+    spoofed_dev = NullQubit(
+        target_device=original_device,
         wires=original_device.wires,
         shots=original_device.shots,
+        track_resources=True,
+        resources_filename=_RESOURCE_TRACKING_FILEPATH,
+        compute_depth=compute_depth,
     )
 
     new_qnode = qjit.original_function.update(device=spoofed_dev)

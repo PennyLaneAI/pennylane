@@ -191,9 +191,10 @@ class NullQubit(Device):
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         track_resources (bool): If True, track the number of resources used by the device and save them to a JSON file.
-            The filename will match ``__pennylane_resources_data_*.json`` where the wildcard (asterisk) is replaced by
-            the timestamp of when execution began in nanoseconds since Unix EPOCH. This argument is experimental and
-            subject to change.
+        resources_filename (string): If set, the static filename to use when saving resource data.
+            If not set, the filename will match ``__pennylane_resources_data_*`` where the wildcard (asterisk) is replaced by
+            the timestamp of when execution began in nanoseconds since Unix EPOCH.
+        compute_depth (bool): If True, compute the circuit depth as part of resource tracking.
 
     **Example:**
 
@@ -285,9 +286,11 @@ class NullQubit(Device):
         track_resources=False,
         resources_filename=None,
         compute_depth=None,
+        target_device=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+        self._target_device = target_device
         self._track_resources = track_resources
 
         # this is required by Catalyst to toggle the tracker at runtime
@@ -296,6 +299,9 @@ class NullQubit(Device):
             self.device_kwargs["resources_filename"] = resources_filename
         if compute_depth is not None:
             self.device_kwargs["compute_depth"] = compute_depth
+
+        if target_device is not None:
+            self.config_filepath = target_device.config_filepath
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
@@ -358,8 +364,13 @@ class NullQubit(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
 
-        target = DefaultQubit(wires=self.wires)
-        program = target.preprocess_transforms(execution_config)
+        if self._target_device is None:
+            target = DefaultQubit(wires=self.wires)
+        else:
+            target = self._target_device
+
+        program, _ = target.preprocess(execution_config)
+
         for t in program:
             if t.transform == decompose.transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
