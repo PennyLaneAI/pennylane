@@ -178,7 +178,7 @@ def specs(
     about the circuit after applying the specified amount of transforms/expansions first.
 
     Args:
-        qnode (.QNode): the QNode to calculate the specifications for.
+        qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
 
     Keyword Args:
         level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
@@ -318,6 +318,14 @@ def specs(
 
     if isinstance(qnode, qml.QNode):
         return partial(_specs_qnode, qnode, level, compute_depth)
+
+    try:
+        from ..qnn.torch import TorchLayer
+
+        if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qml.QNode):
+            return partial(_specs_qnode, qnode, level, compute_depth)
+    except ImportError:
+        pass
 
     try:
         import catalyst
