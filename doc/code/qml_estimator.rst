@@ -40,4 +40,3 @@ Resource Operators:
     :classes-only:
     :skip: CompressedResourceOp, GateCount, ResourceOperator
     :noindex:
-
