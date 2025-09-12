@@ -252,8 +252,6 @@ def _resources_from_resource_ops(
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
-    if isinstance(obj, Operation):
-        obj = map_to_resource_op(obj)
 
     return _resources_from_resource(
         1 * obj,
