@@ -640,10 +640,11 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     channel_wires = op.wires
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
-    eigvals = op.eigvals()
-    eigvals = math.stack(eigvals)
-    eigvals = math.reshape(eigvals, [-1, 2 * len(channel_wires)])
-    if eigvals.ndim == 2 and eigvals.shape[0] == 1:
+    eigvals = math.stack(op.eigvals())
+    is_eigvals_batched = eigvals.ndim == 2
+    if is_eigvals_batched:
+        eigvals = math.reshape(eigvals, [-1, 2 * len(channel_wires)])
+    else:
         eigvals = math.reshape(eigvals, [2] * len(channel_wires))
     eigvals = math.cast_like(eigvals, state)
 
@@ -657,7 +658,7 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
 
     # Basically, we want to do, lambda_a rho_ab lambda_b
     # Use ellipsis to represent the batch dimensions as eigvals.shape = (batch, 2 * len(channel_wires))
-    ellipsis = "..." if eigvals.ndim == 2 else ""
+    ellipsis = "..." if is_eigvals_batched else ""
     einsum_indices = f"{ellipsis}{row_indices},{ellipsis}{state_indices},{ellipsis}{col_indices}->{ellipsis}{state_indices}"
 
     return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
