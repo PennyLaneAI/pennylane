@@ -21,10 +21,10 @@ Data movement operations for the StableHLO dialect.
 from xdsl.dialects.builtin import BoolAttr, DenseArrayBase, IntegerAttr, TensorType, i64
 from xdsl.irdl import (
     IRDLOperation,
-    attr_def,
     irdl_op_definition,
     operand_def,
-    opt_attr_def,
+    opt_prop_def,
+    prop_def,
     region_def,
     result_def,
     traits_def,
@@ -68,7 +68,7 @@ class BroadcastInDimOp(IRDLOperation):
 
     name = "stablehlo.broadcast_in_dim"
     operand = operand_def(HLO_AnyTensor)
-    broadcast_dimensions = attr_def(DenseArrayBase.constr(i64))
+    broadcast_dimensions = prop_def(DenseArrayBase.constr(i64))
     result = result_def(HLO_AnyTensor)
 
     assembly_format = """
@@ -151,7 +151,7 @@ class ConcatenateOp(IRDLOperation):
 
     inputs = var_operand_def(HLO_Tensor)
     result = result_def(HLO_Tensor)
-    dimension = attr_def(IntegerAttr.constr(type=eq(i64), value=AtLeast(0)))
+    dimension = prop_def(IntegerAttr.constr(type=eq(i64), value=AtLeast(0)))
 
     traits = traits_def(
         NoMemoryEffect(),
@@ -194,9 +194,9 @@ class GatherOp(IRDLOperation):
     name = "stablehlo.gather"
     operand = operand_def(HLO_Tensor)
     start_indices = operand_def(HLO_IntTensor)
-    dimension_numbers = attr_def(GatherDimensionNumbers)
-    slice_sizes = attr_def(DenseArrayBase.constr(i64))
-    indices_are_sorted = opt_attr_def(BoolAttr, default_value=BoolAttr.from_bool(False))
+    dimension_numbers = prop_def(GatherDimensionNumbers)
+    slice_sizes = prop_def(DenseArrayBase.constr(i64))
+    indices_are_sorted = opt_prop_def(BoolAttr, default_value=BoolAttr.from_bool(False))
     result = result_def(HLO_Tensor)
 
     traits = traits_def(
@@ -308,9 +308,9 @@ class ScatterOp(IRDLOperation):
     inputs = var_operand_def(HLO_Tensor)
     scatter_indices = operand_def(HLO_AnyIntegerOrIndexTensor)
     updates = var_operand_def(HLO_Tensor)
-    scatter_dimension_numbers = attr_def(ScatterDimensionNumbers)
-    indices_are_sorted = opt_attr_def(BoolAttr, default_value=BoolAttr.from_bool(False))
-    unique_indices = opt_attr_def(BoolAttr, default_value=BoolAttr.from_bool(False))
+    scatter_dimension_numbers = prop_def(ScatterDimensionNumbers)
+    indices_are_sorted = opt_prop_def(BoolAttr, default_value=BoolAttr.from_bool(False))
+    unique_indices = opt_prop_def(BoolAttr, default_value=BoolAttr.from_bool(False))
     result = var_result_def(HLO_Tensor)
     update_computation = region_def("single_block")
 
@@ -354,9 +354,9 @@ class SliceOp(IRDLOperation):
     name = "stablehlo.slice"
 
     operand = operand_def(HLO_Tensor)
-    start_indices = attr_def(DenseArrayBase.constr(i64))
-    limit_indices = attr_def(DenseArrayBase.constr(i64))
-    strides = attr_def(DenseArrayBase.constr(i64))
+    start_indices = prop_def(DenseArrayBase.constr(i64))
+    limit_indices = prop_def(DenseArrayBase.constr(i64))
+    strides = prop_def(DenseArrayBase.constr(i64))
     result = result_def(HLO_Tensor)
 
     # TODO: Implement CustomDirective
