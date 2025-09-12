@@ -584,7 +584,7 @@ class TestPreprocessingTransforms:
         dev = qml.device("default.tensor", wires=3)
         config = ExecutionConfig()
 
-        program, updated_config = dev.preprocess(config)
+        program, _ = dev.preprocess(config)
 
         # Check that we have the expected transforms
         transform_names = [

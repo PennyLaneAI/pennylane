@@ -1419,7 +1419,7 @@ class TestNullQubitGraphModeExclusive:
         """Test that if a decomposition requires more work wires than available on null.qubit,
         that decomposition is discarded and fallback is used."""
 
-        class MyNullQubitOp(qml.operation.Operator):
+        class MyNullQubitOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def decomposition(
