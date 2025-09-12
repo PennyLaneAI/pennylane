@@ -13,6 +13,7 @@
 # limitations under the License.
 """This file contains the implementation of the `draw` function for the Unified Compiler."""
 
+import warnings
 from functools import wraps
 
 from catalyst import qjit
@@ -33,7 +34,7 @@ _cache_store: dict[Callable, dict[int, tuple[str, str]]] = {}
 
 def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
     """Ensure the QNode is compiled and return its MLIR module."""
-    if hasattr(qnode, "mlir_module"):
+    if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
         return qnode.mlir_module
 
     func = getattr(qnode, "user_function", qnode)
@@ -65,6 +66,8 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     cache: dict[int, tuple[str, str]] = _cache_store.setdefault(qnode, {})
 
     def _draw_callback(previous_pass, module, next_pass, pass_level=0):
+        """Callback function for circuit drawing."""
+
         pass_instance = previous_pass if previous_pass else next_pass
         collector = QMLCollector(module)
         ops, meas = collector.collect()
@@ -74,6 +77,13 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
+        if args or kwargs:
+            warnings.warn(
+                "The `draw` function does not yet support dynamic arguments.\n"
+                "To visualize the circuit with dynamic parameters or wires, please use the\n"
+                "`compiler.python_compiler.visualization.generate_mlir_graph` function instead.",
+                UserWarning,
+            )
         mlir_module = _get_mlir_module(qnode, args, kwargs)
         Compiler.run(mlir_module, callback=_draw_callback)
 

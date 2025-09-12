@@ -399,9 +399,10 @@
 
 <h4>Other improvements</h4>
 
-* A `draw` function has been introduced in the `qml.compiler.python_compiler.visualization` module to visualize circuits
-  with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
+* Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module 
+  to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+  [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
 
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
@@ -475,6 +476,7 @@
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass` has been added for the experimental xDSL Python compiler integration. This pass converts all gates in the MBQC gate set (`Hadamard`, `S`, `RZ`, `RotXZX` and `CNOT`) to the textbook MBQC formalism.
   [(#7870)](https://github.com/PennyLaneAI/pennylane/pull/7870)
+  [(#8254)](https://github.com/PennyLaneAI/pennylane/pull/8254)
 
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
@@ -878,6 +880,9 @@
 * `default.tensor` now supports graph decomposition mode during preprocessing.
   [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
 
+* Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
+  [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
+
 * `qml.devices.preprocess.decompose` now works in graph decomposition mode
   when a gateset is provided. `default.qubit` and `null.qubit` can now use
   graph decomposition mode.
@@ -1048,6 +1053,9 @@
 * Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
+* Add nightly RC builds script to `.github/workflows`.
+  [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
+  
 <h3>Documentation 📝</h3>
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
@@ -1192,6 +1200,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
