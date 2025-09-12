@@ -735,8 +735,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.data = copy.copy(self.data)
+        # pylint: disable=attribute-defined-outside-init
+        if hasattr(self, "_hyperparameters"):
+            copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
-            if attr != "data":
+            if attr not in {"data", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
         return copied_op

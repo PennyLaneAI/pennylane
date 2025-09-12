@@ -125,6 +125,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
+  [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
+
 * The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
   one processed by the device.
   [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)

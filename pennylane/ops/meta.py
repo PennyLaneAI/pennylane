@@ -230,9 +230,8 @@ class Snapshot(Operation):
         measurement=None,
         shots: Literal["workflow"] | None | int | Sequence[int] = "workflow",
     ):
-        if tag and not isinstance(tag, str):
-            raise ValueError("Snapshot tags can only be of type 'str'")
-        self.tag = tag
+        if tag and not isinstance(tag, (str, int)):
+            raise ValueError("Snapshot tags can only be of type 'str' or 'int'")
 
         if measurement is None:
             measurement = qml.state()
@@ -248,11 +247,26 @@ class Snapshot(Operation):
                 f"an instance of {qml.measurements.MeasurementProcess}"
             )
 
+        self.hyperparameters["tag"] = tag
         self.hyperparameters["measurement"] = measurement
         self.hyperparameters["shots"] = (
             shots if shots == "workflow" else qml.measurements.Shots(shots)
         )
         super().__init__(wires=measurement.wires)
+
+    def __repr__(self):
+        return f"<Snapshot: tag={self.tag}, measurement={self.hyperparameters['measurement']}, shots={self.hyperparameters['shots']}>"
+
+    @property
+    def tag(self) -> None | str | int:
+        """The tag for the snapshot."""
+        return self.hyperparameters["tag"]
+
+    def update_tag(self, new_tag: int | None | str):
+        """Create a new snapshot with an updated tag."""
+        new_op = copy(self)
+        new_op.hyperparameters["tag"] = new_tag
+        return new_op
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
@@ -270,10 +284,10 @@ class Snapshot(Operation):
         return []
 
     def _controlled(self, _):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def adjoint(self):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Snapshot":
         new_measurement = self.hyperparameters["measurement"].map_wires(wire_map)
