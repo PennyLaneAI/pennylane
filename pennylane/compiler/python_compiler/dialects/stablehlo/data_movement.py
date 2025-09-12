@@ -37,18 +37,20 @@ from xdsl.irdl.operations import SameVariadicOperandSize
 from xdsl.traits import (
     ConditionallySpeculatable,
     NoMemoryEffect,
+    Pure,
     RecursiveMemoryEffect,
 )
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.type import get_element_type_or_self
 
+from pennylane.compiler.python_compiler.xdsl_extras.constraints import TensorConstraint
 from pennylane.compiler.python_compiler.xdsl_extras.traits import (
     AllMatchSameOperatorTrait,
     SameOperandsAndResultElementType,
 )
 
 from .attributes import GatherDimensionNumbers, ScatterDimensionNumbers
-from .types import HLO_AnyIntegerOrIndexTensor, HLO_AnyTensor, HLO_IntTensor, HLO_Tensor
+from .types import HLO_AnyIntegerOrIndexTensor, HLO_AnyTensor, HLO_Int, HLO_IntTensor, HLO_Tensor
 
 
 @irdl_op_definition
@@ -370,4 +372,41 @@ class SliceOp(IRDLOperation):
         ConditionallySpeculatable(),
         AllMatchSameOperatorTrait(("start_indices", "limit_indices", "strides"), len, "size"),
         SameOperandsAndResultElementType(),
+    )
+
+
+@irdl_op_definition
+class DynamicSliceOp(IRDLOperation):
+    """
+    Extracts a slice from the `operand` using dynamically-computed starting
+    indices and produces a `result` tensor.
+
+    See:
+    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#dynamic_slice
+
+    Example:
+    ```mlir
+    %result = stablehlo.dynamic_slice %operand, %start_indices0, %start_indices1, sizes = [2, 2]
+      : (tensor<4x4xi32>, tensor<i64>, tensor<i64>) -> tensor<2x2xi32>
+    ```
+    """
+
+    name = "stablehlo.dynamic_slice"
+    operand = operand_def(HLO_Tensor)
+    start_indices = var_operand_def(TensorConstraint(element_type=HLO_Int, rank=0))
+    slice_sizes = prop_def(DenseArrayBase.constr(i64))
+    result = result_def(HLO_Tensor)
+
+    # TODO: Implement CustomDirective
+    # assembly_format = """
+    #     $operand `,` custom<VariadicOperandWithAttribute>($start_indices)
+    #     `sizes` `=` $slice_sizes attr-dict `:` functional-type(operands, results)
+    # """
+
+    traits = traits_def(
+        Pure(),
+        AllMatchSameOperatorTrait(
+            ("operand", "result"), lambda x: get_element_type_or_self(x.type), "element type"
+        ),
+        # TODO: InferTensorType(),
     )
