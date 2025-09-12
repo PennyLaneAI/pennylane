@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the `pennylane.transforms.zx` folder.
+Unit tests for conversion and helper methods used in `pennylane.transforms.zx`
 """
 import sys
 from functools import partial
