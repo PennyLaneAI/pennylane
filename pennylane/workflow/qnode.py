@@ -675,13 +675,13 @@ class QNode:
 
         .. warning::
 
-            This method is deprecated and will be removed in v0.43. Instead, please use :meth:`~.TransformProgram.push_back` on
+            This method is deprecated and will be removed in v0.44. Instead, please use :meth:`~.TransformProgram.push_back` on
             the ``QNode.transform_program`` property to add transforms to the transform program.
 
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43. "
+            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44. "
             "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
             PennyLaneDeprecationWarning,
         )
