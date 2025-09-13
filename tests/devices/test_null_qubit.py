@@ -1420,11 +1420,6 @@ class TestNullQubitGraphModeExclusive:
         class MyNullQubitOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
-            def decomposition(
-                self,
-            ):  # !Note: This is crucial since otherwise it will be stopped by NQ
-                return NotImplemented
-
         @qml.register_resources({qml.H: 2})
         def decomp_fallback(wires):
             qml.H(wires)

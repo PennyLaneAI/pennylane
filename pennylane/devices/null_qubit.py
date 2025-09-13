@@ -29,6 +29,7 @@ from numbers import Number
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -354,7 +355,7 @@ class NullQubit(Device):
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
-                    return (not op.has_decomposition) or original_stopping_condition(op)
+                    return not _op_has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
 
@@ -509,3 +510,17 @@ class NullQubit(Device):
             return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
 
         return [zeros_like(var, Shots(shots).total_shots) for var in jaxpr.outvars]
+
+
+def _op_has_decomp(op):
+    """Check if an operator has a decomposition, taking into account the graph-based decomposition system.
+
+    Args:
+        op (Operator): The operator to check.
+
+    Returns:
+        bool: True if the operator has a decomposition, False otherwise.
+    """
+    if enabled_graph():
+        return has_decomp(type(op))
+    return op.has_decomposition
