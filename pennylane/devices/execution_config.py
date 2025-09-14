@@ -16,6 +16,7 @@ Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from __future__ import annotations
 
+import pprint
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -220,7 +221,6 @@ class ExecutionConfig:
 
     def __str__(self):
         """Return a formatted string representation of the ExecutionConfig using pprint."""
-        import pprint
         return pprint.pformat(self)
 
 
