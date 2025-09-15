@@ -206,10 +206,6 @@ def allocate(
     """Dynamically allocates new wires in-line,
     or as a context manager which also safely deallocates the new wires upon exiting the context.
 
-    .. warning::
-        This feature is experimental, and any workflows that include calls to ``allocate`` cannot be
-        executed on any device.
-
     Args:
         num_wires (int):
             The number of wires to dynamically allocate.
