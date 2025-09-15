@@ -16,20 +16,14 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
-from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
-    ResourceAdjoint,
-    ResourceControlled,
-    ResourcePow,
-)
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
-from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
-from pennylane.labs.resource_estimation.resource_operator import (
+from .wires_manager import Allocate, Deallocate, WireResourceManager
+from .resource_config import ResourceConfig
+from .resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
 )
-from pennylane.labs.resource_estimation.resources_base import Resources
+from .resources_base import Resources
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
@@ -175,7 +169,7 @@ def _resources_from_qfunc(
         with AnnotatedQueue() as q:
             obj(*args, **kwargs)
 
-        qm = QubitManager(work_wires, tight_budget)
+        qm = WireResourceManager(work_wires, tight_budget)
         # Get algorithm wires:
         num_algo_qubits = 0
         circuit_wires = []
@@ -330,12 +324,12 @@ def _update_counts_from_compressed_res_op(
             )
             continue
 
-        if isinstance(action, AllocWires):
+        if isinstance(action, Allocate):
             if qubit_alloc_sum != 0 and scalar > 1:
                 qbit_mngr.grab_clean_qubits(action.num_wires * scalar)
             else:
                 qbit_mngr.grab_clean_qubits(action.num_wires)
-        if isinstance(action, FreeWires):
+        if isinstance(action, Deallocate):
             if qubit_alloc_sum != 0 and scalar > 1:
                 qbit_mngr.free_qubits(action.num_wires * scalar)
             else:
@@ -348,9 +342,9 @@ def _sum_allocated_wires(decomp):
     """Sum together the allocated and released wires in a decomposition."""
     s = 0
     for action in decomp:
-        if isinstance(action, AllocWires):
+        if isinstance(action, Allocate):
             s += action.num_wires
-        if isinstance(action, FreeWires):
+        if isinstance(action, Deallocate):
             s -= action.num_wires
     return s
 
