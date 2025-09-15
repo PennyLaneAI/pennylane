@@ -18,7 +18,6 @@ This module contains functions to import circuits and objects from external fram
 from .io import (
     from_pyquil,
     from_qasm,
-    to_openqasm,
     from_qiskit,
     from_qiskit_noise,
     from_qiskit_op,
@@ -28,3 +27,4 @@ from .io import (
     from_qasm3,
 )
 from .qualtran_io import FromBloq, bloq_registers, to_bloq, ToBloq
+from .to_openqasm import to_openqasm

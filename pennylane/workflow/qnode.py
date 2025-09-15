@@ -30,7 +30,7 @@ import pennylane as qml
 from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, get_canonical_interface_name
+from pennylane.math import Interface
 from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
@@ -48,7 +48,6 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
-    from pennylane.math import SupportedInterfaceUserInput
     from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
@@ -158,7 +157,9 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
 
     terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
 
-    if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
+    if any(
+        ret is not m for ret, m in zip(measurement_processes, terminal_measurements, strict=True)
+    ):
         raise QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
@@ -295,13 +296,14 @@ class QNode:
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
-            to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
-            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
-            ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
-            as the name suggests. If not provided,
-            the device will determine the best choice automatically. For usage details, please refer to the
-            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+        mcm_method (str): The strategy for applying mid-circuit measurements.
+            Available methods include ``"deferred"`` (to use the deferred
+            measurement principle), ``"one-shot"`` (to execute the circuit
+            for each shot separately when using finite shots), and
+            ``"tree-traversal"`` (visits the tree of possible MCM sequences,
+            only supported on ``default.qubit`` and ``lightning.qubit``).
+            If not provided, the device will select the method automatically.
+            For usage details, refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
@@ -518,7 +520,7 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput = Interface.AUTO,
+        interface: str | Interface = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
         shots: ShotsLike = "unset",
@@ -576,7 +578,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = get_canonical_interface_name(interface)
+        self._interface = Interface(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
         self.diff_method = diff_method
@@ -659,8 +661,8 @@ class QNode:
         return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
-    def interface(self, value: SupportedInterfaceUserInput):
-        self._interface = get_canonical_interface_name(value)
+    def interface(self, value: str):
+        self._interface = Interface(value)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -673,13 +675,13 @@ class QNode:
 
         .. warning::
 
-            This method is deprecated and will be removed in v0.43. Instead, please use :meth:`~.TransformProgram.push_back` on
+            This method is deprecated and will be removed in v0.44. Instead, please use :meth:`~.TransformProgram.push_back` on
             the ``QNode.transform_program`` property to add transforms to the transform program.
 
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43. "
+            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44. "
             "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
             PennyLaneDeprecationWarning,
         )
@@ -799,10 +801,12 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    @debug_logger
-    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
-        """Call the quantum function with a tape context, ensuring the operations get queued."""
-        kwargs = copy.copy(kwargs)
+    def _get_shots(self, kwargs: dict):
+        """
+        Note that this mutates kwargs to remove shots from it.
+        """
+        if self._qfunc_uses_shots_arg:
+            return self.shots
         if "shots" in kwargs:
             # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
@@ -819,10 +823,15 @@ class QNode:
                     stacklevel=2,
                 )
 
-        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode.shots precedency:
-            shots = self.shots
-        else:
-            shots = kwargs.pop("shots", self.shots)
+        if self._shots_override_device:  # QNode.shots precedency:
+            return self.shots
+        return kwargs.pop("shots", self.shots)
+
+    @debug_logger
+    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
+        """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
+        shots = self._get_shots(kwargs)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
@@ -869,7 +878,7 @@ class QNode:
             and not self._transform_program.is_informative
             and self.interface != "auto"
         ):
-            res = _convert_to_interface(res, math.get_canonical_interface_name(self.interface))
+            res = _convert_to_interface(res, math.Interface(self.interface))
 
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 

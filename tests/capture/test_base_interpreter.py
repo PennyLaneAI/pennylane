@@ -243,7 +243,7 @@ def test_overriding_measurements():
             return qml.sample(wires=measurement.wires)
 
     @MeasurementsToSample()
-    @qml.qnode(qml.device("default.qubit", wires=2, shots=5))
+    @qml.qnode(qml.device("default.qubit", wires=2), shots=5)
     def circuit():
         return qml.expval(qml.Z(0)), qml.probs(wires=(0, 1))
 

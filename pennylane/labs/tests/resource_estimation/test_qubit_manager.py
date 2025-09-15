@@ -192,6 +192,17 @@ class TestAllocWires:
             ops = [AllocWires(2), AllocWires(4)]
         assert q.queue == ops
 
+    def test_mul(self):
+        """Test that the multiplication works with AllocWires"""
+        original_wires = AllocWires(5)
+        new_wires = original_wires * 3
+        assert new_wires.num_wires == 15
+
+    def test_type_error(self):
+        """Test that an error is raised when wrong type is provided for multiplication"""
+        with pytest.raises(NotImplementedError):
+            _ = AllocWires(5) * 4.2
+
 
 class TestFreeWires:
     """Test the methods and attributes of the FreeWires class"""
@@ -215,3 +226,14 @@ class TestFreeWires:
             ops = [FreeWires(2), FreeWires(4), FreeWires(8)]
 
         assert q.queue == ops
+
+    def test_mul(self):
+        """Test that the multiplication works with FreeWires"""
+        original_wires = FreeWires(5)
+        new_wires = original_wires * 3
+        assert new_wires.num_wires == 15
+
+    def test_type_error(self):
+        """Test that an error is raised when wrong type is provided for multiplication"""
+        with pytest.raises(NotImplementedError):
+            _ = FreeWires(5) * 4.2
