@@ -22,10 +22,10 @@ pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
 
+import jax
+
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-
-import jax
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.visualization import draw
@@ -345,18 +345,6 @@ class Testdraw:
             == "0: ──H─╭GlobalPhase─┤  State\n1: ──H─├GlobalPhase─┤  State\n2: ──H─╰GlobalPhase─┤  State"
         )
 
-    def test_visualization_mcm(self):
-        """Test the visualization of mid-circuit measurements."""
-
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
-        def _():
-            qml.measure(0)
-            qml.RX(0.1, 1)
-            qml.measure(1)
-            return qml.state()
-
-        assert draw(_)() == "0: ──┤↗├──────┤  State\n1: ──RX───┤↗├─┤  State"
-
     @pytest.mark.parametrize(
         "postselect, mid_measure_label",
         [
@@ -458,13 +446,39 @@ class Testdraw:
     def test_cond_not_implemented(self):
         """Test that NotImplementedError is raised when cond is used."""
 
-        dev_light = qml.device("lightning.qubit", wires=3)
-
         @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-        @qml.qnode(dev_light)
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
         def _():
             m0 = qml.measure(0, reset=False, postselect=0)
             qml.cond(m0, qml.RX, qml.RY)(1.23, 1)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(_)())
+
+    def test_for_loop_not_implemented(self):
+        """Test that NotImplementedError is raised when for loop is used."""
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def _():
+            for _ in range(3):
+                qml.RX(0.1, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(_)())
+
+    def test_while_loop_not_implemented(self):
+        """Test that NotImplementedError is raised when while loop is used."""
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def _():
+            i = 0
+            while i < 3:
+                qml.RX(0.1, 0)
+                i += 1
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(NotImplementedError, match="not yet supported"):
