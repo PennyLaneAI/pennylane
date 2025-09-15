@@ -33,6 +33,7 @@ Resource Estimation Base Classes:
     :toctree: api
 
     ~Resources
+    ~ResourceConfig
     ~ResourceOperator
     ~CompressedResourceOp
     ~GateCount
