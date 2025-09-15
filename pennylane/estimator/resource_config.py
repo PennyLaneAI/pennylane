@@ -160,9 +160,13 @@ class ResourceConfig:
 
             config = qre.ResourceConfig()
             print(f"Default RX precision: {config.resource_op_precisions[qre.RX]['precision']}")
+            print(f"Default RY precision: {config.resource_op_precisions[qre.RY]['precision']}")
+            print(f"Default RZ precision: {config.resource_op_precisions[qre.RZ]['precision']}")
 
             config.set_single_qubit_rot_precision(1e-5)
             print(f"Updated RX precision: {config.resource_op_precisions[qre.RX]['precision']}")
+            print(f"Updated RY precision: {config.resource_op_precisions[qre.RY]['precision']}")
+            print(f"Updated RZ precision: {config.resource_op_precisions[qre.RZ]['precision']}")
 
         .. code-block:: pycon
 
