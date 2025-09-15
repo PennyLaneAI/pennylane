@@ -22,22 +22,23 @@ from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operator
+from pennylane.ops import __all__ as ops_all
+from pennylane.typing import Callable
+
+from ..dialects.quantum import (
     ComputationalBasisOp,
     CustomOp,
 )
-from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import (
     GlobalPhaseOp,
     HamiltonianOp,
     MeasureOp,
     NamedObsOp,
     TensorOp,
 )
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
-from pennylane.ops import __all__ as ops_all
-from pennylane.typing import Callable
 
 from_str_to_PL_gate = {
     name: getattr(ops, name)

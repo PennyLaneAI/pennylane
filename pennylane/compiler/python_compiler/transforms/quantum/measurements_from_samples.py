@@ -43,9 +43,9 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.exceptions import CompileError
 
-from ..dialects import quantum
-from ..jax_utils import xdsl_module
-from .api import compiler_transform
+from ...dialects import quantum
+from ...jax_utils import xdsl_module
+from ...pass_api import compiler_transform
 
 
 @dataclass(frozen=True)
