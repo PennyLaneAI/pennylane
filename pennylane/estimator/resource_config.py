@@ -171,7 +171,11 @@ class ResourceConfig:
         .. code-block:: pycon
 
             Default RX precision: 1e-09
+            Default RY precision: 1e-09
+            Default RZ precision: 1e-09
             Updated RX precision: 1e-05
+            Updated RY precision: 1e-05
+            Updated RZ precision: 1e-05
         """
         if precision < 0:
             raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
