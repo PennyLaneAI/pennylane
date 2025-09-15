@@ -170,7 +170,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return self.process_state(p_state, wire_order)
 
     @staticmethod
-    def _count_samples(indices, batch_size, dim, dtype=None):
+    def _count_samples(indices, batch_size, dim, dtype="float64"):
         """Count the occurrences of sampled indices and convert them to relative
         counts in order to estimate their occurrence probability."""
         num_bins, bin_size = indices.shape[-2:]
@@ -187,9 +187,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         else:
 
             def _count_samples_core(indices, dim, *_):
-                probabilities = math.zeros(
-                    (dim, num_bins), dtype=dtype if dtype is not None else "float64"
-                )
+                probabilities = math.zeros((dim, num_bins), dtype=dtype)
                 for b, idx in enumerate(indices):
                     basis_states, counts = math.unique(idx, return_counts=True)
                     probabilities[basis_states, b] = counts
