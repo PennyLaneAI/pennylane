@@ -1029,7 +1029,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Autograph will now be correctly applied to nested functions of :func:`~pennylane.adjoint`
+* Autograph will now be correctly applied to the wrapped functions of :func:`~pennylane.adjoint`
   and :func:`~pennylane.ctrl`.
   [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
 
