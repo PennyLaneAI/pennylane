@@ -57,7 +57,7 @@ class ResourceSelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = plre.estimate_resources(plre.ResourceSelectTHC(compact_ham, rotation_precision=15))
+    >>> res = plre.estimate(plre.ResourceSelectTHC(compact_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
      Total qubits: 371

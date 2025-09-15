@@ -167,12 +167,12 @@ class ResourceOperator(ABC):
                     return {"num_wires": self.num_wires}  # and values obtained from the operator.
 
                 @classmethod
-                def resource_rep(cls, num_wires):                            # Takes the `resource_keys` as input
-                    params = {"num_wires": num_wires}                        #  and produces a compressed
-                    return qre.CompressedResourceOp(cls, num_wires, params)  # representation of the operator
+                def resource_rep(cls, num_wires):   # Takes the same input as `resource_keys` and
+                    params = {"num_wires": num_wires}  #  produces a compressed representation
+                    return qre.CompressedResourceOp(cls, num_wires, params)
 
                 @classmethod
-                def resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
+                def resource_decomp(cls, num_wires):  # `resource_keys` are input
 
                     # Get compressed reps for each gate in the decomposition:
 
@@ -186,7 +186,7 @@ class ResourceOperator(ABC):
                     hadamard_counts = num_wires
                     ctrl_phase_shift_counts = num_wires*(num_wires - 1) // 2
 
-                    return [                                  # Return the decomposition
+                    return [    # Return the decomposition
                         qre.GateCount(swap, swap_counts),
                         qre.GateCount(hadamard, hadamard_counts),
                         qre.GateCount(ctrl_phase_shift, ctrl_phase_shift_counts),
@@ -314,7 +314,15 @@ class ResourceOperator(ABC):
         return Resources(zeroed=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 
     def add_series(self, other):
-        "Adds two ResourceOperators in series"
+        """Adds a :class:`~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in series.
+
+        Args:
+            other (:class:`~.pennylane.estimator.Resources`|:class:`~.pennylane.estimator.ResourceOperator`): The other object to combine with, it can be
+                another ``ResourceOperator`` or a ``Resources`` object.
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: added ``Resources``
+        """
         if isinstance(other, ResourceOperator):
             return (1 * self).add_series(1 * other)
         if isinstance(other, Resources):
@@ -323,7 +331,15 @@ class ResourceOperator(ABC):
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     def add_parallel(self, other):
-        """Add two ResourceOperators in parallel."""
+        """Adds a :class:`~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in parallel.
+
+        Args:
+            other (:class:`~.pennylane.estimator.Resources`|:class:`~.pennylane.estimator.ResourceOperator`): The other object to combine with, it can be
+                another ``ResourceOperator`` or a ``Resources`` object.
+
+        Returns:
+            :class:`~.pennylane.estimator.Resources`: added ``Resources``
+        """
         if isinstance(other, ResourceOperator):
             return (1 * self).add_parallel(1 * other)
         if isinstance(other, Resources):
