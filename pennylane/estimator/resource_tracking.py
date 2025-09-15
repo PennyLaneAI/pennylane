@@ -65,6 +65,8 @@ DefaultGateSet = frozenset(
     }
 )
 
+def map_to_resource_op(): # TODO: Import this function instead when the mapping PR is merged
+    return
 
 def estimate(
     obj: ResourceOperator | Callable | Resources | list,
@@ -103,27 +105,28 @@ def estimate(
 
     .. code-block:: python
 
-        import pennylane.labs.resource_estimation as plre
+        import pennylane.estimator as qre
 
         def my_circuit():
             for w in range(2):
-                plre.ResourceHadamard(wires=w)
+                qre.Hadamard(wires=w)
 
-            plre.ResourceCNOT(wires=[0,1])
-            plre.ResourceRX(wires=0)
-            plre.ResourceRY(wires=1)
+            qre.CNOT(wires=[0,1])
+            qre.RX(wires=0)
+            qre.RY(wires=1)
 
-            plre.ResourceQFT(num_wires=3, wires=[0, 1, 2])
+            qre.QFT(num_wires=3, wires=[0, 1, 2])
             return
 
     Note that we are passing a python function NOT a :class:`~.QNode`. The resources for this
     workflow are then obtained by:
 
-    >>> config = plre.ResourceConfig()
+    >>> import pennylane.estimator as qre
+    >>> config = qre.ResourceConfig()
     >>> config.set_single_qubit_rot_precision(1e-4)
-    >>> res = plre.estimate(
+    >>> res = qre.estimate(
     ...     my_circuit,
-    ...     gate_set = plre.DefaultGateSet,
+    ...     gate_set = qre.DefaultGateSet,
     ...     config=config,
     ... )()
     ...
@@ -390,9 +393,10 @@ def _get_decomposition(
     """
     op_type = cp_rep.op_type
     _SYMBOLIC_DECOMP_MAP = {
-        ResourceAdjoint: "_adj_custom_decomps",
-        ResourceControlled: "_ctrl_custom_decomps",
-        ResourcePow: "_pow_custom_decomps",
+        # ToDo: Uncomment this when symbolic resource operators are merged.
+        # ResourceAdjoint: "_adj_custom_decomps",
+        # ResourceControlled: "_ctrl_custom_decomps",
+        # ResourcePow: "_pow_custom_decomps",
     }
 
     if op_type in _SYMBOLIC_DECOMP_MAP:
