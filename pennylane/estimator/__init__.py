@@ -26,7 +26,17 @@ Qubit Management Classes:
     ~Deallocate
     ~WireResourceManager
 
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
+
 
 """
 
 from .wires_manager import Allocate, Deallocate, WireResourceManager
+
+from .resources_base import Resources

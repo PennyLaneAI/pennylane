@@ -30,7 +30,7 @@ import pennylane as qml
 from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, get_canonical_interface_name
+from pennylane.math import Interface
 from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
@@ -48,7 +48,6 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
-    from pennylane.math import SupportedInterfaceUserInput
     from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
@@ -521,7 +520,7 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput = Interface.AUTO,
+        interface: str | Interface = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
         shots: ShotsLike = "unset",
@@ -579,7 +578,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = get_canonical_interface_name(interface)
+        self._interface = Interface(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
         self.diff_method = diff_method
@@ -662,8 +661,8 @@ class QNode:
         return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
-    def interface(self, value: SupportedInterfaceUserInput):
-        self._interface = get_canonical_interface_name(value)
+    def interface(self, value: str):
+        self._interface = Interface(value)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -676,13 +675,13 @@ class QNode:
 
         .. warning::
 
-            This method is deprecated and will be removed in v0.43. Instead, please use :meth:`~.TransformProgram.push_back` on
+            This method is deprecated and will be removed in v0.44. Instead, please use :meth:`~.TransformProgram.push_back` on
             the ``QNode.transform_program`` property to add transforms to the transform program.
 
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43. "
+            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44. "
             "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
             PennyLaneDeprecationWarning,
         )
@@ -879,7 +878,7 @@ class QNode:
             and not self._transform_program.is_informative
             and self.interface != "auto"
         ):
-            res = _convert_to_interface(res, math.get_canonical_interface_name(self.interface))
+            res = _convert_to_interface(res, math.Interface(self.interface))
 
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
