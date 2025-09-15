@@ -129,6 +129,7 @@
 <h3>Improvements 🛠</h3>
 
 * The jax version is now included in `qml.about()`.
+  [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
 
 * `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
   [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
