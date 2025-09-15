@@ -172,7 +172,7 @@ class ResourceOperator(ABC):
                     return qre.CompressedResourceOp(cls, num_wires, params)
 
                 @classmethod
-                def resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
+                def resource_decomp(cls, num_wires):  # `resource_keys` are input
 
                     # Get compressed reps for each gate in the decomposition:
 
@@ -224,7 +224,7 @@ class ResourceOperator(ABC):
         self.queue()
         super().__init__()
 
-    def queue(self, context: QueuingManager = QueuingManager) -> ResourceOperator:
+    def queue(self, context: QueuingManager = QueuingManager) -> "ResourceOperator":
         """Append the operator to the Operator queue."""
         context.append(self)
         return self
@@ -361,7 +361,7 @@ class ResourceOperator(ABC):
 
 
 def _dequeue(
-    op_to_remove: ResourceOperator | Iterable,
+    op_to_remove: "ResourceOperator" | Iterable,
     context: QueuingManager = QueuingManager,
 ):
     """Remove the given resource operator(s) from the Operator queue."""

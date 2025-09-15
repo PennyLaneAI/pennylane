@@ -29,7 +29,9 @@ from pennylane.estimator.resource_operator import (
     _make_hashable,
     resource_rep,
 )
+
 from pennylane.exceptions import ResourcesUndefinedError
+
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
