@@ -491,6 +491,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
                     f"First argument to {fn.__name__} must be callable or an Operation"
                 )
 
+            @functools.wraps(wrapped_fn)
             def passthrough_wrapper(*args, **kwargs):
                 return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
 
