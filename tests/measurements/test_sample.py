@@ -414,7 +414,7 @@ class TestSample:
             (1, "float16"),
             (1, "float32"),
             (1, "float64"),
-            (1j, "complex128"),
+            (1j, "complex64"),
             (1 + 1j, "complex128"),
         ],
     )
