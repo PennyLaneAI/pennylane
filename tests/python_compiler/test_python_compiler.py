@@ -39,7 +39,7 @@ import pennylane as qml
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler.python_compiler import Compiler
 from pennylane.compiler.python_compiler.conversion import (
-    jax_from_docstring,
+    mlir_from_docstring,
     module,
     xdsl_from_docstring,
 )
@@ -93,7 +93,7 @@ def test_generic_catalyst_program():
     test that actually will trigger the transform interpreter
     """
 
-    @jax_from_docstring
+    @mlir_from_docstring
     def program():
         """
         "builtin.module"() <{sym_name = "circuit"}> ({
