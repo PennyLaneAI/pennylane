@@ -273,7 +273,12 @@ class ResourceOperator(ABC):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires: int, num_ctrl_values: int, cmpr_op: CompressedResourceOp=None, *args, **kwargs
+        cls,
+        num_ctrl_wires: int,
+        num_ctrl_values: int,
+        *args,
+        cmpr_op: CompressedResourceOp = None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -282,6 +287,8 @@ class ResourceOperator(ABC):
                 operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            cmpr_op (CompressedResourceOp | None): A compressed representation of the operator
+                being controlled.
         """
         raise ResourcesUndefinedError
 
