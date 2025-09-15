@@ -19,6 +19,7 @@ from collections.abc import Callable
 from enum import StrEnum
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
 
