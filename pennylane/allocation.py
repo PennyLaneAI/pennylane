@@ -294,6 +294,8 @@ def allocate(
     .. details:: 
         :title: Usage details 
 
+        **Efficient wire management**
+
         For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic 
         allocation calls in the most resource-efficient manner before sending the program to the 
         device. Consider the following circuit, which contains two dynamic allocations within a 
@@ -333,6 +335,32 @@ def allocate(
         1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤     
         2: ───║────────Z─╰X───║────────Z─╰X─┤     
               ╚════════╝      ╚════════╝          
+
+        Additionally, in circuits that deallocate a wire in `"any"` state, this wire can be reused 
+        as a `"zero"`. The arbitrary-state wire is reset back to a zero state by introducing a 
+        mid-circuit measurement. This is illustrated in the example below, where the first wire 
+        allocation is deallocated in an arbitrary state, but the only other dynamic wire allocation 
+        in the circuit requires a zero state:
+
+        .. code-block:: python
+
+            @qml.qnode(qml.device("default.qubit"), mcm_method="device")
+            def circuit():
+                with qml.allocate(1, state="zero", restored=False) as [wire]:
+                    qml.H(wire)
+
+                with qml.allocate(1, state="zero", restored=False) as [wire]:
+                    qml.X(wire)
+
+                return qml.expval(qml.Z(0))
+
+        >>> print(qml.draw(circuit, level="user")())
+        <DynamicWire>: ──Allocate──H──Deallocate─┤     
+        <DynamicWire>: ──Allocate──X──Deallocate─┤     
+                    0: ──────────────────────────┤  <Z>
+        >>> print(qml.draw(circuit, level="device")())
+        0: ─────────────────┤  <Z>
+        1: ──H──┤↗│  │0⟩──X─┤  
     """
     state = AllocateState(state)
     if capture_enabled():
