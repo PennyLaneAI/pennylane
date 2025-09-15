@@ -94,7 +94,7 @@ class TestSelectTHC:
     def test_resources(self, compact_ham, rotation_prec, selswap_depth, expected_res):
         """Test that the resources are correct."""
 
-        select_cost = plre.estimate_resources(
+        select_cost = plre.estimate(
             plre.ResourceSelectTHC(
                 compact_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
             )
