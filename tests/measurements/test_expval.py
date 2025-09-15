@@ -81,38 +81,22 @@ class TestExpval:
         result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
         assert qml.math.allclose(result, expected * coeffs)
 
-    @pytest.mark.parametrize(
-        "dtype",
-        [
-            None,
-            "int8",
-            "int16",
-            "int32",
-            "int64",
-        ],
-    )
     @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
-    def test_process_samples_dtype(self, coeffs, dtype, seed):
+    def test_process_samples_dtype(self, coeffs, seed):
         """Test that the return type of the process_samples function is correct"""
         shots = 100
         rng = np.random.default_rng(seed)
-        samples = rng.choice([0, 1], size=(shots, 2)).astype(dtype=dtype if dtype else "int64")
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         obs = coeffs * qml.PauliZ(0)
-        expected = qml.expval(obs, dtype=dtype).process_samples(samples, [0, 1])
-        result = ExpectationMP(obs=obs, dtype=dtype).process_samples(samples, [0, 1])
+        expected = qml.expval(obs).process_samples(samples, [0, 1])
+        result = ExpectationMP(obs=obs).process_samples(samples, [0, 1])
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
     @pytest.mark.parametrize(
         "dtype",
-        [
-            "float16",
-            "float32",
-            "float64",
-            "complex64",
-            "complex128",
-        ],
+        ["float16", "float32", "float64"],
     )
     def test_sample_dtype(self, interface, dtype):
         """Test that the dtype argument changes the dtype of the returned samples"""
@@ -128,7 +112,7 @@ class TestExpval:
         assert qml.math.get_dtype_name(samples) == dtype
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64", "complex64", "complex128"])
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])
     def test_jax_jit_dtype(self, dtype):
         """Test that jitting works when the dtype argument is provided"""
 

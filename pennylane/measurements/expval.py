@@ -150,7 +150,7 @@ def expval(
     -0.4794255386042029
 
     The ``dtype`` argument can be used to specify the precision of the returned expectation value when
-    sampling is used to estimate expectation values. If sampling is not used, the ``dtype`` argument is ignored.
+    sampling is used and ``op`` is an operator. If sampling is not used, the ``dtype`` argument is ignored.
 
     By default, the dtype is ``float64``.
 

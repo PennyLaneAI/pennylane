@@ -156,7 +156,7 @@ def var(op: Operator | MeasurementValue, dtype=None) -> VarianceMP:
     0.7701511529340698
 
     The ``dtype`` argument can be used to specify the precision of the returned variance when
-    sampling is used. If sampling is not used, the ``dtype`` argument is ignored.
+    sampling is used and ``op`` is an operator. If sampling is not used, the ``dtype`` argument is ignored.
 
     By default, the dtype is ``float64``.
 
@@ -178,9 +178,6 @@ def var(op: Operator | MeasurementValue, dtype=None) -> VarianceMP:
     dtype('float32')
 
     """
-    if isinstance(op, MeasurementValue):
-        return VarianceMP(obs=op)
-
     if isinstance(op, Sequence):
         raise ValueError(
             "qml.var does not support measuring sequences of measurements or observables"

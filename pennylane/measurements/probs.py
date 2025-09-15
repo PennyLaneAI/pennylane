@@ -304,10 +304,7 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
     the device simulates qubit or continuous variable quantum systems.
 
     The ``dtype`` argument can be used to specify the precision of the returned probabilities when
-    sampling is used to estimate probabilities and the ``op`` argument does not contain mid-circuit measurements.
-
-    If sampling is not used or if ``op`` contains mid-circuit measurements,
-    the ``dtype`` argument is ignored.
+    sampling is used and the ``op`` argument is an operator. If sampling is not used, the ``dtype`` argument is ignored.
 
     By default, the dtype is ``float64``.
 

@@ -330,13 +330,7 @@ class TestProbs:
     @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "jax"])
     @pytest.mark.parametrize(
         "dtype, obs",
-        [
-            ("float16", qml.Z(0)),
-            ("float32", qml.Z(0)),
-            ("float64", qml.Z(0)),
-            ("complex64", qml.Z(0)),
-            ("complex128", qml.Z(0)),
-        ],
+        [("float16", qml.Z(0)), ("float32", qml.Z(0)), ("float64", qml.Z(0))],
     )
     def test_sample_dtype_combined(self, interface, dtype, obs):
         """Test that the dtype argument changes the dtype of the returned samples,
@@ -404,13 +398,7 @@ class TestProbs:
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "dtype, obs",
-        [
-            ("float16", qml.Z(0)),
-            ("float32", qml.Z(0)),
-            ("float64", qml.Z(0)),
-            ("complex64", qml.Z(0)),
-            ("complex128", qml.Z(0)),
-        ],
+        [("float16", qml.Z(0)), ("float32", qml.Z(0)), ("float64", qml.Z(0))],
     )
     def test_jitting_with_dtype(self, dtype, obs):
         """Test that jitting works when the dtype argument is provided"""

@@ -3,8 +3,8 @@
 
 <h3>New features since last release</h3>
 
-* All measurement processes inheriting from `SampleMeasurement` can now accept an optional `dtype`
-  which sets the type and precision of the samples returned by the measurement process.
+* `qml.expval`, `qml.var`, `qml.sample`, and `qml.probs` can now accept an optional `dtype` 
+  parameter which sets the type and precision of the samples returned by these measurement processes.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
   [(#8214)](https://github.com/PennyLaneAI/pennylane/pull/8214)
   
