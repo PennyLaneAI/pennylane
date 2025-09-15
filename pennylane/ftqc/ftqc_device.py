@@ -239,8 +239,8 @@ class FTQCBackend(ABC):
 
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
-        """
 
+        """
         if execution_config is None:
             execution_config = ExecutionConfig()
 
@@ -258,7 +258,6 @@ class FTQCBackend(ABC):
                 )
 
         results = mcm_corrections(results)
-
         return postprocess_fns(results)
 
     @abstractmethod
