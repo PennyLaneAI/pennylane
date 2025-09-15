@@ -208,7 +208,7 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-def _adjoint_change_op_basis_resources(base_class, base_params):
+def _adjoint_change_op_basis_resources(base_params, **_):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
