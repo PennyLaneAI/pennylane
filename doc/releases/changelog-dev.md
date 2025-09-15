@@ -128,6 +128,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
+  [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
+
 * The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
   one processed by the device.
   [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)
