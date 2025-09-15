@@ -15,7 +15,7 @@ r"""Resource operators for identity and global phase operations."""
 
 from pennylane.exceptions import ResourcesUndefinedError
 
-from ..resource_operator import (
+from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,

@@ -15,13 +15,13 @@ r"""Resource operators for non parametric single qubit operations."""
 
 from pennylane.exceptions import ResourcesUndefinedError
 
-from ...resource_operator import (
+from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from ..identity import Identity
+from pennylane.estimator.ops.identity import Identity
 
 # pylint: disable=arguments-differ
 
