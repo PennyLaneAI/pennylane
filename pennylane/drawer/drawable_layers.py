@@ -160,9 +160,6 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     # loop over operations
     for op in operations:
-        if isinstance(op, MidMeasureMP):
-            if len(op.wires) > 1:
-                raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
         if isinstance(op, MeasurementProcess) and op.mv is not None:
             # Only terminal measurements that collect mid-circuit measurement statistics have

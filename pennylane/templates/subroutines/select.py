@@ -358,8 +358,7 @@ class Select(Operation):
         }
 
     def _flatten(self):
-        return tuple(), (
-            self.ops,
+        return tuple(self.ops), (
             self.control,
             self.hyperparameters["work_wires"],
             self.partial,
@@ -372,9 +371,7 @@ class Select(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
-        return cls(
-            *data, ops=metadata[0], control=metadata[1], work_wires=metadata[2], partial=metadata[3]
-        )
+        return cls(data, control=metadata[0], work_wires=metadata[1], partial=metadata[2])
 
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"

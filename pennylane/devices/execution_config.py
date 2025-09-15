@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
-from pennylane.math.interface_utils import Interface, get_canonical_interface_name
+from pennylane.math.interface_utils import Interface
 from pennylane.transforms.core import TransformDispatcher
 
 if TYPE_CHECKING:
@@ -175,7 +175,7 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        object.__setattr__(self, "interface", get_canonical_interface_name(self.interface))
+        object.__setattr__(self, "interface", Interface(self.interface))
 
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(

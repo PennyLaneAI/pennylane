@@ -104,10 +104,10 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 device,
                 diff_method=param_shift,
-                interface="None",
+                interface="blah",
             )[0]
 
-        with pytest.raises(ValueError, match="Unknown interface"):
+        with pytest.raises(ValueError, match="'blah' is not a valid Interface"):
             cost(a, device=dev)
 
     def test_grad_on_execution(self, mocker):

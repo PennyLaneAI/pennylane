@@ -373,6 +373,11 @@ def _check_capture(op):
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
         assert_equal(op, new_op)
+
+        leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
+        assert not any(
+            qml.math.is_abstract(l) for l in leaves
+        ), "capture params cannot contain tracers"
     except Exception as e:
         raise ValueError(
             "The capture of the operation into jaxpr failed somehow."
