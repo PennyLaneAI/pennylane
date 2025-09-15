@@ -408,11 +408,23 @@ class TestSample:
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
-    def test_process_samples_dtype(self):
+    @pytest.mark.parametrize(
+        "coeffs, dtype",
+        [
+            (1, "float16"),
+            (1, "float32"),
+            (1, "float64"),
+            (1j, "complex128"),
+            (1 + 1j, "complex128"),
+        ],
+    )
+    def test_process_samples_dtype(self, coeffs, dtype):
         """Test that the dtype argument changes the dtype of the returned samples."""
         samples = np.zeros(10, dtype="int64")
-        processed_samples = qml.sample(dtype="int8").process_samples(samples, wire_order=[0])
-        assert processed_samples.dtype == np.dtype("int8")
+        processed_samples = qml.sample(coeffs * qml.X(0), dtype=dtype).process_samples(
+            samples, wire_order=[0]
+        )
+        assert processed_samples.dtype == np.dtype(dtype)
 
     def test_sample_allowed_with_parameter_shift(self):
         """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
