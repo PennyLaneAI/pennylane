@@ -3,12 +3,19 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.sample` function can now receive an optional `dtype` parameter 
+  which sets the type and precision of the samples returned by this measurement process.
+  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
+  
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
   
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+  * The `qml.estimator.ResourceOperator`, `qml.estimator.CompressedResourceOp`, and `qml.estimator.GateCount` classes
+    were added as base classes to represent quantum operators.
+    [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
   * The :class:`~.estimator.Resources` class was added as a container class for resources.
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
   * The test files were renamed to avoid the dual definition error with labs module.
@@ -124,6 +131,10 @@
 * `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
   [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
 
+* The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
+  one processed by the device.
+  [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)
+
 * The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
@@ -138,7 +149,7 @@
   [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
-  [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8198)
+  [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
 
 * `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
@@ -533,10 +544,11 @@
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
   [(#8228)](https://github.com/PennyLaneAI/pennylane/pull/8228)
 
-  * The :func:`~.transforms.decompose` transform now accepts a `num_available_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
+  * The :func:`~.transforms.decompose` transform now accepts a `max_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
   [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
   [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
+  [(#8236)](https://github.com/PennyLaneAI/pennylane/pull/8236)
 
   * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
   [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
@@ -552,6 +564,9 @@
   `GlobalPhase` is not assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Renamed several labs test file names to prevent conflict with names in PennyLane tests.
+  [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
 
 * Added concurrency support for `effective_hamiltonian` in labs.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
@@ -611,6 +626,13 @@
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
+
+* Added `__eq__` method to `ResourceOperator` to make comparison checks more intuitive.
+  [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
+
+* Added a mapper function `map_to_resource_ops` that maps PennyLane operators to ResourceOperator equivalents.
+  [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
+  [(#8162)](https://github.com/PennyLaneAI/pennylane/pull/8162)
 
 * Added state of the art resources for the `ResourceTrotterProduct` template.
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
@@ -879,9 +901,10 @@
   Instead, these functions should be imported from the `pennylane.noise` module.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
-* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
+* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
+  [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -1107,6 +1130,9 @@
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* Parameter batching now works for Z-basis gates when executing with `default.mixed`. 
+  [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
 
 * `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
   in the circuit with the `ctrl` happens.
