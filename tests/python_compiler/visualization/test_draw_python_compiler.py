@@ -343,6 +343,18 @@ class Testdraw:
             == "0: ──H─╭GlobalPhase─┤  State\n1: ──H─├GlobalPhase─┤  State\n2: ──H─╰GlobalPhase─┤  State"
         )
 
+    def test_args_warning(self):
+        """Test that a warning is raised when dynamic arguments are used."""
+
+        # pylint: disable=unused-argument
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ(arg):
+            qml.RX(0.1, wires=0)
+            return qml.state()
+
+        with pytest.warns(UserWarning):
+            draw(circ)(0.1)
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

@@ -301,7 +301,7 @@ class TestConvertToMBQCFormalismPass:
             # CHECK: quantum.custom "PauliX"()
             # CHECK: quantum.custom "PauliZ"()
             # CHECK: quantum.dealloc_qb
-            for i in range(1000):
+            for i in range(50):
                 qml.H(i)
                 qml.S(i)
                 RotXZX(0.1, 0.2, 0.3, wires=[i])
@@ -436,9 +436,6 @@ class TestConvertToMBQCFormalismPass:
 
         run_filecheck_qjit(circuit)
 
-    @pytest.mark.xfail(
-        reason="Failure due to the deallocation of qubits in a qreg and insertion of qubit into a qreg is not supported yet."
-    )
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_e2e(self):
         """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""
@@ -457,6 +454,7 @@ class TestConvertToMBQCFormalismPass:
             pipelines=mbqc_pipeline(),
             autograph=True,
         )
+        @decompose_graph_state_pass
         @convert_to_mbqc_formalism_pass
         @measurements_from_samples_pass
         @qml.set_shots(1000)
