@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
-import json
-import os
 from collections import defaultdict as dd
 
 import numpy as np
