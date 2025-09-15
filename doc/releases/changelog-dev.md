@@ -957,6 +957,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Restructure the `qml.compiler.python_compiler` submodule to be more cohesive.
+  [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
+
 * `default.tensor` now supports graph decomposition mode during preprocessing.
   [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
 
