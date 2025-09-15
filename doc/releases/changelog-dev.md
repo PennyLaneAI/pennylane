@@ -125,8 +125,7 @@
 
 * New intermediate representations (IRs) :func:`~transforms.parity_matrix` and :func:`~transforms.
   phase_polynomial` are available in PennyLane. These IRs are used in compilation passes to optimize CNOT and 
-  phase polynomial circuits, respectively. For example, :func:`~transforms.rowcol` uses the parity matrix as
-  its IR.
+  phase polynomial circuits, respectively. Also added :func:`~transforms.rowcol`, which uses the parity matrix as its IR for CNOT routing under constraint connectivity.
   [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
 
 <h3>Improvements 🛠</h3>
