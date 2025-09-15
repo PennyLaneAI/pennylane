@@ -36,7 +36,7 @@ from xdsl.utils.test_value import create_ssa_value
 from pennylane.compiler.python_compiler.dialects import transform
 from pennylane.compiler.python_compiler.dialects.transform import ApplyRegisteredPassOp
 from pennylane.compiler.python_compiler.jax_utils import xdsl_from_docstring
-from pennylane.compiler.python_compiler.transforms.api import (
+from pennylane.compiler.python_compiler.pass_api import (
     ApplyTransformSequence,
     compiler_transform,
 )

@@ -44,7 +44,7 @@ from pennylane.compiler.python_compiler.jax_utils import (
     module,
     xdsl_from_docstring,
 )
-from pennylane.compiler.python_compiler.transforms.api import (
+from pennylane.compiler.python_compiler.pass_api import (
     ApplyTransformSequence,
     TransformFunctionsExt,
     TransformInterpreterPass,

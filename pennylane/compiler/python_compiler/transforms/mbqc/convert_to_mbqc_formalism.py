@@ -25,15 +25,15 @@ from xdsl.ir import SSAValue
 from xdsl.ir.core import OpResult
 from xdsl.rewriter import InsertPoint
 
-from ..dialects.mbqc import (
+from ...dialects.mbqc import (
     GraphStatePrepOp,
     MeasureInBasisOp,
     MeasurementPlaneAttr,
     MeasurementPlaneEnum,
 )
-from ..dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
-from ..mbqc import generate_adj_matrix, get_num_aux_wires
-from .api import compiler_transform
+from ...dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
+from ...pass_api import compiler_transform
+from .graph_state_utils import generate_adj_matrix, get_num_aux_wires
 
 
 @dataclass(frozen=True)

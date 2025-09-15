@@ -24,59 +24,14 @@ from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-n
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xContext
-from xdsl.dialects import arith as xarith
 from xdsl.dialects import builtin as xbuiltin
 from xdsl.dialects import func as xfunc
-from xdsl.dialects import scf as xscf
-from xdsl.dialects import tensor as xtensor
 from xdsl.ir import Dialect as xDialect
-from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from .dialects import MBQC, QEC, Catalyst, Quantum, StableHLO, Transform
+from .parser import QuantumParser
 
 JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
-
-
-class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-methods
-    """A subclass of ``xdsl.parser.Parser`` that automatically loads relevant dialects
-    into the input context.
-
-    Args:
-        ctx (xdsl.context.Context): Context to use for parsing.
-        input (str): Input program string to parse.
-        name (str): The name for the input. ``"<unknown>"`` by default.
-        extra_dialects (Sequence[xdsl.ir.Dialect]): Any additional dialects
-            that should be loaded into the context before parsing.
-    """
-
-    default_dialects: tuple[xDialect] = (
-        xarith.Arith,
-        xbuiltin.Builtin,
-        xfunc.Func,
-        xscf.Scf,
-        StableHLO,
-        xtensor.Tensor,
-        Transform,
-        Quantum,
-        MBQC,
-        Catalyst,
-        QEC,
-    )
-
-    def __init__(
-        self,
-        ctx: xContext,
-        input: str,
-        name: str = "<unknown>",
-        extra_dialects: Sequence[xDialect] | None = (),
-    ) -> None:
-        super().__init__(ctx, input, name)
-
-        extra_dialects = extra_dialects or ()
-        for dialect in self.default_dialects + tuple(extra_dialects):
-            if self.ctx.get_optional_dialect(dialect.name) is None:
-                self.ctx.load_dialect(dialect)
 
 
 def _module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
