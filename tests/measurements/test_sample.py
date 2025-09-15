@@ -473,6 +473,30 @@ class TestSample:
         assert qml.math.get_interface(samples) == interface
         assert qml.math.get_dtype_name(samples) == dtype
 
+    @pytest.mark.parametrize("mcm_method", ["one-shot", "deferred", "tree-traversal"])
+    def test_sample_with_arithmetic_obs(self, mcm_method):
+        """Test that qml.sample works with arithmetic observables."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, mcm_method=mcm_method, shots=10)
+        def circuit(phi, theta):
+            qml.RX(phi, wires=0)
+            m_0 = qml.measure(wires=0)
+            qml.RY(theta, wires=1)
+            m_1 = qml.measure(wires=1)
+            return qml.sample([m_0 + m_1])
+
+        if mcm_method != "deferred":
+            res = circuit(0.1, 0.2)
+            assert res.shape == (10, 1)  # 10 samples of a single observable
+        else:
+            with pytest.raises(
+                ValueError,
+                match="Only sequences of single MeasurementValues can be passed with the op argument",
+            ):
+                _ = circuit(0.1, 0.2)
+
 
 @pytest.mark.jax
 class TestJAXCompatibility:
