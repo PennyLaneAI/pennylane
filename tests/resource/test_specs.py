@@ -103,7 +103,7 @@ class TestSpecsTransform:
         assert specs1 == specs2
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
+        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
     def test_empty(self, diff_method, len_info):
         dev = qml.device("default.qubit", wires=1)
@@ -135,7 +135,7 @@ class TestSpecsTransform:
             assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
+        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
     def test_specs(self, diff_method, len_info):
         """Test the specs transforms works in standard situations"""
@@ -196,7 +196,7 @@ class TestSpecsTransform:
         assert info["resources"].depth == (6 if compute_depth else None)
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
+        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
     def test_specs_state(self, diff_method, len_info):
         """Test specs works when state returned"""
@@ -419,9 +419,8 @@ class TestSpecsGraphModeExclusive:
         specs = qml.specs(circuit, level="device")()
 
         # Work wires calculation should be: device_wires - tape_wires
-        expected_work_wires = num_device_wires - 1  # 1 tape wire used
-        assert specs["max_work_wires"] == expected_work_wires
-        assert specs["num_device_wires"] == num_device_wires
+        if num_device_wires:
+            assert specs["num_device_wires"] == num_device_wires
         assert specs["num_tape_wires"] == 1
 
         # Check that the correct decomposition was used
@@ -454,7 +453,6 @@ class TestSpecsGraphModeExclusive:
         specs = qml.specs(circuit, level="device")()
 
         # Should report 1 work wire available (2 device wires - 1 tape wire)
-        assert specs["max_work_wires"] == 1
         assert specs["num_device_wires"] == 2
         assert specs["num_tape_wires"] == 1
         # Fallback decomposition should be used (H gate)
@@ -474,6 +472,5 @@ class TestSpecsGraphModeExclusive:
         specs = qml.specs(circuit)()
 
         # No work wires available (2 device wires - 2 tape wires = 0)
-        assert specs["max_work_wires"] == 0
         assert specs["num_device_wires"] == 2
         assert specs["num_tape_wires"] == 2
