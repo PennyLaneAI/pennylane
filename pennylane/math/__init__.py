@@ -105,13 +105,10 @@ from .utils import (
     binary_finite_reduced_row_echelon,
 )
 from .interface_utils import (
-    get_canonical_interface_name,
-    SupportedInterfaceUserInput,
     SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
     Interface,
-    InterfaceLike,
 )
 from .grad import grad, jacobian
 from . import decomposition
@@ -228,7 +225,6 @@ __all__ = [
     "get_dtype_name",
     "get_interface",
     "get_batch_size",
-    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
     "grad",

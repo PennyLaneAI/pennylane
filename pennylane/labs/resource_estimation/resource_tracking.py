@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource tracking logic."""
-import copy
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourcePow,
+)
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
+from pennylane.labs.resource_estimation.resource_config import ResourceConfig
 from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -29,61 +34,50 @@ from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=dangerous-default-value,protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments
 
 # user-friendly gateset for visual checks and initial compilation
-StandardGateSet = {
-    "X",
-    "Y",
-    "Z",
-    "Hadamard",
-    "SWAP",
-    "CNOT",
-    "S",
-    "T",
-    "Adjoint(S)",
-    "Adjoint(T)",
-    "Toffoli",
-    "RX",
-    "RY",
-    "RZ",
-    "PhaseShift",
-}
+StandardGateSet = frozenset(
+    {
+        "X",
+        "Y",
+        "Z",
+        "Hadamard",
+        "SWAP",
+        "CNOT",
+        "S",
+        "T",
+        "Adjoint(S)",
+        "Adjoint(T)",
+        "Toffoli",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+    }
+)
 
 # realistic gateset for useful compilation of circuits
-DefaultGateSet = {
-    "X",
-    "Y",
-    "Z",
-    "Hadamard",
-    "CNOT",
-    "S",
-    "T",
-    "Toffoli",
-}
-
-# parameters for further configuration of the decompositions
-resource_config = {
-    "error_rx": 1e-9,
-    "error_ry": 1e-9,
-    "error_rz": 1e-9,
-    "precision_select_pauli_rot": 1e-9,
-    "precision_qubit_unitary": 1e-9,
-    "precision_qrom_state_prep": 1e-9,
-    "precision_mps_prep": 1e-9,
-    "precision_alias_sampling": 1e-9,
-    "qubitization_rotation_precision": 15,
-    "qubitization_coeff_precision": 15,
-}
+DefaultGateSet = frozenset(
+    {
+        "X",
+        "Y",
+        "Z",
+        "Hadamard",
+        "CNOT",
+        "S",
+        "T",
+        "Toffoli",
+    }
+)
 
 
-def estimate_resources(
+def estimate(
     obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
+    gate_set: set | None = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
-    single_qubit_rotation_error: float | None = None,
+    config: ResourceConfig | None = None,
 ) -> Resources | Callable:
     r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
     provided in the gateset.
@@ -93,11 +87,14 @@ def estimate_resources(
             to obtain resources from.
         gate_set (Set, optional): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        config (Dict, optional): A dictionary of additional parameters which sets default values
+        work_wires (int | dict | optional): The number of available zeroed and/or any_state ancilla
+            qubits. If an integer is provided, it specifies the number of zeroed ancillas. If a
+            dictionary is provided, it should have the keys ``"zeroed"`` and ``"any_state"``.
+            Defaults to ``0``.
+        tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
+            exceed the available amount. The default is ``False``.
+        config (ResourceConfig, optional): A ResourceConfig object of additional parameters which sets default values
             when they are not specified on the operator.
-        single_qubit_rotation_error (Union[float, None]): The acceptable error when decomposing
-            single qubit rotations to `T`-gates using a Clifford + T approximation. This value takes
-            preference over the values set in the :code:`config`.
 
     Returns:
         Resources: the quantum resources required to execute the circuit
@@ -128,10 +125,12 @@ def estimate_resources(
     Note that we are passing a python function NOT a :class:`~.QNode`. The resources for this
     workflow are then obtained by:
 
-    >>> res = plre.estimate_resources(
+    >>> config = plre.ResourceConfig()
+    >>> config.set_single_qubit_rot_precision(1e-4)
+    >>> res = plre.estimate(
     ...     my_circuit,
     ...     gate_set = plre.DefaultGateSet,
-    ...     single_qubit_rotation_error = 1e-4,
+    ...     config=config,
     ... )()
     ...
     >>> print(res)
@@ -144,35 +143,30 @@ def estimate_resources(
      {'Hadamard': 5, 'CNOT': 10, 'T': 264}
 
     """
-
-    if single_qubit_rotation_error is not None:
-        config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
-
-    return _estimate_resources(obj, gate_set, config, work_wires, tight_budget)
+    return _estimate_resources_dispatch(obj, gate_set, work_wires, tight_budget, config)
 
 
 @singledispatch
-def _estimate_resources(
+def _estimate_resources_dispatch(
     obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
+    gate_set: set | None = None,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
+    config: ResourceConfig | None = None,
 ) -> Resources | Callable:
-    r"""Raise error if there is no implementation registered for the object type."""
-
+    """Internal singledispatch function for resource estimation."""
     raise TypeError(
         f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Resources, Callable or ResourceOperator"
     )
 
 
-@_estimate_resources.register
-def resources_from_qfunc(
+@_estimate_resources_dispatch.register
+def _resources_from_qfunc(
     obj: Callable,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
+    gate_set: set | None = None,
     work_wires=0,
     tight_budget=False,
+    config: ResourceConfig | None = None,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
 
@@ -200,7 +194,7 @@ def resources_from_qfunc(
 
         gate_counts = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
-            _counts_from_compressed_res_op(
+            _update_counts_from_compressed_res_op(
                 cmp_rep_op, gate_counts, qbit_mngr=qm, gate_set=gate_set, config=config
             )
 
@@ -209,13 +203,13 @@ def resources_from_qfunc(
     return wrapper
 
 
-@_estimate_resources.register
-def resources_from_resource(
+@_estimate_resources_dispatch.register
+def _resources_from_resource(
     obj: Resources,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires=None,
+    gate_set: set | None = None,
+    work_wires=0,
     tight_budget=None,
+    config: ResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a resources object."""
 
@@ -236,7 +230,7 @@ def resources_from_resource(
 
     gate_counts = defaultdict(int)
     for cmpr_rep_op, count in obj.gate_types.items():
-        _counts_from_compressed_res_op(
+        _update_counts_from_compressed_res_op(
             cmpr_rep_op,
             gate_counts,
             qbit_mngr=existing_qm,
@@ -249,53 +243,51 @@ def resources_from_resource(
     return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
 
 
-@_estimate_resources.register
-def resources_from_resource_ops(
+@_estimate_resources_dispatch.register
+def _resources_from_resource_ops(
     obj: ResourceOperator,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires=None,
+    gate_set: set | None = None,
+    work_wires=0,
     tight_budget=None,
+    config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
-    if isinstance(obj, Operation):
-        obj = map_to_resource_op(obj)
 
-    return resources_from_resource(
+    return _resources_from_resource(
         1 * obj,
         gate_set,
-        config,
         work_wires,
         tight_budget,
+        config,
     )
 
 
-@_estimate_resources.register
-def resources_from_pl_ops(
+@_estimate_resources_dispatch.register
+def _resources_from_pl_ops(
     obj: Operation,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires=None,
+    gate_set: set | None = None,
+    work_wires=0,
     tight_budget=None,
+    config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a pl operator."""
     obj = map_to_resource_op(obj)
-    return resources_from_resource(
+    return _resources_from_resource(
         1 * obj,
         gate_set,
-        config,
         work_wires,
         tight_budget,
+        config,
     )
 
 
-def _counts_from_compressed_res_op(
+def _update_counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
     qbit_mngr,
-    gate_set: set,
+    gate_set: set | None = None,
     scalar: int = 1,
-    config: dict = resource_config,
+    config: ResourceConfig | None = None,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
@@ -306,18 +298,29 @@ def _counts_from_compressed_res_op(
         scalar (int, optional): optional scalar to multiply the counts. Defaults to 1.
         config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
     """
+    if gate_set is None:
+        gate_set = DefaultGateSet
+
+    if config is None:
+        config = ResourceConfig()
+
     ## If op in gate_set add to resources
     if cp_rep.name in gate_set:
         gate_counts_dict[cp_rep] += scalar
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
-    resource_decomp = cp_rep.op_type.resource_decomp(config=config, **cp_rep.params)
+    decomp_func, kwargs = _get_decomposition(cp_rep, config)
+
+    params = {key: value for key, value in cp_rep.params.items() if value is not None}
+    filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
+
+    resource_decomp = decomp_func(**params, **filtered_kwargs)
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
     for action in resource_decomp:
         if isinstance(action, GateCount):
-            _counts_from_compressed_res_op(
+            _update_counts_from_compressed_res_op(
                 action.gate,
                 gate_counts_dict,
                 qbit_mngr=qbit_mngr,
@@ -352,22 +355,6 @@ def _sum_allocated_wires(decomp):
     return s
 
 
-def _update_config_single_qubit_rot_error(config, error):
-    r"""Create a new config dictionary with the new single qubit
-    error threshold.
-
-    Args:
-        config (Dict): the configuration dictionary to override
-        error (float): the new error threshold to be set
-
-    """
-    new_config = copy.copy(config)
-    new_config["error_rx"] = error
-    new_config["error_ry"] = error
-    new_config["error_rz"] = error
-    return new_config
-
-
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
     ops: Iterable[Operation | ResourceOperator],
@@ -389,3 +376,41 @@ def _ops_to_compressed_reps(
             cmp_rep_ops.append(map_to_resource_op(op).resource_rep_from_op())
 
     return cmp_rep_ops
+
+
+def _get_decomposition(
+    cp_rep: CompressedResourceOp, config: ResourceConfig
+) -> tuple[Callable, dict]:
+    """
+    Selects the appropriate decomposition function and kwargs from a config object.
+
+    This helper function centralizes the logic for choosing a decomposition,
+    handling standard, custom, and symbolic operator rules using a mapping.
+
+    Args:
+        cp_rep (CompressedResourceOp): The operator to find the decomposition for.
+        config (ResourceConfig): The configuration object containing decomposition rules.
+
+    Returns:
+        A tuple containing the decomposition function and its associated kwargs.
+    """
+    op_type = cp_rep.op_type
+    _SYMBOLIC_DECOMP_MAP = {
+        ResourceAdjoint: "_adj_custom_decomps",
+        ResourceControlled: "_ctrl_custom_decomps",
+        ResourcePow: "_pow_custom_decomps",
+    }
+
+    if op_type in _SYMBOLIC_DECOMP_MAP:
+        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
+        custom_decomp_dict = getattr(config, decomp_attr_name)
+
+        base_op_type = cp_rep.params["base_cmpr_op"].op_type
+        kwargs = config.resource_op_precisions.get(base_op_type, {})
+        decomp_func = custom_decomp_dict.get(base_op_type, op_type.resource_decomp)
+
+    else:
+        kwargs = config.resource_op_precisions.get(op_type, {})
+        decomp_func = config._custom_decomps.get(op_type, op_type.resource_decomp)
+
+    return decomp_func, kwargs

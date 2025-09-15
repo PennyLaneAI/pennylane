@@ -41,7 +41,7 @@ class ResourceAdjoint(ResourceOperator):
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
         determined as follows. If the base operation implements the
-        :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+        :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
         this.
 
         Otherwise, the adjoint resources are given as the adjoint of each operation in the
@@ -67,7 +67,7 @@ class ResourceAdjoint(ResourceOperator):
     ...     "Adjoint(ControlledPhaseShift)",
     ... }
     >>>
-    >>> print(plre.estimate_resources(qft, gate_set))
+    >>> print(plre.estimate(qft, gate_set))
     --- Resources: ---
     Total qubits: 3
     Total gates : 7
@@ -76,7 +76,7 @@ class ResourceAdjoint(ResourceOperator):
     Gate breakdown:
      {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
     >>>
-    >>> print(plre.estimate_resources(adj_qft, gate_set))
+    >>> print(plre.estimate(adj_qft, gate_set))
     --- Resources: ---
     Total qubits: 3
     Total gates : 7
@@ -126,7 +126,7 @@ class ResourceAdjoint(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op})
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
+    def resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -138,7 +138,7 @@ class ResourceAdjoint(ResourceOperator):
         Resources:
             This symbolic operation represents the adjoint of some base operation. The resources are
             determined as follows. If the base operation implements the
-            :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+            :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
             this.
 
             Otherwise, the adjoint resources are given as the adjoint of each operation in the
@@ -169,7 +169,7 @@ class ResourceAdjoint(ResourceOperator):
         ...     "Adjoint(ControlledPhaseShift)",
         ... }
         >>>
-        >>> print(plre.estimate_resources(qft, gate_set))
+        >>> print(plre.estimate(qft, gate_set))
         --- Resources: ---
         Total qubits: 3
         Total gates : 7
@@ -178,7 +178,7 @@ class ResourceAdjoint(ResourceOperator):
         Gate breakdown:
         {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
         >>>
-        >>> print(plre.estimate_resources(adj_qft, gate_set))
+        >>> print(plre.estimate(adj_qft, gate_set))
         --- Resources: ---
         Total qubits: 3
         Total gates : 7
@@ -189,6 +189,9 @@ class ResourceAdjoint(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+
         try:
             return base_class.adjoint_resource_decomp(**base_params, **kwargs)
         except ResourcesNotDefined:
@@ -200,7 +203,7 @@ class ResourceAdjoint(ResourceOperator):
             return gate_lst
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
+    def adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -261,7 +264,7 @@ class ResourceControlled(ResourceOperator):
 
     We can observe the expected gates when we estimate the resources.
 
-    >>> print(plre.estimate_resources(cx))
+    >>> print(plre.estimate(cx))
     --- Resources: ---
     Total qubits: 2
     Total gates : 1
@@ -270,7 +273,7 @@ class ResourceControlled(ResourceOperator):
     Gate breakdown:
     {'CNOT': 1}
     >>>
-    >>> print(plre.estimate_resources(ccx))
+    >>> print(plre.estimate(ccx))
     --- Resources: ---
     Total qubits: 3
     Total gates : 5
@@ -359,7 +362,7 @@ class ResourceControlled(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -400,7 +403,7 @@ class ResourceControlled(ResourceOperator):
 
         We can observe the expected gates when we estimate the resources.
 
-        >>> print(plre.estimate_resources(cx))
+        >>> print(plre.estimate(cx))
         --- Resources: ---
         Total qubits: 2
         Total gates : 1
@@ -409,7 +412,7 @@ class ResourceControlled(ResourceOperator):
         Gate breakdown:
         {'CNOT': 1}
         >>>
-        >>> print(plre.estimate_resources(ccx))
+        >>> print(plre.estimate(ccx))
         --- Resources: ---
         Total qubits: 3
         Total gates : 5
@@ -421,6 +424,8 @@ class ResourceControlled(ResourceOperator):
         """
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
         try:
             return base_class.controlled_resource_decomp(
                 ctrl_num_ctrl_wires=num_ctrl_wires,
@@ -453,7 +458,7 @@ class ResourceControlled(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -535,7 +540,7 @@ class ResourcePow(ResourceOperator):
 
     We obtain the expected resources.
 
-    >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+    >>> print(plre.estimate(z_2, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -544,7 +549,7 @@ class ResourcePow(ResourceOperator):
     Gate breakdown:
     {'Identity': 1}
     >>>
-    >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+    >>> print(plre.estimate(z_5, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -599,7 +604,7 @@ class ResourcePow(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op, "z": z})
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -632,7 +637,7 @@ class ResourcePow(ResourceOperator):
 
         We obtain the expected resources.
 
-        >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+        >>> print(plre.estimate(z_2, gate_set={"Identity", "Z"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 1
@@ -641,7 +646,7 @@ class ResourcePow(ResourceOperator):
         Gate breakdown:
         {'Identity': 1}
         >>>
-        >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+        >>> print(plre.estimate(z_5, gate_set={"Identity", "Z"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 1
@@ -652,6 +657,8 @@ class ResourcePow(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
 
         if z == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
@@ -665,7 +672,7 @@ class ResourcePow(ResourceOperator):
             return [GateCount(base_cmpr_op, z)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, base_cmpr_op, z, **kwargs):
+    def pow_resource_decomp(cls, pow_z, base_cmpr_op, z, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -721,7 +728,7 @@ class ResourceProd(ResourceOperator):
     >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
     >>> prod_xyz = plre.ResourceProd(factors)
     >>>
-    >>> print(plre.estimate_resources(prod_xyz))
+    >>> print(plre.estimate(prod_xyz))
     --- Resources: ---
     Total qubits: 1
     Total gates : 3
@@ -735,7 +742,7 @@ class ResourceProd(ResourceOperator):
     >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
     >>> prod_x2z3 = plre.ResourceProd(factors)
     >>>
-    >>> print(plre.estimate_resources(prod_x2z3))
+    >>> print(plre.estimate(prod_x2z3))
     --- Resources: ---
     Total qubits: 1
     Total gates : 5
@@ -829,7 +836,7 @@ class ResourceProd(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, cmpr_factors_and_counts, num_wires, **kwargs
     ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -860,7 +867,7 @@ class ResourceProd(ResourceOperator):
         >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
         >>> prod_xyz = plre.ResourceProd(factors)
         >>>
-        >>> print(plre.estimate_resources(prod_xyz))
+        >>> print(plre.estimate(prod_xyz))
         --- Resources: ---
         Total qubits: 1
         Total gates : 3
@@ -874,7 +881,7 @@ class ResourceProd(ResourceOperator):
         >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
         >>> prod_x2z3 = plre.ResourceProd(factors)
         >>>
-        >>> print(plre.estimate_resources(prod_x2z3))
+        >>> print(plre.estimate(prod_x2z3))
         --- Resources: ---
         Total qubits: 1
         Total gates : 5
@@ -918,7 +925,7 @@ class ResourceChangeBasisOp(ResourceOperator):
     >>> compute_u = plre.ResourceS()
     >>> base_v = plre.ResourceZ()
     >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
-    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 3
@@ -931,7 +938,7 @@ class ResourceChangeBasisOp(ResourceOperator):
 
     >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
     >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
-    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 4
@@ -1053,7 +1060,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, num_wires, **kwargs
     ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -1082,7 +1089,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         >>> compute_u = plre.ResourceS()
         >>> base_v = plre.ResourceZ()
         >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
-        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 3
@@ -1095,7 +1102,7 @@ class ResourceChangeBasisOp(ResourceOperator):
 
         >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
         >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
-        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 4
