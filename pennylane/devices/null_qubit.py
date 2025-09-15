@@ -18,10 +18,7 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 
 
 import inspect
-import json
 import logging
-import time
-from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
@@ -40,7 +37,6 @@ from pennylane.measurements import (
     Shots,
     StateMP,
 )
-from pennylane.ops.op_math import Adjoint, Controlled, ControlledOp
 from pennylane.tape import QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch

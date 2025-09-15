@@ -315,6 +315,8 @@ def specs(
         >>> len(qml.specs(circuit, level="user")())
         2
     """
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
     if isinstance(qnode, qml.QNode):
         return partial(_specs_qnode, qnode, level, compute_depth)
