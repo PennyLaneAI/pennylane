@@ -140,12 +140,12 @@ class ResourceConfig:
         affects the number of gates required.
 
         This method updates the ``precision`` value for the following operators:
-        - :class:`~.RX`
-        - :class:`~.RY`
-        - :class:`~.RZ`
-        - :class:`~.CRX`
-        - :class:`~.CRY`
-        - :class:`~.CRZ`
+        - :class:`~.pennylane.estimator.RX`
+        - :class:`~.pennylane.estimator.RY`
+        - :class:`~.pennylane.estimator.RZ`
+        - :class:`~.pennylane.estimator.CRX`
+        - :class:`~.pennylane.estimator.CRY`
+        - :class:`~.pennylane.estimator.CRZ`
 
         Args:
             precision (float): The desired synthesis precision tolerance. A smaller
