@@ -809,8 +809,10 @@ def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
     if len(projectors1) != len(projectors2):
         return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
     for i, (p1, p2) in enumerate(zip(projectors1, projectors2)):
-        if not equal(p1, p2, **kwargs):
-            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}."
+        try:
+            assert_equal(p1, p2, **kwargs)
+        except AssertionError as e:
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {e}."
     return True
 
 

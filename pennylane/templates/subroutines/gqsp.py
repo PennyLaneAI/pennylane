@@ -217,7 +217,7 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
     for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
-        ops.Controlled(unitary, control_wires=control, control_values=[0])
+        ops.ctrl(unitary, control=control, control_values=[0])
 
         ops.X(control)
         ops.U3(2 * theta, phi, lamb, wires=control)
