@@ -277,7 +277,7 @@ class ResourceOperator(ABC):
         num_ctrl_wires: int,
         num_ctrl_values: int,
         *args,
-        cmpr_op: CompressedResourceOp = None,
+        cmpr_op: CompressedResourceOp | None= None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
