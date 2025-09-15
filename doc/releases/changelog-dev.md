@@ -20,6 +20,9 @@
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
   * The test files were renamed to avoid the dual definition error with labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
+  * The :class:`~.estimator.ResourceOperator` class signature was modified to accept compressed operator as an argument
+    and change the argument names.
+    [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
