@@ -42,7 +42,7 @@ class Hadamard(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -71,7 +71,7 @@ class Hadamard(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -90,7 +90,6 @@ class Hadamard(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -106,7 +105,7 @@ class Hadamard(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -148,7 +147,7 @@ class S(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -174,7 +173,7 @@ class S(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -194,7 +193,6 @@ class S(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        **kwargs,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -210,7 +208,7 @@ class S(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -307,7 +305,7 @@ class SWAP(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -345,7 +343,7 @@ class SWAP(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -364,7 +362,6 @@ class SWAP(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -377,10 +374,10 @@ class SWAP(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        return super().controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -417,7 +414,7 @@ class T(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -446,7 +443,7 @@ class T(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -463,7 +460,7 @@ class T(ResourceOperator):
         return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
     @classmethod
-    def controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs):
+    def controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -475,7 +472,7 @@ class T(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        return super().controlled_resource_decomp(ctrl_num_ctrl_wires, ctrl_num_ctrl_values)
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
