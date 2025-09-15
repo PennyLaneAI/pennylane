@@ -1128,6 +1128,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Error handling for sampling combinations of mid-circuit measurements has been improved.
+  [(#8272)](https://github.com/PennyLaneAI/pennylane/pull/8272)
+
 * Parameter batching now works for Z-basis gates when executing with `default.mixed`. 
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
 

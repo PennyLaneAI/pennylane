@@ -19,6 +19,7 @@ from numbers import Number
 from warnings import warn
 
 import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
@@ -66,6 +67,15 @@ def _check_tape_validity(tape: QuantumScript):
                 "Cannot use StateMP as a measurement when using qml.defer_measurements. "
                 "Deferred measurements can occur automatically when using mid-circuit "
                 "measurements on a device that does not support them."
+            )
+
+        if not all(
+            isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in mp.mv
+        ) and not all(math.is_abstract(o) for o in mp.mv):
+            raise ValueError(
+                "Only sequences of single MeasurementValues can be passed with the op "
+                "argument. MeasurementValues manipulated using arithmetic operators cannot be "
+                "used when collecting statistics for a sequence of mid-circuit measurements."
             )
 
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
