@@ -57,7 +57,6 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
-    # pylint: disable=too-many-arguments
     def process_samples(
         self,
         samples: Sequence[complex],
@@ -67,7 +66,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     ):
         if not self.wires:
             return math.squeeze(self.eigvals())
-        # estimate the ev
+        # estimate the expectation value
         op = self.mv if self.mv is not None else self.obs
 
         with QueuingManager.stop_recording():

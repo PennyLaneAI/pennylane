@@ -1388,7 +1388,7 @@ class QubitDevice(Device):
             # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
             return self._dot(prob, eigvals)
 
-        # estimate the ev
+        # estimate the expectation value
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size

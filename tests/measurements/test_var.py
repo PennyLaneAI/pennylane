@@ -120,6 +120,42 @@ class TestVar:
         expected = qml.var(qml.PauliZ(0)).process_samples(samples, [0, 1])
         assert VarianceMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize(
+        "dtype",
+        ["float16", "float32", "float64"],
+    )
+    def test_sample_dtype(self, interface, dtype):
+        """Test that the dtype argument changes the dtype of the returned samples"""
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.var(qml.Z(0), dtype=dtype)
+
+        samples = circuit()
+        assert qml.math.get_interface(samples) == interface
+        assert qml.math.get_dtype_name(samples) == dtype
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])
+    def test_jax_jit_dtype(self, dtype):
+        """Test that jitting works when the dtype argument is provided"""
+
+        import jax
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.var(qml.Z(0), dtype=dtype)
+
+        samples = jax.jit(circuit)(jax.numpy.array(0.123))
+        assert qml.math.get_interface(samples) == "jax"
+        assert qml.math.get_dtype_name(samples) == dtype
+
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""
         m0 = qml.measure(0)

@@ -21,7 +21,7 @@ from pennylane import math
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
+from pennylane.wires import WiresLike
 
 from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
@@ -44,12 +44,15 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        dtype: The dtype of the samples returned by this measurement process.
     """
 
     _shortname = "var"
 
     @property
     def numeric_type(self):
+        if self._dtype is not None:
+            return self._dtype
         return float
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
@@ -58,7 +61,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     def process_samples(
         self,
         samples: Sequence[complex],
-        wire_order: Wires,
+        wire_order: WiresLike,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
     ):
@@ -69,6 +72,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
                 obs=op,
                 eigvals=self._eigvals,
                 wires=self.wires if self._eigvals is not None else None,
+                dtype=self._dtype,
             ).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
@@ -79,7 +83,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return math.squeeze(math.var(samples, axis=axis))
 
-    def process_state(self, state: TensorLike, wire_order: Wires):
+    def process_state(self, state: TensorLike, wire_order: WiresLike):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         # we use ``wires`` instead of ``op`` because the observable was
@@ -89,7 +93,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return self._calculate_variance(prob)
 
-    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: WiresLike):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         # we use ``wires`` instead of ``op`` because the observable was
@@ -101,7 +105,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return self._calculate_variance(prob)
 
-    def process_counts(self, counts: dict, wire_order: Wires):
+    def process_counts(self, counts: dict, wire_order: WiresLike):
         with QueuingManager.stop_recording():
             probabilities = probs(wires=self.wires).process_counts(
                 counts=counts, wire_order=wire_order
@@ -115,17 +119,20 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         Args:
             probabilities (array): the probabilities of collapsing to eigen states
         """
-        eigvals = math.asarray(self.eigvals(), dtype="float64")
+        eigvals = math.asarray(
+            self.eigvals(), dtype=self._dtype if self._dtype is not None else "float64"
+        )
         return math.dot(probabilities, (eigvals**2)) - math.dot(probabilities, eigvals) ** 2
 
 
-def var(op: Operator | MeasurementValue) -> VarianceMP:
+def var(op: Operator | MeasurementValue, dtype=None) -> VarianceMP:
     r"""Variance of the supplied observable.
 
     Args:
         op (Union[Operator, MeasurementValue]): a quantum observable object.
             To get variances for mid-circuit measurements, ``op`` should be a
             ``MeasurementValue``.
+        dtype: The dtype of the samples returned by this measurement process.
 
     Returns:
         VarianceMP: Measurement process instance
@@ -147,6 +154,29 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
 
     >>> circuit(0.5)
     0.7701511529340698
+
+    The ``dtype`` argument can be used to specify the precision of the returned variance when
+    sampling is used. If sampling is not used, the ``dtype`` argument is ignored.
+
+    By default, the dtype is ``float64``.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+        @qml.set_shots(10)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.var(qml.Y(0), dtype='float32')
+
+    Executing this QNode, we see that the returned samples have the specified dtype:
+
+    >>> samples = circuit(0.5)
+    >>> samples.dtype
+    dtype('float32')
+
     """
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)
@@ -156,4 +186,4 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
             "qml.var does not support measuring sequences of measurements or observables"
         )
 
-    return VarianceMP(obs=op)
+    return VarianceMP(obs=op, dtype=dtype)

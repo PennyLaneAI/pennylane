@@ -798,7 +798,7 @@ class DefaultGaussian(Device):
             ev, var = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
 
         if self.shots is not None:
-            # estimate the ev
+            # estimate the expectation value
             # use central limit theorem, sample normal distribution once, only ok if n_eval is large
             # (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
             ev = np.random.normal(ev, math.sqrt(var / self.shots))

@@ -68,7 +68,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         len_wires = len(self.wires) if self.wires else num_device_wires
         return (2**len_wires,)
 
-    # pylint: disable=too-many-arguments
     def process_samples(
         self,
         samples: TensorLike,

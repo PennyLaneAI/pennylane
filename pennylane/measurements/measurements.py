@@ -529,7 +529,6 @@ class SampleMeasurement(MeasurementProcess):
 
     _shortname = "sample"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
