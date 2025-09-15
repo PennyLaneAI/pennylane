@@ -19,9 +19,7 @@ import numpy as np
 import pennylane as qml
 
 
-def phase_polynomial(
-    tape: qml.tape.QuantumScript, wire_order: Sequence = None, verbose: bool = False
-):
+def phase_polynomial(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
     r"""
     `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of CNOT and RZ gates.
 
@@ -52,7 +50,7 @@ def phase_polynomial(
 
     .. code-block:: python
 
-        def compute_phase_polynomial(tape, verbose=False):
+        def compute_phase_polynomial(tape):
             wires = tape.wires
             parity_matrix = np.eye(len(wires), dtype=int)
             parity_table = []
@@ -74,7 +72,6 @@ def phase_polynomial(
     Args:
         tape (qml.tape.QuantumScript): Quantum circuit containing only CNOT and RZ gates.
         wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
-        verbose (bool): Whether or not progress should be printed during computation.
 
     Returns:
         tuple(np.ndarray, np.ndarray, np.ndarray): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
@@ -188,12 +185,6 @@ def phase_polynomial(
         else:
             raise TypeError(
                 f"phase_polynomial can only handle CNOT and RZ operators, received {op}"
-            )
-
-        if verbose:
-            print(f"Operator {op.name} - #{i}")
-            print(
-                f"parity matrix: \n{parity_matrix}\n parity table: \n{np.array(parity_table).T}\n angles: {angles}"
             )
 
         i += 1

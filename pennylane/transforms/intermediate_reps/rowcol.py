@@ -234,7 +234,7 @@ def _get_S(P: np.ndarray, idx: int, node_set: Iterable[int], mode: str):
     return S
 
 
-def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbose: bool):
+def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str):
     """Eliminate the column or row with index ``idx`` of the parity matrix P,
     respecting the connectivity constraints given by ``connectivity``.
 
@@ -243,7 +243,6 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
         connectivity (nx.Graph): Connectivity graph
         idx (int): Column or row index to eliminate
         mode (str): Whether to eliminate the column (``column``) or row (``row``) of ``P``.
-        verbose (bool): Whether to print elimination results
 
     Returns:
         tuple[np.ndarray, list[tuple[int]]]: Updated parity matrix and list of CNOTs that
@@ -254,8 +253,6 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
     S = _get_S(P, idx, connectivity.nodes(), mode)
     if len(S) == 1:
         # idx is in S for sure, so this column/row already has the right content. No need to update
-        if verbose:
-            print(f"CNOTs from {mode} elimination ({idx}): {[]}")
         return P, []
 
     cnots = []
@@ -288,14 +285,12 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
         # ... and no constraints for second pass (i.2.3)
         _ = [state := _update(*state, child, parent) for child, parent in visit_nodes]
 
-    if verbose:
-        print(f"CNOTs from {mode} elimination ({idx}): {cnots}")
     return P % 2, cnots
 
 
 @transform
 def rowcol(
-    tape: QuantumScript, connectivity: nx.Graph = None, verbose: bool = False
+    tape: QuantumScript, connectivity: nx.Graph = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""CNOT routing algorithm `ROWCOL <https://pennylane.ai/compilation/rowcol-algorithm>`__.
 
@@ -307,7 +302,6 @@ def rowcol(
         tape (QNode or QuantumScript or Callable): Input circuit containing only :class:`~CNOT` gates. Will internally be translated to the :func:`~parity_matrix` IR.
         connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default),
             full connectivity is assumed.
-        verbose (bool): Whether or not to print progress of obtained CNOT gates. Default is ``False``.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -666,7 +660,7 @@ def rowcol(
     wire_order = tape.wires
     P = parity_matrix(tape, wire_order=wire_order)
 
-    cnots = _rowcol_parity_matrix(P, connectivity, verbose)
+    cnots = _rowcol_parity_matrix(P, connectivity)
     circ = QuantumScript(
         [qml.CNOT((wire_order[i], wire_order[j])) for (i, j) in cnots], tape.measurements
     )
@@ -680,9 +674,7 @@ def rowcol(
     return [circ], null_postprocessing
 
 
-def _rowcol_parity_matrix(
-    P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False
-) -> list[tuple[int]]:
+def _rowcol_parity_matrix(P: np.ndarray, connectivity: nx.Graph = None) -> list[tuple[int]]:
     """RowCol algorithm that turns a parity matrix to a list of CNOT operators"""
 
     if not has_galois:  # pragma: no cover
@@ -706,7 +698,7 @@ def _rowcol_parity_matrix(
         i = next(v for v in connectivity.nodes() if v not in cut_vertices)
         # Eliminate column and row of parity matrix with index v (Steps i.1 and i.2 in compilation hub)
         for mode in ("column", "row"):
-            P, new_cnots = _eliminate(P, connectivity, i, mode, verbose)
+            P, new_cnots = _eliminate(P, connectivity, i, mode)
             # Memorize CNOTs required to eliminate column/row
             cnots.extend(new_cnots)
         # Remove vertex i

@@ -165,13 +165,6 @@ def assert_respects_connectivity(cnots, connectivity):
 class TestRowCol:
     """Tests for rowcol."""
 
-    def test_verbose(self, capsys):
-        """Test verbose output"""
-        _ = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=None, verbose=True)
-        captured = capsys.readouterr()
-        assert "CNOTs from column elimination (0): [(0, 1)]" in captured.out
-        assert "CNOTs from row elimination (0): []" in captured.out
-
     def test_connectivity_default(self):
         """Test the connectivity default is used correctly"""
         m1 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=None)
