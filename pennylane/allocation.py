@@ -130,7 +130,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     .. seealso:: :func:`~.allocate`
 
     .. note::
-        The :func:`~.allocate` function can be used as a context manager with automatic deallocation 
+        The :func:`~.allocate` function can be used as a context manager with automatic deallocation
         (recommended for most cases) upon exiting the scope.
 
     **Example**
@@ -138,7 +138,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     .. code-block:: python
 
         import pennylane as qml
-    
+
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.H(0)
@@ -151,25 +151,25 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             new_wires = qml.allocate(2, state="zero", restored=True)
             qml.SWAP((new_wires[1], new_wires[0]))
             qml.deallocate(new_wires)
-            
+
             return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)())
                 0: ──H────────╭●────╭●──────────────────────┤  <Z>
-    <DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤     
-    <DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤     
-    <DynamicWire>: ─╰Allocate─╰SWAP─╰Deallocate─────────────┤     
+    <DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤
+    <DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤
+    <DynamicWire>: ─╰Allocate─╰SWAP─╰Deallocate─────────────┤
 
     Here, three dynamic wires were allocated in the circuit originally. When PennyLane determines
-    which concrete values to use for dynamic wires to send to the device for execution, we can see 
-    that the first dynamic wire is already deallocated back into the zero state. This allows us to 
+    which concrete values to use for dynamic wires to send to the device for execution, we can see
+    that the first dynamic wire is already deallocated back into the zero state. This allows us to
     use it as one of the wires requested in the second allocation, resulting in a total of three wires
     being required from the device, including two dynamically allocated wires:
 
     >>> print(qml.draw(c, level="device")())
     0: ──H─╭●─╭●───────┤  <Z>
-    1: ────╰X─╰X─╭SWAP─┤     
-    2: ──────────╰SWAP─┤    
+    1: ────╰X─╰X─╭SWAP─┤
+    2: ──────────╰SWAP─┤
     """
     if capture_enabled():
         if not isinstance(wires, Sequence):
@@ -211,19 +211,19 @@ def allocate(
         executed on any device.
 
     Args:
-        num_wires (int): 
+        num_wires (int):
             The number of wires to dynamically allocate.
 
     Keyword Args:
         state (Literal["any", "zero"]):
-            Specifies whether to allocate ``num_wires`` in the all-zeros state (``"zero"``) or in 
+            Specifies whether to allocate ``num_wires`` in the all-zeros state (``"zero"``) or in
             any arbitrary state (``"any"``). The default value is ``state="zero"``.
 
         restored (bool):
-            Whether or not the dynamically allocated wires are returned to the same state they 
-            started in. ``restored=True`` indicates that the user promises to restore the 
-            dynamically allocated wires to their original state before being deallocated. 
-            ``restored=False`` indicates that the user does not promise to restore the dynamically 
+            Whether or not the dynamically allocated wires are returned to the same state they
+            started in. ``restored=True`` indicates that the user promises to restore the
+            dynamically allocated wires to their original state before being deallocated.
+            ``restored=False`` indicates that the user does not promise to restore the dynamically
             allocated wires before being deallocated. The default value is ``False``.
 
     Returns:
@@ -231,15 +231,15 @@ def allocate(
         allocated wires.
 
     .. note::
-        The ``allocate`` function can be used as a context manager with automatic deallocation 
+        The ``allocate`` function can be used as a context manager with automatic deallocation
         (recommended for most cases) or with manual deallocation via :func:`~.deallocate`.
 
     .. seealso::
         :func:`~.deallocate`
 
     **Example**
-  
-    Using ``allocate`` to dynamically request wires returns an array of wires 
+
+    Using ``allocate`` to dynamically request wires returns an array of wires
     (``DynamicRegister``) that can be indexed into:
 
     >>> wires = qml.allocate(3)
@@ -255,15 +255,15 @@ def allocate(
     <DynamicRegister: size=1>
     >>> wire[0]
     <DynamicWire>
-        
-    Most use cases for ``allocate`` are covered by using it as a context manager, which ensures 
+
+    Most use cases for ``allocate`` are covered by using it as a context manager, which ensures
     that allocation and safe deallocation are controlled within a localized scope.
 
     .. code-block:: python
 
         import pennylane as qml
 
-        @qml.qnode(qml.device("default.qubit")) 
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.H(0)
             qml.H(1)
@@ -271,17 +271,17 @@ def allocate(
             with qml.allocate(2, state="zero", restored=True) as new_wires:
                 qml.H(new_wires[0])
                 qml.H(new_wires[1])
-                
+
             return qml.expval(qml.Z(0))
-            
+
     >>> print(qml.draw(circuit)())
                 0: ──H───────────────────────┤  <Z>
                 1: ──H───────────────────────┤
     <DynamicWire>: ─╭Allocate──H─╭Deallocate─┤
     <DynamicWire>: ─╰Allocate──H─╰Deallocate─┤
 
-    Equivalenty, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual 
-    handling: 
+    Equivalenty, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
+    handling:
 
     .. code-block:: python
 
@@ -289,21 +289,21 @@ def allocate(
         qml.H(new_wires[0])
         qml.H(new_wires[1])
         qml.deallocate(new_wires)
-    
-        
-    .. details:: 
-        :title: Usage details 
+
+
+    .. details::
+        :title: Usage details
 
         **Efficient wire management**
 
-        For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic 
-        allocation calls in the most resource-efficient manner before sending the program to the 
-        device. Consider the following circuit, which contains two dynamic allocations within a 
+        For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic
+        allocation calls in the most resource-efficient manner before sending the program to the
+        device. Consider the following circuit, which contains two dynamic allocations within a
         ``for`` loop.
 
         .. code-block:: python
 
-            @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal") 
+            @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal")
             def circuit():
                 qml.H(0)
 
@@ -318,28 +318,28 @@ def allocate(
 
         >>> print(qml.draw(circuit)())
                     0: ──H─────────────────────╭●───────────────────────╭●─────────────┤  <Z>
-        <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤     
-        <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤     
-        <DynamicWire>: ─────────────║────────║──Allocate──┤↗│  │0⟩──────│───Deallocate─┤     
-        <DynamicWire>: ─────────────║────────║──Allocate───║──────────Z─╰X──Deallocate─┤     
-                                    ╚════════╝             ╚══════════╝                      
+        <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤
+        <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤
+        <DynamicWire>: ─────────────║────────║──Allocate──┤↗│  │0⟩──────│───Deallocate─┤
+        <DynamicWire>: ─────────────║────────║──Allocate───║──────────Z─╰X──Deallocate─┤
+                                    ╚════════╝             ╚══════════╝
 
-        The user-level circuit drawing shows four separate allocations and deallocations (two per 
-        loop iteration). However, the circuit that the device receives gets automatically compiled 
-        to only use **two** additional wires (wires labelled ``1`` and ``2`` in the diagram below). This 
-        is due to the fact that ``new_qubit1`` and ``new_qubit2`` can both be reused after they've been 
+        The user-level circuit drawing shows four separate allocations and deallocations (two per
+        loop iteration). However, the circuit that the device receives gets automatically compiled
+        to only use **two** additional wires (wires labelled ``1`` and ``2`` in the diagram below). This
+        is due to the fact that ``new_qubit1`` and ``new_qubit2`` can both be reused after they've been
         deallocated in the first iteration of the ``for`` loop:
 
         >>> print(qml.draw(circuit, level="device")())
         0: ──H───────────╭●──────────────╭●─┤  <Z>
-        1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤     
-        2: ───║────────Z─╰X───║────────Z─╰X─┤     
-              ╚════════╝      ╚════════╝          
+        1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤
+        2: ───║────────Z─╰X───║────────Z─╰X─┤
+              ╚════════╝      ╚════════╝
 
-        Additionally, in circuits that deallocate a wire in `"any"` state, this wire can be reused 
-        as a `"zero"`. The arbitrary-state wire is reset back to a zero state by introducing a 
-        mid-circuit measurement. This is illustrated in the example below, where the first wire 
-        allocation is deallocated in an arbitrary state, but the only other dynamic wire allocation 
+        Additionally, in circuits that deallocate a wire in `"any"` state, this wire can be reused
+        as a `"zero"`. The arbitrary-state wire is reset back to a zero state by introducing a
+        mid-circuit measurement. This is illustrated in the example below, where the first wire
+        allocation is deallocated in an arbitrary state, but the only other dynamic wire allocation
         in the circuit requires a zero state:
 
         .. code-block:: python
@@ -355,12 +355,12 @@ def allocate(
                 return qml.expval(qml.Z(0))
 
         >>> print(qml.draw(circuit, level="user")())
-        <DynamicWire>: ──Allocate──H──Deallocate─┤     
-        <DynamicWire>: ──Allocate──X──Deallocate─┤     
+        <DynamicWire>: ──Allocate──H──Deallocate─┤
+        <DynamicWire>: ──Allocate──X──Deallocate─┤
                     0: ──────────────────────────┤  <Z>
         >>> print(qml.draw(circuit, level="device")())
         0: ─────────────────┤  <Z>
-        1: ──H──┤↗│  │0⟩──X─┤  
+        1: ──H──┤↗│  │0⟩──X─┤
     """
     state = AllocateState(state)
     if capture_enabled():
