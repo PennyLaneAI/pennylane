@@ -474,8 +474,8 @@ class TestSample:
         assert qml.math.get_dtype_name(samples) == dtype
 
     @pytest.mark.parametrize("mcm_method", ["one-shot", "deferred", "tree-traversal"])
-    def test_sample_with_arithmetic_obs(self, mcm_method):
-        """Test that qml.sample works with arithmetic observables."""
+    def test_sampling_combination_of_measurement_values(self, mcm_method):
+        """Test that qml.sample works with a combination of measurement values."""
 
         dev = qml.device("default.qubit")
 
