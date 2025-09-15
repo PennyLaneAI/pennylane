@@ -31,7 +31,7 @@ try:
     from xdsl.printer import Printer
 
     from pennylane.compiler.python_compiler import Compiler, QuantumParser
-    from pennylane.compiler.python_compiler.jax_utils import parse_generic_to_xdsl_module
+    from pennylane.compiler.python_compiler.conversion import parse_generic_to_xdsl_module
 except (ImportError, ModuleNotFoundError):
     deps_available = False
 
