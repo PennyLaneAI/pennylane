@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig, MCMConfig
-from pennylane.ftqc import GraphStatePrep, RotXZX
+from pennylane.ftqc import RotXZX
 from pennylane.ftqc.ftqc_device import (
     FTQCQubit,
     LightningQubitBackend,
@@ -497,6 +497,7 @@ class TestQuantumScriptSequence:
         tape = qml.workflow.construct_tape(shots_circ)()
         (sequence,), _ = split_at_non_clifford_gates(tape)
 
+        # pylint: disable=protected-access
         raw_samples = backend._execute_sequence(sequence, ExecutionConfig())
         sequence_results = np.average(raw_samples, axis=0)
 
@@ -548,5 +549,6 @@ class TestBackendExecution:
 
         assert len(results) == 3
         for res in results:
-            assert len(res) == 2
-            assert np.allclose(res, 0)
+            assert len(res) == 3000
+            for r in res:
+                assert np.allclose(r, 0)
