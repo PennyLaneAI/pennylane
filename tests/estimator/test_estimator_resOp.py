@@ -485,7 +485,7 @@ class TestResourceOperator:
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
         op1 = X
-        assert op1.resource_keys == set()
+        assert op1.resource_keys == set()  # pylint: disable=comparison-with-callable
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""
@@ -495,7 +495,7 @@ class TestResourceOperator:
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
         with pytest.raises(ResourcesUndefinedError):
-            X.controlled_resource_decomp(num_ctrl_wires=2, num_ctrl_values=0)
+            X.controlled_resource_decomp(num_ctrl_wires=2, num_zero_ctrl=0)
 
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
