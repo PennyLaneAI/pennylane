@@ -363,6 +363,15 @@ def _try_wrap_in_custom_ctrl_op(
         qml.QueuingManager.remove(op)
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
+    if isinstance(op, qml.Barrier):
+        if qml.QueuingManager.recording():
+            # for example
+            # op = Barrier(), qml.X(), qml.ctrl(op, 1)
+            # new barrier should exist after the X
+            qml.QueuingManager.remove(op)
+            qml.QueuingManager.append(op)  # requeue in proper place
+        return op
+
     if isinstance(op, qml.QubitUnitary):
         qml.QueuingManager.remove(op)
         return qml.ControlledQubitUnitary(

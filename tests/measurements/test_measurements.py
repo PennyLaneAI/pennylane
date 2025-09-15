@@ -278,9 +278,9 @@ class TestProperties:
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qml.measure(0)
-        m0.measurements[0].id = "abc"
+        m0.measurements[0]._id = "abc"  # pylint: disable=protected-access
         m1 = qml.measure(1)
-        m1.measurements[0].id = "def"
+        m1.measurements[0]._id = "def"  # pylint: disable=protected-access
 
         mp1 = qml.sample(op=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
@@ -341,8 +341,8 @@ class TestProperties:
         m1 = qml.measure("b")
         m2 = qml.measure(0)
         m3 = qml.measure(1)
-        m2.measurements[0].id = m0.measurements[0].id
-        m3.measurements[0].id = m1.measurements[0].id
+        m2.measurements[0]._id = m0.measurements[0].id  # pylint: disable=protected-access
+        m3.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
 
         wire_map = {"a": 0, "b": 1}
 

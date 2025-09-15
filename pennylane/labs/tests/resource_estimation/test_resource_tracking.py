@@ -14,11 +14,15 @@
 """
 Test the core resource tracking functionality.
 """
-import copy
 from collections import defaultdict
 
 import pytest
 
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -27,7 +31,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.resource_tracking import estimate_resources, resource_config
+from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate
 from pennylane.labs.resource_estimation.resources_base import Resources
 
 # pylint: disable= no-self-use, arguments-differ
@@ -48,7 +52,7 @@ class ResourceTestCNOT(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -67,7 +71,7 @@ class ResourceTestHadamard(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -86,7 +90,7 @@ class ResourceTestT(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         raise ResourcesNotDefined
 
 
@@ -105,7 +109,7 @@ class ResourceTestZ(ResourceOperator):
         return {}
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):
         t = resource_rep(ResourceTestT)
         return [GateCount(t, count=4)]
 
@@ -114,27 +118,24 @@ class ResourceTestRZ(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 1
-    resource_keys = {"epsilon"}
+    resource_keys = {"precision"}
 
-    def __init__(self, epsilon=None, wires=None) -> None:
-        self.epsilon = epsilon
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_rep(cls, epsilon=None):
-        return CompressedResourceOp(cls, 1, {"epsilon": epsilon})
+    def resource_rep(cls, precision=None):
+        return CompressedResourceOp(cls, 1, {"precision": precision})
 
     @property
     def resource_params(self):
-        return {"epsilon": self.epsilon}
+        return {"precision": self.precision}
 
     @classmethod
-    def default_resource_decomp(cls, epsilon, **kwargs):
-        if epsilon is None:
-            epsilon = kwargs["config"]["error_rz"]
-
+    def resource_decomp(cls, precision):
         t = resource_rep(ResourceTestT)
-        t_counts = round(1 / epsilon)
+        t_counts = round(1 / precision)
         return [GateCount(t, count=t_counts)]
 
 
@@ -157,7 +158,7 @@ class ResourceTestAlg1(ResourceOperator):
         return {"num_iter": self.num_iter}
 
     @classmethod
-    def default_resource_decomp(cls, num_iter, **kwargs):
+    def resource_decomp(cls, num_iter, **kwargs):
         cnot = resource_rep(ResourceTestCNOT)
         h = resource_rep(ResourceTestHadamard)
 
@@ -187,8 +188,8 @@ class ResourceTestAlg2(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def default_resource_decomp(cls, num_wires, **kwargs):
-        rz = resource_rep(ResourceTestRZ, {"epsilon": 1e-2})
+    def resource_decomp(cls, num_wires, **kwargs):
+        rz = resource_rep(ResourceTestRZ, {"precision": 1e-2})
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
         return [
@@ -197,6 +198,13 @@ class ResourceTestAlg2(ResourceOperator):
             GateCount(alg1, num_wires // 2),
             FreeWires(num_wires=num_wires),
         ]
+
+
+def mock_rotation_decomp(precision):
+    """A mock decomposition for rotation gates returning TestT gates for testing."""
+    t = resource_rep(ResourceTestT)
+    t_counts = round(1 / precision)
+    return [GateCount(t, count=t_counts)]
 
 
 class TestEstimateResources:
@@ -210,7 +218,7 @@ class TestEstimateResources:
                 ResourceTestHadamard(wires=[w])
             ResourceTestCNOT(wires=[0, 1])
             ResourceTestRZ(wires=[1])
-            ResourceTestRZ(epsilon=1e-2, wires=[2])
+            ResourceTestRZ(precision=1e-2, wires=[2])
             ResourceTestCNOT(wires=[3, 4])
             ResourceTestAlg1(num_iter=5, wires=[5, 6])
 
@@ -226,18 +234,20 @@ class TestEstimateResources:
         expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
-        computed_resources = estimate_resources(my_circuit, gate_set=gate_set)()
+        custom_config = ResourceConfig()
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": 1e-9}
+        computed_resources = estimate(my_circuit, gate_set=gate_set, config=custom_config)()
         assert computed_resources == expected_resources
 
     def test_estimate_resources_from_resource_operator(self):
         """Test that we can accurately obtain resources from qfunc"""
         op = ResourceTestAlg2(num_wires=4)
-        actual_resources = estimate_resources(op, gate_set={"TestRZ", "TestAlg1"})
+        actual_resources = estimate(op, gate_set={"TestRZ", "TestAlg1"})
 
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestRZ, {"epsilon": 1e-2}): 4,
+                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
                 resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
             },
         )
@@ -251,7 +261,7 @@ class TestEstimateResources:
         gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestRZ, {"epsilon": 1e-2}): 4,
+                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
                 resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
             },
         )
@@ -259,7 +269,7 @@ class TestEstimateResources:
         resources = Resources(qubit_manager=qubits, gate_types=gates)
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
-        actual_resources = estimate_resources(resources, gate_set=gate_set)
+        actual_resources = estimate(resources, gate_set=gate_set)
 
         expected_gates = defaultdict(
             int,
@@ -290,7 +300,7 @@ class TestEstimateResources:
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(ResourceTestRZ, {"epsilon": 1e-2}): 4,
+                            resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
                             resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
                             resource_rep(ResourceTestZ): 4,
                         },
@@ -321,17 +331,17 @@ class TestEstimateResources:
             for w in range(num_wires):
                 ResourceTestZ(wires=w)
 
-        actual_resources = estimate_resources(my_circ, gate_set=gate_set)(num_wires=4)
+        actual_resources = estimate(my_circ, gate_set=gate_set)(num_wires=4)
         assert actual_resources == expected_resources
 
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
-        custom_config = copy.copy(resource_config)
-        custom_config["error_rz"] = error_val
+        custom_config = ResourceConfig()
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": error_val}
 
-        op = ResourceTestRZ()  # don't specify epsilon
-        computed_resources = estimate_resources(op, gate_set={"TestT"}, config=custom_config)
+        op = ResourceTestRZ()  # don't specify precision
+        computed_resources = estimate(op, gate_set={"TestT"}, config=custom_config)
 
         expected_resources = Resources(
             qubit_manager=QubitManager(work_wires=0, algo_wires=1),
@@ -341,16 +351,26 @@ class TestEstimateResources:
         assert computed_resources == expected_resources
 
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
-    def test_varying_single_qubit_rotation_error(self, error_val):
-        """Test that setting the single_qubit_rotation_error correctly updates the resources"""
-        op = ResourceTestRZ()  # don't specify epsilon
-        computed_resources = estimate_resources(
-            op, gate_set={"TestT"}, single_qubit_rotation_error=error_val
-        )
+    def test_varying_single_qubit_rotation_precision(self, error_val):
+        """Test that setting the single_qubit_rotation_precision correctly updates the resources"""
+        custom_config = ResourceConfig()
+        custom_config.set_single_qubit_rot_precision(error_val)
 
+        custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
+        custom_config.set_decomp(ResourceRY, mock_rotation_decomp)
+        custom_config.set_decomp(ResourceRZ, mock_rotation_decomp)
+
+        def my_circuit():
+            ResourceRX(wires=0)
+            ResourceRY(wires=1)
+            ResourceRZ(wires=2)
+
+        computed_resources = estimate(my_circuit, gate_set={"TestT"}, config=custom_config)()
+
+        expected_t_count = 3 * round(1 / error_val)
         expected_resources = Resources(
-            qubit_manager=QubitManager(work_wires=0, algo_wires=1),
-            gate_types=defaultdict(int, {resource_rep(ResourceTestT): round(1 / error_val)}),
+            qubit_manager=QubitManager(work_wires=0, algo_wires=3),
+            gate_types=defaultdict(int, {resource_rep(ResourceTestT): expected_t_count}),
         )
 
         assert computed_resources == expected_resources
