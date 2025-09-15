@@ -487,15 +487,16 @@ class TestSample:
             m_1 = qml.measure(wires=1)
             return qml.sample([m_0 + m_1])
 
-        if mcm_method != "deferred":
-            res = circuit(0.1, 0.2)
-            assert res.shape == (10, 1)  # 10 samples of a single observable
-        else:
+        if mcm_method == "deferred":
             with pytest.raises(
                 ValueError,
                 match="Only sequences of single MeasurementValues can be passed with the op argument",
             ):
                 _ = circuit(0.1, 0.2)
+            return
+
+        res = circuit(0.1, 0.2)
+        assert res.shape == (10, 1)  # 10 samples of a single observable
 
 
 @pytest.mark.jax
