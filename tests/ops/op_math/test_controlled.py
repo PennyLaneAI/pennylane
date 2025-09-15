@@ -1330,7 +1330,7 @@ class TestDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -1709,6 +1709,9 @@ custom_ctrl_ops = [
         [1, 2],
         qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 2, 0]),
     ),
+    (qml.Barrier(), [1], qml.Barrier()),
+    (qml.Barrier(wires=(0, 1)), [2], qml.Barrier(wires=(0, 1))),
+    (qml.Barrier(wires=(0, 1), only_visual=True), [2], qml.Barrier(wires=(0, 1), only_visual=True)),
 ]
 
 
@@ -1739,6 +1742,18 @@ class TestCtrl:
         with pytest.raises(ValueError, match=r"<class 'int'> is not an Operator or callable."):
             qml.ctrl(1, control=2)
 
+    def test_ctrl_barrier_queueing(self):
+        """Test that a ctrl Barrier is queued where the ctrl happens."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.Barrier()
+            qml.X(0)
+            qml.ctrl(op, [1])
+
+        assert len(q.queue) == 2
+        assert q.queue[0] == qml.X(0)
+        assert q.queue[1] == qml.Barrier()
+
     @pytest.mark.parametrize("op, ctrl_wires, expected_op", custom_ctrl_ops)
     def test_custom_controlled_ops(self, op, ctrl_wires, expected_op):
         """Tests custom controlled operations are handled correctly."""
@@ -1748,8 +1763,8 @@ class TestCtrl:
     def test_custom_controlled_ops_ctrl_on_zero(self, op, ctrl_wires, _):
         """Tests custom controlled ops with control on zero are handled correctly."""
 
-        if isinstance(op, qml.QubitUnitary):
-            pytest.skip("ControlledQubitUnitary can accept any control values.")
+        if isinstance(op, (qml.QubitUnitary, qml.Barrier)):
+            pytest.skip("ControlledQubitUnitary and Barrier can accept any control values.")
 
         ctrl_values = [False] * len(ctrl_wires)
 
@@ -1771,8 +1786,10 @@ class TestCtrl:
 
         ctrl_wires = ctrl_wires + ["a", "b", "c"]
 
-        if isinstance(op, qml.QubitUnitary):
-            pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
+        if isinstance(op, (qml.QubitUnitary, qml.Barrier)):
+            pytest.skip(
+                "ControlledQubitUnitary and Barrier can accept any number of control wires."
+            )
         elif isinstance(op, Controlled):
             expected = Controlled(
                 op.base,
@@ -1809,8 +1826,8 @@ class TestCtrl:
     def test_nested_custom_controls(self, op, ctrl_wires, ctrl_op):
         """Tests that nested controls of custom controlled ops are flattened correctly."""
 
-        if isinstance(ctrl_op, qml.ControlledQubitUnitary):
-            pytest.skip("ControlledQubitUnitary has its own logic")
+        if isinstance(ctrl_op, (qml.ControlledQubitUnitary, qml.Barrier)):
+            pytest.skip("ControlledQubitUnitary and Barrier have their own logic")
 
         expected_base = op.base if isinstance(op, Controlled) else op
         base_ctrl_wires = (
@@ -2299,7 +2316,7 @@ class TestCtrlTransformDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 

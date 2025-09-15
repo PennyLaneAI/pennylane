@@ -126,7 +126,7 @@ def _get_interface(qnode, args, kwargs) -> str:
     if qnode.interface == "auto":
         interface = math.get_interface(*args, *list(kwargs.values()))
         try:
-            interface = math.get_canonical_interface_name(interface).value
+            interface = math.Interface(interface).value
         except ValueError:
             interface = "numpy"
     else:

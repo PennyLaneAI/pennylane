@@ -16,9 +16,12 @@
 from .compiler import Compiler
 from .jax_utils import QuantumParser
 from .transforms.api import compiler_transform
+from .visualization import QMLCollector
+
 
 __all__ = [
     "Compiler",
     "compiler_transform",
     "QuantumParser",
+    "QMLCollector",
 ]
