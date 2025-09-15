@@ -126,6 +126,10 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
+  [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
+  [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
+
 <h3>Improvements 🛠</h3>
 
 * The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
