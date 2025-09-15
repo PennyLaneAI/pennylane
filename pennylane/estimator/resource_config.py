@@ -91,18 +91,17 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            from pennylane.labs.resource_estimation import ResourceConfig
-            from pennylane.labs.resource_estimation.templates import ResourceSelectPauliRot
+            import pennylane.estimator as qre
 
-            config = ResourceConfig()
+            config = qre.ResourceConfig()
 
             # Check the default precision
-            default = config.resource_op_precisions[ResourceSelectPauliRot]['precision']
+            default = config.resource_op_precisions[qre.ResourceSelectPauliRot]['precision']
             print(f"Default precision for SelectPauliRot: {default}")
 
             # Set a new precision
-            config.set_precision(ResourceSelectPauliRot, precision=1e-5)
-            new = config.resource_op_precisions[ResourceSelectPauliRot]['precision']
+            config.set_precision(qre.ResourceSelectPauliRot, precision=1e-5)
+            new = config.resource_op_precisions[qre.ResourceSelectPauliRot]['precision']
             print(f"New precision for SelectPauliRot: {new}")
 
         .. code-block:: pycon
@@ -141,12 +140,12 @@ class ResourceConfig:
         affects the number of gates required.
 
         This method updates the ``precision`` value for the following operators:
-        - :class:`~.ResourceRX`
-        - :class:`~.ResourceRY`
-        - :class:`~.ResourceRZ`
-        - :class:`~.ResourceCRX`
-        - :class:`~.ResourceCRY`
-        - :class:`~.ResourceCRZ`
+        - :class:`~.RX`
+        - :class:`~.RY`
+        - :class:`~.RZ`
+        - :class:`~.CRX`
+        - :class:`~.CRY`
+        - :class:`~.CRZ`
 
         Args:
             precision (float): The desired synthesis precision tolerance. A smaller
@@ -160,14 +159,13 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            from pennylane.labs.resource_estimation import ResourceConfig
-            from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import ResourceRX
+            import pennylane.estimator as qre
 
-            config = ResourceConfig()
-            print(f"Default RX precision: {config.resource_op_precisions[ResourceRX]['precision']}")
+            config = qre.ResourceConfig()
+            print(f"Default RX precision: {config.resource_op_precisions[qre.ResourceRX]['precision']}")
 
             config.set_single_qubit_rot_precision(1e-5)
-            print(f"Updated RX precision: {config.resource_op_precisions[ResourceRX]['precision']}")
+            print(f"Updated RX precision: {config.resource_op_precisions[qre.ResourceRX]['precision']}")
 
         .. code-block:: pycon
 
@@ -205,16 +203,16 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            from pennylane.labs import resource_estimation as plre
+            import pennylane.estimator as qre
 
             def custom_res_decomp(**kwargs):
-                h = plre.resource_rep(plre.ResourceHadamard)
-                s = plre.resource_rep(plre.ResourceS)
-                return [plre.GateCount(h, 1), plre.GateCount(s, 2)]
+                h = qre.resource_rep(qre.ResourceHadamard)
+                s = qre.resource_rep(qre.ResourceS)
+                return [qre.GateCount(h, 1), qre.GateCount(s, 2)]
 
         .. code-block:: pycon
 
-            >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
+            >>> print(qre.estimate_resources(qre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
             --- Resources: ---
             Total qubits: 1
             Total gates : 4
@@ -222,9 +220,9 @@ class ResourceConfig:
               clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
             Gate breakdown:
               {'Hadamard': 2, 'S': 2}
-            >>> config = plre.ResourceConfig()
-            >>> config.set_decomp(plre.ResourceX, custom_res_decomp)
-            >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}, config=config))
+            >>> config = qre.ResourceConfig()
+            >>> config.set_decomp(qre.ResourceX, custom_res_decomp)
+            >>> print(qre.estimate_resources(qre.ResourceX(), gate_set={"Hadamard", "Z", "S"}, config=config))
             --- Resources: ---
             Total qubits: 1
             Total gates : 3
