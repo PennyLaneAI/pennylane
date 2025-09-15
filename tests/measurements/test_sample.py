@@ -475,7 +475,7 @@ class TestSample:
 
     @pytest.mark.parametrize("mcm_method", ["one-shot", "deferred", "tree-traversal"])
     def test_sampling_combination_of_measurement_values(self, mcm_method):
-        """Test that qml.sample works with a combination of measurement values."""
+        """Test that qml.sample works on a linear combination of measurement values."""
 
         dev = qml.device("default.qubit")
 
