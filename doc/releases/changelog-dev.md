@@ -128,7 +128,6 @@
 
 * Added a new `ResourceConfig` class to store the configuration used for resource estimation,
   including operator precisions and custom decompositions.
-  [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
   [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
 
 <h3>Improvements 🛠</h3>
