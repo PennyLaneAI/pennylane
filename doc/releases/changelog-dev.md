@@ -906,7 +906,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * Restructure the `qml.compiler.python_compiler` submodule to be more cohesive.
-  [(#)]()
+  [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
 * Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
   [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
