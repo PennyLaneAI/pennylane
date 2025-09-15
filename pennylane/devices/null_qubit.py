@@ -230,6 +230,7 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires=None,

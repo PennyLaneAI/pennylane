@@ -100,6 +100,9 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict
 
 # NOTE: Some information is missing from specs_qjit compared to specs_qnode
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+
     from catalyst.jit import QJIT
 
     from ..devices import NullQubit
