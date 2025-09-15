@@ -13,14 +13,14 @@
 # limitations under the License.
 r"""Resource operators for non parametric single qubit operations."""
 
-from pennylane.estimator.resource_operator import (
+from pennylane.exceptions import ResourcesUndefinedError
+
+from ...resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.exceptions import ResourcesUndefinedError
-
 from ..identity import Identity
 
 # pylint: disable=arguments-differ
