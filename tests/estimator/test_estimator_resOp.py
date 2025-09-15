@@ -495,7 +495,7 @@ class TestResourceOperator:
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
         with pytest.raises(ResourcesUndefinedError):
-            X.controlled_resource_decomp(ctrl_num_ctrl_wires=2, ctrl_num_ctrl_values=0)
+            X.controlled_resource_decomp(num_ctrl_wires=2, num_ctrl_values=0)
 
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
