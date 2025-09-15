@@ -25,12 +25,17 @@ from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operator
+from pennylane.ops import __all__ as ops_all
+from pennylane.typing import Callable
+
+from ..dialects.quantum import (
     ComputationalBasisOp,
     CustomOp,
 )
-from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import (
     GlobalPhaseOp,
     HamiltonianOp,
     MeasureOp,
