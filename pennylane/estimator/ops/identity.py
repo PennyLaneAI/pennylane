@@ -237,7 +237,7 @@ class GlobalPhase(ResourceOperator):
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): The number of control qubits, that are controlled when
+            ctrl_num_ctrl_values (int): The number of control qubits that are controlled when
                 in the :math:`|0\rangle` state.
 
         Raises:
