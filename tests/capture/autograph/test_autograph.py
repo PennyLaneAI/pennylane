@@ -309,7 +309,7 @@ class TestIntegration:
             qml.adjoint(qml.X(0))
             return qml.expval(qml.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ)()
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_adjoint_of_operator_type(self):
@@ -320,7 +320,7 @@ class TestIntegration:
             qml.adjoint(qml.X)(0)
             return qml.expval(qml.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ)()
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_adjoint_no_argument(self):
@@ -333,7 +333,7 @@ class TestIntegration:
             return qml.probs(wires=0)
 
         with pytest.raises(ValueError, match="adjoint requires at least one argument"):
-            _ = qml.capture.make_plxpr(circ)()
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
 
     def test_adjoint_wrong_argument(self):
         """Test that passing an invalid argument to qml.adjoint raises an error."""
@@ -347,7 +347,7 @@ class TestIntegration:
         with pytest.raises(
             ValueError, match="First argument to adjoint must be callable or an Operation"
         ):
-            _ = qml.capture.make_plxpr(circ)()
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
 
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
@@ -387,7 +387,7 @@ class TestIntegration:
             return qml.probs(wires=0)
 
         with pytest.raises(ValueError, match="ctrl requires at least one argument"):
-            _ = qml.capture.make_plxpr(circ)()
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
 
     def test_ctrl_wrong_argument(self):
         """Test that passing an invalid argument to qml.ctrl raises an error."""
@@ -401,7 +401,7 @@ class TestIntegration:
         with pytest.raises(
             ValueError, match="First argument to ctrl must be callable or an Operation"
         ):
-            _ = qml.capture.make_plxpr(circ)()
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
 
     def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
