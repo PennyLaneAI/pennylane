@@ -13,13 +13,12 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
-from pennylane.exceptions import ResourcesUndefinedError
-
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
 )
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ
 
