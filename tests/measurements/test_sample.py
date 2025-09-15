@@ -411,7 +411,7 @@ class TestSample:
     def test_process_samples_dtype(self):
         """Test that the dtype argument changes the dtype of the returned samples."""
         samples = np.zeros(10, dtype="int64")
-        processed_samples = qml.sample().process_samples(samples, wire_order=[0], dtype="int8")
+        processed_samples = qml.sample(dtype="int8").process_samples(samples, wire_order=[0])
         assert processed_samples.dtype == np.dtype("int8")
 
     def test_sample_allowed_with_parameter_shift(self):

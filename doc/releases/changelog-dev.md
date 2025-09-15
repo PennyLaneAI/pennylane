@@ -3,9 +3,21 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.sample` function can now receive an optional `dtype` parameter 
-  which sets the type and precision of the samples returned by this measurement process.
+* All measurement processes inheriting from `SampleMeasurement` can now accept an optional `dtype`
+  which sets the type and precision of the samples returned by the measurement process.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
+  [(#8214)](https://github.com/PennyLaneAI/pennylane/pull/8214)
+  
+* The Resource estimation toolkit was upgraded and has migrated from
+  :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
+  
+  * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
+    classes were added to track auxiliary wires for resource estimation.
+    [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+  * The :class:`~.estimator.Resources` class was added as a container class for resources.
+    [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
+  * The test files were renamed to avoid the dual definition error with labs module.
+    [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
@@ -31,7 +43,7 @@
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
 
-* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
@@ -63,7 +75,7 @@
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
   [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
-* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
+* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
@@ -113,6 +125,23 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
+  one processed by the device.
+  [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)
+
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
+  with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
+* The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
+  to guard users from an incompatibility that currently exists between the two.
+  Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
+  [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
+
+* `qml.counts` can now be captured with program capture into plxpr. It still cannot be interpreted or executed
+  with program capture.
+  [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
 
 * `allocate` and `deallocate` can now be accessed as `qml.allocate` and `qml.deallocate`.
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
@@ -203,7 +232,7 @@
   Shots(total=123)
   ```
 
-* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
+* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`.
   Users can now use this when designing quantum circuits with experimental program capture enabled.
 
   ```python
@@ -227,7 +256,7 @@
   >>> circuit(jnp.pi)
   (Array(-1, dtype=float32),
    Array(-1, dtype=float32),
-   Array(-1, dtype=float32)) 
+   Array(-1, dtype=float32))
   ```
 
   [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
@@ -257,7 +286,7 @@
   >>> circuit(jnp.pi)
   (Array(0.99999994, dtype=float32),
    Array(0., dtype=float32),
-   Array(-0.99999994, dtype=float32)) 
+   Array(-0.99999994, dtype=float32))
   ```
 
   [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
@@ -312,9 +341,9 @@
 
   ```pycon
   print(node())
-  0: ─╭●─────●╮─┤     
-  1: ─├○─────○┤─┤     
-  2: ─╰──╭●───╯─┤     
+  0: ─╭●─────●╮─┤
+  1: ─├○─────○┤─┤
+  2: ─╰──╭●───╯─┤
   3: ────╰X─────┤  <Z>
   ```
 
@@ -329,12 +358,12 @@
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
   [(#8075)](https://github.com/PennyLaneAI/pennylane/pull/8075)
   [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
-  
-  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
+
+  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`,
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
-  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
-  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`, 
+  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`,
+  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`,
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`,
   :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, :class:`~.FABLE`,
   :class:`~.Qubitization`, and :class:`~.Superposition`
 
@@ -381,13 +410,18 @@
 
 <h4>Other improvements</h4>
 
+* Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module 
+  to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
+  [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+  [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
+
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
 
 * Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
   [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
 
-* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
+* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate
   representation of the program between multiple compilation passes.
   [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
 
@@ -402,7 +436,7 @@
 
 * An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
-  
+
 
   ```python
   @qml.qnode(qml.device("default.qubit"), mcm_method="deferred")
@@ -415,8 +449,8 @@
   ```pycon
   >>> print(qml.draw(circuit)())
     a: ──┤↗├────┤  <Z>
-  aux: ───║───X─┤     
-          ╚═══╝      
+  aux: ───║───X─┤
+          ╚═══╝
   ```
 
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
@@ -429,6 +463,7 @@
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -452,6 +487,7 @@
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass` has been added for the experimental xDSL Python compiler integration. This pass converts all gates in the MBQC gate set (`Hadamard`, `S`, `RZ`, `RotXZX` and `CNOT`) to the textbook MBQC formalism.
   [(#7870)](https://github.com/PennyLaneAI/pennylane/pull/7870)
+  [(#8254)](https://github.com/PennyLaneAI/pennylane/pull/8254)
 
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
@@ -501,6 +537,7 @@
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+  [(#8228)](https://github.com/PennyLaneAI/pennylane/pull/8228)
 
   * The :func:`~.transforms.decompose` transform now accepts a `num_available_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
@@ -521,6 +558,9 @@
   `GlobalPhase` is not assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Renamed several labs test file names to prevent conflict with names in PennyLane tests.
+  [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
 
 * Added concurrency support for `effective_hamiltonian` in labs.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
@@ -552,6 +592,12 @@
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
+* Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
+  [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
+
+* Renamed `estimate_resources` to `estimate` for concision. 
+  [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
+
 * Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
@@ -575,6 +621,13 @@
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
+* Added `__eq__` method to `ResourceOperator` to make comparison checks more intuitive.
+  [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
+
+* Added a mapper function `map_to_resource_ops` that maps PennyLane operators to ResourceOperator equivalents.
+  [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
+  [(#8162)](https://github.com/PennyLaneAI/pennylane/pull/8162)
+
 * Added state of the art resources for the `ResourceTrotterProduct` template.
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
@@ -582,6 +635,27 @@
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
 <h3>Breaking changes 💔</h3>
+
+* Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
+  If you would like to get the canonical interface you can simply use the `Enum` like,
+
+  ```pycon
+  >>> from pennylane.math.interface_utils import Interface
+  >>> Interface("torch")
+  Interface.TORCH
+  >>> Interface("jax-jit")
+  Interface.JAX_JIT
+  ```
+
+  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
+
+* :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing 
+  them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
+  input ``lcu``. 
+  [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
+
+* `MidMeasureMP` now inherits from `Operator` instead of `MeasurementProcess`.
+  [(#8166)](https://github.com/PennyLaneAI/pennylane/pull/8166)
 
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
   and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
@@ -606,7 +680,7 @@
   ```
 
   Before the change, we had:
-  
+
   ```pycon
   >>> qml.set_shots(c, shots=1)()
   0
@@ -626,12 +700,12 @@
   0
   ```
 
-* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`.
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
   [(#8046)](https://github.com/PennyLaneAI/pennylane/pull/8046)
 
-* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
-  This prevents the potential mutation of a global object. 
+* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly.
+  This prevents the potential mutation of a global object.
 
   This means that functions like,
   ```python
@@ -651,14 +725,14 @@
 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
-* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified.
   They now accept an operation or a list of operations as quantum unitaries.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
   In past versions of PennyLane, these templates required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
   respectively, along with separate parameters and wires.
 
-  With this release, each template has been improved to accept one or more operators as  unitaries. 
+  With this release, each template has been improved to accept one or more operators as  unitaries.
   The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
 
   ```python
@@ -732,7 +806,7 @@
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
   machine learning applications to benefit from enhanced support and features. Please consult the following demos for
-  more usage information: 
+  more usage information:
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
@@ -742,7 +816,7 @@
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
   [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are restored to their original state upon completing the decomposition.
@@ -784,7 +858,7 @@
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
   [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
-* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
@@ -821,11 +895,31 @@
   Instead, these functions should be imported from the `pennylane.noise` module.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
-* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
+* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
+  [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
+  [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
+
+* `qml.devices.preprocess.decompose` now works in graph decomposition mode
+  when a gateset is provided. `default.qubit` and `null.qubit` can now use
+  graph decomposition mode.
+  [(#8225)](https://github.com/PennyLaneAI/pennylane/pull/8225)
+
+* `DefaultQubit` now determines the `mcm_method` in `Device.setup_execution_config`,
+  making it easier to tell which mcm method will be used. This also allows `defer_measurements` and `dynamic_one_shot` to be applied at different
+  locations in the preprocessing program.
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
+
+* Remove usage of the `pytest.mark.capture` marker from tests in the `tests/python_compiler` directory.
+  [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
+
+* Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
+  [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
 
 * Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
   [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
@@ -849,10 +943,10 @@
 * A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.  
   [(#8105)](https://github.com/PennyLaneAI/pennylane/pull/8105)
 
-* The `autograph` keyword argument has been removed from the `QNode` constructor. 
+* The `autograph` keyword argument has been removed from the `QNode` constructor.
   To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
   [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
-  
+
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
@@ -969,10 +1063,25 @@
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
+* The `mbqc.graph_state_prep` operation is integrated into the `convert_to_mbqc_formalism` pass.
+  [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
+
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
 
+* Add a `mbqc` submodule to the `python_compiler` module for common utils of MBQC workflows.
+  [(#8219)](https://github.com/PennyLaneAI/pennylane/pull/8219)
+
+* Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
+  [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
+
+* Add nightly RC builds script to `.github/workflows`.
+  [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
+  
 <h3>Documentation 📝</h3>
+
+* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
+  [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
@@ -1007,10 +1116,24 @@
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
+* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted 
+  to `torch.float64`.
+  [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
+
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* Parameter batching now works for Z-basis gates when executing with `default.mixed`. 
+  [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
+
+* `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
+  in the circuit with the `ctrl` happens.
+  [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
+
+* JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
+  [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
 
 * Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
   [(#8190)](https://github.com/PennyLaneAI/pennylane/pull/8190)
@@ -1102,6 +1225,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
@@ -1114,14 +1238,17 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares
 Erick Ochoa,
+Lee James O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,

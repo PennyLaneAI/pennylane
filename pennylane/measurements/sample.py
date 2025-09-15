@@ -131,16 +131,10 @@ class SampleMP(SampleMeasurement):
         wire_order: WiresLike,
         shot_range: None | tuple[int, ...] = None,
         bin_size: None | int = None,
-        dtype=None,
     ) -> TensorLike:
 
         return process_raw_samples(
-            self,
-            samples,
-            wire_order,
-            shot_range=shot_range,
-            bin_size=bin_size,
-            dtype=self._dtype if dtype is None else dtype,
+            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size, dtype=self._dtype
         )
 
     def process_counts(self, counts: dict, wire_order: WiresLike) -> np.ndarray:
@@ -338,7 +332,7 @@ def sample(
             when the ``op`` argument does not contain mid-circuit measurements. Otherwise, the ``dtype`` argument is ignored.
 
             By default, the samples will be returned as floating point numbers if an observable is provided,
-            and as integers if no observable is provided. The ``dtype`` argument can be used to override this default behavior,
+            and as integers if no observable is provided. The ``dtype`` argument can be used to specify further details,
             and set the precision to any valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
 
             We show two examples below using the JAX and PyTorch interfaces.
