@@ -411,6 +411,10 @@ class TestSample:
     @pytest.mark.parametrize(
         "coeffs, dtype",
         [
+            (1, "int8"),
+            (1, "int16"),
+            (1, "int32"),
+            (1, "int64"),
             (1, "float16"),
             (1, "float32"),
             (1, "float64"),
