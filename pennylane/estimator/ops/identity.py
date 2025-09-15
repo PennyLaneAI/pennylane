@@ -20,8 +20,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=arguments-differ,no-self-use,too-many-ancestors
-# pylint: disable=unused-argument
+# pylint: disable=arguments-differ
 
 
 class Identity(ResourceOperator):

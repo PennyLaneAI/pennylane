@@ -23,7 +23,7 @@ from pennylane.exceptions import ResourcesUndefinedError
 
 from ..identity import Identity
 
-# pylint: disable=arguments-differ, unused-argument, no-name-in-module
+# pylint: disable=arguments-differ
 
 
 class Hadamard(ResourceOperator):
