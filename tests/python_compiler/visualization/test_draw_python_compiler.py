@@ -21,7 +21,7 @@ pytestmark = pytest.mark.external
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
-
+# pylint: disable=wrong-import-position
 import jax
 
 # pylint: disable=wrong-import-position

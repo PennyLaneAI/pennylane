@@ -43,9 +43,7 @@ from pennylane.operation import Operator
 
 from .xdsl_conversion import (
     dispatch_wires_extract,
-    xdsl_to_qml_meas,
-    xdsl_to_qml_measure_op,
-    xdsl_to_qml_obs_op,
+    xdsl_to_qml_measurement,
     xdsl_to_qml_op,
 )
 
@@ -74,16 +72,16 @@ class QMLCollector:
 
     @handle.register
     def _(self, xdsl_meas: StateOp) -> MeasurementProcess:
-        return xdsl_to_qml_meas(xdsl_meas)
+        return xdsl_to_qml_measurement(xdsl_meas)
 
     @handle.register
     def _(self, xdsl_meas_op: ExpvalOp | VarianceOp | ProbsOp | SampleOp) -> MeasurementProcess:
         obs_op = xdsl_meas_op.obs.owner
-        return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_obs_op(obs_op))
+        return xdsl_to_qml_measurement(xdsl_meas_op, xdsl_to_qml_measurement(obs_op))
 
     @handle.register
     def _(self, xdsl_measure: MeasureOp) -> MeasurementProcess:
-        return xdsl_to_qml_measure_op(xdsl_measure)
+        return xdsl_to_qml_measurement(xdsl_measure)
 
     ############################################################
     ### Operators
