@@ -45,6 +45,12 @@ class Identity(ResourceOperator):
 
     num_wires = 1
 
+    def __init__(self, wires=None):
+        """Initializes the ``Identity`` operator."""
+        if wires is not None and not isinstance(wires, int):
+            self.num_wires = len(wires)
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
