@@ -1128,6 +1128,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Return `dtype` of `qml.samples` when using `mcm_method="tree-traversal"` is now of type `int` - consistent with other MCMs.
+  [(#8274)](https://github.com/PennyLaneAI/pennylane/pull/8274)
+
 * Parameter batching now works for Z-basis gates when executing with `default.mixed`. 
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
 
