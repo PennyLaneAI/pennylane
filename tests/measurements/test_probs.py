@@ -160,7 +160,7 @@ class TestProbs:
     def test_process_samples_dtype(self):
         """Test that the dtype argument changes the dtype of the returned samples."""
         samples = np.zeros((10, 10), dtype="int64")
-        processed_samples = qml.probs().process_samples(samples, wire_order=[0], dtype="float32")
+        processed_samples = qml.probs(dtype="float32").process_samples(samples, wire_order=[0])
         assert processed_samples.dtype == np.dtype("float32")
 
     @pytest.mark.all_interfaces

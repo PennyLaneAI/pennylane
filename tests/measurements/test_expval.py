@@ -98,8 +98,8 @@ class TestExpval:
         rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(dtype=dtype if dtype else "int64")
         obs = coeffs * qml.PauliZ(0)
-        expected = qml.expval(obs).process_samples(samples, [0, 1], dtype=dtype)
-        result = ExpectationMP(obs=obs).process_samples(samples, [0, 1], dtype=dtype)
+        expected = qml.expval(obs, dtype=dtype).process_samples(samples, [0, 1])
+        result = ExpectationMP(obs=obs, dtype=dtype).process_samples(samples, [0, 1])
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.all_interfaces

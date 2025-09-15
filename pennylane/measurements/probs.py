@@ -47,6 +47,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        dtype: The dtype of the samples returned by this measurement process.
     """
 
     _shortname = "probs"
@@ -74,7 +75,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         wire_order: Wires,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
-        dtype=None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
@@ -101,7 +101,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         new_bin_size = bin_size or samples.shape[-2]
         new_shape = (-1, new_bin_size) if batch_size is None else (batch_size, -1, new_bin_size)
         indices = indices.reshape(new_shape)
-        prob = self._count_samples(indices, batch_size, dim, dtype=dtype or self._dtype)
+        prob = self._count_samples(indices, batch_size, dim, dtype=self._dtype)
         return math.squeeze(prob) if bin_size is None else prob
 
     def process_state(self, state: TensorLike, wire_order: Wires):
@@ -151,7 +151,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         # constructs the probability vector
         # converts outcomes from binary strings to integers (base 10 representation)
-        prob_vector = math.zeros((dim), dtype="float64")
+        prob_vector = math.zeros((dim), dtype=self._dtype if self._dtype is not None else "float64")
         for outcome, occurrence in mapped_counts.items():
             prob_vector[int(outcome, base=2)] = occurrence / num_shots
 
@@ -372,4 +372,4 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
             UserWarning,
         )
 
-    return ProbabilityMP(obs=op, wires=wires)
+    return ProbabilityMP(obs=op, wires=wires, dtype=dtype)

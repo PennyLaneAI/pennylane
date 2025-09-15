@@ -64,23 +64,20 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         wire_order: WiresLike,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
-        dtype=None,
     ):
         if not self.wires:
             return math.squeeze(self.eigvals())
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
+
         with QueuingManager.stop_recording():
             samples = SampleMP(
                 obs=op,
                 eigvals=self._eigvals,
                 wires=self.wires if self._eigvals is not None else None,
+                dtype=self._dtype,
             ).process_samples(
-                samples=samples,
-                wire_order=wire_order,
-                shot_range=shot_range,
-                bin_size=bin_size,
-                dtype=self._dtype if dtype is None else dtype,
+                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
