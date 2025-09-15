@@ -81,16 +81,26 @@ class TestExpval:
         result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
         assert qml.math.allclose(result, expected * coeffs)
 
-    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
-    def test_process_samples_dtype(self, coeffs, seed):
+    @pytest.mark.parametrize(
+        "coeffs, dtype",
+        [
+            (1, "float16"),
+            (1, "float32"),
+            (1, "float64"),
+            (1j, "complex128"),
+            (1 + 1j, "complex128"),
+        ],
+    )
+    def test_process_samples_dtype(self, coeffs, seed, dtype):
         """Test that the return type of the process_samples function is correct"""
         shots = 100
         rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         obs = coeffs * qml.PauliZ(0)
-        expected = qml.expval(obs).process_samples(samples, [0, 1])
-        result = ExpectationMP(obs=obs).process_samples(samples, [0, 1])
+        expected = qml.expval(obs, dtype=dtype).process_samples(samples, [0, 1])
+        result = ExpectationMP(obs=obs, dtype=dtype).process_samples(samples, [0, 1])
         assert qml.math.allclose(result, expected)
+        assert result.dtype == np.dtype(dtype)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
@@ -98,8 +108,8 @@ class TestExpval:
         "dtype",
         ["float16", "float32", "float64"],
     )
-    def test_sample_dtype(self, interface, dtype):
-        """Test that the dtype argument changes the dtype of the returned samples"""
+    def test_dtype(self, interface, dtype):
+        """Test that the dtype argument changes the dtype of the returned expectation value."""
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
@@ -107,9 +117,9 @@ class TestExpval:
             qml.Hadamard(wires=0)
             return qml.expval(qml.Z(0), dtype=dtype)
 
-        samples = circuit()
-        assert qml.math.get_interface(samples) == interface
-        assert qml.math.get_dtype_name(samples) == dtype
+        expectation_value = circuit()
+        assert qml.math.get_interface(expectation_value) == interface
+        assert qml.math.get_dtype_name(expectation_value) == dtype
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])

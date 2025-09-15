@@ -158,10 +158,11 @@ class TestProbs:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_process_samples_dtype(self):
-        """Test that the dtype argument changes the dtype of the returned samples."""
+        """Test that the dtype argument changes the dtype of the returned probabilities when
+        processing samples."""
         samples = np.zeros((10, 10), dtype="int64")
-        processed_samples = qml.probs(dtype="float32").process_samples(samples, wire_order=[0])
-        assert processed_samples.dtype == np.dtype("float32")
+        processed_probs = qml.probs(dtype="float32").process_samples(samples, wire_order=[0])
+        assert processed_probs.dtype == np.dtype("float32")
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
@@ -328,23 +329,19 @@ class TestProbs:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "jax"])
-    @pytest.mark.parametrize(
-        "dtype, obs",
-        [("float16", qml.Z(0)), ("float32", qml.Z(0)), ("float64", qml.Z(0))],
-    )
-    def test_sample_dtype_combined(self, interface, dtype, obs):
-        """Test that the dtype argument changes the dtype of the returned samples,
-        both with and without an observable."""
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])
+    def test_sample_dtype_combined(self, interface, dtype):
+        """Test that the dtype argument changes the dtype of the returned probabilities."""
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
         def circuit():
             qml.Hadamard(wires=0)
-            return qml.probs(op=obs, dtype=dtype) if obs is not None else qml.probs(dtype=dtype)
+            return qml.probs(dtype=dtype)
 
-        samples = circuit()
-        assert qml.math.get_interface(samples) == interface
-        assert qml.math.get_dtype_name(samples) == dtype
+        probabilities = circuit()
+        assert qml.math.get_interface(probabilities) == interface
+        assert qml.math.get_dtype_name(probabilities) == dtype
 
     def test_integration(self, tol):
         """Test the probability is correct for a known state preparation."""

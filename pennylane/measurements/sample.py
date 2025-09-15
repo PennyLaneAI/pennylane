@@ -133,6 +133,8 @@ class SampleMP(SampleMeasurement):
         bin_size: None | int = None,
     ) -> TensorLike:
 
+        print(f"self._dtype: {self._dtype}")
+
         return process_raw_samples(
             self, samples, wire_order, shot_range=shot_range, bin_size=bin_size, dtype=self._dtype
         )

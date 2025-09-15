@@ -127,7 +127,8 @@ class TestVar:
         ["float16", "float32", "float64"],
     )
     def test_sample_dtype(self, interface, dtype):
-        """Test that the dtype argument changes the dtype of the returned samples"""
+        """Test that the dtype argument changes the dtype of the returned variance
+        when sampling is used."""
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
@@ -135,9 +136,18 @@ class TestVar:
             qml.Hadamard(wires=0)
             return qml.var(qml.Z(0), dtype=dtype)
 
-        samples = circuit()
-        assert qml.math.get_interface(samples) == interface
-        assert qml.math.get_dtype_name(samples) == dtype
+        variance = circuit()
+        assert qml.math.get_interface(variance) == interface
+        assert qml.math.get_dtype_name(variance) == dtype
+
+    def test_process_samples_dtype(self):
+        """Test that the dtype argument changes the dtype of the returned variance
+        when processing samples."""
+        samples = np.zeros((10, 10), dtype="int64")
+        processed_variance = qml.var(qml.X(0), dtype="float32").process_samples(
+            samples, wire_order=[0]
+        )
+        assert processed_variance.dtype == np.dtype("float32")
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])

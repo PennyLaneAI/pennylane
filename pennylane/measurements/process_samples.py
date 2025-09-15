@@ -89,7 +89,7 @@ def process_raw_samples(
         # Extract only the columns of the basis samples required based on ``wires``.
         powers_of_two = 2 ** math.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
-        indices = math.array(indices)  # Add np.array here for Jax support.
+        indices = math.array(indices, dtype=int)  # Add np.array here for Jax support.
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         if math.is_abstract(indices):

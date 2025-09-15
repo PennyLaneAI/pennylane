@@ -47,7 +47,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
-        dtype: The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the probabilities returned by this measurement process.
     """
 
     _shortname = "probs"
@@ -228,7 +228,7 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
         op (Operator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a ``MeasurementValue``
             corresponding to mid-circuit measurements.
-        dtype: The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the probabilities returned by this measurement process.
 
     Returns:
         ProbabilityMP: Measurement process instance
@@ -266,6 +266,8 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
     following example:
 
     .. code-block:: python3
+
+        import numpy as np
 
         H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
 
@@ -316,10 +318,10 @@ def probs(wires=None, op=None, dtype=None) -> ProbabilityMP:
             qml.Hadamard(0)
             return qml.probs(dtype="float32")
 
-    Executing this QNode, we see that the returned samples have the specified dtype:
+    Executing this QNode, we see that the returned probabilities have the specified dtype:
 
-    >>> samples = circuit()
-    >>> samples.dtype
+    >>> probs = circuit()
+    >>> probs.dtype
     torch.float32
     """
     if isinstance(op, MeasurementValue):

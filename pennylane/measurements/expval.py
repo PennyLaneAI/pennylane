@@ -43,7 +43,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
-        dtype: The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the expectation value returned by this measurement process.
     """
 
     _shortname = "expval"
@@ -166,17 +166,17 @@ def expval(
             qml.RX(x, wires=0)
             return qml.expval(qml.Y(0), dtype='float32')
 
-    Executing this QNode, we see that the returned samples have the specified dtype:
+    Executing this QNode, we see that the returned expectation value has the specified dtype:
 
-    >>> samples = circuit(0.5)
-    >>> samples.dtype
+    >>> expval = circuit(0.5)
+    >>> expval.dtype
     dtype('float32')
 
     Args:
         op (Union[Operator, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
-        dtype: The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the expected value returned by this measurement process.
 
     Returns:
         ExpectationMP: measurement process instance

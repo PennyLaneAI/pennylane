@@ -44,7 +44,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
-        dtype: The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the variance returned by this measurement process.
     """
 
     _shortname = "var"
@@ -132,7 +132,7 @@ def var(op: Operator | MeasurementValue, dtype=None) -> VarianceMP:
         op (Union[Operator, MeasurementValue]): a quantum observable object.
             To get variances for mid-circuit measurements, ``op`` should be a
             ``MeasurementValue``.
-        dtype: The dtype of the samples returned by this measurement process.
+        dtype: The dtype of the variance returned by this measurement process.
 
     Returns:
         VarianceMP: Measurement process instance
@@ -171,10 +171,10 @@ def var(op: Operator | MeasurementValue, dtype=None) -> VarianceMP:
             qml.RX(x, wires=0)
             return qml.var(qml.Y(0), dtype='float32')
 
-    Executing this QNode, we see that the returned samples have the specified dtype:
+    Executing this QNode, we see that the returned variance has the specified dtype:
 
-    >>> samples = circuit(0.5)
-    >>> samples.dtype
+    >>> var = circuit(0.5)
+    >>> var.dtype
     dtype('float32')
 
     """
