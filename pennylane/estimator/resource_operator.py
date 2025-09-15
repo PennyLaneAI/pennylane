@@ -172,7 +172,7 @@ class ResourceOperator(ABC):
                     return qre.CompressedResourceOp(cls, num_wires, params)
 
                 @classmethod
-                def resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
+                def resource_decomp(cls, num_wires):  # `resource_keys` are input
 
                     # Get compressed reps for each gate in the decomposition:
 
