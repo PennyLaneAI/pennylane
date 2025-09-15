@@ -24,6 +24,11 @@ from sys import version_info
 import numpy
 import scipy
 
+try:
+    from jax import __version__ as jax_version
+except ImportError:
+    jax_version = None
+
 
 def about():
     """
@@ -44,6 +49,7 @@ def about():
     )
     print(f"Numpy version:           {numpy.__version__}")
     print(f"Scipy version:           {scipy.__version__}")
+    print(f"Jax version:             {jax_version}")
 
     print("Installed devices:")
 
