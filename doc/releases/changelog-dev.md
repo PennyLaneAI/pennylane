@@ -133,6 +133,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
+  [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
+
 * The `QNode` primitive in the experimental program capture now captures the unprocessed `ExecutionConfig`, instead of
   one processed by the device.
   [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)
@@ -1132,6 +1135,10 @@
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* Autograph will now be correctly applied to the wrapped functions of :func:`~pennylane.adjoint`
+  and :func:`~pennylane.ctrl`.
+  [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
 
 * Parameter batching now works for Z-basis gates when executing with `default.mixed`. 
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
