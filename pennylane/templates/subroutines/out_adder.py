@@ -286,11 +286,7 @@ class OutAdder(Operation):
 
 
 def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
-    if mod != 2**num_output_wires and mod is not None:
-        qft_wires = 1 + num_output_wires
-    else:
-        qft_wires = num_output_wires
-
+    qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
     target_resources = defaultdict(int)
     target_resources[
         resource_rep(
@@ -309,14 +305,11 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
         )
     ] += 1
 
-    params = {
-        "compute_op_params": {"num_wires": qft_wires},
-        "target_op_params": {
-            "resources": dict(target_resources),
-        },
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(QFT, num_wires=qft_wires), resource_rep(Prod, resources=target_resources)
+        ): 1
     }
-
-    return {change_op_basis_resource_rep(QFT, Prod, params=params): 1}
 
 
 # pylint: disable=no-value-for-parameter

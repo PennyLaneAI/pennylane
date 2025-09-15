@@ -19,6 +19,7 @@ from pennylane.decomposition import (
     change_op_basis_resource_rep,
     register_resources,
 )
+from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops.op_math import change_op_basis
 from pennylane.wires import Wires, WiresLike
@@ -219,19 +220,12 @@ class Adder(Operation):
 
 
 def _adder_decomposition_resources(num_x_wires, mod) -> dict:
-
-    if mod == 2**num_x_wires:
-        qft_wires = num_x_wires
-    else:
-        qft_wires = 1 + num_x_wires
-
-    params = {
-        "compute_op_params": {"num_wires": qft_wires},
-        "target_op_params": {"num_x_wires": qft_wires, "mod": mod},
-        "uncompute_op_params": {"num_wires": qft_wires},
-    }
+    qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
-        change_op_basis_resource_rep(QFT, PhaseAdder, params=params): 1,
+        change_op_basis_resource_rep(
+            resource_rep(QFT, num_wires=qft_wires),
+            resource_rep(PhaseAdder, num_wires=qft_wires, mod=mod),
+        ): 1,
     }
 
 

@@ -19,6 +19,7 @@ from pennylane.decomposition import (
     change_op_basis_resource_rep,
     register_resources,
 )
+from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import change_op_basis
 from pennylane.wires import Wires, WiresLike
@@ -299,26 +300,22 @@ class OutMultiplier(Operation):
 def _out_multiplier_decomposition_resources(
     num_output_wires, num_x_wires, num_y_wires, mod
 ) -> dict:
-
-    if mod != 2**num_output_wires:
-        qft_wires = num_output_wires + 1
-    else:
-        qft_wires = num_output_wires
-
-    params = {
-        "compute_op_params": {"num_wires": qft_wires},
-        "target_op_params": {
-            "base_class": ControlledSequence,
-            "base_params": {
-                "base_class": PhaseAdder,
-                "base_params": {"num_x_wires": qft_wires, "mod": mod},
-                "num_control_wires": num_x_wires,
-            },
-            "num_control_wires": num_y_wires,
-        },
+    qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(QFT, num_wires=qft_wires),
+            resource_rep(
+                ControlledSequence,
+                base_class=ControlledSequence,
+                base_params={
+                    "base_class": PhaseAdder,
+                    "base_params": {"num_x_wires": qft_wires, "mod": mod},
+                    "num_control_wires": num_x_wires,
+                },
+                num_control_wires=num_y_wires,
+            ),
+        ): 1
     }
-
-    return {change_op_basis_resource_rep(QFT, ControlledSequence, params=params): 1}
 
 
 # pylint: disable=no-value-for-parameter

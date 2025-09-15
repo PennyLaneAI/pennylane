@@ -217,16 +217,11 @@ def _prepselprep_resources(op_reps, num_control):
     prod_reps = tuple(
         resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
-    params = {
-        "compute_op_params": {"num_wires": num_control},
-        "target_op_params": {
-            "op_reps": prod_reps,
-            "num_control_wires": num_control,
-            "partial": True,
-        },
-    }
     return {
-        change_op_basis_resource_rep(StatePrep, Select, params=params): 1,
+        change_op_basis_resource_rep(
+            resource_rep(StatePrep, num_wires=num_control),
+            resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control, partial=True),
+        ): 1,
     }
 
 

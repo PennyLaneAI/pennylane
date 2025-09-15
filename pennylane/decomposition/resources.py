@@ -286,18 +286,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     if issubclass(op_type, qml.ops.Pow):
         return pow_resource_rep(**params)
     if issubclass(op_type, qml.ops.ChangeOpBasis):
-        base_compute_op = params.pop("compute_op")
-        base_target_op = params.pop("target_op")
-        base_uncompute_op = params.pop("uncompute_op")
-        compute_op, compute_params = base_compute_op.op_type, base_compute_op.params
-        target_op, target_params = base_target_op.op_type, base_target_op.params
-        uncompute_op, uncompute_params = base_uncompute_op.op_type, base_uncompute_op.params
-        params = {
-            "compute_op_params": compute_params,
-            "target_op_params": target_params,
-            "uncompute_op_params": uncompute_params,
-        }
-        return change_op_basis_resource_rep(compute_op, target_op, uncompute_op, params)
+        return change_op_basis_resource_rep(**params)
     if op_type is qml.ops.ControlledOp:
         op_type = qml.ops.Controlled
     if op_type is qml.ops.Controlled:
@@ -419,39 +408,29 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
 
 
 def change_op_basis_resource_rep(
-    compute_op: type[Operator],
-    target_op: type[Operator],
-    uncompute_op: type[Operator] = None,
-    params: dict = None,
+    compute_op: type[Operator] | CompressedResourceOp,
+    target_op: type[Operator] | CompressedResourceOp,
+    uncompute_op: type[Operator] | CompressedResourceOp | None = None,
 ):
     """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern
     :class:`~.ChangeOpBasis` of operators.
 
     Args:
-        compute_op: the compute operator type
-        target_op: the target operator type
-        uncompute_op: the uncompute operator type
-        params: the resource params of the compute, target, and uncompute operators.
-           This is expected to have three keys: ``"compute_op_params"``, ``"target_op_params"``,
-           and ``"uncompute_op_params"``, with the values being their respective resource parameters
-           given as ``dict`` objects.
+        compute_op: the compressed resource representation of the compute operator
+        target_op: the compressed resource representation of target operator
+        uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    compute_op_resource_rep = resource_rep(compute_op, **params["compute_op_params"])
-    target_op_resource_rep = resource_rep(target_op, **params["target_op_params"])
-
-    uncompute_op_params = params.get("uncompute_op_params", params["compute_op_params"])
-    if uncompute_op is None:
-        uncompute_op_resource_rep = adjoint_resource_rep(compute_op, uncompute_op_params)
-    else:
-        uncompute_op_resource_rep = resource_rep(uncompute_op, **uncompute_op_params)
-
+    compute_op = auto_wrap(compute_op)
+    target_op = auto_wrap(target_op)
+    uncompute_op = uncompute_op or adjoint_resource_rep(compute_op.op_type, compute_op.params)
+    uncompute_op = auto_wrap(uncompute_op)
     return CompressedResourceOp(
         qml.ops.ChangeOpBasis,
         {
-            "compute_op": compute_op_resource_rep,
-            "target_op": target_op_resource_rep,
-            "uncompute_op": uncompute_op_resource_rep,
+            "compute_op": compute_op,
+            "target_op": target_op,
+            "uncompute_op": uncompute_op,
         },
     )
 
@@ -581,3 +560,21 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
+
+
+def auto_wrap(op_type):
+    """Conveniently wrap an operator type in a resource representation."""
+    if isinstance(op_type, CompressedResourceOp):
+        return op_type
+    if not issubclass(op_type, Operator):
+        raise TypeError(
+            "The keys of the dictionary returned by the resource function must be a subclass of "
+            "Operator or a CompressedResourceOp constructed with qml.resource_rep"
+        )
+    try:
+        return resource_rep(op_type)
+    except TypeError as e:
+        raise TypeError(
+            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
+            f"representation must be explicitly constructed using qml.resource_rep"
+        ) from e

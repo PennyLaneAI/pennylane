@@ -24,6 +24,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import adjoint_resource_rep
 from pennylane.operation import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -205,6 +206,26 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     resources[uncompute_op] += 1
 
     return resources
+
+
+def _adjoint_change_op_basis_resources(base_class, base_params):
+    resources = defaultdict(int)
+    resources[base_params["compute_op"]] += 1
+    resources[base_params["uncompute_op"]] += 1
+    target_op = base_params["target_op"]
+    resources[adjoint_resource_rep(target_op.op_type, target_op.params)] += 1
+    return resources
+
+
+# pylint: disable=protected-access
+@register_resources(_adjoint_change_op_basis_resources)
+def _adjoint_change_op_basis_decomp(*_, base, **__):
+    base.operands[2]._unflatten(*base.operands[2]._flatten())
+    adjoint(base.operands[1]._unflatten(*base.operands[1]._flatten()))
+    base.operands[0]._unflatten(*base.operands[0]._flatten())
+
+
+add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
 
 
 def _controlled_change_op_basis_resources(

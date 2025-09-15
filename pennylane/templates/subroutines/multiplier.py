@@ -259,44 +259,32 @@ def _multiplier_decomposition_resources(
     mod,
     num_work_wires,
 ) -> dict:
-    if mod != 2**num_x_wires:
-        num_wires_aux = num_work_wires - 1
-    else:
-        num_wires_aux = num_x_wires
-
-    # Base params for ControlledSequence
+    num_wires_aux = num_work_wires - 1 if mod != 2**num_x_wires else num_x_wires
     cs_base_params = {
         "base_class": PhaseAdder,
         "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
         "num_control_wires": num_x_wires,
     }
-
-    params = {
-        "compute_op_params": {
-            "compute_op": resource_rep(QFT, num_wires=num_wires_aux),
-            "target_op": resource_rep(ControlledSequence, **cs_base_params),
-            "uncompute_op": adjoint_resource_rep(QFT, base_params={"num_wires": num_wires_aux}),
-        },
-        "uncompute_op_params": {
-            "compute_op": resource_rep(QFT, num_wires=num_wires_aux),
-            "target_op": resource_rep(
-                Adjoint, base_class=ControlledSequence, base_params=cs_base_params
-            ),
-            "uncompute_op": adjoint_resource_rep(QFT, base_params={"num_wires": num_wires_aux}),
-        },
-    }
     if num_x_wires > 1:
-        params["target_op_params"] = {"resources": {resource_rep(SWAP): num_x_wires}}
-        resources = {
-            change_op_basis_resource_rep(ChangeOpBasis, Prod, ChangeOpBasis, params=params): 1,
-        }
-    else:
-        params["target_op_params"] = {}
-        resources = {
-            change_op_basis_resource_rep(ChangeOpBasis, SWAP, ChangeOpBasis, params=params): 1,
+        return {
+            change_op_basis_resource_rep(
+                change_op_basis_resource_rep(
+                    resource_rep(QFT, num_wires=num_wires_aux),
+                    resource_rep(ControlledSequence, **cs_base_params),
+                ),
+                resource_rep(Prod, resources={resource_rep(SWAP): num_x_wires}),
+            ): 1,
         }
 
-    return resources
+    return {
+        change_op_basis_resource_rep(
+            change_op_basis_resource_rep(
+                resource_rep(QFT, num_wires=num_wires_aux),
+                resource_rep(ControlledSequence, **cs_base_params),
+            ),
+            SWAP,
+        ): 1,
+    }
 
 
 @register_resources(_multiplier_decomposition_resources)
