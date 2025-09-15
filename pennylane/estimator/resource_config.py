@@ -139,13 +139,10 @@ class ResourceConfig:
         for compiling rotation gates into a discrete gate set, which in turn
         affects the number of gates required.
 
-        This method updates the ``precision`` value for the following operators:
-        - :class:`~.pennylane.estimator.RX`
-        - :class:`~.pennylane.estimator.RY`
-        - :class:`~.pennylane.estimator.RZ`
-        - :class:`~.pennylane.estimator.CRX`
-        - :class:`~.pennylane.estimator.CRY`
-        - :class:`~.pennylane.estimator.CRZ`
+        This method updates the ``precision`` value for the following operators:  
+        :class:`~.pennylane.estimator.RX`, :class:`~.pennylane.estimator.RY`,
+        :class:`~.pennylane.estimator.RZ`, :class:`~.pennylane.estimator.CRX`,
+        :class:`~.pennylane.estimator.CRY`, :class:`~.pennylane.estimator.CRZ`.
 
         Args:
             precision (float): The desired synthesis precision tolerance. A smaller
