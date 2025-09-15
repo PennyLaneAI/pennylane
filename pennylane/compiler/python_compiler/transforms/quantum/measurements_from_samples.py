@@ -43,8 +43,8 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.exceptions import CompileError
 
+from ...conversion import xdsl_module
 from ...dialects import quantum
-from ...jax_utils import xdsl_module
 from ...pass_api import compiler_transform
 
 
