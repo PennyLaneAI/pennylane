@@ -40,7 +40,7 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler.python_compiler import Compiler
 from pennylane.compiler.python_compiler.conversion import (
     mlir_from_docstring,
-    module,
+    mlir_module,
     xdsl_from_docstring,
 )
 from pennylane.compiler.python_compiler.dialects import transform
@@ -50,6 +50,10 @@ from pennylane.compiler.python_compiler.pass_api import (
     TransformInterpreterPass,
     available_passes,
     compiler_transform,
+)
+from pennylane.compiler.python_compiler.transforms import (
+    iterative_cancel_inverses_pass,
+    merge_rotations_pass,
 )
 
 
@@ -77,7 +81,7 @@ def test_compiler():
     and returns a valid
     """
 
-    @module
+    @mlir_module
     @jax.jit
     def identity(x):
         return x
@@ -443,8 +447,8 @@ class TestCallbackIntegration:
             print(module)
 
         @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @iterative_cancel_inverses_pass
+        @merge_rotations_pass
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
             qml.RX(0.1, 0)
