@@ -257,6 +257,8 @@ def _update_counts_from_compressed_res_op(
     Args:
         cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
         gate_counts_dict (dict): base dictionary to modify with the resource counts
+        wire_mngr (WireResourceManager): the `WireResourceManager` that tracks and manages the 
+            `zeroed`, `any_state`, and `algo_wires` wires.
         gate_set (set): the set of operations to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
         config (dict | None): additional parameters to specify the resources from an operator. Defaults to ResourceConfig.
