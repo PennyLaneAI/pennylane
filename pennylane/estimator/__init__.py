@@ -36,3 +36,5 @@ from .ops.qubit import (
     S,
     T,
 )
+
+from .resource_mapping import map_to_resource_op

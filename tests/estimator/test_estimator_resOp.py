@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.estimator.ops as qre_ops
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import (
     GateCount,
@@ -29,9 +30,7 @@ from pennylane.estimator.resource_operator import (
     _make_hashable,
     resource_rep,
 )
-
 from pennylane.exceptions import ResourcesUndefinedError
-
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
@@ -322,6 +321,12 @@ class TestResourceOperator:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
+
+    def test_eq_method(self):
+        """Test that the __eq__ method for the ResourceOperator is correct"""
+
+        assert qre_ops.X() == qre_ops.X()
+        assert qre_ops.SWAP() == qre_ops.SWAP()
 
     ops_to_queue = [
         Hadamard(wires=[0]),
