@@ -412,6 +412,9 @@
 * :func:`~.tape.plxpr_to_tape` now supports converting circuits containing dynamic wire allocation.
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
 
+* :func:`~.has_decomps` and :func:`~.list_decomps` now take operator instances as arguments
+  [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
