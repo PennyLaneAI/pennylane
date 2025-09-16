@@ -282,7 +282,7 @@ def _multiplier_decomposition_resources(
         change_op_basis_resource_rep(
             resource_rep(QFT, num_wires=num_wires_aux),
             resource_rep(ControlledSequence, **cs_base_params),
-        ): 2,
+        ): 1,
         SWAP: 1,
         change_op_basis_resource_rep(
             resource_rep(QFT, num_wires=num_wires_aux),
