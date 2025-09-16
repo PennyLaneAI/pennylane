@@ -19,7 +19,7 @@ import pytest
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import ResourceOperator
 
-# pylint: disable=protected-access, unused-argument, too-few-public-methods
+# pylint: disable=protected-access, too-few-public-methods
 
 
 class DummyOp(ResourceOperator):
@@ -28,6 +28,7 @@ class DummyOp(ResourceOperator):
     num_wires = 1
 
 
+# pylint: disable=unused-argument
 def dummy_decomp_func(**kwargs):
     """Dummy decomposition function for testing."""
     return []

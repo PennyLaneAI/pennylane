@@ -17,8 +17,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
-from .resource_operator import ResourceOperator
+if TYPE_CHECKING:
+    from pennylane.estimator.resource_operator import ResourceOperator
 
 
 class DecompositionType(StrEnum):
@@ -79,7 +81,7 @@ class ResourceConfig:
         Args:
             op_type (type[ResourceOperator]): the operator class for which
                 to set the precision
-            precision (float): The desired synthesis precision tolerance. A smaller
+            precision (float): The desired precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
                 increase the required gate counts. Must be greater than 0.
 
@@ -134,12 +136,12 @@ class ResourceConfig:
         r"""Sets the synthesis precision for all single-qubit rotation gates.
 
         This is a convenience method to update the synthesis precision tolerance
-        for all standard single-qubit rotation gates and their
-        controlled versions at once. The synthesis precision dictates the precision
+        for all standard single-qubit rotation gates (and their
+        controlled versions) at once. The synthesis precision dictates the precision
         for compiling rotation gates into a discrete gate set, which in turn
         affects the number of gates required.
 
-        This method updates the ``precision`` value for the following operators:  
+        This method updates the ``precision`` value for the following operators:
         :class:`~.pennylane.estimator.RX`, :class:`~.pennylane.estimator.RY`,
         :class:`~.pennylane.estimator.RZ`, :class:`~.pennylane.estimator.CRX`,
         :class:`~.pennylane.estimator.CRY`, :class:`~.pennylane.estimator.CRZ`.
@@ -200,7 +202,7 @@ class ResourceConfig:
 
         .. note::
 
-            The new decomposition function, ``decomp_func``, should have the same signature as the one it replaces.
+            The new decomposition function ``decomp_func`` should have the same signature as the one it replaces.
             Specifically, the signature should match the :code:`resource_keys` of the base resource
             operator class being overriden.
 
