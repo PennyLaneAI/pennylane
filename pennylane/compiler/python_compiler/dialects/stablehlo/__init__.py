@@ -84,10 +84,17 @@ from .reduction import (
     ReduceOp,
 )
 
+from .extensibility import (
+    CustomCallOp,
+)
+
 from .attributes import (
     GatherDimensionNumbers,
     ResultAccuracyModeAttr,
     ScatterDimensionNumbers,
+    CustomCallApiVersion,
+    CustomCallApiVersionAttr,
+    OutputOperandAlias,
 )
 
 # Import the main StableHLO dialect
@@ -147,8 +154,13 @@ __all__ = [
     "DynamicBroadcastInDimOp",
     # Reduction operations
     "ReduceOp",
+    # Extensibility operations
+    "CustomCallOp",
     # Attributes
     "GatherDimensionNumbers",
     "ResultAccuracyModeAttr",
     "ScatterDimensionNumbers",
+    "CustomCallApiVersion",
+    "CustomCallApiVersionAttr",
+    "OutputOperandAlias",
 ]
