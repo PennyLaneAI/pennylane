@@ -139,23 +139,27 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         # TODO: Warn that something has gone wrong here
         os.remove(_RESOURCE_TRACKING_FILEPATH)
 
-    # Execute on null.qubit with resource tracking
-    new_qjit(*args, **kwargs)
+    try:
+        # Execute on null.qubit with resource tracking
+        new_qjit(*args, **kwargs)
 
-    with open(_RESOURCE_TRACKING_FILEPATH, "r", encoding="utf-8") as f:
-        resource_data = json.load(f)
+        with open(_RESOURCE_TRACKING_FILEPATH, "r", encoding="utf-8") as f:
+            resource_data = json.load(f)
 
-    info["resources"] = Resources(
-        num_wires=resource_data["num_wires"],
-        num_gates=resource_data["num_gates"],
-        gate_types=defaultdict(int, resource_data["gate_types"]),
-        gate_sizes=defaultdict(int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}),
-        depth=resource_data["depth"],
-        shots=qjit.original_function.shots,  # TODO: Can this ever be overriden during compilation?
-    )
-
-    # print(resource_data)
-    os.remove(_RESOURCE_TRACKING_FILEPATH)
+        info["resources"] = Resources(
+            num_wires=resource_data["num_wires"],
+            num_gates=resource_data["num_gates"],
+            gate_types=defaultdict(int, resource_data["gate_types"]),
+            gate_sizes=defaultdict(
+                int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
+            ),
+            depth=resource_data["depth"],
+            shots=qjit.original_function.shots,  # TODO: Can this ever be overriden during compilation?
+        )
+    finally:
+        # Ensure we clean up the resource tracking file
+        if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
+            os.remove(_RESOURCE_TRACKING_FILEPATH)
 
     info["num_device_wires"] = len(original_device.wires)
     info["device_name"] = original_device.name
