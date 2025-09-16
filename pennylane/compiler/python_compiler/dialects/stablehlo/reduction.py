@@ -81,6 +81,7 @@ class ReduceOp(IRDLOperation):
     # pylint: disable=no-member
     # pylint: disable=too-many-branches
     def verify_(self):
+        """Verify the ReduceOp."""
         # Gather shaped operand/result types
         input_types = [op.type for op in self.inputs]
         init_types = [op.type for op in self.init_values]

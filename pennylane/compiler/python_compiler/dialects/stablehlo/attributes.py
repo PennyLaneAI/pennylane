@@ -354,6 +354,7 @@ class OutputOperandAlias(ParametrizedAttribute):
     operand_tuple_indices: ArrayAttr[IntegerAttr[I64]]
 
     def print_parameters(self, printer: Printer) -> None:
+        """Print the OutputOperandAlias attribute."""
         with printer.in_angle_brackets():
             with printer.indented():
                 printer.print_string("\noutput_tuple_indices = ")
@@ -370,6 +371,7 @@ class OutputOperandAlias(ParametrizedAttribute):
 
     @classmethod
     def parse_parameters(cls, parser: AttrParser):
+        """Parse the OutputOperandAlias attribute."""
         with parser.in_angle_brackets():
             output_tuple_indices = ArrayAttr([])
             operand_index = IntegerAttr(0, i64)

@@ -100,6 +100,7 @@ class CustomCallOp(IRDLOperation):
     # """
 
     def verify_(self) -> None:
+        """Verify the CustomCallOp."""
         # If both operand and result layout attributes are not specified then nothing to verify.
         if self.operand_layouts is None and self.result_layouts is None:
             return
