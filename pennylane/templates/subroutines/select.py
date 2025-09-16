@@ -753,10 +753,23 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
         return dict(resources)
 
     def _make_first_flipped_bits(c, i=0):
-        """Compute the pattern [c-1, c-2, c-1, c-3, c-1, c-2, c-1, c-4...] recursively."""
+        """Compute the pattern [c-1, c-2, c-1, c-3, c-1, c-2, c-1, c-4...] recursively.
+
+        For example, for ``c=4``, we get a first call (with ``i=0``) that produces
+        ``output =_make_first_flipped_bit(4, 0) = sub_0 + [0] + sub_0``, where
+        ``sub_0 = _make_first_flipped_bit(3, 1) = sub_1 + [1] + sub_1``, where
+        ``sub_1 = _make_first_flipped_bit(2, 2) = sub_2 + [2] + sub_2``, where
+        ``sub_2 = _make_first_flipped_bit(1, 3) = [3]``.
+
+        Overall this gives
+        ``sub_1 = [3, 2, 3]``
+        ``sub_0 = [3, 2, 3, 1, 3, 2, 3]``
+        ``output = [3, 2, 3, 1, 3, 2, 3, 0, 3, 2, 3, 1, 3, 2, 3]``.
+        """
         if c == 1:
             return [i]
-        return (sub := _make_first_flipped_bits(c - 1, i=i + 1)) + [i] + sub
+        sub = _make_first_flipped_bits(c - 1, i=i + 1)
+        return sub + [i] + sub
 
     # c-1 left elbows at the beginning and c-1-max(a,1) left elbows for each of the target
     # operators, except the last one, where a is the first flipped bit. Same for right elbows.
