@@ -20,8 +20,7 @@ import numpy as np
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import DoubleExcitation, OrbitalRotation
-
-from ..embeddings import BasisEmbedding
+from pennylane.templates.embeddings import BasisEmbedding
 
 
 class GateFabric(Operation):

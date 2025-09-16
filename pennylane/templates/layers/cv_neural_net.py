@@ -19,8 +19,7 @@ from pennylane import math
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access,arguments-differ
 from pennylane.operation import Operation
 from pennylane.ops.cv import Displacement, Kerr, Squeezing
-
-from ..subroutines import Interferometer
+from pennylane.templates.subroutines import Interferometer
 
 
 class CVNeuralNetLayers(Operation):
