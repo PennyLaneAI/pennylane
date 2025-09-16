@@ -330,7 +330,7 @@ def _ops_to_compressed_reps(
         List[CompressedResourceOp]: set of converted compressed resource ops
     """
     cmp_rep_ops = []
-    for op in ops:  # We are skipping measurement processes here.
+    for op in ops:  # Skipping measurement processes here
         if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
 
