@@ -23,48 +23,12 @@ from .resource_operator import (
     GateCount,
     ResourceOperator,
 )
-from .resources_base import Resources
+from .resources_base import Resources, DefaultGateSet
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=protected-access,too-many-arguments
-
-# user-friendly gateset for visual checks and initial compilation
-StandardGateSet = frozenset(
-    {
-        "X",
-        "Y",
-        "Z",
-        "Hadamard",
-        "SWAP",
-        "CNOT",
-        "S",
-        "T",
-        "Adjoint(S)",
-        "Adjoint(T)",
-        "Toffoli",
-        "RX",
-        "RY",
-        "RZ",
-        "PhaseShift",
-    }
-)
-
-# realistic gateset for useful compilation of circuits
-DefaultGateSet = frozenset(
-    {
-        "X",
-        "Y",
-        "Z",
-        "Hadamard",
-        "CNOT",
-        "S",
-        "T",
-        "Toffoli",
-    }
-)
-
 
 def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
     pass
