@@ -84,7 +84,7 @@ class PhaseShift(ResourceOperator):
     num_wires = 1
     resource_keys = {"precision"}
 
-    def __init__(self, precision=None, wires=None) -> None:
+    def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
         self.precision = precision
         super().__init__(wires=wires)
 
