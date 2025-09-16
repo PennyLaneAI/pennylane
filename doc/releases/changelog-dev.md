@@ -132,6 +132,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The JAX version is now included in :func:`pennylane.about`.
+  [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
+
 * Various decompositions of :class:`~.MultiControlledX` now utilize :class:`~.TemporaryAND` in
   place of :class:`~.Toffoli` gates, leading to cheaper decompositions.
   [(#8172)](https://github.com/PennyLaneAI/pennylane/pull/8172)
