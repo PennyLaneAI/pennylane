@@ -13,9 +13,9 @@
 # limitations under the License.
 """PennyLane-xDSL API for pattern rewriting."""
 
-from .wire_qubit_map import AbstractWire, WireQubitMap
+from .ssa_qubit_map import AbstractWire, SSAQubitMap
 
 __all__ = [
     "AbstractWire",
-    "WireQubitMap",
+    "SSAQubitMap",
 ]

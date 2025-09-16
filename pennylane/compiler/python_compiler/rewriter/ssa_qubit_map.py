@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""WireQubitMap class for a bidirectional map between wire labels and SSA qubits."""
+"""SSAQubitMap class for a bidirectional map between wire labels and SSA qubits."""
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -59,7 +59,7 @@ class AbstractWire:
 
 
 @dataclass
-class WireQubitMap:
+class SSAQubitMap:
     """Class to maintain two-way mapping between wire labels and SSA qubits."""
 
     wires: tuple[int, ...] | None = None
@@ -88,7 +88,7 @@ class WireQubitMap:
         # ``isinstance`` cannot handle.
         if not any(isa(obj, hint) for hint in self._valid_types):
             raise AssertionError(
-                f"{obj} is not a valid key or value for a WireQubitMap. Valid keys and values "
+                f"{obj} is not a valid key or value for a SSAQubitMap. Valid keys and values "
                 f"must be of one of the following types: {self._valid_types}."
             )
 
