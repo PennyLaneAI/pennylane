@@ -362,8 +362,8 @@ class TestIntegration:
         """Test that nested adjoint and ctrl successfully pass through autograph"""
 
         # Build the nested operator
-        op = func2(qml.X) if func2 is qml.adjoint else func2(qml.X, control=0)
-        final_op = func1(op) if func1 is qml.adjoint else func1(op, control=1)
+        op = func2(qml.X)
+        final_op = func1(op)
 
         @qml.qnode(qml.device("default.qubit", wires=3))
         def circ():
