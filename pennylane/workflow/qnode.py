@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
 
-def _convert_to_interface(result, interface: Interface):
+def _convert_to_interface(result: Result, interface: Interface) -> Result:
     """
     Recursively convert a result to the given interface.
     """
@@ -73,7 +73,9 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: QNode | None, diff_method=None, mcm_config=None
+    circuit: QNode | None,
+    diff_method: str | None = None,
+    mcm_config: qml.devices.MCMConfig | None = None,
 ) -> qml.devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
@@ -90,11 +92,11 @@ def _make_execution_config(
         gradient_method=diff_method,
         grad_on_execution=grad_on_execution,
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
-        mcm_config=mcm_config or qml.devices.MCMConfig(),
+        mcm_config=mcm_config,
     )
 
 
-def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) -> Result:
+def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: bool) -> Result:
 
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
@@ -203,7 +205,7 @@ class QNode:
     the quantum circuit.
 
     Args:
-        func (callable): a quantum function
+        func (Callable): a quantum function
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
@@ -534,7 +536,7 @@ class QNode:
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,
-    ):
+    ) -> None:
         self._init_args = locals()
         del self._init_args["self"]
 
@@ -801,7 +803,7 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    def _get_shots(self, kwargs: dict):
+    def _get_shots(self, kwargs: dict) -> Shots:
         """
         Note that this mutates kwargs to remove shots from it.
         """
@@ -890,7 +892,7 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-def qnode(device, **kwargs):
+def qnode(device, **kwargs) -> Callable:
     """Docstring will be updated below."""
     return functools.partial(QNode, device=device, **kwargs)
 
