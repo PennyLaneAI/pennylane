@@ -230,8 +230,10 @@ class Snapshot(Operation):
         measurement=None,
         shots: Literal["workflow"] | None | int | Sequence[int] = "workflow",
     ):
-        if tag and not isinstance(tag, (str, int)):
-            raise ValueError("Snapshot tags can only be of type 'str' or 'int'")
+        if tag is not None and not isinstance(tag, (str, int)):
+            # ints are validated in snapshot transform, as the snapshot
+            # transform adds int tags
+            raise ValueError("Snapshot tags can only be of type 'str'")
 
         if measurement is None:
             measurement = qml.state()

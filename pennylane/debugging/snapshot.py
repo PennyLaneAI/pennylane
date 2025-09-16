@@ -192,7 +192,8 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
             return qml.probs(0)
 
     If we use ``"one-shot"`` together with three shots, you can see that each snapshot has three
-    probabilities in a list.  Each entry corresponds to a different execution of the circuit.
+    probabilities in a list.  Each entry corresponds to a different execution of the circuit. Note that
+    postselection will not be applied on snapshots with ``"one-shot"``.
 
     >>> one_shot = qml.set_shots(c, 3).update(mcm_method="one-shot")
     >>> qml.snapshots(one_shot)(1.0)
@@ -253,6 +254,8 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     for op in tape.operations:
         if isinstance(op, Snapshot):
+            if isinstance(op.tag, int):
+                raise ValueError("User provided Snapshot tags can only be of type 'str'. Got int.")
             snapshot_tags.append(op.tag or len(new_tapes))
             meas_op = op.hyperparameters["measurement"]
             shots = (
@@ -291,6 +294,8 @@ def _add_snapshot_tags(tape):
         if isinstance(op, Snapshot):
             if op.tag is None:
                 new_ops.append(op.update_tag(num_snapshots))
+            elif isinstance(op.tag, int):
+                raise ValueError("User provided Snapshot tags can only be of type 'str'. Got int.")
             else:
                 new_ops.append(op)
             num_snapshots += 1
