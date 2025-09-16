@@ -461,13 +461,12 @@ def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
 def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     """Process the quantum function of a QNode to create a Jaxpr."""
 
-    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-    flat_fn = FlatFn(qfunc)
+    flat_fn = FlatFn(qnode.func)
 
     try:
         qfunc_jaxpr = jax.make_jaxpr(
             flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
-        )(*args)
+        )(*args, **kwargs)
     except (
         jax.errors.TracerArrayConversionError,
         jax.errors.TracerIntegerConversionError,
@@ -557,27 +556,27 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
     # we don't want to correctly compute the ``cache_key``.
-    dynamic_args, static_args = _split_static_args(args, qnode.static_argnums)
-    flat_dynamic_args, dynamic_args_struct = jax.tree_util.tree_flatten(dynamic_args)
-    flat_static_args = jax.tree_util.tree_leaves(static_args)
-    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
-    cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
 
-    if cached_value := qnode.capture_cache.get(cache_key, None):
-        qfunc_jaxpr, config, out_tree = cached_value
-    else:
-        config = construct_execution_config(
-            qnode, resolve=False
-        )()  # no need for args and kwargs as not resolving
+    dynamic_args, _ = _split_static_args(args, qnode.static_argnums)
+    flat_args = jax.tree_util.tree_leaves((dynamic_args, kwargs))
 
-        if abstracted_axes:
-            # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
-            # as the original dynamic arguments
-            abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
 
-        qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
+    config = construct_execution_config(
+        qnode, resolve=False
+    )()  # no need for args and kwargs as not resolving
 
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
+    if abstracted_axes:
+        if kwargs:
+            raise NotImplementedError(
+                "jax does not support dynamic shapes and keyword arguments together."
+            )
+        # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
+        # as the original dynamic arguments
+        struct = jax.tree_util.tree_structure(args)
+        abstracted_axes = jax.tree_util.tree_unflatten(struct, abstracted_axes)
+
+    qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
 
@@ -585,7 +584,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         *flat_shots,
         *qfunc_jaxpr.consts,
         *abstract_shapes,
-        *flat_dynamic_args,
+        *flat_args,
         shots_len=len(flat_shots),
         qnode=qnode,
         device=qnode.device,
