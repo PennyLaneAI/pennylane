@@ -30,7 +30,7 @@ from .collector import QMLCollector
 if TYPE_CHECKING:
     from xdsl.dialects.builtin import ModuleOp
 
-    from pennylane import QNode
+    from pennylane.workflow.qnode import QNode
     from pennylane.typing import Callable
 
 # TODO: This caching mechanism should be improved,
