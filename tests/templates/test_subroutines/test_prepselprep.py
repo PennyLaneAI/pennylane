@@ -357,7 +357,7 @@ class TestPrepSelPrep:
                 qml.ops.ChangeOpBasis,
                 compute_op=qml.resource_rep(qml.StatePrep, num_wires=2),
                 target_op=qml.resource_rep(
-                    qml.Select, op_reps=op_reps, num_control_wires=2, partial=True
+                    qml.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
                 ),
                 uncompute_op=qml.resource_rep(
                     qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
