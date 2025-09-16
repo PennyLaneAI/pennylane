@@ -38,6 +38,14 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~GateCount
 
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~estimate
+    ~resource_rep
 
 """
 
@@ -53,3 +61,5 @@ from .resource_operator import (
     GateCount,
     resource_rep,
 )
+
+from .resource_tracking import estimate
