@@ -161,13 +161,12 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
     if heuristic_resources:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        # assert all(op in gate_counts for op in actual_gate_counts)
-        pass
+        assert all(op in gate_counts for op in actual_gate_counts)
     else:
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        # assert (
-        #    non_zero_gate_counts == actual_gate_counts
-        # ), f"{non_zero_gate_counts} != {actual_gate_counts}"
+        assert (
+            non_zero_gate_counts == actual_gate_counts
+        ), f"{non_zero_gate_counts} != {actual_gate_counts}"
 
     # Add projector to the additional wires (work wires) on the tape
     work_wires = tape.wires - op.wires

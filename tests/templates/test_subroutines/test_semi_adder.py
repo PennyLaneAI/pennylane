@@ -38,7 +38,7 @@ def test_standard_validity_SemiAdder():
     y_wires = [4, 5, 6]
     work_wires = [7, 8]
     op = qml.SemiAdder(x_wires, y_wires, work_wires)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, heuristic_resources=True)
 
 
 class TestSemiAdder:

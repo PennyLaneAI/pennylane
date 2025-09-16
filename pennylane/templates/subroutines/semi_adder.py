@@ -348,7 +348,7 @@ def _cnot_ladder(wires):
     """
 
     alpha = [i for i in range(1, len(wires))]
-    adjoint(_L_alpha)(alpha, wires=wires)
+    adjoint(_L_alpha, lazy=False)(alpha, wires=wires)
 
 
 def _toffoli_ladder(wires):
@@ -358,7 +358,7 @@ def _toffoli_ladder(wires):
     """
 
     alpha = [i for i in range(2, len(wires), 2)]
-    return adjoint(_L_alpha)(alpha, wires=wires)
+    return adjoint(_L_alpha, lazy=False)(alpha, wires=wires)
 
 
 def _fanout_1(wires):
@@ -366,7 +366,7 @@ def _fanout_1(wires):
     Implements the operator presented in Definition 2: https://arxiv.org/pdf/2501.16802
     """
 
-    adjoint(_cnot_ladder)(wires[1:])
+    adjoint(_cnot_ladder, lazy=False)(wires[1:])
     _cnot_ladder(wires)
 
 
@@ -424,6 +424,7 @@ def _semiadder_log_depth_resources(num_y_wires):
     return {
         Toffoli: int(2.5 * num_y_wires),
         CNOT: int(num_y_wires * log2(num_y_wires)),
+        X: 2 * num_y_wires,
     }
 
 
@@ -446,7 +447,7 @@ def _semiadder_log_depth(x_wires, y_wires, **_):
     for i in range(1, len(wires_x)):
         CNOT(wires=[wires_x[i], wires_y[i]])
 
-    adjoint(_cnot_ladder)([*wires_x][1:])
+    adjoint(_cnot_ladder, lazy=False)([*wires_x][1:])
 
     temp_wires = [elem for par in zip(wires_x[:-1], wires_y[:-1]) for elem in par]
     temp_wires += [wires_x[-1]]
@@ -459,7 +460,7 @@ def _semiadder_log_depth(x_wires, y_wires, **_):
     for i in range(1, len(wires_y[:-1])):
         X(wires=wires_y[i])
 
-    adjoint(_toffoli_ladder)(temp_wires)
+    adjoint(_toffoli_ladder, lazy=False)(temp_wires)
 
     for i in range(1, len(wires_y[:-1])):
         X(wires=wires_y[i])
