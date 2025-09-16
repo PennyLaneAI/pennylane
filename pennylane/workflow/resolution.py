@@ -84,9 +84,8 @@ def _validate_jax_version() -> None:
 
 
 # pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph() -> (
-    bool
-):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+# TensorFlow tests were disabled during deprecation
+def _use_tensorflow_autograph() -> bool:  # pragma: no cover
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
         import tensorflow as tf
