@@ -187,7 +187,7 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False, pauli_tracker=True):
 
     else:
         postprocessing = null_postprocessing
-        ops_queue = get_new_ops(tape, wire_map)
+        ops_queue = get_new_ops(tape, wire_map, include_corrections_in_ops=not pauli_tracker)
         new_wires = [wire_map[w] for w in meas_wires]
         new_tape = tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
 
