@@ -62,30 +62,33 @@ def rz_phase_gradient(
     r"""Quantum function transform to decompose all instances of :class:`~RZ` gates into additions
     using a phase gradient resource state.
 
-    This method is described on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
-    and Figure 17a in `arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__ (a generalization to
-    multiplexed :class:`~RZ` rotations is provided in Figure 4 in
-    `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`__).
-
-    The routine looks as follows.
+    For example, a :class:`~.RZ` gate with angle $\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi$
+    is translated into the following routine, where the angle is conditionally prepared on the ``aux_wires`` in binary
+    and added to a ``phase_grad_wires`` register semi-inplace via :class:`~.SemiAdder`.
 
     .. code-block::
 
-        algorithm level
-        target: ────╭●──────────────╭●────────┤
-         aux_0: ────├|0⟩─╭SemiAdder─├|0⟩──────┤
-         aux_1: ────├|1⟩─├SemiAdder─├|1⟩──────┤
-         aux_2: ────╰|0⟩─├SemiAdder─╰|0⟩──────┤
-         phg_0: ──╭|∇Z⟩──├SemiAdder───────────┤
-         phg_1: ──├|∇Z⟩──├SemiAdder───────────┤
-         phg_2: ──╰|∇Z⟩──╰SemiAdder───────────┤
+        target: ─RZ(ϕ)─ = ────╭●──────────────╭●────────┤
+         aux_0:           ────├|0⟩─╭SemiAdder─├|0⟩──────┤
+         aux_1:           ────├|1⟩─├SemiAdder─├|1⟩──────┤
+         aux_2:           ────╰|0⟩─├SemiAdder─╰|0⟩──────┤
+         phg_0:           ─────────├SemiAdder───────────┤
+         phg_1:           ─────────├SemiAdder───────────┤
+         phg_2:           ─────────╰SemiAdder───────────┤
 
-    The ``target`` qubit is where :class:`~RZ` is applied. The ``aux`` qubits
-    conditionally load the binary representation of the angle :math:`\phi = (0.010)_2 \pi`. The ``phg`` qubits
-    hold a phase gradient state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
-    This state is not modified and can be re-used at a later stage. Because we
-    are using :class`~SemiAdder`, we require additional ``work_wires`` for the semi-in-place addition
+    For this routine to work, the provided ``phase_gradient_wires`` need to hold a phase gradient
+    state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
+    The state is not modified and can be re-used at a later stage.
+    It is important to stress that this transform does not prepare the state.
+
+
+    Note that :class`~SemiAdder` we requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{aux} |y\rangle_\text{qft} = |x\rangle_\text{aux} |x + y\rangle_\text{qft}`.
+
+    More details can be found on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
+    and Figure 17a in `arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__ (a generalization to
+    multiplexed :class:`~RZ` rotations is provided in Figure 4 in
+    `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`__).
 
     Note that, technically, this circuit realizes :class:`~PhaseShift`, i.e. :math:`R_\phi(\phi) = R_(\phi) e^{\phi/2}`.
     The additional global phase is taken into account in the decomposition.
@@ -107,7 +110,7 @@ def rz_phase_gradient(
 
     **Example**
 
-    .. code-block::python
+    .. code-block:: python
 
         import pennylane as qml
         import numpy as np
@@ -123,24 +126,45 @@ def rz_phase_gradient(
         wire_order = [wire] + aux_wires + phase_grad_wires + work_wires
 
         def phase_gradient(wires):
+            # prepare phase gradient state
             qml.X(wires[-1])
             qml.QFT(wires)
 
         @partial(qml.transforms.rz_phase_gradient, aux_wires=aux_wires, phase_grad_wires=phase_grad_wires, work_wires=work_wires)
         @qml.qnode(qml.device("default.qubit"))
         def rz_circ(phi, wire):
-            qml.Hadamard(wire) # prepare |+>
             phase_gradient(phase_grad_wires) # prepare phase gradient state
 
+            qml.Hadamard(wire) # transform rotation
             qml.RZ(phi, wire)
-
-            qml.adjoint(phase_gradient)(phase_grad_wires)
-            qml.Hadamard(wire)
+            qml.Hadamard(wire) # transform rotation
 
             return qml.probs(wire)
 
-        rz_circ(phi, wire)
-        # array([0.85355339, 0.14644661])
+    In this example we perform the rotation of an angle of :math:`\phi = (0.111)_2 2\pi`. Because phase shifts
+    are trivial on computational basis states, we transform the :math:`R_Z` rotation to `R_X = H R_Z H` via two
+    :class:`~.Hadamard` gates.
+
+    Note that for the transform to work, we need to also prepare a phase gradient state on the ``phase_grad_wires``.
+
+    Overall, the circuit looks like the following:
+
+    >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
+      targ: ──H─╭●──────────────╭●───╭GlobalPhase(2.75)──H─┤  Probs
+     aux_0: ────├|Ψ⟩─╭SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
+     aux_1: ────├|Ψ⟩─├SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
+     aux_2: ────╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─├GlobalPhase(2.75)────┤
+     qft_0: ────╭QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
+     qft_1: ────├QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
+     qft_2: ──X─╰QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
+    work_0: ─────────├SemiAdder──────├GlobalPhase(2.75)────┤
+    work_1: ─────────╰SemiAdder──────╰GlobalPhase(2.75)────┤
+
+    The additional work wires are required by the :class:`~.SemiAdder`.
+    Executing the circuit, we get the expected result:
+
+    >>> rz_circ(phi, wire)
+    array([0.85355339, 0.14644661])
 
     """
     operations = []
