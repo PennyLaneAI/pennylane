@@ -60,25 +60,23 @@ def test_ftqc_device_initializes(backend_cls):
 
 
 @pytest.mark.parametrize(
-    "backend, preferred_method",
-    [(LightningQubitBackend(), "one-shot"), (NullQubitBackend(), "device")],
+    "backend",
+    [LightningQubitBackend(), NullQubitBackend()],
 )
 @pytest.mark.parametrize("initial_config", (True, False))
-def test_setup_execution_config(backend, preferred_method, initial_config):
+def test_setup_execution_config(backend, initial_config):
     """Test that setup_execution_config works as expected when the input ExecutionConfig
     is None or is consistent with the device MCM capabilities"""
 
     dev = FTQCQubit(wires=2, backend=backend)
     initial_config = (
-        ExecutionConfig(mcm_config=MCMConfig(mcm_method=preferred_method))
-        if initial_config
-        else None
+        ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot")) if initial_config else None
     )
 
     config = dev.setup_execution_config(initial_config)
 
     assert isinstance(config, ExecutionConfig)
-    assert config.mcm_config.mcm_method == preferred_method
+    assert config.mcm_config.mcm_method == "one-shot"
 
 
 @pytest.mark.parametrize("backend", [LightningQubitBackend(), NullQubitBackend()])
