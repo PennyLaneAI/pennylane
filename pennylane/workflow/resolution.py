@@ -15,12 +15,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, get_args
 from warnings import warn
 
 from packaging.version import Version
@@ -28,7 +27,7 @@ from packaging.version import Version
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, get_canonical_interface_name, get_interface
+from pennylane.math import Interface, get_interface
 from pennylane.transforms.core import TransformDispatcher
 
 SupportedDiffMethods = Literal[
@@ -82,7 +81,7 @@ def _validate_jax_version():
 
 
 # pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph():
+def _use_tensorflow_autograph():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
         import tensorflow as tf
@@ -106,7 +105,7 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
     Returns:
         Interface: resolved interface
     """
-    interface = get_canonical_interface_name(interface)
+    interface = Interface(interface)
 
     if interface == Interface.AUTO:
         params = []
@@ -114,7 +113,7 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
         try:
-            interface = get_canonical_interface_name(interface)
+            interface = Interface(interface)
         except ValueError:
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
@@ -122,7 +121,9 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
     if interface in (Interface.JAX, Interface.JAX_JIT):
         _validate_jax_version()
 
-    if interface == Interface.TF and _use_tensorflow_autograph():
+    if (
+        interface == Interface.TF and _use_tensorflow_autograph()
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
         # pylint: disable=unused-import
@@ -144,7 +145,7 @@ def _resolve_mcm_config(
 ) -> qml.devices.MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
     if not finite_shots:
         updated_values["postselect_mode"] = None
@@ -210,7 +211,7 @@ def _resolve_hadamard(
 def _resolve_diff_method(
     initial_config: qml.devices.ExecutionConfig,
     device: qml.devices.Device,
-    tape: qml.tape.QuantumTape = None,
+    tape: qml.tape.QuantumScript | None = None,
 ) -> qml.devices.ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
@@ -230,7 +231,7 @@ def _resolve_diff_method(
         return initial_config
 
     if device.supports_derivatives(initial_config, circuit=tape):
-        new_config = device.setup_execution_config(initial_config)
+        new_config = device.setup_execution_config(initial_config, tape)
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
@@ -285,10 +286,10 @@ def _resolve_execution_config(
     Returns:
         qml.devices.ExecutionConfig: resolved execution configuration
     """
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
-    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
-        execution_config.gradient_method, Callable
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not callable(
+        execution_config.gradient_method
     ):
         updated_values["grad_on_execution"] = False
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
@@ -317,5 +318,5 @@ def _resolve_execution_config(
     updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
     execution_config = replace(execution_config, **updated_values)
-    execution_config = device.setup_execution_config(execution_config)
+    execution_config = device.setup_execution_config(execution_config, tapes[0])
     return execution_config

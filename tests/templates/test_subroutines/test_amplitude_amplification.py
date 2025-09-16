@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 
 
@@ -160,9 +161,11 @@ class TestDifferentiability:
     def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit", wires=3, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=3, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
+        )
 
         params = qml.numpy.array(self.params, requires_grad=True)
         res = qml.grad(qnode)(params)
@@ -179,10 +182,12 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
+        )
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -203,10 +208,12 @@ class TestDifferentiability:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
+        )
 
         params = torch.tensor(self.params, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, params)
@@ -221,9 +228,11 @@ class TestDifferentiability:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
+        )
 
         params = tf.Variable(self.params)
         with tf.GradientTape() as tape:
@@ -330,3 +339,23 @@ def test_fixed_point_angles_function(iters, p_min):
 
     assert all(isinstance(x, float) for x in alphas)
     assert all(isinstance(x, float) for x in betas)
+
+
+@pytest.mark.parametrize(
+    "n_wires, items, iters, fixed",
+    (
+        (3, [0, 2], 1, True),
+        (3, [1, 2], 2, False),
+        (5, [4, 5, 7, 12], 3, True),
+        (5, [0, 1, 2, 3, 4], 4, False),
+    ),
+)
+def test_decomposition_new(n_wires, items, iters, fixed):
+    """Tests the decomposition rule implemented with the new system."""
+    U = generator(wires=range(n_wires))
+    O = oracle(items, wires=range(n_wires))
+
+    op = qml.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
+
+    for rule in qml.list_decomps(qml.AmplitudeAmplification):
+        _test_decomposition_rule(op, rule)

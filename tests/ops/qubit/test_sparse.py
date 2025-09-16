@@ -211,7 +211,7 @@ class TestSparse:
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
@@ -227,7 +227,7 @@ class TestSparse:
     @pytest.mark.parametrize("qubits, hamiltonian, expected_output", [(4, H_hydrogen, -0.18092703)])
     def test_sparse_gradient(self, qubits, hamiltonian, expected_output, tol):
         """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
-        dev = qml.device("default.qubit", wires=qubits, shots=None)
+        dev = qml.device("default.qubit", wires=qubits)
 
         hamiltonian = csr_matrix(hamiltonian)
 
@@ -243,7 +243,7 @@ class TestSparse:
     def test_sparse_no_all_wires_error(self, tol):
         """Tests that SparseHamiltonian can be used as expected when the operator wires don't cover
         all device wires."""
-        dev = qml.device("default.qubit", wires=6, shots=None)
+        dev = qml.device("default.qubit", wires=6)
 
         hamiltonian = qml.SparseHamiltonian(csr_matrix(H_hydrogen), wires=range(4))
 
@@ -309,9 +309,9 @@ class TestSparse:
 
         hamiltonian = csr_matrix(hamiltonian)
 
-        dev = qml.device("default.qubit", wires=qubits, shots=None)
+        dev = qml.device("default.qubit", wires=qubits)
         qs = qml.tape.QuantumScript(
-            operations, [qml.expval((qml.SparseHamiltonian(hamiltonian, range(qubits))))]
+            operations, [qml.expval(qml.SparseHamiltonian(hamiltonian, range(qubits)))]
         )
         expval = dev.execute(qs)
 

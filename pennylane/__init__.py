@@ -31,6 +31,7 @@ from pennylane import kernels
 from pennylane import math
 from pennylane import operation
 from pennylane import allocation
+from pennylane.allocation import allocate, deallocate
 from pennylane import decomposition
 from pennylane.decomposition import (
     register_resources,
@@ -92,7 +93,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod
 from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
@@ -104,20 +105,7 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots
 from pennylane import workflow
-from pennylane.io import (
-    from_pyquil,
-    from_qasm,
-    to_openqasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
-    from_qasm3,
-    to_bloq,
-)
+
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -178,6 +166,21 @@ from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
 
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+    to_bloq,
+)
+
 # pylint:disable=wrong-import-order
 from pennylane import logging  # pylint:disable=wrong-import-order
 
@@ -194,6 +197,20 @@ from pennylane import spin
 from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
 from pennylane import qnn
+
+from importlib.metadata import version as _metadata_version
+from importlib.util import find_spec as _find_spec
+from packaging.version import Version as _Version
+
+if _find_spec("jax") is not None:
+    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.6.2"):  # pragma: no cover
+        warnings.warn(
+            "PennyLane is not yet compatible with JAX versions > 0.6.2. "
+            f"You have version {jax_version} installed. "
+            "Please downgrade JAX to 0.6.2 to avoid runtime errors using "
+            "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
+            RuntimeWarning,
+        )
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

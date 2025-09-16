@@ -386,7 +386,7 @@ class TestOpmath:
         assert eqn.params == {
             "control_values": [0, 1],
             "work_wires": None,
-            "work_wire_type": "dirty",
+            "work_wire_type": "borrowed",
         }
 
         with qml.queuing.AnnotatedQueue() as q:

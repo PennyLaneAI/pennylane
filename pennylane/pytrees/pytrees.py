@@ -69,7 +69,7 @@ def unflatten_tuple(data, _) -> tuple:
 
 def unflatten_dict(data, metadata) -> dict:
     """Unflatten a dictionary."""
-    return dict(zip(metadata, data))
+    return dict(zip(metadata, data, strict=True))
 
 
 unflatten_registrations: dict[type, UnflattenFn] = {

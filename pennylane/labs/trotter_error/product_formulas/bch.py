@@ -463,12 +463,12 @@ def _right_nest_two_comms(commutator: tuple[tuple | Hashable]) -> dict[tuple[Has
     b = commutator[1][0]
     c = commutator[1][1:]
 
-    comm_bca = {(b,) + comm: coeff for comm, coeff in _right_nest_two_comms((a, c)).items()}
+    comm_bac = {(b,) + comm: coeff for comm, coeff in _right_nest_two_comms((a, c)).items()}
     comm_cab = {comm: -coeff for comm, coeff in _right_nest_two_comms(((b,) + a, c)).items()}
 
     commutators = defaultdict(int)
 
-    for comm, coeff in comm_bca.items():
+    for comm, coeff in comm_bac.items():
         commutators[comm] += coeff
 
     for comm, coeff in comm_cab.items():

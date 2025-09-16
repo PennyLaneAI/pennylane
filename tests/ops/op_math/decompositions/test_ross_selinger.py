@@ -19,7 +19,11 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.rings import ZOmega
-from pennylane.ops.op_math.decompositions.ross_selinger import _domain_correction, rs_decomposition
+from pennylane.ops.op_math.decompositions.ross_selinger import (
+    _domain_correction,
+    _jit_rs_decomposition,
+    rs_decomposition,
+)
 
 
 @pytest.mark.parametrize(
@@ -54,6 +58,8 @@ def test_domain_correction(angle, result):
         (qml.RZ(-math.pi / 5, wires=[0]), 1e-4),
         (qml.RZ(-math.pi / 7, wires=[1]), 1e-4),
         (qml.RZ(-math.pi / 8, wires=[2]), 1e-2),
+        (qml.RZ(9 * math.pi / 4, wires=[0]), 1e-3),
+        (qml.RZ(4.434079721283546, wires=[3]), 1e-3),
     ],
 )
 def test_ross_selinger(op, epsilon):
@@ -93,3 +99,65 @@ def test_exception():
         match=r"Operator must be a RZ or PhaseShift gate",
     ):
         rs_decomposition(op, epsilon=1e-4, max_search_trials=1)
+
+
+@pytest.mark.catalyst
+@pytest.mark.jax
+@pytest.mark.external
+@pytest.mark.parametrize(
+    ("decomposition_info"),
+    [
+        # T, (SHT, HT, SHT, SHT, SHT, HT ) , I
+        [1, [1, 0, 1, 1, 1, 0], 0],
+        # _ ,  (SHT, HT, SHT, SHT, SHT, HT ), S, Y
+        [0, [1, 0, 1, 1, 1, 0], 12],
+        # _ , , H, Sd
+        [0, [], 9],
+    ],
+)
+@pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
+def test_jit_rs_decomposition(decomposition_info):
+    """Test that the qjit rs decomposition is working."""
+    pytest.importorskip("catalyst")
+    jax = pytest.importorskip("jax")
+    jnp = jax.numpy
+
+    # Create decomposition info using jnp
+    has_leading_t = jnp.int32(decomposition_info[0])  # First element
+    syllable_sequence = jnp.array(decomposition_info[1], dtype=jnp.int32)  # Second element
+    clifford_op_idx = jnp.int32(decomposition_info[2])  # Third element
+
+    decomposition_info = (has_leading_t, syllable_sequence, clifford_op_idx)
+
+    # Get the operations from _jit_rs_decomposition
+    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    def qjit_circuit():
+        _jit_rs_decomposition(0, decomposition_info)
+        return qml.state()
+
+    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    def non_qjit_circuit():
+        if int(decomposition_info[0].item()) == 1:
+            qml.T(0)
+        for i in decomposition_info[1]:
+            if i == 0:
+                qml.H(0)
+                qml.T(0)
+            elif i == 1:
+                qml.S(0)
+                qml.H(0)
+                qml.T(0)
+        if decomposition_info[2] == 12:
+            qml.S(0)
+            qml.Y(0)
+        elif decomposition_info[2] == 9:
+            qml.H(0)
+            qml.adjoint(qml.S)(0)
+
+        return qml.state()
+
+    qjit_result = qml.qjit(qjit_circuit)()
+    # Do not jit the reference circuit; it uses standard Python control flow
+    non_qjit_result = non_qjit_circuit()
+
+    assert qml.math.allclose(qjit_result, non_qjit_result)

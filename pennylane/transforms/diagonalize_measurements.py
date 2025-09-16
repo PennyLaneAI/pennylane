@@ -39,7 +39,9 @@ def null_postprocessing(results):
 
 
 @transform
-def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to_eigvals=False):
+def diagonalize_measurements(
+    tape, supported_base_obs=_default_supported_obs, to_eigvals=False, use_op_gates_only=False
+):
     """Diagonalize a set of measurements into the standard basis. Raises an error if the
     measurements do not commute.
 
@@ -52,6 +54,10 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
             unsupported observables will be diagonalized to the Z basis.
+        use_op_gates_only (bool): Indicates whether to restrict the transform to only the diagonalizing gates
+            stored on each observable. If this is False, the transform may use the `pauli` module to calculate
+            diagonalizing gates, which returns non-Clifford gates RX and RY when diagonalizing X and Y,
+            instead of gates in {H, S, Z}
 
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -172,9 +178,9 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     if (
         all(m.obs.pauli_rep is not None for m in tape.measurements if m.obs is not None)
         and diagonalize_all
+        and not use_op_gates_only
     ):
         try:
-            raise QuantumFunctionError
             if tape.samples_computational_basis and len(tape.measurements) > 1:
                 _validate_computational_basis_sampling(tape)
             diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(

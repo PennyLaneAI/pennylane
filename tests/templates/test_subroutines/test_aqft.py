@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_standard_validity():
@@ -82,6 +83,23 @@ class TestAQFT:
         m2 = qml.matrix(qml.QFT(wires=range(wires)))
 
         assert np.allclose(m1, m2)
+
+    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    def test_decomposition_new(self, order, wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.AQFT(order=order, wires=range(wires))
+
+        for rule in qml.list_decomps(qml.AQFT):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    @pytest.mark.capture
+    def test_decomposition_new_capture(self, order, wires):
+        """Tests the decomposition rule implemented with the new system when program capture is enabled."""
+        op = qml.AQFT(order=order, wires=range(wires))
+
+        for rule in qml.list_decomps(qml.AQFT):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
     def test_gates(self, order, wires):

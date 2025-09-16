@@ -22,7 +22,8 @@ from pennylane import math
 from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .counts import CountsMP
 from .measurements import SampleMeasurement
@@ -46,11 +47,15 @@ class SampleMP(SampleMeasurement):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        dtype (str or None): The dtype of the samples returned by this measurement process.
     """
 
     _shortname = "sample"
 
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None):
+    # pylint: disable=too-many-arguments
+    def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
+
+        self._dtype = dtype
 
         if isinstance(obs, MeasurementValue):
             super().__init__(obs=obs)
@@ -86,28 +91,21 @@ class SampleMP(SampleMeasurement):
         has_eigvals=False,
         shots: int | None = None,
         num_device_wires: int = 0,
-    ):
+    ) -> tuple[tuple[int, ...], type]:
         if shots is None:
             raise ValueError("finite shots are required to use SampleMP")
         sample_eigvals = n_wires is None or has_eigvals
         dtype = float if sample_eigvals else int
 
-        if n_wires == 0:
-            dim = num_device_wires
-        elif sample_eigvals:
-            dim = 1
-        else:
-            dim = n_wires
-
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if dim != 1:
-            shape.append(dim)
-        return tuple(shape), dtype
+        if sample_eigvals:
+            return (shots,), dtype
+        dim = num_device_wires if n_wires == 0 else n_wires
+        return (shots, dim), dtype
 
     @property
     def numeric_type(self):
+        if self._dtype is not None:
+            return self._dtype
         if self.obs is None:
             # Computational basis samples
             return int
@@ -120,32 +118,28 @@ class SampleMP(SampleMeasurement):
                 f"{self.__class__.__name__}."
             )
         if self.obs:
-            num_values_per_shot = 1  # one single eigenvalue
-        elif self.mv is not None:
+            return (shots,)
+
+        if self.mv is not None:
             num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
         else:
-            # one value per wire
             num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
 
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if num_values_per_shot != 1:
-            shape.append(num_values_per_shot)
-        return tuple(shape)
+        return (shots, num_values_per_shot)
 
     def process_samples(
         self,
         samples: Sequence[complex],
-        wire_order: Wires,
+        wire_order: WiresLike,
         shot_range: None | tuple[int, ...] = None,
         bin_size: None | int = None,
-    ):
+    ) -> TensorLike:
+
         return process_raw_samples(
-            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size, dtype=self._dtype
         )
 
-    def process_counts(self, counts: dict, wire_order: Wires):
+    def process_counts(self, counts: dict, wire_order: WiresLike) -> np.ndarray:
         samples = []
         mapped_counts = self._map_counts(counts, wire_order)
         for outcome, count in mapped_counts.items():
@@ -157,11 +151,11 @@ class SampleMP(SampleMeasurement):
 
         return np.array(samples)
 
-    def _map_counts(self, counts_to_map, wire_order) -> dict:
+    def _map_counts(self, counts_to_map: dict, wire_order: WiresLike) -> dict:
         """
         Args:
-            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
-            wire_order: Order of wires to which counts_to_map should be ordered in
+            counts_to_map (dict): Dictionary where key is binary representation of the outcome and value is its count
+            wire_order (WiresLike): Order of wires to which counts_to_map should be ordered in
 
         Returns:
             Dictionary where counts_to_map has been reordered according to wire_order
@@ -170,7 +164,7 @@ class SampleMP(SampleMeasurement):
             helper_counts = CountsMP(wires=self.wires, all_outcomes=False)
         return helper_counts.process_counts(counts_to_map, wire_order)
 
-    def _compute_outcome_sample(self, outcome) -> list:
+    def _compute_outcome_sample(self, outcome: str) -> list:
         """
         Args:
             outcome (str): The binary string representation of the measurement outcome.
@@ -188,11 +182,12 @@ class SampleMP(SampleMeasurement):
 
 def sample(
     op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
-    wires=None,
+    wires: WiresLike = None,
+    dtype=None,
 ) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
-    returning raw samples. If no observable is provided then basis state samples are returned
+    determined from QNode,
+    returning raw samples. If no observable is provided, then basis state samples are returned
     directly from the device.
 
     Note that the output shape of this measurement process depends on the shots
@@ -203,12 +198,44 @@ def sample(
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
+        dtype: The dtype of the samples returned by this measurement process.
 
     Returns:
         SampleMP: Measurement process instance
 
     Raises:
         ValueError: Cannot set wires if an observable is provided
+
+    .. warning::
+
+        In v0.42, a breaking change removed the squeezing of singleton dimensions, eliminating the need for
+        specialized, error-prone handling for finite-shot results.
+        For the QNode:
+
+        >>> @qml.qnode(qml.device('default.qubit'))
+        ... def circuit(wires):
+        ...     return qml.sample(wires=wires)
+
+        We previously squeezed out singleton dimensions like:
+
+        >>> qml.set_shots(circuit, 1)(wires=1)
+        array(0)
+        >>> qml.set_shots(circuit, 2)(0)
+        array([0, 0])
+        >>> qml.set_shots(circuit, 1)((0,1))
+        array([0, 0])
+
+        With v0.42 and newer, the above circuit will **always** return an array of shape ``(shots, num_wires)``.
+
+        >>> qml.set_shots(circuit, 1)(wires=1)
+        array([[0]])
+        >>> qml.set_shots(circuit, 2)(0)
+        array([[0],
+        [0]])
+        >>> qml.set_shots(circuit, 1)((0,1))
+        array([[0, 0]])
+
+        Previous behavior can be recovered by applying ``qml.math.squeeze(result)`` to the array.
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
@@ -275,8 +302,8 @@ def sample(
     array([ 1.,  1.,  1., -1.])
 
     If no observable is provided, then the raw basis state samples obtained
-    from device are returned (e.g., for a qubit device, samples from the
-    computational device are returned). In this case, ``wires`` can be specified
+    from the device are returned (e.g., for a qubit device, samples from the
+    computational basis are returned). In this case, ``wires`` can be specified
     so that sample results only include measurement results of the qubits of interest.
 
     .. code-block:: python3
@@ -300,5 +327,54 @@ def sample(
            [1, 1],
            [0, 0]])
 
+    .. details::
+            :title: Setting the precision of the samples
+
+            The ``dtype`` argument can be used to set the type and precision of the samples returned by this measurement process
+            when the ``op`` argument does not contain mid-circuit measurements. Otherwise, the ``dtype`` argument is ignored.
+
+            By default, the samples will be returned as floating point numbers if an observable is provided,
+            and as integers if no observable is provided. The ``dtype`` argument can be used to specify further details,
+            and set the precision to any valid interface-like dtype, e.g. ``'float32'``, ``'int8'``, ``'uint16'``, etc.
+
+            We show two examples below using the JAX and PyTorch interfaces.
+            This argument is compatible with all interfaces currently supported by PennyLane.
+
+            **Example:**
+
+            .. code-block:: python3
+
+                @qml.set_shots(1000000)
+                @qml.qnode(qml.device("default.qubit", wires=1), interface="jax")
+                def circuit():
+                    qml.Hadamard(0)
+                    return qml.sample(dtype="int8")
+
+            Executing this QNode, we get:
+
+            >>> samples = circuit()
+            >>> samples.dtype
+            dtype('int8')
+            >>> type(samples)
+            jaxlib._jax.ArrayImpl
+
+            If an observable is provided, the samples will be floating point numbers:
+
+            .. code-block:: python3
+
+                @qml.set_shots(1000000)
+                @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
+                def circuit():
+                    qml.Hadamard(0)
+                    return qml.sample(qml.Z(0), dtype="float32")
+
+            Executing this QNode, we get:
+
+            >>> samples = circuit()
+            >>> samples.dtype
+            torch.float32
+            >>> type(samples)
+            torch.Tensor
+
     """
-    return SampleMP(obs=op, wires=None if wires is None else Wires(wires))
+    return SampleMP(obs=op, wires=None if wires is None else Wires(wires), dtype=dtype)

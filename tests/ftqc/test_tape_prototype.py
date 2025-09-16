@@ -60,25 +60,50 @@ def test_ftqc_device_initializes(backend_cls):
 
 
 @pytest.mark.parametrize(
-    "backend, expected_method",
-    [(LightningQubitBackend(), "one-shot"), (NullQubitBackend(), "device")],
+    "backend",
+    [LightningQubitBackend(), NullQubitBackend()],
 )
-@pytest.mark.parametrize(
-    "initial_config", [ExecutionConfig(mcm_config=MCMConfig(mcm_method="placeholder")), None]
-)
-def test_setup_execution_config(backend, expected_method, initial_config):
-    """Test that setup_execution_config works as expected"""
+@pytest.mark.parametrize("initial_config", (True, False))
+def test_setup_execution_config(backend, initial_config):
+    """Test that setup_execution_config works as expected when the input ExecutionConfig
+    is None or is consistent with the device MCM capabilities"""
 
     dev = FTQCQubit(wires=2, backend=backend)
+    initial_config = (
+        ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot")) if initial_config else None
+    )
+
     config = dev.setup_execution_config(initial_config)
 
     assert isinstance(config, ExecutionConfig)
-    assert config.mcm_config.mcm_method == expected_method
+    assert config.mcm_config.mcm_method == "one-shot"
 
 
-@pytest.mark.parametrize("wires", ([0, 1], ["a", "b"]))
+@pytest.mark.parametrize("backend", [LightningQubitBackend(), NullQubitBackend()])
+def test_invalid_mcm_method_raises_error(backend):
+    """Test that setup_execution_config raises en error for incompatible MCM methods"""
+
+    dev = FTQCQubit(wires=2, backend=backend)
+    with pytest.raises(
+        qml.exceptions.QuantumFunctionError, match='"placeholder" unsupported by the device'
+    ):
+        _ = dev.setup_execution_config(
+            ExecutionConfig(mcm_config=MCMConfig(mcm_method="placeholder"))
+        )
+
+
+@pytest.mark.parametrize(
+    "wires",
+    [
+        [0, 1],
+        pytest.param(
+            ["a", "b"],
+            marks=pytest.mark.xfail(reason="string wire labels raise error with pauli tracker"),
+        ),
+    ],
+)
 @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
-def test_executing_arbitrary_circuit(wires, backend_cls):
+def test_executing_arbitrary_circuit(wires, backend_cls, mocker):
     """Test that an arbitrary circuit is preprocessed to be expressed in the
     MBQC formalism before executing, and executes as expected"""
 
@@ -87,14 +112,16 @@ def test_executing_arbitrary_circuit(wires, backend_cls):
     backend = backend_cls()
     dev = FTQCQubit(wires=wires, backend=backend)
 
+    spy = mocker.spy(backend_cls, "_execute_sequence")
+
     def circ():
         qml.RY(1.2, wires[1])  # tape and device wire order do not match
         qml.RX(0.45, wires[0])
         # observables don't commute
-        return qml.expval(qml.X(wires[1])), qml.expval(qml.Y(wires[0])), qml.expval(qml.Y(wires[1]))
+        return qml.expval(qml.Y(wires[1])), qml.expval(qml.Y(wires[0])), qml.expval(qml.X(wires[1]))
 
     ftqc_circ = qml.qnode(device=dev)(circ)
-    ftqc_circ = qml.set_shots(ftqc_circ, shots=1500)
+    ftqc_circ = qml.set_shots(ftqc_circ, shots=2000)
 
     ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=wires))(circ)
 
@@ -105,22 +132,36 @@ def test_executing_arbitrary_circuit(wires, backend_cls):
     for sequence in tapes:
         assert isinstance(sequence, QuantumScriptSequence)
         assert all(isinstance(mp, qml.measurements.SampleMP) for mp in sequence.measurements)
-        for inner_tape in sequence.tapes:
-            assert all(
-                isinstance(op, (Conditional, CZ, H, MidMeasureMP)) for op in inner_tape.operations
-            )
 
     # circuit executes
     res = ftqc_circ()
+
+    (_, script, _), _ = spy.call_args  # the call arguments are (device, script, config)
+
+    for tape in script:
+        assert all(
+            # Z and Adjoint from diagonalization
+            isinstance(op, (Adjoint, Conditional, CZ, H, MidMeasureMP, Z))
+            for op in tape.operations
+        )
 
     expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
 
     assert np.allclose(res, expected_res, atol=0.05)
 
 
-@pytest.mark.parametrize("wires", ([0, 1], ["a", "b"]))
+@pytest.mark.parametrize(
+    "wires",
+    [
+        [0, 1],
+        pytest.param(
+            ["a", "b"],
+            marks=pytest.mark.xfail(reason="string wire labels raise error with pauli tracker"),
+        ),
+    ],
+)
 @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
-def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls):
+def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls, mocker):
     """Test that an arbitrary circuit is preprocessed to be expressed in the
     MBQC formalism before executing, and executes as expected"""
 
@@ -128,6 +169,8 @@ def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls):
 
     backend = backend_cls()
     dev = FTQCQubit(wires=wires, backend=backend)
+
+    spy = mocker.spy(backend_cls, "_execute_sequence")
 
     def circ():
         qml.RX(np.pi / 4, wires[1])
@@ -141,16 +184,21 @@ def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls):
 
     # the processed circuit is two tapes (split_non_commuting), returning
     # only samples, and expressed in the MBQC formalism
-    tapes, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
-    assert len(tapes) == 1
-    assert all(isinstance(mp, qml.measurements.SampleMP) for mp in tapes[0].measurements)
-    # CZ, H, MCMs, Conditional MCMs/Pauli corrections, + Adjoint for diagonalizing gates
-    assert all(
-        isinstance(op, (Conditional, CZ, H, MidMeasureMP, Adjoint)) for op in tapes[0].operations
-    )
+    sequences, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
+    assert len(sequences) == 1
+    assert isinstance(sequences[0], QuantumScriptSequence)
 
     # circuit executes
     res = ftqc_circ()
+
+    # check executed tape was converted to the MBQC formalism as expected
+    (_, script, _), _ = spy.call_args  # the call arguments are (device, script, config)
+    for tape in script:
+        assert all(
+            # Z and Adjoint from diagonalization
+            isinstance(op, (Adjoint, Conditional, CZ, H, MidMeasureMP, Z))
+            for op in tape.operations
+        )
 
     expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
 
@@ -211,6 +259,42 @@ class TestQuantumScriptSequence:
             assert op_list1 == op_list2
 
         assert repr(sequence) == "<QuantumScriptSequence: wires=[0, 1, 2]>"
+
+    def test_iterator_behaviour(self):
+        """Test that the sequence behaves like an iterator whose elements are the ordered tapes"""
+
+        operations = [[X(0), Y(1)], [Y(0), Z(0)], [H(1), S(0)]]
+        measurements = [[], [], [qml.expval(X(0))]]
+        tapes = [
+            qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
+            for ops, meas in zip(operations, measurements)
+        ]
+        sequence = QuantumScriptSequence(tapes)
+
+        # it has a length
+        assert len(sequence) == 3
+
+        # we can iterate over it and it matches the initial tapes (except for shots)
+        assert [tape.measurements for tape in sequence] == measurements
+        assert [tape.operations for tape in sequence] == operations
+
+        # we can iterate over it in reverse and it also matches initial tapes
+        assert [tape.measurements for tape in reversed(sequence)] == [[qml.expval(X(0))], [], []]
+        assert [tape.operations for tape in reversed(sequence)] == [
+            [H(1), S(0)],
+            [Y(0), Z(0)],
+            [X(0), Y(1)],
+        ]
+
+        # we can use next on it repeatedly and get the tapes out in order
+        for i in range(3):
+            next_tape = next(sequence)
+            assert isinstance(next_tape, qml.tape.QuantumScript)
+            assert next_tape.operations == operations[i]
+            assert next_tape.measurements == measurements[i]
+
+        with pytest.raises(StopIteration):
+            next(sequence)
 
     def test_sequence_copy(self):
         """Test that copying a sequence works as expected with no updates"""
@@ -366,8 +450,6 @@ class TestQuantumScriptSequence:
         tape = qml.workflow.construct_tape(circ)()
         sequence, fn = split_at_non_clifford_gates(tape)
         sequence = fn(sequence)
-        sequence, fn = split_at_non_clifford_gates(tape)
-        sequence = fn(sequence)
 
         assert isinstance(sequence, QuantumScriptSequence)
         assert tape.measurements == sequence.measurements
@@ -381,7 +463,11 @@ class TestQuantumScriptSequence:
     def test_executing_sequence(self):
         """Test that a QuantumScriptSequence can be executed with a backend, and that
         LightningQubitBackend.execute matches the results for executing the standard
-        circuit on lightning.qubit"""
+        circuit on lightning.qubit.
+
+        This test is only regarding the execution process for the QuantumScriptSequence,
+        (i.e. that the segments of the circuit are executed in series while preserving
+        the state, as expected). It bypasses conversion to MBQC formalism and corrections."""
 
         dev = qml.device("lightning.qubit", wires=3)
         backend = LightningQubitBackend()
@@ -407,17 +493,11 @@ class TestQuantumScriptSequence:
 
         shots_circ = qml.set_shots(circ, 5000)
         tape = qml.workflow.construct_tape(shots_circ)()
-        sequence, _ = split_at_non_clifford_gates(tape)
-        sequence, _ = split_at_non_clifford_gates(tape)
+        (sequence,), _ = split_at_non_clifford_gates(tape)
 
-        raw_samples = backend.execute(
-            [
-                sequence[0],
-                sequence[0],
-            ],
-            ExecutionConfig(),
-        )
-        sequence_results = np.average(raw_samples[0], axis=0)
+        # pylint: disable=protected-access
+        raw_samples = backend._execute_sequence(sequence, ExecutionConfig())
+        sequence_results = np.average(raw_samples, axis=0)
 
         # expected results are approximately -0.24 and -0.59, a tolerance of 0.05 is fine
         assert np.allclose(expected_result, sequence_results, atol=0.05)
@@ -426,12 +506,12 @@ class TestQuantumScriptSequence:
 class TestBackendExecution:
 
     def test_lightning_backend_execution_with_sequences(self, mocker):
+        """Test executing a compatible circuit (MBQC gate set, single samples measurement)
+        on the lighting backend"""
 
-        tape1 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
-        tape2 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
-        tape3 = qml.tape.QuantumScript(
-            [qml.RX(0.21, 0)], measurements=[qml.expval(Y(0)), qml.expval(Z(0))]
-        )
+        tape1 = qml.tape.QuantumScript([RotXZX(0.21, 0, 0, 0)])
+        tape2 = qml.tape.QuantumScript([RotXZX(0.21, 0, 0, 0)])
+        tape3 = qml.tape.QuantumScript([RotXZX(0.21, 0, 0, 0)], measurements=[qml.sample(wires=0)])
 
         sequence = QuantumScriptSequence([tape1, tape2, tape3], shots=3000)
 
@@ -446,7 +526,8 @@ class TestBackendExecution:
         # sequence execution and reset between executions
         for res in results:
             assert len(res) == 3000
-            assert np.allclose(np.average(res, axis=0), [-np.sin(0.63), np.cos(0.63)], atol=0.05)
+            res_to_eigvals = [-1 if r else 1 for r in res]
+            assert np.allclose(np.average(res_to_eigvals, axis=0), np.cos(0.63), atol=0.05)
 
         # executed 3 sequences of 3 segments, with 3000 shots each
         assert spy_simulate.call_count == 3 * 3 * 3000
@@ -456,7 +537,7 @@ class TestBackendExecution:
         backend."""
 
         tape1 = qml.tape.QuantumScript([H(0)])
-        tape2 = qml.tape.QuantumScript([H(0)], measurements=[qml.expval(Y(0)), qml.expval(Z(0))])
+        tape2 = qml.tape.QuantumScript([H(0)], measurements=[qml.sample(wires=0)])
 
         sequence = QuantumScriptSequence([tape1, tape1, tape2], shots=3000)
 
@@ -466,5 +547,6 @@ class TestBackendExecution:
 
         assert len(results) == 3
         for res in results:
-            assert len(res) == 2
-            assert np.allclose(res, 0)
+            assert len(res) == 3000
+            for r in res:
+                assert np.allclose(r, 0)

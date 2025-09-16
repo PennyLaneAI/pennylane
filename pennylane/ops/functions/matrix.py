@@ -21,6 +21,7 @@ from pennylane import transform
 from pennylane.exceptions import MatrixUndefinedError, TransformError
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
 
@@ -229,12 +230,15 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
             f"Wires in circuit {list(op.wires)} are inconsistent with "
             f"those in wire_order {list(wire_order)}"
         )
+    QueuingManager.remove(op)
     if op.has_matrix:
         return op.matrix(wire_order=wire_order)
     if op.has_sparse_matrix:
         return op.sparse_matrix(wire_order=wire_order).todense()
     if op.has_decomposition:
-        return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
+        with QueuingManager.stop_recording():
+            ops = op.decomposition()
+        return matrix(QuantumScript(ops), wire_order=wire_order or op.wires)
     raise MatrixUndefinedError(
         "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
     )

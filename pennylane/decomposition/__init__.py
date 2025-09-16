@@ -66,6 +66,7 @@ Defining Decomposition Rules
     ~DecompositionRule
     ~Resources
     ~CompressedResourceOp
+    ~null_decomp
 
 In the new decomposition system, a decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
@@ -209,6 +210,7 @@ Graph-based Decomposition Solver
     :toctree: api
 
     ~DecompositionGraph
+    ~DecompGraphSolution
 
 The decomposition graph is a directed graph of operators and decomposition rules. Dijkstra's
 algorithm is used to explore the graph and find the most efficient decomposition of a given
@@ -221,12 +223,12 @@ operator towards a target gate set.
         operations=[op],
         gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
     )
-    graph.solve()
+    solution = graph.solve()
 
 .. code-block:: pycon
 
     >>> with qml.queuing.AnnotatedQueue() as q:
-    ...     graph.decomposition(op)(0.5, wires=[0, 1])
+    ...     solution.decomposition(op)(0.5, wires=[0, 1])
     ...
     >>> q.queue
     [RZ(1.5707963267948966, wires=[1]),
@@ -254,7 +256,7 @@ from .utils import (
     disable_graph,
     enabled_graph,
 )
-from .decomposition_graph import DecompositionGraph
+from .decomposition_graph import DecompositionGraph, DecompGraphSolution
 from .resources import (
     Resources,
     resource_rep,
@@ -267,6 +269,7 @@ from .decomposition_rule import (
     register_resources,
     register_condition,
     DecompositionRule,
+    null_decomp,
     add_decomps,
     list_decomps,
     has_decomp,

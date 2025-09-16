@@ -42,10 +42,16 @@ from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
-    decompose_mcx_with_many_workers,
+    decompose_mcx_many_borrowed_workers,
+    decompose_mcx_many_workers_explicit,
+    decompose_mcx_many_zeroed_workers,
+    decompose_mcx_one_borrowed_worker,
+    decompose_mcx_one_worker_explicit,
+    decompose_mcx_one_zeroed_worker,
+    decompose_mcx_two_borrowed_workers,
+    decompose_mcx_two_workers_explicit,
+    decompose_mcx_two_zeroed_workers,
     decompose_mcx_with_no_worker,
-    decompose_mcx_with_one_worker,
-    decompose_mcx_with_two_workers,
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
@@ -83,7 +89,7 @@ class ControlledQubitUnitary(ControlledOp):
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
-        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized during
+        work_wires (Union[Wires, Sequence[int], or int]): auxiliary wire(s) that may be utilized during
             the decomposition of the operator into native operations.
 
     **Example**
@@ -157,7 +163,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
-        work_wire_type="dirty",
+        work_wire_type="borrowed",
     ):
 
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -177,7 +183,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
-        work_wire_type: str | None = "dirty",
+        work_wire_type: str | None = "borrowed",
     ):
 
         if wires is None:
@@ -1349,9 +1355,9 @@ class MultiControlledX(ControlledOp):
             should take. Integers other than 0 or 1 will be treated as :code:`int(bool(x))`.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
-        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"`` indicates that
-            the work wires are in the state :math:`|0\rangle`, while ``"dirty"`` indicates that the
-            work wires are in an arbitrary state. Defaults to ``"dirty"``.
+        work_wire_type (str): whether the work wires are ``"zeroed"`` or ``"borrowed"``. ``"zeroed"`` indicates that
+            the work wires are in the state :math:`|0\rangle`, while ``"borrowed"`` indicates that the
+            work wires are in an arbitrary state. Defaults to ``"borrowed"``.
 
     .. note::
 
@@ -1369,9 +1375,9 @@ class MultiControlledX(ControlledOp):
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
         #. If at least :math:`2` work wires are provided, Sec. 5.2 and 5.4 of Khattar and Gidney
-           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
+           will be used depending on whether the ``work_wire_type`` is ``"zeroed"`` or ``"borrowed"``.
         #. If at least :math:`1` work wire is provided, Sec. 5.1 and 5.3 of Khattar and Gidney
-           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
+           will be used depending on whether the ``work_wire_type`` is ``"zeroed"`` or ``"borrowed"``.
 
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
@@ -1417,7 +1423,7 @@ class MultiControlledX(ControlledOp):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type="dirty", id=None
+        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
     ):
         return cls._primitive.bind(
             *wires,
@@ -1444,7 +1450,7 @@ class MultiControlledX(ControlledOp):
         wires: WiresLike,
         control_values: None | bool | list[bool] | int | list[int] = None,
         work_wires: WiresLike = (),
-        work_wire_type: Literal["clean", "dirty"] = "dirty",
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -1549,7 +1555,7 @@ class MultiControlledX(ControlledOp):
         wires: WiresLike = None,
         work_wires: WiresLike = None,
         control_values=None,
-        work_wire_type: Literal["clean", "dirty"] = "dirty",
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         **kwargs,
     ):
         r"""Representation of the operator as a product of other operators (static method).
@@ -1564,7 +1570,7 @@ class MultiControlledX(ControlledOp):
                 the operation into a series of Toffoli gates.
             control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-            work_wire_type (str): whether the work wires are clean or dirty.
+            work_wire_type (str): whether the work wires are zeroed or borrowed.
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1594,9 +1600,9 @@ class MultiControlledX(ControlledOp):
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
-        if work_wire_type not in {"clean", "dirty"}:
+        if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
-                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+                f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
             )
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
@@ -1637,9 +1643,15 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
 add_decomps(
     MultiControlledX,
     _mcx_to_cnot_or_toffoli,
-    decompose_mcx_with_many_workers,
-    decompose_mcx_with_two_workers,
-    decompose_mcx_with_one_worker,
+    decompose_mcx_many_workers_explicit,
+    decompose_mcx_many_borrowed_workers,
+    decompose_mcx_many_zeroed_workers,
+    decompose_mcx_two_workers_explicit,
+    decompose_mcx_two_borrowed_workers,
+    decompose_mcx_two_zeroed_workers,
+    decompose_mcx_one_worker_explicit,
+    decompose_mcx_one_borrowed_worker,
+    decompose_mcx_one_zeroed_worker,
     decompose_mcx_with_no_worker,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
@@ -1755,7 +1767,9 @@ class CRX(ControlledOp):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
@@ -1962,7 +1976,9 @@ class CRY(ControlledOp):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
@@ -2138,7 +2154,9 @@ class CRZ(ControlledOp):
                 [0.0+0.0j, 0.0+0.0j, 0.9689-0.2474j,       0.0+0.0j],
                 [0.0+0.0j, 0.0+0.0j,       0.0+0.0j, 0.9689+0.2474j]])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             if qml.math.ndim(p) == 0:
                 return qml.math.diag([1, 1, p, qml.math.conj(p)])
@@ -2183,7 +2201,9 @@ class CRZ(ControlledOp):
         >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             ones = qml.math.ones_like(phase)
             return stack_last([ones, ones, phase, qml.math.conj(phase)])
@@ -2371,7 +2391,9 @@ class CRot(ControlledOp):
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
@@ -2563,7 +2585,9 @@ class ControlledPhaseShift(ControlledOp):
                     [0.0+0.0j, 0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j],
                     [0.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             if qml.math.ndim(p) == 0:
                 return qml.math.diag([1, 1, 1, p])
@@ -2608,7 +2632,9 @@ class ControlledPhaseShift(ControlledOp):
         >>> qml.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             ones = qml.math.ones_like(phase)
             return stack_last([ones, ones, ones, phase])

@@ -47,7 +47,7 @@ from pennylane.typing import Result, ResultBatch
 
 from .default_qubit import accepted_sample_measurement
 from .device_api import Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -454,7 +454,7 @@ class DefaultClifford(Device):
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
@@ -470,6 +470,8 @@ class DefaultClifford(Device):
         This device currently does not intrinsically support parameter broadcasting.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
@@ -497,15 +499,17 @@ class DefaultClifford(Device):
         # Validate derivatives
         transform_program.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
-            config.gradient_method = None
+            config = replace(config, gradient_method=None)
 
         return transform_program, config
 
     def execute(
         self,
         circuits: QuantumScript | QuantumScriptBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))
@@ -551,6 +555,7 @@ class DefaultClifford(Device):
         circuit = circuit.map_to_standard_wires()
 
         # Build a stim circuit, tableau and simulator
+        # pylint: disable=no-member
         stim_circuit = stim.Circuit()
         tableau_simulator = stim.TableauSimulator()
         if self.wires is not None:
@@ -640,6 +645,7 @@ class DefaultClifford(Device):
                 )
 
             # Build a temporary simulator for obtaining state
+            # pylint: disable=no-member
             snap_sim = stim.TableauSimulator()
             if self.wires is not None:
                 snap_sim.set_num_qubits(len(self.wires))
@@ -790,6 +796,7 @@ class DefaultClifford(Device):
             pauli_term = ["I"] * max(np.max(list(wire)) + 1, tableau_simulator.num_qubits)
             for op, wr in zip(pauli, wire):
                 pauli_term[wr] = op
+            # pylint:disable=no-member
             stim_pauli = stim.PauliString("".join(pauli_term))
             expecs[idx] = tableau_simulator.peek_observable_expectation(stim_pauli)
 
@@ -955,6 +962,7 @@ class DefaultClifford(Device):
                 diagonalizing_cit.append_from_stim_program_text(f"{stim_op[0]} {stim_op[1]}")
 
         # Build the Tableau simulator from the diagonalized circuit
+        # pylint: disable=no-member
         circuit_simulator = stim.TableauSimulator()
         circuit_simulator.do_circuit(diagonalizing_cit)
         if not self._tableau:
@@ -1042,6 +1050,7 @@ class DefaultClifford(Device):
     @staticmethod
     def _measure_single_sample(stim_ct, meas_ops, meas_idx, meas_wire):
         """Sample a single qubit Pauli measurement from a stim circuit"""
+        # pylint: disable=no-member
         stim_sm = stim.TableauSimulator()
         stim_sm.do_circuit(stim_ct)
         res = [0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1)

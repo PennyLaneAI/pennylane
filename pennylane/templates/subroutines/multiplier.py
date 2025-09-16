@@ -96,7 +96,7 @@ class Multiplier(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [1 0 1]
+        [[1 0 1]]
 
     The result :math:`[1 0 1]`, is the binary representation of
     :math:`3 \cdot 4 \; \text{modulo} \; 7 = 5`.

@@ -117,16 +117,17 @@ def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4p
 
     pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
     states = [state] * n_states
-    actual = perturbation_error(
+    actual_dicts = perturbation_error(
         pf,
         fragments,
         states,
-        order=order,
+        max_order=order,
         timestep=h,
         backend=backend,
         num_workers=num_workers,
         parallel_mode=parallel_mode,
     )
+    actual = [sum(d.values()) for d in actual_dicts]
     expected = np.array([1.5815039950517473e-05j] * n_states)
 
     assert np.allclose(actual, expected)

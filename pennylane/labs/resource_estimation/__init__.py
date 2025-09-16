@@ -33,6 +33,7 @@ Resource Estimation Base Classes:
     ~ResourceOperator
     ~CompressedResourceOp
     ~GateCount
+    ~ResourceConfig
 
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,12 +41,8 @@ Resource Estimation Functions:
 .. autosummary::
     :toctree: api
 
-    ~estimate_resources
+    ~estimate
     ~resource_rep
-    ~set_decomp
-    ~set_adj_decomp
-    ~set_ctrl_decomp
-    ~set_pow_decomp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,18 +119,39 @@ Templates:
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
+    ~ResourceQPE
+    ~ResourceIterativeQPE
+    ~ResourceControlledSequence
     ~ResourceQFT
     ~ResourceAQFT
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSingleQubitComparator
+    ~ResourceTwoQubitComparator
+    ~ResourceIntegerComparator
+    ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
+    ~ResourceTrotterProduct
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
     ~ResourceTrotterVibronic
     ~ResourceQubitizeTHC
+    ~ResourceSelectTHC
+
+State Preparation:
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceMPSPrep
+    ~ResourceQROMStatePreparation
+    ~ResourceUniformStatePrep
+    ~ResourceAliasSampling
+    ~ResourcePrepTHC
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,18 +170,14 @@ from .resource_operator import (
     ResourceOperator,
     ResourcesNotDefined,
     resource_rep,
-    set_adj_decomp,
-    set_ctrl_decomp,
-    set_decomp,
-    set_pow_decomp,
     GateCount,
 )
 from .resource_mapping import map_to_resource_op
 from .resource_tracking import (
     StandardGateSet,
     DefaultGateSet,
-    resource_config,
-    estimate_resources,
+    ResourceConfig,
+    estimate,
 )
 from .ops import (
     ResourceHadamard,
@@ -218,12 +232,26 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceTwoQubitComparator,
+    ResourceIntegerComparator,
+    ResourceSingleQubitComparator,
+    ResourceRegisterComparator,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
+    ResourceUniformStatePrep,
+    ResourceAliasSampling,
+    ResourceSelectTHC,
+    ResourcePrepTHC,
+    ResourceQPE,
+    ResourceControlledSequence,
+    ResourceIterativeQPE,
 )
