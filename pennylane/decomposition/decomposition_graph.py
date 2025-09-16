@@ -537,7 +537,7 @@ class DecompGraphSolution:
         op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
     ) -> None:
         self._visitor = visitor
-        self._graph = visitor._graph  # pylint: disable=protected-access
+        self._graph = visitor._graph
         self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
 
@@ -708,7 +708,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         op_node_idx, d_node_idx = edge_obj
         return self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
 
-    def discover_vertex(self, v, score):  # pylint: disable=unused-argument
+    def discover_vertex(self, v, score):
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:

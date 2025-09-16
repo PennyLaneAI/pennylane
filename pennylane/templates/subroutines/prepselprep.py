@@ -229,7 +229,7 @@ def _prepselprep_resources(op_reps, num_control):
     }
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 @register_resources(_prepselprep_resources)
 def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     coeffs, ops = _get_new_terms(lcu)
