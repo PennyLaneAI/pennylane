@@ -102,7 +102,7 @@ class TestPauliRotation:
         """Test that the adjoint decompositions are correct."""
 
         expected = [GateCount(resource_class(precision).resource_rep(), 1)]
-        assert resource_class(precision).adjoint_resource_decomp() == expected
+        assert resource_class(precision).adjoint_resource_decomp({"precision": None}) == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
@@ -117,7 +117,7 @@ class TestPauliRotation:
                 else GateCount(CompressedResourceOp(Identity, 1, {}), 1)
             )
         ]
-        assert resource_class(precision).pow_resource_decomp(z) == expected
+        assert resource_class(precision).pow_resource_decomp(z, {"precision": None}) == expected
 
     params_ctrl_classes = (
         (RX),
@@ -132,7 +132,7 @@ class TestPauliRotation:
     ):  # pylint: disable=unused-argument
         """Test that the controlled decompositions are correct."""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(1, 0)
+            resource_class.controlled_resource_decomp(1, 0, resource_class.resource_params)
 
     ctrl_res_data = (([1, 2], [1, 1]),)
 
@@ -143,7 +143,9 @@ class TestPauliRotation:
     ):
         """Test that the controlled docomposition is correct when controlled on multiple wires."""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(ctrl_wires, ctrl_values)
+            resource_class.controlled_resource_decomp(
+                ctrl_wires, ctrl_values, resource_class.resource_params
+            )
 
 
 class TestRot:
@@ -185,7 +187,7 @@ class TestRot:
         """Test that the adjoint decomposition is correct"""
 
         expected = [GateCount(Rot.resource_rep(), 1)]
-        assert Rot.adjoint_resource_decomp() == expected
+        assert Rot.adjoint_resource_decomp({"precision": None}) == expected
 
     params_ctrl_classes = ((Rot),)
     ctrl_data = ([1, 0], [1, 1])
@@ -195,7 +197,9 @@ class TestRot:
     def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(ctrl_wires, ctrl_values)
+            resource_class.controlled_resource_decomp(
+                ctrl_wires, ctrl_values, resource_class.resource_params
+            )
 
     pow_data = (
         (1, [GateCount(Rot.resource_rep(), 1)]),
@@ -207,7 +211,7 @@ class TestRot:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
         op = Rot()
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
 
 
 class TestPhaseShift:
@@ -250,7 +254,7 @@ class TestPhaseShift:
         """Test that the adjoint decomposition is correct"""
 
         expected = [GateCount(PhaseShift.resource_rep(), 1)]
-        assert PhaseShift.adjoint_resource_decomp() == expected
+        assert PhaseShift.adjoint_resource_decomp({"precision": None}) == expected
 
     params_ctrl_classes = ((PhaseShift),)
     ctrl_data = ([1, 0], [1, 1])
@@ -260,7 +264,9 @@ class TestPhaseShift:
     def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(ctrl_wires, ctrl_values)
+            resource_class.controlled_resource_decomp(
+                ctrl_wires, ctrl_values, resource_class.resource_params
+            )
 
     pow_data = (
         (1, [GateCount(PhaseShift.resource_rep(), 1)]),
@@ -272,4 +278,4 @@ class TestPhaseShift:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
         op = PhaseShift()
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
