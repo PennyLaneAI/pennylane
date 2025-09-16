@@ -841,11 +841,11 @@ class TestUnaryIterator:
 
 @pytest.mark.parametrize("partial", [False, True])
 class TestSelectWithWorkWire:
-    """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
+    """Tests for the 1 work-wire decomposition of Select."""
 
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
     def test_no_ops(self, num_controls, partial):
-        """Test that the unary iterator does not return any operators for an empty list
+        """Test that the decomposition does not return any operators for an empty list
         of target operators."""
 
         control = list(range(num_controls))
@@ -858,7 +858,7 @@ class TestSelectWithWorkWire:
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_identity_with_basis_states(self, num_controls, num_ops, partial):
-        """Test that the unary iterator is correct by asserting that the identity
+        """Test that the decomposition is correct by asserting that the identity
         matrix is created by preparing the i-th computational basis state conditioned on the
         i-th basis state in the control qubits."""
         if not partial:
@@ -907,7 +907,7 @@ class TestSelectWithWorkWire:
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_comparison_with_select(self, num_controls, num_ops, seed, partial):
-        """Test that the unary iterator is correct by comparing it to the standard Select
+        """Test that the decomposition is correct by comparing it to the standard Select
         decomposition."""
 
         angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
