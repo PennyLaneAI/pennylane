@@ -30,7 +30,7 @@ from .non_parametric_ops import T
 
 
 def _rotation_resources(precision=10e-3):
-    r"""An estimate on the number of T gates needed to implement a Pauli rotation.
+    r"""Estimates the number of T gates needed to implement a Pauli rotation to a given precision.
 
     The expected T-count is taken from the "Simulation Results" section of `Efficient
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
