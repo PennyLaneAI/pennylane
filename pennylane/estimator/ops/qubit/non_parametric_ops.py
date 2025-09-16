@@ -230,7 +230,7 @@ class S(ResourceOperator):
         """
         mod_4 = pow_z % 4
         if mod_4 == 0:
-            return [GateCount(resource_rep(Identity))]
+            return []
         if mod_4 == 1:
             return [GateCount(cls.resource_rep())]
         if mod_4 == 2:
