@@ -213,9 +213,9 @@ def _resources_from_resource_ops(
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
-
+    resources = 1 * obj
     return _resources_from_resource(  # pylint: disable=too-many-function-args
-        1 * obj,
+        resources,
         gate_set,
         zeroed,
         any_state,
@@ -236,8 +236,9 @@ def _resources_from_pl_ops(
     """Extract resources from a PennyLane operator."""
     # TODO: remove pylint disable when mapping is implemented.
     obj = map_to_resource_op(obj)  # pylint: disable=assignment-from-no-return
+    resources = 1 * obj
     return _resources_from_resource(  # pylint: disable=too-many-function-args
-        1 * obj,
+        resources,
         gate_set,
         zeroed,
         any_state,
