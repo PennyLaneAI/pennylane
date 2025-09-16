@@ -351,6 +351,9 @@ class ScatterOp(IRDLOperation):
     unique_indices = opt_prop_def(BoolAttr, default_value=BoolAttr.from_bool(False))
     result = var_result_def(HLO_Tensor)
     update_computation = region_def("single_block")
+    # TODO: The MLIR implementation doesn't have the SingleBlockImplicitTerminator trait,
+    # However, it is checked to have a terminator in the verifier,
+    # which does not specifically check the terminator to be stablehlo.return.
 
     traits = traits_def(
         RecursiveMemoryEffect(),
