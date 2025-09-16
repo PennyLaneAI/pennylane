@@ -219,7 +219,7 @@ class TestS:
                 GateCount(S.resource_rep(), 1),
             ],
         ),
-        (4, [GateCount(Identity.resource_rep(), 1)]),
+        (4, []),
         (
             7,
             [
@@ -227,7 +227,7 @@ class TestS:
                 GateCount(S.resource_rep(), 1),
             ],
         ),
-        (8, [GateCount(Identity.resource_rep(), 1)]),
+        (8, []),
         (14, [GateCount(Z.resource_rep(), 1)]),
         (
             15,

@@ -97,14 +97,14 @@ class Identity(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires: int,
-        ctrl_num_ctrl_values: int,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
+            num_zero_ctrl (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
 
         Resources:
             The Identity gate acts trivially when controlled. The resources of this operation are same as
@@ -230,14 +230,14 @@ class GlobalPhase(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires: int,
-        ctrl_num_ctrl_values: int,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): The number of control qubits that are controlled when
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): The number of control qubits that are controlled when
                 in the :math:`|0\rangle` state.
 
         Raises:
