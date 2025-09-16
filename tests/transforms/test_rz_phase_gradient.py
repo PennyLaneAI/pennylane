@@ -52,16 +52,21 @@ def test_units_rz_phase_gradient(p):
         work_wires=work_wires,
     )
 
-    assert isinstance(ops[0], qml.ops.op_math.controlled.ControlledOp)
-    assert np.allclose(ops[0].base.parameters, [1] * p)
-    assert ops[0].base.wires == aux_wires
+    assert isinstance(ops[0], qml.ops.op_math.ChangeOpBasis)
+    assert isinstance(ops[1], qml.GlobalPhase)
 
-    assert isinstance(ops[1], qml.SemiAdder)
-    assert ops[1].wires == aux_wires + phase_grad_wires + work_wires
+    operands = ops[0].operands
 
-    assert isinstance(ops[2], qml.ops.op_math.controlled.ControlledOp)
-    assert np.allclose(ops[2].base.parameters, [1] * p)
-    assert ops[2].base.wires == aux_wires
+    assert isinstance(operands[0], qml.ops.op_math.controlled.ControlledOp)
+    assert np.allclose(operands[0].base.parameters, [1] * p)
+    assert operands[0].base.wires == aux_wires
+
+    assert isinstance(operands[1], qml.SemiAdder)
+    assert operands[1].wires == aux_wires + phase_grad_wires + work_wires
+
+    assert isinstance(operands[2], qml.ops.op_math.controlled.ControlledOp)
+    assert np.allclose(operands[2].base.parameters, [1] * p)
+    assert operands[2].base.wires == aux_wires
 
 
 @pytest.mark.parametrize(

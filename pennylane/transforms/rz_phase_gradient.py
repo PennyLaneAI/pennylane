@@ -46,10 +46,10 @@ def _rz_phase_gradient(
     binary_int = _binary_repr_int(
         phi, precision
     )  # BasisEmbedding can handle integer inputs, no need to actually translate to binary
+    compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire)
+    target_op = qml.SemiAdder(aux_wires, phase_grad_wires, work_wires)
     ops = [
-        qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
-        qml.SemiAdder(aux_wires, phase_grad_wires, work_wires),
-        qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire),
+        qml.change_op_basis(compute_op, target_op, compute_op),
         qml.GlobalPhase(-phi / 2),
     ]
     return ops
