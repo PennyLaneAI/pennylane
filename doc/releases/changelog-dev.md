@@ -20,7 +20,7 @@
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
   * The :class:`~.estimator.Resources` class was added as a container class for resources.
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * The resource operators for ``Identity``, non-parametric operators and single-qubit
+  * The resource operators for ``Identity``, ``GlobalPhase``, non-parametric operators and single-qubit
     parametric operators have been added to `qml.estimator.ops`.
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
     [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
