@@ -6,6 +6,7 @@
 * The `qml.sample` function can now receive an optional `dtype` parameter 
   which sets the type and precision of the samples returned by this measurement process.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
+  [(#8271)](https://github.com/PennyLaneAI/pennylane/pull/8271)
   
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
