@@ -67,7 +67,7 @@ def estimate(
 
     **Example**
 
-    We can track the resources of a quantum workflow by passing the quantum function defining our
+    The resources of a quantum workflow can be tracked by passing the quantum function defining the
     workflow directly into this function.
 
     .. code-block:: python
