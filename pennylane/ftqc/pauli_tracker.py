@@ -396,7 +396,7 @@ def apply_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement
             from pennylane.ftqc import diagonalize_mcms, generate_lattice, measure_x, measure_y
             from pennylane.ftqc import GraphStatePrep
 
-            from pennylane.ftqc.pauli_tracker import get_byproduct_corrections
+            from pennylane.ftqc.pauli_tracker import apply_byproduct_corrections
             import numpy as np
 
 
@@ -467,7 +467,7 @@ def apply_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement
 
             for i in range(num_shots):
                 mid_meas = [row[i] for row in mid_meas_res]
-                corrected_meas_res.extend(get_byproduct_corrections(script, mid_meas, [meas_res[i]]))
+                corrected_meas_res.extend(apply_byproduct_corrections(script, mid_meas, [meas_res[i]]))
 
             res_corrected = 1 - 2*np.sum(corrected_meas_res) / num_shots
 
