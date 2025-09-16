@@ -78,9 +78,7 @@ def rz_phase_gradient(
          aux_2: ────╰|0⟩─├SemiAdder─╰|0⟩──────┤
          phg_0: ──╭|∇Z⟩──├SemiAdder───────────┤
          phg_1: ──├|∇Z⟩──├SemiAdder───────────┤
-         phg_2: ──╰|∇Z⟩──├SemiAdder───────────┤
-        work_0: ─────────├SemiAdder───────────┤
-        work_1: ─────────╰SemiAdder───────────┤
+         phg_2: ──╰|∇Z⟩──╰SemiAdder───────────┤
 
     The ``target`` qubit is where :class:`~RZ` is applied. The ``aux`` qubits
     conditionally load the binary representation of the angle :math:`\phi = (0.010)_2 \pi`. The ``phg`` qubits
@@ -94,8 +92,12 @@ def rz_phase_gradient(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~RZ` gates.
-        aux_wires (Wires): The auxiliary qubits that conditionally load the angle :math:`\phi` of the :class:`~RZ` gate.
-        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them
+        aux_wires (Wires): The auxiliary qubits that conditionally load the angle :math:`\phi` of
+            the :class:`~RZ` gate in binary as a multiple of :math:`2\pi`.
+            The length of the ``aux_wires`` implicitly determine the precision
+            with which the angle is represented.
+            E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) * 2\pi` is exactly represented by three bits as ``111``.
+        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them. Will only use the first ``len(aux_wires)`` according to the precision with which the angle is decomposed.
         work wires (Wires): Additional work wires to realize the :class`~SemiAdder` between the ``aux_wires`` and
             ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b`` is the number of
             phase gradient wires, hence the precision of the angle :math:`\phi`.
