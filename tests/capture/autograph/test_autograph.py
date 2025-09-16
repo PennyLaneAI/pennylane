@@ -349,6 +349,34 @@ class TestIntegration:
         ):
             _ = qml.capture.make_plxpr(circ, autograph=True)()
 
+    @pytest.mark.parametrize(
+        "func1, func2",
+        [
+            (qml.adjoint, qml.ctrl),
+            (qml.ctrl, qml.adjoint),
+            (qml.adjoint, qml.adjoint),
+            (qml.ctrl, qml.ctrl),
+        ],
+    )
+    def test_nested_adjoint_ctrl(self, func1, func2):
+        """Test that nested adjoint and ctrl successfully pass through autograph"""
+
+        # Build the nested operator
+        op = func2(qml.X) if func2 is qml.adjoint else func2(qml.X, control=0)
+        final_op = func1(op) if func1 is qml.adjoint else func1(op, control=1)
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circ():
+            final_op(wires=2)
+            return qml.state()
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        qfunc_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        hop_outer = qfunc_jaxpr.eqns[0].primitive
+        hop_inner = qfunc_jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive
+        assert func2.__name__ in str(hop_inner)
+        assert func1.__name__ in str(hop_outer)
+
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
 
