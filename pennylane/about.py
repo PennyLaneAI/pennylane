@@ -18,15 +18,13 @@ e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 import platform
 import sys
 from importlib import metadata
+from importlib.metadata import version
+from importlib.util import find_spec
 from subprocess import check_output
 from sys import version_info
 
 import numpy
 import scipy
-
-from importlib.metadata import version
-from importlib.util import find_spec
-from packaging.version import Version
 
 if find_spec("jax"):
     jax_version = version("jax")
