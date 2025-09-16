@@ -27,10 +27,11 @@ from pennylane.labs.resource_estimation import (
     QubitManager,
     ResourceOperator,
     Resources,
-    set_adj_decomp,
-    set_ctrl_decomp,
-    set_decomp,
-    set_pow_decomp,
+)
+from pennylane.labs.resource_estimation.ops import (
+    ResourceMultiControlledX,
+    ResourceMultiRZ,
+    ResourcePauliRot,
 )
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
@@ -212,7 +213,7 @@ class DummyOp(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -230,7 +231,7 @@ class DummyOp_no_resource_rep(ResourceOperator):
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -248,7 +249,7 @@ class DummyOp_no_resource_params(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
+    def resource_decomp(cls, x) -> list:
         """dummy resources"""
         return [x]
 
@@ -305,6 +306,14 @@ class TestResourceOperator:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
+
+    def test_eq_method(self):
+        """Test that the __eq__ method for the ResourceOperator is correct"""
+
+        assert ResourceMultiRZ(num_wires=3) == ResourceMultiRZ(num_wires=3)
+        assert ResourceMultiRZ(num_wires=3) != ResourceMultiRZ(num_wires=2)
+        assert ResourcePauliRot("XYZ") != ResourcePauliRot("YZ")
+        assert ResourceMultiControlledX(2, 2) != ResourceMultiControlledX(2, 1)
 
     ops_to_queue = [
         ResourceHadamard(wires=[0]),
@@ -498,109 +507,6 @@ def test_make_hashable(input_obj, expected_hashable):
     assert hash(result) is not None
 
 
-def test_set_decomp():
-    """Test that the set_decomp function works as expected."""
-    op1 = DummyOp(x=5)
-    assert DummyOp.resource_decomp(**op1.resource_params) == [5]
-
-    def custom_res_decomp(x, **kwargs):
-        return [x + 1]
-
-    set_decomp(DummyOp, custom_res_decomp)
-
-    assert DummyOp.resource_decomp(**op1.resource_params) == [6]
-
-    def custom_res_decomp_error(y):  # must match signature of default_resource_decomp
-        return [y + 1]
-
-    with pytest.raises(ValueError):
-        set_decomp(DummyOp, custom_res_decomp_error)
-
-
-def test_set_adj_decomp():
-    """Test that the set_decomp function works as expected."""
-
-    class DummyAdjOp(DummyOp):
-        """Dummy Adjoint Op class"""
-
-        @classmethod
-        def default_adjoint_resource_decomp(cls, x):
-            """dummy adjoint resource decomp method"""
-            return cls.default_resource_decomp(x=x)
-
-    op1 = DummyAdjOp(x=5)
-    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [5]
-
-    def custom_res_decomp(x, **kwargs):
-        return [x + 1]
-
-    set_adj_decomp(DummyAdjOp, custom_res_decomp)
-
-    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [6]
-
-    def custom_res_decomp_error(y):  # must match signature of default_adjoint_resource_decomp
-        return [y + 1]
-
-    with pytest.raises(ValueError):
-        set_adj_decomp(DummyAdjOp, custom_res_decomp_error)
-
-
-def test_set_ctrl_decomp():
-    """Test that the set_decomp function works as expected."""
-
-    class DummyCtrlOp(DummyOp):
-        """Dummy Controlled Op class"""
-
-        @classmethod
-        def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
-            """dummy control resource decomp method"""
-            return cls.default_resource_decomp(x=x + ctrl_num_ctrl_values)
-
-    op1 = DummyCtrlOp(x=5)
-    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [5]
-
-    def custom_res_decomp(ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x, **kwargs):
-        return [x + ctrl_num_ctrl_wires]
-
-    set_ctrl_decomp(DummyCtrlOp, custom_res_decomp)
-
-    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [6]
-
-    def custom_res_decomp_error(x):  # must match signature of default_controlled_resource_decomp
-        return [x + 1]
-
-    with pytest.raises(ValueError):
-        set_ctrl_decomp(DummyCtrlOp, custom_res_decomp_error)
-
-
-def test_set_pow_decomp():
-    """Test that the set_decomp function works as expected."""
-
-    class DummyPowOp(DummyOp):
-        """Dummy Pow Op class"""
-
-        @classmethod
-        def default_pow_resource_decomp(cls, pow_z, x):
-            """dummy adjoint resource decomp method"""
-            return cls.default_resource_decomp(x=x)
-
-    op1 = DummyPowOp(x=5)
-    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [5]
-
-    def custom_res_decomp(pow_z, x, **kwargs):
-        return [x * pow_z]
-
-    set_pow_decomp(DummyPowOp, custom_res_decomp)
-
-    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [15]
-
-    def custom_res_decomp_error(x):  # must match signature of default_pow_resource_decomp
-        return [x + 1]
-
-    with pytest.raises(ValueError):
-        set_pow_decomp(DummyPowOp, custom_res_decomp_error)
-
-
 class TestGateCount:
     """Tests for the GateCount class."""
 
@@ -680,7 +586,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, params)
 
         @classmethod
-        def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
+        def resource_decomp(cls, num_wires, continuous_param, bool_param):
             """dummy default resource decomp method"""
             raise NotImplementedError
 
@@ -700,7 +606,7 @@ def test_resource_rep():
             return CompressedResourceOp(cls, {})
 
         @classmethod
-        def default_resource_decomp(cls, **kwargs):
+        def resource_decomp(cls):
             """dummy default resource decomp method"""
             raise NotImplementedError
 

@@ -22,18 +22,16 @@ null_decompose_graph_state transforms, written using xDSL.
     documentation for the GraphStatePrepOp operation in the MBQC dialect in Catalyst.
 """
 
-import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Generator, TypeAlias
+from typing import TypeAlias
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
 
-from pennylane.exceptions import CompileError
-
 from ..dialects import mbqc, quantum
+from ..mbqc import edge_iter, n_vertices_from_packed_adj_matrix
 from .api import compiler_transform
 
 DenselyPackedAdjMatrix: TypeAlias = Sequence[int] | Sequence[bool]
@@ -72,7 +70,7 @@ class DecomposeGraphStatePattern(RewritePattern):
         entangle_op_gate_name = graph_prep_op.entangle_op.data
 
         adj_matrix = _parse_adj_matrix(graph_prep_op)
-        n_vertices = _n_vertices_from_packed_adj_matrix(adj_matrix)
+        n_vertices = n_vertices_from_packed_adj_matrix(adj_matrix)
 
         # Allocate a register with as many qubits as vertices in the graph
         alloc_op = quantum.AllocOp(n_vertices)
@@ -97,7 +95,7 @@ class DecomposeGraphStatePattern(RewritePattern):
             graph_qubits_map[i] = init_op.out_qubits[0]
 
         entangle_ops: list[quantum.CustomOp] = []
-        for edge in _edge_iter(adj_matrix):
+        for edge in edge_iter(adj_matrix):
             q0 = graph_qubits_map[edge[0]]
             q1 = graph_qubits_map[edge[1]]
             entangle_op = quantum.CustomOp(in_qubits=(q0, q1), gate_name=entangle_op_gate_name)
@@ -167,7 +165,7 @@ class NullDecomposeGraphStatePattern(RewritePattern):
     def match_and_rewrite(self, graph_prep_op: mbqc.GraphStatePrepOp, rewriter: PatternRewriter, /):
         """Match and rewrite pattern for graph_state_prep ops."""
         adj_matrix = _parse_adj_matrix(graph_prep_op)
-        n_vertices = _n_vertices_from_packed_adj_matrix(adj_matrix)
+        n_vertices = n_vertices_from_packed_adj_matrix(adj_matrix)
 
         # Allocate a register with as many qubits as vertices in the graph
         alloc_op = quantum.AllocOp(n_vertices)
@@ -210,88 +208,3 @@ def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> list[int]:
     )
 
     return list(adj_matrix_bytes.data)
-
-
-def _n_vertices_from_packed_adj_matrix(adj_matrix: DenselyPackedAdjMatrix) -> int:
-    """Returns the number of vertices in the graph represented by the given densely packed adjacency
-    matrix.
-
-    Args:
-        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix, given as a
-            sequence of bools or ints. See the note in the module documentation for a description of
-            this format.
-
-    Raises:
-        CompileError: If the number of elements in `adj_matrix` is not compatible with the number of
-            elements in the lower-triangular part of a square matrix, excluding the elements along
-            the diagonal.
-
-    Returns:
-        int: The number of vertices in the graph.
-
-    Example:
-        >>> _n_vertices_from_packed_adj_matrix([1, 1, 0, 0, 1, 1])
-        4
-    """
-    assert isinstance(
-        adj_matrix, Sequence
-    ), f"Expected `adj_matrix` to be a sequence, but got {type(adj_matrix).__name__}"
-
-    m = len(adj_matrix)
-
-    # The formula to compute the number of vertices, N, in the graph from the number elements in the
-    # densely packed adjacency matrix, m, is
-    #   N = (1 + sqrt(1 + 8m)) / 2
-    # To avoid floating-point errors in the sqrt function, we break it down into integer-arithmetic
-    # operations and ensure that the solution is one where N is mathematically a true integer.
-
-    discriminant = 1 + 8 * m
-    sqrt_discriminant = math.isqrt(discriminant)
-
-    # Check if it's a perfect square
-    if sqrt_discriminant * sqrt_discriminant != discriminant:
-        raise CompileError(
-            f"The number of elements in the densely packed adjacency matrix is {m}, which does not "
-            f"correspond to an integer number of graph vertices"
-        )
-
-    # The numerator, 1 + sqrt(1 + 8m), must be even for the result to be an integer. The quantity
-    # sqrt(1 + 8m) will always be odd if it's a perfect square, so the quantity (1 + sqrt(1 + 8m))
-    # will always be even. We can therefore safely divide (using integer division).
-    return (1 + sqrt_discriminant) // 2
-
-
-def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int], None, None]:
-    """Generate an iterator over the edges in a graph represented by the given densely packed
-    adjacency matrix.
-
-    Args:
-        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix, given as a
-            sequence of bools or ints. See the note in the module documentation for a description of
-            this format.
-
-    Yields:
-        tuple[int, int]: The next edge in the graph, represented as the pair of vertices labelled
-            according to their indices in the adjacency matrix.
-
-    Example:
-        >>> for edge in _edge_iter([1, 1, 0, 0, 1, 1]):
-        ...     print(edge)
-        (0, 1)
-        (0, 2)
-        (1, 3)
-        (2, 3)
-    """
-    # Calling `_n_vertices_from_packed_adj_matrix()` asserts that the input `adj_matrix` is in the
-    # correct format and is valid.
-    _n_vertices_from_packed_adj_matrix(adj_matrix)
-
-    j = 1
-    k = 0
-    for entry in adj_matrix:
-        if entry:
-            yield (k, j)
-        k += 1
-        if k == j:
-            k = 0
-            j += 1

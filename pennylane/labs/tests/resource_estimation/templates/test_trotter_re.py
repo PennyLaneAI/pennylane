@@ -51,14 +51,14 @@ class TestResourceTrotterProduct:
             ],
         ),
         (
-            [plre.ResourceRX(eps=1e-3), plre.ResourceRY(eps=1e-3), plre.ResourceZ()],
+            [plre.ResourceRX(precision=1e-3), plre.ResourceRY(precision=1e-3), plre.ResourceZ()],
             1,
             10,
             4,
             [
-                GateCount(resource_rep(plre.ResourceRX, {"eps": 1e-3}), 51),
+                GateCount(resource_rep(plre.ResourceRX, {"precision": 1e-3}), 51),
                 GateCount(resource_rep(plre.ResourceZ), 50),
-                GateCount(resource_rep(plre.ResourceRY, {"eps": 1e-3}), 100),
+                GateCount(resource_rep(plre.ResourceRY, {"precision": 1e-3}), 100),
             ],
         ),
     ]
@@ -201,7 +201,7 @@ class TestTrotterCDF:
         def circ():
             plre.ResourceTrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate_resources(circ)()
+        res = plre.estimate(circ)()
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
@@ -277,7 +277,7 @@ class TestTrotterTHC:
         def circ():
             plre.ResourceTrotterTHC(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate_resources(circ)()
+        res = plre.estimate(circ)()
 
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
@@ -385,7 +385,7 @@ class TestTrotterVibrational:
         def circ():
             plre.ResourceTrotterVibrational(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate_resources(circ)()
+        res = plre.estimate(circ)()
 
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
@@ -500,7 +500,7 @@ class TestResourceTrotterVibronic:
         def circ():
             plre.ResourceTrotterVibronic(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate_resources(circ)()
+        res = plre.estimate(circ)()
 
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
