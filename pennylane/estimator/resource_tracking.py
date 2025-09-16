@@ -336,7 +336,7 @@ def _ops_to_compressed_reps(
         if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
 
-        if isinstance(op, Operation):  # map: op --> res_op, then: res_op --> cmprsd_res_op
+        if isinstance(op, Operation):
             cmp_rep_ops.append(map_to_resource_op(op).resource_rep_from_op())
 
     return cmp_rep_ops
