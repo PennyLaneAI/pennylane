@@ -82,7 +82,7 @@ class ResourceConfig:
         Args:
             op_type (type[ResourceOperator]): the operator class for which
                 to set the precision
-            precision (float): The desired synthesis precision tolerance. A smaller
+            precision (float): The desired precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
                 increase the required gate counts. Must be greater than 0.
 
