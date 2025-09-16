@@ -1126,7 +1126,7 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
         return []
 
     if not work_wires:
-        raise ValueError(f"Can't use this decomposition with less than 1 work wire.")
+        raise ValueError("Can't use this decomposition with less than 1 work wire.")
 
     if partial:
         if len(ops) == 1:
