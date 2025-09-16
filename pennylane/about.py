@@ -24,9 +24,13 @@ from sys import version_info
 import numpy
 import scipy
 
-try:
-    from jax import __version__ as jax_version
-except ImportError:
+from importlib.metadata import version
+from importlib.util import find_spec
+from packaging.version import Version
+
+if find_spec("jax"):
+    jax_version = version("jax")
+else:
     jax_version = None
 
 
