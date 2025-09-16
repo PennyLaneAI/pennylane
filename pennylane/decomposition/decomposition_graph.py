@@ -708,7 +708,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         op_node_idx, d_node_idx = edge_obj
         return self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
 
-    def discover_vertex(self, v, score):
+    def discover_vertex(self, v, score):  # pylint: disable=unused-argument
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:

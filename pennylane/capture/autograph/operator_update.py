@@ -20,6 +20,7 @@ from malt.core import converter
 from malt.pyct import templates
 
 
+# pylint: disable=too-few-public-methods
 # TODO: The methods from this class should be moved to the SliceTransformer class in DiastaticMalt
 class SingleIndexArrayOperatorUpdateTransformer(converter.Base):
     """Converts array element operator assignment statements into calls to update_item_with_{op},
