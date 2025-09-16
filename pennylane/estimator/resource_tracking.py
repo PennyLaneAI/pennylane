@@ -232,7 +232,7 @@ def _resources_from_pl_ops(
     tight_budget=None,
     config: ResourceConfig | None = None,
 ) -> Resources:
-    """Extract resources from a pl operator."""
+    """Extract resources from a PennyLane operator."""
     obj = map_to_resource_op(obj)
     return _resources_from_resource(
         1 * obj,
