@@ -18,7 +18,6 @@ from functools import singledispatch
 
 import pennylane.estimator.ops as re_ops
 import pennylane.ops as qops
-import pennylane.templates as qtemps
 from pennylane.estimator import ResourceOperator
 from pennylane.operation import Operation
 
