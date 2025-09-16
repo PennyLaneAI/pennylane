@@ -51,7 +51,7 @@ def about():
     )
     print(f"Numpy version:           {numpy.__version__}")
     print(f"Scipy version:           {scipy.__version__}")
-    print(f"Jax version:             {jax_version}")
+    print(f"JAX version:             {jax_version}")
 
     print("Installed devices:")
 
