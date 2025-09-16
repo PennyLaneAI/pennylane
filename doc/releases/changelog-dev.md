@@ -133,6 +133,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds a warning about the experimental, unmaintained nature of native plxpr execution.
+
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
 

@@ -163,6 +163,11 @@ qnode_prim.prim_type = "higher_order"
 @qnode_prim.def_impl
 def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
+    warn(
+        "Native execution of plxpr is an unmaintained experimental feature. Plxpr should only be used as a frontend for catalyst.",
+        UserWarning,
+    )
+
     execution_config = device.setup_execution_config(execution_config)
 
     if shots_len == 0:
