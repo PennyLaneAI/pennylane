@@ -65,7 +65,6 @@ def test_debugger_attribute():
 
 def test_resource_tracking_attributes():
     """Test NullQubit track_resources attribute"""
-    # pylint: disable=protected-access
     default_dev = NullQubit()
     assert "track_resources" in default_dev.device_kwargs
     assert default_dev.device_kwargs["track_resources"] is False
@@ -79,6 +78,20 @@ def test_resource_tracking_attributes():
     assert dev.device_kwargs["resources_filename"] == "test.json"
     assert "compute_depth" in dev.device_kwargs
     assert dev.device_kwargs["compute_depth"] is True
+
+
+def test_set_device_target():
+    """Test that the device target can be set and retrieved correctly."""
+    # pylint: disable=protected-access
+    default_dev = NullQubit()
+    assert default_dev._target_device is None
+    assert default_dev.config_filepath is None
+
+    to_target = qml.devices.DefaultQubit()
+
+    dev = NullQubit(target_device=to_target)
+    assert dev._target_device == to_target
+    assert dev.config_filepath == to_target.config_filepath
 
 
 @pytest.mark.parametrize("shots", (None, 10))

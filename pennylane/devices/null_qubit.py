@@ -146,6 +146,7 @@ class NullQubit(Device):
             If not set, the filename will match ``__pennylane_resources_data_*`` where the wildcard (asterisk)
             is replaced by the timestamp of when execution began in nanoseconds since Unix EPOCH.
         compute_depth (bool): If True, compute the circuit depth as part of resource tracking.
+        target_device (qml.devices.Device): The target device to use for preprocessing steps. If None, ``DefaultQubit`` is used.
 
     **Example:**
 
