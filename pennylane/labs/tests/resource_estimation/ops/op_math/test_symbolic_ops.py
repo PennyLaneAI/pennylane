@@ -31,7 +31,7 @@ class TestResourceAdjoint:
         "base_type, base_args",
         (
             (plre.ResourceS, {}),
-            (plre.ResourceRZ, {"eps": 1e-3}),
+            (plre.ResourceRZ, {"precision": 1e-3}),
             (plre.ResourceCNOT, {"wires": ["ctrl", "trgt"]}),
         ),
     )
@@ -57,7 +57,7 @@ class TestResourceAdjoint:
             """Dummy class with no default adjoint decomp"""
 
             @classmethod
-            def default_adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+            def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined
 
@@ -78,7 +78,7 @@ class TestResourceAdjoint:
         "base_op",
         (
             plre.ResourceS(),
-            plre.ResourceRZ(eps=1e-3),
+            plre.ResourceRZ(precision=1e-3),
             plre.ResourceCNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -99,7 +99,7 @@ class TestResourcePow:
         "base_type, base_args",
         (
             (plre.ResourceS, {}),
-            (plre.ResourceRZ, {"eps": 1e-3}),
+            (plre.ResourceRZ, {"precision": 1e-3}),
             (plre.ResourceCNOT, {"wires": ["ctrl", "trgt"]}),
         ),
     )
@@ -131,7 +131,7 @@ class TestResourcePow:
             """Dummy class with no default pow decomp"""
 
             @classmethod
-            def default_pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+            def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
                 """No default resources"""
                 raise plre.ResourcesNotDefined
 
@@ -145,7 +145,7 @@ class TestResourcePow:
         "base_op",
         (
             plre.ResourceS(),
-            plre.ResourceRZ(eps=1e-3),
+            plre.ResourceRZ(precision=1e-3),
             plre.ResourceCNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -180,7 +180,7 @@ class TestResourceControlled:
         "base_type, base_args",
         (
             (plre.ResourceS, {}),
-            (plre.ResourceRZ, {"eps": 1e-3}),
+            (plre.ResourceRZ, {"precision": 1e-3}),
             (plre.ResourceCNOT, {"wires": ["ctrl", "trgt"]}),
         ),
     )
@@ -210,7 +210,7 @@ class TestResourceControlled:
             """Dummy class with no default ctrl decomp"""
 
             @classmethod
-            def default_controlled_resource_decomp(
+            def controlled_resource_decomp(
                 cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
@@ -243,7 +243,7 @@ class TestResourceControlled:
         "base_op",
         (
             plre.ResourceS(),
-            plre.ResourceRZ(eps=1e-3),
+            plre.ResourceRZ(precision=1e-3),
             plre.ResourceCNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -274,7 +274,7 @@ class TestResourceProd:
                 plre.ResourceX(wires=0),
                 plre.ResourceCZ(wires=[1, 2]),
                 (plre.ResourceHadamard(), 4),
-                plre.ResourceRX(eps=1e-4, wires=3),
+                plre.ResourceRX(precision=1e-4, wires=3),
                 (plre.ResourceCNOT(), 2),
             ]
             prod_op = plre.ResourceProd(res_ops=ops)
@@ -293,7 +293,7 @@ class TestResourceProd:
             plre.ResourceX(wires=0),
             plre.ResourceCZ(wires=[1, 2]),
             (plre.ResourceHadamard(), 4),
-            plre.ResourceRX(eps=1e-4, wires=3),
+            plre.ResourceRX(precision=1e-4, wires=3),
             (plre.ResourceCNOT(), 2),
         ]
         prod_op = plre.ResourceProd(res_ops=ops)
@@ -302,7 +302,7 @@ class TestResourceProd:
             GateCount(plre.resource_rep(plre.ResourceX)),
             GateCount(plre.resource_rep(plre.ResourceCZ)),
             GateCount(plre.resource_rep(plre.ResourceHadamard), 4),
-            GateCount(plre.resource_rep(plre.ResourceRX, {"eps": 1e-4})),
+            GateCount(plre.resource_rep(plre.ResourceRX, {"precision": 1e-4})),
             GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
         ]
         assert prod_op.resource_decomp(**prod_op.resource_params) == expected_res
