@@ -123,9 +123,9 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
-* New intermediate representations (IRs) :func:`~transforms.parity_matrix` and :func:`~transforms.
-  phase_polynomial` are available in PennyLane. These IRs are used in compilation passes to optimize CNOT and 
-  phase polynomial circuits, respectively. For example, :func:`~transforms.rowcol` uses the parity matrix as
+* New intermediate representations (IRs) :func:`~.transforms.parity_matrix` and :func:`~.transforms.phase_polynomial`
+  are available in PennyLane. These IRs are used in compilation passes to optimize CNOT and 
+  phase polynomial circuits, respectively. For example, :func:`~.transforms.rowcol` uses the parity matrix as
   its IR.
   [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
 

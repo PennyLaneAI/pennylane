@@ -21,7 +21,7 @@ import pennylane as qml
 
 def phase_polynomial(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
     r"""
-    `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of CNOT and RZ gates.
+    `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of :class:`~.CNOT` and :class:`~.RZ` gates.
 
     The action of such circuits can be described by a phase polynomial :math:`p(\boldsymbol{x})` and a :func:`~parity_matrix` :math:`P` acting on a computational basis state :math:`|\boldsymbol{x}\rangle = |x_1, x_2, .., x_n\rangle` in the following way:
 

@@ -296,10 +296,10 @@ def rowcol(
 
     This algorithm was introduced by `Wu et al. <https://arxiv.org/abs/1910.14478>`__ and is
     detailed in the `compilation hub <https://pennylane.ai/compilation/rowcol-algorithm>`__,
-    where examples can be found as well.
+    where additional examples can be found as well.
 
     Args:
-        tape (QNode or QuantumScript or Callable): Input circuit containing only :class:`~CNOT` gates. Will internally be translated to the :func:`~parity_matrix` IR.
+        tape (QNode or QuantumScript or Callable): Input circuit containing only :class:`~.CNOT` gates. Will internally be translated to the :func:`~.parity_matrix` IR.
         connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default),
             full connectivity is assumed.
 
