@@ -267,9 +267,7 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def adjoint_resource_decomp(
-        cls, target_resource_params: dict | None = None, **kwargs
-    ) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -284,7 +282,6 @@ class ResourceOperator(ABC):
         num_ctrl_wires: int,
         num_zero_ctrl: int,
         target_resource_params: dict | None = None,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -300,7 +297,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     def pow_resource_decomp(
-        cls, pow_z: int, target_resource_params: dict | None = None, **kwargs
+        cls, pow_z: int, target_resource_params: dict | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator
         raised to a power.
