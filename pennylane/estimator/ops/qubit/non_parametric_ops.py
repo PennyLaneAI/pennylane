@@ -487,7 +487,7 @@ class T(ResourceOperator):
             to :math:`T^{z \pmod 8}`.
 
 
-            The decomposition for :math:`T^{z}`, (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+            The decomposition for :math:`T^{z}`, where :math:`z \pmod 8` is denoted as `z'`, is as follows:
 
             - If `z' = 0`: The operation is equivalent to the Identity gate (:math:`I`).
             - If `z' = 1`: The operation is equivalent to the T-gate (:math:`T`).
