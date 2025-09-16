@@ -220,7 +220,9 @@ class TestDecompositionRule:
         qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
 
         assert qml.decomposition.has_decomp(CustomOp)
+        assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
         assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
+        assert qml.list_decomps(CustomOp(wires=[0, 1])) == [custom_decomp, custom_decomp2, custom_decomp3]
 
         def custom_decomp4(theta, wires, **__):
             qml.RZ(theta, wires=wires[0])
