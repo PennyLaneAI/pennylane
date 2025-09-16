@@ -442,7 +442,7 @@ def _compute_expectation_single_op(
 ) -> Tuple[complex, int]:
     """Returns the expectation value obtained from a single operator/state multiplication"""
     new_state = state
-    for symbol in op:
+    for symbol in reversed(op):
         if isinstance(symbol, FrozenSet):
             fragment = sum(
                 (frag_coeff * fragments[x] for x, frag_coeff in symbol), _AdditiveIdentity()
