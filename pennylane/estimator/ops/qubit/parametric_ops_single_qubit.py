@@ -113,7 +113,7 @@ class PhaseShift(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, precision=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, precision=None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
