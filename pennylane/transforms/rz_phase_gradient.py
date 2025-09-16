@@ -82,7 +82,7 @@ def rz_phase_gradient(
     It is important to stress that this transform does not prepare the state.
 
 
-    Note that :class`~SemiAdder` we requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
+    Note that :class`~.SemiAdder` we requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{aux} |y\rangle_\text{qft} = |x\rangle_\text{aux} |x + y\rangle_\text{qft}`.
 
     More details can be found on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
@@ -101,7 +101,7 @@ def rz_phase_gradient(
             with which the angle is represented.
             E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) * 2\pi` is exactly represented by three bits as ``111``.
         phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them. Will only use the first ``len(aux_wires)`` according to the precision with which the angle is decomposed.
-        work wires (Wires): Additional work wires to realize the :class`~SemiAdder` between the ``aux_wires`` and
+        work wires (Wires): Additional work wires to realize the :class`~.SemiAdder` between the ``aux_wires`` and
             ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b`` is the number of
             phase gradient wires, hence the precision of the angle :math:`\phi`.
 
