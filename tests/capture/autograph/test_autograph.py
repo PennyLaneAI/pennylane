@@ -352,10 +352,10 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "func1, func2",
         [
-            (qml.adjoint, qml.ctrl),
-            (qml.ctrl, qml.adjoint),
+            (qml.adjoint, partial(qml.ctrl, control=0)),
+            (partial(qml.ctrl, control=0), qml.adjoint),
             (qml.adjoint, qml.adjoint),
-            (qml.ctrl, qml.ctrl),
+            (partial(qml.ctrl, control=0), partial(qml.ctrl, control=0)),
         ],
     )
     def test_nested_adjoint_ctrl(self, func1, func2):
