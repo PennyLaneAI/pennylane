@@ -32,7 +32,8 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 # pylint: disable=protected-access,too-many-arguments
 
 
-def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
+def map_to_resource_op(): # TODO: Import this function instead when the mapping PR is merged
+    """Maps an instance of :class:`~.Operation` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`."""
     pass
 
 
@@ -158,7 +159,7 @@ def _resources_from_qfunc(
         gate_counts = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
             _update_counts_from_compressed_res_op(
-                cmp_rep_op, gate_counts, wire_mngr=wire_manager, gate_set=gate_set, config=config
+                cmp_rep_op, gate_counts, wire_manager=wire_manager, gate_set=gate_set, config=config
             )
         return Resources(
             zeroed=wire_manager.zeroed,
@@ -187,7 +188,7 @@ def _resources_from_resource(
         _update_counts_from_compressed_res_op(
             cmpr_rep_op,
             gate_counts,
-            wire_mngr=wire_manager,
+            wire_manager=wire_manager,
             gate_set=gate_set,
             scalar=count,
             config=config,
@@ -245,9 +246,9 @@ def _resources_from_pl_ops(
 
 
 def _update_counts_from_compressed_res_op(
-    cp_rep: CompressedResourceOp,
+    comp_res_op: CompressedResourceOp,
     gate_counts_dict: dict,
-    wire_mngr: WireResourceManager,
+    wire_manager: WireResourceManager,
     gate_set: set | None = None,
     scalar: int = 1,
     config: ResourceConfig | None = None,
@@ -255,9 +256,9 @@ def _update_counts_from_compressed_res_op(
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
     Args:
-        cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
+        comp_res_op (CompressedResourceOp): operation in compressed representation to extract resources from
         gate_counts_dict (dict): base dictionary to modify with the resource counts
-        wire_mngr (WireResourceManager): the `WireResourceManager` that tracks and manages the 
+        wire_manager (WireResourceManager): the `WireResourceManager` that tracks and manages the
             `zeroed`, `any_state`, and `algo_wires` wires.
         gate_set (set): the set of operations to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
@@ -270,14 +271,14 @@ def _update_counts_from_compressed_res_op(
         config = ResourceConfig()
 
     ## If op in gate_set add to resources
-    if cp_rep.name in gate_set:
-        gate_counts_dict[cp_rep] += scalar
+    if comp_res_op.name in gate_set:
+        gate_counts_dict[comp_res_op] += scalar
         return
 
-    ## Else decompose cp_rep using its resource decomp [cp_rep --> list[GateCounts]] and extract resources
-    decomp_func, kwargs = _get_decomposition(cp_rep, config)
+    ## Else decompose comp_res_op using its resource decomp [comp_res_op --> list[GateCounts]] and extract resources
+    decomp_func, kwargs = _get_decomposition(comp_res_op, config)
 
-    params = {key: value for key, value in cp_rep.params.items() if value is not None}
+    params = {key: value for key, value in comp_res_op.params.items() if value is not None}
     filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
     resource_decomp = decomp_func(**params, **filtered_kwargs)
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
@@ -287,7 +288,7 @@ def _update_counts_from_compressed_res_op(
             _update_counts_from_compressed_res_op(
                 action.gate,
                 gate_counts_dict,
-                wire_mngr=wire_mngr,
+                wire_manager=wire_manager,
                 scalar=scalar * action.count,
                 gate_set=gate_set,
                 config=config,
@@ -296,14 +297,14 @@ def _update_counts_from_compressed_res_op(
 
         if isinstance(action, Allocate):
             if qubit_alloc_sum != 0 and scalar > 1:
-                wire_mngr.grab_zeroed(action.num_wires * scalar)
+                wire_manager.grab_zeroed(action.num_wires * scalar)
             else:
-                wire_mngr.grab_zeroed(action.num_wires)
+                wire_manager.grab_zeroed(action.num_wires)
         if isinstance(action, Deallocate):
             if qubit_alloc_sum != 0 and scalar > 1:
-                wire_mngr.free_wires(action.num_wires * scalar)
+                wire_manager.free_wires(action.num_wires * scalar)
             else:
-                wire_mngr.free_wires(action.num_wires)
+                wire_manager.free_wires(action.num_wires)
 
     return
 
@@ -343,7 +344,7 @@ def _ops_to_compressed_reps(
 
 
 def _get_decomposition(
-    cp_rep: CompressedResourceOp, config: ResourceConfig
+    comp_res_op: CompressedResourceOp, config: ResourceConfig
 ) -> tuple[Callable, dict]:
     """
     Selects the appropriate decomposition function and kwargs from a config object.
@@ -352,13 +353,13 @@ def _get_decomposition(
     handling standard, custom, and symbolic operator rules using a mapping.
 
     Args:
-        cp_rep (CompressedResourceOp): The operator to find the decomposition for.
+        comp_res_op (CompressedResourceOp): The operator to find the decomposition for.
         config (ResourceConfig): The configuration object containing decomposition rules.
 
     Returns:
         A tuple containing the decomposition function and its associated kwargs.
     """
-    op_type = cp_rep.op_type
+    op_type = comp_res_op.op_type
     _SYMBOLIC_DECOMP_MAP = {
         # TODO: Uncomment this when symbolic resource operators are merged.
         # ResourceAdjoint: "_adj_custom_decomps",
@@ -370,7 +371,7 @@ def _get_decomposition(
         decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
         custom_decomp_dict = getattr(config, decomp_attr_name)
 
-        base_op_type = cp_rep.params["base_cmpr_op"].op_type
+        base_op_type = comp_res_op.params["base_cmpr_op"].op_type
         kwargs = config.resource_op_precisions.get(base_op_type, {})
         decomp_func = custom_decomp_dict.get(base_op_type, op_type.resource_decomp)
 
