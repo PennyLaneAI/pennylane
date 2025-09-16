@@ -54,7 +54,7 @@ class ResourceSingleExcitation(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> se = plre.ResourceSingleExcitation()
-    >>> print(plre.estimate_resources(se, plre.StandardGateSet))
+    >>> print(plre.estimate(se, plre.StandardGateSet))
     --- Resources: ---
     Total qubits: 2
     Total gates : 16

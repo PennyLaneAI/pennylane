@@ -170,8 +170,8 @@ class ConcatenateOp(IRDLOperation):
 @irdl_op_definition
 class DynamicSliceOp(IRDLOperation):
     """
-    Extracts a slice from the `operand` using dynamically-computed starting
-    indices and produces a `result` tensor.
+    Extracts a slice from the ``operand`` using dynamically-computed starting
+    indices and produces a ``result`` tensor.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#dynamic_slice
@@ -351,6 +351,9 @@ class ScatterOp(IRDLOperation):
     unique_indices = opt_prop_def(BoolAttr, default_value=BoolAttr.from_bool(False))
     result = var_result_def(HLO_Tensor)
     update_computation = region_def("single_block")
+    # TODO: The MLIR implementation doesn't have the SingleBlockImplicitTerminator trait,
+    # However, it is checked to have a terminator in the verifier,
+    # which does not specifically check the terminator to be stablehlo.return.
 
     traits = traits_def(
         RecursiveMemoryEffect(),
