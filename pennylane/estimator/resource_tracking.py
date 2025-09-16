@@ -131,7 +131,7 @@ def _resources_from_qfunc(
     gate_set: set | None = None,
     zeroed: int = 0,
     any_state: int = 0,
-    tight_budget=False,
+    tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
