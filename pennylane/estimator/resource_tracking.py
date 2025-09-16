@@ -85,7 +85,7 @@ def estimate(
             qre.QFT(num_wires=3, wires=[0, 1, 2])
             return
 
-    Note that we are passing a python function NOT a :class:`~.QNode`. The resources for this
+    Note that a python function is passed here, not a :class:`~.QNode`. The resources for this
     workflow are then obtained by:
 
     >>> import pennylane.estimator as qre
