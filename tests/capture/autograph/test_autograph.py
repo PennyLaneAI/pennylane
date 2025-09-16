@@ -17,6 +17,8 @@ source-to-source transformation feature."""
 
 # pylint: disable = wrong-import-position, wrong-import-order, ungrouped-imports
 
+from functools import partial
+
 import numpy as np
 import pytest
 from malt.core import converter
