@@ -3,8 +3,8 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.specs` function can now support code that has been compiled with `qml.qjit`.
-  This new feature only supports getting circuit specs at the `device` level.
+* The :func:`~.specs` function now supports programs compiled with :func:`~.qjit`.
+  This new feature is only supported using `level="device"`.
   [(#8202)](https://github.com/PennyLaneAI/pennylane/pull/8202)
 
   ```python
