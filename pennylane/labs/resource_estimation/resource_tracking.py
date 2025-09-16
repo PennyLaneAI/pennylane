@@ -191,7 +191,6 @@ def _resources_from_qfunc(
 
         # Obtain resources in the gate_set
         compressed_res_ops_lst = _ops_to_compressed_reps(q.queue)
-
         gate_counts = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
             _update_counts_from_compressed_res_op(
@@ -212,7 +211,6 @@ def _resources_from_resource(
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a resources object."""
-
     existing_qm = obj.qubit_manager
     if work_wires is not None:
         if isinstance(work_wires, dict):

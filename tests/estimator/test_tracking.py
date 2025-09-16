@@ -18,21 +18,17 @@ from collections import defaultdict
 
 import pytest
 
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-)
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
-from pennylane.labs.resource_estimation.resource_operator import (
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
+    ResourcesUndefinedError,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate
-from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.estimator.resource_config import ResourceConfig
+from pennylane.estimator.resource_tracking import estimate
+from pennylane.estimator.resources_base import Resources
 
 # pylint: disable= no-self-use, arguments-differ
 
@@ -53,7 +49,7 @@ class ResourceTestCNOT(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
 
 class ResourceTestHadamard(ResourceOperator):
@@ -72,7 +68,7 @@ class ResourceTestHadamard(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
 
 class ResourceTestT(ResourceOperator):
@@ -91,7 +87,7 @@ class ResourceTestT(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, **kwargs):
-        raise ResourcesNotDefined
+        raise ResourcesUndefinedError
 
 
 class ResourceTestZ(ResourceOperator):
@@ -163,10 +159,10 @@ class ResourceTestAlg1(ResourceOperator):
         h = resource_rep(ResourceTestHadamard)
 
         return [
-            AllocWires(num_wires=num_iter),
+            Allocate(num_wires=num_iter),
             GateCount(h, num_iter),
             GateCount(cnot, num_iter),
-            FreeWires(num_wires=num_iter - 1),
+            Deallocate(num_wires=num_iter - 1),
         ]
 
 
@@ -193,10 +189,10 @@ class ResourceTestAlg2(ResourceOperator):
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
         return [
-            AllocWires(num_wires=num_wires),
+            Allocate(num_wires=num_wires),
             GateCount(rz, num_wires),
             GateCount(alg1, num_wires // 2),
-            FreeWires(num_wires=num_wires),
+            Deallocate(num_wires=num_wires),
         ]
 
 
@@ -230,8 +226,9 @@ class TestEstimateResources:
                 resource_rep(ResourceTestHadamard): 10,
             },
         )
-        expected_qubits = QubitManager(work_wires={"clean": 4, "dirty": 1}, algo_wires=7)
-        expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
+        expected_resources = Resources(
+            zeroed=4, any_state=1, algo_wires=7, gate_types=expected_gates
+        )
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
@@ -251,9 +248,7 @@ class TestEstimateResources:
                 resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
             },
         )
-        expected_qubits = QubitManager(work_wires=4, algo_wires=4)
-        expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
-
+        expected_resources = Resources(zeroed=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
 
     def test_estimate_resources_from_resources_obj(self):
@@ -265,8 +260,7 @@ class TestEstimateResources:
                 resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
             },
         )
-        qubits = QubitManager(work_wires=0, algo_wires=4)
-        resources = Resources(qubit_manager=qubits, gate_types=gates)
+        resources = Resources(zeroed=0, algo_wires=4, gate_types=gates)
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         actual_resources = estimate(resources, gate_set=gate_set)
@@ -279,10 +273,10 @@ class TestEstimateResources:
                 resource_rep(ResourceTestHadamard): 6,
             },
         )
-        expected_qubits = QubitManager(
-            work_wires={"clean": 4, "dirty": 2}, algo_wires=4
-        )  # TODO: optimize allocation
-        expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
+        # TODO: optimize allocation
+        expected_resources = Resources(
+            zeroed=4, any_state=2, algo_wires=4, gate_types=expected_gates
+        )
 
         assert actual_resources == expected_resources
 
@@ -296,7 +290,8 @@ class TestEstimateResources:
             (
                 {"TestRZ", "TestAlg1", "TestZ"},
                 Resources(
-                    qubit_manager=QubitManager(work_wires=4, algo_wires=4),
+                    zeroed=4,
+                    algo_wires=4,
                     gate_types=defaultdict(
                         int,
                         {
@@ -310,7 +305,9 @@ class TestEstimateResources:
             (
                 {"TestCNOT", "TestT", "TestHadamard"},
                 Resources(
-                    qubit_manager=QubitManager(work_wires={"clean": 8, "dirty": 2}, algo_wires=4),
+                    zeroed=8,
+                    any_state=2,
+                    algo_wires=4,
                     gate_types=defaultdict(
                         int,
                         {
@@ -344,32 +341,37 @@ class TestEstimateResources:
         computed_resources = estimate(op, gate_set={"TestT"}, config=custom_config)
 
         expected_resources = Resources(
-            qubit_manager=QubitManager(work_wires=0, algo_wires=1),
+            zeroed=0,
+            algo_wires=1,
             gate_types=defaultdict(int, {resource_rep(ResourceTestT): round(1 / error_val)}),
         )
 
         assert computed_resources == expected_resources
 
+    @pytest.mark.xfail(reason="RX and equivalent not yet in PL core")
     @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
     def test_varying_single_qubit_rotation_precision(self, error_val):
         """Test that setting the single_qubit_rotation_precision correctly updates the resources"""
         custom_config = ResourceConfig()
         custom_config.set_single_qubit_rot_precision(error_val)
 
-        custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
-        custom_config.set_decomp(ResourceRY, mock_rotation_decomp)
-        custom_config.set_decomp(ResourceRZ, mock_rotation_decomp)
+        # TODO: uncomment this when ready resource operators are imported.
+        # custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
+        # custom_config.set_decomp(ResourceRY, mock_rotation_decomp)
+        # custom_config.set_decomp(ResourceRZ, mock_rotation_decomp)
 
-        def my_circuit():
-            ResourceRX(wires=0)
-            ResourceRY(wires=1)
-            ResourceRZ(wires=2)
+        # def my_circuit():
+        #     ResourceRX(wires=0)
+        #     ResourceRY(wires=1)
+        #     ResourceRZ(wires=2)
 
-        computed_resources = estimate(my_circuit, gate_set={"TestT"}, config=custom_config)()
+        # computed_resources = estimate(my_circuit, gate_set={"TestT"}, config=custom_config)()
 
+        computed_resources = 0  # TODO: Replace this with above code block
         expected_t_count = 3 * round(1 / error_val)
         expected_resources = Resources(
-            qubit_manager=QubitManager(work_wires=0, algo_wires=3),
+            zeroed=0,
+            algo_wires=3,
             gate_types=defaultdict(int, {resource_rep(ResourceTestT): expected_t_count}),
         )
 

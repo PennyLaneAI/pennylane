@@ -67,13 +67,14 @@ DefaultGateSet = frozenset(
 
 
 def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
-    return
+    pass
 
 
 def estimate(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set | None = None,
-    work_wires: int | dict = 0,
+    zeroed: int = 0,
+    any_state: int = 0,
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources | Callable:
@@ -81,14 +82,12 @@ def estimate(
     provided in the gateset.
 
     Args:
-        obj (ResourceOperator | Callable | Resources | List): The quantum circuit or operation
+        obj (ResourceOperator | Callable | Resources | list): The quantum circuit or operation
             to obtain resources from.
         gate_set (set | None): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        work_wires (int | dict | None): The number of available zeroed and/or any_state ancilla
-            qubits. If an integer is provided, it specifies the number of zeroed ancillas. If a
-            dictionary is provided, it should have the keys ``"zeroed"`` and ``"any_state"``.
-            Defaults to ``0``.
+        zeroed (int | None): The number of available zeroed qubits.
+        any_state (int | None): TODO
         tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
             exceed the available amount. The default is ``False``.
         config (ResourceConfig | None): A ResourceConfig object of additional parameters which sets default values
@@ -142,20 +141,21 @@ def estimate(
      {'Hadamard': 5, 'CNOT': 10, 'T': 264}
 
     """
-    return _estimate_resources_dispatch(obj, gate_set, work_wires, tight_budget, config)
+    return _estimate_resources_dispatch(obj, gate_set, zeroed, any_state, tight_budget, config)
 
 
 @singledispatch
 def _estimate_resources_dispatch(
     obj: ResourceOperator | Callable | Resources | list,
     gate_set: set | None = None,
-    work_wires: int | dict = 0,
+    zeroed: int = 0,
+    any_state: int = 0,
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources | Callable:
     """Internal singledispatch function for resource estimation."""
     raise TypeError(
-        f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Resources, Callable or ResourceOperator"
+        f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Resources, Callable, ResourceOperator, or list"
     )
 
 
@@ -163,7 +163,8 @@ def _estimate_resources_dispatch(
 def _resources_from_qfunc(
     obj: Callable,
     gate_set: set | None = None,
-    work_wires=0,
+    zeroed: int = 0,
+    any_state: int = 0,
     tight_budget=False,
     config: ResourceConfig | None = None,
 ) -> Callable:
@@ -174,7 +175,7 @@ def _resources_from_qfunc(
         with AnnotatedQueue() as q:
             obj(*args, **kwargs)
 
-        qm = WireResourceManager(work_wires, tight_budget)
+        wire_manager = WireResourceManager(zeroed, any_state, tight_budget)
         # Get algorithm wires:
         num_algo_qubits = 0
         circuit_wires = []
@@ -182,22 +183,23 @@ def _resources_from_qfunc(
             if isinstance(op, (ResourceOperator, Operation)):
                 if op.wires:
                     circuit_wires.append(op.wires)
-                else:
+                elif op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
-
         num_algo_qubits += len(Wires.all_wires(circuit_wires))
-        qm.algo_qubits = num_algo_qubits  # set the algorithmic qubits in the qubit manager
-
+        wire_manager.algo_wires = num_algo_qubits  # set the algorithmic qubits in the qubit manager
         # Obtain resources in the gate_set
         compressed_res_ops_lst = _ops_to_compressed_reps(q.queue)
-
         gate_counts = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
             _update_counts_from_compressed_res_op(
-                cmp_rep_op, gate_counts, qbit_mngr=qm, gate_set=gate_set, config=config
+                cmp_rep_op, gate_counts, wire_mngr=wire_manager, gate_set=gate_set, config=config
             )
-
-        return Resources(qubit_manager=qm, gate_types=gate_counts)
+        return Resources(
+            zeroed=wire_manager.zeroed,
+            any_state=wire_manager.any_state,
+            algo_wires=wire_manager.algo_wires,
+            gate_types=gate_counts,
+        )
 
     return wrapper
 
@@ -206,47 +208,40 @@ def _resources_from_qfunc(
 def _resources_from_resource(
     obj: Resources,
     gate_set: set | None = None,
-    work_wires=0,
+    zeroed: int = 0,
+    any_state: int = 0,
     tight_budget=None,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a resources object."""
 
-    existing_qm = obj.qubit_manager
-    if work_wires is not None:
-        if isinstance(work_wires, dict):
-            clean_wires = work_wires["clean"]
-            dirty_wires = work_wires["dirty"]
-        else:
-            clean_wires = work_wires
-            dirty_wires = 0
-
-        existing_qm._clean_qubit_counts = max(clean_wires, existing_qm._clean_qubit_counts)
-        existing_qm._dirty_qubit_counts = max(dirty_wires, existing_qm._dirty_qubit_counts)
-
-    if tight_budget is not None:
-        existing_qm.tight_budget = tight_budget
-
+    wire_manager = WireResourceManager(zeroed, any_state, obj.algo_wires, tight_budget)
     gate_counts = defaultdict(int)
     for cmpr_rep_op, count in obj.gate_types.items():
         _update_counts_from_compressed_res_op(
             cmpr_rep_op,
             gate_counts,
-            qbit_mngr=existing_qm,
+            wire_mngr=wire_manager,
             gate_set=gate_set,
             scalar=count,
             config=config,
         )
 
     # Update:
-    return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
+    return Resources(
+        zeroed=wire_manager.zeroed,
+        any_state=wire_manager.any_state,
+        algo_wires=wire_manager.algo_wires,
+        gate_types=gate_counts,
+    )
 
 
 @_estimate_resources_dispatch.register
 def _resources_from_resource_ops(
     obj: ResourceOperator,
     gate_set: set | None = None,
-    work_wires=0,
+    zeroed: int = 0,
+    any_state: int = 0,
     tight_budget=None,
     config: ResourceConfig | None = None,
 ) -> Resources:
@@ -255,7 +250,8 @@ def _resources_from_resource_ops(
     return _resources_from_resource(
         1 * obj,
         gate_set,
-        work_wires,
+        zeroed,
+        any_state,
         tight_budget,
         config,
     )
@@ -265,7 +261,8 @@ def _resources_from_resource_ops(
 def _resources_from_pl_ops(
     obj: Operation,
     gate_set: set | None = None,
-    work_wires=0,
+    zeroed: int = 0,
+    any_state: int = 0,
     tight_budget=None,
     config: ResourceConfig | None = None,
 ) -> Resources:
@@ -274,7 +271,8 @@ def _resources_from_pl_ops(
     return _resources_from_resource(
         1 * obj,
         gate_set,
-        work_wires,
+        zeroed,
+        any_state,
         tight_budget,
         config,
     )
@@ -283,7 +281,7 @@ def _resources_from_pl_ops(
 def _update_counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
-    qbit_mngr,
+    wire_mngr: WireResourceManager,
     gate_set: set | None = None,
     scalar: int = 1,
     config: ResourceConfig | None = None,
@@ -313,7 +311,6 @@ def _update_counts_from_compressed_res_op(
 
     params = {key: value for key, value in cp_rep.params.items() if value is not None}
     filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
-
     resource_decomp = decomp_func(**params, **filtered_kwargs)
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
@@ -322,7 +319,7 @@ def _update_counts_from_compressed_res_op(
             _update_counts_from_compressed_res_op(
                 action.gate,
                 gate_counts_dict,
-                qbit_mngr=qbit_mngr,
+                wire_mngr=wire_mngr,
                 scalar=scalar * action.count,
                 gate_set=gate_set,
                 config=config,
@@ -331,14 +328,14 @@ def _update_counts_from_compressed_res_op(
 
         if isinstance(action, Allocate):
             if qubit_alloc_sum != 0 and scalar > 1:
-                qbit_mngr.grab_clean_qubits(action.num_wires * scalar)
+                wire_mngr.grab_zeroed(action.num_wires * scalar)
             else:
-                qbit_mngr.grab_clean_qubits(action.num_wires)
+                wire_mngr.grab_zeroed(action.num_wires)
         if isinstance(action, Deallocate):
             if qubit_alloc_sum != 0 and scalar > 1:
-                qbit_mngr.free_qubits(action.num_wires * scalar)
+                wire_mngr.free_wires(action.num_wires * scalar)
             else:
-                qbit_mngr.free_qubits(action.num_wires)
+                wire_mngr.free_wires(action.num_wires)
 
     return
 
@@ -395,7 +392,7 @@ def _get_decomposition(
     """
     op_type = cp_rep.op_type
     _SYMBOLIC_DECOMP_MAP = {
-        # ToDo: Uncomment this when symbolic resource operators are merged.
+        # TODO: Uncomment this when symbolic resource operators are merged.
         # ResourceAdjoint: "_adj_custom_decomps",
         # ResourceControlled: "_ctrl_custom_decomps",
         # ResourcePow: "_pow_custom_decomps",
