@@ -41,7 +41,7 @@ def _rotation_resources(precision=10e-3):
     where :math:`\epsilon` is the provided ``precision``.
 
     Args:
-        precision (float): the acceptable error threshold for the approximation
+        precision (float): The acceptable error threshold for the approximation.
 
     Returns:
         list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
