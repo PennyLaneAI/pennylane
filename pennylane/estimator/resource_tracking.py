@@ -51,8 +51,8 @@ def estimate(
             to obtain resources from.
         gate_set (set | None): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        zeroed (int | None): The number of available zeroed qubits.
-        any_state (int | None): TODO
+        zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
+        any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
             exceed the available amount. The default is ``False``.
         config (ResourceConfig | None): A ResourceConfig object of additional parameters which sets default values
