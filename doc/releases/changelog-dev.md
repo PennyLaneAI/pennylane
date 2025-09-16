@@ -6,6 +6,7 @@
 * The `qml.sample` function can now receive an optional `dtype` parameter 
   which sets the type and precision of the samples returned by this measurement process.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
+  [(#8271)](https://github.com/PennyLaneAI/pennylane/pull/8271)
   
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
@@ -20,6 +21,8 @@
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
   * The test files were renamed to avoid the dual definition error with labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
+  * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
+    [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
@@ -1133,6 +1136,10 @@
 
 * Return `dtype` of `qml.samples` when using `mcm_method="tree-traversal"` is now `int` - consistent with other MCMs.
   [(#8274)](https://github.com/PennyLaneAI/pennylane/pull/8274)
+
+* Autograph will now be correctly applied to the wrapped functions of :func:`~pennylane.adjoint`
+  and :func:`~pennylane.ctrl`.
+  [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
 
 * Parameter batching now works for Z-basis gates when executing with `default.mixed`. 
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
