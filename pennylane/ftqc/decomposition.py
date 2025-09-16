@@ -94,8 +94,25 @@ def correct_final_samples(results, tape):
 
 
 def get_new_ops(
-    tape_in, wire_map_in, q_mgr, diagonalize_mcms=False, include_corrections_in_ops=True
+    tape_in,
+    wire_map_in,
+    q_mgr,
+    diagonalize_mcms=False,
+    queue_paulis=True,
 ):
+    """This function takes the tape operations in the MBQC gate-set, and returns a new
+    queue of operations in the MBQC formalism.
+
+    Args:
+        tape_in (QuantumScript): the tape (expressed in the MBQC gateset) to generate a tape in the MBQC formalism from.
+        wire_map_in (dict): A dictionary of the current wire mapping. Will be updated while queueing the operations.
+        q_mgr (QubitMgr): The qubit manager that is tracking available wires for the system.
+        diagonalize_mcms (bool, optional): When set, the transform inserts diagonalizing gates
+            before arbitrary-basis mid-circuit measurements. Defaults to False.
+        queue_paulis(bool, optional): whether Pauli ops (both from the original tape and
+            introduced conditionally as byproduct corrections) will be queued. Defaults to True.
+            If False, they must be handled by the pauli tracker seperately.
+    """
     with AnnotatedQueue() as q:
         for op in tape_in.operations:
             if isinstance(op, GlobalPhase):  # no wires
@@ -108,14 +125,15 @@ def get_new_ops(
                     wire_map_in[tgt],
                     diagonalize_mcms=diagonalize_mcms,
                 )
-                if include_corrections_in_ops:
+                if queue_paulis:
                     cnot_corrections(measurements)(wire_map_in[ctrl], wire_map_in[tgt])
             else:  # one wire
                 # pylint: disable=isinstance-second-argument-not-valid-type
                 if isinstance(op, (X, Y, Z, Identity)):
-                    # else branch because Identity may not have wires
-                    wire = wire_map_in[op.wires[0]] if op.wires else ()
-                    op.__class__(wire)
+                    if queue_paulis:
+                        # else branch because Identity may not have wires
+                        wire = wire_map_in[op.wires[0]] if op.wires else ()
+                        op.__class__(wire)
                 else:
                     w = op.wires[0]
                     wire_map_in[w], measurements = queue_single_qubit_gate(
@@ -124,7 +142,7 @@ def get_new_ops(
                         in_wire=wire_map_in[w],
                         diagonalize_mcms=diagonalize_mcms,
                     )
-                    if include_corrections_in_ops:
+                    if queue_paulis:
                         queue_corrections(op, measurements)(wire_map_in[w])
 
     return q.queue
@@ -176,6 +194,7 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
         ops_queue = get_new_ops(
             tape.final_tape,
             wire_map,
+            q_mgr,
             diagonalize_mcms=diagonalize_mcms,
         )
         new_wires = [wire_map[w] for w in meas_wires]
@@ -233,7 +252,7 @@ def convert_to_mbqc_formalism_with_pauli_tracker(sequence):
         from pennylane.ftqc.pauli_tracker import get_byproduct_ops
 
         ops_queue = get_new_ops(
-            inner_tape, wire_map, q_mgr, diagonalize_mcms=True, include_corrections_in_ops=False
+            inner_tape, wire_map, q_mgr, diagonalize_mcms=True, queue_paulis=False
         )
         byproduct_fns.append(partial(get_byproduct_ops, tape=inner_tape, wire_map=wire_map.copy()))
         new_tapes.append(inner_tape.copy(operations=ops_queue))
@@ -246,7 +265,7 @@ def convert_to_mbqc_formalism_with_pauli_tracker(sequence):
         wire_map,
         q_mgr,
         diagonalize_mcms=True,
-        include_corrections_in_ops=False,
+        queue_paulis=False,
     )
     new_wires = [wire_map[w] for w in meas_wires]
     new_tapes.append(

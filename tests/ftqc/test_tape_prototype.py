@@ -92,6 +92,25 @@ def test_invalid_mcm_method_raises_error(backend):
         )
 
 
+def test_simple_circuit(wires):
+    """Test that an arbitrary circuit is preprocessed to be expressed in the
+    MBQC formalism before executing, and executes as expected"""
+
+    qml.decomposition.enable_graph()
+
+    dev = FTQCQubit(wires=wires, backend=NullQubitBackend())
+
+    @qml.set_shots(1)
+    @qml.qnode(dev)
+    def circ():
+        qml.H(0)
+        qml.S(0)
+        qml.H(1)
+        return qml.expval(qml.X(0)), qml.expval(qml.X(1))
+
+    assert np.allclose(circ(), (1.0, 1.0), atol=0.05)
+
+
 @pytest.mark.parametrize(
     "wires",
     [
@@ -148,6 +167,12 @@ def test_executing_arbitrary_circuit(wires, backend_cls, mocker):
     expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
 
     assert np.allclose(res, expected_res, atol=0.05)
+    # assert np.isclose(res[0], expected_res[0], atol=0.05)
+    # # NOTE: SIGN FLIP compared to expected result for the second response
+    # # This is known, but not understood. We allow it to pass for now
+    # # so we can monitor that it is generally working except for the sign flip
+    # assert np.isclose(res[1], expected_res[1], atol=0.05)
+    # assert np.isclose(res[2], expected_res[2], atol=0.05)
 
 
 @pytest.mark.parametrize(

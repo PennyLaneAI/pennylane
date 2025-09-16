@@ -19,6 +19,7 @@ from typing import Literal
 
 import numpy as np
 
+import pennylane as qml
 from pennylane import allocation, control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
@@ -417,12 +418,13 @@ def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
 
 
 def _mcx_many_workers_resource(num_control_wires, work_wire_type, **__):
+
+    if work_wire_type == "borrowed":
+        return {ops.Toffoli: 4 * (num_control_wires - 2)}
     return {
-        ops.Toffoli: (
-            4 * (num_control_wires - 2)
-            if work_wire_type == "borrowed"
-            else 2 * (num_control_wires - 2) + 1
-        )
+        qml.TemporaryAND: num_control_wires - 2,
+        adjoint_resource_rep(qml.TemporaryAND): num_control_wires - 2,
+        ops.Toffoli: 1,
     }
 
 
@@ -433,27 +435,32 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
-
     target_wire, control_wires = wires[-1], wires[:-1]
     work_wires = work_wires[: len(control_wires) - 2]
 
+    if work_wire_type == "borrowed":
+        up_gate = down_gate = ops.Toffoli
+    else:
+        down_gate = qml.TemporaryAND
+        up_gate = ops.adjoint(qml.TemporaryAND)
+
     @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
-        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+        up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     @control_flow.for_loop(len(work_wires) - 1, 0, -1)
     def loop_down(i):
-        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+        down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
         loop_up()
 
-    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
     loop_down()
     ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
     loop_up()
-    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
         loop_down()
@@ -497,16 +504,27 @@ decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_worke
 
 
 def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
-    return num_control_wires > 2 and num_work_wires >= 2
+    return num_control_wires > 2 and (
+        num_work_wires >= 2 or (num_work_wires == 1 and num_control_wires < 6)
+    )
 
 
 def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
+
+    is_small_mcx = num_control_wires < 6
+
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 3
-        return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3 if num_control_wires < 6 else n_ccx - 5}
+        n_temporary_ccx_pairs = 2 - is_small_mcx
+        return {
+            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
+            ops.X: n_ccx - 3 if is_small_mcx else n_ccx - 5,
+            qml.TemporaryAND: n_temporary_ccx_pairs,
+            adjoint_resource_rep(qml.TemporaryAND): n_temporary_ccx_pairs,
+        }
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 if num_control_wires < 6 else n_ccx - 8}
+    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 if is_small_mcx else n_ccx - 8}
 
 
 @register_condition(_mcx_two_workers_condition)
@@ -523,30 +541,48 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
-
+    # Unpack work wires for readability. There might just be one of them if it is a "small" MCX
+    # (less than 6 controls)
+    work0, *work1 = work_wires
     # First use the work wire to prepare the first two control wires as conditionally clean.
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    left_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.TemporaryAND
+    left_elbow([wires[0], wires[1], work0])
+
     middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
 
-    # Apply the MCX in the middle
+    # Apply the MCX in the middle. This is just a single Toffoli without work wires for "small" MCX
     if len(middle_ctrl_indices) == 1:
-        ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
+        ops.Toffoli([work0, wires[middle_ctrl_indices[0]], wires[-1]])
     else:
         middle_wires = [wires[i] for i in middle_ctrl_indices]
-        _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
+        # No toggle detection needed for the inner MCX decomposition, even for borrowed work wires
+        _mcx_one_worker(
+            [work0] + middle_wires + wires[-1:],
+            work1,
+            work_wire_type=work_wire_type,
+            _skip_toggle_detection=True,
+        )
 
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
+
+    right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.adjoint(qml.TemporaryAND)
+    right_elbow([wires[0], wires[1], work0])
 
     if work_wire_type == "borrowed":
-        # Perform toggle-detection of the work wire is borrowed
+        # Perform toggle-detection if the work wire is borrowed
         middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
         if len(middle_ctrl_indices) == 1:
-            ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
+            ops.Toffoli([work0, wires[middle_ctrl_indices[0]], wires[-1]])
         else:
             middle_wires = [wires[i] for i in middle_ctrl_indices]
-            _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
+            _mcx_one_worker(
+                [work0] + middle_wires + wires[-1:],
+                work1,
+                work_wire_type=work_wire_type,
+                _skip_toggle_detection=True,
+            )
+
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
@@ -557,10 +593,11 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
-    work_wires={"zeroed": 2},
+    work_wires=lambda num_control_wires, **_: {"zeroed": 1 + (num_control_wires >= 6)},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
-    with allocation.allocate(2, state="zero", restored=True) as work_wires:
+    is_small_mcx = (len(wires) - 1) < 6
+    with allocation.allocate(2 - is_small_mcx, state="zero", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -572,10 +609,11 @@ decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
-    work_wires={"borrowed": 2},
+    work_wires=lambda num_control_wires, **_: {"borrowed": 2 - (num_control_wires < 6)},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
-    with allocation.allocate(2, state="any", restored=True) as work_wires:
+    is_small_mcx = (len(wires) - 1) < 6
+    with allocation.allocate(2 - is_small_mcx, state="any", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -589,8 +627,13 @@ def _mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
 
 def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
     if work_wire_type == "zeroed":
-        n_ccx = 2 * num_control_wires - 3
-        return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
+        n_ccx = 2 * num_control_wires - 5
+        return {
+            ops.Toffoli: n_ccx,
+            qml.TemporaryAND: 1,
+            adjoint_resource_rep(qml.TemporaryAND): 1,
+            ops.X: n_ccx - 1,
+        }
     # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
     return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
@@ -598,28 +641,43 @@ def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
 
 @register_condition(_mcx_one_worker_condition)
 @register_resources(_mcx_one_worker_resource)
-def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", **__):
+def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_detection=False, **__):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
     produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
     and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is borrowed as described in
     Sec. 5.1 of [1].
 
+    .. note::
+
+        The keyword argument ``_skip_toggle_detection`` is only supposed to be used when utilizing
+        ``_mcx_one_worker`` as a subroutine within a decomposition rule, but not when using
+        it as a decomposition rule itself. This is because ``_mcx_one_worker_resource`` does not
+        support/take into account this keyword argument.
+
     References:
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
-
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    if work_wire_type == "borrowed":
+        ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    else:
+        _skip_toggle_detection = True
+        qml.TemporaryAND([wires[0], wires[1], work_wires[0]])
 
     final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
     ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
 
     if work_wire_type == "borrowed":
-        # Perform toggle-detection of the work wire is borrowed
+        ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    else:
+        ops.adjoint(qml.TemporaryAND([wires[0], wires[1], work_wires[0]]))
+
+    if not _skip_toggle_detection:
+        # Perform toggle-detection unless skipped explicitly. By default, toggle detection
+        # is skipped for `work_wire_type="zeroed"` but not for `work_wire_type="borrowed"`.
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
