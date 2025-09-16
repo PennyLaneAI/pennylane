@@ -65,8 +65,10 @@ DefaultGateSet = frozenset(
     }
 )
 
-def map_to_resource_op(): # TODO: Import this function instead when the mapping PR is merged
+
+def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
     return
+
 
 def estimate(
     obj: ResourceOperator | Callable | Resources | list,
