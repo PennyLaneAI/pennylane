@@ -15,16 +15,15 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.Z(0) @ qml.Z(1))
 
-  print(qml.specs(circuit, level="device")())
+  print(qml.specs(circuit, level="device")()["resources"])
   ```
   ```
-  {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}), gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
-   'num_device_wires': 2,
-   'device_name': 'lightning.qubit',
-   'level': 'device',
-   'gradient_options': {},
-   'interface': 'auto',
-   'diff_method': 'best'}
+  Resources(num_wires=2,
+            num_gates=2,
+            gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}),
+            gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 1}),
+            depth=2,
+            shots=Shots(total_shots=None, shot_vector=()))
   ```
 
 * The `qml.sample` function can now receive an optional `dtype` parameter
