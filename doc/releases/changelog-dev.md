@@ -57,6 +57,7 @@
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
+  [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
 
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
@@ -980,6 +981,7 @@
 
 * Improve type hinting internally.
   [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
+  [(#8284)](https://github.com/PennyLaneAI/pennylane/pull/8284)
 
 * The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
   as jaxprs with no output.
