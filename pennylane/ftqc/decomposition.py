@@ -90,7 +90,7 @@ def correct_final_samples(results, tape):
 
 
 @transform
-def convert_to_mbqc_formalism(tape, diagonalize_mcms=False, pauli_tracker=True):
+def convert_to_mbqc_formalism(tape, diagonalize_mcms=False, pauli_tracker=False):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
