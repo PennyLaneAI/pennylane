@@ -150,6 +150,12 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
                     case "stablehlo.broadcast_in_dim":
                         return resolve_constant_params(op.operands[0])
 
+        case "stablehlo.concatenate":
+            return [resolve_constant_params(operand) for operand in op.operands]
+          
+        case "stablehlo.broadcast_in_dim":
+            return resolve_constant_params(op.operands[0])
+
         case _:
             raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 
