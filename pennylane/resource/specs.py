@@ -335,14 +335,18 @@ def specs(
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qml.QNode):
             return partial(_specs_qnode, qnode, level, compute_depth)
     except ImportError:
+        # pragma: no cover
         pass
 
     try:
+        # pragma: no cover
+        # This is tested by integration tests within the Catalyst frontend
         import catalyst
 
         if isinstance(qnode, catalyst.jit.QJIT):
             return partial(_specs_qjit, qnode, level, compute_depth)
     except ImportError:
+        # pragma: no cover
         pass
 
     raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
