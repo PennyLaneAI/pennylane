@@ -90,7 +90,7 @@ def correct_final_samples(results, tape):
 
 
 @transform
-def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
+def convert_to_mbqc_formalism(tape, diagonalize_mcms=False, pauli_tracker=True):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
@@ -122,7 +122,7 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
 
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
 
-    def get_new_ops(tape_in, wire_map_in, include_corrections=True):
+    def get_new_ops(tape_in, wire_map_in, include_corrections_in_ops=True):
         with AnnotatedQueue() as q:
             for op in tape_in.operations:
                 if isinstance(op, GlobalPhase):  # no wires
@@ -135,7 +135,7 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
                         wire_map_in[tgt],
                         diagonalize_mcms=diagonalize_mcms,
                     )
-                    if include_corrections:
+                    if include_corrections_in_ops:
                         cnot_corrections(measurements)(wire_map_in[ctrl], wire_map_in[tgt])
                 else:  # one wire
                     # pylint: disable=isinstance-second-argument-not-valid-type
@@ -151,7 +151,7 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
                             in_wire=wire_map_in[w],
                             diagonalize_mcms=diagonalize_mcms,
                         )
-                        if include_corrections:
+                        if include_corrections_in_ops:
                             queue_corrections(op, measurements)(wire_map_in[w])
 
         return q.queue
@@ -169,7 +169,11 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
             new_tapes.append(new_tape)
 
         # new ops and measurement wires for the final tape
-        ops_queue = get_new_ops(tape.final_tape, wire_map, include_corrections=False)
+        ops_queue = get_new_ops(
+            tape.final_tape,
+            wire_map,
+            include_corrections_in_ops=not pauli_tracker,
+        )
         new_wires = [wire_map[w] for w in meas_wires]
 
         # mcms for postprocessing will be added after this using `dynamic_one_shot`,
