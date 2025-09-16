@@ -27,6 +27,7 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
+from pennylane.operation import Operator
 
 
 @pytest.mark.unit
@@ -193,7 +194,7 @@ class TestDecompositionRule:
     def test_decomposition_dictionary(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operator):  # pylint: disable=too-few-public-methods
             pass
 
         assert not qml.decomposition.has_decomp(CustomOp)
@@ -222,7 +223,11 @@ class TestDecompositionRule:
         assert qml.decomposition.has_decomp(CustomOp)
         assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
         assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
-        assert qml.list_decomps(CustomOp(wires=[0, 1])) == [custom_decomp, custom_decomp2, custom_decomp3]
+        assert qml.list_decomps(CustomOp(wires=[0, 1])) == [
+            custom_decomp,
+            custom_decomp2,
+            custom_decomp3,
+        ]
 
         def custom_decomp4(theta, wires, **__):
             qml.RZ(theta, wires=wires[0])
@@ -237,6 +242,9 @@ class TestDecompositionRule:
     def test_custom_symbolic_decomposition(self):
         """Tests that custom decomposition rules for symbolic operators can be registered."""
 
+        class CustomOp(Operator):
+            pass
+
         @register_resources({qml.RX: 1, qml.RZ: 1})
         def my_adjoint_custom_op(theta, wires, **__):
             qml.RX(theta, wires=wires[0])
@@ -245,11 +253,13 @@ class TestDecompositionRule:
         qml.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
         assert qml.decomposition.has_decomp("Adjoint(CustomOp)")
         assert qml.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
+        assert qml.decomposition.has_decomp(qml.adjoint(CustomOp(wires=[0, 1])))
+        assert qml.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
 
             resource_keys = set()
 
@@ -273,7 +283,7 @@ class TestDecompositionRule:
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
-        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
 
             resource_keys = {"foo"}
 
