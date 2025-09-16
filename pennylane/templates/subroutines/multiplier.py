@@ -220,7 +220,6 @@ class Multiplier(Operation):
         [((Adjoint(QFT(wires=[3, 4, 5]))) @ (Adjoint(ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2]))) @ QFT(wires=[[3, 4, 5]])) @ (SWAP(wires=[2, 5]) @ SWAP(wires=[1, 4]) @ SWAP(wires=[0, 3])) @ ((Adjoint(QFT(wires=[3, 4, 5]))) @ (ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2])) @ QFT(wires=[3, 4, 5]))]
         """
 
-        op_list = []
         if mod != 2 ** len(x_wires):
             work_wire_aux = work_wires[:1]
             wires_aux = work_wires[1:]
@@ -230,7 +229,7 @@ class Multiplier(Operation):
             wires_aux = work_wires[: len(x_wires)]
             wires_aux_swap = wires_aux
 
-        compute_op = change_op_basis(
+        op1 = change_op_basis(
             QFT(wires=wires_aux),
             ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
         )
@@ -238,7 +237,7 @@ class Multiplier(Operation):
         target_op = prod(*reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap)]))
 
         inv_k = pow(k, -1, mod)
-        uncompute_op = change_op_basis(
+        op2 = change_op_basis(
             QFT(wires=wires_aux),
             adjoint(
                 ControlledSequence(
@@ -247,11 +246,7 @@ class Multiplier(Operation):
             ),
         )
 
-        op_list = [
-            change_op_basis(compute_op, target_op, uncompute_op),
-        ]
-
-        return op_list
+        return [op1, target_op, op2]
 
 
 def _multiplier_decomposition_resources(
