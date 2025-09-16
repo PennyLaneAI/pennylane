@@ -712,6 +712,129 @@ def test_invalid_reduction_operations(run_filecheck):
         run_filecheck(program_return_count, roundtrip=True, verify=True)
 
 
+def test_custom_call_basic(run_filecheck):
+    """CustomCallOp minimal form without layouts should verify."""
+    program = r"""
+    // CHECK: %[[ARG:.*]] = "test.op"() : () -> tensor<2x3xi32>
+    %arg = "test.op"() : () -> tensor<2x3xi32>
+
+    // CHECK: %[[RES:.*]] = "stablehlo.custom_call"(%[[ARG]])
+    // CHECK-SAME: call_target_name = "foo"
+    // CHECK-SAME: api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>
+    %res = "stablehlo.custom_call"(%arg) {
+      call_target_name = "foo",
+      api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>,
+      output_operand_aliases = []
+    } : (tensor<2x3xi32>) -> tensor<2x3xi32>
+    """
+
+    run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_custom_call_with_layouts(run_filecheck):
+    """CustomCallOp with matching operand/result layouts should verify."""
+    program = r"""
+    // CHECK: %[[ARG:.*]] = "test.op"() : () -> tensor<2x3xi32>
+    %arg = "test.op"() : () -> tensor<2x3xi32>
+
+    // CHECK: %[[RES:.*]] = "stablehlo.custom_call"(%[[ARG]])
+    // CHECK-SAME: operand_layouts = [dense<[1, 0]> : tensor<2xindex>]
+    // CHECK-SAME: result_layouts = [dense<[1, 0]> : tensor<2xindex>]
+    %res = "stablehlo.custom_call"(%arg) {
+      call_target_name = "foo",
+      api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>,
+      operand_layouts = [dense<[1, 0]> : tensor<2xindex>],
+      result_layouts = [dense<[1, 0]> : tensor<2xindex>],
+      output_operand_aliases = []
+    } : (tensor<2x3xi32>) -> tensor<2x3xi32>
+    """
+
+    run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_custom_call_missing_result_layouts(run_filecheck):
+    """Providing only operand_layouts should fail (must provide both or none)."""
+    program = r"""
+    %arg = "test.op"() : () -> tensor<2x3xi32>
+
+    %res = "stablehlo.custom_call"(%arg) {
+      call_target_name = "foo",
+      api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>,
+      operand_layouts = [dense<[1, 0]> : tensor<2xindex>],
+      output_operand_aliases = []
+    } : (tensor<2x3xi32>) -> tensor<2x3xi32>
+    """
+
+    with pytest.raises(
+        Exception,
+        match=r"either both operands and results or none",
+    ):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_custom_call_layouts_mismatch(run_filecheck):
+    """Number of layouts must match number of operands/results."""
+    program = r"""
+    %arg0 = "test.op"() : () -> tensor<2x3xi32>
+    %arg1 = "test.op"() : () -> tensor<2x3xi32>
+
+    %res = "stablehlo.custom_call"(%arg0, %arg1) {
+      call_target_name = "foo",
+      api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>,
+      operand_layouts = [dense<[1, 0]> : tensor<2xindex>],
+      result_layouts = [dense<[1, 0]> : tensor<2xindex>],
+      output_operand_aliases = []
+    } : (tensor<2x3xi32>, tensor<2x3xi32>) -> tensor<2x3xi32>
+    """
+
+    with pytest.raises(
+        Exception, match=r"Number of operands must match the number of operand layouts"
+    ):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_custom_call_incorrect_layout_perm(run_filecheck):
+    """Layout must be a permutation of [0, rank)."""
+    program = r"""
+    %arg = "test.op"() : () -> tensor<2x3xi32>
+
+    %res = "stablehlo.custom_call"(%arg) {
+      call_target_name = "foo",
+      api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>,
+      operand_layouts = [dense<[0]> : tensor<1xindex>],
+      result_layouts = [dense<[0]> : tensor<1xindex>],
+      output_operand_aliases = []
+    } : (tensor<2x3xi32>) -> tensor<2x3xi32>
+    """
+
+    with pytest.raises(Exception, match=r"layout must be a permutation of \[0, 2\)"):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_custom_call_single_tuple_result_with_element_layouts(run_filecheck):
+    """Single tuple result with element-wise layouts should verify (common case)."""
+    program = r"""
+    // CHECK: %[[ARG0:.*]] = "test.op"() : () -> tensor<2x3xi32>
+    // CHECK: %[[ARG1:.*]] = "test.op"() : () -> tensor<1xi32>
+    %arg0 = "test.op"() : () -> tensor<2x3xi32>
+    %arg1 = "test.op"() : () -> tensor<1xi32>
+
+    // CHECK: %[[RES:.*]] = "stablehlo.custom_call"(%[[ARG0]])
+    // CHECK-SAME: call_target_name = "foo"
+    // CHECK-SAME: api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>
+    // CHECK-SAME: operand_layouts = [dense<[1, 0]> : tensor<2xindex>]
+    // CHECK-SAME: result_layouts = [dense<[1, 0]> : tensor<2xindex>, dense<0> : tensor<1xindex>]
+    %res = "stablehlo.custom_call"(%arg0) {
+      call_target_name = "foo",
+      api_version = #stablehlo<custom_call_api_version API_VERSION_TYPED_FFI>,
+      operand_layouts = [dense<[1, 0]> : tensor<2xindex>],
+      result_layouts = [dense<[1, 0]> : tensor<2xindex>, dense<[0]> : tensor<1xindex>],
+      output_operand_aliases = []
+    } : (tensor<2x3xi32>) -> tuple<tensor<2x3xi32>, tensor<1xi32>>
+    """
+    run_filecheck(program, roundtrip=True, verify=True)
+
+
 def test_invalid_dynamic_broadcast_in_dim_operations(run_filecheck):
     """Test invalid dynamic_broadcast_in_dim cases that should fail verification."""
 
