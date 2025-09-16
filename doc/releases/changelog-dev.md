@@ -23,6 +23,8 @@
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
+  * Added a new `estimate` function to estimate the quantum resources required from a circuit or operation with respect to customizable configurations.
+    [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
