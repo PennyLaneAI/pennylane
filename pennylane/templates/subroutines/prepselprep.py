@@ -220,7 +220,13 @@ def _prepselprep_resources(op_reps, num_control):
     return {
         change_op_basis_resource_rep(
             resource_rep(StatePrep, num_wires=num_control),
-            resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control, partial=True),
+            resource_rep(
+                Select,
+                op_reps=prod_reps,
+                num_control_wires=num_control,
+                partial=True,
+                num_work_wires=0,
+            ),
         ): 1,
     }
 
