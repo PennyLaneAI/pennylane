@@ -208,7 +208,7 @@ def _resources_from_resource_ops(
     gate_set: set | None = None,
     zeroed: int = 0,
     any_state: int = 0,
-    tight_budget=None,
+    tight_budget: bool = None,
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
