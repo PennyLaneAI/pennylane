@@ -22,9 +22,7 @@ from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    CustomOp,
-)
+from pennylane.compiler.python_compiler.dialects.quantum import CustomOp
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
@@ -152,7 +150,7 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
 
         case "stablehlo.concatenate":
             return [resolve_constant_params(operand) for operand in op.operands]
-          
+
         case "stablehlo.broadcast_in_dim":
             return resolve_constant_params(op.operands[0])
 
