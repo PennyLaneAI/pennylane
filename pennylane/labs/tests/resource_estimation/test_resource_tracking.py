@@ -237,7 +237,6 @@ class TestEstimateResources:
         custom_config = ResourceConfig()
         custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": 1e-9}
         computed_resources = estimate(my_circuit, gate_set=gate_set, config=custom_config)()
-        print(computed_resources)
         assert computed_resources == expected_resources
 
     def test_estimate_resources_from_resource_operator(self):

@@ -30,6 +30,7 @@ from pennylane.wires import Wires
 
 # pylint: disable=protected-access,too-many-arguments
 
+
 def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
     pass
 
