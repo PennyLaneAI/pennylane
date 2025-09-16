@@ -141,8 +141,12 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False, pauli_tracker=True):
                     # pylint: disable=isinstance-second-argument-not-valid-type
                     if isinstance(op, (X, Y, Z, Identity)):
                         # else branch because Identity may not have wires
-                        wire = wire_map_in[op.wires[0]] if op.wires else ()
-                        op.__class__(wire)
+                        if include_corrections_in_ops:
+                            wire = wire_map_in[op.wires[0]] if op.wires else ()
+                            op.__class__(wire)
+                        else:
+                            # No need to include Paulis operations if corrections are conducted with Pauli Tracker
+                            continue
                     else:
                         w = op.wires[0]
                         wire_map_in[w], measurements = queue_single_qubit_gate(
