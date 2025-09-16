@@ -25,7 +25,7 @@ from .temporary_and import TemporaryAND
 
 
 def _left_operator(wires, ik_is_zero=False):
-    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the left block in figure 2, https://arxiv.org/abs/1709.06648"""
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -42,7 +42,7 @@ def _left_operator(wires, ik_is_zero=False):
 
 
 def _right_operator(wires, ik_is_zero=False):
-    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the right block in figure 2, https://arxiv.org/abs/1709.06648"""
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -290,11 +290,15 @@ add_decomps(SemiAdder, _semiadder)
 
 def _L_alpha(alpha, wires):
     """
-    Implements the operator presented in Definition 6: https://arxiv.org/pdf/2501.16802
-    It corresponds to a ladder of multi-controlled operators where the positions of the target wires are determined
-    by some integers :math:`\alpha`.
+    Implements the operator presented in Definition 6: https://arxiv.org/abs/2501.16802
+    It corresponds to a sequence of ``len(alpha)`` multi-controlled operators.
+    The control wires of the first multi-controlled gate are the first :math:\alpha_0 wires,
+    and its target is wire :math:`\alpha_0`. For the :math:`i`-th operator, the control wires are
+    those with indices in the interval :math:`[\alpha_{i-1} + 1,\ \alpha_i)`, and the target
+    wire is :math:`\alpha_i.
 
-    The implementation is based on Algorithm 2: https://arxiv.org/pdf/2501.16802
+
+    The implementation is based on Algorithm 2: https://arxiv.org/abs/2501.16802
 
     Args:
         alpha (list): ordered list of integer storing the position of the target wires
@@ -344,7 +348,7 @@ def _L_alpha(alpha, wires):
 def _cnot_ladder(wires):
     """
     CNOT ladder implementation with sublinear depth.
-    It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/pdf/2501.16802
+    It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/abs/2501.16802
     """
 
     alpha = [i for i in range(1, len(wires))]
@@ -354,7 +358,7 @@ def _cnot_ladder(wires):
 def _toffoli_ladder(wires):
     """
     Toffoli ladder implementation with sublinear depth.
-    It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/pdf/2501.16802
+    It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/abs/2501.16802
     """
 
     alpha = [i for i in range(2, len(wires), 2)]
@@ -363,7 +367,7 @@ def _toffoli_ladder(wires):
 
 def _fanout_1(wires):
     """
-    Implements the operator presented in Definition 2: https://arxiv.org/pdf/2501.16802
+    Implements the operator presented in Definition 2: https://arxiv.org/abs/2501.16802
     """
 
     adjoint(_cnot_ladder, lazy=False)(wires[1:])
@@ -372,7 +376,7 @@ def _fanout_1(wires):
 
 def _fanout_2(control, wires_control, wires_target):
     """
-    Implements the operator presented in Definition 3: https://arxiv.org/pdf/2501.16802
+    Implements the operator presented in Definition 3: https://arxiv.org/abs/2501.16802
     """
 
     if len(wires_control) == 1:
@@ -431,7 +435,7 @@ def _semiadder_log_depth_resources(num_y_wires):
 @register_resources(_semiadder_log_depth_resources)
 def _semiadder_log_depth(x_wires, y_wires, **_):
 
-    # Implementation described in Algorithm 3: https://arxiv.org/pdf/2501.16802
+    # Implementation described in Algorithm 3: https://arxiv.org/abs/2501.16802
     # Figure 1 shows an example of a 5 qubits adder.
     # We remove the last qubit to just keep the modular addition
 
