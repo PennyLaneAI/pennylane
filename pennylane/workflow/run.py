@@ -22,6 +22,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
 from pennylane.workflow import _cache_transform
@@ -35,6 +36,7 @@ from .jacobian_products import (
 )
 
 if TYPE_CHECKING:
+    from pennylane.devices import Device, ExecutionConfig
     from pennylane.tape import QuantumScriptBatch
     from pennylane.transforms.core import TransformProgram
     from pennylane.typing import ResultBatch
@@ -43,8 +45,8 @@ if TYPE_CHECKING:
 
 
 def _construct_tf_autograph_pipeline(
-    config: qml.devices.ExecutionConfig,
-    device: qml.devices.Device,
+    config: ExecutionConfig,
+    device: Device,
     inner_transform_program: TransformProgram,
 ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
@@ -107,8 +109,8 @@ def _construct_tf_autograph_pipeline(
 
 
 def _construct_ml_execution_pipeline(
-    config: qml.devices.ExecutionConfig,
-    device: qml.devices.Device,
+    config: ExecutionConfig,
+    device: Device,
     inner_transform_program: TransformProgram,
 ) -> tuple[JacobianProductCalculator, ExecuteFn]:
     """Constructs the ML execution pipeline for all JPC interfaces.
@@ -178,7 +180,7 @@ def _construct_ml_execution_pipeline(
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    resolved_execution_config: qml.devices.ExecutionConfig, differentiable=False
+    resolved_execution_config: ExecutionConfig, differentiable=False
 ) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
@@ -269,8 +271,8 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 
 def run(
     tapes: QuantumScriptBatch,
-    device: qml.devices.Device,
-    config: qml.devices.ExecutionConfig,
+    device: Device,
+    config: ExecutionConfig,
     inner_transform_program: TransformProgram,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.
@@ -338,7 +340,7 @@ def run(
     if config.interface in {Interface.JAX, Interface.JAX_JIT}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+            tape.trainable_params = math.get_trainable_indices(params)
 
     results = ml_execute(tapes, execute_fn, jpc, device=device)
     return results
