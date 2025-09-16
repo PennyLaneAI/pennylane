@@ -138,6 +138,7 @@ class MidMeasureMP(Operator):
     num_wires = 1
     num_params = 0
     batch_size = None
+    resource_keys = set()
 
     def __init__(
         self,
@@ -189,6 +190,10 @@ class MidMeasureMP(Operator):
         _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def hash(self):

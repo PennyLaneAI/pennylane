@@ -578,6 +578,7 @@
   raised if the circuit contains a `GlobalPhase`, reminding the user that
   `GlobalPhase` is not assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Renamed several labs test file names to prevent conflict with names in PennyLane tests.

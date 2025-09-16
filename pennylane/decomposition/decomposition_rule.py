@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
 
+import pennylane as qml
 from pennylane.operation import Operator
 
 from .resources import CompressedResourceOp, Resources, resource_rep
@@ -436,6 +437,8 @@ def _auto_wrap(op_type):
     """Conveniently wrap an operator type in a resource representation."""
     if isinstance(op_type, CompressedResourceOp):
         return op_type
+    if op_type == "measure":
+        return CompressedResourceOp(qml.measurements.MidMeasureMP, {})
     if not issubclass(op_type, Operator):
         raise TypeError(
             "The keys of the dictionary returned by the resource function must be a subclass of "
