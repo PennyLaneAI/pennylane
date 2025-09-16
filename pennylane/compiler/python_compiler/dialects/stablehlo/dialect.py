@@ -25,7 +25,6 @@ import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
 from .attributes import (
-    CustomCallApiVersion,
     CustomCallApiVersionAttr,
     GatherDimensionNumbers,
     OutputOperandAlias,
@@ -151,7 +150,6 @@ OPERATIONS = [
 
 # Attributes to add to the dialect
 ATTRIBUTES = [
-    CustomCallApiVersion,
     CustomCallApiVersionAttr,
     GatherDimensionNumbers,
     ResultAccuracyModeAttr,
