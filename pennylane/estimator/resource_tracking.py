@@ -81,17 +81,17 @@ def estimate(
     provided in the gateset.
 
     Args:
-        obj (Union[ResourceOperator, Callable, Resources, List]): The quantum circuit or operation
+        obj (ResourceOperator | Callable | Resources | List): The quantum circuit or operation
             to obtain resources from.
-        gate_set (Set, optional): A set of names (strings) of the fundamental operations to track
+        gate_set (set | None): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        work_wires (int | dict | optional): The number of available zeroed and/or any_state ancilla
+        work_wires (int | dict | None): The number of available zeroed and/or any_state ancilla
             qubits. If an integer is provided, it specifies the number of zeroed ancillas. If a
             dictionary is provided, it should have the keys ``"zeroed"`` and ``"any_state"``.
             Defaults to ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
             exceed the available amount. The default is ``False``.
-        config (ResourceConfig, optional): A ResourceConfig object of additional parameters which sets default values
+        config (ResourceConfig | None): A ResourceConfig object of additional parameters which sets default values
             when they are not specified on the operator.
 
     Returns:
@@ -292,10 +292,10 @@ def _update_counts_from_compressed_res_op(
 
     Args:
         cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
-        gate_counts_dict (Dict): base dictionary to modify with the resource counts
-        gate_set (Set): the set of operations to track resources with respect to
-        scalar (int, optional): optional scalar to multiply the counts. Defaults to 1.
-        config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
+        gate_counts_dict (dict): base dictionary to modify with the resource counts
+        gate_set (set): the set of operations to track resources with respect to
+        scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
+        config (dict | None): additional parameters to specify the resources from an operator. Defaults to ResourceConfig.
     """
     if gate_set is None:
         gate_set = DefaultGateSet
