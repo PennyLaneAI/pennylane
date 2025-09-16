@@ -105,7 +105,7 @@ class ResourceTestZ(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_decomp(cls, **kwargs):
+    def resource_decomp(cls):
         t = resource_rep(ResourceTestT)
         return [GateCount(t, count=4)]
 
@@ -154,7 +154,7 @@ class ResourceTestAlg1(ResourceOperator):
         return {"num_iter": self.num_iter}
 
     @classmethod
-    def resource_decomp(cls, num_iter, **kwargs):
+    def resource_decomp(cls, num_iter):
         cnot = resource_rep(ResourceTestCNOT)
         h = resource_rep(ResourceTestHadamard)
 
@@ -184,7 +184,7 @@ class ResourceTestAlg2(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def resource_decomp(cls, num_wires, **kwargs):
+    def resource_decomp(cls, num_wires):
         rz = resource_rep(ResourceTestRZ, {"precision": 1e-2})
         alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
 
