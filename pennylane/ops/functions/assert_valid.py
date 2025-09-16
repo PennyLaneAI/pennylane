@@ -166,7 +166,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert (
             non_zero_gate_counts == actual_gate_counts
-        ), f"{non_zero_gate_counts} != {actual_gate_counts}"
+        ), f"\nGate counts expected from resource function:\n{non_zero_gate_counts}\nActual gate counts:\n{actual_gate_counts}"
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix:
