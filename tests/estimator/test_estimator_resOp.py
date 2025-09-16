@@ -29,9 +29,6 @@ from pennylane.estimator.resource_operator import (
     _make_hashable,
     resource_rep,
 )
-
-from pennylane.exceptions import ResourcesUndefinedError
-
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
@@ -306,6 +303,67 @@ class CNOT(DummyOp):
     num_wires = 2
 
 
+class DummyOp_decomps(ResourceOperator):
+    """Class for testing the resource_decomp methods"""
+
+    resource_keys = {"max_register_size"}
+
+    def __init__(self, max_register_size, wires=None):
+        self.max_register_size = max_register_size
+        self.num_wires = 2 * max_register_size
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources."""
+        return {"max_register_size": self.max_register_size}
+
+    @classmethod
+    def resource_rep(cls, max_register_size):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+        """
+        num_wires = 2 * max_register_size
+        return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
+
+    @classmethod
+    def resource_decomp(cls, max_register_size):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+        """
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(rx, max_register_size)]
+
+    @classmethod
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        cnot = resource_rep(CNOT, {"x": None})
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(cnot, max_register_size), GateCount(rx, max_register_size)]
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        rx = resource_rep(RX, {"x": 1})
+        h = resource_rep(Hadamard, {"x": None})
+        return [GateCount(rx, max_register_size), GateCount(h, 2 * max_register_size)]
+
+    @classmethod
+    def pow_resource_decomp(cls, pow_z, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(rx, max_register_size * pow_z)]
+
+
 class TestResourceOperator:
     """Tests for the ResourceOperator class"""
 
@@ -487,22 +545,30 @@ class TestResourceOperator:
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
         op1 = X
-        assert op1.resource_keys == set()
+        assert op1.resource_keys == set()  # pylint: disable=comparison-with-callable
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""
-        with pytest.raises(ResourcesUndefinedError):
-            X.adjoint_resource_decomp()
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.adjoint_resource_decomp(target_resource_params=dummy_params) == [
+            GateCount(DummyCmprsRep("RX", 1), 10),
+            GateCount(DummyCmprsRep("Hadamard", None), 20),
+        ]
 
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
-        with pytest.raises(ResourcesUndefinedError):
-            X.controlled_resource_decomp(ctrl_num_ctrl_wires=2, ctrl_num_ctrl_values=0)
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.controlled_resource_decomp(
+            num_ctrl_wires=2, num_zero_ctrl=0, target_resource_params=dummy_params
+        ) == [GateCount(DummyCmprsRep("CNOT", None), 10), GateCount(DummyCmprsRep("RX", 1), 10)]
 
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
-        with pytest.raises(ResourcesUndefinedError):
-            X.pow_resource_decomp(2)
+
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.pow_resource_decomp(
+            pow_z=2, target_resource_params=dummy_params
+        ) == [GateCount(DummyCmprsRep("RX", 1), 20)]
 
     def test_tracking_name(self):
         """Test that correct tracking name is returned."""

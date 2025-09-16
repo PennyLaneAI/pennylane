@@ -88,15 +88,15 @@ class Hadamard(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires: int,
-        ctrl_num_ctrl_values: int,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
+            num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
+            num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
 
         Raises:
@@ -191,15 +191,15 @@ class S(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-    ):
+        num_ctrl_wires,
+        num_zero_ctrl,
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
+            num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
+            num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
 
         Raises:
@@ -360,21 +360,21 @@ class SWAP(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
+            num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
+            num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
 
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        return super().controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        return super().controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     @classmethod
     def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
@@ -460,22 +460,22 @@ class T(ResourceOperator):
         return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
     @classmethod
-    def controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
+            num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
+            num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
 
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        return super().controlled_resource_decomp(ctrl_num_ctrl_wires, ctrl_num_ctrl_values)
+        return super().controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -590,7 +590,7 @@ class X(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -607,16 +607,15 @@ class X(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-        **kwargs,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
+            num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
+            num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
 
         Raises:
@@ -625,7 +624,7 @@ class X(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -718,7 +717,7 @@ class Y(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -734,14 +733,16 @@ class Y(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
+        cls,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
+            num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
+            num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
 
         Raises:
@@ -750,7 +751,7 @@ class Y(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -826,7 +827,7 @@ class Z(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -843,16 +844,15 @@ class Z(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-        **kwargs,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
+            num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
+            num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
 
         Raises:
@@ -861,7 +861,7 @@ class Z(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
