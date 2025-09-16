@@ -16,17 +16,18 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
-from .wires_manager import Allocate, Deallocate, WireResourceManager
+from pennylane.operation import Operation
+from pennylane.queuing import AnnotatedQueue, QueuingManager
+from pennylane.wires import Wires
+
 from .resource_config import ResourceConfig
 from .resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
 )
-from .resources_base import Resources, DefaultGateSet
-from pennylane.operation import Operation
-from pennylane.queuing import AnnotatedQueue, QueuingManager
-from pennylane.wires import Wires
+from .resources_base import DefaultGateSet, Resources
+from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 # pylint: disable=protected-access,too-many-arguments
 
