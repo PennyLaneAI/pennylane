@@ -28,6 +28,11 @@ from pennylane.labs.resource_estimation import (
     ResourceOperator,
     Resources,
 )
+from pennylane.labs.resource_estimation.ops import (
+    ResourceMultiControlledX,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+)
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     _make_hashable,
@@ -301,6 +306,14 @@ class TestResourceOperator:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
+
+    def test_eq_method(self):
+        """Test that the __eq__ method for the ResourceOperator is correct"""
+
+        assert ResourceMultiRZ(num_wires=3) == ResourceMultiRZ(num_wires=3)
+        assert ResourceMultiRZ(num_wires=3) != ResourceMultiRZ(num_wires=2)
+        assert ResourcePauliRot("XYZ") != ResourcePauliRot("YZ")
+        assert ResourceMultiControlledX(2, 2) != ResourceMultiControlledX(2, 1)
 
     ops_to_queue = [
         ResourceHadamard(wires=[0]),

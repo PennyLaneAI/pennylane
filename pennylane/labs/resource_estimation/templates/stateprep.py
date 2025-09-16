@@ -59,7 +59,7 @@ class ResourceUniformStatePrep(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> unif_state_prep = plre.ResourceUniformStatePrep(10)
-    >>> print(plre.estimate_resources(unif_state_prep))
+    >>> print(plre.estimate(unif_state_prep))
     --- Resources: ---
      Total qubits: 5
      Total gates : 124
@@ -174,7 +174,7 @@ class ResourceAliasSampling(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> alias_sampling = plre.ResourceAliasSampling(num_coeffs=100)
-    >>> print(plre.estimate_resources(alias_sampling))
+    >>> print(plre.estimate(alias_sampling))
     --- Resources: ---
      Total qubits: 81
      Total gates : 6.157E+3
@@ -295,7 +295,7 @@ class ResourceMPSPrep(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> mps = plre.ResourceMPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
-    >>> print(plre.estimate_resources(mps, gate_set={"CNOT", "RZ", "RY"}))
+    >>> print(plre.estimate(mps, gate_set={"CNOT", "RZ", "RY"}))
     --- Resources: ---
      Total qubits: 13
      Total gates : 1.654E+3
@@ -438,7 +438,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qrom_prep = plre.ResourceQROMStatePreparation(num_state_qubits=5, precision=1e-3)
-    >>> print(plre.estimate_resources(qrom_prep, gate_set=plre.StandardGateSet))
+    >>> print(plre.estimate(qrom_prep, gate_set=plre.StandardGateSet))
     --- Resources: ---
      Total qubits: 28
      Total gates : 2.744E+3
@@ -458,7 +458,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         ...     precision = 1e-2,
         ...     select_swap_depths = 2,  # default value is 1
         ... )
-        >>> res = plre.estimate_resources(qrom_prep, gate_set)
+        >>> res = plre.estimate(qrom_prep, gate_set)
         >>> print(res)
         --- Resources: ---
          Total qubits: 21
@@ -500,7 +500,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         ...     precision = 1e-2,
         ...     select_swap_depths = [1, None, 2, 2, None],
         ... )
-        >>> res = plre.estimate_resources(qrom_prep, gate_set)
+        >>> res = plre.estimate(qrom_prep, gate_set)
         >>> for op in res.gate_types:
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
@@ -861,7 +861,7 @@ class ResourcePrepTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = plre.estimate_resources(plre.ResourcePrepTHC(compact_ham, coeff_precision=15))
+    >>> res = plre.estimate(plre.ResourcePrepTHC(compact_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
      Total qubits: 185
