@@ -596,57 +596,6 @@ def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
 
 add_decomps(Select, _select_decomp_multi_control)
 
-# Decomposition of Select using one work wire to control the target operations
-
-
-def _select_resources_multi_control_work_wire(op_reps, num_control_wires, partial):
-    resources = defaultdict(int)
-    if partial:
-        if len(op_reps) == 1:
-            resources[op_reps[0]] += 1
-        else:
-            # Use dummy control values, we will only care about the length of the outputs
-            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
-                resources[_multi_controlled_rep(rep, 1, [1])] += 1
-                resources[_multi_controlled_rep(resource_rep(X), len(ctrl_), ctrl_state)] += 2
-    else:
-        state_iterator = product([0, 1], repeat=num_control_wires)
-
-        for state, rep in zip(state_iterator, op_reps):
-
-            resources[_multi_controlled_rep(rep, 1, [1])] += 1
-            resources[_multi_controlled_rep(resource_rep(X), num_control_wires, state)] += 2
-    return dict(resources)
-
-
-# pylint: disable=unused-argument
-@register_resources(_select_resources_multi_control_work_wire)
-def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
-    if len(ops) == 0:
-        return []
-
-    if not work_wires:
-        raise ValueError(f"Can't use this decomposition with less than 1 work wire.")
-
-    if partial:
-        if len(ops) == 1:
-            apply(ops[0])
-        else:
-            ctrls_and_ctrl_states = _partial_select(len(ops), control)
-            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops):
-                ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state)
-                ctrl(op, control=work_wires[:1])
-                ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state)
-    else:
-        for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops):
-            ctrl(X(work_wires[:1]), control, control_values=ctrl_state)
-            ctrl(op, control=work_wires[:1])
-            ctrl(X(work_wires[:1]), control, control_values=ctrl_state)
-
-
-add_decomps(Select, _select_decomp_multi_control_work_wire)
-
 # Decomposition of Select using unary iterator
 
 
@@ -1138,3 +1087,61 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
 
 
 add_decomps(Select, _select_decomp_unary)
+
+
+# Decomposition of Select using one work wire to control the target operations
+
+
+def _select_resources_multi_control_work_wire(op_reps, num_control_wires, num_work_wires, partial):
+    resources = defaultdict(int)
+    if partial:
+        if len(op_reps) == 1:
+            resources[op_reps[0]] += 1
+        else:
+            # Use dummy control values, we will only care about the length of the outputs
+            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
+            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
+                resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
+                resources[
+                    _multi_controlled_rep(
+                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
+                    )
+                ] += 2
+    else:
+        state_iterator = product([0, 1], repeat=num_control_wires)
+
+        for state, rep in zip(state_iterator, op_reps):
+
+            resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
+            resources[
+                _multi_controlled_rep(resource_rep(X), num_control_wires, state, num_work_wires - 1)
+            ] += 2
+    return dict(resources)
+
+
+# pylint: disable=unused-argument
+@register_resources(_select_resources_multi_control_work_wire)
+def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
+    if len(ops) == 0:
+        return []
+
+    if not work_wires:
+        raise ValueError(f"Can't use this decomposition with less than 1 work wire.")
+
+    if partial:
+        if len(ops) == 1:
+            apply(ops[0])
+        else:
+            ctrls_and_ctrl_states = _partial_select(len(ops), control)
+            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops):
+                ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+                ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
+                ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+    else:
+        for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops):
+            ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+            ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
+            ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+
+
+add_decomps(Select, _select_decomp_multi_control_work_wire)

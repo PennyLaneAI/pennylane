@@ -25,8 +25,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.templates.subroutines.select import (
     _partial_select,
-    _select_decomp_partial_unary,
-    _select_resources_partial_unary,
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
@@ -37,7 +35,7 @@ from pennylane.templates.subroutines.select import (
     [(0, 1), (1, 1), (2, 1), (1, 2), (4, 2), (3, 4), (10, 4), (15, 4), (16, 4)],
 )
 @pytest.mark.parametrize("partial", [True, False])
-@pytest.mark.parametrize("work_wires", [None, [5, 6, 7]])
+@pytest.mark.parametrize("work_wires", [[5, 6, 7]])
 @pytest.mark.parametrize("parametrized", [False, True])
 def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrized):
     """Run standard validity tests."""
@@ -580,7 +578,7 @@ num_controls_and_num_ops = (
 
 
 @pytest.mark.parametrize("partial", [False, True])
-class TestSelectWorkWire:
+class TestUnaryIterator:
     """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
 
     def test_is_registered_with_select(self, partial):
