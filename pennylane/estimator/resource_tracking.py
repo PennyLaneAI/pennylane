@@ -32,7 +32,7 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 # pylint: disable=protected-access,too-many-arguments
 
 
-def map_to_resource_op(): # TODO: Import this function instead when the mapping PR is merged
+def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
     """Maps an instance of :class:`~.Operation` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`."""
     pass
 
@@ -214,7 +214,7 @@ def _resources_from_resource_ops(
 ) -> Resources:
     """Extract resources from a resource operator."""
 
-    return _resources_from_resource( # pylint: disable=too-many-function-args
+    return _resources_from_resource(  # pylint: disable=too-many-function-args
         1 * obj,
         gate_set,
         zeroed,
@@ -235,8 +235,8 @@ def _resources_from_pl_ops(
 ) -> Resources:
     """Extract resources from a PennyLane operator."""
     # TODO: remove pylint disable when mapping is implemented.
-    obj = map_to_resource_op(obj) # pylint: disable=assignment-from-no-return
-    return _resources_from_resource( # pylint: disable=too-many-function-args
+    obj = map_to_resource_op(obj)  # pylint: disable=assignment-from-no-return
+    return _resources_from_resource(  # pylint: disable=too-many-function-args
         1 * obj,
         gate_set,
         zeroed,
