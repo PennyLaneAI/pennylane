@@ -15,6 +15,7 @@
 Contains an implementation of a PennyLane frontend (Device) for an FTQC/MBQC based
 device
 """
+from abc import ABC, abstractmethod
 from dataclasses import replace
 from pathlib import Path
 
@@ -32,7 +33,6 @@ from pennylane.ftqc import (
     GraphStatePrep,
     convert_to_mbqc_formalism,
     convert_to_mbqc_gateset,
-    diagonalize_mcms,
 )
 from pennylane.tape.qscript import QuantumScript
 from pennylane.transforms import combine_global_phases, split_non_commuting
@@ -167,16 +167,12 @@ class FTQCQubit(Device):
         return self.backend.execute(circuits, execution_config)
 
 
-from abc import ABC, abstractmethod
-
-
 # pylint: disable=too-few-public-methods
 class FTQCBackend(ABC):
     """Wrapper base class for the backends for the ftqc.qubit device"""
 
-    def __init__(self, name, diagonalize_mcms, max_wires, device, config_filepath):
+    def __init__(self, name, max_wires, device, config_filepath):
         self.name = name
-        self.diagonalize_mcms = diagonalize_mcms
         self.wires = qml.wires.Wires(range(max_wires))
         self.device = device
         self.config_filepath = config_filepath
@@ -211,9 +207,9 @@ class FTQCBackend(ABC):
             name=f"{self.name} FTQC backend",
         )
 
+        # ToDo: does this even make sense anymore? Its not based on device, the method
+        # requires the MCMs added by one-shot
         # handle mcms based on device
-        if self.diagonalize_mcms:
-            program.add_transform(diagonalize_mcms)
         program.add_transform(
             qml.devices.preprocess.mid_circuit_measurements,
             device=self,
@@ -245,7 +241,9 @@ class FTQCBackend(ABC):
             execution_config = ExecutionConfig()
 
         preprocess_transforms = self.preprocess_transforms(execution_config)
-        sequences, mcm_corrections = convert_to_mbqc_formalism(sequences)
+        sequences, mcm_corrections = convert_to_mbqc_formalism(
+            sequences, diagonalize_mcms=True, pauli_tracker=True
+        )
         sequences, postprocess_fns = preprocess_transforms(sequences)
 
         results = []
@@ -271,7 +269,7 @@ class FTQCBackend(ABC):
         Returns:
             tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
-        pass
+        raise NotImplementedError
 
 
 class LightningQubitBackend(FTQCBackend):
@@ -280,7 +278,6 @@ class LightningQubitBackend(FTQCBackend):
     def __init__(self):
         super().__init__(
             name="lightning",
-            diagonalize_mcms=True,
             max_wires=25,
             device=qml.device("lightning.qubit"),
             config_filepath=Path(__file__).parent / "lightning_backend.toml",
@@ -373,7 +370,6 @@ class NullQubitBackend(FTQCBackend):
     def __init__(self):
         super().__init__(
             name="null",
-            diagonalize_mcms=False,
             max_wires=1000,
             device=qml.device("null.qubit"),
             config_filepath=Path(__file__).parent / "null_backend.toml",
