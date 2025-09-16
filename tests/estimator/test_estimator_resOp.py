@@ -492,15 +492,29 @@ class TestResourceOperator:
         with pytest.raises(ResourcesUndefinedError):
             X.adjoint_resource_decomp()
 
+        dummy_params = {"x": 10}
+        with pytest.raises(ResourcesUndefinedError):
+            X.adjoint_resource_decomp(target_resource_params=dummy_params)
+
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
         with pytest.raises(ResourcesUndefinedError):
             X.controlled_resource_decomp(num_ctrl_wires=2, num_zero_ctrl=0)
 
+        dummy_params = {"x": 10}
+        with pytest.raises(ResourcesUndefinedError):
+            X.controlled_resource_decomp(
+                num_ctrl_wires=2, num_zero_ctrl=0, target_resource_params=dummy_params
+            )
+
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
         with pytest.raises(ResourcesUndefinedError):
             X.pow_resource_decomp(2)
+
+        dummy_params = {"x": 10}
+        with pytest.raises(ResourcesUndefinedError):
+            X.pow_resource_decomp(pow_z=2, target_resource_params=dummy_params)
 
     def test_tracking_name(self):
         """Test that correct tracking name is returned."""
