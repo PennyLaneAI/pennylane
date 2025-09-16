@@ -223,7 +223,7 @@ class RX(ResourceOperator):
 
     **Example**
 
-    The resources for this operation are computed as:
+    The resources for this operation are computed using:
 
     >>> qml.estimator.RX.resource_decomp(precision=1e-4)
     [(24 x T)]
