@@ -347,32 +347,3 @@ class TestEstimateResources:
         )
 
         assert computed_resources == expected_resources
-
-    @pytest.mark.xfail(reason="RX and equivalent not yet in PL core")
-    @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
-    def test_varying_single_qubit_rotation_precision(self, error_val):
-        """Test that setting the single_qubit_rotation_precision correctly updates the resources"""
-        custom_config = ResourceConfig()
-        custom_config.set_single_qubit_rot_precision(error_val)
-
-        # TODO: uncomment this when ready resource operators are imported.
-        # custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
-        # custom_config.set_decomp(ResourceRY, mock_rotation_decomp)
-        # custom_config.set_decomp(ResourceRZ, mock_rotation_decomp)
-
-        # def my_circuit():
-        #     ResourceRX(wires=0)
-        #     ResourceRY(wires=1)
-        #     ResourceRZ(wires=2)
-
-        # computed_resources = estimate(my_circuit, gate_set={"TestT"}, config=custom_config)()
-
-        computed_resources = 0  # TODO: Replace this with above code block
-        expected_t_count = 3 * round(1 / error_val)
-        expected_resources = Resources(
-            zeroed=0,
-            algo_wires=3,
-            gate_types=defaultdict(int, {resource_rep(ResourceTestT): expected_t_count}),
-        )
-
-        assert computed_resources == expected_resources
