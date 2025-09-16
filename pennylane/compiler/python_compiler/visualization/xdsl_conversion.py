@@ -16,13 +16,15 @@ which collects and maps PennyLane operations and measurements from xDSL."""
 
 import inspect
 
-from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr
+from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr, IntegerType
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import CustomOp
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    CustomOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
@@ -128,14 +130,14 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
 
     match op.name:
 
-        case "stablehlo.constant":
-            return _extract_dense_constant_value(op)
-
         case "arith.addf":
             return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
 
         case "arith.constant":
             return op.value.value.data  # Catalyst
+
+        case "stablehlo.constant":
+            return _extract_dense_constant_value(op)
 
         case "stablehlo.convert":
             return resolve_constant_params(op.operands[0])
@@ -146,8 +148,14 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
         case "stablehlo.broadcast_in_dim":
             return resolve_constant_params(op.operands[0])
 
+        case "stablehlo.reshape":
+            res_type = op.result_types[0]
+            shape = res_type.get_shape()
+            type = res_type.get_element_type()
+            return jax.numpy.array(shape, dtype=int if isinstance(type, IntegerType) else float)
+
         case _:
-            raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
+            raise NotImplementedError(f"Cannot resolve parameters for operation: {op}")
 
 
 def dispatch_wires_extract(op: ExtractOpPL):

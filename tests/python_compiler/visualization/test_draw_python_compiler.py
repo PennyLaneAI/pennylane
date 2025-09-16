@@ -431,6 +431,27 @@ class Testdraw:
 
         assert draw(circuit)() == expected
 
+    def test_reshape(self):
+        """Test that the visualization works when the parameters are reshaped."""
+
+        one_dim = jax.numpy.array([1, 0])
+        two_dim = jax.numpy.array([[0, 1], [1, 0]])
+        eight_dim = jax.numpy.zeros((8, 8))
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit():
+            qml.RX(one_dim[0], wires=0)
+            qml.RZ(two_dim[0, 0], wires=0)
+            qml.QubitUnitary(eight_dim[:2, :2], wires=0)
+            qml.QubitUnitary(eight_dim[0:4, 0:4], wires=[0, 1])
+            return qml.state()
+
+        expected = (
+            "0: ──RX(M0)──RZ(M0)──U(M1)─╭U(M2)─┤  State\n"
+            "1: ────────────────────────╰U(M2)─┤  State"
+        )
+        assert draw(circuit)() == expected
+
     def test_args_warning(self):
         """Test that a warning is raised when dynamic arguments are used."""
 
