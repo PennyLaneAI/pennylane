@@ -59,7 +59,7 @@ def _rz_phase_gradient(
 def rz_phase_gradient(
     tape: QuantumScript, aux_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""Quantum function transform to decompose all instances of :class:`~RZ` gates into additions
+    r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
 
     For example, a :class:`~.RZ` gate with angle $\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi$
@@ -87,16 +87,16 @@ def rz_phase_gradient(
 
     More details can be found on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
     and Figure 17a in `arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__ (a generalization to
-    multiplexed :class:`~RZ` rotations is provided in Figure 4 in
+    multiplexed :class:`~.RZ` rotations is provided in Figure 4 in
     `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`__).
 
     Note that, technically, this circuit realizes :class:`~PhaseShift`, i.e. :math:`R_\phi(\phi) = R_(\phi) e^{\phi/2}`.
     The additional global phase is taken into account in the decomposition.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~RZ` gates.
+        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.RZ` gates.
         aux_wires (Wires): The auxiliary qubits that conditionally load the angle :math:`\phi` of
-            the :class:`~RZ` gate in binary as a multiple of :math:`2\pi`.
+            the :class:`~.RZ` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``aux_wires`` implicitly determine the precision
             with which the angle is represented.
             E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) * 2\pi` is exactly represented by three bits as ``111``.
