@@ -246,7 +246,7 @@ def _resources_from_pl_ops(
 
 def _update_counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
-    gate_counts_dict,
+    gate_counts_dict: dict,
     wire_mngr: WireResourceManager,
     gate_set: set | None = None,
     scalar: int = 1,
