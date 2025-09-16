@@ -92,7 +92,7 @@ def _make_execution_config(
         gradient_method=diff_method,
         grad_on_execution=grad_on_execution,
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
-        mcm_config=mcm_config,
+        mcm_config=mcm_config or qml.devices.MCMConfig(),
     )
 
 
