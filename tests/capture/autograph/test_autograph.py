@@ -352,15 +352,20 @@ class TestIntegration:
             _ = qml.capture.make_plxpr(circ, autograph=True)()
 
     @pytest.mark.parametrize(
-        "func1, func2",
+        "func1, func2, prim1, prim2",
         [
-            (qml.adjoint, partial(qml.ctrl, control=0)),
-            (partial(qml.ctrl, control=0), qml.adjoint),
-            (qml.adjoint, qml.adjoint),
-            (partial(qml.ctrl, control=0), partial(qml.ctrl, control=0)),
+            (qml.adjoint, partial(qml.ctrl, control=0), "adjoint_transform", "ctrl_transform"),
+            (partial(qml.ctrl, control=0), qml.adjoint, "ctrl_transform", "adjoint_transform"),
+            (qml.adjoint, qml.adjoint, "adjoint_transform", "adjoint_transform"),
+            (
+                partial(qml.ctrl, control=0),
+                partial(qml.ctrl, control=0),
+                "ctrl_transform",
+                "ctrl_transform",
+            ),
         ],
     )
-    def test_nested_adjoint_ctrl(self, func1, func2):
+    def test_nested_adjoint_ctrl(self, func1, func2, prim1, prim2):
         """Test that nested adjoint and ctrl successfully pass through autograph"""
 
         # Build the nested operator
@@ -376,8 +381,8 @@ class TestIntegration:
         qfunc_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
         hop_outer = qfunc_jaxpr.eqns[0].primitive
         hop_inner = qfunc_jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive
-        assert func2.__name__ in str(hop_inner)
-        assert func1.__name__ in str(hop_outer)
+        assert str(hop_outer) == prim1
+        assert str(hop_inner) == prim2
 
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
