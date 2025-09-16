@@ -121,7 +121,7 @@ def rz_phase_gradient(
         phi = (1/2 + 1/4 + 1/8) * 2 * np.pi
         wire="targ"
         aux_wires = [f"aux_{i}" for i in range(precision)]
-        phase_grad_wires = [f"qft_{i}" for i in range(precision)]
+        phase_grad_wires = [f"phg_{i}" for i in range(precision)]
         work_wires = [f"work_{i}" for i in range(precision-1)]
         wire_order = [wire] + aux_wires + phase_grad_wires + work_wires
 
@@ -147,16 +147,16 @@ def rz_phase_gradient(
 
     Note that for the transform to work, we need to also prepare a phase gradient state on the ``phase_grad_wires``.
 
-    Overall, the circuit looks like the following:
+    Overall, the full circuit looks like the following:
 
     >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
       targ: ──H─╭●──────────────╭●───╭GlobalPhase(2.75)──H─┤  Probs
      aux_0: ────├|Ψ⟩─╭SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
      aux_1: ────├|Ψ⟩─├SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
      aux_2: ────╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─├GlobalPhase(2.75)────┤
-     qft_0: ────╭QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
-     qft_1: ────├QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
-     qft_2: ──X─╰QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
+     phg_0: ────╭QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
+     phg_1: ────├QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
+     phg_2: ──X─╰QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
     work_0: ─────────├SemiAdder──────├GlobalPhase(2.75)────┤
     work_1: ─────────╰SemiAdder──────╰GlobalPhase(2.75)────┤
 
