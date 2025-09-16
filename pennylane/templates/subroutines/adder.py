@@ -224,7 +224,7 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     return {
         change_op_basis_resource_rep(
             resource_rep(QFT, num_wires=qft_wires),
-            resource_rep(PhaseAdder, num_wires=qft_wires, mod=mod),
+            resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
         ): 1,
     }
 
