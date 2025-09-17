@@ -132,7 +132,7 @@ def _resources_from_qfunc(
     any_state: int = 0,
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
-) -> Callable:
+) -> Callable[..., Resources]:
     """Get resources from a quantum function which queues operations"""
 
     @wraps(obj)
