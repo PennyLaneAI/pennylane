@@ -54,7 +54,7 @@ def estimate(
             counts for throughout the quantum workflow.
         zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
-        tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
+        tight_budget (bool | None): Determines whether extra zeroed state wires may be allocated when they
             exceed the available amount. The default is ``False``.
         config (ResourceConfig | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
