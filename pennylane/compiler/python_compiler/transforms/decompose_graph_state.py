@@ -45,7 +45,7 @@ class DecomposeGraphStatePass(passes.ModulePass):
 
     name = "decompose-graph-state"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the decompose-graph-state pass."""
 
@@ -60,7 +60,6 @@ decompose_graph_state_pass = compiler_transform(DecomposeGraphStatePass)
 class DecomposeGraphStatePattern(RewritePattern):
     """Rewrite pattern for the decompose-graph-state transform."""
 
-    # pylint: disable=arguments-renamed
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, graph_prep_op: mbqc.GraphStatePrepOp, rewriter: PatternRewriter, /):
         """Match and rewrite pattern for graph_state_prep ops."""
@@ -145,7 +144,7 @@ class NullDecomposeGraphStatePass(passes.ModulePass):
 
     name = "null-decompose-graph-state"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the null-decompose-graph-state pass."""
 
@@ -160,7 +159,6 @@ null_decompose_graph_state_pass = compiler_transform(NullDecomposeGraphStatePass
 class NullDecomposeGraphStatePattern(RewritePattern):
     """Rewrite pattern for the null-decompose-graph-state transform."""
 
-    # pylint: disable=arguments-renamed
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, graph_prep_op: mbqc.GraphStatePrepOp, rewriter: PatternRewriter, /):
         """Match and rewrite pattern for graph_state_prep ops."""

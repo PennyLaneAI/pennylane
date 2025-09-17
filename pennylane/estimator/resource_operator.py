@@ -29,10 +29,8 @@ from pennylane.wires import Wires
 
 from .resources_base import Resources
 
-# pylint: disable=unused-argument, no-member
 
-
-class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+class CompressedResourceOp:
     r"""Defines a lightweight class corresponding to the operator type and its parameters.
 
     This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`, containing
@@ -213,6 +211,7 @@ class ResourceOperator(ABC):
 
     num_wires: int | None = None
 
+    # pylint: disable=unused-argument
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
         if wires is not None:
@@ -364,6 +363,7 @@ class ResourceOperator(ABC):
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
+    # pylint: disable=unused-argument
     @classmethod
     def make_tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
