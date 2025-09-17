@@ -57,7 +57,7 @@ def rz_phase_gradient(
     r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
 
-    For example, a :class:`~.RZ` gate with angle $\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi$
+    For example, an :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
     is translated into the following routine, where the angle is conditionally prepared on the ``angle_wires`` in binary
     and added to a ``phase_grad_wires`` register semi-inplace via :class:`~.SemiAdder`.
 
@@ -71,13 +71,13 @@ def rz_phase_gradient(
          phg_1:           ─────────├SemiAdder─────────────────┤
          phg_2:           ─────────╰SemiAdder─────────────────┤
 
-    For this routine to work, the provided ``phase_gradient_wires`` need to hold a phase gradient
+    For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
     state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
     The state is not modified and can be re-used at a later stage.
     It is important to stress that this transform does not prepare the state.
 
 
-    Note that :class`~.SemiAdder` we requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
+    Note that :class:`~.SemiAdder` we requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{aux} |y\rangle_\text{qft} = |x\rangle_\text{aux} |x + y\rangle_\text{qft}`.
 
     More details can be found on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
@@ -85,7 +85,7 @@ def rz_phase_gradient(
     multiplexed :class:`~.RZ` rotations is provided in Figure 4 in
     `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`__).
 
-    Note that technically, this circuit realizes :class:`~PhaseShift`, i.e. :math:`R_\phi(\phi) = R_Z(\phi) e^{i\phi/2}`.
+    Note that technically, this circuit realizes :class:`~.PhaseShift`, i.e. :math:`R_\phi(\phi) = R_Z(\phi) e^{i\phi/2}`.
     The additional global phase is taken into account in the decomposition.
 
     Args:
@@ -94,13 +94,13 @@ def rz_phase_gradient(
             the :class:`~.RZ` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``angle_wires`` implicitly determines the precision
             with which the angle is represented.
-            E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) * 2\pi` is exactly represented by three bits as ``111``.
+            E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) 2\pi` is exactly represented by three bits as ``111``.
         phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them.
             Needs to be at least the length of ``angle_wires`` and will only
             use the first ``len(angle_wires)`` according to the precision with which the angle is decomposed.
-        work_wires (Wires): Additional work wires to realize the :class`~.SemiAdder` between the ``angle_wires`` and
-            ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b`` is the number of
-            phase gradient wires, hence the precision of the angle :math:`\phi`.
+        work_wires (Wires): Additional work wires to realize the :class:`~.SemiAdder` between the ``angle_wires`` and
+            ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b=len(phase_grad_wires)`` is
+            the precision of the angle :math:`\phi`.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -132,7 +132,10 @@ def rz_phase_gradient(
 
 
         @partial(
-            rz_phase_gradient, angle_wires=angle_wires, phase_grad_wires=phase_grad_wires, work_wires=work_wires
+            rz_phase_gradient,
+            angle_wires=angle_wires,
+            phase_grad_wires=phase_grad_wires,
+            work_wires=work_wires,
         )
         @qml.qnode(qml.device("default.qubit"))
         def rz_circ(phi, wire):
@@ -146,7 +149,7 @@ def rz_phase_gradient(
 
 
     In this example we perform the rotation of an angle of :math:`\phi = (0.111)_2 2\pi`. Because phase shifts
-    are trivial on computational basis states, we transform the :math:`R_Z` rotation to `R_X = H R_Z H` via two
+    are trivial on computational basis states, we transform the :math:`R_Z` rotation to :math:`R_X = H R_Z H` via two
     :class:`~.Hadamard` gates.
 
     Note that for the transform to work, we need to also prepare a phase gradient state on the ``phase_grad_wires``.
