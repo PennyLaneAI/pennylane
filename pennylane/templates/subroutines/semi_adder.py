@@ -289,11 +289,11 @@ add_decomps(SemiAdder, _semiadder)
 
 
 def _L_alpha(alpha, wires):
-    """
+    r"""
     Implements the operator presented in Definition 6: https://arxiv.org/abs/2501.16802
     It corresponds to a sequence of ``len(alpha)`` multi-controlled operators.
-    The control wires of the first multi-controlled gate are the first :math:\alpha_0 wires,
-    and its target is wire :math:`\alpha_0`. For the :math:`i`-th operator, the control wires are
+    The control wires of the first multi-controlled gate are the first :math:`\alpha_0` wires,
+    and its target is wire :math:`\alpha_0`, using zero-based indexing. For the :math:`i`-th operator, the control wires are
     those with indices in the interval :math:`[\alpha_{i-1} + 1,\ \alpha_i)`, and the target
     wire is :math:`\alpha_i.
 
@@ -301,8 +301,8 @@ def _L_alpha(alpha, wires):
     The implementation is based on Algorithm 2: https://arxiv.org/abs/2501.16802
 
     Args:
-        alpha (list): ordered list of integer storing the position of the target wires
-        wires (Sequence[int]): wires where the operator acts on
+        alpha (list): ordered list of integers storing the position of the target wires
+        wires (Sequence[int]): wires on which the operator acts
     """
 
     k = len(alpha) + 1
@@ -351,8 +351,7 @@ def _cnot_ladder(wires):
     It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/abs/2501.16802
     """
 
-    alpha = [i for i in range(1, len(wires))]
-    adjoint(_L_alpha, lazy=False)(alpha, wires=wires)
+    adjoint(_L_alpha, lazy=False)(list(range(1, len(wires))), wires=wires)
 
 
 def _toffoli_ladder(wires):
@@ -361,8 +360,7 @@ def _toffoli_ladder(wires):
     It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/abs/2501.16802
     """
 
-    alpha = [i for i in range(2, len(wires), 2)]
-    return adjoint(_L_alpha, lazy=False)(alpha, wires=wires)
+    return adjoint(_L_alpha, lazy=False)(list(range(2, len(wires), 2)), wires=wires)
 
 
 def _fanout_1(wires):
@@ -466,13 +464,11 @@ def _semiadder_log_depth(x_wires, y_wires, **_):
 
     adjoint(_toffoli_ladder, lazy=False)(temp_wires)
 
-    for i in range(1, len(wires_y[:-1])):
-        X(wires=wires_y[i])
+    _ = [X(w) for w in wires_y[1:-1]]
 
     _cnot_ladder([*wires_x][1:])
 
-    for i in range(len(wires_x)):
-        CNOT(wires=[wires_x[i], wires_y[i]])
+    _ = [CNOT(wires=wires) for wires in zip(wires_x, wires_y)]
 
 
 add_decomps(SemiAdder, _semiadder_log_depth)

@@ -172,8 +172,8 @@ class TestSemiAdder:
                 qml.SemiAdder(x_wires, [5, 6], [9, 10, 11]), rule, heuristic_resources=True
             )
 
-    def test_error_lenght_wires(self):
-        """Test that the decomposition through an error if len(x_wires) < len(y_wires)."""
+    def test_error_length_wires(self):
+        """Test that the log-depth decomposition throws an error if len(x_wires) < len(y_wires)."""
 
         with pytest.raises(AssertionError, match="must be greater or equal"):
             _test_decomposition_rule(
@@ -215,7 +215,7 @@ class TestSemiAdder:
 
 @pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4]])
 def test_cnot_ladder(wires):
-    """Check the auxiliar function _cnot_ladder."""
+    """Check the auxiliary function _cnot_ladder."""
 
     def cnot_ladder(wires):
         for i in range(len(wires) - 1):
@@ -228,7 +228,7 @@ def test_cnot_ladder(wires):
 
 @pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4, "c"]])
 def test_toffoli_ladder(wires):
-    """Check the auxiliar function _toffoli_ladder."""
+    """Check the auxiliary function _toffoli_ladder."""
 
     def toffoli_ladder(wires):
         for i in range(0, len(wires) - 2, 2):
@@ -241,7 +241,7 @@ def test_toffoli_ladder(wires):
 
 @pytest.mark.parametrize(("wires"), [[0, 1, 2, 3], [2, 3, 4, "a", 6, 7, 8], [0, 4]])
 def test_fanout1_ladder(wires):
-    """Check the auxiliar function _fanout_1."""
+    """Check the auxiliary function _fanout_1."""
 
     def fanout1(wires):
         for i in range(1, len(wires)):
@@ -254,7 +254,7 @@ def test_fanout1_ladder(wires):
 
 @pytest.mark.parametrize(("wires"), [[0, 1, 2], [2, 3, 4, "a", 6, 7, 8], [0, 4, "c"]])
 def test_fanout_2(wires):
-    """Check the auxiliar function _fanout_2."""
+    """Check the auxiliary function _fanout_2."""
 
     def fanout_2(wires):
         for i in range(1, len(wires) - 1, 2):

@@ -115,8 +115,8 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
-* New decomposition of ``~.SemiAdder`` has been included. This decomposition, which does not use auxiliary qubits, 
-  reduces the depth of the circuit.
+* A new decomposition of ``~.SemiAdder`` has been included. This decomposition, which does not use auxiliary qubits, 
+  reduces the depth of the circuit at the cost of additional gates.
   [(#8241)](https://github.com/PennyLaneAI/pennylane/pull/8241)
 
 <h3>Improvements 🛠</h3>
