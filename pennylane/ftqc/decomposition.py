@@ -98,7 +98,6 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
                 )
                 cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                # pylint: disable=isinstance-second-argument-not-valid-type
                 if isinstance(op, (X, Y, Z, Identity)):
                     # else branch because Identity may not have wires
                     wire = wire_map[op.wires[0]] if op.wires else ()
