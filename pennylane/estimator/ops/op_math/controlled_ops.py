@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for controlled operations."""
 
+from typing import Literal
+
 from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X, Z
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -959,7 +961,9 @@ class Toffoli(ResourceOperator):
     num_wires = 3
     resource_keys = {"elbow"}
 
-    def __init__(self, elbow: Literal["left", "right"] | None = None, wires: WiresLike = None) -> None:
+    def __init__(
+        self, elbow: Literal["left", "right"] | None = None, wires: WiresLike = None
+    ) -> None:
         self.elbow = elbow
         super().__init__(wires=wires)
 
