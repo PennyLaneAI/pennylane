@@ -201,7 +201,7 @@ def _resources_from_resource(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_resource_ops(
+def _resources_from_resource_operator(
     obj: ResourceOperator,
     gate_set: set | None = None,
     zeroed: int = 0,
