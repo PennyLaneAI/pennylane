@@ -16,11 +16,7 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    resource_rep,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
@@ -121,11 +117,13 @@ class TestHadamard:
 class TestSWAP:
     """Tests for SWAP resource operator"""
 
-    def test_resources_raises(self):
-        """Test that decomposition of SWAP is not defined"""
-        op = SWAP([0, 1])
-        with pytest.raises(ResourcesUndefinedError):
-            op.resource_decomp()
+    def test_resources(self):
+        """Test that SWAP decomposes into three CNOTs"""
+        op = qre.SWAP([0, 1])
+        cnot = qre.CNOT.resource_rep()
+        expected = [qre.GateCount(cnot, 3)]
+
+        assert op.resource_decomp() == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -327,7 +325,7 @@ class TestS:
                 GateCount(S.resource_rep(), 1),
             ],
         ),
-        (4, [GateCount(Identity.resource_rep(), 1)]),
+        (4, []),
         (
             7,
             [
@@ -335,7 +333,7 @@ class TestS:
                 GateCount(S.resource_rep(), 1),
             ],
         ),
-        (8, [GateCount(Identity.resource_rep(), 1)]),
+        (8, []),
         (14, [GateCount(Z.resource_rep(), 1)]),
         (
             15,

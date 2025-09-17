@@ -27,7 +27,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called,arguments-renamed
+# pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
 
 class Adjoint(ResourceOperator):
@@ -238,7 +238,7 @@ class Controlled(ResourceOperator):
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base operator to be
             controlled.
         num_ctrl_wires (int): the number of qubits the operation is controlled on
-        num_ctrl_values (int): the number of control qubits, that are controlled when in the
+        num_zero_ctrl (int): the number of control qubits, that are controlled when in the
             :math:`|0\rangle` state
 
     Resources:
@@ -248,7 +248,7 @@ class Controlled(ResourceOperator):
 
         Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
         which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
-        to an additional cost of two ``X`` gates per :code:`num_ctrl_values`.
+        to an additional cost of two ``X`` gates per :code:`num_zero_ctrl`.
         Secondly, the base operation resources are extracted and we add to the cost the controlled
         variant of each operation in the resources.
 
@@ -259,8 +259,8 @@ class Controlled(ResourceOperator):
     The controlled operation can be constructed like this:
 
     >>> x = qml.estimator.X()
-    >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
-    >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
+    >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_zero_ctrl=0)
+    >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_zero_ctrl=2)
 
     We can observe the expected gates when we estimate the resources.
 
@@ -284,13 +284,13 @@ class Controlled(ResourceOperator):
 
     """
 
-    resource_keys = {"base_cmpr_op", "num_ctrl_wires", "num_ctrl_values"}
+    resource_keys = {"base_cmpr_op", "num_ctrl_wires", "num_zero_ctrl"}
 
     def __init__(
         self,
         base_op: ResourceOperator,
         num_ctrl_wires: int,
-        num_ctrl_values: int,
+        num_zero_ctrl: int,
         wires=None,
     ) -> None:
         _dequeue(op_to_remove=base_op)
@@ -299,7 +299,7 @@ class Controlled(ResourceOperator):
 
         self.base_op = base_cmpr_op
         self.num_ctrl_wires = num_ctrl_wires
-        self.num_ctrl_values = num_ctrl_values
+        self.num_zero_ctrl = num_zero_ctrl
 
         self.num_wires = num_ctrl_wires + base_cmpr_op.num_wires
         if wires:
@@ -320,14 +320,14 @@ class Controlled(ResourceOperator):
             * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
             operator to be controlled.
             * num_ctrl_wires (int): the number of qubits the operation is controlled on
-            * num_ctrl_values (int): the number of control qubits, that are controlled when in the
+            * num_zero_ctrl (int): the number of control qubits, that are controlled when in the
             :math:`|0\rangle` state
         """
 
         return {
             "base_cmpr_op": self.base_op,
             "num_ctrl_wires": self.num_ctrl_wires,
-            "num_ctrl_values": self.num_ctrl_values,
+            "num_zero_ctrl": self.num_zero_ctrl,
         }
 
     @classmethod
@@ -335,7 +335,7 @@ class Controlled(ResourceOperator):
         cls,
         base_cmpr_op,
         num_ctrl_wires,
-        num_ctrl_values,
+        num_zero_ctrl,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -344,7 +344,7 @@ class Controlled(ResourceOperator):
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the
                 :math:`|0\rangle` state
 
         Returns:
@@ -357,13 +357,13 @@ class Controlled(ResourceOperator):
             {
                 "base_cmpr_op": base_cmpr_op,
                 "num_ctrl_wires": num_ctrl_wires,
-                "num_ctrl_values": num_ctrl_values,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 
     @classmethod
     def resource_decomp(
-        cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values, **kwargs
+        cls, base_cmpr_op, num_ctrl_wires, num_zero_ctrl, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -372,7 +372,7 @@ class Controlled(ResourceOperator):
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the
                 :math:`|0\rangle` state
 
         Resources:
@@ -382,7 +382,7 @@ class Controlled(ResourceOperator):
 
             Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
             which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
-            to an additional cost of two ``X`` gates per :code:`num_ctrl_values`.
+            to an additional cost of two ``X`` gates per :code:`num_zero_ctrl`.
             Secondly, the base operation resources are extracted and we add to the cost the controlled
             variant of each operation in the resources.
 
@@ -398,8 +398,8 @@ class Controlled(ResourceOperator):
         The controlled operation can be constructed like this:
 
         >>> x = qml.estimator.X()
-        >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_ctrl_values=0)
-        >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_ctrl_values=2)
+        >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_zero_ctrl=0)
+        >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_zero_ctrl=2)
 
         We can observe the expected gates when we estimate the resources.
 
@@ -428,18 +428,17 @@ class Controlled(ResourceOperator):
         kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
         try:
             return base_class.controlled_resource_decomp(
-                ctrl_num_ctrl_wires=num_ctrl_wires,
-                ctrl_num_ctrl_values=num_ctrl_values,
-                **base_params,
-                **kwargs,
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
+                target_resource_params=base_params,
             )
         except ResourcesUndefinedError:
             pass
 
         gate_lst = []
-        if num_ctrl_values != 0:
+        if num_zero_ctrl != 0:
             x = resource_rep(qre.X)
-            gate_lst.append(GateCount(x, 2 * num_ctrl_values))
+            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
         decomp = base_class.resource_decomp(**base_params, **kwargs)
         for action in decomp:
@@ -448,7 +447,7 @@ class Controlled(ResourceOperator):
                 c_gate = cls.resource_rep(
                     gate,
                     num_ctrl_wires,
-                    num_ctrl_values=0,  # we flipped already and added the X gates above
+                    num_zero_ctrl=0,  # we flipped already and added the X gates above
                 )
                 gate_lst.append(GateCount(c_gate, action.count))
 
@@ -460,24 +459,18 @@ class Controlled(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-        base_cmpr_op,
         num_ctrl_wires,
-        num_ctrl_values,
+        num_zero_ctrl,
+        target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): The number of control qubits to further control the base
+            num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
-            ctrl_num_ctrl_values (int): The subset of those control qubits, which further control
+            num_zero_ctrl (int): The subset of those control qubits, which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
-                operator to be controlled.
-            num_ctrl_wires (int): the number of control qubits of the operation
-            num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
-                when in the :math:`|0\rangle` state.
+            target_resource_params (dict): The resource parameters of the base controlled operation.
 
         Resources:
             The resources are derived by simply combining the control qubits, control-values and
@@ -489,12 +482,16 @@ class Controlled(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        inner_ctrl_wires = target_resource_params.get("num_ctrl_wires")
+        inner_zero_ctrl = target_resource_params.get("num_zero_ctrl")
+        base_cmpr_op = target_resource_params.get("base_cmpr_op")
+
         return [
             GateCount(
                 cls.resource_rep(
                     base_cmpr_op,
-                    ctrl_num_ctrl_wires + num_ctrl_wires,
-                    ctrl_num_ctrl_values + num_ctrl_values,
+                    inner_ctrl_wires + num_ctrl_wires,
+                    inner_zero_ctrl + num_zero_ctrl,
                 )
             ),
         ]
@@ -503,11 +500,11 @@ class Controlled(ResourceOperator):
     def tracking_name(
         base_cmpr_op: CompressedResourceOp,
         num_ctrl_wires: int,
-        num_ctrl_values: int,
+        num_zero_ctrl: int,
     ):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
-        return f"C({base_name}, num_ctrl_wires={num_ctrl_wires},num_ctrl_values={num_ctrl_values})"
+        return f"C({base_name}, num_ctrl_wires={num_ctrl_wires},num_zero_ctrl={num_zero_ctrl})"
 
 
 class Pow(ResourceOperator):

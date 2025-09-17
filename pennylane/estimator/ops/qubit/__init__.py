@@ -22,7 +22,6 @@ from .non_parametric_ops import (
     Z,
     SWAP,
 )
-
 from .parametric_ops_single_qubit import (
     PhaseShift,
     RX,
