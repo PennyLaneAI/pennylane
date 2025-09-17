@@ -98,6 +98,26 @@ def test_global_phases():
     assert np.isclose(global_phase.parameters[0], np.sum(phis / 2))
 
 
+def test_wire_validation():
+    """Test that an error is raised when phg wires are fewer than angle wires"""
+
+    circ = qml.tape.QuantumScript([qml.RZ(0.5, 0)])
+
+    angle_wires = qml.wires.Wires([f"angle_{i}" for i in range(3)])
+    phase_grad_wires = qml.wires.Wires([f"phg_{i}" for i in range(2)])
+    work_wires = qml.wires.Wires([f"work_{i}" for i in range(2)])
+
+    with pytest.raises(
+        ValueError, match="phase_grad_wires needs to be at least as large as angle_wires"
+    ):
+        _ = qml.transforms.rz_phase_gradient(
+            circ,
+            angle_wires=angle_wires,
+            phase_grad_wires=phase_grad_wires,
+            work_wires=work_wires,
+        )
+
+
 @pytest.mark.parametrize(
     "phi",
     [

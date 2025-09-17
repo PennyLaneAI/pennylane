@@ -95,9 +95,10 @@ def rz_phase_gradient(
             The length of the ``angle_wires`` implicitly determines the precision
             with which the angle is represented.
             E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) * 2\pi` is exactly represented by three bits as ``111``.
-        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them. Will only
+        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them.
+            Needs to be at least the length of ``angle_wires`` and will only
             use the first ``len(angle_wires)`` according to the precision with which the angle is decomposed.
-        work wires (Wires): Additional work wires to realize the :class`~.SemiAdder` between the ``angle_wires`` and
+        work_wires (Wires): Additional work wires to realize the :class`~.SemiAdder` between the ``angle_wires`` and
             ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b`` is the number of
             phase gradient wires, hence the precision of the angle :math:`\phi`.
 
@@ -170,6 +171,12 @@ def rz_phase_gradient(
     array([0.85355339, 0.14644661])
 
     """
+
+    if len(phase_grad_wires) < len(angle_wires):
+        raise ValueError(
+            f"phase_grad_wires needs to be at least as large as angle_wires. Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the {len(angle_wires)} angle wires."
+        )
+
     operations = []
     global_phases = []
     for op in tape.operations:
