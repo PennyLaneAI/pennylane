@@ -191,7 +191,8 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
     }
 
 
-@register_resources(_select_pauli_rot_resource)
+# Heuristic resources because rotations might be skipped based on angles
+@register_resources(_select_pauli_rot_resource, heuristic=True)
 def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
     r"""Decomposes the SelectPauliRot"""
 

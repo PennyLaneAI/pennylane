@@ -152,7 +152,8 @@ class TestSemiAdder:
 
         for rule in qml.list_decomps(qml.SemiAdder):
             _test_decomposition_rule(
-                qml.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule, heuristic_resources=True
+                qml.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
+                rule,
             )
 
     @pytest.mark.jax
