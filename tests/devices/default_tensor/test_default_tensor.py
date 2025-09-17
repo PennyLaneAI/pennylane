@@ -26,7 +26,6 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_tensor import _operations, stopping_condition
-from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.math.decomposition import givens_decomposition
 from pennylane.typing import TensorLike
@@ -708,9 +707,6 @@ class TestGraphModeExclusiveFeatures:
 
         tape = qml.tape.QuantumScript([MyOp(0)], [qml.expval(qml.Z(0))])
         dev = qml.device("default.tensor", wires=wires)
-        device_wires = qml.wires.Wires([0, 1])  # Only 2 wires, insufficient for 3 burnable
-        target_gates = {"Hadamard", "PauliX"}
-
         program = dev.preprocess_transforms()
         (out_tape,), _ = program([tape])
 
