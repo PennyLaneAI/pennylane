@@ -136,7 +136,8 @@ def test_executing_arbitrary_circuit(wires, backend_cls, mocker):
     # circuit executes
     res = ftqc_circ()
 
-    (_, script, _), _ = spy.call_args  # the call arguments are (device, script, config)
+    # the call arguments are (device, script, config, online_corrections)
+    (_, script, _, _), _ = spy.call_args
 
     for tape in script:
         assert all(
@@ -192,7 +193,8 @@ def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls, mocker):
     res = ftqc_circ()
 
     # check executed tape was converted to the MBQC formalism as expected
-    (_, script, _), _ = spy.call_args  # the call arguments are (device, script, config)
+    # the call arguments are (device, script, config, online_corrections)
+    (_, script, _, _), _ = spy.call_args
     for tape in script:
         assert all(
             # Z and Adjoint from diagonalization
@@ -537,6 +539,7 @@ class TestBackendExecution:
         # of the _execute_sequence method in isolation, the correction ops are always []
         online_corrections = [lambda mid_meas: [] for tape in sequence]
 
+        # pylint: disable=protected-access
         results = backend._execute_sequence(sequence, ExecutionConfig(), online_corrections)
         res_to_eigvals = [-1 if res[0] else 1 for res in results]
 
@@ -558,6 +561,7 @@ class TestBackendExecution:
         sequence = QuantumScriptSequence([tape1, tape1, tape2], shots=3000)
         backend = NullQubitBackend()
 
+        # pylint: disable=protected-access
         results = backend._execute_sequence(sequence, ExecutionConfig(), online_corrections=None)
 
         assert len(results) == 3000

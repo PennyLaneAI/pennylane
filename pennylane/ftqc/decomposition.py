@@ -66,27 +66,16 @@ def correct_final_samples(results, tape):
 
     correction_fn = partial(apply_byproduct_corrections, tape)
 
-    # import numpy as np
-    #     for result in results:
-    #         corrected_samples = []
-    #         for shot_res in result:
-    #             measurements = shot_res[0]
-    #             mcms = shot_res[1:]
-    #             ####
-    #             # hack work-around because null.qubit
-    #             # nests the MCMs for unknown reasons
-    #             if np.shape(mcms[0]):
-    #                 mcms = [m[0][0] for m in mcms]
-    #             ####
-    #             new_measurements = correction_fn(mcms, measurements)
-    #             corrected_samples.append([new_measurements, *mcms])
-    #         corrected_results.append(tuple(corrected_samples))
-
     corrected_samples = []
-
     for shot_res in results:
         measurements = shot_res[0]
         mcms = shot_res[1:]
+        ####
+        # hack work-around because null.qubit
+        # nests the MCMs for unknown reasons
+        if np.shape(mcms[0]):
+            mcms = [m[0][0] for m in mcms]
+        ####
         new_measurements = correction_fn(mcms, measurements)
         corrected_samples.append([new_measurements, *mcms])
 
