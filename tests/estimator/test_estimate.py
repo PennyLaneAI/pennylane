@@ -252,6 +252,9 @@ class TestEstimateResources:
             ResourceTestCNOT(wires=[3, 4])
             ResourceTestAlg1(num_iter=5, wires=[5, 6])
 
+        # See implementation of ResourceTestRZ to see how it decomposes down to
+        # ResourceTestT based on the precision value, hence why
+        # round(1/1e-2) + round(1/1e-9)
         expected_gates = defaultdict(
             int,
             {
