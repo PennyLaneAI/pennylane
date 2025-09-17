@@ -97,7 +97,7 @@ def device(name, *args, **kwargs):
 
     Args:
         name (str): the name of the device to load
-        wires (WiresLike): the wires (subsystems) to initialize the device with.
+        wires (Wires): the wires (subsystems) to initialize the device with.
             Note that this is optional for certain devices, such as ``default.qubit``
 
     Keyword Args:
