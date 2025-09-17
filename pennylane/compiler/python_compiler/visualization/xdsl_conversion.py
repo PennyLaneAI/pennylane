@@ -68,7 +68,7 @@ def _resolve(name: str, mapping: dict, kind: str):
     try:
         return mapping[name]
     except KeyError as exc:
-        raise ValueError(f"Unsupported {kind}: {name}") from exc
+        raise NotImplementedError(f"Unsupported {kind}: {name}") from exc
 
 
 def resolve_gate(name: str) -> Operator:
@@ -132,7 +132,7 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
     match op.name:
 
         case "arith.addf":
-            return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
+            return sum(resolve_constant_params(o) for o in op.operands)
 
         case "arith.constant":
             return op.value.value.data  # Catalyst
@@ -140,14 +140,11 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
         case "stablehlo.constant":
             return _extract_dense_constant_value(op)
 
-        case "stablehlo.convert":
+        case "stablehlo.convert" | "stablehlo.broadcast_in_dim":
             return resolve_constant_params(op.operands[0])
 
         case "stablehlo.concatenate":
             return [resolve_constant_params(operand) for operand in op.operands]
-
-        case "stablehlo.broadcast_in_dim":
-            return resolve_constant_params(op.operands[0])
 
         case "stablehlo.reshape":
             res_type = op.result_types[0]
@@ -237,7 +234,14 @@ def ssa_to_qml_wires_named(op: NamedObsOp) -> int:
 
 
 def xdsl_to_qml_op(op) -> Operator:
-    """Convert an xDSL op to a PennyLane operator."""
+    """Convert an xDSL operation into a PennyLane Operator.
+
+    Args:
+        op: The xDSL operation to convert.
+
+    Returns:
+        A PennyLane Operator.
+    """
 
     match op.name:
 
@@ -272,13 +276,20 @@ def xdsl_to_qml_op(op) -> Operator:
             gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
 
         case _:
-            raise ValueError(f"Unsupported gate: {op.name}")
+            raise NotImplementedError(f"Unsupported gate: {op.name}")
 
     return _apply_adjoint_and_ctrls(gate, op)
 
 
 def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operator:
-    """Convert any xDSL measurement/observable op to a PennyLane object."""
+    """Convert any xDSL measurement/observable operation to a PennyLane object.
+
+    Args:
+        op: The xDSL measurement/observable operation to convert.
+
+    Returns:
+        A PennyLane MeasurementProcess or Operator.
+    """
 
     match op.name:
 
@@ -306,4 +317,4 @@ def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operato
             return resolve_measurement(op.name)(*args, **kwargs)
 
         case _:
-            raise ValueError(f"Unsupported measurement/observable: {op.name}")
+            raise NotImplementedError(f"Unsupported measurement/observable: {op.name}")
