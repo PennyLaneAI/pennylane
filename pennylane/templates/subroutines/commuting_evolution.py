@@ -14,7 +14,7 @@
 r"""
 Contains the CommutingEvolution template.
 """
-# pylint: disable-msg=too-many-arguments,import-outside-toplevel
+# pylint: disable-msg=too-many-arguments
 import copy
 
 from pennylane import math
