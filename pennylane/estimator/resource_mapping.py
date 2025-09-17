@@ -23,7 +23,7 @@ from pennylane.operation import Operation
 
 
 @singledispatch
-def map_to_resource_op(op: Operation) -> ResourceOperator:
+def _map_to_resource_op(op: Operation) -> ResourceOperator:
     r"""Maps an instance of :class:`~.Operation` to its associated :class:`~.estimator.ResourceOperator`.
 
     Args:
@@ -46,46 +46,46 @@ def map_to_resource_op(op: Operation) -> ResourceOperator:
     )
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.Identity):
     return re_ops.Identity()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.GlobalPhase):
     return re_ops.GlobalPhase()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.Hadamard):
     return re_ops.Hadamard()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.S):
     return re_ops.S()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.T):
     return re_ops.T()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.X):
     return re_ops.X()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.Y):
     return re_ops.Y()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.Z):
     return re_ops.Z()
 
 
-@map_to_resource_op.register
+@_map_to_resource_op.register
 def _(op: qops.SWAP):
     return re_ops.SWAP()

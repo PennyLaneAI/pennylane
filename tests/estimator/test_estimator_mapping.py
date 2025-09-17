@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.estimator as re_ops
-from pennylane.estimator import map_to_resource_op
+from pennylane.estimator import _map_to_resource_op
 from pennylane.operation import Operation
 
 # pylint: disable= no-self-use
@@ -30,7 +30,7 @@ class TestMapToResourceOp:
     def test_map_to_resource_op_raises_type_error_if_not_operation(self):
         """Test that a TypeError is raised if the input is not an Operation."""
         with pytest.raises(TypeError, match="is not a valid operation"):
-            map_to_resource_op("oper")
+            _map_to_resource_op("oper")
 
     def test_map_to_resource_op_raises_not_implemented_error(self):
         """Test that a NotImplementedError is raised for a valid Operation."""
@@ -38,7 +38,7 @@ class TestMapToResourceOp:
         with pytest.raises(
             NotImplementedError, match="Operation doesn't have a resource equivalent"
         ):
-            map_to_resource_op(operation)
+            _map_to_resource_op(operation)
 
     @pytest.mark.parametrize(
         "operator, expected_res_op",
@@ -57,5 +57,5 @@ class TestMapToResourceOp:
         ],
     )
     def test_map_to_resource_op(self, operator, expected_res_op):
-        """Test that map_to_resource_op maps to the appropriate resource operator"""
-        assert map_to_resource_op(operator) == expected_res_op
+        """Test that _map_to_resource_op maps to the appropriate resource operator"""
+        assert _map_to_resource_op(operator) == expected_res_op
