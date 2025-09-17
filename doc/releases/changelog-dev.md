@@ -1008,6 +1008,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :class:`~.SpecialUnitary` now correctly obeys the interfaces of input parameters when large numbers of wires are used.
+  [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
+
 * Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
   [(#8190)](https://github.com/PennyLaneAI/pennylane/pull/8190)
 
