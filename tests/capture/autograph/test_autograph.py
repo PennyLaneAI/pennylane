@@ -359,7 +359,7 @@ class TestIntegration:
             (qml.adjoint, qml.adjoint, "adjoint_transform", "adjoint_transform"),
             (
                 partial(qml.ctrl, control=0),
-                partial(qml.ctrl, control=0),
+                partial(qml.ctrl, control=1),
                 "ctrl_transform",
                 "ctrl_transform",
             ),
