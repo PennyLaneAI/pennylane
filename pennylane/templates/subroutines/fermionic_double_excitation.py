@@ -14,7 +14,7 @@
 r"""
 Contains the FermionicDoubleExcitation template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments,protected-access
 import copy
 
 import numpy as np

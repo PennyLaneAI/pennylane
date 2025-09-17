@@ -159,7 +159,6 @@ class MidMeasureMP(Operator):
         """Which basis state to postselect after a mid-circuit measurement."""
         return self.hyperparameters["postselect"]
 
-    # pylint: disable=arguments-renamed, arguments-differ
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return type.__call__(cls, *args, **kwargs)
@@ -168,7 +167,7 @@ class MidMeasureMP(Operator):
     def compute_diagonalizing_gates(*params, wires, **hyperparams) -> list[Operator]:
         return []
 
-    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:

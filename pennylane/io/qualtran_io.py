@@ -1144,7 +1144,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     return qvars_in
 
 
-class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
+class ToBloq(Bloq):
     r"""
     An adapter to convert a PennyLane :class:`~.QNode`, ``Qfunc``, or :class:`~.Operation` to a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
@@ -1220,7 +1220,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             num_wires = len(make_qscript(self.op)(**self._kwargs).wires)
         return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
-    def decompose_bloq(self):  # pylint:disable=too-many-branches
+    def decompose_bloq(self):
         """Decompose the bloq using the op's decomposition or the tape of the QNode"""
         try:
             if isinstance(self.op, QNode):

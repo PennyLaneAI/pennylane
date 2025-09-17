@@ -704,7 +704,6 @@ class StateVectorProjector(Projector):
     def __new__(cls, *_, **__):
         return object.__new__(cls)
 
-    # pylint: disable=unused-argument
     def label(
         self,
         decimals: int | None = None,
