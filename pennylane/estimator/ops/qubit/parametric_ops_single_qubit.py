@@ -558,7 +558,7 @@ class RZ(ResourceOperator):
             from the "Simulation Results" section of `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} \approx 1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2
+            .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2
 
         Args:
             precision (float): error threshold for the Clifford + T decomposition of this operation
