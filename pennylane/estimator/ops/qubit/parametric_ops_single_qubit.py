@@ -34,7 +34,7 @@ def _rotation_resources(precision=1e-9):
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil,
+        .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2,
 
     where :math:`\epsilon` is the provided ``precision``.
 
@@ -55,10 +55,10 @@ class PhaseShift(ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         The phase shift gate is equivalent to a Z-rotation up to some global phase,
@@ -92,7 +92,7 @@ class PhaseShift(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -102,7 +102,7 @@ class PhaseShift(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -159,8 +159,8 @@ class PhaseShift(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -199,7 +199,7 @@ class PhaseShift(ResourceOperator):
         return [qre.Allocate(1), GateCount(c_ps), GateCount(mcx, 2), qre.Deallocate(1)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -224,10 +224,10 @@ class RX(ResourceOperator):
     r"""Resource class for the RX gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -235,7 +235,7 @@ class RX(ResourceOperator):
         from the "Simulation Results" section of `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+        .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.RX`.
 
@@ -260,7 +260,7 @@ class RX(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -270,7 +270,7 @@ class RX(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -292,7 +292,7 @@ class RX(ResourceOperator):
             from the "Simulation Results" section of `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+            .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -324,8 +324,8 @@ class RX(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -363,7 +363,7 @@ class RX(ResourceOperator):
         return [GateCount(h, 2), GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -388,10 +388,10 @@ class RY(ResourceOperator):
     r"""Resource class for the RY gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -399,7 +399,7 @@ class RY(ResourceOperator):
         from the "Simulation Results" section of `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+        .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.RY`.
 
@@ -424,7 +424,7 @@ class RY(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -434,7 +434,7 @@ class RY(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -455,7 +455,7 @@ class RY(ResourceOperator):
             from the "Simulation Results" section of `Efficient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+            .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -487,8 +487,8 @@ class RY(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -523,7 +523,7 @@ class RY(ResourceOperator):
         return [GateCount(ry, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -548,10 +548,10 @@ class RZ(ResourceOperator):
     r"""Resource class for the RZ gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -559,7 +559,7 @@ class RZ(ResourceOperator):
         from the "Simulation Results" section of `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+        .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.RZ`.
 
@@ -584,7 +584,7 @@ class RZ(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -594,7 +594,7 @@ class RZ(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -612,7 +612,7 @@ class RZ(ResourceOperator):
             from the "Simulation Results" section of `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
+            .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2
 
         Args:
             precision (float): error threshold for the Clifford + T decomposition of this operation
@@ -647,8 +647,8 @@ class RZ(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -685,7 +685,7 @@ class RZ(ResourceOperator):
         return [GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -710,10 +710,10 @@ class Rot(ResourceOperator):
     r"""Resource class for the Rot gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         The resources are obtained according to the definition of the ``Rot`` gate:
@@ -743,7 +743,7 @@ class Rot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -753,7 +753,7 @@ class Rot(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -794,7 +794,7 @@ class Rot(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires, num_zero_ctrl, target_resource_params: dict
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -831,7 +831,7 @@ class Rot(ResourceOperator):
         return [GateCount(mcx, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
