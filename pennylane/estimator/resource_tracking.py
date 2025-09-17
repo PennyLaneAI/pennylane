@@ -43,7 +43,7 @@ def estimate(
     any_state: int = 0,
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
-) -> Resources | Callable:
+) -> Resources | Callable[..., Resources]:
     r"""Estimate the quantum resources required by a circuit or operation
     with respect to a given gateset.
 
