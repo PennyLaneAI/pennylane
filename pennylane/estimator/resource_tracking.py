@@ -236,7 +236,7 @@ def _resources_from_pl_ops(
     # TODO: remove pylint disable when mapping is implemented.
     obj = map_to_resource_op(obj)  # pylint: disable=assignment-from-no-return
     resources = 1 * obj
-    return _resources_from_resource( 
+    return _resources_from_resource(
         obj=resources,
         gate_set=gate_set,
         zeroed=zeroed,
@@ -297,12 +297,12 @@ def _update_counts_from_compressed_res_op(
             continue
 
         if isinstance(action, Allocate):
-            if qubit_alloc_sum != 0 and scalar > 1:
+            if qubit_alloc_sum != 0:
                 wire_manager.grab_zeroed(action.num_wires * scalar)
             else:
                 wire_manager.grab_zeroed(action.num_wires)
         if isinstance(action, Deallocate):
-            if qubit_alloc_sum != 0 and scalar > 1:
+            if qubit_alloc_sum != 0:
                 wire_manager.free_wires(action.num_wires * scalar)
             else:
                 wire_manager.free_wires(action.num_wires)

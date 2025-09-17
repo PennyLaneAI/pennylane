@@ -237,7 +237,7 @@ class TestEstimateResources:
         assert computed_resources == expected_resources
 
     def test_estimate_resources_from_resource_operator(self):
-        """Test that we can accurately obtain resources from qfunc"""
+        """Test that we can accurately obtain resources from resource operator"""
         op = ResourceTestAlg2(num_wires=4)
         actual_resources = estimate(op, gate_set={"TestRZ", "TestAlg1"})
 
@@ -251,8 +251,23 @@ class TestEstimateResources:
         expected_resources = Resources(zeroed=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
 
+    def test_estimate_resources_from_scaled_resource_operator(self):
+        """Test that we can accurately obtain resources from resource operator"""
+        op = 2 * ResourceTestAlg2(num_wires=4)
+        actual_resources = estimate(op, gate_set={"TestRZ", "TestAlg1"})
+
+        expected_gates = defaultdict(
+            int,
+            {
+                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 8,
+                resource_rep(ResourceTestAlg1, {"num_iter": 3}): 4,
+            },
+        )
+        expected_resources = Resources(zeroed=4, algo_wires=4, gate_types=expected_gates)
+        assert actual_resources == expected_resources
+
     def test_estimate_resources_from_resources_obj(self):
-        """Test that we can accurately obtain resources from qfunc"""
+        """Test that we can accurately obtain resources from resources obj"""
         gates = defaultdict(
             int,
             {
