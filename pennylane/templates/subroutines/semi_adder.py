@@ -294,7 +294,7 @@ def _L_alpha(alpha, wires):
     It corresponds to a sequence of ``len(alpha)`` multi-controlled operators.
     The control wires of the first multi-controlled gate are the first :math:`\alpha_0` wires,
     and its target is wire :math:`\alpha_0`, using zero-based indexing. For the :math:`i`-th operator, the control wires are
-    those with indices in the interval :math:`[\alpha_{i-1} + 1,\ \alpha_i)`, and the target
+    those with indices in the interval :math:`[\alpha_{i-1} + 1,\ \alpha_i - 1]`, and the target
     wire is :math:`\alpha_i.
 
     The previously described explanation helps to understand the operator’s behavior, but the implementation is
