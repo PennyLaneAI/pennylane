@@ -607,7 +607,8 @@ def clifford_t_decomposition(
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    [new_tape], _ = cancel_inverses(new_tape)
+    if not is_qjit:
+        [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
