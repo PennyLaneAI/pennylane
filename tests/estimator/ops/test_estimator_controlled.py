@@ -245,7 +245,7 @@ class TestCSWAP:
 
 
 class TestCCZ:
-    """Test the ResourceCCZ operation"""
+    """Test the Resource CCZ operation"""
 
     op = CCZ(wires=[0, 1, 2])
 

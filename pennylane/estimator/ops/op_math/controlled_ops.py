@@ -14,6 +14,9 @@
 r"""Resource operators for controlled operations."""
 
 import pennylane.estimator as qre
+
+from typing import Literal
+
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -959,7 +962,9 @@ class Toffoli(ResourceOperator):
     num_wires = 3
     resource_keys = {"elbow"}
 
-    def __init__(self, elbow: str | None = None, wires: WiresLike = None) -> None:
+    def __init__(
+        self, elbow: Literal["left", "right"] | None = None, wires: WiresLike = None
+    ) -> None:
         self.elbow = elbow
         super().__init__(wires=wires)
 
@@ -1001,7 +1006,7 @@ class Toffoli(ResourceOperator):
         return gate_types
 
     @classmethod
-    def resource_decomp(cls, elbow: str | None = None) -> list[GateCount]:
+    def resource_decomp(cls, elbow: Literal["left", "right"] | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -1053,7 +1058,9 @@ class Toffoli(ResourceOperator):
         ]
 
     @classmethod
-    def textbook_resource_decomp(cls, elbow: str | None = None) -> list[GateCount]:
+    def textbook_resource_decomp(
+        cls, elbow: Literal["left", "right"] | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
         Args:
@@ -1106,7 +1113,7 @@ class Toffoli(ResourceOperator):
         return {"elbow": self.elbow}
 
     @classmethod
-    def resource_rep(cls, elbow: str | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, elbow: Literal["left", "right"] | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
