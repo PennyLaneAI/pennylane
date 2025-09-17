@@ -202,15 +202,12 @@ class TestPrepSelPrep:
                 lcu1,
                 [0],
                 [
-                    qml.AmplitudeEmbedding(
-                        qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
-                    ),
-                    qml.Select(ops1, control=[0]),
-                    qml.ops.Adjoint(
+                    qml.ops.ChangeOpBasis(
                         qml.AmplitudeEmbedding(
                             qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
-                        )
-                    ),
+                        ),
+                        qml.Select(ops1, control=[0]),
+                    )
                 ],
             )
         ],
@@ -344,7 +341,7 @@ class TestPrepSelPrep:
         decomp = qml.list_decomps(qml.PrepSelPrep)[0]
 
         resource_obj = decomp.compute_resources(**op.resource_params)
-        assert resource_obj.num_gates == 3
+        assert resource_obj.num_gates == 1
 
         expected_counts = {
             qml.resource_rep(
@@ -355,6 +352,19 @@ class TestPrepSelPrep:
                 qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
             ): 1,
         }
+        expected_counts = {
+            qml.resource_rep(
+                qml.ops.ChangeOpBasis,
+                compute_op=qml.resource_rep(qml.StatePrep, num_wires=2),
+                target_op=qml.resource_rep(
+                    qml.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
+                ),
+                uncompute_op=qml.resource_rep(
+                    qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
+                ),
+            ): 1,
+        }
+
         assert resource_obj.gate_counts == expected_counts
 
         decomp = qml.list_decomps(qml.PrepSelPrep)[0]
@@ -362,7 +372,7 @@ class TestPrepSelPrep:
         with qml.queuing.AnnotatedQueue() as q:
             decomp(*op.data, wires=op.wires, **op.hyperparameters)
 
-        q = q.queue
+        q = q.queue[0].decomposition()
 
         phase_ops = [qml.prod(op, qml.GlobalPhase(0, wires=op.wires)) for op in ops]
 
