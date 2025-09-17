@@ -151,7 +151,7 @@ def _resources_from_qfunc(
                 elif op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
         num_algo_qubits += len(Wires.all_wires(circuit_wires))
-        wire_manager.algo_wires = num_algo_qubits  # set the algorithmic qubits in the qubit manager
+        wire_manager.algo_wires = num_algo_qubits
         # Obtain resources in the gate_set
         compressed_res_ops_lst = _ops_to_compressed_reps(q.queue)
         gate_counts = defaultdict(int)
