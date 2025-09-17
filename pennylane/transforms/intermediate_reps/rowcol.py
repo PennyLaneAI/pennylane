@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """CNOT routing algorithm ROWCOL as described in https://arxiv.org/abs/1910.14478."""
+from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import networkx as nx
 import numpy as np
@@ -25,6 +27,9 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .parity_matrix import parity_matrix
+
+if TYPE_CHECKING:
+    from pennylane.typing import TensorLike
 
 try:
     import galois
@@ -209,7 +214,7 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     return out
 
 
-def _update(P: np.ndarray, cnots: list[tuple[int]], control: int, target: int):
+def _update(P: TensorLike, cnots: list[tuple[int]], control: int, target: int):
     """In-place apply update corresponding to a CNOT on wires ``(control, target)``
     to parity matrix P and list of CNOT gates ``cnots``."""
     P[target] += P[control]
@@ -217,7 +222,7 @@ def _update(P: np.ndarray, cnots: list[tuple[int]], control: int, target: int):
     return P, cnots
 
 
-def _get_S(P: np.ndarray, idx: int, node_set: Iterable[int], mode: str):
+def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     # Find S (S') either by simply extracting a column or by solving a linear system for the row
     if mode == "column":
         b = P[:, idx]
@@ -234,18 +239,18 @@ def _get_S(P: np.ndarray, idx: int, node_set: Iterable[int], mode: str):
     return S
 
 
-def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str):
+def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
     """Eliminate the column or row with index ``idx`` of the parity matrix P,
     respecting the connectivity constraints given by ``connectivity``.
 
     Args:
-        P (np.ndarray): Parity matrix
+        P (TensorLike): Parity matrix
         connectivity (nx.Graph): Connectivity graph
         idx (int): Column or row index to eliminate
         mode (str): Whether to eliminate the column (``column``) or row (``row``) of ``P``.
 
     Returns:
-        tuple[np.ndarray, list[tuple[int]]]: Updated parity matrix and list of CNOTs that
+        tuple[TensorLike, list[tuple[int]]]: Updated parity matrix and list of CNOTs that
         accomplish the update, in terms of ``(control, target)`` qubit pairs.
     """
 
