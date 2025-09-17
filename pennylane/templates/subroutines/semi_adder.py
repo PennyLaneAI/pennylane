@@ -422,7 +422,7 @@ def _fanout_2(control, wires_control, wires_target):
 
 
 def _semiadder_log_depth_resources(num_y_wires):
-    # Resources estimated form the decomposition and qml.specs counts.
+    # Resources estimated from the decomposition and qml.specs counts.
     return {
         Toffoli: int(2.5 * num_y_wires),
         CNOT: int(num_y_wires * log2(num_y_wires)),
