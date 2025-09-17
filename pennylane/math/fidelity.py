@@ -71,7 +71,6 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
     state0 = math.cast(state0, dtype=c_dtype)
     state1 = math.cast(state1, dtype=c_dtype)
 
-    # pylint: disable=protected-access
     if check_state:
         _check_state_vector(state0)
         _check_state_vector(state1)
@@ -143,7 +142,6 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     state0 = math.cast(state0, dtype=c_dtype)
     state1 = math.cast(state1, dtype=c_dtype)
 
-    # pylint: disable= protected-access
     if check_state:
         _check_density_matrix(state0)
         _check_density_matrix(state1)

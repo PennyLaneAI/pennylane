@@ -312,7 +312,6 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     }
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_out_adder_decomposition_resources)
 def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **__):
     if mod != 2 ** len(output_wires) and mod is not None:
