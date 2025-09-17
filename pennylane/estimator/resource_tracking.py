@@ -152,9 +152,9 @@ def _resources_from_qfunc(
         num_algo_qubits += len(Wires.all_wires(circuit_wires))
         wire_manager.algo_wires = num_algo_qubits
         # Obtain resources in the gate_set
-        compressed_res_ops_lst = _ops_to_compressed_reps(q.queue)
+        compressed_res_ops_list = _ops_to_compressed_reps(q.queue)
         gate_counts = defaultdict(int)
-        for cmp_rep_op in compressed_res_ops_lst:
+        for cmp_rep_op in compressed_res_ops_list:
             _update_counts_from_compressed_res_op(
                 cmp_rep_op, gate_counts, wire_manager=wire_manager, gate_set=gate_set, config=config
             )
