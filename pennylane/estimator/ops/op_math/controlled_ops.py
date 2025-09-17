@@ -107,8 +107,12 @@ class CH(ResourceOperator):
         return [GateCount(h, 2), GateCount(ry, 2), GateCount(cnot, 1)]
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -126,12 +130,15 @@ class CH(ResourceOperator):
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
@@ -139,11 +146,15 @@ class CH(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -227,8 +238,12 @@ class CY(ResourceOperator):
         return [GateCount(cnot), GateCount(s, 2), GateCount(z)]
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -244,14 +259,17 @@ class CY(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
@@ -259,11 +277,15 @@ class CY(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -351,8 +373,12 @@ class CZ(ResourceOperator):
         return [GateCount(cnot), GateCount(h, 2)]
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -366,12 +392,16 @@ class CZ(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl) -> list[GateCount]:
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
@@ -382,11 +412,15 @@ class CZ(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -479,8 +513,12 @@ class CSWAP(ResourceOperator):
         return [GateCount(tof), GateCount(cnot, 2)]
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -494,12 +532,16 @@ class CSWAP(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl) -> list[GateCount]:
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
@@ -507,11 +549,15 @@ class CSWAP(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -598,8 +644,12 @@ class CCZ(ResourceOperator):
         return [GateCount(toffoli), GateCount(h, 2)]
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -615,14 +665,17 @@ class CCZ(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
@@ -630,11 +683,15 @@ class CCZ(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -701,8 +758,12 @@ class CNOT(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -718,15 +779,17 @@ class CNOT(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
@@ -736,11 +799,15 @@ class CNOT(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -812,8 +879,12 @@ class TempAND(ResourceOperator):
         return [GateCount(tof)]
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
@@ -830,14 +901,17 @@ class TempAND(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict or None): A dictionary containing the resource parameters
+                of the target operator.
 
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
@@ -924,7 +998,7 @@ class Toffoli(ResourceOperator):
         return gate_types
 
     @classmethod
-    def resource_decomp(cls, elbow=None) -> list[GateCount]:
+    def resource_decomp(cls, elbow: str | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -976,8 +1050,12 @@ class Toffoli(ResourceOperator):
         ]
 
     @classmethod
-    def textbook_resource_decomp(cls, elbow=None) -> list[GateCount]:
+    def textbook_resource_decomp(cls, elbow: str | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
+
+        Args:
+            elbow (str, optional): String identifier to determine if this is a special type of
+                Toffoli gate (left or right elbow). Default value is `None`.
 
         Resources:
             If `elbow` is provided, resources are obtained from Figure 4 of
@@ -1032,7 +1110,7 @@ class Toffoli(ResourceOperator):
         return {"elbow": self.elbow}
 
     @classmethod
-    def resource_rep(cls, elbow=None) -> CompressedResourceOp:
+    def resource_rep(cls, elbow: str | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -1047,6 +1125,10 @@ class Toffoli(ResourceOperator):
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -1067,8 +1149,8 @@ class Toffoli(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1084,7 +1166,7 @@ class Toffoli(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1164,7 +1246,7 @@ class MultiControlledX(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, num_ctrl_wires, num_zero_ctrl) -> CompressedResourceOp:
+    def resource_rep(cls, num_ctrl_wires: int, num_zero_ctrl: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -1186,11 +1268,7 @@ class MultiControlledX(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
-        cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
-    ) -> list[GateCount]:
+    def resource_decomp(cls, num_ctrl_wires: int, num_zero_ctrl: int) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
         Args:
@@ -1244,8 +1322,6 @@ class MultiControlledX(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
@@ -1264,8 +1340,8 @@ class MultiControlledX(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1298,7 +1374,7 @@ class MultiControlledX(ResourceOperator):
         ]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1435,8 +1511,8 @@ class CRX(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1452,7 +1528,7 @@ class CRX(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1581,8 +1657,8 @@ class CRY(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1599,7 +1675,7 @@ class CRY(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1731,8 +1807,8 @@ class CRZ(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1749,7 +1825,7 @@ class CRZ(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1899,8 +1975,8 @@ class CRot(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1917,7 +1993,7 @@ class CRot(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -2056,8 +2132,8 @@ class ControlledPhaseShift(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -2074,7 +2150,7 @@ class ControlledPhaseShift(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
