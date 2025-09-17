@@ -92,25 +92,6 @@ def test_invalid_mcm_method_raises_error(backend):
         )
 
 
-def test_simple_circuit(wires):
-    """Test that an arbitrary circuit is preprocessed to be expressed in the
-    MBQC formalism before executing, and executes as expected"""
-
-    qml.decomposition.enable_graph()
-
-    dev = FTQCQubit(wires=wires, backend=NullQubitBackend())
-
-    @qml.set_shots(1)
-    @qml.qnode(dev)
-    def circ():
-        qml.H(0)
-        qml.S(0)
-        qml.H(1)
-        return qml.expval(qml.X(0)), qml.expval(qml.X(1))
-
-    assert np.allclose(circ(), (1.0, 1.0), atol=0.05)
-
-
 @pytest.mark.parametrize(
     "wires",
     [
@@ -123,8 +104,8 @@ def test_simple_circuit(wires):
 )
 @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
 def test_executing_arbitrary_circuit(wires, backend_cls, mocker):
-    """Test that an arbitrary circuit is preprocessed to be expressed in the
-    MBQC formalism before executing, and executes as expected"""
+    """Test that an arbitrary circuit (containing non-MBQC gates) is preprocessed
+    to be expressed in the MBQC formalism before executing, and executes as expected"""
 
     qml.decomposition.enable_graph()
 
@@ -167,12 +148,6 @@ def test_executing_arbitrary_circuit(wires, backend_cls, mocker):
     expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
 
     assert np.allclose(res, expected_res, atol=0.05)
-    # assert np.isclose(res[0], expected_res[0], atol=0.05)
-    # # NOTE: SIGN FLIP compared to expected result for the second response
-    # # This is known, but not understood. We allow it to pass for now
-    # # so we can monitor that it is generally working except for the sign flip
-    # assert np.isclose(res[1], expected_res[1], atol=0.05)
-    # assert np.isclose(res[2], expected_res[2], atol=0.05)
 
 
 @pytest.mark.parametrize(
@@ -187,8 +162,8 @@ def test_executing_arbitrary_circuit(wires, backend_cls, mocker):
 )
 @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
 def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls, mocker):
-    """Test that an arbitrary circuit is preprocessed to be expressed in the
-    MBQC formalism before executing, and executes as expected"""
+    """Test that an arbitrary circuit (containing non-MBQC gates) is preprocessed
+    to be expressed in the MBQC formalism before executing, and executes as expected"""
 
     qml.decomposition.enable_graph()
 
@@ -449,7 +424,7 @@ class TestQuantumScriptSequence:
         assert new_sequence.tapes[1].operations == [H(4)]
         assert new_sequence.measurements == new_sequence.tapes[1].measurements == [qml.expval(Y(3))]
 
-    def test_split_at_non_clifford_gates_creates_sequence(self):
+    def test_split_at_non_clifford_gates(self):
         """Test that split_at_non_clifford_gates splits the tape before
         each non-Clifford gate and returns a QuantumScriptSequence"""
 
@@ -479,16 +454,20 @@ class TestQuantumScriptSequence:
         assert isinstance(sequence, QuantumScriptSequence)
         assert tape.measurements == sequence.measurements
 
-        assert len(sequence.tapes) == 4
-        assert sequence.tapes[0].operations == [RotXZX(0.64, 0.33, 1.2, 0)]
-        assert sequence.tapes[1].operations == [RotXZX(0.16, 0.93, 0.29, 1), H(0), S(1)]
-        assert sequence.tapes[2].operations == [RZ(0.54, 1), H(0), S(1), H(2)]
-        assert sequence.tapes[3].operations == [RotXZX(0.82, 0.66, 0.26, 2), H(2), H(0), S(1)]
+        assert len(sequence.tapes) == 3
+        assert sequence.tapes[0].operations == [
+            RotXZX(0.64, 0.33, 1.2, 0),
+            RotXZX(0.16, 0.93, 0.29, 1),
+            H(0),
+            S(1),
+        ]
+        assert sequence.tapes[1].operations == [RZ(0.54, 1), H(0), S(1), H(2)]
+        assert sequence.tapes[2].operations == [RotXZX(0.82, 0.66, 0.26, 2), H(2), H(0), S(1)]
 
-    def test_executing_sequence(self):
-        """Test that a QuantumScriptSequence can be executed with a backend, and that
-        LightningQubitBackend.execute matches the results for executing the standard
-        circuit on lightning.qubit.
+    def test_executing_split_at_non_clifford_gates(self):
+        """Test that a QuantumScriptSequence can be created with split_at_non_clifford_gates
+        and executed with a backend, and that LightningQubitBackend.execute matches the results
+        for executing the standard circuit on lightning.qubit.
 
         This test is only regarding the execution process for the QuantumScriptSequence,
         (i.e. that the segments of the circuit are executed in series while preserving
@@ -520,8 +499,13 @@ class TestQuantumScriptSequence:
         tape = qml.workflow.construct_tape(shots_circ)()
         (sequence,), _ = split_at_non_clifford_gates(tape)
 
+        # we have to provide online correction functions to the _execute_sequence method, but
+        # since we are bypassing conversion to the MBQC formalism to test the sequential execution
+        # behaviour of the _execute_sequence method in isolation, the correction ops are always []
+        online_corrections = [lambda mid_meas: [] for tape in sequence]
+
         # pylint: disable=protected-access
-        raw_samples = backend._execute_sequence(sequence, ExecutionConfig())
+        raw_samples = backend._execute_sequence(sequence, ExecutionConfig(), online_corrections)
         sequence_results = np.average(raw_samples, axis=0)
 
         # expected results are approximately -0.24 and -0.59, a tolerance of 0.05 is fine
@@ -530,48 +514,52 @@ class TestQuantumScriptSequence:
 
 class TestBackendExecution:
 
-    def test_lightning_backend_execution_with_sequences(self, mocker):
-        """Test executing a compatible circuit (MBQC gate set, single samples measurement)
-        on the lighting backend"""
+    def test_lightning_backend_execution_with_sequence(self, mocker):
+        """Test executing a QuantumScriptSequence on the backend with _execute_sequence
+        method on the lighting backend, to confirm that the ops on each segement of the
+        sequence are executed sequentially without reseting the state.
 
-        tape1 = qml.tape.QuantumScript([RotXZX(0.21, 0, 0, 0)])
-        tape2 = qml.tape.QuantumScript([RotXZX(0.21, 0, 0, 0)])
-        tape3 = qml.tape.QuantumScript([RotXZX(0.21, 0, 0, 0)], measurements=[qml.sample(wires=0)])
+        Calling _execute_sequence means that we won't do any pre- or post-processing on
+        the results, so this circuit will be executed using the gates, not converted to
+        the MBQC formalism.
+        """
 
+        tape1 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
+        tape2 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
+        tape3 = qml.tape.QuantumScript([qml.RX(0.21, 0)], measurements=[qml.sample(wires=0)])
         sequence = QuantumScriptSequence([tape1, tape2, tape3], shots=3000)
 
         backend = LightningQubitBackend()
         spy_simulate = mocker.spy(backend, "simulate")
 
-        results = backend.execute([sequence, sequence, sequence], ExecutionConfig())
+        # we have to provide online correction functions to the method, but since we are bypassing
+        # conversion to the MBQC formalism to test the sequential execution behaviour
+        # of the _execute_sequence method in isolation, the correction ops are always []
+        online_corrections = [lambda mid_meas: [] for tape in sequence]
 
-        assert len(results) == 3
+        results = backend._execute_sequence(sequence, ExecutionConfig(), online_corrections)
+        res_to_eigvals = [-1 if res[0] else 1 for res in results]
 
-        # all results are as expected - backend state is correctly maintained during a
-        # sequence execution and reset between executions
-        for res in results:
-            assert len(res) == 3000
-            res_to_eigvals = [-1 if r else 1 for r in res]
-            assert np.allclose(np.average(res_to_eigvals, axis=0), np.cos(0.63), atol=0.05)
+        # 3000 shots, 3000 samples
+        assert len(results) == 3000
 
-        # executed 3 sequences of 3 segments, with 3000 shots each
-        assert spy_simulate.call_count == 3 * 3 * 3000
+        # executed 3 segments and 2 (empty) online correction tapes, with 3000 shots each
+        assert spy_simulate.call_count == 5 * 3000
+
+        # processing samples gives the expected value
+        assert np.allclose(np.average(res_to_eigvals, axis=0), np.cos(0.63), atol=0.05)
 
     def test_null_qubit_backend_execution(self):
-        """Test execution of QuantumScriptSequences succeeds with the null.qubit
-        backend."""
+        """Test executing a QuantumScriptSequence on the backend with _execute_sequence
+        method on the null.qubit backend succeeds and returns 0s with the expected shape."""
 
         tape1 = qml.tape.QuantumScript([H(0)])
         tape2 = qml.tape.QuantumScript([H(0)], measurements=[qml.sample(wires=0)])
-
         sequence = QuantumScriptSequence([tape1, tape1, tape2], shots=3000)
-
         backend = NullQubitBackend()
 
-        results = backend.execute([sequence, sequence, sequence], ExecutionConfig())
+        results = backend._execute_sequence(sequence, ExecutionConfig(), online_corrections=None)
 
-        assert len(results) == 3
-        for res in results:
-            assert len(res) == 3000
-            for r in res:
-                assert np.allclose(r, 0)
+        assert len(results) == 3000
+        for r in results:
+            assert np.allclose(r, 0)
