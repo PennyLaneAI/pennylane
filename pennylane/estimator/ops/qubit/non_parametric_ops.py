@@ -29,7 +29,7 @@ class Hadamard(ResourceOperator):
     r"""Resource class for the Hadamard gate.
 
     Args:
-        wires (Sequence[int] or int, optional): the wire the operation acts on
+        wires (Sequence[int] | int | None): the wire the operation acts on
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
@@ -71,8 +71,12 @@ class Hadamard(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -90,7 +94,7 @@ class Hadamard(ResourceOperator):
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
-        target_resource_params: dict = None,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -99,6 +103,8 @@ class Hadamard(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             For a single control wire, the cost is a single instance of ``CH``.
@@ -149,11 +155,15 @@ class Hadamard(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The Hadamard gate raised to even powers produces identity and raised
@@ -173,7 +183,7 @@ class S(ResourceOperator):
     r"""Resource class for the S-gate.
 
     Args:
-        wires (Sequence[int] or int, optional): the wire the operation acts on
+        wires (Sequence[int] | int | None): the wire the operation acts on
 
     Resources:
         The ``S`` gate decomposes into two ``T`` gates.
@@ -217,8 +227,12 @@ class S(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The adjoint of the ``S`` gate is equivalent to :math:`\hat{Z} \cdot \hat{S}`.
@@ -235,9 +249,9 @@ class S(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
-        target_resource_params: dict = None,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -294,11 +308,15 @@ class S(ResourceOperator):
         ]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             - The S-gate, when raised to a power which is a multiple of four, produces identity.
@@ -329,7 +347,7 @@ class SWAP(ResourceOperator):
     r"""Resource class for the SWAP gate.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The resources come from the following identity expressing SWAP as the product of
@@ -429,8 +447,12 @@ class SWAP(ResourceOperator):
         return [GateCount(resource_rep(qre.CNOT), 3)]
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation
@@ -446,9 +468,9 @@ class SWAP(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
-        target_resource_params: dict = None,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -494,7 +516,9 @@ class SWAP(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(mcx)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -518,7 +542,7 @@ class T(ResourceOperator):
     r"""Resource class for the T-gate.
 
     Args:
-        wires (Sequence[int] or int, optional): the wire the operation acts on
+        wires (Sequence[int] | int | None): the wire the operation acts on
 
     Resources:
         The ``T`` gate is treated as a fundamental gate and thus it cannot be decomposed
@@ -560,8 +584,12 @@ class T(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The adjoint of the T-gate is equivalent to the T-gate raised to the 7th power.
@@ -578,7 +606,7 @@ class T(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict = None
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -625,11 +653,15 @@ class T(ResourceOperator):
         return [GateCount(ct), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The ``T`` gate, when raised to a power which is a multiple of eight, produces identity.
@@ -675,7 +707,7 @@ class X(ResourceOperator):
     r"""Resource class for the X-gate.
 
     Args:
-        wires (Sequence[int] or int, optional): the wire the operation acts on
+        wires (Sequence[int] | int | None): the wire the operation acts on
 
     Resources:
         The ``X`` gate can be decomposed according to the following identities:
@@ -702,7 +734,7 @@ class X(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -739,7 +771,7 @@ class X(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -756,9 +788,9 @@ class X(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
-        target_resource_params: dict = None,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
         Args:
@@ -806,11 +838,15 @@ class X(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The X-gate raised to even powers produces identity and raised
@@ -830,7 +866,7 @@ class Y(ResourceOperator):
     r"""Resource class for the Y-gate.
 
     Args:
-        wires (Sequence[int] or int, optional): the wire the operation acts on
+        wires (Sequence[int] | int | None): the wire the operation acts on
 
     Resources:
         The ``Y`` gate can be decomposed according to the following identities:
@@ -859,7 +895,7 @@ class Y(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -900,8 +936,12 @@ class Y(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -917,9 +957,9 @@ class Y(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
-        target_resource_params: dict = None,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -968,11 +1008,15 @@ class Y(ResourceOperator):
         return [GateCount(s), GateCount(s_dagg), GateCount(mcx)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The ``Y`` gate raised to even powers produces identity and raised
@@ -992,7 +1036,7 @@ class Z(ResourceOperator):
     r"""Resource class for the Z-gate.
 
     Args:
-        wires (Sequence[int] or int, optional): the wire the operation acts on
+        wires (Sequence[int] | int | None): the wire the operation acts on
 
     Resources:
         The ``Z`` gate can be decomposed according to the following identities:
@@ -1014,7 +1058,7 @@ class Z(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -1044,7 +1088,7 @@ class Z(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -1063,7 +1107,7 @@ class Z(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
-        target_resource_params: dict = None,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1117,11 +1161,15 @@ class Z(ResourceOperator):
         return gate_list
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The ``Z`` gate raised to even powers produces identity and raised

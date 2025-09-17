@@ -192,7 +192,7 @@ class Adjoint(ResourceOperator):
         kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
 
         try:
-            return base_class.adjoint_resource_decomp(**base_params, **kwargs)
+            return base_class.adjoint_resource_decomp(base_params)
         except ResourcesUndefinedError:
             gate_lst = []
             decomp = base_class.resource_decomp(**base_params, **kwargs)
@@ -202,12 +202,12 @@ class Adjoint(ResourceOperator):
             return gate_lst
 
     @classmethod
-    def adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp):
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
-                compressed resource representation for the operator we want the adjoint of.
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The adjoint of an adjointed operation is just the original operation. The resources
@@ -218,6 +218,7 @@ class Adjoint(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        base_cmpr_op = target_resource_params.get("base_cmpr_op")
         return [GateCount(base_cmpr_op)]
 
     @staticmethod
@@ -469,7 +470,8 @@ class Controlled(ResourceOperator):
                 controlled operation upon.
             num_zero_ctrl (int): The subset of those control qubits, which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
-            target_resource_params (dict): The resource parameters of the base controlled operation.
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
 
         Resources:
             The resources are derived by simply combining the control qubits, control-values and

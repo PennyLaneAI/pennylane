@@ -58,7 +58,7 @@ class TestAdjoint:
             """Dummy class with no default adjoint decomp"""
 
             @classmethod
-            def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+            def adjoint_resource_decomp(cls, target_resource_params=None) -> list[GateCount]:
                 """No default resources"""
                 raise ResourcesUndefinedError
 
