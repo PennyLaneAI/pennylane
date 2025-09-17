@@ -18,6 +18,7 @@ from collections import defaultdict
 
 import pytest
 
+from pennylane.estimator.estimate import estimate
 from pennylane.estimator.ops.qubit import X
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
@@ -27,7 +28,6 @@ from pennylane.estimator.resource_operator import (
     ResourcesUndefinedError,
     resource_rep,
 )
-from pennylane.estimator.estimate import estimate
 from pennylane.estimator.resources_base import Resources
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 
