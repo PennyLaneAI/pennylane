@@ -141,7 +141,6 @@ def _resources_from_qfunc(
             obj(*args, **kwargs)
 
         wire_manager = WireResourceManager(zeroed, any_state, 0, tight_budget)
-        # Get algorithm wires:
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
