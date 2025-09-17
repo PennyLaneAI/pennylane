@@ -207,7 +207,7 @@ def mock_rotation_decomp(precision):
 class TestEstimateResources:
     """Test that core resource estimation functionality"""
 
-    def test_estimate_resources_dispatch(self):
+    def test_estimate_with_unsupported_dispatch(self):
         """Test that a TypeError is raised when an unsupported type is passed to the estimate function."""
         with pytest.raises(TypeError, match="Could not obtain resources for obj of type"):
             estimate(({1, 2, 3}))
