@@ -16,9 +16,7 @@
 from uuid import UUID
 
 import pytest
-from xdsl.dialects import arith, builtin
-from xdsl.dialects import stablehlo as xstablehlo
-from xdsl.dialects import tensor, test
+from xdsl.dialects import builtin, test
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects import quantum
@@ -47,24 +45,6 @@ def _create_populated_ssa_qubit_map(wires=None) -> tuple[SSAQubitMap, quantum.Qu
         ssa_qubit_map[map_wires[i % len(map_wires)]] = q
 
     return ssa_qubit_map, ssa_qubits
-
-
-def _create_arith_constant_int(value) -> SSAValue:
-    """Create a constant SSAValue using arith.constant."""
-    op = arith.ConstantOp(
-        value=builtin.IntegerAttr(value=value, value_type=builtin.IntegerType(64))
-    )
-    return op.results[0]
-
-
-def _create_stablehlo_constant_int(value) -> SSAValue:
-    """Create a constant SSAValue using stablehlo.constant and tensor.extract."""
-    dense_repr = builtin.DenseIntOrFPElementsAttr(
-        type=builtin.TensorType(builtin.IntegerType(64), shape=()), data=[value]
-    )
-    cst_op = xstablehlo.ConstantOp(dense_repr)
-    extract_op = tensor.ExtractOp(tensor=cst_op.results[0], indices=())
-    return extract_op.results[0]
 
 
 class TestAbstractWire:
@@ -344,7 +324,7 @@ class TestSSAQubitMap:
         ssa_qubit_map = SSAQubitMap()
         ssa_qubit_map._map[0] = "foo"
 
-        with pytest.raises(AssertionError, match=f"The key {0} maps to an invalid type {"foo"}."):
+        with pytest.raises(AssertionError, match=f"The key {0} maps to an invalid type {'foo'}."):
             ssa_qubit_map.verify()
 
     def test_verify_different_wire_keys_values_errors(self):
