@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains tests for class needed to map PennyLane operations to their ResourceOperator.
+This module contains tests for class needed to map PennyLane operations to their associated ResourceOperator.
 """
 import pytest
 

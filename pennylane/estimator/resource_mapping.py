@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Mapping PL operations to their ResourceOperator."""
+r"""Mapping PL operations to their associated ResourceOperator."""
 from __future__ import annotations
 
 from functools import singledispatch
@@ -24,13 +24,13 @@ from pennylane.operation import Operation
 
 @singledispatch
 def map_to_resource_op(op: Operation) -> ResourceOperator:
-    r"""Maps an instance of :class:`~.Operation` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`.
+    r"""Maps an instance of :class:`~.Operation` to its associated :class:`~.estimator.ResourceOperator`.
 
     Args:
         op (~.Operation): base operation to be mapped
 
     Return:
-        (~.pennylane.labs.resource_estimation.ResourceOperator): the resource operator equal of the base operator
+        (~.estimator.ResourceOperator): the resource operator equivalent of the base operator
 
     Raises:
         TypeError: The op is not a valid operation
