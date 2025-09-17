@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.estimator as re_ops
-from pennylane.estimator import _map_to_resource_op
+from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.operation import Operation
 
 # pylint: disable= no-self-use
