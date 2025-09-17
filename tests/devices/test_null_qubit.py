@@ -1409,9 +1409,11 @@ class TestNullQubitGraphModeExclusive:
     @pytest.fixture(autouse=True)
     def enable_graph_mode_only(self):
         """Auto-enable graph mode for all tests in this class."""
-        qml.decomposition.enable_graph()
-        yield
-        qml.decomposition.disable_graph()
+        try:
+            qml.decomposition.enable_graph()
+            yield
+        finally:
+            qml.decomposition.disable_graph()
 
     def test_insufficient_work_wires_causes_fallback(self):
         """Test that if a decomposition requires more work wires than available on null.qubit,
