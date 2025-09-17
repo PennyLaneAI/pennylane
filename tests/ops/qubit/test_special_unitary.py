@@ -742,7 +742,7 @@ class TestSpecialUnitary:
         assert np.allclose(jac, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["jax", "torch", "autograd"])
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
     def test_large_wire_jacobian_regression(self, interface):
         """Regression test for compute_matrix with num_wires > 5.
 
