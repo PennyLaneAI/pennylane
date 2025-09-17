@@ -18,6 +18,7 @@ from uuid import UUID
 
 import pytest
 
+xdsl = pytest.importorskip("xdsl")
 pytestmark = pytest.mark.external
 
 from xdsl.dialects import builtin, test
