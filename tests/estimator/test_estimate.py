@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Test the core resource tracking functionality.
+Test the core resource estimation functionality.
 """
 from collections import defaultdict
 
