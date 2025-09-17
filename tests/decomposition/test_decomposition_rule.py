@@ -33,7 +33,8 @@ from pennylane.decomposition.resources import CompressedResourceOp, Resources
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
 
-    def test_create_decomposition_rule(self):
+    @pytest.mark.parametrize("heuristic_resources", [False, True])
+    def test_create_decomposition_rule(self, heuristic_resources):
         """Test that a DecompositionRule object can be created."""
 
         def multi_rz_decomposition(theta, wires, **__):
@@ -49,7 +50,9 @@ class TestDecompositionRule:
                 qml.CNOT: 2 * (num_wires - 1),
             }
 
-        multi_rz_decomposition = register_resources(_multi_rz_resources, multi_rz_decomposition)
+        multi_rz_decomposition = register_resources(
+            _multi_rz_resources, multi_rz_decomposition, heuristic=heuristic_resources
+        )
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
 
@@ -67,8 +70,10 @@ class TestDecompositionRule:
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
             gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
         )
+        assert multi_rz_decomposition.heuristic_resources is heuristic_resources
 
-    def test_decomposition_decorator(self):
+    @pytest.mark.parametrize("heuristic_resources", [False, True])
+    def test_decomposition_decorator(self, heuristic_resources):
         """Tests creating a decomposition rule using the decorator syntax."""
 
         def _multi_rz_resources(num_wires):
@@ -77,7 +82,7 @@ class TestDecompositionRule:
                 qml.CNOT: 2 * (num_wires - 1),
             }
 
-        @register_resources(_multi_rz_resources)
+        @register_resources(_multi_rz_resources, heuristic=heuristic_resources)
         def multi_rz_decomposition(theta, wires, **__):
             for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
                 qml.CNOT(wires=(w0, w1))
@@ -86,6 +91,7 @@ class TestDecompositionRule:
                 qml.CNOT(wires=(w0, w1))
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
+        assert multi_rz_decomposition.heuristic_resources is heuristic_resources
 
         with qml.queuing.AnnotatedQueue() as q:
             multi_rz_decomposition(0.5, wires=[0, 1, 2])
@@ -153,10 +159,11 @@ class TestDecompositionRule:
             }
         )
 
-    def test_inspect_decomposition_rule(self):
+    @pytest.mark.parametrize("heuristic_resources", [False, True])
+    def test_inspect_decomposition_rule(self, heuristic_resources):
         """Tests that the source code for a decomposition rule can be inspected."""
 
-        @register_resources({qml.H: 2, qml.CNOT: 1})
+        @register_resources({qml.H: 2, qml.CNOT: 1}, heuristic=heuristic_resources)
         def my_cz(wires):
             qml.H(wires[0])
             qml.CNOT(wires=wires)
@@ -166,7 +173,7 @@ class TestDecompositionRule:
             str(my_cz)
             == dedent(
                 """
-        @register_resources({qml.H: 2, qml.CNOT: 1})
+        @register_resources({qml.H: 2, qml.CNOT: 1}, heuristic=heuristic_resources)
         def my_cz(wires):
             qml.H(wires[0])
             qml.CNOT(wires=wires)
@@ -312,3 +319,46 @@ class TestDecompositionRule:
             raise NotImplementedError
 
         assert custom_decomp_2.get_work_wire_spec(num_wires=5) == WorkWireSpec(zeroed=2, borrowed=3)
+
+    @pytest.mark.parametrize("heuristic_resources", [False, True])
+    def test_set_resources(self, heuristic_resources):
+        """Test that a DecompositionRule object can be assigned new resources."""
+
+        def multi_rz_decomposition(theta, wires, **__):
+            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+                qml.CNOT(wires=(w0, w1))
+            qml.RZ(theta, wires=wires[0])
+            for w0, w1 in zip(wires[1:], wires[:-1]):
+                qml.CNOT(wires=(w0, w1))
+
+        def _multi_rz_resources_old(num_wires):
+            return {
+                qml.RZ: 500,
+                qml.CNOT: 2 * (num_wires - 1),
+            }
+
+        def _multi_rz_resources_new(num_wires):
+            return {
+                qml.RZ: 1,
+                qml.CNOT: 2 * (num_wires - 1),
+            }
+
+        multi_rz_decomposition = register_resources(
+            _multi_rz_resources_old, multi_rz_decomposition, heuristic=heuristic_resources
+        )
+
+        assert isinstance(multi_rz_decomposition, DecompositionRule)
+        assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
+            gate_counts={CompressedResourceOp(qml.RZ): 500, CompressedResourceOp(qml.CNOT): 4},
+        )
+        assert multi_rz_decomposition.heuristic_resources is heuristic_resources
+
+        # Overwrite resources
+        multi_rz_decomposition.set_resources(
+            _multi_rz_resources_new, heuristic_resources=not heuristic_resources
+        )
+
+        assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
+        )
+        assert multi_rz_decomposition.heuristic_resources is not heuristic_resources
