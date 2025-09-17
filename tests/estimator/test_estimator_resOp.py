@@ -387,6 +387,7 @@ class TestResourceOperator:
 
         assert qre_ops.X() == qre_ops.X()
         assert qre_ops.SWAP() == qre_ops.SWAP()
+        assert qre_ops.X() != qre_ops.SWAP()
 
     ops_to_queue = [
         Hadamard(wires=[0]),
