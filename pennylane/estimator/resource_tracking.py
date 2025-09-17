@@ -60,7 +60,7 @@ def estimate(
             when they are not specified on the operator.
 
     Returns:
-        Resources: the quantum resources required to execute the circuit
+        Resources: the estimated quantum resources required to execute the circuit
 
     Raises:
         TypeError: could not obtain resources for obj of type :code:`type(obj)`
