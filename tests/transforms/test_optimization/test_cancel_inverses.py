@@ -361,6 +361,20 @@ class TestCancelInversesInterfaces:
         res = circuit(jax.numpy.array(0))
         qml.math.allclose(res, 1.0)
 
+    @pytest.mark.jax
+    def test_cencel_inverses_abstract_wires(self):
+        """Tests that inverses do not cancel across operators with abstract wires."""
+
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript([qml.H(0), qml.CNOT([w, 1]), qml.H(0)], [qml.state()])
+            [tape], _ = cancel_inverses(tape)
+            return len(tape.operations)
+
+        assert f(0) == 3
+
 
 ### Tape
 with qml.queuing.AnnotatedQueue() as q:

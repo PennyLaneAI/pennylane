@@ -607,10 +607,7 @@ def clifford_t_decomposition(
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    # TODO: Remove this branch after fix https://github.com/PennyLaneAI/pennylane/issues/7803, so
-    # then cancel_inverses can compute with QJIT
-    if not is_qjit:
-        [new_tape], _ = cancel_inverses(new_tape)
+    [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
