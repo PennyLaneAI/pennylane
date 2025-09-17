@@ -22,7 +22,10 @@ from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import CustomOp, ExpvalOp
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    CustomOp,
+    ExpvalOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
