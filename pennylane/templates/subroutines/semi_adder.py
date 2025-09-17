@@ -297,8 +297,10 @@ def _L_alpha(alpha, wires):
     those with indices in the interval :math:`[\alpha_{i-1} + 1,\ \alpha_i)`, and the target
     wire is :math:`\alpha_i.
 
-
-    The implementation is based on Algorithm 2: https://arxiv.org/abs/2501.16802
+    The previously described explanation helps to understand the operator’s behavior, but the implementation is
+    carried out differently. The implementation is done calling the function ``_L_alpha`` over a subset of wires
+    and :math:`\vec{\alpha}` following the description of Algorithm 2: https://arxiv.org/abs/2501.16802.
+    This implementation achieves a logarithmic circuit depth.
 
     Args:
         alpha (list): ordered list of integers storing the position of the target wires
@@ -423,6 +425,7 @@ def _fanout_2(control, wires_control, wires_target):
 
 def _semiadder_log_depth_resources(num_y_wires):
     # Resources estimated from the decomposition and qml.specs counts.
+    # TODO: calculate exact resources
     return {
         Toffoli: int(2.5 * num_y_wires),
         CNOT: int(num_y_wires * log2(num_y_wires)),

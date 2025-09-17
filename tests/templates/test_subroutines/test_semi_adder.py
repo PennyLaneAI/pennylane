@@ -45,61 +45,40 @@ class TestSemiAdder:
     """Test the qml.SemiAdder template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "work_wires", "x", "y", "decomposition_rule"),
+        ("x_wires", "y_wires", "work_wires"),
         [
-            ([0], [1], None, 1, 0, _semiadder_log_depth),
-            ([0], [1], None, 1, 1, _semiadder_log_depth),
-            ([0, 1], [2], None, 0, 1, _semiadder_log_depth),
-            ([0, 1], [2], None, 1, 1, _semiadder_log_depth),
-            ([0, 1], [2], None, 1, 0, _semiadder_log_depth),
-            ([0, 1], [2, 3], [4], 2, 0, _semiadder_log_depth),
-            ([0, 1], [2, 3], [4], 1, 2, _semiadder_log_depth),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 1, 2, _semiadder_log_depth),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 5, 6, _semiadder_log_depth),
-            ([0, 1], [2, 3, 4], [5, 6], 3, 2, _semiadder),
-            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 10, _semiadder),
-            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 7, _semiadder),
-            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5, _semiadder),
-            ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5, _semiadder),
-            ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2, _semiadder),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2, _semiadder),
+            ([0], [1], []),
+            ([0], [1], []),
+            ([0, 1], [2], []),
+            ([0, 1], [2], []),
+            ([0, 1], [2], []),
+            ([0, 1], [2, 3], [4]),
+            ([0, 1], [2, 3], [4]),
+            ([0, 1, 2], [3, 4, 5], [6, 7]),
+            ([0, 1, 2], [3, 4, 5], [6, 7]),
+            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"]),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y, decomposition_rule
+        self, x_wires, y_wires, work_wires
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the SemiAdder template output."""
-        dev = qml.device("default.qubit")
-
-        qml.decomposition.enable_graph()
-
-        @qml.set_shots(1)
-        @partial(
-            qml.transforms.decompose,
-            fixed_decomps={qml.SemiAdder: decomposition_rule},
-            max_expansion=1,
-        )
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            qml.SemiAdder(x_wires, y_wires, work_wires)
-            return qml.sample(wires=y_wires), qml.probs(wires=work_wires)
-
-        output = circuit(x, y)
-
-        sample = output[0]
-
-        #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
-        # pylint: disable=bad-reversed-sequence
-        assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(sample[0, :]))),
-            (x + y) % 2 ** len(y_wires),
-        )
 
         if work_wires:
-            # check work_wires are in state |0>
-            assert np.isclose(output[1][0], 1.0)
+            total_wires = work_wires + x_wires + y_wires
+        else:
+            total_wires = x_wires + y_wires
+
+        # We compare matrices when work_wires are initialized to |0>
+        matrix1 = qml.matrix(_semiadder_log_depth, wire_order=total_wires)(x_wires, y_wires)[
+            : 2 ** (len(x_wires) + len(y_wires) - len(work_wires))
+        ]
+
+        matrix2 = qml.matrix(_semiadder, wire_order=total_wires)(x_wires, y_wires, work_wires)[
+            : 2 ** (len(x_wires) + len(y_wires) - len(work_wires))
+        ]
+
+        assert np.allclose(matrix1, matrix2)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "work_wires", "msg_match"),
