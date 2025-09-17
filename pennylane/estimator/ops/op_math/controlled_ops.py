@@ -147,7 +147,7 @@ class CH(ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(
-        cls, pow_z, target_resource_params: dict | None = None
+        cls, pow_z: int, target_resource_params: dict | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
