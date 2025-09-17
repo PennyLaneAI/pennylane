@@ -58,6 +58,10 @@ class AbstractWire:
         return self.uuid == other.uuid
 
 
+# The allowed types for the keys and values in the bidirectional map.
+_valid_types = (int, AbstractWire, quantum.QubitSSAValue)
+
+
 @dataclass
 class SSAQubitMap:
     """Class to maintain two-way mapping between wire labels and SSA qubits."""
@@ -74,11 +78,6 @@ class SSAQubitMap:
     SSA qubit, then the value will be the wire (integer or ``AbstractWire``) to which
     it corresponds."""
 
-    _valid_types: tuple[type, ...] = field(
-        default=(int, AbstractWire, quantum.QubitSSAValue), init=False
-    )
-    """The allowed types for the keys and values in the bidirectional map."""
-
     def _assert_valid_type(self, obj: Any) -> None:
         """Check if the given value is valid. Valid types are ``int``, ``AbstractWire``,
         or ``xdsl.ir.SSAValue`` of type ``quantum.QubitType``. If not, raise an error."""
@@ -86,10 +85,10 @@ class SSAQubitMap:
         # We use ``xdsl.utils.hints.isa`` here instead of ``isinstance`` because that is
         # designed to allow checking the input object againt generic types, which
         # ``isinstance`` cannot handle.
-        if not any(isa(obj, hint) for hint in self._valid_types):
+        if not any(isa(obj, hint) for hint in _valid_types):
             raise AssertionError(
-                f"{obj} is not a valid key or value for a SSAQubitMap. Valid keys and values "
-                f"must be of one of the following types: {self._valid_types}."
+                f"{obj} is not a valid key or value for an SSAQubitMap. Valid keys and values "
+                f"must be of one of the following types: {_valid_types}."
             )
 
     def _assert_valid_wire_label(self, wire: int | AbstractWire) -> None:
@@ -103,14 +102,12 @@ class SSAQubitMap:
 
     def __contains__(self, key: int | AbstractWire | quantum.QubitSSAValue) -> bool:
         """Check if the map contains a wire label or qubit."""
-        self._assert_valid_type(key)
         return key in self._map
 
     def __getitem__(
         self, key: int | AbstractWire | quantum.QubitSSAValue
     ) -> int | AbstractWire | list[quantum.QubitSSAValue]:
         """Get a value from the wire/qubit maps."""
-        self._assert_valid_type(key)
         return self._map[key]
 
     def __setitem__(
@@ -145,7 +142,6 @@ class SSAQubitMap:
     ) -> int | AbstractWire | list[quantum.QubitSSAValue] | None:
         """Return an item from the map without removing it, if it exists. Else, return
         the provided default value."""
-        self._assert_valid_type(key)
         return self._map.get(key, default)
 
     def pop(
@@ -153,8 +149,6 @@ class SSAQubitMap:
     ) -> int | AbstractWire | list[quantum.QubitSSAValue] | None:
         """Remove and return an item from the map, if it exists. Else, return the
         provided default value."""
-        self._assert_valid_type(key)
-
         if key not in self._map:
             return default
 
@@ -163,6 +157,8 @@ class SSAQubitMap:
             wire = self._map.pop(key)
             qubits = self._map[wire]
             _ = qubits.pop(qubits.index(key))
+            if len(qubits) == 0:
+                _ = self._map.pop(wire)
             return wire
 
         qubits = self._map.pop(key)
@@ -190,13 +186,21 @@ class SSAQubitMap:
 
         for k, v in self._map.items():
             self._assert_valid_type(k)
-            self._assert_valid_type(v)
+
             if isa(k, quantum.QubitSSAValue):
-                qubit_keys.add(k)
+                self._assert_valid_type(v)
                 self._assert_valid_wire_label(v)
+
+                qubit_keys.add(k)
                 wire_values.add(v)
+
             else:
                 self._assert_valid_wire_label(k)
+                assert isinstance(v, list), f"The key {k} maps to an invalid type {v}."
+
+                for _q in v:
+                    self._assert_valid_type(_q)
+
                 wire_keys.add(k)
                 all_qubit_values.extend(v)
 
