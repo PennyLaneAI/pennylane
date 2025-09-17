@@ -394,7 +394,7 @@ class TestSpecsGraphModeExclusive:
     def test_specs_max_work_wires_calculation(self, num_device_wires, expected_decomp):
         """Test that qml.specs correctly calculates max_work_wires and uses appropriate decomposition."""
 
-        class MyCustomOp(qml.operation.Operator):
+        class MyCustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         @qml.register_resources({qml.H: 2})  # Fallback: 2 H gates
@@ -429,7 +429,7 @@ class TestSpecsGraphModeExclusive:
     def test_specs_max_work_wires_with_insufficient_wires(self):
         """Test that qml.specs correctly reports work wires when decomposition fallback is used."""
 
-        class MyLimitedOp(qml.operation.Operator):
+        class MyLimitedOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         @qml.register_resources({qml.H: 1})  # Fallback that uses 1 H gate
