@@ -813,6 +813,9 @@
   be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
+* :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at `qml.tape`.
+  [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
+
 <h3>Deprecations 👋</h3>
 
 * Setting shots on a device through the `shots=` kwarg, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use the `set_shots` transform on the `QNode` instead.
@@ -1106,9 +1109,6 @@
 
 * Add nightly RC builds script to `.github/workflows`.
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
-
-* :func:`~.tape.expand_tape` has been moved to its own file, and made available at `qml.tape`.
-  [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
 
 <h3>Documentation 📝</h3>
 
