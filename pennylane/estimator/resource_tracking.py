@@ -34,7 +34,6 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
     """Maps an instance of :class:`~.Operation` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`."""
-    pass
 
 
 def estimate(
@@ -214,13 +213,13 @@ def _resources_from_resource_ops(
 ) -> Resources:
     """Extract resources from a resource operator."""
     resources = 1 * obj
-    return _resources_from_resource(  # pylint: disable=too-many-function-args
-        resources,
-        gate_set,
-        zeroed,
-        any_state,
-        tight_budget,
-        config,
+    return _resources_from_resource(
+        obj=resources,
+        gate_set=gate_set,
+        zeroed=zeroed,
+        any_state=any_state,
+        tight_budget=tight_budget,
+        config=config,
     )
 
 
@@ -237,13 +236,13 @@ def _resources_from_pl_ops(
     # TODO: remove pylint disable when mapping is implemented.
     obj = map_to_resource_op(obj)  # pylint: disable=assignment-from-no-return
     resources = 1 * obj
-    return _resources_from_resource(  # pylint: disable=too-many-function-args
-        resources,
-        gate_set,
-        zeroed,
-        any_state,
-        tight_budget,
-        config,
+    return _resources_from_resource( 
+        obj=resources,
+        gate_set=gate_set,
+        zeroed=zeroed,
+        any_state=any_state,
+        tight_budget=tight_budget,
+        config=config,
     )
 
 
