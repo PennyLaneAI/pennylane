@@ -362,7 +362,7 @@ class TestCancelInversesInterfaces:
         qml.math.allclose(res, 1.0)
 
     @pytest.mark.jax
-    def test_cencel_inverses_abstract_wires(self):
+    def test_cancel_inverses_abstract_wires(self):
         """Tests that inverses do not cancel across operators with abstract wires."""
 
         import jax
