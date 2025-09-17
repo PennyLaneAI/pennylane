@@ -329,6 +329,7 @@ class TestEstimateResources:
 
         assert actual_resources == expected_resources
 
+    # TODO: Implement this when mapping is merged
     def test_estimate_resources_from_pl_operator(self):
         """Test that we can accurately obtain resources from qfunc"""
         assert True

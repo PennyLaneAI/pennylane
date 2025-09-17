@@ -60,7 +60,7 @@ from .resource_operator import (
     resource_rep,
 )
 
-from .resource_tracking import estimate
+from .estimate import estimate
 
 from .ops.identity import Identity, GlobalPhase
 
