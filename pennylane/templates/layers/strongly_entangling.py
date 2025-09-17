@@ -14,11 +14,10 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
+# pylint: disable=too-many-arguments
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
-
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, Rot
 from pennylane.ops.op_math import cond

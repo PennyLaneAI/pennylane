@@ -273,7 +273,7 @@ class Pow(ScalarSymbolicOp):
             self.base.pow(self.z)
         except PowUndefinedError:
             return False
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             # some pow methods cant handle a batched z
             if qml.math.ndim(self.z) != 0:
                 return False
@@ -291,7 +291,7 @@ class Pow(ScalarSymbolicOp):
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             raise DecompositionUndefinedError from e
 
     @property

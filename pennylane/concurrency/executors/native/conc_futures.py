@@ -21,7 +21,8 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import partial
 from multiprocessing import get_context
 
-from ..base import ExecBackendConfig
+from pennylane.concurrency.executors.base import ExecBackendConfig
+
 from .api import PyNativeExec
 
 
