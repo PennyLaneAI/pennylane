@@ -11,6 +11,9 @@
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
 
+  * The `qml.estimator.map_to_resource_op` function was added to map PennyLane operations to their
+    resource estimator equivalent.
+    [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
