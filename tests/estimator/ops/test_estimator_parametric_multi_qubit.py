@@ -115,19 +115,19 @@ class TestMultiRZ:
         ),
     )
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values, expected_res", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
 
         op = qre.MultiRZ(num_wires=3, precision=1e-3)
         op2 = qre.Controlled(
             op,
             num_ctrl_wires,
-            num_ctrl_values,
+            num_zero_ctrl,
         )
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, **op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
@@ -364,15 +364,15 @@ class TestPauliRot:
         ),
     )
 
-    @pytest.mark.parametrize("pauli_word, num_ctrl_wires, num_ctrl_values, expected_res", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, pauli_word, expected_res):
+    @pytest.mark.parametrize("pauli_word, num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, pauli_word, expected_res):
         """Test that the controlled resources are as expected"""
 
         op = qre.PauliRot(pauli_word, precision=1e-5)
-        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, **op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
