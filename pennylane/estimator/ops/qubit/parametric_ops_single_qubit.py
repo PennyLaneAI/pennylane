@@ -58,10 +58,10 @@ class PhaseShift(ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         The phase shift gate is equivalent to a Z-rotation up to some global phase,
@@ -95,7 +95,7 @@ class PhaseShift(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -105,7 +105,7 @@ class PhaseShift(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -207,10 +207,10 @@ class RX(ResourceOperator):
     r"""Resource class for the RX gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -243,7 +243,7 @@ class RX(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -253,7 +253,7 @@ class RX(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -352,10 +352,10 @@ class RY(ResourceOperator):
     r"""Resource class for the RY gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -388,7 +388,7 @@ class RY(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -398,7 +398,7 @@ class RY(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -494,10 +494,10 @@ class RZ(ResourceOperator):
     r"""Resource class for the RZ gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -530,7 +530,7 @@ class RZ(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -540,7 +540,7 @@ class RZ(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -638,10 +638,10 @@ class Rot(ResourceOperator):
     r"""Resource class for the Rot gate.
 
     Args:
-        precision (float, optional): The error threshold for the Clifford + T decomposition
+        precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires, optional): The wires the operation acts on.
+        wires (Any or Wires | None): The wires the operation acts on.
 
     Resources:
         The resources are obtained according to the definition of the ``Rot`` gate:
@@ -671,7 +671,7 @@ class Rot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -681,7 +681,7 @@ class Rot(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
