@@ -29,7 +29,7 @@ class TestMapToResourceOp:
 
     def test_map_to_resource_op_raises_type_error_if_not_operation(self):
         """Test that a TypeError is raised if the input is not an Operation."""
-        with pytest.raises(TypeError, match="The op oper is not a valid operation"):
+        with pytest.raises(TypeError, match="is not a valid operation"):
             map_to_resource_op("oper")
 
     def test_map_to_resource_op_raises_not_implemented_error(self):
