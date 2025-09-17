@@ -369,19 +369,13 @@ class TestSpecsTransform:
         assert dev_specs["errors"] == {}
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestSpecsGraphModeExclusive:
     """Tests for qml.specs features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
 
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
     """
-
-    @pytest.fixture(autouse=True)
-    def enable_graph_mode_only(self):
-        """Auto-enable graph mode for all tests in this class."""
-        qml.decomposition.enable_graph()
-        yield
-        qml.decomposition.disable_graph()
 
     @pytest.mark.parametrize(
         "num_device_wires, expected_decomp",
