@@ -48,8 +48,8 @@ def estimate(
     with respect to a given gateset.
 
     Args:
-        obj (ResourceOperator | Callable | Resources | list): The quantum circuit or operation
-            to obtain resources from.
+        workflow (Callable | ResourceOperator | Resources): The quantum circuit or operation
+            for which to estimate resources.
         gate_set (set | None): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
         zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
