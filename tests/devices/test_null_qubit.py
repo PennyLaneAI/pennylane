@@ -1401,7 +1401,7 @@ def test_execute_plxpr_shots():
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestNullQubitGraphModeExclusive:
+class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
     """Tests for NullQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
