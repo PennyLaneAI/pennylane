@@ -50,7 +50,6 @@ def process_raw_samples(
 
     """
 
-    samples = samples.astype(dtype) if dtype is not None else samples
     wire_map = dict(zip(wire_order, range(len(wire_order))))
     mapped_wires = [wire_map[w] for w in mp.wires]
     # Select the samples from samples that correspond to ``shot_range`` if provided
@@ -70,6 +69,7 @@ def process_raw_samples(
     # pylint: disable=protected-access
     if mp.obs is None and not isinstance(mp.mv, MeasurementValue) and mp._eigvals is None:
         # if no observable was provided then return the raw samples
+        samples = samples.astype(dtype) if dtype is not None else samples
         return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
     # If we're sampling observables
@@ -97,4 +97,5 @@ def process_raw_samples(
         else:
             samples = eigvals[indices]
 
+    samples = samples.astype(dtype) if dtype is not None else samples
     return samples if bin_size is None else samples.reshape((bin_size, -1))
