@@ -65,10 +65,10 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
 
-Compiltation transforms using ZX calculus
+Compilation transforms using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There is a set of transforms that use the ZX calculus to optimize circuits.
+There is a set of transforms that use ZX calculus to optimize circuits.
 
 .. autosummary::
     :toctree: api
@@ -78,7 +78,7 @@ There is a set of transforms that use the ZX calculus to optimize circuits.
     ~transforms.zx.reduce_non_clifford
     ~transforms.zx.todd
 
-The following utility functions are only required when working explicitly with ZX diagrams,
+The following utility functions assist when working explicitly with ZX diagrams,
 for example when writing custom ZX compilation passes.
 
 .. autosummary::
