@@ -674,15 +674,9 @@ class TestPreprocessingTransforms:
         assert isinstance(result, (float, np.floating))
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphModeExclusiveFeatures:
     """Tests that only work when graph mode is enabled."""
-
-    @pytest.fixture(autouse=True)
-    def enable_graph_mode_only(self):
-        """Auto-enable graph mode for all tests in this class."""
-        qml.decomposition.enable_graph()
-        yield
-        qml.decomposition.disable_graph()
 
     @pytest.mark.parametrize(("wires", "expected_program_len"), [(1, 2), (2, 2), (4, 1), (None, 1)])
     def test_work_wire_constraint_respected(self, wires, expected_program_len):
