@@ -32,6 +32,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     MultiRZOp,
     NamedObsOp,
     QubitUnitaryOp,
+    SetBasisStateOp,
     SetStateOp,
 )
 from pennylane.measurements import MeasurementProcess, MidMeasureMP
@@ -183,7 +184,14 @@ def resolve_constant_wire(ssa: SSAValue) -> float | int:
         case _ if op.name == "stablehlo.constant":
             return _extract_dense_constant_value(op)
 
-        case CustomOp() | GlobalPhaseOp() | QubitUnitaryOp() | SetStateOp() | MultiRZOp():
+        case (
+            CustomOp()
+            | GlobalPhaseOp()
+            | QubitUnitaryOp()
+            | SetStateOp()
+            | MultiRZOp()
+            | SetBasisStateOp()
+        ):
             all_qubits = list(getattr(op, "in_qubits", [])) + list(
                 getattr(op, "in_ctrl_qubits", [])
             )
@@ -205,7 +213,7 @@ def resolve_constant_wire(ssa: SSAValue) -> float | int:
 
 
 def ssa_to_qml_params(
-    op: CustomOp, control: bool = False, single: bool = False
+    op, control: bool = False, single: bool = False
 ) -> list[float | int] | float | int | None:
     """Get the parameters from the operation."""
     return _extract(op, "in_ctrl_values" if control else "params", resolve_constant_params, single)
@@ -235,23 +243,36 @@ def xdsl_to_qml_op(op) -> Operator:
 
         case "quantum.gphase":
             gate = qml.GlobalPhase(ssa_to_qml_params(op, single=True), wires=ssa_to_qml_wires(op))
+
         case "quantum.unitary":
             gate = qml.QubitUnitary(
                 U=jax.numpy.zeros(_tensor_shape_from_ssa(op.matrix)), wires=ssa_to_qml_wires(op)
             )
+
         case "quantum.set_state":
             gate = qml.StatePrep(
                 state=jax.numpy.zeros(_tensor_shape_from_ssa(op.in_state)),
                 wires=ssa_to_qml_wires(op),
             )
+
         case "quantum.multirz":
             gate = qml.MultiRZ(
                 theta=_extract(op, "theta", resolve_constant_params, single=True),
                 wires=ssa_to_qml_wires(op),
             )
-        case _:
+
+        case "quantum.set_basis_state":
+            gate = qml.BasisState(
+                state=jax.numpy.zeros(_tensor_shape_from_ssa(op.basis_state)),
+                wires=ssa_to_qml_wires(op),
+            )
+
+        case "quantum.custom":
             gate_cls = resolve_gate(op.properties.get("gate_name").data)
             gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
+
+        case _:
+            raise ValueError(f"Unsupported gate: {op.name}")
 
     return _apply_adjoint_and_ctrls(gate, op)
 
@@ -279,5 +300,10 @@ def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operato
         case "quantum.compbasis":
             return _extract(op, "qubits", resolve_constant_wire)
 
-        case _:
+        case (
+            "quantum.state" | "quantum.probs" | "quantum.sample" | "quantum.expval" | "quantum.var"
+        ):
             return resolve_measurement(op.name)(*args, **kwargs)
+
+        case _:
+            raise ValueError(f"Unsupported measurement/observable: {op.name}")

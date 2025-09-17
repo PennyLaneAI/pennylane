@@ -416,6 +416,18 @@ class Testdraw:
                 "1: ──────────╰MultiRZ─├MultiRZ─╰MultiRZ──────────┤  State\n"
                 "2: ───────────────────╰MultiRZ───────────────────┤  State",
             ),
+            (
+                [
+                    (qml.BasisState, jax.numpy.array([1]), [0]),
+                    (qml.BasisState, jax.numpy.array([1, 0]), [0, 1]),
+                    (qml.BasisState, jax.numpy.array([1, 0, 0]), [0, 1, 2]),
+                    (qml.BasisState, jax.numpy.array([1, 0]), [0, 1]),
+                    (qml.BasisState, jax.numpy.array([1]), [0]),
+                ],
+                "0: ──|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩──|Ψ⟩─┤  State\n"
+                "1: ──────╰|Ψ⟩─├|Ψ⟩─╰|Ψ⟩──────┤  State\n"
+                "2: ───────────╰|Ψ⟩───────────┤  State",
+            ),
         ],
     )
     def test_visualization_cases(self, ops, expected):

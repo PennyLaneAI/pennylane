@@ -22,10 +22,7 @@ from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    CustomOp,
-    ExpvalOp,
-)
+from pennylane.compiler.python_compiler.dialects.quantum import CustomOp, ExpvalOp
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
@@ -34,6 +31,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     ProbsOp,
     QubitUnitaryOp,
     SampleOp,
+    SetBasisStateOp,
     SetStateOp,
     StateOp,
     VarianceOp,
@@ -41,11 +39,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 
-from .xdsl_conversion import (
-    dispatch_wires_extract,
-    xdsl_to_qml_measurement,
-    xdsl_to_qml_op,
-)
+from .xdsl_conversion import dispatch_wires_extract, xdsl_to_qml_measurement, xdsl_to_qml_op
 
 
 class QMLCollector:
@@ -90,7 +84,9 @@ class QMLCollector:
     @handle.register
     def _(
         self,
-        xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp,
+        xdsl_op: (
+            CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp | SetBasisStateOp
+        ),
     ) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
@@ -140,12 +136,12 @@ class QMLCollector:
         collected_ops: list[Operator] = []
         collected_meas: list[MeasurementProcess] = []
 
-        for func_op in self.module.walk():
+        for func_op in self.module.body.ops:
 
             if not isinstance(func_op, func.FuncOp):
                 continue
 
-            for op in func_op.body.walk():
+            for op in func_op.body.ops:
 
                 self._process_qubit_mapping(op)
                 result = self.handle(op)
