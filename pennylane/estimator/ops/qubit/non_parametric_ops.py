@@ -22,7 +22,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=arguments-differ, unused-argument, no-name-in-module
+# pylint: disable=arguments-differ
 
 
 class Hadamard(ResourceOperator):
@@ -42,7 +42,7 @@ class Hadamard(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -71,7 +71,7 @@ class Hadamard(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -88,15 +88,16 @@ class Hadamard(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires: int,
-        ctrl_num_ctrl_values: int,
-        **kwargs,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
 
         Resources:
             For a single control wire, the cost is a single instance of ``CH``.
@@ -147,7 +148,7 @@ class Hadamard(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -189,7 +190,7 @@ class S(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -215,7 +216,7 @@ class S(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -233,15 +234,16 @@ class S(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-        **kwargs,
-    ):
+        num_ctrl_wires,
+        num_zero_ctrl,
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
 
         Resources:
             The controlled-S gate decomposition is presented in (Fig. 5)
@@ -288,7 +290,7 @@ class S(ResourceOperator):
         ]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -310,7 +312,7 @@ class S(ResourceOperator):
         """
         mod_4 = pow_z % 4
         if mod_4 == 0:
-            return [GateCount(resource_rep(qre.Identity))]
+            return []
         if mod_4 == 1:
             return [GateCount(cls.resource_rep())]
         if mod_4 == 2:
@@ -385,7 +387,7 @@ class SWAP(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -423,7 +425,7 @@ class SWAP(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -440,15 +442,16 @@ class SWAP(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-        **kwargs,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
 
         Resources:
             For a single control wire, the cost is a single instance of ``CSWAP``.
@@ -465,26 +468,10 @@ class SWAP(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(qre.CSWAP))]
-
-            if ctrl_num_ctrl_values:
-                gate_types.append(GateCount(resource_rep(X), 2))
-
-            return gate_types
-
-        cnot = resource_rep(qre.CNOT)
-        mcx = resource_rep(
-            qre.MultiControlledX,
-            {
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
-                "num_ctrl_values": ctrl_num_ctrl_values,
-            },
-        )
-        return [GateCount(cnot, 2), GateCount(mcx)]
+        return super().controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -521,7 +508,7 @@ class T(ResourceOperator):
     num_wires = 1
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -550,7 +537,7 @@ class T(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -567,12 +554,14 @@ class T(ResourceOperator):
         return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
     @classmethod
-    def controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
 
         Resources:
             The T-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single
@@ -590,26 +579,10 @@ class T(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(qre.ControlledPhaseShift))]
-
-            if ctrl_num_ctrl_values:
-                gate_types.append(GateCount(resource_rep(X), 2))
-
-            return gate_types
-
-        ct = resource_rep(qre.ControlledPhaseShift)
-        mcx = resource_rep(
-            qre.MultiControlledX,
-            {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
-            },
-        )
-        return [GateCount(ct), GateCount(mcx, 2)]
+        return super().controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -620,8 +593,7 @@ class T(ResourceOperator):
             Consequently, for any integer power `z`, the effective quantum operation :math:`T^{z}` is equivalent
             to :math:`T^{z \pmod 8}`.
 
-
-            The decomposition for :math:`T^{z}`, (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+            The decomposition for :math:`T^{z}`, where :math:`z \pmod 8` is denoted as `z'`, is as follows:
 
             - If `z' = 0`: The operation is equivalent to the Identity gate (:math:`I`).
             - If `z' = 1`: The operation is equivalent to the T-gate (:math:`T`).
@@ -724,7 +696,7 @@ class X(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -741,14 +713,15 @@ class X(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-        **kwargs,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
 
         Resources:
             For one or two control wires, the cost is one of ``CNOT`` or ``Toffoli`` respectively.
@@ -787,7 +760,7 @@ class X(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -881,7 +854,7 @@ class Y(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -897,13 +870,17 @@ class Y(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
+        cls,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
 
         Resources:
             For a single control wire, the cost is a single instance of ``CY``.
@@ -942,7 +919,7 @@ class Y(ResourceOperator):
         return [GateCount(s), GateCount(s_dagg), GateCount(mcx)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1018,7 +995,7 @@ class Z(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -1035,15 +1012,16 @@ class Z(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
-        **kwargs,
+        num_ctrl_wires,
+        num_zero_ctrl,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
 
         Resources:
             For one or two control wires, the cost is one of ``CZ``
@@ -1087,7 +1065,7 @@ class Z(ResourceOperator):
         return gate_list
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:

@@ -21,8 +21,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ,no-self-use,too-many-ancestors
-# pylint: disable=unused-argument
+# pylint: disable=arguments-differ
 
 
 class Identity(ResourceOperator):
@@ -47,6 +46,12 @@ class Identity(ResourceOperator):
 
     num_wires = 1
 
+    def __init__(self, wires=None):
+        """Initializes the ``Identity`` operator."""
+        if wires is not None and not isinstance(wires, int):
+            self.num_wires = len(wires)
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -57,13 +62,13 @@ class Identity(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -93,14 +98,14 @@ class Identity(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires: int,
-        ctrl_num_ctrl_values: int,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
+            num_zero_ctrl (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
 
         Resources:
             The Identity gate acts trivially when controlled. The resources of this operation are same as
@@ -171,13 +176,13 @@ class GlobalPhase(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -226,14 +231,14 @@ class GlobalPhase(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires: int,
-        ctrl_num_ctrl_values: int,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): The number of control qubits, that are controlled when
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): The number of control qubits that are controlled when
                 in the :math:`|0\rangle` state.
 
         Resources:

@@ -122,12 +122,12 @@ class TestCY:
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
 
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -177,17 +177,17 @@ class TestCZ:
         (2, 1),
     )
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
-        if num_ctrl_wires == 1 and num_ctrl_values == 0:
+        if num_ctrl_wires == 1 and num_zero_ctrl == 0:
             expected_res = [GateCount(CCZ.resource_rep(), 1)]
             assert (
-                self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+                self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == expected_res
             )
         else:
             with pytest.raises(ResourcesUndefinedError):
-                self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+                self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     pow_data = [
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -231,11 +231,11 @@ class TestCSWAP:
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -280,11 +280,11 @@ class TestCCZ:
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -333,16 +333,16 @@ class TestCNOT:
     def test_resource_controlled(self, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
-        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
 
-        if num_ctrl_wires == 1 and num_ctrl_values == 0:
+        if num_ctrl_wires == 1 and num_zero_ctrl == 0:
             expected_res = [GateCount(Toffoli.resource_rep(), 1)]
             assert (
-                self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+                self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == expected_res
             )
         else:
             with pytest.raises(ResourcesUndefinedError):
-                self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+                self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -388,9 +388,9 @@ class TestTempAND:
     def test_resource_controlled(self, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
-        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
 
 
 class TestToffoli:
@@ -456,14 +456,14 @@ class TestToffoli:
         """Test that the adjoint resources are as expected"""
         expected_res = [GateCount(self.op.resource_rep(), 1)]
 
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.adjoint_resource_decomp(self.op.resource_params) == expected_res
 
         expected_elbows_res = [
             [GateCount(self.op.resource_rep(elbow="left"), 1)],
             [GateCount(self.op.resource_rep(elbow="right"), 1)],
         ]
-        assert self.op.adjoint_resource_decomp(elbow="right") == expected_elbows_res[0]
-        assert self.op.adjoint_resource_decomp(elbow="left") == expected_elbows_res[1]
+        assert self.op.adjoint_resource_decomp({"elbow":"right"}) == expected_elbows_res[0]
+        assert self.op.adjoint_resource_decomp({"elbow":"left"}) == expected_elbows_res[1]
 
     ctrl_data = ((["c1"], [1]),)
 
@@ -471,10 +471,10 @@ class TestToffoli:
     def test_resource_controlled(self, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
-        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
 
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, self.op.resource_params)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -486,7 +486,7 @@ class TestToffoli:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.pow_resource_decomp(z, self.op.resource_params) == expected_res
 
 
 class TestMultiControlledX:
@@ -522,10 +522,10 @@ class TestMultiControlledX:
     )
 
     @staticmethod
-    def _prep_params(num_control, num_control_values):
+    def _prep_params(num_control, num_zero_ctrl):
         return {
             "num_ctrl_wires": num_control,
-            "num_ctrl_values": num_control_values,
+            "num_zero_ctrl": num_zero_ctrl,
         }
 
     @pytest.mark.parametrize("params, expected_res", zip(res_params, expected_resources))
@@ -569,7 +569,7 @@ class TestMultiControlledX:
         op = MultiControlledX(5, 3)
         expected_res = [GateCount(op.resource_rep(**op.resource_params), 1)]
 
-        assert op.adjoint_resource_decomp(**op.resource_params) == expected_res
+        assert op.adjoint_resource_decomp(op.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -601,10 +601,10 @@ class TestMultiControlledX:
         """Test that the controlled resources are as expected"""
         op = MultiControlledX(3, 2)
         num_ctrl_wires = len(ctrl_wires)
-        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
             == expected_res
         )
 
@@ -619,7 +619,7 @@ class TestMultiControlledX:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
         op = MultiControlledX(5, 3)
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
 
 
 class TestCRX:
@@ -654,15 +654,15 @@ class TestCRX:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.adjoint_resource_decomp(self.op.resource_params) == expected_res
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, self.op.resource_params)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -674,7 +674,7 @@ class TestCRX:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
 
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.pow_resource_decomp(z, self.op.resource_params) == expected_res
 
 
 class TestCRY:
@@ -708,15 +708,15 @@ class TestCRY:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.adjoint_resource_decomp(self.op.resource_params) == expected_res
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, self.op.resource_params)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -727,7 +727,7 @@ class TestCRY:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.pow_resource_decomp(z, self.op.resource_params) == expected_res
 
 
 class TestCRZ:
@@ -761,15 +761,15 @@ class TestCRZ:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.adjoint_resource_decomp(self.op.resource_params) == expected_res
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, self.op.resource_params)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -780,7 +780,7 @@ class TestCRZ:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.pow_resource_decomp(z, self.op.resource_params) == expected_res
 
 
 class TestCRot:
@@ -814,15 +814,15 @@ class TestCRot:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [GateCount(self.op.resource_rep(), 1)]
-        assert self.op.adjoint_resource_decomp() == expected_res
+        assert self.op.adjoint_resource_decomp(self.op.resource_params) == expected_res
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, self.op.resource_params)
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
@@ -833,7 +833,7 @@ class TestCRot:
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        assert self.op.pow_resource_decomp(z) == expected_res
+        assert self.op.pow_resource_decomp(z, self.op.resource_params) == expected_res
 
 
 class TestControlledPhaseShift:
@@ -899,7 +899,7 @@ class TestControlledPhaseShift:
 
         op = ControlledPhaseShift()
 
-        assert op.adjoint_resource_decomp() == [GateCount(ControlledPhaseShift.resource_rep(), 1)]
+        assert op.adjoint_resource_decomp({"precision": None}) == [GateCount(ControlledPhaseShift.resource_rep(), 1)]
 
     pow_data = ((1, [GateCount(ControlledPhaseShift.resource_rep(), 1)]),)
 
@@ -908,13 +908,13 @@ class TestControlledPhaseShift:
         """Test that the adjoint resources are correct."""
 
         op = ControlledPhaseShift
-        assert op.pow_resource_decomp(z) == expected_res
+        assert op.pow_resource_decomp(z, {"precision": None}) == expected_res
 
     ctrl_data = ((1, 0),)
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl):
         """Test that the controlled resources are as expected"""
         op = ControlledPhaseShift()
         with pytest.raises(ResourcesUndefinedError):
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)

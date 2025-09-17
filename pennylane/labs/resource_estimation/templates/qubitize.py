@@ -57,7 +57,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
     >>> prep = plre.ResourcePrepTHC(compact_ham, coeff_precision=20, select_swap_depth=2)
-    >>> res = plre.estimate_resources(plre.ResourceQubitizeTHC(compact_ham, prep_op=prep))
+    >>> res = plre.estimate(plre.ResourceQubitizeTHC(compact_ham, prep_op=prep))
     >>> print(res)
     --- Resources: ---
      Total qubits: 381
