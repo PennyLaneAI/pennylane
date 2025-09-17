@@ -25,7 +25,7 @@ def parity_matrix(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
 
     Args:
         tape (QNode or QuantumTape or Callable): Quantum circuit containing only CNOT gates.
-        wire_order (Sequence): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
+        wire_order (Sequence): Wire order indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:
         np.ndarray: :math:`n \times n` Parity matrix for :math:`n` qubits.
