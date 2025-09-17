@@ -22,11 +22,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import WiresLike
-
-from ..identity import GlobalPhase
-from .non_parametric_ops import T
 
 # pylint: disable=arguments-differ, signature-differs
 
@@ -180,12 +176,14 @@ class PhaseShift(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        if ctrl_num_ctrl_wires == 1:
+        print("target_resource_params:", target_resource_params)
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
             gate_types = [
                 GateCount(resource_rep(qre.ControlledPhaseShift, {"precision": precision}))
             ]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_types.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_types
@@ -194,11 +192,11 @@ class PhaseShift(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
-        return [Allocate(1), GateCount(c_ps), GateCount(mcx, 2), Deallocate(1)]
+        return [qre.Allocate(1), GateCount(c_ps), GateCount(mcx, 2), qre.Deallocate(1)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
@@ -343,11 +341,12 @@ class RX(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        if ctrl_num_ctrl_wires == 1:
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
 
             gate_types = [GateCount(resource_rep(qre.CRX, {"precision": precision}))]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_types.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_types
@@ -357,8 +356,8 @@ class RX(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(h, 2), GateCount(rz, 2), GateCount(mcx, 2)]
@@ -503,10 +502,11 @@ class RY(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        if ctrl_num_ctrl_wires == 1:
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(qre.CRY, {"precision": precision}))]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_types.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_types
@@ -515,8 +515,8 @@ class RY(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 
@@ -664,10 +664,11 @@ class RZ(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        if ctrl_num_ctrl_wires == 1:
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(qre.CRZ, {"precision": precision}))]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_types.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_types
@@ -676,8 +677,8 @@ class RZ(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 
@@ -808,10 +809,11 @@ class Rot(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        if ctrl_num_ctrl_wires == 1:
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(qre.CRot, {"precision": precision}))]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_types.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_types
@@ -821,8 +823,8 @@ class Rot(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 

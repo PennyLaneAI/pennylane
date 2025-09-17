@@ -90,6 +90,7 @@ class Hadamard(ResourceOperator):
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
+        target_resource_params: dict = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -122,10 +123,10 @@ class Hadamard(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires == 1:
+        if num_ctrl_wires == 1:
             gate_lst = [GateCount(resource_rep(qre.CH))]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_lst.append(GateCount(resource_rep(X), 2))
 
             return gate_lst
@@ -137,8 +138,8 @@ class Hadamard(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 
@@ -236,6 +237,7 @@ class S(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
+        target_resource_params: dict = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -244,6 +246,8 @@ class S(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The controlled-S gate decomposition is presented in (Fig. 5)
@@ -262,14 +266,14 @@ class S(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires == 1:
+        if num_ctrl_wires == 1:
             gate_lst = [
                 GateCount(resource_rep(qre.CNOT), 2),
                 GateCount(resource_rep(T), 2),
                 GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(T)})),
             ]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_lst.append(GateCount(resource_rep(X), 2))
 
             return gate_lst
@@ -277,8 +281,8 @@ class S(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 
@@ -422,7 +426,7 @@ class SWAP(ResourceOperator):
                         0 & 0 & 1 & 0
                 \end{bmatrix}.
         """
-        raise ResourcesUndefinedError
+        return [GateCount(resource_rep(qre.CNOT), 3)]
 
     @classmethod
     def adjoint_resource_decomp(cls) -> list[GateCount]:
@@ -444,6 +448,7 @@ class SWAP(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
+        target_resource_params: dict = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -452,6 +457,8 @@ class SWAP(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             For a single control wire, the cost is a single instance of ``CSWAP``.
@@ -468,7 +475,23 @@ class SWAP(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return super().controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
+        if num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.CSWAP))]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(X), 2))
+
+            return gate_types
+
+        cnot = resource_rep(qre.CNOT)
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(cnot, 2), GateCount(mcx)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
@@ -554,7 +577,9 @@ class T(ResourceOperator):
         return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl) -> list[GateCount]:
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -562,6 +587,8 @@ class T(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The T-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single
@@ -579,7 +606,23 @@ class T(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return super().controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
+        if num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.ControlledPhaseShift))]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(X), 2))
+
+            return gate_types
+
+        ct = resource_rep(qre.ControlledPhaseShift)
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ct), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
@@ -715,6 +758,7 @@ class X(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
+        target_resource_params: dict = None,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
         Args:
@@ -722,6 +766,8 @@ class X(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             For one or two control wires, the cost is one of ``CNOT`` or ``Toffoli`` respectively.
@@ -734,24 +780,24 @@ class X(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires > 2:
+        if num_ctrl_wires > 2:
             mcx = resource_rep(
                 qre.MultiControlledX,
                 {
-                    "num_ctrl_wires": ctrl_num_ctrl_wires,
-                    "num_ctrl_values": ctrl_num_ctrl_values,
+                    "num_ctrl_wires": num_ctrl_wires,
+                    "num_zero_ctrl": num_zero_ctrl,
                 },
             )
             return [GateCount(mcx)]
 
         gate_lst = []
-        if ctrl_num_ctrl_values:
-            gate_lst.append(GateCount(resource_rep(X), 2 * ctrl_num_ctrl_values))
+        if num_zero_ctrl:
+            gate_lst.append(GateCount(resource_rep(X), 2 * num_zero_ctrl))
 
-        if ctrl_num_ctrl_wires == 0:
+        if num_ctrl_wires == 0:
             gate_lst.append(GateCount(resource_rep(X)))
 
-        elif ctrl_num_ctrl_wires == 1:
+        elif num_ctrl_wires == 1:
             gate_lst.append(GateCount(resource_rep(qre.CNOT)))
 
         else:
@@ -873,6 +919,7 @@ class Y(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
+        target_resource_params: dict = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -881,6 +928,8 @@ class Y(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             For a single control wire, the cost is a single instance of ``CY``.
@@ -899,10 +948,10 @@ class Y(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires == 1:
+        if num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(qre.CY))]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_types.append(GateCount(resource_rep(X), 2))
 
             return gate_types
@@ -912,8 +961,8 @@ class Y(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(s), GateCount(s_dagg), GateCount(mcx)]
@@ -1014,6 +1063,7 @@ class Z(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
+        target_resource_params: dict = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1022,6 +1072,8 @@ class Z(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             For one or two control wires, the cost is one of ``CZ``
@@ -1041,26 +1093,26 @@ class Z(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires > 2:
+        if num_ctrl_wires > 2:
             h = resource_rep(Hadamard)
             mcx = resource_rep(
                 qre.MultiControlledX,
                 {
-                    "num_ctrl_wires": ctrl_num_ctrl_wires,
-                    "num_ctrl_values": ctrl_num_ctrl_values,
+                    "num_ctrl_wires": num_ctrl_wires,
+                    "num_zero_ctrl": num_zero_ctrl,
                 },
             )
             return [GateCount(h, 2), GateCount(mcx)]
 
         gate_list = []
-        if ctrl_num_ctrl_wires == 1:
+        if num_ctrl_wires == 1:
             gate_list.append(GateCount(resource_rep(qre.CZ)))
 
-        if ctrl_num_ctrl_wires == 2:
+        if num_ctrl_wires == 2:
             gate_list.append(GateCount(resource_rep(qre.CCZ)))
 
-        if ctrl_num_ctrl_values:
-            gate_list.append(GateCount(resource_rep(X), 2 * ctrl_num_ctrl_values))
+        if num_zero_ctrl:
+            gate_list.append(GateCount(resource_rep(X), 2 * num_zero_ctrl))
 
         return gate_list
 

@@ -28,10 +28,8 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
     Rot,
     _rotation_resources,
 )
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
 
@@ -123,40 +121,21 @@ class TestPauliRotation:
         ]
         assert resource_class(precision).pow_resource_decomp(z, {"precision": None}) == expected
 
-    params_ctrl_classes = (
-        (qre.RX, qre.CRX),
-        (qre.RY, qre.CRY),
-        (qre.RZ, qre.CRZ),
-    )
-
-    @pytest.mark.parametrize("resource_class, controlled_class", params_ctrl_classes)
-    @pytest.mark.parametrize("precision", params_errors)
-    def test_controlled_decomposition_single_control(
-        self, resource_class, controlled_class, precision
-    ):
-        """Test that the controlled decompositions are correct."""
-        with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(1, 0, resource_class.resource_params)
-
-        c = controlled_class(wires=[1, 0], precision=precision)
-        expected = [GateCount(c.resource_rep(**c.resource_params), 1)]
-        assert c_op.resource_decomp(**c_op.resource_params) == expected
-
     ctrl_res_data = (
         (
             [1, 2],
             [1, 1],
-            [qre.MultiControlledX.resource_rep(2, 0)],
+            [qre.GateCount(qre.MultiControlledX.resource_rep(2, 0), 2)],
         ),
         (
             [1, 2],
             [1, 0],
-            [qre.MultiControlledX.resource_rep(2, 1)],
+            [qre.GateCount(qre.MultiControlledX.resource_rep(2, 1), 2)],
         ),
         (
             [1, 2, 3],
             [1, 0, 0],
-            [qre.MultiControlledX.resource_rep(3, 2)],
+            [qre.GateCount(qre.MultiControlledX.resource_rep(3, 2), 2)],
         ),
     )
 
@@ -167,20 +146,18 @@ class TestPauliRotation:
     ):
         """Test that the controlled docomposition is correct when controlled on multiple wires."""
         num_ctrl_wires = len(ctrl_wires)
-        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
 
         op = resource_class(wires=0)
-        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
-
-        expected_resources = op2.resource_decomp(**op2.resource_params)
-        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_resources
+        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
         expected_resources = copy.copy(local_res)
-        expected_resources.extend(GateCount(gate, 2) for gate in general_res)
+        expected_resources.extend(general_res)
 
-        assert op.controlled_resource_decomp(num_
-                ctrl_wires, num_ctrl_values, resource_class.resource_params
-            ) == expected_resources
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
+            == expected_resources
+        )
         assert op2.resource_decomp(**op2.resource_params) == expected_resources
 
 
@@ -225,22 +202,49 @@ class TestRot:
         expected = [GateCount(Rot.resource_rep(), 1)]
         assert Rot.adjoint_resource_decomp({"precision": None}) == expected
 
-    params_ctrl_classes = ((Rot),)
-    ctrl_data = ([1, 0], [1, 1])
+    ctrl_data = (
+        ([1], [1], [qre.GateCount(qre.CRot.resource_rep(), 1)]),
+        (
+            [1],
+            [0],
+            [
+                qre.GateCount(qre.CRot.resource_rep(), 1),
+                qre.GateCount(qre.X.resource_rep(), 2),
+            ],
+        ),
+        (
+            [1, 2],
+            [1, 1],
+            [
+                qre.GateCount(qre.MultiControlledX.resource_rep(2, 0), 2),
+                qre.GateCount(qre.RZ.resource_rep(), 3),
+                qre.GateCount(qre.RY.resource_rep(), 2),
+            ],
+        ),
+        (
+            [1, 2, 3],
+            [1, 0, 0],
+            [
+                qre.GateCount(qre.MultiControlledX.resource_rep(3, 2), 2),
+                qre.GateCount(qre.RZ.resource_rep(), 3),
+                qre.GateCount(qre.RY.resource_rep(), 2),
+            ],
+        ),
+    )
 
-    @pytest.mark.parametrize("resource_class", params_ctrl_classes)
-    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
-    def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
-        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_zero_ctrl = len([v for v in ctrl_values if not v])
 
         op = qre.Rot(wires=0)
-        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
-        assert op.controlled_resource_decomp(num_
-                ctrl_wires, num_ctrl_values, resource_class.resource_params
-            ) == expected_res
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
+            == expected_res
+        )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
@@ -298,17 +302,51 @@ class TestPhaseShift:
         expected = [GateCount(PhaseShift.resource_rep(), 1)]
         assert PhaseShift.adjoint_resource_decomp({"precision": None}) == expected
 
-    params_ctrl_classes = ((PhaseShift),)
-    ctrl_data = ([1, 0], [1, 1])
+    ctrl_data = (
+        ([1], [1], [qre.GateCount(qre.ControlledPhaseShift.resource_rep(), 1)]),
+        (
+            [1],
+            [0],
+            [
+                qre.GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
+                qre.GateCount(qre.X.resource_rep(), 2),
+            ],
+        ),
+        (
+            [1, 2],
+            [1, 1],
+            [
+                qre.Allocate(1),
+                qre.GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
+                qre.GateCount(qre.MultiControlledX.resource_rep(2, 0), 2),
+                qre.Deallocate(1),
+            ],
+        ),
+        (
+            [1, 2, 3],
+            [1, 0, 0],
+            [
+                qre.Allocate(1),
+                qre.GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
+                qre.GateCount(qre.MultiControlledX.resource_rep(3, 2), 2),
+                qre.Deallocate(1),
+            ],
+        ),
+    )
 
-    @pytest.mark.parametrize("resource_class", params_ctrl_classes)
-    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
-    def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
-        with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(
-                ctrl_wires, ctrl_values, resource_class.resource_params
-            )
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = qre.PhaseShift(wires=0)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert repr(
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, op.resource_params)
+        ) == repr(expected_res)
+        assert repr(op2.resource_decomp(**op2.resource_params)) == repr(expected_res)
 
     pow_data = (
         (1, [GateCount(PhaseShift.resource_rep(), 1)]),

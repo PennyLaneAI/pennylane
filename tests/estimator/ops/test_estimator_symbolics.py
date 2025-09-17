@@ -163,20 +163,20 @@ class TestControlled:
 
             @classmethod
             def controlled_resource_decomp(
-                cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
+                cls, num_ctrl_wires, num_zero_ctrl, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
                 raise ResourcesUndefinedError
 
         op = ResourceDummyZ()  # no default_ctrl_decomp defined
-        ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_ctrl_values=2)
+        ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
         expected_res = [
             GateCount(qre.resource_rep(qre.X), 4),
             GateCount(
                 qre.Controlled.resource_rep(
                     qre.resource_rep(qre.S),
                     num_ctrl_wires=3,
-                    num_ctrl_values=0,
+                    num_zero_ctrl=0,
                 ),
                 2,
             ),
@@ -202,14 +202,14 @@ class TestControlled:
     def test_ctrl_resource_decomp(self, ctrl_wires, ctrl_values, base_op):
         """Test that the control of this operator produces resources as expected."""
         ctrl_op = qre.Controlled(base_op, ctrl_wires, ctrl_values)
-        ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=2, num_ctrl_values=1)
+        ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=2, num_zero_ctrl=1)
 
         expected_res = [
             GateCount(
                 qre.Controlled.resource_rep(
                     base_op.resource_rep_from_op(),
                     num_ctrl_wires=ctrl_wires + 2,
-                    num_ctrl_values=ctrl_values + 1,
+                    num_zero_ctrl=ctrl_values + 1,
                 )
             )
         ]
@@ -219,13 +219,13 @@ class TestControlled:
         """Test that the name of the operator is tracked correctly."""
         assert (
             qre.Controlled.tracking_name(qre.T.resource_rep(), 1, 0)
-            == "C(T, num_ctrl_wires=1,num_ctrl_values=0)"
+            == "C(T, num_ctrl_wires=1,num_zero_ctrl=0)"
         )
         assert (
             qre.Controlled.tracking_name(qre.S.resource_rep(), 2, 0)
-            == "C(S, num_ctrl_wires=2,num_ctrl_values=0)"
+            == "C(S, num_ctrl_wires=2,num_zero_ctrl=0)"
         )
         assert (
             qre.Controlled.tracking_name(qre.CNOT.resource_rep(), 3, 2)
-            == "C(CNOT, num_ctrl_wires=3,num_ctrl_values=2)"
+            == "C(CNOT, num_ctrl_wires=3,num_zero_ctrl=2)"
         )

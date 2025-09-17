@@ -233,6 +233,7 @@ class GlobalPhase(ResourceOperator):
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
+        target_resource_params: dict = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -253,10 +254,10 @@ class GlobalPhase(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if ctrl_num_ctrl_wires == 1:
+        if num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(qre.PhaseShift))]
 
-            if ctrl_num_ctrl_values:
+            if num_zero_ctrl:
                 gate_types.append(GateCount(resource_rep(qre.X), 2))
 
             return gate_types
@@ -265,8 +266,8 @@ class GlobalPhase(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 
