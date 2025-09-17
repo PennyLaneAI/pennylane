@@ -415,6 +415,15 @@
 
 <h4>Other improvements</h4>
 
+* Added a new `rewriter` submodule to `qml.compiler.python_compiler`, which includes APIs to allow high-level pattern
+  rewriting abstractions to pass developers.
+  [(#8280)](https://github.com/PennyLaneAI/pennylane/pull/8280)
+
+* Added a `SSAQubitMap` class to the `qml.compiler.python_compiler.rewriter` submodule, which allows maintaining a bidirectional
+  map between wire labels and qubit SSA values. Additionally, added an `AbstractWire` class, which can be used for handling
+  dynamic wires/qubits.
+  [(#8280)](https://github.com/PennyLaneAI/pennylane/pull/8280)
+
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module 
   to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
