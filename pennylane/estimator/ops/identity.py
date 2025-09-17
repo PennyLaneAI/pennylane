@@ -13,11 +13,7 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=arguments-differ
@@ -27,7 +23,7 @@ class Identity(ResourceOperator):
     r"""Resource class for the Identity gate.
 
     Args:
-        wires (Iterable[Any], optional): wire label(s) that the identity acts on
+        wires (Iterable[Any] | None): wire label(s) that the identity acts on
 
     Resources:
         The Identity gate does not require any resources and thus it cannot be decomposed
@@ -81,8 +77,12 @@ class Identity(ResourceOperator):
         return []
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation are same as the base operation.
@@ -99,12 +99,15 @@ class Identity(ResourceOperator):
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The Identity gate acts trivially when controlled. The resources of this operation are same as
@@ -118,11 +121,15 @@ class Identity(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The Identity gate acts trivially when raised to a power. The resources of this
@@ -140,7 +147,7 @@ class GlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
-        wires (Iterable[Any], optional): the wires the operator acts on
+        wires (Iterable[Any] | None): the wires the operator acts on
 
     Resources:
         The GlobalPhase gate does not require any resources and thus it cannot be decomposed
@@ -195,8 +202,12 @@ class GlobalPhase(ResourceOperator):
         return []
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The adjoint of GlobalPhase operator changes the sign of the phase, thus
@@ -210,11 +221,15 @@ class GlobalPhase(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             Taking arbitrary powers of a global phase produces a sum of global phases.
@@ -232,6 +247,7 @@ class GlobalPhase(ResourceOperator):
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -239,6 +255,8 @@ class GlobalPhase(ResourceOperator):
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): The number of control qubits that are controlled when
                 in the :math:`|0\rangle` state.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
