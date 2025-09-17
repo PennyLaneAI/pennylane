@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane import capture, math
 from pennylane.capture.autograph import wraps
 from pennylane.exceptions import TransformError
+from pennylane.operation import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import ResultBatch
 
@@ -111,7 +112,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
 
         def preprocess(
             self,
-            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+            execution_config: qml.devices.ExecutionConfig | None = None,
         ):
             """This function updates the original device transform program to be applied."""
             program, config = self.original_device.preprocess(execution_config)
@@ -145,7 +146,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
 
         def preprocess_transforms(
             self,
-            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+            execution_config: qml.devices.ExecutionConfig | None = None,
         ):
             """This function updates the original device transform program to be applied."""
             program = self.original_device.preprocess_transforms(execution_config)
@@ -426,6 +427,13 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         @wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
+
+            # removes the argument to the qfuncs from the active queuing context.
+            leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+            for l in leaves:
+                if isinstance(l, Operator):
+                    qml.QueuingManager.remove(l)
+
             with AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)
 
@@ -444,10 +452,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             if self.is_informative:
                 return processing_fn(transformed_tapes)
 
-            for op in transformed_tape.circuit:
+            for op in transformed_tape.operations:
                 apply(op)
 
-            mps = transformed_tape.measurements
+            mps = [qml.apply(mp) for mp in transformed_tape.measurements]
 
             if not mps:
                 return qfunc_output
@@ -509,7 +517,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             count = 0
             final_results = []
 
-            for f, s in zip(batch_fns, tape_counts):
+            for f, s in zip(batch_fns, tape_counts, strict=True):
                 # apply any batch transform post-processing
                 new_res = f(res[count : count + s])
                 final_results.append(new_res)

@@ -14,17 +14,37 @@
 """PennyLane-xDSL transformations API."""
 
 from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inverses_pass
+from .decompose_graph_state import (
+    DecomposeGraphStatePass,
+    decompose_graph_state_pass,
+    NullDecomposeGraphStatePass,
+    null_decompose_graph_state_pass,
+)
 from .measurements_from_samples import MeasurementsFromSamplesPass, measurements_from_samples_pass
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
+from .convert_to_mbqc_formalism import convert_to_mbqc_formalism_pass, ConvertToMBQCFormalismPass
+from .diagonalize_measurements import (
+    DiagonalizeFinalMeasurementsPass,
+    diagonalize_final_measurements_pass,
+)
+
 
 __all__ = [
     "combine_global_phases_pass",
     "CombineGlobalPhasesPass",
+    "convert_to_mbqc_formalism_pass",
+    "ConvertToMBQCFormalismPass",
+    "decompose_graph_state_pass",
+    "DecomposeGraphStatePass",
+    "diagonalize_final_measurements_pass",
+    "DiagonalizeFinalMeasurementsPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
     "measurements_from_samples_pass",
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
+    "null_decompose_graph_state_pass",
+    "NullDecomposeGraphStatePass",
 ]

@@ -17,7 +17,9 @@ Contains the CosineWindow template.
 import numpy as np
 
 import pennylane as qml
-from pennylane import math
+from pennylane import capture, math, register_resources
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, adjoint_resource_rep, resource_rep
 from pennylane.exceptions import WireError
 from pennylane.operation import StatePrepBase
 from pennylane.wires import Wires
@@ -60,6 +62,8 @@ class CosineWindow(StatePrepBase):
     [1.87469973e-33 2.50000000e-01 5.00000000e-01 2.50000000e-01]
     """
 
+    resource_keys = {"num_wires"}
+
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
@@ -82,6 +86,12 @@ class CosineWindow(StatePrepBase):
             decomp_ops.append(qml.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire))
 
         return decomp_ops
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+        }
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "CosineWindow"
@@ -131,3 +141,32 @@ class CosineWindow(StatePrepBase):
             ket = ket.transpose(desired_order)
 
         return math.convert_like(ket, op_vector)
+
+
+def _cosine_window_resources(num_wires):
+    return {
+        resource_rep(qml.Hadamard): 1,
+        resource_rep(qml.RZ): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": num_wires}): 1,
+        resource_rep(qml.PhaseShift): num_wires,
+    }
+
+
+@register_resources(_cosine_window_resources)
+def _cosine_window_decomposition(wires):
+    qml.Hadamard(wires=wires[-1])
+    qml.RZ(np.pi, wires=wires[-1])
+    qml.adjoint(qml.QFT)(wires=wires)
+
+    if capture.enabled():
+        wires = qml.math.array(wires, like="jax")
+
+    @for_loop(len(wires))
+    def wires_loop(ind):
+        wire = wires[ind]
+        qml.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire)
+
+    wires_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(CosineWindow, _cosine_window_decomposition)

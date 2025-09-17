@@ -165,7 +165,7 @@ class TestQubitMgr:
         idx_list = mgr.acquire_qubit()
 
         assert idx_list == offset
-        assert set([idx_list]) == mgr.active
+        assert {idx_list} == mgr.active
         assert (
             str(mgr)
             == f"QubitMgr(num_qubits={num_qubits}, active={mgr.active}, inactive={mgr.inactive})"

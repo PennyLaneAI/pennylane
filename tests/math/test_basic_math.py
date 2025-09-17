@@ -20,7 +20,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -80,30 +79,6 @@ class TestFrobeniusInnerProduct:
             (
                 torch.tensor([[1.0, 2.3], [-1.3, 2.4]], dtype=torch.complex128),
                 torch.tensor([[0.7, -7.3], [-1.0, -2.9]], dtype=torch.complex128),
-                True,
-                -0.7381450594,
-            ),
-            (
-                tf.Variable([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.Variable([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
-                False,
-                -21.75,
-            ),
-            (
-                tf.Variable([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.Variable([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
-                True,
-                -0.7381450594,
-            ),
-            (
-                tf.constant([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.constant([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
-                False,
-                -21.75,
-            ),
-            (
-                tf.constant([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
-                tf.constant([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
                 True,
                 -0.7381450594,
             ),

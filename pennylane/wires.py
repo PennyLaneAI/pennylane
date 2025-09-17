@@ -14,8 +14,10 @@
 """
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
+
 import functools
 import itertools
+import uuid
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
 
@@ -44,7 +46,7 @@ def _process(wires):
     and turned into a tuple. Otherwise, `wires` is interpreted as a single wire label.
 
     The only exception to this are strings, which are always interpreted as a single
-    wire label, so users can address wires with labels such as `"ancilla"`.
+    wire label, so users can address wires with labels such as `"auxiliary"`.
 
     Any type can be a wire label, as long as it is hashable. We need this to establish
     the uniqueness of two labels. For example, `0` and `0.` are interpreted as
@@ -729,3 +731,29 @@ WiresLike = Wires | Iterable[Hashable] | Hashable
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
+
+
+class DynamicWire:
+    """A wire whose concrete value will be determined later during a compilation step or execution.
+
+    Multiple dynamic wires can correspond to the same device wire as long as they are properly allocated and
+    deallocated.
+
+    Args:
+        key (uuid.UUID or None): An optional UUID key to identify the dynamic wire. If None, a random UUID will be generated.
+
+    """
+
+    def __init__(self, key: uuid.UUID | None = None):
+        self.key = key or uuid.uuid4()
+
+    def __eq__(self, other):
+        if not isinstance(other, DynamicWire):
+            return False
+        return self.key == other.key
+
+    def __hash__(self):
+        return hash(("DynamicWire", self.key))
+
+    def __repr__(self):
+        return "<DynamicWire>"

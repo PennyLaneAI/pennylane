@@ -90,6 +90,7 @@ from .quantum import (
     max_entropy,
     min_entropy,
     trace_distance,
+    choi_matrix,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
@@ -104,13 +105,10 @@ from .utils import (
     binary_finite_reduced_row_echelon,
 )
 from .interface_utils import (
-    get_canonical_interface_name,
-    SupportedInterfaceUserInput,
     SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
     Interface,
-    InterfaceLike,
 )
 from .grad import grad, jacobian
 from . import decomposition
@@ -141,7 +139,40 @@ def get_dtype_name(x) -> str:
     return ar.get_dtype_name(x)
 
 
-class NumpyMimic(ar.autoray.NumpyMimic):
+def is_real_obj_or_close(obj):
+    """Convert an array to its real part if it is close to being real-valued, and afterwards
+    return whether the resulting data type is real.
+
+    Args:
+        obj (array): Array to check for being (close to) real.
+
+    Returns:
+        bool: Whether the array ``obj``, after potentially converting it to a real matrix,
+        has a real data type. This is obtained by checking whether the data type name starts with
+        ``"complex"`` and returning the negated result of this.
+
+    >>> x = jnp.array(0.4)
+    >>> qml.math.is_real_obj_or_close(x)
+    True
+
+    >>> x = tf.Variable(0.4+0.2j)
+    >>> qml.math.is_real_obj_or_close(x)
+    False
+
+    >>> x = torch.tensor(0.4+1e-13j)
+    >>> qml.math.is_real_obj_or_close(x)
+    True
+
+    Default absolute and relative tolerances of
+    ``qml.math.allclose`` are used to determine whether the
+    input is close to real-valued.
+    """
+    if not is_abstract(obj) and allclose(ar.imag(obj), 0.0):
+        obj = ar.real(obj)
+    return not get_dtype_name(obj).startswith("complex")
+
+
+class NumpyMimic(ar.autoray.AutoNamespace):
     """Subclass of the Autoray NumpyMimic class in order to support
     the NumPy fft submodule"""
 
@@ -154,7 +185,7 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 
 
 numpy_mimic = NumpyMimic()
-numpy_fft = ar.autoray.NumpyMimic("fft")
+numpy_fft = ar.autoray.AutoNamespace(submodule="fft")
 
 # small constant for numerical stability that the user can modify
 eps = 1e-14
@@ -194,13 +225,13 @@ __all__ = [
     "get_dtype_name",
     "get_interface",
     "get_batch_size",
-    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
     "grad",
     "in_backprop",
     "is_abstract",
     "is_independent",
+    "is_real_obj_or_close",
     "iscomplex",
     "jacobian",
     "kron",
@@ -233,4 +264,5 @@ __all__ = [
     "vn_entropy",
     "vn_entanglement_entropy",
     "where",
+    "choi_matrix",
 ]

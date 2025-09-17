@@ -628,7 +628,7 @@ class TestLinearCombination:
     def test_LinearCombination_wires(self, coeffs, ops):
         """Tests that the LinearCombination object has correct wires."""
         H = qml.ops.LinearCombination(coeffs, ops)
-        assert set(H.wires) == set(w for op in H.ops for w in op.wires)
+        assert set(H.wires) == {w for op in H.ops for w in op.wires}
 
     def test_label(self):
         """Tests the label method of LinearCombination when <=3 coefficients."""
@@ -1476,12 +1476,12 @@ class TestGrouping:
 
         # compute grouping during construction
         H2 = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc", method="lf")
-        assert set(H2.grouping_indices) == set(((0, 1), (2,)))
+        assert set(H2.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping separately
         H3 = qml.ops.LinearCombination(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
-        assert set(H3.grouping_indices) == set(((0, 1), (2,)))
+        assert set(H3.grouping_indices) == {(0, 1), (2,)}
 
     def test_grouping_with_duplicate_terms(self):
         """Test that the grouping indices are correct when the LinearCombination has duplicate

@@ -15,14 +15,27 @@ r"""
 Contains the UCCSD template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-positional-arguments
 import copy
+from collections import Counter
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.wires import Wires
+
+from .fermionic_double_excitation import FermionicDoubleExcitation
+from .fermionic_single_excitation import FermionicSingleExcitation
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class UCCSD(Operation):
@@ -176,6 +189,8 @@ class UCCSD(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "n_repeats", "num_d_wires", "num_s_wires"}
+
     def __init__(
         self, weights, wires, s_wires=None, d_wires=None, init_state=None, n_repeats=1, id=None
     ):
@@ -193,7 +208,7 @@ class UCCSD(Operation):
         if n_repeats < 1:
             raise ValueError(f"Requires n_repeats to be at least 1; got {n_repeats}.")
 
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
 
         expected_shape = (len(s_wires) + len(d_wires),)
         if len(shape) == 1 and (n_repeats != 1 or shape != expected_shape):
@@ -206,7 +221,7 @@ class UCCSD(Operation):
                 f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
             )
 
-        init_state = qml.math.toarray(init_state)
+        init_state = math.toarray(init_state)
 
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
@@ -231,6 +246,17 @@ class UCCSD(Operation):
             for wires in self._hyperparameters["d_wires"]
         )
         return new_op
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_d_wires": [
+                (len(x[0]), len(x[1])) if len(x) else () for x in self.hyperparameters["d_wires"]
+            ],
+            "num_s_wires": [len(x) for x in self.hyperparameters["s_wires"]],
+            "n_repeats": self.hyperparameters["n_repeats"],
+            "num_wires": len(self.wires),
+        }
 
     @property
     def num_params(self):
@@ -268,18 +294,66 @@ class UCCSD(Operation):
 
         op_list.append(BasisState(init_state, wires=wires))
 
-        if n_repeats == 1 and len(qml.math.shape(weights)) == 1:
-            weights = qml.math.expand_dims(weights, 0)
+        if n_repeats == 1 and len(math.shape(weights)) == 1:
+            weights = math.expand_dims(weights, 0)
 
         for layer in range(n_repeats):
             for i, (w1, w2) in enumerate(d_wires):
                 op_list.append(
-                    qml.FermionicDoubleExcitation(
+                    FermionicDoubleExcitation(
                         weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
                     )
                 )
 
             for j, s_wires_ in enumerate(s_wires):
-                op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
+                op_list.append(FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list
+
+
+def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
+    resources = Counter(
+        {
+            resource_rep(BasisState, num_wires=num_wires): 1,
+        }
+    )
+
+    for _ in range(n_repeats):
+        for w1, w2 in num_d_wires:
+            resources[resource_rep(FermionicDoubleExcitation, num_wires_1=w1, num_wires_2=w2)] += 1
+
+        for s in num_s_wires:
+            resources[resource_rep(FermionicSingleExcitation, num_wires=s)] += 1
+
+    return dict(resources)
+
+
+@register_resources(_UCCSD_resources)
+def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
+    BasisState(init_state, wires=wires)
+
+    if n_repeats == 1 and len(math.shape(weights)) == 1:
+        weights = math.expand_dims(weights, 0)
+
+    if has_jax and capture.enabled():
+        weights, d_wires, s_wires = jnp.array(weights), jnp.array(d_wires), jnp.array(s_wires)
+
+    @for_loop(n_repeats)
+    def apply_layers(layer):
+        @for_loop(len(d_wires))
+        def double_excitation(i):
+            (w1, w2) = d_wires[i]
+            FermionicDoubleExcitation(weights[layer][len(s_wires) + i], wires1=w1, wires2=w2)
+
+        @for_loop(len(s_wires))
+        def single_excitation(j):
+            s_wires_ = s_wires[j]
+            FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
+
+        double_excitation()  # pylint: disable=no-value-for-parameter
+        single_excitation()  # pylint: disable=no-value-for-parameter
+
+    apply_layers()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(UCCSD, _UCCSD_decomposition)

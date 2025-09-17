@@ -943,7 +943,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
         inferred from the matrix representation.
 
-        .. seealso:: :meth:`~.Operator.compute_eigvals`
+        .. seealso:: :meth:`~.Operator.compute_eigvals` and :func:`qml.eigvals() <pennylane.eigvals>`
 
         Returns:
             tensor_like: eigenvalues
@@ -1159,7 +1159,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
-        except ValueError as e:
+        except (
+            ValueError
+        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             # TODO:[dwierichs] When using tf.function with an input_signature that contains
             # an unknown-shaped input, ndim() will not be able to determine the number of
             # dimensions because they are not specified yet. Failing example: Let `fun` be
@@ -1184,7 +1186,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if ndims != self.ndim_params:
             ndims_matches = [
                 (ndim == exp_ndim, ndim == exp_ndim + 1)
-                for ndim, exp_ndim in zip(ndims, self.ndim_params)
+                for ndim, exp_ndim in zip(ndims, self.ndim_params, strict=True)
             ]
             if not all(correct or batched for correct, batched in ndims_matches):
                 raise ValueError(
@@ -1193,7 +1195,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 )
 
             first_dims = [
-                qml.math.shape(p)[0] for (_, batched), p in zip(ndims_matches, params) if batched
+                qml.math.shape(p)[0]
+                for (_, batched), p in zip(ndims_matches, params, strict=True)
+                if batched
             ]
             if not qml.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
@@ -1442,10 +1446,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         {"num_wires": 2}
 
         """
-        # For most operators, this should just be an empty dictionary, but a default
-        # implementation is intentionally not provided so that each operator class is
-        # forced to explicitly define its resource params.
-        raise NotImplementedError(f"{self.__class__.__name__}.resource_params undefined!")
+        return {}
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
@@ -1537,13 +1538,30 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
     def pow(self, z: float) -> list["Operator"]:
-        """A list of new operators equal to this one raised to the given power.
+        """A list of new operators equal to this one raised to the given power. This method is used to simplify
+        :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
+
+        ``Operator.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
+        are the entry point for constructing generic powers to exponents.
 
         Args:
             z (float): exponent for the operator
 
         Returns:
             list[:class:`~.operation.Operator`]
+
+        >>> class MyClass(qml.operation.Operator):
+        ...
+        ...     def pow(self, z):
+        ...         return [MyClass(self.data[0]*z, self.wires)]
+        ...
+        >>> op = MyClass(0.5, 0) ** 2
+        >>> op
+        MyClass(0.5, wires=[0])**2
+        >>> op.decomposition()
+        [MyClass(1.0, wires=[0])]
+        >>> op.simplify()
+        MyClass(1.0, wires=[0])
 
         """
         # Child methods may call super().pow(z%period) where op**period = I
@@ -1586,14 +1604,33 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return cls.adjoint != Operator.adjoint
 
     def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
+        """Create an operation that is the adjoint of this one. Used to simplify
+        :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
 
+        ``Operator.adjoint`` can be optionally defined by Operator developers, while :func:`~.adjoint`
+        is the entry point for constructing generic adjoint representations.
+
         Returns:
             The adjointed operation.
+
+        >>> class MyClass(qml.operation.Operator):
+        ...
+        ...     def adjoint(self):
+        ...         return self
+        ...
+        >>> op = qml.adjoint(MyClass(wires=0))
+        >>> op
+        Adjoint(MyClass(wires=[0]))
+        >>> op.decomposition()
+        [MyClass(wires=[0])]
+        >>> op.simplify()
+        MyClass(wires=[0])
+
+
         """
         raise AdjointUndefinedError
 
@@ -1678,7 +1715,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """The negation operation of an Operator object."""
         return qml.s_prod(scalar=-1, operator=self, lazy=False)
 
-    def __pow__(self, other: TensorLike):
+    def __pow__(self, other: TensorLike) -> "Operator":
         r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qml.pow(self, z=other)

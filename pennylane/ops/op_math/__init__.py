@@ -25,6 +25,7 @@ Constructor Functions
     ~adjoint
     ~ctrl
     ~cond
+    ~change_op_basis
     ~exp
     ~sum
     ~pow
@@ -40,6 +41,7 @@ Symbolic Classes
     :toctree: api
 
     ~Adjoint
+    ~ChangeOpBasis
     ~CompositeOp
     ~Conditional
     ~Controlled
@@ -139,6 +141,7 @@ from .exp import Exp, exp
 from .linear_combination import LinearCombination
 from .pow import Pow, pow
 from .prod import Prod, prod
+from .change_op_basis import ChangeOpBasis, change_op_basis
 from .sprod import SProd, s_prod
 from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp

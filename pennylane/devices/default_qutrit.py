@@ -89,7 +89,7 @@ class DefaultQutrit(QutritDevice):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
@@ -200,8 +200,6 @@ class DefaultQutrit(QutritDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=arguments-differ
     @debug_logger
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []

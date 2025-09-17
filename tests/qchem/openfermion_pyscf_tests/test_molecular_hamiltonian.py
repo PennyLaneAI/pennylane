@@ -607,7 +607,7 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     ("wiremap"),
     [
         ["a", "b", "c", "d"],
-        [0, "z", 3, "ancilla"],
+        [0, "z", 3, "auxiliary"],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -633,7 +633,7 @@ def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
     ("wiremap"),
     [
         ["a", "b", "c", "d"],
-        [0, "z", 3, "ancilla"],
+        [0, "z", 3, "auxiliary"],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -658,11 +658,11 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             None,
         ),
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -698,11 +698,11 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             None,
         ),
         (
-            [0, "z", 3, "ancilla"],
+            [0, "z", 3, "auxiliary"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -1113,7 +1113,7 @@ def test_error_raised_for_missing_molecule_information():
                 ],
             ),
         ),
-        (
+        pytest.param(
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             0,
@@ -1160,6 +1160,10 @@ def test_error_raised_for_missing_molecule_information():
                     Z(1) @ Z(3),
                     Z(2) @ Z(3),
                 ],
+            ),
+            marks=pytest.mark.xfail(
+                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
+                strict=True,
             ),
         ),
         (

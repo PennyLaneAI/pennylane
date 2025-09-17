@@ -214,7 +214,7 @@ class TestLoad:
 class TestOpenQasm:
     """Test the qml.to_openqasm and qml.from_qasm3 functions."""
 
-    dev = qml.device("default.qubit", wires=2, shots=100)
+    dev = qml.device("default.qubit", wires=2)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_return_from_qasm3(self):
@@ -287,6 +287,7 @@ class TestOpenQasm:
     def test_basic_example(self):
         """Test basic usage on simple circuit with parameters."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit(theta, phi):
             qml.RX(theta, wires=0)
@@ -314,6 +315,7 @@ class TestOpenQasm:
     def test_measure_qubits_subset_only(self):
         """Test OpenQASM program includes measurements only over the qubits subset specified in the QNode."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(0)
@@ -338,6 +340,7 @@ class TestOpenQasm:
     def test_rotations_with_expval(self):
         """Test OpenQASM program includes gates that make the measured observables diagonal in the computational basis."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(0)
@@ -367,6 +370,7 @@ class TestOpenQasm:
     def test_precision(self):
         """Test OpenQASM program takes into account the desired numerical precision of the circuit's parameters."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.RX(np.pi, wires=0)

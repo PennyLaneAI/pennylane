@@ -24,7 +24,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
@@ -38,12 +37,11 @@ class ResourceAdjoint(ResourceOperator):
     Args:
         base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
             want the adjoint of.
-        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
         determined as follows. If the base operation implements the
-        :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+        :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
         this.
 
         Otherwise, the adjoint resources are given as the adjoint of each operation in the
@@ -69,7 +67,7 @@ class ResourceAdjoint(ResourceOperator):
     ...     "Adjoint(ControlledPhaseShift)",
     ... }
     >>>
-    >>> print(plre.estimate_resources(qft, gate_set))
+    >>> print(plre.estimate(qft, gate_set))
     --- Resources: ---
     Total qubits: 3
     Total gates : 7
@@ -78,7 +76,7 @@ class ResourceAdjoint(ResourceOperator):
     Gate breakdown:
      {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
     >>>
-    >>> print(plre.estimate_resources(adj_qft, gate_set))
+    >>> print(plre.estimate(adj_qft, gate_set))
     --- Resources: ---
     Total qubits: 3
     Total gates : 7
@@ -91,24 +89,14 @@ class ResourceAdjoint(ResourceOperator):
 
     resource_keys = {"base_cmpr_op"}
 
-    def __init__(self, base_op: ResourceOperator, wires=None) -> None:
-        self.queue(remove_op=base_op)
+    def __init__(self, base_op: ResourceOperator) -> None:
+        self.dequeue(op_to_remove=base_op)
+        self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.base_op = base_cmpr_op
-
-        if wires:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = None or base_op.wires
-            self.num_wires = base_op.num_wires
-
-    def queue(self, remove_op, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.remove(remove_op)
-        context.append(self)
-        return self
+        self.wires = base_op.wires
+        self.num_wires = base_cmpr_op.num_wires
 
     @property
     def resource_params(self) -> dict:
@@ -123,7 +111,7 @@ class ResourceAdjoint(ResourceOperator):
         return {"base_cmpr_op": self.base_op}
 
     @classmethod
-    def resource_rep(cls, base_cmpr_op) -> CompressedResourceOp:
+    def resource_rep(cls, base_cmpr_op: CompressedResourceOp) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -134,10 +122,11 @@ class ResourceAdjoint(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op})
+        num_wires = base_cmpr_op.num_wires
+        return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op})
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
+    def resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -149,7 +138,7 @@ class ResourceAdjoint(ResourceOperator):
         Resources:
             This symbolic operation represents the adjoint of some base operation. The resources are
             determined as follows. If the base operation implements the
-            :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+            :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
             this.
 
             Otherwise, the adjoint resources are given as the adjoint of each operation in the
@@ -180,7 +169,7 @@ class ResourceAdjoint(ResourceOperator):
         ...     "Adjoint(ControlledPhaseShift)",
         ... }
         >>>
-        >>> print(plre.estimate_resources(qft, gate_set))
+        >>> print(plre.estimate(qft, gate_set))
         --- Resources: ---
         Total qubits: 3
         Total gates : 7
@@ -189,7 +178,7 @@ class ResourceAdjoint(ResourceOperator):
         Gate breakdown:
         {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
         >>>
-        >>> print(plre.estimate_resources(adj_qft, gate_set))
+        >>> print(plre.estimate(adj_qft, gate_set))
         --- Resources: ---
         Total qubits: 3
         Total gates : 7
@@ -200,8 +189,11 @@ class ResourceAdjoint(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+
         try:
-            return base_class.adjoint_resource_decomp(**base_params)
+            return base_class.adjoint_resource_decomp(**base_params, **kwargs)
         except ResourcesNotDefined:
             gate_lst = []
             decomp = base_class.resource_decomp(**base_params, **kwargs)
@@ -211,7 +203,7 @@ class ResourceAdjoint(ResourceOperator):
             return gate_lst
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp):
+    def adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -272,7 +264,7 @@ class ResourceControlled(ResourceOperator):
 
     We can observe the expected gates when we estimate the resources.
 
-    >>> print(plre.estimate_resources(cx))
+    >>> print(plre.estimate(cx))
     --- Resources: ---
     Total qubits: 2
     Total gates : 1
@@ -281,7 +273,7 @@ class ResourceControlled(ResourceOperator):
     Gate breakdown:
     {'CNOT': 1}
     >>>
-    >>> print(plre.estimate_resources(ccx))
+    >>> print(plre.estimate(ccx))
     --- Resources: ---
     Total qubits: 3
     Total gates : 5
@@ -301,26 +293,23 @@ class ResourceControlled(ResourceOperator):
         num_ctrl_values: int,
         wires=None,
     ) -> None:
-        self.queue(remove_base_op=base_op)
+        self.dequeue(op_to_remove=base_op)
+        self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.base_op = base_cmpr_op
         self.num_ctrl_wires = num_ctrl_wires
         self.num_ctrl_values = num_ctrl_values
 
+        self.num_wires = num_ctrl_wires + base_cmpr_op.num_wires
         if wires:
             self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
+            if base_wires := base_op.wires:
+                self.wires = Wires.all_wires([self.wires, base_wires])
+            if len(self.wires) != self.num_wires:
+                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
         else:
             self.wires = None
-            num_base_wires = base_op.num_wires
-            self.num_wires = num_ctrl_wires + num_base_wires
-
-    def queue(self, remove_base_op, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.remove(remove_base_op)
-        context.append(self)
-        return self
 
     @property
     def resource_params(self) -> dict:
@@ -361,8 +350,10 @@ class ResourceControlled(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_wires = num_ctrl_wires + base_cmpr_op.num_wires
         return CompressedResourceOp(
             cls,
+            num_wires,
             {
                 "base_cmpr_op": base_cmpr_op,
                 "num_ctrl_wires": num_ctrl_wires,
@@ -371,7 +362,7 @@ class ResourceControlled(ResourceOperator):
         )
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -412,7 +403,7 @@ class ResourceControlled(ResourceOperator):
 
         We can observe the expected gates when we estimate the resources.
 
-        >>> print(plre.estimate_resources(cx))
+        >>> print(plre.estimate(cx))
         --- Resources: ---
         Total qubits: 2
         Total gates : 1
@@ -421,7 +412,7 @@ class ResourceControlled(ResourceOperator):
         Gate breakdown:
         {'CNOT': 1}
         >>>
-        >>> print(plre.estimate_resources(ccx))
+        >>> print(plre.estimate(ccx))
         --- Resources: ---
         Total qubits: 3
         Total gates : 5
@@ -433,11 +424,14 @@ class ResourceControlled(ResourceOperator):
         """
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
         try:
             return base_class.controlled_resource_decomp(
                 ctrl_num_ctrl_wires=num_ctrl_wires,
                 ctrl_num_ctrl_values=num_ctrl_values,
                 **base_params,
+                **kwargs,
             )
         except re.ResourcesNotDefined:
             pass
@@ -464,13 +458,14 @@ class ResourceControlled(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         base_cmpr_op,
         num_ctrl_wires,
         num_ctrl_values,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -525,7 +520,6 @@ class ResourcePow(ResourceOperator):
         base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
             want to exponentiate.
         z (float): the exponent (default value is 1)
-        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
@@ -546,7 +540,7 @@ class ResourcePow(ResourceOperator):
 
     We obtain the expected resources.
 
-    >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+    >>> print(plre.estimate(z_2, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -555,7 +549,7 @@ class ResourcePow(ResourceOperator):
     Gate breakdown:
     {'Identity': 1}
     >>>
-    >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+    >>> print(plre.estimate(z_5, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -568,25 +562,15 @@ class ResourcePow(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "z"}
 
-    def __init__(self, base_op: ResourceOperator, z: int, wires=None) -> None:
-        self.queue(remove_op=base_op)
+    def __init__(self, base_op: ResourceOperator, z: int) -> None:
+        self.dequeue(op_to_remove=base_op)
+        self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.z = z
         self.base_op = base_cmpr_op
-
-        if wires:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = None or base_op.wires
-            self.num_wires = base_op.num_wires
-
-    def queue(self, remove_op, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.remove(remove_op)
-        context.append(self)
-        return self
+        self.wires = base_op.wires
+        self.num_wires = base_cmpr_op.num_wires
 
     @property
     def resource_params(self) -> dict:
@@ -604,7 +588,7 @@ class ResourcePow(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, base_cmpr_op, z) -> CompressedResourceOp:
+    def resource_rep(cls, base_cmpr_op: CompressedResourceOp, z) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -616,10 +600,11 @@ class ResourcePow(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op, "z": z})
+        num_wires = base_cmpr_op.num_wires
+        return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op, "z": z})
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -652,7 +637,7 @@ class ResourcePow(ResourceOperator):
 
         We obtain the expected resources.
 
-        >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+        >>> print(plre.estimate(z_2, gate_set={"Identity", "Z"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 1
@@ -661,7 +646,7 @@ class ResourcePow(ResourceOperator):
         Gate breakdown:
         {'Identity': 1}
         >>>
-        >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+        >>> print(plre.estimate(z_5, gate_set={"Identity", "Z"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 1
@@ -672,6 +657,8 @@ class ResourcePow(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_params = {key: value for key, value in base_params.items() if value is not None}
+        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
 
         if z == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
@@ -680,12 +667,12 @@ class ResourcePow(ResourceOperator):
             return [GateCount(base_cmpr_op)]
 
         try:
-            return base_class.pow_resource_decomp(pow_z=z, **base_params)
+            return base_class.pow_resource_decomp(pow_z=z, **base_params, **kwargs)
         except re.ResourcesNotDefined:
             return [GateCount(base_cmpr_op, z)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, base_cmpr_op, z):
+    def pow_resource_decomp(cls, pow_z, base_cmpr_op, z, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -741,7 +728,7 @@ class ResourceProd(ResourceOperator):
     >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
     >>> prod_xyz = plre.ResourceProd(factors)
     >>>
-    >>> print(plre.estimate_resources(prod_xyz))
+    >>> print(plre.estimate(prod_xyz))
     --- Resources: ---
     Total qubits: 1
     Total gates : 3
@@ -755,7 +742,7 @@ class ResourceProd(ResourceOperator):
     >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
     >>> prod_x2z3 = plre.ResourceProd(factors)
     >>>
-    >>> print(plre.estimate_resources(prod_x2z3))
+    >>> print(plre.estimate(prod_x2z3))
     --- Resources: ---
     Total qubits: 1
     Total gates : 5
@@ -766,7 +753,7 @@ class ResourceProd(ResourceOperator):
 
     """
 
-    resource_keys = {"cmpr_factors_and_counts"}
+    resource_keys = {"num_wires", "cmpr_factors_and_counts"}
 
     def __init__(
         self,
@@ -782,7 +769,8 @@ class ResourceProd(ResourceOperator):
             ops.append(op)
             counts.append(count)
 
-        self.queue(ops)
+        self.dequeue(op_to_remove=ops)
+        self.queue()
 
         try:
             cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -793,24 +781,21 @@ class ResourceProd(ResourceOperator):
 
         self.cmpr_factors_and_counts = tuple(zip(cmpr_ops, counts))
 
-        if wires:
+        if wires:  # User defined wires take precedent
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
-        else:
-            ops_wires = [op.wires for op in ops if op.wires is not None]
-            if len(ops_wires) == 0:
-                self.wires = None
-                self.num_wires = max(op.num_wires for op in ops)
-            else:
-                self.wires = Wires.all_wires(ops_wires)
-                self.num_wires = len(self.wires)
 
-    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        for op in ops_to_remove:
-            context.remove(op)
-        context.append(self)
-        return self
+        else:  # Otherwise determine the wires from the factors in the product
+            ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
+            fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+
+            if len(ops_wires) < fewest_unique_wires:  # If factors didn't provide enough wire labels
+                self.wires = None  # we assume they all act on the same set
+                self.num_wires = fewest_unique_wires
+
+            else:  # If there are more wire labels, use that as the operator wires
+                self.wires = ops_wires
+                self.num_wires = len(self.wires)
 
     @property
     def resource_params(self) -> dict:
@@ -818,14 +803,19 @@ class ResourceProd(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
-            A sequence of tuples containing the operations, in the compressed representation, and
-            a count for how many times they are repeated corresponding to the factors in the product.
+                * num_wires (int): the number of wires this operator acts upon
+                * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+                  A sequence of tuples containing the operations, in the compressed representation, and
+                  a count for how many times they are repeated corresponding to the factors in the product.
+
         """
-        return {"cmpr_factors_and_counts": self.cmpr_factors_and_counts}
+        return {
+            "num_wires": self.num_wires,
+            "cmpr_factors_and_counts": self.cmpr_factors_and_counts,
+        }
 
     @classmethod
-    def resource_rep(cls, cmpr_factors_and_counts) -> CompressedResourceOp:
+    def resource_rep(cls, cmpr_factors_and_counts, num_wires=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -833,14 +823,22 @@ class ResourceProd(ResourceOperator):
             cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
                 A sequence of tuples containing the operations, in the compressed representation, and
                 a count for how many times they are repeated corresponding to the factors in the product.
+            num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"cmpr_factors_and_counts": cmpr_factors_and_counts})
+        num_wires = num_wires or max(cmpr_op.num_wires for cmpr_op, _ in cmpr_factors_and_counts)
+        return CompressedResourceOp(
+            cls,
+            num_wires,
+            {"num_wires": num_wires, "cmpr_factors_and_counts": cmpr_factors_and_counts},
+        )
 
     @classmethod
-    def default_resource_decomp(cls, cmpr_factors_and_counts, **kwargs):
+    def resource_decomp(
+        cls, cmpr_factors_and_counts, num_wires, **kwargs
+    ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -848,6 +846,7 @@ class ResourceProd(ResourceOperator):
             cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
                 A sequence of tuples containing the operations, in the compressed representation, and
                 a count for how many times they are repeated corresponding to the factors in the product.
+            num_wires (int): the number of wires this operator acts upon
 
         Resources:
             This symbolic class represents a product of operations. The resources are defined
@@ -868,7 +867,7 @@ class ResourceProd(ResourceOperator):
         >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
         >>> prod_xyz = plre.ResourceProd(factors)
         >>>
-        >>> print(plre.estimate_resources(prod_xyz))
+        >>> print(plre.estimate(prod_xyz))
         --- Resources: ---
         Total qubits: 1
         Total gates : 3
@@ -882,7 +881,7 @@ class ResourceProd(ResourceOperator):
         >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
         >>> prod_x2z3 = plre.ResourceProd(factors)
         >>>
-        >>> print(plre.estimate_resources(prod_x2z3))
+        >>> print(plre.estimate(prod_x2z3))
         --- Resources: ---
         Total qubits: 1
         Total gates : 5
@@ -926,7 +925,7 @@ class ResourceChangeBasisOp(ResourceOperator):
     >>> compute_u = plre.ResourceS()
     >>> base_v = plre.ResourceZ()
     >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
-    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 3
@@ -939,7 +938,7 @@ class ResourceChangeBasisOp(ResourceOperator):
 
     >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
     >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
-    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 4
@@ -950,7 +949,7 @@ class ResourceChangeBasisOp(ResourceOperator):
 
     """
 
-    resource_keys = {"cmpr_compute_op", "cmpr_base_op", "cmpr_uncompute_op"}
+    resource_keys = {"num_wires", "cmpr_compute_op", "cmpr_base_op", "cmpr_uncompute_op"}
 
     def __init__(
         self,
@@ -959,39 +958,44 @@ class ResourceChangeBasisOp(ResourceOperator):
         uncompute_op: None | ResourceOperator = None,
         wires=None,
     ) -> None:
-        uncompute_op = uncompute_op or ResourceAdjoint(compute_op)
-        ops_to_remove = [compute_op, base_op, uncompute_op]
-
-        self.queue(ops_to_remove)
+        ops_to_remove = (
+            [compute_op, base_op, uncompute_op] if uncompute_op else [compute_op, base_op]
+        )
+        self.dequeue(op_to_remove=ops_to_remove)
+        self.queue()
 
         try:
             self.cmpr_compute_op = compute_op.resource_rep_from_op()
             self.cmpr_base_op = base_op.resource_rep_from_op()
-            self.cmpr_uncompute_op = uncompute_op.resource_rep_from_op()
-
         except AttributeError as error:
             raise ValueError(
                 "All ops of the ChangeofBasisOp must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        if wires:
+        self.cmpr_uncompute_op = (
+            uncompute_op.resource_rep_from_op()
+            if uncompute_op
+            else ResourceAdjoint.resource_rep(base_cmpr_op=self.cmpr_compute_op)
+        )
+
+        if wires:  # User defined wires take precedent
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
-        else:
-            ops_wires = [op.wires for op in ops_to_remove if op.wires is not None]
-            if len(ops_wires) == 0:
-                self.wires = None
-                self.num_wires = max(op.num_wires for op in ops_to_remove)
-            else:
-                self.wires = Wires.all_wires(ops_wires)
-                self.num_wires = len(self.wires)
 
-    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        for op in ops_to_remove:
-            context.remove(op)
-        context.append(self)
-        return self
+        else:  # Otherwise determine the wires from the compute, base & uncompute ops
+            ops_wires = Wires.all_wires([op.wires for op in ops_to_remove if op.wires is not None])
+            fewest_unique_wires = max(
+                op.num_wires
+                for op in [self.cmpr_base_op, self.cmpr_compute_op, self.cmpr_uncompute_op]
+            )
+
+            if len(ops_wires) < fewest_unique_wires:  # If factors didn't provide enough wire labels
+                self.wires = None
+                self.num_wires = fewest_unique_wires
+
+            else:  # If there are more wire labels, use that as the operator wires
+                self.wires = ops_wires
+                self.num_wires = len(self.wires)
 
     @property
     def resource_params(self) -> dict:
@@ -999,23 +1003,29 @@ class ResourceChangeBasisOp(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
-            to the compute operation.
-            * cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
-            to the base operation.
-            * cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
-            to the uncompute operation.
+                * cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the compute operation.
+                * cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the base operation.
+                * cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the uncompute operation.
+                * num_wires (int): the number of wires this operator acts upon
 
         """
         return {
             "cmpr_compute_op": self.cmpr_compute_op,
             "cmpr_base_op": self.cmpr_base_op,
             "cmpr_uncompute_op": self.cmpr_uncompute_op,
+            "num_wires": self.num_wires,
         }
 
     @classmethod
     def resource_rep(
-        cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op=None
+        cls,
+        cmpr_compute_op: CompressedResourceOp,
+        cmpr_base_op: CompressedResourceOp,
+        cmpr_uncompute_op: CompressedResourceOp | None = None,
+        num_wires: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to estimate the resources.
@@ -1025,8 +1035,9 @@ class ResourceChangeBasisOp(ResourceOperator):
                 to the compute operation.
             cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
                 to the base operation.
-            cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
-                to the uncompute operation.
+            cmpr_uncompute_op (CompressedResourceOp): An optional compressed resource operator, corresponding
+                to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
+            num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1034,17 +1045,24 @@ class ResourceChangeBasisOp(ResourceOperator):
         cmpr_uncompute_op = cmpr_uncompute_op or resource_rep(
             ResourceAdjoint, {"base_cmpr_op": cmpr_compute_op}
         )
+        num_wires = num_wires or max(
+            cmpr_compute_op.num_wires, cmpr_base_op.num_wires, cmpr_uncompute_op.num_wires
+        )
         return CompressedResourceOp(
             cls,
+            num_wires,
             {
                 "cmpr_compute_op": cmpr_compute_op,
                 "cmpr_base_op": cmpr_base_op,
                 "cmpr_uncompute_op": cmpr_uncompute_op,
+                "num_wires": num_wires,
             },
         )
 
     @classmethod
-    def default_resource_decomp(cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, **kwargs):
+    def resource_decomp(
+        cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, num_wires, **kwargs
+    ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -1053,8 +1071,9 @@ class ResourceChangeBasisOp(ResourceOperator):
                 to the compute operation.
             cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
                 to the base operation.
-            cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
-                to the uncompute operation.
+            cmpr_uncompute_op (CompressedResourceOp): An optional compressed resource operator, corresponding
+                to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
+            num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Resources:
             This symbolic class represents a product of the three provided operations. The resources are
@@ -1070,7 +1089,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         >>> compute_u = plre.ResourceS()
         >>> base_v = plre.ResourceZ()
         >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
-        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 3
@@ -1083,7 +1102,7 @@ class ResourceChangeBasisOp(ResourceOperator):
 
         >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
         >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
-        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 4

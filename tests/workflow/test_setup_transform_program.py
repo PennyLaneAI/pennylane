@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the `qml.workflow.resolution._setup_transform_program` helper function"""
 
+from dataclasses import replace
 from unittest.mock import MagicMock
 
 import pennylane as qml
@@ -43,8 +44,7 @@ def device_transform(tape):
 
 def test_gradient_expand_transform():
     """Test if gradient expand transform is added to the full_transform_program."""
-    config = ExecutionConfig()
-    config.gradient_method = qml.gradients.param_shift
+    config = ExecutionConfig(gradient_method=qml.gradients.param_shift)
 
     device = qml.device("default.qubit")
 
@@ -55,8 +55,7 @@ def test_gradient_expand_transform():
 
 def test_device_transform_program():
     """Test that the device transform is correctly placed in the transform program."""
-    config = ExecutionConfig()
-    config.use_device_gradient = True
+    config = ExecutionConfig(use_device_gradient=True)
 
     container = qml.transforms.core.TransformContainer(device_transform)
     device_tp = qml.transforms.core.TransformProgram((container,))
@@ -68,7 +67,7 @@ def test_device_transform_program():
     assert repr(full_tp) == "TransformProgram(device_transform)"
     assert inner_tp.is_empty()
 
-    config.use_device_gradient = False
+    config = replace(config, use_device_gradient=False)
 
     full_tp, inner_tp = _setup_transform_program(device, config)
 

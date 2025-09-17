@@ -35,7 +35,10 @@ class TestDeviceProperties:
     def test_shots(self):
         """Test the shots property of DefaultQutritMixed."""
         assert DefaultQutritMixed().shots == qml.measurements.Shots(None)
-        assert DefaultQutritMixed(shots=100).shots == qml.measurements.Shots(100)
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            assert DefaultQutritMixed(shots=100).shots == qml.measurements.Shots(100)
 
         with pytest.raises(AttributeError):
             DefaultQutritMixed().shots = 10
@@ -571,7 +574,7 @@ class TestSampleMeasurements:
         assert len(results) == 2
         assert all(isinstance(res, (float, np.ndarray)) for res in results)
         assert results[0].shape == (100, 2)
-        assert results[1].shape == (50,)
+        assert results[1].shape == (50, 1)
 
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes, subspace, seed):
@@ -1185,8 +1188,9 @@ class TestIntegration:
     @pytest.mark.parametrize("wires,expected", [(None, [1, 0]), (3, [0, 0, 1])])
     def test_sample_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by sample."""
-        dev = qml.device("default.qutrit.mixed", wires=wires, shots=5)
+        dev = qml.device("default.qutrit.mixed", wires=wires)
 
+        @qml.set_shots(5)
         @qml.qnode(dev)
         def circuit():
             qml.TShift(2)
@@ -1223,8 +1227,9 @@ class TestIntegration:
     )
     def test_counts_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = qml.device("default.qutrit.mixed", wires=wires, shots=10)
+        dev = qml.device("default.qutrit.mixed", wires=wires)
 
+        @qml.set_shots(10)
         @qml.qnode(dev, interface=None)
         def circuit():
             qml.TShift(2)
@@ -1505,12 +1510,12 @@ class TestReadoutError:
         """Tests the sample output with readout error"""
         dev = qml.device(
             "default.qutrit.mixed",
-            shots=2,
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
         )
 
+        @qml.set_shots(2)
         @qml.qnode(dev)
         def circuit():
             qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
@@ -1533,12 +1538,12 @@ class TestReadoutError:
         """Tests the counts output with readout error"""
         dev = qml.device(
             "default.qutrit.mixed",
-            shots=100,
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
         )
 
+        @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit():
             qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
@@ -1563,13 +1568,13 @@ class TestReadoutError:
         num_shots = 10000
         dev = qml.device(
             "default.qutrit.mixed",
-            shots=num_shots,
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
             seed=seed,
         )
 
+        @qml.set_shots(num_shots)
         @qml.qnode(dev)
         def circuit():
             self.setup_state(num_wires)

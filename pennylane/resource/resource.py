@@ -20,9 +20,28 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Any
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
+from pennylane.tape import QuantumScript
+
+from .error import _compute_algo_error
+
+
+class SpecsDict(dict):
+    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
+
+    def __getitem__(self, __k):
+        if __k == "num_diagonalizing_gates":
+            raise KeyError(
+                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
+                "and extreme performance costs."
+            )
+        try:
+            return super().__getitem__(__k)
+        except KeyError as e:
+            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
 
 
 @dataclass(frozen=True)
@@ -599,6 +618,39 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
     return initial_resources
 
 
+# The reason why this function is not a method of the QuantumScript class is
+# because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
+# The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
+def specs_from_tape(tape: QuantumScript, compute_depth: bool = True) -> SpecsDict[str, Any]:
+    """
+    Extracts the resource information from a quantum circuit (tape).
+
+    The depth of the circuit is computed by default, but can be set to None
+    by setting the `compute_depth` argument to False.
+    This is useful when the depth is not needed, for example, in some
+    resource counting scenarios or heavy circuits where computing depth is expensive.
+
+    Args:
+        tape (.QuantumScript): The quantum circuit for which we extract resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
+
+    Returns:
+        (.SpecsDict): The specifications extracted from the workflow
+    """
+    resources = _count_resources(tape, compute_depth=compute_depth)
+    algo_errors = _compute_algo_error(tape)
+
+    return SpecsDict(
+        {
+            "resources": resources,
+            "errors": algo_errors,
+            "num_observables": len(tape.observables),
+            "num_trainable_params": tape.num_params,
+        }
+    )
+
+
 def _combine_dict(dict1: dict, dict2: dict):
     r"""Combines two dictionaries and adds values of common keys."""
     combined_dict = copy.copy(dict1)
@@ -623,19 +675,21 @@ def _scale_dict(dict1: dict, scalar: int):
     return combined_dict
 
 
-def _count_resources(tape) -> Resources:
+def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resources:
     """Given a quantum circuit (tape), this function
      counts the resources used by standard PennyLane operations.
 
     Args:
-        tape (.QuantumTape): The quantum circuit for which we count resources
+        tape (.QuantumScript): The quantum circuit for which we count resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
 
     Returns:
         (.Resources): The total resources used in the workflow
     """
     num_wires = len(tape.wires)
     shots = tape.shots
-    depth = tape.graph.get_depth()
+    depth = tape.graph.get_depth() if compute_depth else None
 
     num_gates = 0
     gate_types = defaultdict(int)

@@ -22,6 +22,94 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.state_preparations.superposition import order_states
+
+PROBS_BASES = [
+    (
+        [0.1, 0.2, 0.3, 0.2, 0.2],
+        [
+            [0, 0, 0, 0, 0],
+            [0, 1, 0, 1, 1],
+            [0, 0, 0, 0, 1],
+            [0, 0, 0, 1, 0],
+            [1, 1, 0, 1, 1],
+        ],
+    ),
+    (
+        [0.1, 0.05, 0.25, 0.6],
+        [
+            [0, 0, 0, 0],
+            [0, 1, 1, 1],
+            [0, 0, 0, 1],
+            [1, 1, 1, 1],
+        ],
+    ),
+    (
+        [0.1, 0.2, 0.3, 0.2, 0.2],
+        [
+            [0, 1, 1, 1, 0],
+            [1, 1, 0, 1, 1],
+            [0, 0, 0, 0, 1],
+            [0, 0, 0, 1, 0],
+            [1, 0, 0, 1, 1],
+        ],
+    ),
+    ([0.1, 0.9], [[0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1]]),
+]
+
+
+def int_to_state(i, length):
+    return tuple(map(int, f"{i:0{length}b}"))
+
+
+@pytest.mark.parametrize(
+    "basis_states, exp_map",
+    (
+        [  # Examples where all basis states are fixed points
+            (
+                [int_to_state(i, L) for i in range(m)],
+                {int_to_state(i, L): int_to_state(i, L) for i in range(m)},
+            )
+            for L, m in [(1, 2), (2, 4), (2, 3), (3, 7), (4, 3), (4, 16)]
+        ]
+        + [  # Examples from docstring
+            (
+                [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]],
+                {
+                    (1, 1, 0, 0): (0, 0, 0, 0),
+                    (1, 0, 1, 0): (0, 0, 0, 1),
+                    (0, 1, 0, 1): (0, 0, 1, 0),
+                    (1, 0, 0, 1): (0, 0, 1, 1),
+                },
+            ),
+            (
+                [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]],
+                {
+                    (0, 0, 0, 1): (0, 0, 0, 1),
+                    (1, 1, 0, 0): (0, 0, 0, 0),
+                    (0, 1, 0, 1): (0, 0, 1, 0),
+                    (1, 0, 0, 1): (0, 0, 1, 1),
+                },
+            ),
+        ]
+        + [  # Other examples
+            (
+                [[1, 1, 0, 1], [0, 1, 0, 0], [1, 1, 1, 1], [0, 0, 1, 0], [0, 0, 0, 0]],
+                {
+                    (0, 0, 0, 0): (0, 0, 0, 0),
+                    (0, 0, 1, 0): (0, 0, 1, 0),
+                    (0, 1, 0, 0): (0, 1, 0, 0),
+                    (1, 1, 0, 1): (0, 0, 0, 1),
+                    (1, 1, 1, 1): (0, 0, 1, 1),
+                },
+            ),
+            ([[1, 1, 0], [0, 0, 1]], {(0, 0, 1): (0, 0, 1), (1, 1, 0): (0, 0, 0)}),
+        ]
+    ),
+)
+def test_order_states(basis_states, exp_map):
+    assert order_states(basis_states) == exp_map
 
 
 def test_standard_validity():
@@ -39,41 +127,7 @@ def test_standard_validity():
 class TestSuperposition:
     """Test the Superposition template."""
 
-    @pytest.mark.parametrize(
-        "probs, bases",
-        [
-            (
-                [0.1, 0.2, 0.3, 0.2, 0.2],
-                [
-                    [0, 0, 0, 0, 0],
-                    [0, 1, 0, 1, 1],
-                    [0, 0, 0, 0, 1],
-                    [0, 0, 0, 1, 0],
-                    [1, 1, 0, 1, 1],
-                ],
-            ),
-            (
-                [0.1, 0.05, 0.25, 0.6],
-                [
-                    [0, 0, 0, 0],
-                    [0, 1, 1, 1],
-                    [0, 0, 0, 1],
-                    [1, 1, 1, 1],
-                ],
-            ),
-            (
-                [0.1, 0.2, 0.3, 0.2, 0.2],
-                [
-                    [0, 1, 1, 1, 0],
-                    [1, 1, 0, 1, 1],
-                    [0, 0, 0, 0, 1],
-                    [0, 0, 0, 1, 0],
-                    [1, 0, 0, 1, 1],
-                ],
-            ),
-            ([0.1, 0.9], [[0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1]]),
-        ],
-    )
+    @pytest.mark.parametrize("probs, bases", PROBS_BASES)
     def test_correct_output(self, probs, bases):
         """Test the correct output of the Superposition template."""
 
@@ -106,6 +160,15 @@ class TestSuperposition:
 
         for op1, op2 in zip(decomposition, expected):
             assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize(("probs", "bases"), PROBS_BASES)
+    def test_decomposition_new(self, probs, bases):
+        """Test the decomposition of the Superposition template."""
+        op = qml.Superposition(
+            np.sqrt(probs), bases, wires=range(len(bases[0])), work_wire=len(bases[0])
+        )
+        for rule in qml.list_decomps(qml.Superposition):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("coeffs", "bases", "msg_match"),

@@ -17,22 +17,31 @@ Contains the PrepSelPrep template.
 # pylint: disable=arguments-differ
 import copy
 
-import pennylane as qml
+from pennylane import math
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
+from pennylane.ops import GlobalPhase, Prod, StatePrep, adjoint, prod
+from pennylane.queuing import QueuingManager
+from pennylane.templates.embeddings import AmplitudeEmbedding
+from pennylane.wires import Wires
+
+from .select import Select
 
 
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
     coeffs, ops = lcu.terms()
-    coeffs = qml.math.stack(coeffs)
-    angles = qml.math.angle(coeffs)
-    new_ops = []
+    coeffs = math.stack(coeffs)
+    angles = math.angle(coeffs)
+    # The following will produce a nested `Prod` object for a `Prod` object in`ops`
+    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
 
-    for angle, op in zip(angles, ops):
-        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
-        new_ops.append(new_op)
-
-    return qml.math.abs(coeffs), new_ops
+    return math.abs(coeffs), new_ops
 
 
 class PrepSelPrep(Operation):
@@ -71,24 +80,26 @@ class PrepSelPrep(Operation):
      [ 0.75  0.25]]
     """
 
+    resource_keys = frozenset({"num_control", "op_reps"})
+
+    @property
+    def resource_params(self):
+        ops = self.lcu.terms()[1]
+        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        return {"op_reps": op_reps, "num_control": len(self.control)}
+
     grad_method = None
 
     def __init__(self, lcu, control=None, id=None):
 
-        coeffs, ops = lcu.terms()
-        control = qml.wires.Wires(control)
-        self.hyperparameters["lcu"] = qml.ops.LinearCombination(coeffs, ops)
-        self.hyperparameters["coeffs"] = coeffs
-        self.hyperparameters["ops"] = ops
+        control = Wires(control)
+        self.hyperparameters["lcu"] = lcu
         self.hyperparameters["control"] = control
+        target_wires = lcu.wires
 
-        if any(
-            control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
-            for control_wire in control
-        ):
+        if any(control_wire in target_wires for control_wire in control):
             raise ValueError("Control wires should be different from operation wires.")
 
-        target_wires = qml.wires.Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
@@ -102,12 +113,11 @@ class PrepSelPrep(Operation):
         return cls(data[0], metadata[0])
 
     def __repr__(self):
-        return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={tuple(self.ops)}, control={self.control})"
+        return f"PrepSelPrep(lcu={self.lcu}, control={self.control})"
 
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
-        new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
-        new_lcu = qml.ops.LinearCombination(self.hyperparameters["coeffs"], new_ops)
+        new_lcu = self.lcu.map_wires(wire_map)
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
@@ -118,10 +128,9 @@ class PrepSelPrep(Operation):
         if cache is None or not isinstance(cache.get("matrices", None), list):
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
-        coeffs = qml.math.array(self.coeffs)
-        shape = qml.math.shape(coeffs)
+        coeffs = math.array(self.coeffs)
         for i, mat in enumerate(cache["matrices"]):
-            if shape == qml.math.shape(mat) and qml.math.allclose(coeffs, mat):
+            if math.shape(coeffs) == math.shape(mat) and math.allclose(coeffs, mat):
                 str_wo_id = f"{op_label}(M{i})"
                 break
         else:
@@ -136,14 +145,10 @@ class PrepSelPrep(Operation):
         coeffs, ops = _get_new_terms(lcu)
 
         decomp_ops = [
-            qml.AmplitudeEmbedding(
-                qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
-            ),
-            qml.Select(ops, control),
-            qml.adjoint(
-                qml.AmplitudeEmbedding(
-                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
-                )
+            AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
+            Select(ops, control, partial=True),
+            adjoint(
+                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
             ),
         ]
 
@@ -175,19 +180,19 @@ class PrepSelPrep(Operation):
         self.hyperparameters["lcu"].data = new_data
 
     @property
-    def coeffs(self):
-        """The coefficients of the LCU."""
-        return self.hyperparameters["coeffs"]
-
-    @property
-    def ops(self):
-        """The operations of the LCU."""
-        return self.hyperparameters["ops"]
-
-    @property
     def lcu(self):
         """The LCU to be block-encoded."""
         return self.hyperparameters["lcu"]
+
+    @property
+    def coeffs(self):
+        """The coefficients of the LCU to be block-encoded."""
+        return self.lcu.terms()[0]
+
+    @property
+    def ops(self):
+        """The operators of the LCU to be block-encoded."""
+        return self.lcu.terms()[1]
 
     @property
     def control(self):
@@ -203,3 +208,35 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+    def queue(self, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(self.lcu)
+        context.append(self)
+        return self
+
+
+def _prepselprep_resources(op_reps, num_control):
+    prod_reps = tuple(
+        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
+    )
+    return {
+        resource_rep(StatePrep, num_wires=num_control): 1,
+        resource_rep(
+            Select, op_reps=prod_reps, num_control_wires=num_control, partial=True, num_work_wires=0
+        ): 1,
+        adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
+    }
+
+
+# pylint: disable=unused-argument, too-many-arguments
+@register_resources(_prepselprep_resources)
+def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
+    coeffs, ops = _get_new_terms(lcu)
+    sqrt_coeffs = math.sqrt(coeffs)
+    StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
+    Select(ops, control, partial=True)
+    adjoint(StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
+
+
+add_decomps(PrepSelPrep, _prepselprep_decomp)
