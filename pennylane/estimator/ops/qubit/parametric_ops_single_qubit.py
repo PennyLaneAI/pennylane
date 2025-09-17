@@ -30,7 +30,7 @@ from .non_parametric_ops import T
 # pylint: disable=arguments-differ, signature-differs
 
 
-def _rotation_resources(precision=10e-3):
+def _rotation_resources(precision=1e-9):
     r"""Estimates the number of T gates needed to implement a Pauli rotation to a given precision.
 
     The expected T-count is taken from the "Simulation Results" section of `Efficient
