@@ -37,14 +37,14 @@ def parity_matrix(circ: QuantumScript | QNode | Callable, wire_order: Sequence =
         wire_order (Sequence): Wire order indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:
-        np.ndarray: :math:`n \times n` Parity matrix for :math:`n` qubits.
+        TensorLike: :math:`n \times n` Parity matrix for :math:`n` qubits.
 
     **Example**
 
     .. code-block:: python
 
         import pennylane as qml
-        from pennylane.labs.intermediate_reps import parity_matrix
+        from pennylane.transforms import parity_matrix
 
         tape = qml.tape.QuantumScript([
             qml.CNOT((3, 2)),
