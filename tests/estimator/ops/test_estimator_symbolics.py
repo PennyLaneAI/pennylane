@@ -21,6 +21,7 @@ from pennylane.estimator.resource_operator import GateCount
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
+from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, too-few-public-methods
 
@@ -229,3 +230,205 @@ class TestControlled:
             qre.Controlled.tracking_name(qre.CNOT.resource_rep(), 3, 2)
             == "C(CNOT, num_ctrl_wires=3,num_ctrl_values=2)"
         )
+
+
+class TestPow:
+    """Tests for the Pow resource Op"""
+
+    @pytest.mark.parametrize("z", (0, 1, 2, 3))
+    @pytest.mark.parametrize(
+        "base_type, base_args",
+        (
+            (qre.S, {}),
+            (qre.RZ, {"precision": 1e-3}),
+            (qre.CNOT, {"wires": ["ctrl", "trgt"]}),
+        ),
+    )
+    def test_init(self, z, base_type, base_args):
+        """Test that the operator is instantiated correctly"""
+        with AnnotatedQueue() as q:
+            base_op = base_type(**base_args)
+            pow_base_op = qre.Pow(base_op, z)
+
+        assert base_op not in q.queue
+        assert pow_base_op.num_wires == base_op.num_wires
+        assert base_op.wires == pow_base_op.wires
+
+    def test_resource_decomp(self):
+        """Test that we can obtain the resources as expected"""
+        op = qre.X()  # has default_pow_decomp defined
+        z_and_expected_res = (
+            (0, [GateCount(qre.resource_rep(qre.Identity()))]),
+            (1, [GateCount(op.resource_rep_from_op())]),
+            (2, op.pow_resource_decomp(2, **op.resource_params)),
+            (3, op.pow_resource_decomp(3, **op.resource_params)),
+        )
+
+        for z, res in z_and_expected_res:
+            pow_op = qre.Pow(op, z)
+            assert pow_op.resource_decomp(**pow_op.resource_params) == res
+
+        class ResourceDummyX(qre.X):
+            """Dummy class with no default pow decomp"""
+
+            @classmethod
+            def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
+                """No default resources"""
+                raise ResourcesUndefinedError
+
+        op = ResourceDummyX()  # no default_pow_decomp defined
+        pow_op = qre.Pow(op, 7)
+        expected_res = [GateCount(op.resource_rep_from_op(), 7)]
+        assert pow_op.resource_decomp(**pow_op.resource_params) == expected_res
+
+    @pytest.mark.parametrize("z", (0, 1, 2, 3))
+    @pytest.mark.parametrize(
+        "base_op",
+        (
+            qre.S(),
+            qre.RZ(precision=1e-3),
+            qre.CNOT(wires=["ctrl", "trgt"]),
+        ),
+    )
+    def test_pow_resource_decomp(self, base_op, z):
+        """Test that the power of this operator produces resources as expected."""
+        pow_op = qre.Pow(base_op, z)
+        pow_pow_op = qre.Pow(pow_op, z=5)
+
+        expected_res = [
+            GateCount(
+                qre.Pow.resource_rep(
+                    base_op.resource_rep_from_op(),
+                    z=5 * z,
+                )
+            )
+        ]
+        assert pow_pow_op.resource_decomp(**pow_pow_op.resource_params) == expected_res
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.Pow.tracking_name(qre.T.resource_rep(), 1) == "Pow(T, 1)"
+        assert qre.Pow.tracking_name(qre.S.resource_rep(), 2) == "Pow(S, 2)"
+        assert qre.Pow.tracking_name(qre.CNOT.resource_rep(), 3) == "Pow(CNOT, 3)"
+
+
+class TestProd:
+    """Tests for the Prod resource Op"""
+
+    def test_init(self):
+        """Test that the operator is instantiated correctly"""
+        with AnnotatedQueue() as q:
+            ops = [
+                qre.X(wires=0),
+                qre.CZ(wires=[1, 2]),
+                (qre.Hadamard(), 4),
+                qre.RX(precision=1e-4, wires=3),
+                (qre.CNOT(), 2),
+            ]
+            prod_op = qre.Prod(res_ops=ops)
+
+        for op in ops:
+            if isinstance(op, tuple):
+                op = op[0]
+            assert op not in q.queue
+
+        assert prod_op.num_wires == 4
+        assert prod_op.wires == Wires([0, 1, 2, 3])
+
+    def test_resource_decomp(self):
+        """Test that we can obtain the resources as expected"""
+        ops = [
+            qre.X(wires=0),
+            qre.CZ(wires=[1, 2]),
+            (qre.Hadamard(), 4),
+            qre.RX(precision=1e-4, wires=3),
+            (qre.CNOT(), 2),
+        ]
+        prod_op = qre.Prod(res_ops=ops)
+
+        expected_res = [
+            GateCount(qre.resource_rep(qre.X)),
+            GateCount(qre.resource_rep(qre.CZ)),
+            GateCount(qre.resource_rep(qre.Hadamard), 4),
+            GateCount(qre.resource_rep(qre.RX, {"precision": 1e-4})),
+            GateCount(qre.resource_rep(qre.CNOT), 2),
+        ]
+        assert prod_op.resource_decomp(**prod_op.resource_params) == expected_res
+
+    def test_resource_init_wires(self):
+        """Test that the operator initializes correctly with wires."""
+        prod_op = qre.Prod([qre.X(), qre.Y()], wires=[0, 1])
+        assert prod_op.num_wires == 2
+        assert prod_op.wires == Wires([0, 1])
+
+        prod_op = qre.Prod([qre.X(), qre.Y()])
+        assert prod_op.wires is None
+
+    def test_resource_init_raises(self):
+        """Test that the operator raises an error if the resource operator is not a ResourceOperator."""
+        with pytest.raises(ValueError, match="All factors of the Product must be"):
+            qre.Prod([qre.X(), 3])
+
+
+class TestChangeOpBasis:
+    """Tests for the ChangeOpBasis resource Op"""
+
+    def test_init(self):
+        """Test that the operator is instantiated correctly"""
+        with AnnotatedQueue() as q:
+            compute_op = qre.S(wires=0)
+            base_op = qre.Prod(((qre.Z(), 3),), wires=[0, 1, 2])
+            uncompute_op = qre.Pow(qre.T(wires=0), 6)
+
+            cb_op = qre.ChangeOpBasis(compute_op, base_op, uncompute_op)
+
+        for op in [compute_op, base_op, uncompute_op]:
+            assert op not in q.queue
+
+        assert cb_op.num_wires == 3
+        assert cb_op.wires == Wires([0, 1, 2])
+
+    def test_resource_init_raises(self):
+        """Test that the operator raises an error if the resource operator is not a ResourceOperator."""
+        with pytest.raises(ValueError, match="All ops of the ChangeOpBasis must be"):
+            qre.ChangeOpBasis(qre.X(), 3, qre.X())
+
+    def test_resource_init_wires(self):
+        """Test that the operator initializes correctly with wires."""
+        cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.X(), wires=[0, 1])
+        assert cb_op.num_wires == 2
+        assert cb_op.wires == Wires([0, 1])
+
+        cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
+        assert cb_op.wires is None
+
+    def test_resource_decomp(self):
+        """Test that we can obtain the resources as expected"""
+        compute_op = qre.S(wires=0)
+        base_op = qre.Prod([(qre.Z(), 3)], wires=[0, 1, 2])
+        uncompute_op = qre.Pow(qre.T(wires=0), 6)
+
+        cb_op = qre.ChangeOpBasis(compute_op, base_op, uncompute_op)
+        expected_res = [
+            GateCount(qre.resource_rep(qre.S)),
+            GateCount(
+                qre.resource_rep(
+                    qre.Prod,
+                    {
+                        "cmpr_factors_and_counts": ((qre.Z.resource_rep(), 3),),
+                        "num_wires": 3,
+                    },
+                ),
+            ),
+            GateCount(
+                qre.resource_rep(
+                    qre.Pow,
+                    {
+                        "base_cmpr_op": (qre.T.resource_rep()),
+                        "z": 6,
+                    },
+                ),
+            ),
+        ]
+
+        assert cb_op.resource_decomp(**cb_op.resource_params) == expected_res
