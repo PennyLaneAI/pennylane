@@ -31,4 +31,4 @@ from .controlled_ops import (
     Toffoli,
 )
 
-from .symbolic import Adjoint, Controlled
+from .symbolic import Adjoint, Controlled, Pow, Prod, ChangeOpBasis
