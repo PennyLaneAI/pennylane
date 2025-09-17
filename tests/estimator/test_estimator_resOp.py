@@ -30,11 +30,8 @@ from pennylane.estimator.resource_operator import (
     _make_hashable,
     resource_rep,
 )
-<<<<<<< HEAD:tests/estimator/test_resource_operator.py
 from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
-=======
->>>>>>> add-controlled-ops:tests/estimator/test_estimator_resOp.py
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
