@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the RewriteContext class and associated utilities."""
+# pylint: disable=wrong-import-position
 
 from uuid import UUID
 
 import pytest
+
+pytestmark = pytest.mark.external
+
 from xdsl.dialects import builtin, test
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects import quantum
 from pennylane.compiler.python_compiler.rewriter import AbstractWire, SSAQubitMap
-
-pytestmark = pytest.mark.external
 
 
 def _create_ssa_values(result_types) -> list[SSAValue]:
