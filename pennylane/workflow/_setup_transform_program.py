@@ -15,9 +15,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
-from cachetools import LRUCache
+from cachetools import Cache, LRUCache
 
 from pennylane.math import Interface
 from pennylane.transforms.convert_to_numpy_parameters import convert_to_numpy_parameters
@@ -30,7 +30,9 @@ if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
 
 
-def _prune_dynamic_transform(outer_transform: TransformProgram, inner_transform: TransformProgram):
+def _prune_dynamic_transform(
+    outer_transform: TransformProgram, inner_transform: TransformProgram
+) -> None:
     """Ensure a single ``dynamic_one_shot`` transform is applied.
 
     Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
@@ -60,8 +62,8 @@ def _prune_dynamic_transform(outer_transform: TransformProgram, inner_transform:
 def _setup_transform_program(
     device: Device,
     resolved_execution_config: ExecutionConfig,
-    cache=None,
-    cachesize=10000,
+    cache: Cache | dict | Literal["auto"] | bool = None,
+    cachesize: int = 10000,
 ) -> tuple[TransformProgram, TransformProgram]:
     """Sets-up the outer and inner transform programs for execution.
 
