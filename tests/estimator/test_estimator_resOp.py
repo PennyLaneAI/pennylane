@@ -32,7 +32,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.queuing import AnnotatedQueue
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
+# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
 
 class DummyX(ResourceOperator):
