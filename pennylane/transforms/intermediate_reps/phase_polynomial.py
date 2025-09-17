@@ -166,7 +166,7 @@ def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequenc
 
     """
     if callable(circ):
-        circ = qml.tape.make_qscript(circ)()
+        circ = qml.workflow.construct_tape(circ)()
 
     wires = circ.wires
 

@@ -76,7 +76,7 @@ def parity_matrix(circ: QuantumScript | QNode | Callable, wire_order: Sequence =
 
     """
     if callable(circ):
-        circ = qml.tape.make_qscript(circ)()
+        circ = qml.workflow.construct_tape(circ)()
 
     wires = circ.wires
 
