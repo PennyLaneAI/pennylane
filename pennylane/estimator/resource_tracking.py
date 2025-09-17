@@ -59,7 +59,7 @@ def estimate(
         config (ResourceConfig | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
     Returns:
-        Resources: the estimated quantum resources required to execute the circuit
+        Resources | Callable[..., Resources]: the estimated quantum resources required to execute the circuit
 
     Raises:
         TypeError: could not obtain resources for obj of type :code:`type(obj)`
