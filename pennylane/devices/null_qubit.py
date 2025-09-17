@@ -340,11 +340,6 @@ class NullQubit(Device):
         """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return execution_config
 
-    @property
-    def _max_workers(self):
-        """No-op property to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
-        return None
-
     # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
@@ -352,7 +347,8 @@ class NullQubit(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
 
-        program = DefaultQubit.preprocess_transforms(self, execution_config)
+        target = DefaultQubit(wires=self.wires)
+        program = target.preprocess_transforms(execution_config)
         for t in program:
             if t.transform == decompose.transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
@@ -492,8 +488,6 @@ class NullQubit(Device):
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     def eval_jaxpr(
         self,
         jaxpr: "jax.extend.core.Jaxpr",
