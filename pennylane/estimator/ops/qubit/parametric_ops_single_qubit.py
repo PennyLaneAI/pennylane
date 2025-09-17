@@ -114,7 +114,7 @@ class PhaseShift(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, precision=None) -> list[GateCount]:
+    def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -164,7 +164,7 @@ class PhaseShift(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
-        target_resource_params,
+        target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -182,7 +182,7 @@ class PhaseShift(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -248,7 +248,7 @@ class RX(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -262,7 +262,7 @@ class RX(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, precision=None) -> list[GateCount]:
+    def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -285,7 +285,7 @@ class RX(ResourceOperator):
         return _rotation_resources(precision=precision)
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -309,7 +309,7 @@ class RX(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
-        target_resource_params,
+        target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -327,7 +327,7 @@ class RX(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -393,7 +393,7 @@ class RY(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -406,7 +406,7 @@ class RY(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, precision=None) -> list[GateCount]:
+    def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -429,7 +429,7 @@ class RY(ResourceOperator):
         return _rotation_resources(precision=precision)
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -453,7 +453,7 @@ class RY(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
-        target_resource_params,
+        target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -469,7 +469,7 @@ class RY(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -535,7 +535,7 @@ class RZ(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -548,7 +548,7 @@ class RZ(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, precision=None) -> list[GateCount]:
+    def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -571,7 +571,7 @@ class RZ(ResourceOperator):
         return _rotation_resources(precision=precision)
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -595,7 +595,7 @@ class RZ(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
-        target_resource_params,
+        target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -613,7 +613,7 @@ class RZ(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -676,7 +676,7 @@ class Rot(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision=None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -689,7 +689,7 @@ class Rot(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
-    def resource_decomp(cls, precision=None) -> list[GateCount]:
+    def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -705,7 +705,7 @@ class Rot(ResourceOperator):
         return [GateCount(ry), GateCount(rz, 2)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
@@ -722,7 +722,7 @@ class Rot(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires, num_zero_ctrl, target_resource_params
+        cls, num_ctrl_wires, num_zero_ctrl, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -740,7 +740,7 @@ class Rot(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, target_resource_params) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
