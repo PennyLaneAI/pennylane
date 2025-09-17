@@ -101,3 +101,24 @@ class TestPhasePolynomial:
         assert np.allclose(pmat, pmat_exp)
         assert np.allclose(ptab, ptab_exp)
         assert np.allclose(angles, angles_exp)
+
+    def test_qnode_input(self):
+        """Test phase_polynomial works for qnode inputs"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def qnode():
+            qml.CNOT((0, 1))
+            qml.RZ(0.5, 1)
+            qml.CNOT((1, 2))
+            qml.CNOT((2, 0))
+            qml.RZ(0.3, 0)
+            return qml.expval(qml.Z(0))
+
+        tape = qml.workflow.construct_tape(qnode)()
+
+        pmat, ptab, angles = phase_polynomial(qnode, wire_order=range(3))
+        pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
+
+        assert np.allclose(pmat, pmat_exp)
+        assert np.allclose(ptab, ptab_exp)
+        assert np.allclose(angles, angles_exp)

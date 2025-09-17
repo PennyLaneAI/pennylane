@@ -90,3 +90,19 @@ class TestParityMatrix:
         _P1 = parity_matrix(qfunc, wire_order=range(3))
         _P2 = parity_matrix(tape, wire_order=range(3))
         assert np.allclose(_P1, _P2)
+
+    def test_qnode_input(self):
+        """Test parity_matrix correctly handles a qnode input"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def qnode():
+            qml.CNOT((0, 1))
+            qml.CNOT((1, 2))
+            qml.CNOT((2, 0))
+            return qml.expval(qml.Z(0))
+
+        tape = qml.workflow.construct_tape(qnode)()
+
+        _P1 = parity_matrix(qnode, wire_order=range(3))
+        _P2 = parity_matrix(tape, wire_order=range(3))
+        assert np.allclose(_P1, _P2)

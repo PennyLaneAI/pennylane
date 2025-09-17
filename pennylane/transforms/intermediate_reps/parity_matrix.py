@@ -75,8 +75,11 @@ def parity_matrix(circ: QuantumScript | QNode | Callable, wire_order: Sequence =
     For more details, see the `compilation page <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ on the parity matrix intermediate representation.
 
     """
-    if callable(circ):
+    if isinstance(circ, qml.workflow.QNode):
         circ = qml.workflow.construct_tape(circ)()
+
+    elif callable(circ):
+        circ = qml.tape.make_qscript(circ)()
 
     wires = circ.wires
 
