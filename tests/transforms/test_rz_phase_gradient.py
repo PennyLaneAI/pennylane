@@ -33,29 +33,33 @@ def test_binary_repr_int(string, p):
     phi = np.sum([c * 2 ** (-i - 1) for i, c in enumerate(string)]) * 2 * np.pi
     string_str = "".join([str(i) for i in string])
     binary_rep_re = np.binary_repr(_binary_repr_int(phi, precision=p), width=p)
-    assert binary_rep_re == string_str[:p], f"nope: {binary_rep_re}, {string_str[:p]}, {p}"
+    assert (
+        binary_rep_re == string_str[:p]
+    ), f"Wrong binary representation:\n{binary_rep_re}\n{string_str[:p]}, {p}"
 
 
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_units_rz_phase_gradient(p):
     """Test the outputs of _rz_phase_gradient"""
+
     phi = -(1 / 2 + 1 / 4 + 1 / 8 + 1 / 16) * 2 * np.pi
+
     wire = "targ"
     angle_wires = qml.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qml.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qml.wires.Wires([f"work_{i}" for i in range(p - 1)])
 
-    ops = _rz_phase_gradient(
-        qml.RZ(phi, wire),
+    op = _rz_phase_gradient(
+        phi,
+        wire,
         angle_wires=angle_wires,
         phase_grad_wires=phase_grad_wires,
         work_wires=work_wires,
     )
 
-    assert isinstance(ops[0], qml.ops.op_math.ChangeOpBasis)
-    assert isinstance(ops[1], qml.GlobalPhase)
+    assert isinstance(op, qml.ops.op_math.ChangeOpBasis)
 
-    operands = ops[0].operands
+    operands = op.operands
 
     assert isinstance(operands[0], qml.ops.op_math.controlled.ControlledOp)
     assert np.allclose(operands[0].base.parameters, [1] * p)
@@ -67,6 +71,31 @@ def test_units_rz_phase_gradient(p):
     assert isinstance(operands[2], qml.ops.op_math.controlled.ControlledOp)
     assert np.allclose(operands[2].base.parameters, [1] * p)
     assert operands[2].base.wires == angle_wires
+
+
+def test_global_phases():
+    """Test that one single global phase is correctly returned"""
+
+    phis = np.array([0.5, 0.3, 0.1])
+    circ = qml.tape.QuantumScript([qml.RZ(phi, 0) for phi in phis])
+
+    p = 4
+    angle_wires = qml.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qml.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qml.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    res, fn = qml.transforms.rz_phase_gradient(
+        circ,
+        angle_wires=angle_wires,
+        phase_grad_wires=phase_grad_wires,
+        work_wires=work_wires,
+    )
+    tape = fn(res)
+
+    global_phase = tape.operations[-1]
+    assert not any(isinstance(op, qml.GlobalPhase) for op in tape.operations[:-1])
+    assert isinstance(global_phase, qml.GlobalPhase)
+    assert np.isclose(global_phase.parameters[0], np.sum(phis / 2))
 
 
 @pytest.mark.parametrize(
