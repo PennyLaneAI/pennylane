@@ -157,7 +157,7 @@ def device(name, *args, **kwargs):
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
     >>> new_circuit = qml.set_shots(circuit, shots=[3, 4, 4])
-    >>> new_circuit(0.8)
+    >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
     (array([1., 1., 1.]), array([ 1.,  1.,  1., -1.]), array([ 1.,  1., -1.,  1.]))
 
     When constructing a device, we may optionally pass a dictionary of custom
