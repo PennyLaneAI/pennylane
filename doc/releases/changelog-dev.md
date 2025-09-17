@@ -1107,6 +1107,9 @@
 * Add nightly RC builds script to `.github/workflows`.
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
+* :func:`~.tape.expand_tape` has been moved to its own file, and made available at `qml.tape`.
+  [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
+
 <h3>Documentation 📝</h3>
 
 * The documentation of `qml.device` has been updated.
