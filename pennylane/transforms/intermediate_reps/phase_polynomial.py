@@ -12,14 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Phase polynomial intermediate representation"""
+# pylint: disable=used-before-assignment
+
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 import pennylane as qml
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def phase_polynomial(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
+    from pennylane.tape import QuantumScript
+    from pennylane.workflow import QNode
+
+
+def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequence = None):
     r"""
     `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of :class:`~.CNOT` and :class:`~.RZ` gates.
 
@@ -70,7 +79,7 @@ def phase_polynomial(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
             return parity_matrix, np.array(parity_table).T, angles
 
     Args:
-        tape (qml.tape.QuantumScript): Quantum circuit containing only CNOT and RZ gates.
+        circ (QNode or QuantumTape or Callable): Quantum circuit containing only CNOT and RZ gates.
         wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:
@@ -155,10 +164,10 @@ def phase_polynomial(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
         True
 
     """
-    if callable(tape):
-        tape = qml.tape.make_qscript(tape)()
+    if callable(circ):
+        circ = qml.tape.make_qscript(circ)()
 
-    wires = tape.wires
+    wires = circ.wires
 
     if wire_order is None:
         wire_order = wires
@@ -169,7 +178,7 @@ def phase_polynomial(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
     parity_table = []
     angles = []
     i = 0
-    for op in tape.operations:
+    for op in circ.operations:
 
         if op.name == "CNOT":
             control, target = op.wires
