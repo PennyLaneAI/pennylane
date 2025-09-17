@@ -34,8 +34,7 @@ class CH(ResourceOperator):
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
-        The resources are derived from the following identities (as presented in this
-        `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
+        The resources are derived from the following identities:
 
         .. math::
 
@@ -83,8 +82,7 @@ class CH(ResourceOperator):
         r"""Returns a list of ``GateCount`` objects representing the resources of the operator..
 
         Resources:
-            The resources are derived from the following identities (as presented in this
-            `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
+            The resources are derived from the following identities:
 
             .. math::
 
