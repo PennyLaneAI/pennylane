@@ -12,19 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Parity matrix representation"""
+# pylint: disable=used-before-assignment
 
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 import pennylane as qml
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def parity_matrix(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
+    from pennylane.tape import QuantumScript
+    from pennylane.workflow import QNode
+
+
+def parity_matrix(circ: QuantumScript | QNode | Callable, wire_order: Sequence = None):
     r"""Compute the `parity matrix intermediate representation <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ of a CNOT circuit.
 
     Args:
-        tape (QNode or QuantumTape or Callable): Quantum circuit containing only CNOT gates.
+        circ (QNode or QuantumTape or Callable): Quantum circuit containing only CNOT gates.
         wire_order (Sequence): Wire order indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:
@@ -66,10 +74,10 @@ def parity_matrix(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
     For more details, see the `compilation page <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ on the parity matrix intermediate representation.
 
     """
-    if callable(tape):
-        tape = qml.tape.make_qscript(tape)()
+    if callable(circ):
+        circ = qml.tape.make_qscript(circ)()
 
-    wires = tape.wires
+    wires = circ.wires
 
     if wire_order is None:
         wire_order = wires
@@ -79,15 +87,15 @@ def parity_matrix(tape: qml.tape.QuantumScript, wire_order: Sequence = None):
             f"The provided wire_order {wire_order} does not contain all wires of the circuit {wires}"
         )
 
-    if any(op.name != "CNOT" for op in tape.operations):
+    if any(op.name != "CNOT" for op in circ.operations):
         raise TypeError(
-            f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {tape.operations}"
+            f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {circ.operations}"
         )
 
     wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
 
     P = np.eye(len(wire_order), dtype=int)
-    for op in tape.operations:
+    for op in circ.operations:
 
         control, target = op.wires
         P[wire_map[target]] += P[wire_map[control]]
