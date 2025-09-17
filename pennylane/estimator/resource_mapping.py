@@ -39,7 +39,7 @@ def map_to_resource_op(op: Operation) -> ResourceOperator:
     """
 
     if not isinstance(op, Operation):
-        raise TypeError(f"The op {op} is not a valid operation.")
+        raise TypeError(f"Operator of type {type(op)} is not a valid operation.")
 
     raise NotImplementedError(
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."

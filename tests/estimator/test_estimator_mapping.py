@@ -24,7 +24,7 @@ from pennylane.operation import Operation
 # pylint: disable= no-self-use
 
 
-class Test_map_to_resource_op:
+class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their ResourceOperators."""
 
     def test_map_to_resource_op_raises_type_error_if_not_operation(self):
@@ -58,5 +58,4 @@ class Test_map_to_resource_op:
     )
     def test_map_to_resource_op(self, operator, expected_res_op):
         """Test that map_to_resource_op maps to the appropriate resource operator"""
-        print(operator)
         assert map_to_resource_op(operator) == expected_res_op
