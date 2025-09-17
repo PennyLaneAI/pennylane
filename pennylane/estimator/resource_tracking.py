@@ -38,7 +38,7 @@ def map_to_resource_op():  # TODO: Import this function instead when the mapping
 
 def estimate(
     obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set | None = None,
+    gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
     tight_budget: bool = False,
