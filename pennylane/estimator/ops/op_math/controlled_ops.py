@@ -924,7 +924,7 @@ class Toffoli(ResourceOperator):
 
     Args:
         wires (Sequence[int], optional): the subsystem the gate acts on
-        elbow (Union[str, None]): String identifier to determine if this is a special type of
+        elbow (str | None): String identifier to determine if this is a special type of
             Toffoli gate (left or right elbow). Default value is `None`.
 
     Resources:
