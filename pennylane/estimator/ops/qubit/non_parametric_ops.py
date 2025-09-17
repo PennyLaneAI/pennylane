@@ -75,8 +75,8 @@ class Hadamard(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -103,8 +103,8 @@ class Hadamard(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             For a single control wire, the cost is a single instance of ``CH``.
@@ -162,8 +162,8 @@ class Hadamard(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The Hadamard gate raised to even powers produces identity and raised
@@ -231,8 +231,8 @@ class S(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The adjoint of the ``S`` gate is equivalent to :math:`\hat{Z} \cdot \hat{S}`.
@@ -260,7 +260,7 @@ class S(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -315,8 +315,8 @@ class S(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             - The S-gate, when raised to a power which is a multiple of four, produces identity.
@@ -451,8 +451,8 @@ class SWAP(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation
@@ -479,7 +479,7 @@ class SWAP(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -523,6 +523,8 @@ class SWAP(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The ``SWAP`` gate raised to even powers produces identity and raised
@@ -588,8 +590,8 @@ class T(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The adjoint of the T-gate is equivalent to the T-gate raised to the 7th power.
@@ -615,7 +617,7 @@ class T(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -660,8 +662,8 @@ class T(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The ``T`` gate, when raised to a power which is a multiple of eight, produces identity.
@@ -774,6 +776,10 @@ class X(ResourceOperator):
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
+        Args:
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
             are same as the original operation.
@@ -798,7 +804,7 @@ class X(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -845,8 +851,8 @@ class X(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The X-gate raised to even powers produces identity and raised
@@ -940,8 +946,8 @@ class Y(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -968,7 +974,7 @@ class Y(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -1015,8 +1021,8 @@ class Y(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The ``Y`` gate raised to even powers produces identity and raised
@@ -1091,6 +1097,10 @@ class Z(ResourceOperator):
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
+        Args:
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
             are same as the original operation.
@@ -1105,8 +1115,8 @@ class Z(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1116,7 +1126,7 @@ class Z(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -1168,8 +1178,8 @@ class Z(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict): A dictionary containing the resource parameters of the
-                target operator.
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The ``Z`` gate raised to even powers produces identity and raised

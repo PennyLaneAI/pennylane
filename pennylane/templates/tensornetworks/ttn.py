@@ -14,7 +14,7 @@
 """
 Contains the TTN template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 
 import warnings
 
