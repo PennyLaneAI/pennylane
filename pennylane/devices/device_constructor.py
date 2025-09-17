@@ -139,8 +139,8 @@ def device(name, *args, **kwargs):
 
     >>> dev = qml.device("default.qubit")
 
-    When executing quantum circuits on a device, we can specify the number of times the circuit is to be executed
-    by using the :func:`~pennylane.set_shots` transform.
+    When executing quantum circuits on a device, we can specify the number of times the circuit must be executed
+    to estimate stochastic return values by using the :func:`~pennylane.set_shots` transform.
     As an example, ``qml.sample()`` measurements will return as many samples as the number of shots specified.
     Note that ``shots`` can be a single integer or a list of shot values.
 
