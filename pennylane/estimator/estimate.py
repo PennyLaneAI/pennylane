@@ -177,7 +177,7 @@ def _resources_from_resource(
     tight_budget: bool = None,
     config: ResourceConfig | None = None,
 ) -> Resources:
-    """Further process resources from a Resources object."""
+    """Further process resources from a Resources object (i.e. a Resources object that contains high-level operators)."""
 
     wire_manager = WireResourceManager(zeroed, any_state, obj.algo_wires, tight_budget)
     gate_counts = defaultdict(int)
