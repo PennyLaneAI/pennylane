@@ -254,7 +254,7 @@ def _update_counts_from_compressed_res_op(
         gate_counts_dict[comp_res_op] += scalar
         return
 
-    ## Else decompose comp_res_op using its resource decomp [comp_res_op --> list[GateCounts]] and extract resources
+    ## Otherwise need to use its resource decomp to extract the resources
     decomp_func, kwargs = _get_decomposition(comp_res_op, config)
 
     params = {key: value for key, value in comp_res_op.params.items() if value is not None}
