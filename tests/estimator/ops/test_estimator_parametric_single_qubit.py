@@ -63,7 +63,7 @@ class TestPauliRotation:
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
     def test_resources(self, resource_class, precision):
-        """Test the resources method"""
+        """Test the resources method matches the expected number of rotation resources"""
         config = {"precision": precision}
         op = resource_class(wires=0)
         assert op.resource_decomp(**config) == _rotation_resources(precision=precision)
