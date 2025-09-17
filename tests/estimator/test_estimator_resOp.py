@@ -382,12 +382,16 @@ class TestResourceOperator:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
 
-    def test_eq_method(self):
-        """Test that the __eq__ method for the ResourceOperator is correct"""
+    def test_equality_method(self):
+        """Test that the __eq__ method for the ResourceOperator is correct."""
 
         assert qre_ops.X() == qre_ops.X()
         assert qre_ops.SWAP() == qre_ops.SWAP()
         assert qre_ops.X() != qre_ops.SWAP()
+
+    def test_equality_false(self):
+        """Test that the __eq__ method returns False if the input operator is not ResourceOperator."""
+        assert not qre_ops.X() == qml.X(0)
 
     ops_to_queue = [
         Hadamard(wires=[0]),
