@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
+
 from collections.abc import Sequence
-from copy import copy
 from typing import Any
 
 from pennylane import math
@@ -206,13 +206,6 @@ def fold_global_tape(circuit, scale_factor):
         QuantumTape: Folded circuit
 
     """
-
-    # TODO: simplify queing via qfunc(op) - currently just a workaround, to solve the problem of ownership when tape contains adjoint(op)
-    # https://github.com/PennyLaneAI/pennylane/pull/2766 already touched on the issue, future work
-    # in Q3 2022 should make it possible to substantially simplify this.
-    def qfunc(op):
-        copy(op).queue()
-
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
     base_ops = circuit.operations
@@ -232,22 +225,22 @@ def fold_global_tape(circuit, scale_factor):
     with AnnotatedQueue() as new_circuit_q:
         # Original U
         for op in base_ops:
-            qfunc(op)
+            apply(op)
 
         # Folding U => U (U^H U)**n.
         for _ in range(int(num_global_folds)):
             for op in base_ops[::-1]:
-                adjoint(qfunc)(op)
+                adjoint(op)
 
             for op in base_ops:
-                qfunc(op)
+                apply(op)
 
         # Remainder folding U => U (U^H U)**n (L_d^H .. L_s^H) (L_s .. L_d)
         for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
-            adjoint(qfunc)(base_ops[i])
+            adjoint(base_ops[i])
 
         for i in range(n_ops - num_to_fold, n_ops):
-            qfunc(base_ops[i])
+            apply(base_ops[i])
 
         # Append measurements
         for meas in circuit.measurements:

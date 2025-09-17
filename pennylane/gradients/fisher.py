@@ -16,7 +16,6 @@
 from functools import partial
 
 from pennylane import math
-from pennylane._grad import jacobian
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
@@ -27,33 +26,6 @@ from pennylane.typing import PostprocessingFn
 from pennylane.workflow import execute
 
 from .metric_tensor import metric_tensor
-
-
-# TODO: create qml.math.jacobian and replace it here
-def _torch_jac(circ):
-    """Torch jacobian as a callable function"""
-    import torch
-
-    def wrapper(*args, **kwargs):
-        loss = partial(circ, **kwargs)
-        if len(args) > 1:
-            return torch.autograd.functional.jacobian(loss, args, create_graph=True)
-        return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
-
-    return wrapper
-
-
-# TODO: create qml.math.jacobian and replace it here
-def _tf_jac(circ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """TF jacobian as a callable function"""
-    import tensorflow as tf
-
-    def wrapper(*args, **kwargs):
-        with tf.GradientTape() as tape:
-            loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, args)
-
-    return wrapper
 
 
 def _compute_cfim(p, dp):
@@ -240,34 +212,9 @@ def classical_fisher(qnode, argnums=0):
     new_qnode = _make_probs(qnode)
 
     def wrapper(*args, **kwargs):
+
         old_interface = qnode.interface
-
-        if old_interface == "auto":
-            qnode.interface = math.get_interface(*args, *list(kwargs.values()))
-
-        interface = qnode.interface
-
-        if interface in ("jax", "jax-jit"):
-            import jax
-
-            jac = jax.jacobian(new_qnode, argnums=argnums)
-
-        elif interface == "torch":
-            jac = _torch_jac(new_qnode)
-
-        elif interface == "autograd":
-            jac = jacobian(new_qnode)
-
-        elif (
-            interface == "tf"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            jac = _tf_jac(new_qnode)
-        else:
-            raise ValueError(
-                f"Interface {interface} not supported for jacobian calculations."
-            )  # pragma: no cover
-
-        j = jac(*args, **kwargs)
+        j = math.jacobian(new_qnode, argnums=argnums)(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
 
         if old_interface == "auto":
