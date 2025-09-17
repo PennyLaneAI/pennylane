@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""This module contains resource operators for PennyLane Operators"""
 
-from .identity import Identity, GlobalPhase
+from .identity import GlobalPhase, Identity
 
 from .qubit import (
     Hadamard,

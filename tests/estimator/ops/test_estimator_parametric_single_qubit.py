@@ -29,9 +29,8 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
     _rotation_resources,
 )
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
-from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
+# pylint: disable=too-many-arguments, no-self-use
 
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 
@@ -138,7 +137,7 @@ class TestPauliRotation:
             [qre.GateCount(qre.MultiControlledX.resource_rep(3, 2), 2)],
         ),
     )
-    
+
     @pytest.mark.parametrize("resource_class, local_res", zip(params_classes, params_ctrl_res))
     @pytest.mark.parametrize("ctrl_wires, ctrl_values, general_res", ctrl_res_data)
     def test_controlled_decomposition_multi_controlled(
@@ -159,6 +158,7 @@ class TestPauliRotation:
             == expected_resources
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_resources
+
 
 class TestRot:
     """Test ResourceRot"""
@@ -346,7 +346,6 @@ class TestPhaseShift:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, op.resource_params)
         ) == repr(expected_res)
         assert repr(op2.resource_decomp(**op2.resource_params)) == repr(expected_res)
-
 
     pow_data = (
         (1, [GateCount(PhaseShift.resource_rep(), 1)]),
