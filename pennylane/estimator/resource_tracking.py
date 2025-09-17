@@ -37,7 +37,7 @@ def map_to_resource_op():  # TODO: Import this function instead when the mapping
 
 
 def estimate(
-    obj: ResourceOperator | Callable | Resources | list,
+    obj: ResourceOperator | Callable | Resources,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -50,7 +50,7 @@ def estimate(
     Args:
         workflow (Callable | ResourceOperator | Resources): The quantum circuit or operation
             for which to estimate resources.
-        gate_set (set | None): A set of names (strings) of the fundamental operations to track
+        gate_set (set[str] | None): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
         zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
@@ -112,7 +112,7 @@ def estimate(
 @singledispatch
 def _estimate_resources_dispatch(
     obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set | None = None,
+    gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
     tight_budget: bool = False,
@@ -127,7 +127,7 @@ def _estimate_resources_dispatch(
 @_estimate_resources_dispatch.register
 def _resources_from_qfunc(
     obj: Callable,
-    gate_set: set | None = None,
+    gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
     tight_budget: bool = False,
@@ -171,7 +171,7 @@ def _resources_from_qfunc(
 @_estimate_resources_dispatch.register
 def _resources_from_resource(
     obj: Resources,
-    gate_set: set | None = None,
+    gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
     tight_budget: bool = None,
@@ -202,7 +202,7 @@ def _resources_from_resource(
 @_estimate_resources_dispatch.register
 def _resources_from_resource_operator(
     obj: ResourceOperator,
-    gate_set: set | None = None,
+    gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
     tight_budget: bool = None,
@@ -228,7 +228,7 @@ def _update_counts_from_compressed_res_op(
     comp_res_op: CompressedResourceOp,
     gate_counts_dict: dict,
     wire_manager: WireResourceManager,
-    gate_set: set | None = None,
+    gate_set: set[str] | None = None,
     scalar: int = 1,
     config: ResourceConfig | None = None,
 ) -> None:
@@ -239,7 +239,7 @@ def _update_counts_from_compressed_res_op(
         gate_counts_dict (dict): base dictionary to modify with the resource counts
         wire_manager (WireResourceManager): the `WireResourceManager` that tracks and manages the
             `zeroed`, `any_state`, and `algo_wires` wires.
-        gate_set (set): the set of operations to track resources with respect to
+        gate_set (set[str]): the set of operations to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
         config (dict | None): additional parameters to specify the resources from an operator. Defaults to ResourceConfig.
     """
@@ -275,6 +275,8 @@ def _update_counts_from_compressed_res_op(
             continue
 
         if isinstance(action, Allocate):
+            # When qubits are allocated and deallocate in equal numbers, we allocate and deallocate
+            # in series, meaning we don't need to apply the scalar
             if qubit_alloc_sum != 0:
                 wire_manager.grab_zeroed(action.num_wires * scalar)
             else:
