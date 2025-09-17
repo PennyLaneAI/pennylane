@@ -37,7 +37,7 @@ def _rotation_resources(precision=1e-9):
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
-        .. math:: T_{count} \approx 1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2,
+        .. math:: T_{count} \approx 1.149 \times log_{2}(\frac{1}{\epsilon}) + 9.2,
 
     where :math:`\epsilon` is the provided ``precision``.
 
