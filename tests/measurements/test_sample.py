@@ -401,10 +401,34 @@ class TestSample:
         """Test that calling process with an operator that has no eigvals defined raises an error."""
 
         class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+            """Dummy operator with no eigenvalues defined."""
+
             num_wires = 1
 
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
+
+    @pytest.mark.parametrize(
+        "coeffs, dtype",
+        [
+            (1, "int8"),
+            (1, "int16"),
+            (1, "int32"),
+            (1, "int64"),
+            (1, "float16"),
+            (1, "float32"),
+            (1, "float64"),
+            (1j, "complex64"),
+            (1 + 1j, "complex128"),
+        ],
+    )
+    def test_process_samples_dtype(self, coeffs, dtype):
+        """Test that the dtype argument changes the dtype of the returned samples."""
+        samples = np.zeros(10, dtype="int64")
+        processed_samples = qml.sample(coeffs * qml.X(0), dtype=dtype).process_samples(
+            samples, wire_order=[0]
+        )
+        assert processed_samples.dtype == np.dtype(dtype)
 
     def test_sample_allowed_with_parameter_shift(self):
         """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
@@ -437,9 +461,38 @@ class TestSample:
         angle = jax.numpy.array(0.1)
         _ = jax.jacobian(circuit)(angle)
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize(
+        "dtype, obs",
+        [
+            ("int8", None),
+            ("int16", None),
+            ("int32", None),
+            ("int64", None),
+            ("float16", qml.Z(0)),
+            ("float32", qml.Z(0)),
+            ("float64", qml.Z(0)),
+        ],
+    )
+    def test_sample_dtype_combined(self, interface, dtype, obs):
+        """Test that the dtype argument changes the dtype of the returned samples,
+        both with and without an observable."""
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface=interface)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
+
+        samples = circuit()
+        assert qml.math.get_interface(samples) == interface
+        assert qml.math.get_dtype_name(samples) == dtype
+
 
 @pytest.mark.jax
 class TestJAXCompatibility:
+    """Tests for JAX compatibility"""
 
     @pytest.mark.parametrize("samples", (1, 10))
     def test_jitting_with_sampling_on_subset_of_wires(self, samples):
@@ -509,6 +562,32 @@ class TestJAXCompatibility:
 
         assert results.dtype == jax.numpy.float64
         assert np.all([r in [1, -1] for r in results])
+
+    @pytest.mark.parametrize(
+        "dtype, obs",
+        [
+            ("int8", None),
+            ("int16", None),
+            ("int32", None),
+            ("int64", None),
+            ("float16", qml.Z(0)),
+            ("float32", qml.Z(0)),
+            ("float64", qml.Z(0)),
+        ],
+    )
+    def test_jitting_with_dtype(self, dtype, obs):
+        """Test that jitting works when the dtype argument is provided"""
+        import jax
+
+        @qml.set_shots(10)
+        @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
+
+        samples = jax.jit(circuit)(jax.numpy.array(0.123))
+        assert qml.math.get_interface(samples) == "jax"
+        assert qml.math.get_dtype_name(samples) == dtype
 
     def test_process_samples_with_jax_tracer(self):
         """Test that qml.sample can be used when samples is a JAX Tracer"""

@@ -265,7 +265,7 @@ class ResourceConfig:
 
         .. code-block:: pycon
 
-            >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
+            >>> print(plre.estimate(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
             --- Resources: ---
             Total qubits: 1
             Total gates : 4
@@ -275,7 +275,7 @@ class ResourceConfig:
               {'Hadamard': 2, 'S': 2}
             >>> config = plre.ResourceConfig()
             >>> config.set_decomp(plre.ResourceX, custom_res_decomp)
-            >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}, config=config))
+            >>> print(plre.estimate(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}, config=config))
             --- Resources: ---
             Total qubits: 1
             Total gates : 3
