@@ -44,8 +44,8 @@ def estimate(
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources | Callable:
-    r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
-    provided in the gateset.
+    r"""Estimate the quantum resources required by a circuit or operation
+    with respect to a given gateset.
 
     Args:
         obj (ResourceOperator | Callable | Resources | list): The quantum circuit or operation
