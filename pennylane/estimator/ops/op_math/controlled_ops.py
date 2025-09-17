@@ -24,8 +24,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments
-# pylint: disable=unused-argument, signature-differs
+# pylint: disable= arguments-differ, signature-differs
 
 
 class CH(ResourceOperator):
@@ -111,7 +110,7 @@ class CH(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -153,7 +152,7 @@ class CH(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -176,7 +175,7 @@ class CY(ResourceOperator):
     r"""Resource class for the CY gate.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The resources are derived from the following identity:
@@ -242,7 +241,7 @@ class CY(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -268,7 +267,7 @@ class CY(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         raises:
@@ -284,7 +283,7 @@ class CY(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -307,7 +306,7 @@ class CZ(ResourceOperator):
     r"""Resource class for the CZ gate.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The resources are derived from the following identity:
@@ -377,7 +376,7 @@ class CZ(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -400,7 +399,7 @@ class CZ(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         raises:
@@ -419,7 +418,7 @@ class CZ(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -442,7 +441,7 @@ class CSWAP(ResourceOperator):
     r"""Resource class for the CSWAP gate.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
@@ -517,7 +516,7 @@ class CSWAP(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -540,7 +539,7 @@ class CSWAP(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         raises:
@@ -556,7 +555,7 @@ class CSWAP(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -579,7 +578,7 @@ class CCZ(ResourceOperator):
     r"""Resource class for the CCZ gate.
 
     Args:
-        wires (Sequence[int], optional): the subsystem the gate acts on
+        wires (Sequence[int] | None): the subsystem the gate acts on
 
     Resources:
         The resources are derived from the following identity:
@@ -648,7 +647,7 @@ class CCZ(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -674,7 +673,7 @@ class CCZ(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         raises:
@@ -690,7 +689,7 @@ class CCZ(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -713,7 +712,7 @@ class CNOT(ResourceOperator):
     r"""Resource class for the CNOT gate.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The CNOT gate is treated as a fundamental gate and thus it cannot be decomposed further.
@@ -762,7 +761,7 @@ class CNOT(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -788,7 +787,7 @@ class CNOT(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
@@ -806,7 +805,7 @@ class CNOT(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -829,7 +828,7 @@ class TempAND(ResourceOperator):
     r"""Resource class representing a temporary `AND`-gate.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
     with its adjoint (uncompute).
@@ -883,7 +882,7 @@ class TempAND(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -910,7 +909,7 @@ class TempAND(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         raises:
@@ -923,7 +922,7 @@ class Toffoli(ResourceOperator):
     r"""Resource class for the Toffoli gate.
 
     Args:
-        wires (Sequence[int], optional): the subsystem the gate acts on
+        wires (Sequence[int] | None): the subsystem the gate acts on
         elbow (str | None): String identifier to determine if this is a special type of
             Toffoli gate (left or right elbow). Default value is `None`.
 
@@ -972,7 +971,7 @@ class Toffoli(ResourceOperator):
         `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
 
         Args:
-            elbow (str, optional): One of "left" or "right". Defaults to "left".
+            elbow (str | None): One of "left" or "right". Defaults to "left".
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: The resources of decomposing the elbow gates.
@@ -1054,7 +1053,7 @@ class Toffoli(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Args:
-            elbow (str, optional): String identifier to determine if this is a special type of
+            elbow (str | None): String identifier to determine if this is a special type of
                 Toffoli gate (left or right elbow). Default value is `None`.
 
         Resources:
@@ -1104,7 +1103,7 @@ class Toffoli(ResourceOperator):
 
         Returns:
             A dictionary containing the resource parameters:
-                * elbow (Union[str, None]): String identifier to determine if this is a special type of Toffoli gate (left or right elbow).
+                * elbow (str | None): String identifier to determine if this is a special type of Toffoli gate (left or right elbow).
 
         """
         return {"elbow": self.elbow}
@@ -1115,7 +1114,7 @@ class Toffoli(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            elbow (str, optional): String identifier to determine if this is a special type of Toffoli gate (left or right elbow).
+            elbow (str | None): String identifier to determine if this is a special type of Toffoli gate (left or right elbow).
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -1196,7 +1195,7 @@ class MultiControlledX(ResourceOperator):
     Args:
         num_ctrl_wires (int): the number of qubits the operation is controlled on
         num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-        wires (Sequence[int], optional): the wires this operation acts on
+        wires (Sequence[int] | None): the wires this operation acts on
 
     Resources:
         The resources are obtained based on the unary iteration technique described in
@@ -1403,8 +1402,8 @@ class CRX(ResourceOperator):
     r"""Resource class for the CRX gate.
 
     Args:
-        wires (Sequence[int], optional): the wire the operation acts on
-        precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+        wires (Sequence[int] | None): the wire the operation acts on
+        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the precision stated in the config.
 
     Resources:
@@ -1441,7 +1440,7 @@ class CRX(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -1451,7 +1450,7 @@ class CRX(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -1464,7 +1463,7 @@ class CRX(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Args:
-            precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
@@ -1552,8 +1551,8 @@ class CRY(ResourceOperator):
     r"""Resource class for the CRY gate.
 
     Args:
-        wires (Sequence[int], optional): the wire the operation acts on
-        precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+        wires (Sequence[int] | None): the wire the operation acts on
+        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
@@ -1590,7 +1589,7 @@ class CRY(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -1600,7 +1599,7 @@ class CRY(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -1612,7 +1611,7 @@ class CRY(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Args:
-            precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
@@ -1700,8 +1699,8 @@ class CRZ(ResourceOperator):
     r"""Resource class for the CRZ gate.
 
     Args:
-        wires (Sequence[int], optional): the wire the operation acts on
-        precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+        wires (Sequence[int] | None): the wire the operation acts on
+        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
@@ -1738,7 +1737,7 @@ class CRZ(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
         """
         return {"precision": self.precision}
 
@@ -1748,7 +1747,7 @@ class CRZ(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -1761,7 +1760,7 @@ class CRZ(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Args:
-            precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
@@ -1850,8 +1849,8 @@ class CRot(ResourceOperator):
     r"""Resource class for the CRot gate.
 
     Args:
-        wires (Sequence[int], optional): the wire the operation acts on
-        precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+        wires (Sequence[int] | None): the wire the operation acts on
+        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
@@ -1896,7 +1895,7 @@ class CRot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
 
         """
         return {"precision": self.precision}
@@ -1907,7 +1906,7 @@ class CRot(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -1919,7 +1918,7 @@ class CRot(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Args:
-            precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
@@ -2018,8 +2017,8 @@ class ControlledPhaseShift(ResourceOperator):
     r"""Resource class for the ControlledPhaseShift gate.
 
     Args:
-        wires (Sequence[int], optional): the wire the operation acts on
-        precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+        wires (Sequence[int] | None): the wire the operation acts on
+        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
@@ -2055,7 +2054,7 @@ class ControlledPhaseShift(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * precision (Union[float, None]): the number of qubits the operation is controlled on
+                * precision (float | None): the number of qubits the operation is controlled on
 
         """
         return {"precision": self.precision}
@@ -2066,7 +2065,7 @@ class ControlledPhaseShift(ResourceOperator):
         the operator that are needed to compute the resources.
 
         Args:
-            precision (float, optional): The error threshold for the Clifford + T decomposition of this operation.
+            precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
@@ -2078,7 +2077,7 @@ class ControlledPhaseShift(ResourceOperator):
         r"""Returns a list of GateCount objects representing the resources of the operator.
 
         Args:
-            precision (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
