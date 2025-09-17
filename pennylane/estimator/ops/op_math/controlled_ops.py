@@ -137,7 +137,7 @@ class CH(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict or None): A dictionary containing the resource parameters
+            target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
         raises:
