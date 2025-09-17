@@ -18,6 +18,7 @@ from collections import defaultdict
 
 import pytest
 
+from pennylane.estimator.ops.qubit import X
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -205,6 +206,39 @@ def mock_rotation_decomp(precision):
 
 class TestEstimateResources:
     """Test that core resource estimation functionality"""
+
+    def test_estimate_resources_dispatch(self):
+        """Test that a TypeError is raised when an unsupported type is passed to the estimate function."""
+        with pytest.raises(TypeError, match="Could not obtain resources for obj of type"):
+            estimate(({1, 2, 3}))
+
+    def test_qfunc_with_num_wires(self):
+        """Test that the number of wires is correctly inferred from a qfunc
+        when the num_wires argument is used."""
+
+        def my_circuit():
+            ResourceTestAlg2(num_wires=4)
+
+        res = estimate(my_circuit, gate_set={"TestAlg2"})()
+        expected = Resources(
+            zeroed=0,
+            any_state=0,
+            algo_wires=4,
+            gate_types={resource_rep(ResourceTestAlg2, {"num_wires": 4}): 1},
+        )
+        assert res == expected
+
+    def test_gate_set_is_none(self):
+        """Test that the default gate set is used when gate_set is None."""
+        op = X()
+        res = estimate(op, gate_set=None)
+        expected = Resources(
+            zeroed=0,
+            any_state=0,
+            algo_wires=1,
+            gate_types={resource_rep(X): 1},
+        )
+        assert res == expected
 
     def test_estimate_resources_from_qfunc(self):
         """Test that we can accurately obtain resources from qfunc"""

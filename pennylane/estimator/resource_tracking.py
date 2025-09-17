@@ -223,27 +223,8 @@ def _resources_from_resource_ops(
     )
 
 
-@_estimate_resources_dispatch.register
-def _resources_from_pl_ops(
-    obj: Operation,
-    gate_set: set | None = None,
-    zeroed: int = 0,
-    any_state: int = 0,
-    tight_budget: bool = None,
-    config: ResourceConfig | None = None,
-) -> Resources:
-    """Extract resources from a PennyLane operator."""
-    # TODO: remove pylint disable when mapping is implemented.
-    obj = map_to_resource_op(obj)  # pylint: disable=assignment-from-no-return
-    resources = 1 * obj
-    return _resources_from_resource(
-        obj=resources,
-        gate_set=gate_set,
-        zeroed=zeroed,
-        any_state=any_state,
-        tight_budget=tight_budget,
-        config=config,
-    )
+# TODO: Restore logic to handle PennyLanec operators when mappings are merged.
+# Define a _resources_from_pl_ops dispatch
 
 
 def _update_counts_from_compressed_res_op(
@@ -321,6 +302,7 @@ def _sum_allocated_wires(decomp):
     return s
 
 
+# pylint: disable=too-many-function-args
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
     ops: Iterable[Operation | ResourceOperator],
@@ -338,8 +320,7 @@ def _ops_to_compressed_reps(
         if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
 
-        if isinstance(op, Operation):
-            cmp_rep_ops.append(map_to_resource_op(op).resource_rep_from_op())
+        # TODO: Restore logic to handle PennyLanec operators when mappings are merged.
 
     return cmp_rep_ops
 
@@ -361,23 +342,9 @@ def _get_decomposition(
         A tuple containing the decomposition function and its associated kwargs.
     """
     op_type = comp_res_op.op_type
-    _SYMBOLIC_DECOMP_MAP = {
-        # TODO: Uncomment this when symbolic resource operators are merged.
-        # ResourceAdjoint: "_adj_custom_decomps",
-        # ResourceControlled: "_ctrl_custom_decomps",
-        # ResourcePow: "_pow_custom_decomps",
-    }
+    # TODO: Restore logic to handle symbolic operators when symboli operators are merged.
 
-    if op_type in _SYMBOLIC_DECOMP_MAP:
-        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
-        custom_decomp_dict = getattr(config, decomp_attr_name)
-
-        base_op_type = comp_res_op.params["base_cmpr_op"].op_type
-        kwargs = config.resource_op_precisions.get(base_op_type, {})
-        decomp_func = custom_decomp_dict.get(base_op_type, op_type.resource_decomp)
-
-    else:
-        kwargs = config.resource_op_precisions.get(op_type, {})
-        decomp_func = config._custom_decomps.get(op_type, op_type.resource_decomp)
+    kwargs = config.resource_op_precisions.get(op_type, {})
+    decomp_func = config._custom_decomps.get(op_type, op_type.resource_decomp)
 
     return decomp_func, kwargs
