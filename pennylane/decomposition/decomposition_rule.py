@@ -514,7 +514,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions[translate_op_alias(op_type)].extend(decomps)
 
 
-def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
+def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -525,8 +525,9 @@ def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
         decomposition rules for an operator.
 
     Args:
-        op_type (type or str): the operator class to retrieve decomposition rules for. For symbolic
-            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to retrieve decomposition
+            rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
+            ``"C(RX)"``, etc.
 
     Returns:
         list[DecompositionRule]: a list of decomposition rules registered for the given operator.
@@ -553,12 +554,14 @@ def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    return _decompositions[translate_op_alias(op_type)][:]
+    if isinstance(op, Operator):
+        return _decompositions[op.name][:]
+    if isinstance(op, type):
+        op = op.__name__
+    return _decompositions[translate_op_alias(op)][:]
 
 
-def has_decomp(op_type: type[Operator] | str) -> bool:
+def has_decomp(op: type[Operator] | Operator | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
 
     .. note::
@@ -569,17 +572,20 @@ def has_decomp(op_type: type[Operator] | str) -> bool:
         decomposition rules for an operator.
 
     Args:
-        op_type (type or str): the operator class to check for decomposition rules. For symbolic
-            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to check for
+            decomposition rules. For symbolic operators, use strings like ``"Adjoint(RY)"``,
+            ``"Pow(H)"``, ``"C(RX)"``, etc.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    op_type = translate_op_alias(op_type)
-    return op_type in _decompositions and len(_decompositions[op_type]) > 0
+    if isinstance(op, Operator):
+        return op.name in _decompositions and len(_decompositions[op.name]) > 0
+    if isinstance(op, type):
+        op = op.__name__
+    op = translate_op_alias(op)
+    return op in _decompositions and len(_decompositions[op]) > 0
 
 
 @register_resources({})
