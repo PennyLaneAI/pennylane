@@ -141,16 +141,16 @@ class MultiRZ(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
+        num_ctrl_wires,
+        num_ctrl_values,
         num_wires,
         precision=None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_wires (int): the number of qubits the base operation acts upon
             precision (float): error threshold for Clifford + T decomposition of this operation
 
@@ -175,8 +175,8 @@ class MultiRZ(ResourceOperator):
             qre.Controlled,
             {
                 "base_cmpr_op": qre.resource_rep(qre.RZ, {"precision": precision}),
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_ctrl_values": num_ctrl_values,
             },
         )
 
@@ -390,16 +390,16 @@ class PauliRot(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
+        num_ctrl_wires,
+        num_ctrl_values,
         pauli_string,
         precision=None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             pauli_string (str): a string describing the pauli operators that define the rotation
             precision (float, optional): error threshold for Clifford + T decomposition of this operation
 
@@ -429,8 +429,8 @@ class PauliRot(ResourceOperator):
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
             ctrl_gp = qre.Controlled.resource_rep(
                 qre.resource_rep(qre.GlobalPhase),
-                ctrl_num_ctrl_wires,
-                ctrl_num_ctrl_values,
+                num_ctrl_wires,
+                num_ctrl_values,
             )
             return [GateCount(ctrl_gp)]
 
@@ -439,8 +439,8 @@ class PauliRot(ResourceOperator):
                 GateCount(
                     qre.Controlled.resource_rep(
                         qre.resource_rep(qre.RX, {"precision": precision}),
-                        ctrl_num_ctrl_wires,
-                        ctrl_num_ctrl_values,
+                        num_ctrl_wires,
+                        num_ctrl_values,
                     )
                 )
             ]
@@ -449,8 +449,8 @@ class PauliRot(ResourceOperator):
                 GateCount(
                     qre.Controlled.resource_rep(
                         qre.resource_rep(qre.RY, {"precision": precision}),
-                        ctrl_num_ctrl_wires,
-                        ctrl_num_ctrl_values,
+                        num_ctrl_wires,
+                        num_ctrl_values,
                     )
                 )
             ]
@@ -459,8 +459,8 @@ class PauliRot(ResourceOperator):
                 GateCount(
                     qre.Controlled.resource_rep(
                         qre.resource_rep(qre.RZ, {"precision": precision}),
-                        ctrl_num_ctrl_wires,
-                        ctrl_num_ctrl_values,
+                        num_ctrl_wires,
+                        num_ctrl_values,
                     )
                 )
             ]
@@ -471,8 +471,8 @@ class PauliRot(ResourceOperator):
         s = qre.S.resource_rep()
         crz = qre.Controlled.resource_rep(
             qre.resource_rep(qre.RZ, {"precision": precision}),
-            ctrl_num_ctrl_wires,
-            ctrl_num_ctrl_values,
+            num_ctrl_wires,
+            num_ctrl_values,
         )
         s_dagg = qre.resource_rep(
             qre.Adjoint,
