@@ -675,7 +675,7 @@ class TestPreprocessingTransforms:
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestGraphModeExclusiveFeatures:
+class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
     """Tests that only work when graph mode is enabled."""
 
     @pytest.mark.parametrize(("wires", "expected_program_len"), [(1, 2), (2, 2), (4, 1), (None, 1)])
