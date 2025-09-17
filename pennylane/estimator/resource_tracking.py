@@ -56,8 +56,7 @@ def estimate(
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires can be allocated when they
             exceed the available amount. The default is ``False``.
-        config (ResourceConfig | None): A ResourceConfig object of additional parameters which sets default values
-            when they are not specified on the operator.
+        config (ResourceConfig | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
     Returns:
         Resources: the estimated quantum resources required to execute the circuit
