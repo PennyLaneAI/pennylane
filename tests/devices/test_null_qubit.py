@@ -1400,20 +1400,12 @@ def test_execute_plxpr_shots():
     assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestNullQubitGraphModeExclusive:
     """Tests for NullQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
     """
-
-    @pytest.fixture(autouse=True)
-    def enable_graph_mode_only(self):
-        """Auto-enable graph mode for all tests in this class."""
-        try:
-            qml.decomposition.enable_graph()
-            yield
-        finally:
-            qml.decomposition.disable_graph()
 
     def test_insufficient_work_wires_causes_fallback(self):
         """Test that if a decomposition requires more work wires than available on null.qubit,
