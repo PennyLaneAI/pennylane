@@ -191,7 +191,6 @@ def _resources_from_resource(
             config=config,
         )
 
-    # Update:
     return Resources(
         zeroed=wire_manager.zeroed,
         any_state=wire_manager.any_state,
