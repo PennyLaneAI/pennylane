@@ -249,7 +249,7 @@ def _update_counts_from_compressed_res_op(
     if config is None:
         config = ResourceConfig()
 
-    ## If op in gate_set add to resources
+    ## Early return if compressed resource operator is already in our defined gate set
     if comp_res_op.name in gate_set:
         gate_counts_dict[comp_res_op] += scalar
         return
