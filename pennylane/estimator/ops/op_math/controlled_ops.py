@@ -32,7 +32,7 @@ class CH(ResourceOperator):
     r"""Resource class for the CH gate.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The resources are derived from the following identities (as presented in this
