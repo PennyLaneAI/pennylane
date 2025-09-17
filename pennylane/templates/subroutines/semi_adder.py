@@ -133,13 +133,7 @@ class SemiAdder(Operation):
 
     resource_keys = {"num_y_wires"}
 
-    def __init__(
-        self,
-        x_wires: WiresLike,
-        y_wires: WiresLike,
-        work_wires,
-        id=None,
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires, id=None):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -197,7 +191,7 @@ class SemiAdder(Operation):
             new_dict["work_wires"],
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
         return self.compute_decomposition(**self.hyperparameters)
 

@@ -29,10 +29,8 @@ from pennylane.wires import Wires
 
 from .resources_base import Resources
 
-# pylint: disable=unused-argument, no-member
 
-
-class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+class CompressedResourceOp:
     r"""Defines a lightweight class corresponding to the operator type and its parameters.
 
     This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`, containing
@@ -213,6 +211,7 @@ class ResourceOperator(ABC):
 
     num_wires: int | None = None
 
+    # pylint: disable=unused-argument
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
         if wires is not None:
@@ -267,31 +266,45 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def adjoint_resource_decomp(cls, *args, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources for the adjoint of the operator."""
-        raise ResourcesUndefinedError
-
-    @classmethod
-    def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-    ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator.
+    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the
-                operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are
-                controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
         """
         raise ResourcesUndefinedError
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list[GateCount]:
+    def controlled_resource_decomp(
+        cls,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict | None = None,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+        """
+        raise ResourcesUndefinedError
+
+    @classmethod
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
             pow_z (int): exponent that the operator is being raised to
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
         """
         raise ResourcesUndefinedError
 
@@ -350,6 +363,7 @@ class ResourceOperator(ABC):
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
+    # pylint: disable=unused-argument
     @classmethod
     def make_tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
