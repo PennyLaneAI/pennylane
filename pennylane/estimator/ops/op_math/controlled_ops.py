@@ -124,8 +124,8 @@ class CH(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
