@@ -35,19 +35,19 @@ def _binary_repr_int(phi, precision):
 
 @QueuingManager.stop_recording()
 def _rz_phase_gradient(
-    RZ_op: qml.RZ, aux_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
+    RZ_op: qml.RZ, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Function that transforms the RZ gate to the phase gradient circuit
 
-    The precision is implicitly defined by the length of ``aux_wires``"""
+    The precision is implicitly defined by the length of ``angle_wires``"""
     wire = RZ_op.wires
     phi = -1 * RZ_op.parameters[0]
-    precision = len(aux_wires)
+    precision = len(angle_wires)
     binary_int = _binary_repr_int(
         phi, precision
     )  # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=aux_wires), control=wire)
-    target_op = qml.SemiAdder(aux_wires, phase_grad_wires, work_wires)
+    compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
+    target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
     ops = [
         qml.change_op_basis(compute_op, target_op, compute_op),
         qml.GlobalPhase(-phi / 2),
@@ -57,13 +57,13 @@ def _rz_phase_gradient(
 
 @transform
 def rz_phase_gradient(
-    tape: QuantumScript, aux_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
+    tape: QuantumScript, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
 
     For example, a :class:`~.RZ` gate with angle $\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi$
-    is translated into the following routine, where the angle is conditionally prepared on the ``aux_wires`` in binary
+    is translated into the following routine, where the angle is conditionally prepared on the ``angle_wires`` in binary
     and added to a ``phase_grad_wires`` register semi-inplace via :class:`~.SemiAdder`.
 
     .. code-block::
@@ -95,13 +95,13 @@ def rz_phase_gradient(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.RZ` gates.
-        aux_wires (Wires): The auxiliary qubits that conditionally load the angle :math:`\phi` of
+        angle_wires (Wires): The auxiliary qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.RZ` gate in binary as a multiple of :math:`2\pi`.
-            The length of the ``aux_wires`` implicitly determine the precision
+            The length of the ``angle_wires`` implicitly determine the precision
             with which the angle is represented.
             E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) * 2\pi` is exactly represented by three bits as ``111``.
-        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them. Will only use the first ``len(aux_wires)`` according to the precision with which the angle is decomposed.
-        work wires (Wires): Additional work wires to realize the :class`~.SemiAdder` between the ``aux_wires`` and
+        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them. Will only use the first ``len(angle_wires)`` according to the precision with which the angle is decomposed.
+        work wires (Wires): Additional work wires to realize the :class`~.SemiAdder` between the ``angle_wires`` and
             ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b`` is the number of
             phase gradient wires, hence the precision of the angle :math:`\phi`.
 
@@ -122,10 +122,10 @@ def rz_phase_gradient(
         precision = 3
         phi = (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi
         wire = "targ"
-        aux_wires = [f"aux_{i}" for i in range(precision)]
+        angle_wires = [f"aux_{i}" for i in range(precision)]
         phase_grad_wires = [f"phg_{i}" for i in range(precision)]
         work_wires = [f"work_{i}" for i in range(precision - 1)]
-        wire_order = [wire] + aux_wires + phase_grad_wires + work_wires
+        wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
 
 
         def phase_gradient(wires):
@@ -135,7 +135,7 @@ def rz_phase_gradient(
 
 
         @partial(
-            rz_phase_gradient, aux_wires=aux_wires, phase_grad_wires=phase_grad_wires, work_wires=work_wires
+            rz_phase_gradient, angle_wires=angle_wires, phase_grad_wires=phase_grad_wires, work_wires=work_wires
         )
         @qml.qnode(qml.device("default.qubit"))
         def rz_circ(phi, wire):
@@ -180,7 +180,7 @@ def rz_phase_gradient(
             operations.extend(
                 _rz_phase_gradient(
                     op,
-                    aux_wires=aux_wires,
+                    angle_wires=angle_wires,
                     phase_grad_wires=phase_grad_wires,
                     work_wires=work_wires,
                 )

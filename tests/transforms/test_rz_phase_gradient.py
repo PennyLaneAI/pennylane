@@ -41,13 +41,13 @@ def test_units_rz_phase_gradient(p):
     """Test the outputs of _rz_phase_gradient"""
     phi = -(1 / 2 + 1 / 4 + 1 / 8 + 1 / 16) * 2 * np.pi
     wire = "targ"
-    aux_wires = qml.wires.Wires([f"aux_{i}" for i in range(p)])
+    angle_wires = qml.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qml.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qml.wires.Wires([f"work_{i}" for i in range(p - 1)])
 
     ops = _rz_phase_gradient(
         qml.RZ(phi, wire),
-        aux_wires=aux_wires,
+        angle_wires=angle_wires,
         phase_grad_wires=phase_grad_wires,
         work_wires=work_wires,
     )
@@ -59,14 +59,14 @@ def test_units_rz_phase_gradient(p):
 
     assert isinstance(operands[0], qml.ops.op_math.controlled.ControlledOp)
     assert np.allclose(operands[0].base.parameters, [1] * p)
-    assert operands[0].base.wires == aux_wires
+    assert operands[0].base.wires == angle_wires
 
     assert isinstance(operands[1], qml.SemiAdder)
-    assert operands[1].wires == aux_wires + phase_grad_wires + work_wires
+    assert operands[1].wires == angle_wires + phase_grad_wires + work_wires
 
     assert isinstance(operands[2], qml.ops.op_math.controlled.ControlledOp)
     assert np.allclose(operands[2].base.parameters, [1] * p)
-    assert operands[2].base.wires == aux_wires
+    assert operands[2].base.wires == angle_wires
 
 
 @pytest.mark.parametrize(
@@ -82,10 +82,10 @@ def test_integration_rz_phase_gradient(phi):
     """Test that the transform applies the RZ gate correctly by doing an X rotation via two Hadamards"""
     precision = 3
     wire = "targ"
-    aux_wires = qml.wires.Wires([f"aux_{i}" for i in range(precision)])
+    angle_wires = qml.wires.Wires([f"aux_{i}" for i in range(precision)])
     phase_grad_wires = qml.wires.Wires([f"qft_{i}" for i in range(precision)])
     work_wires = qml.wires.Wires([f"work_{i}" for i in range(precision - 1)])
-    wire_order = [wire] + aux_wires + phase_grad_wires + work_wires
+    wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
 
     rz_circ = qml.tape.QuantumScript(
         [
@@ -99,7 +99,7 @@ def test_integration_rz_phase_gradient(phi):
         ]
     )
 
-    res, fn = qml.transforms.rz_phase_gradient(rz_circ, aux_wires, phase_grad_wires, work_wires)
+    res, fn = qml.transforms.rz_phase_gradient(rz_circ, angle_wires, phase_grad_wires, work_wires)
     tapes = fn(res)
     output = qml.matrix(tapes, wire_order=wire_order)[:, 0]
 
