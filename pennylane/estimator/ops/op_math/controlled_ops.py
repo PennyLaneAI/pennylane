@@ -959,7 +959,7 @@ class Toffoli(ResourceOperator):
     num_wires = 3
     resource_keys = {"elbow"}
 
-    def __init__(self, elbow: str | None = None, wires: WiresLike = None) -> None:
+    def __init__(self, elbow: Literal["left", "right"] | None = None, wires: WiresLike = None) -> None:
         self.elbow = elbow
         super().__init__(wires=wires)
 
