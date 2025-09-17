@@ -25,7 +25,7 @@ from typing import overload
 
 from pennylane.operation import Operator
 
-from .resources import CompressedResourceOp, Resources, resource_rep
+from .resources import Resources, auto_wrap
 from .utils import translate_op_alias
 
 
@@ -398,7 +398,7 @@ class DecompositionRule:
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if count > 0:
-                gate_counter.update({_auto_wrap(op): count})
+                gate_counter.update({auto_wrap(op): count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
@@ -430,24 +430,6 @@ class DecompositionRule:
     def set_work_wire_spec(self, work_wires: Callable | dict) -> None:
         """Sets the work wire usage of this decomposition rule."""
         self._work_wire_spec = work_wires
-
-
-def _auto_wrap(op_type):
-    """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
-        return op_type
-    if not issubclass(op_type, Operator):
-        raise TypeError(
-            "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qml.resource_rep"
-        )
-    try:
-        return resource_rep(op_type)
-    except TypeError as e:
-        raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
-            f"representation must be explicitly constructed using qml.resource_rep"
-        ) from e
 
 
 _decompositions = defaultdict(list)
