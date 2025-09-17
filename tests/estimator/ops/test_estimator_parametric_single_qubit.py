@@ -60,28 +60,28 @@ class TestPauliRotation:
         ],
     ]
 
-    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
-    def test_resources(self, resource_class, precision):
-        """Test the resources method"""
+    def test_resources(self, resource_op_class, precision):
+        """Test the resources method matches the expected number of rotation resources"""
         config = {"precision": precision}
-        op = resource_class(wires=0)
+        op = resource_op_class(wires=0)
         assert op.resource_decomp(**config) == _rotation_resources(precision=precision)
 
-    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
-    def test_resource_rep(self, resource_class, precision):  # pylint: disable=unused-argument
+    def test_resource_rep(self, resource_op_class, precision):
         """Test the compact representation"""
-        op = resource_class(wires=0)
-        expected = CompressedResourceOp(resource_class, 1, {"precision": None})
-        assert op.resource_rep() == expected
+        op = resource_op_class(wires=0, precision=precision)
+        expected = CompressedResourceOp(resource_op_class, 1, {"precision": precision})
+        assert op.resource_rep(precision=precision) == expected
 
-    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
-    def test_resources_from_rep(self, resource_class, precision):
+    def test_resources_from_rep(self, resource_op_class, precision):
         """Test the resources can be obtained from the compact representation"""
 
-        op = resource_class(wires=0, precision=precision)
+        op = resource_op_class(wires=0, precision=precision)
         expected = _rotation_resources(precision=precision)
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -89,35 +89,35 @@ class TestPauliRotation:
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
-    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
-    def test_resource_params(self, resource_class, precision):  # pylint: disable=unused-argument
+    def test_resource_params(self, resource_op_class, precision):
         """Test that the resource params are correct"""
-        op = resource_class(precision, wires=0)
+        op = resource_op_class(precision, wires=0)
         assert op.resource_params == {"precision": precision}
 
-    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
-    def test_adjoint_decomposition(self, resource_class, precision):
+    def test_adjoint_decomposition(self, resource_op_class, precision):
         """Test that the adjoint decompositions are correct."""
 
-        expected = [GateCount(resource_class(precision).resource_rep(), 1)]
-        assert resource_class(precision).adjoint_resource_decomp({"precision": None}) == expected
+        expected = [GateCount(resource_op_class(precision).resource_rep(), 1)]
+        assert resource_op_class(precision).adjoint_resource_decomp({"precision": None}) == expected
 
-    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
     @pytest.mark.parametrize("z", list(range(1, 10)))
-    def test_pow_decomposition(self, resource_class, precision, z):
+    def test_pow_decomposition(self, resource_op_class, precision, z):
         """Test that the pow decompositions are correct."""
 
         expected = [
             (
-                GateCount(resource_class(precision).resource_rep(), 1)
+                GateCount(resource_op_class(precision).resource_rep(), 1)
                 if z
                 else GateCount(CompressedResourceOp(Identity, 1, {}), 1)
             )
         ]
-        assert resource_class(precision).pow_resource_decomp(z, {"precision": None}) == expected
+        assert resource_op_class(precision).pow_resource_decomp(z, {"precision": None}) == expected
 
     params_ctrl_classes = (
         (RX),
@@ -125,26 +125,26 @@ class TestPauliRotation:
         (RZ),
     )
 
-    @pytest.mark.parametrize("resource_class", params_ctrl_classes)
+    @pytest.mark.parametrize("resource_op_class", params_ctrl_classes)
     @pytest.mark.parametrize("precision", params_errors)
     def test_controlled_decomposition_single_control(
-        self, resource_class, precision
+        self, resource_op_class, precision
     ):  # pylint: disable=unused-argument
         """Test that the controlled decompositions are correct."""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(1, 0, resource_class.resource_params)
+            resource_op_class.controlled_resource_decomp(1, 0, resource_op_class.resource_params)
 
     ctrl_res_data = (([1, 2], [1, 1]),)
 
-    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_res_data)
     def test_controlled_decomposition_multi_controlled(
-        self, resource_class, ctrl_wires, ctrl_values
+        self, resource_op_class, ctrl_wires, ctrl_values
     ):
         """Test that the controlled docomposition is correct when controlled on multiple wires."""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(
-                ctrl_wires, ctrl_values, resource_class.resource_params
+            resource_op_class.controlled_resource_decomp(
+                ctrl_wires, ctrl_values, resource_op_class.resource_params
             )
 
 
@@ -152,7 +152,7 @@ class TestRot:
     """Test ResourceRot"""
 
     def test_resources(self):
-        """Test the resources method"""
+        """Test the resources method matches the expected resources"""
         op = Rot(wires=0)
         ry = RY.resource_rep()
         rz = RZ.resource_rep()
@@ -192,13 +192,13 @@ class TestRot:
     params_ctrl_classes = ((Rot),)
     ctrl_data = ([1, 0], [1, 1])
 
-    @pytest.mark.parametrize("resource_class", params_ctrl_classes)
+    @pytest.mark.parametrize("resource_op_class", params_ctrl_classes)
     @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
-    def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, resource_op_class, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(
-                ctrl_wires, ctrl_values, resource_class.resource_params
+            resource_op_class.controlled_resource_decomp(
+                ctrl_wires, ctrl_values, resource_op_class.resource_params
             )
 
     pow_data = (
@@ -218,7 +218,7 @@ class TestPhaseShift:
     """Test ResourcePhaseShift"""
 
     def test_resources(self):
-        """Test the resources method"""
+        """Test the resources method matches the expected resources"""
         op = PhaseShift(0.1, wires=0)
         rz = RZ.resource_rep()
         global_phase = GlobalPhase.resource_rep()
@@ -259,13 +259,13 @@ class TestPhaseShift:
     params_ctrl_classes = ((PhaseShift),)
     ctrl_data = ([1, 0], [1, 1])
 
-    @pytest.mark.parametrize("resource_class", params_ctrl_classes)
+    @pytest.mark.parametrize("resource_op_class", params_ctrl_classes)
     @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
-    def test_resource_controlled(self, resource_class, ctrl_wires, ctrl_values):
+    def test_resource_controlled(self, resource_op_class, ctrl_wires, ctrl_values):
         """Test that the controlled resources are as expected"""
         with pytest.raises(ResourcesUndefinedError):
-            resource_class.controlled_resource_decomp(
-                ctrl_wires, ctrl_values, resource_class.resource_params
+            resource_op_class.controlled_resource_decomp(
+                ctrl_wires, ctrl_values, resource_op_class.resource_params
             )
 
     pow_data = (
