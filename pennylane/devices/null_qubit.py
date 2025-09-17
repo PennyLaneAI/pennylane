@@ -520,5 +520,5 @@ def _op_has_decomp(op):
         bool: True if the operator has a decomposition, False otherwise.
     """
     if enabled_graph():
-        return has_decomp(type(op))
+        return has_decomp(op)
     return op.has_decomposition
