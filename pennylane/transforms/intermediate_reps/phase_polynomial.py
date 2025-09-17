@@ -84,7 +84,7 @@ def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequenc
         wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:
-        tuple(np.ndarray, np.ndarray, np.ndarray): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
+        tuple(TensorLike, TensorLike, TensorLike): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
 
     **Example**
 
