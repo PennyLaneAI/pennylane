@@ -14,7 +14,6 @@
 r"""
 Contains the BasisEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 
 from pennylane.decomposition import add_decomps
 from pennylane.ops.qubit.state_preparation import BasisState, _basis_state_decomp

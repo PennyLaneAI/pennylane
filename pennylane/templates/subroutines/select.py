@@ -579,7 +579,6 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial, num_wor
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 @register_resources(_select_resources_multi_control)
 def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
 

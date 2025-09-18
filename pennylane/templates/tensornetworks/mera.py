@@ -14,7 +14,7 @@
 """
 Contains the MERA template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 
 import warnings
 from collections.abc import Callable
