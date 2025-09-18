@@ -1131,13 +1131,14 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
     if partial:
         if len(ops) == 1:
             apply(ops[0])
-        else:
-            ctrls_and_ctrl_states = _partial_select(len(ops), control)
-            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops):
-                ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
-                ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
-                ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
             return
+
+        ctrls_and_ctrl_states = _partial_select(len(ops), control)
+        for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops):
+            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+            ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
+            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+        return
 
     for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops):
         ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
