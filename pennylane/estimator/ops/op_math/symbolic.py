@@ -476,6 +476,7 @@ class Pow(ResourceOperator):
 
     The operation raised to a power :math:`z` can be constructed like this:
 
+    >>> from pennylane import estimator as qre
     >>> z = qre.Z()
     >>> z_2 = qre.Pow(z, 2)
     >>> z_5 = qre.Pow(z, 5)
@@ -484,21 +485,23 @@ class Pow(ResourceOperator):
 
     >>> print(qre.estimate(z_2, gate_set={"Identity", "Z"}))
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'Identity': 1}
+     Total wires: 1
+        algorithmic wires: 1
+        allocated wires: 0
+                 zero state: 0
+                 any state: 0
+     Total gates : 1
+      'Identity': 1
     >>>
     >>> print(qre.estimate(z_5, gate_set={"Identity", "Z"}))
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'Z': 1}
+     Total wires: 1
+        algorithmic wires: 1
+        allocated wires: 0
+                 zero state: 0
+                 any state: 0
+     Total gates : 1
+      'Z': 1
 
     """
 
@@ -570,36 +573,6 @@ class Pow(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
-        .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Pow`.
-
-        **Example**
-
-        The operation raised to a power :math:`z` can be constructed like this:
-
-        >>> z = qre.Z()
-        >>> z_2 = qre.Pow(z, 2)
-        >>> z_5 = qre.Pow(z, 5)
-
-        We obtain the expected resources.
-
-        >>> print(qre.estimation(z_2, gate_set={"Identity", "Z"}))
-        --- Resources: ---
-        Total qubits: 1
-        Total gates : 1
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-        Gate breakdown:
-        {'Identity': 1}
-        >>>
-        >>> print(qre.estimation(z_5, gate_set={"Identity", "Z"}))
-        --- Resources: ---
-        Total qubits: 1
-        Total gates : 1
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-        Gate breakdown:
-        {'Z': 1}
-
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params = {key: value for key, value in base_params.items() if value is not None}
@@ -622,7 +595,7 @@ class Pow(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            pow_z (float): The exponent that the base operator is being raised to, default value is 1.
+            pow_z (int): The exponent that the base operator is being raised to, default value is 1.
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
@@ -671,31 +644,37 @@ class Prod(ResourceOperator):
 
     We can construct a product operator as follows:
 
+    >>> from pennylane import estimator as qre
     >>> factors = [qre.X(), qre.Y(), qre.Z()]
     >>> prod_xyz = qre.Prod(factors)
     >>>
-    >>> print(qre.estimation(prod_xyz))
+    >>> print(qre.estimate(prod_xyz))
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 3
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-     {'X': 1, 'Y': 1, 'Z': 1}
+     Total wires: 1
+        algorithmic wires: 1
+        allocated wires: 0
+                 zero state: 0
+                 any state: 0
+     Total gates : 3
+      'X': 1,
+      'Y': 1,
+      'Z': 1
 
     We can also specify the factors as a tuple with
 
     >>> factors = [(qre.X(), 2), (qre.Z(), 3)]
     >>> prod_x2z3 = qre.Prod(factors)
     >>>
-    >>> print(qre.estimation(prod_x2z3))
+    >>> print(qre.estimate(prod_x2z3))
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 5
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-     {'X': 2, 'Z': 3}
+     Total wires: 1
+        algorithmic wires: 1
+        allocated wires: 0
+                 zero state: 0
+                 any state: 0
+     Total gates : 5
+      'X': 2,
+      'Z': 3
 
     """
 
@@ -761,7 +740,9 @@ class Prod(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, cmpr_factors_and_counts, num_wires=None) -> CompressedResourceOp:
+    def resource_rep(
+        cls, cmpr_factors_and_counts, num_wires: WiresLike = None
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation.
 
@@ -782,7 +763,9 @@ class Prod(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, cmpr_factors_and_counts, num_wires):  # pylint: disable=unused-argument
+    def resource_decomp(
+        cls, cmpr_factors_and_counts, num_wires: int
+    ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -801,39 +784,6 @@ class Prod(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
-        .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Prod`.
-
-        **Example**
-
-        The product of operations can be constructed as follows. Note, each operation in the
-        product must be a valid `:class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
-
-        >>> factors = [qre.X(), qre.Y(), qre.Z()]
-        >>> prod_xyz = qre.Prod(factors)
-        >>>
-        >>> print(qre.estimation(prod_xyz))
-        --- Resources: ---
-        Total qubits: 1
-        Total gates : 3
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-        Gate breakdown:
-        {'X': 1, 'Y': 1, 'Z': 1}
-
-        We can also specify the factors as a tuple with
-
-        >>> factors = [(qre.X(), 2), (qre.Z(), 3)]
-        >>> prod_x2z3 = qre.Prod(factors)
-        >>>
-        >>> print(qre.estimation(prod_x2z3))
-        --- Resources: ---
-        Total qubits: 1
-        Total gates : 5
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-        Gate breakdown:
-        {'X': 2, 'Z': 3}
-
         """
         return [GateCount(cmpr_op, count) for cmpr_op, count in cmpr_factors_and_counts]
 
@@ -851,9 +801,9 @@ class ChangeOpBasis(ResourceOperator):
             representing the basis change operation.
         target_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A resource operator
             representing the base operation.
-        uncompute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`, optional): An optional
+        uncompute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             resource operator representing the inverse of the basis change operation.
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         This symbolic class represents a product of the three provided operations. The resources are
@@ -866,30 +816,36 @@ class ChangeOpBasis(ResourceOperator):
     The change of basis operation can be constructed as follows with each operation defining the
     compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
 
+    >>> from pennylane import estimator as qre
     >>> compute_u = qre.S()
     >>> base_v = qre.Z()
     >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
-    >>> print(qre.estimation(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(qre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 3
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'S': 1, 'Z': 1, 'Adjoint(S)': 1}
+     Total wires: 1
+        algorithmic wires: 1
+        allocated wires: 0
+                 zero state: 0
+                 any state: 0
+     Total gates : 3
+      'Adjoint(S)': 1,
+      'Z': 1,
+      'S': 1
 
     We can also set the :code:`uncompute_op` directly.
 
     >>> uncompute_u = qre.Prod([qre.Z(), qre.S()])
     >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
-    >>> print(qre.estimation(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(qre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 4
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'S': 2, 'Z': 2}
+     Total wires: 1
+        algorithmic wires: 1
+        allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 4
+      'Z': 2,
+      'S': 2
 
     """
 
@@ -1005,7 +961,11 @@ class ChangeOpBasis(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, cmpr_compute_op, cmpr_target_op, cmpr_uncompute_op, num_wires
+        cls,
+        cmpr_compute_op: CompressedResourceOp,
+        cmpr_target_op: CompressedResourceOp,
+        cmpr_uncompute_op: CompressedResourceOp,
+        num_wires: int,
     ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
