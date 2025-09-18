@@ -346,7 +346,7 @@ class Controlled(ResourceOperator):
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_zero_ctrl (int): the number of control qubits, that are controlled when in the
+            num_zero_ctrl (int): the number of control qubits that are controlled when in the
                 :math:`|0\rangle` state
 
         Resources:
