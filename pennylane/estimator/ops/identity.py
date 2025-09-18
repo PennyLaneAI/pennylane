@@ -44,8 +44,10 @@ class Identity(ResourceOperator):
 
     def __init__(self, wires=None):
         """Initializes the ``Identity`` operator."""
-        if wires is not None:
+        if wires:
             self.num_wires = len(Wires(wires))
+        else:
+            self.num_wires = 1
         super().__init__(wires=wires)
 
     @property
@@ -158,8 +160,10 @@ class GlobalPhase(ResourceOperator):
 
     def __init__(self, wires=None):
         """Initializes the ``GlobalPhase`` operator."""
-        if wires is not None:
+        if wires:
             self.num_wires = len(Wires(wires))
+        else:
+            self.num_wires = 1
         super().__init__(wires=wires)
 
     @property
