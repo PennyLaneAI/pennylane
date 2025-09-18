@@ -1926,8 +1926,8 @@ class CRot(ResourceOperator):
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
-            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+            The resources are taken from Figure 1b of `arXiv:2110.10292
+            <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
             .. math::
 
