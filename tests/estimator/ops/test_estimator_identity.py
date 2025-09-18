@@ -104,6 +104,7 @@ class TestGlobalPhase:
         """Test that common PL wires are accepted."""
         op = GlobalPhase(wire_labels)
         assert op.wires == Wires(wire_labels)
+        assert op.num_wires == len(Wires(wire_labels))
 
     def test_resources(self):
         """ResourceGlobalPhase should have empty resources"""
