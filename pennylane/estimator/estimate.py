@@ -94,7 +94,7 @@ def estimate(
     >>> res = qre.estimate(
     ...     my_circuit,
     ...     gate_set = qre.DefaultGateSet,
-    ...     config=config,
+    ...     config = config,
     ... )()
     ...
     >>> print(res)
