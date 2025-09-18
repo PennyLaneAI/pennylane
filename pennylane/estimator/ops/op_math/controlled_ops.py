@@ -2024,7 +2024,7 @@ class ControlledPhaseShift(ResourceOperator):
 
     Args:
         wires (Sequence[int] | None): the wire the operation acts on
-        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
+        precision (float | None): The error threshold for Clifford + T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
