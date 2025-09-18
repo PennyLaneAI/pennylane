@@ -1046,7 +1046,7 @@ class Toffoli(ResourceOperator):
             `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
 
             If `elbow` is `None`, the resources are obtained from Figure 1 of
-            `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
+            `Jones (2012) <https://arxiv.org/pdf/1212.5069>`_.
 
             The circuit which applies the Toffoli gate on target wire 'target' with control wires
             ('c1', 'c2') is defined as:
