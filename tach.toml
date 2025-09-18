@@ -43,7 +43,6 @@ visibility = []
 [[modules]]
 path = "pennylane.compiler.python_compiler"
 visibility = []
-cannot_depend_on = ["pennylane.labs", "pennylane"]
 
 ## UTILITY modules
 
