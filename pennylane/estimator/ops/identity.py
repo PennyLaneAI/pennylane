@@ -267,7 +267,7 @@ class GlobalPhase(ResourceOperator):
             The resources are generated from the fact that a global phase controlled on a
             single qubit is equivalent to a local phase shift on that control qubit.
             This idea can be generalized to a multi-qubit global phase by introducing one
-            'clean' auxilliary qubit which gets reset at the end of the computation. In this
+            auxilliary qubit in `zeroed` state which gets reset at the end of the computation. In this
             case, we sandwich the phase shift operation with two multi-controlled ``X`` gates.
 
         Returns:
