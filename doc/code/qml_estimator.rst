@@ -38,5 +38,4 @@ Resource Operators:
     :toctree: api
     :no-inherited-members:
     :classes-only:
-    :skip: CompressedResourceOp, GateCount, ResourceOperator
     :noindex:

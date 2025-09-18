@@ -13,10 +13,9 @@
 # limitations under the License.
 r"""Resource operators for controlled operations."""
 
-import pennylane.estimator as qre
-
 from typing import Literal
 
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -832,7 +831,7 @@ class TempAND(ResourceOperator):
         wires (Sequence[int] | None): the wires the operation acts on
 
     This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
-    with its adjoint (uncompute).
+    with its adjoint.
 
     **Example**
 
