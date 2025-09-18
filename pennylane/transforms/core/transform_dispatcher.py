@@ -549,7 +549,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
                 "The transform argument to TransformContainer must now be a TransformDispatcher."
             )
         self._transform = transform
-        self._args = args or []
+        self._args = tuple(args)
         self._kwargs = kwargs or {}
         self._use_argnum = use_argnum
 
@@ -590,12 +590,12 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return self._transform.transform
 
     @property
-    def args(self):
+    def args(self) -> tuple:
         """The stored quantum transform's ``args``."""
         return self._args
 
     @property
-    def kwargs(self):
+    def kwargs(self) -> dict:
         """The stored quantum transform's ``kwargs``."""
         return self._kwargs
 
@@ -610,12 +610,12 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return self._transform.plxpr_transform
 
     @property
-    def is_informative(self):
+    def is_informative(self) -> bool:
         """``True`` if the transform is informative."""
         return self._transform.is_informative
 
     @property
-    def final_transform(self):
+    def final_transform(self) -> bool:
         """``True`` if the transform needs to be executed"""
         return self._transform.final_transform
 

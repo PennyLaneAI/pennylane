@@ -159,7 +159,7 @@ class TestTransformContainer:
         t1 = qml.transforms.core.TransformContainer(
             qml.transforms.compile, kwargs={"num_passes": 2}
         )
-        assert repr(t1) == "<compile([], {'num_passes': 2})>"
+        assert repr(t1) == "<compile((), {'num_passes': 2})>"
 
     def test_equality(self):
         """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
@@ -196,7 +196,7 @@ class TestTransformContainer:
         )
 
         assert q_transform is first_valid_transform
-        assert args == [0]
+        assert args == (0,)
         assert kwargs == {}
         assert cotransform is None
         assert plxpr_transform is not None  # fallback
@@ -204,12 +204,38 @@ class TestTransformContainer:
         assert not final_transform
 
         assert container.transform is first_valid_transform
-        assert container.args == [0]
+        assert container.args == (0,)
         assert not container.kwargs
         assert container.classical_cotransform is None
         assert container.plxpr_transform is not None  # tape fallback
         assert not container.is_informative
         assert not container.final_transform
+
+    def test_dispatch_container(self):
+        """Test that transform containers can be called on objects with their various stored args and kwargs."""
+
+        def postprocessing(results):
+            return results[0]
+
+        @qml.transform
+        def repeat_ops(tape, n, new_ops=()):
+            return (tape.copy(ops=tape.operations * n + list(new_ops)),), postprocessing
+
+        container = TransformContainer(repeat_ops, (3,), {"new_ops": [qml.X(0)]})
+
+        tape = qml.tape.QuantumScript([qml.X(0)])
+        expected = qml.tape.QuantumScript([qml.X(0), qml.X(0), qml.X(0), qml.X(0)])
+        [out], fn = container(tape)
+        assert fn is postprocessing
+        qml.assert_equal(expected, out)
+
+        @qml.qnode(qml.device("default.qubit"))
+        def c():
+            qml.Y(0)
+            return qml.state()
+
+        new_c = container(c)
+        assert container == new_c.transform_program[0]
 
 
 class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
@@ -417,7 +443,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         expand_transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
-        assert expand_transform_container.args == [0]
+        assert expand_transform_container.args == (0,)
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
@@ -425,7 +451,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         transform_container = qnode_transformed.transform_program.pop_front()
 
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
-        assert transform_container.args == [0]
+        assert transform_container.args == (0,)
         assert transform_container.kwargs == {}
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
