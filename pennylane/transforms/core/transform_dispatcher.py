@@ -259,6 +259,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             return transformed_tapes, processing_fn
 
         if isinstance(obj, qml.workflow.QNode):
+            if capture.enabled():
+                new_qnode = self.default_qnode_transform(obj, targs, tkwargs)
+                return self._capture_callable_transform(new_qnode, targs, tkwargs)
             return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
