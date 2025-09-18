@@ -109,7 +109,7 @@ class TestAdjoint:
         assert _apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
 
     # pylint: disable=protected-access
-    def test_apply_adj_raises(self):
+    def test_apply_adj_raises_error_on_unknown_type(self):
         """Test that the apply_adj method is working correctly."""
         with pytest.raises(TypeError):
             qre.ops.op_math.symbolic._apply_adj(1)
