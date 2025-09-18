@@ -930,6 +930,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `default.tensor` now supports graph decomposition mode during preprocessing.
+  [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
+
 * Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
   [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
 
