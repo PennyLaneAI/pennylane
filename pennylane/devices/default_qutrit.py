@@ -24,10 +24,10 @@ import logging
 import numpy as np
 
 import pennylane as qml
+from pennylane._version import __version__
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.logging import debug_logger, debug_logger_init
 
-from .._version import __version__
 from ._qutrit_device import QutritDevice
 
 logger = logging.getLogger(__name__)

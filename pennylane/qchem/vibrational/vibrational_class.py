@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ..openfermion_pyscf import _import_pyscf
+from pennylane.qchem.openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
