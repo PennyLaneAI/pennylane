@@ -627,8 +627,8 @@ class DefaultQubit(Device):
 
         transform_program = TransformProgram()
 
-        if config.interface == math.Interface.JAX_JIT:
-            transform_program.add_transform(no_counts)
+        # if config.interface == math.Interface.JAX_JIT:
+        #     transform_program.add_transform(no_counts)
 
         if config.mcm_config.mcm_method == "deferred":
             transform_program.add_transform(defer_measurements, allow_postselect=True)
