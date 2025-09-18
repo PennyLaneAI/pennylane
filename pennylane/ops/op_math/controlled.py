@@ -363,6 +363,15 @@ def _try_wrap_in_custom_ctrl_op(
         qml.QueuingManager.remove(op)
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
+    if isinstance(op, qml.Barrier):
+        if qml.QueuingManager.recording():
+            # for example
+            # op = Barrier(), qml.X(), qml.ctrl(op, 1)
+            # new barrier should exist after the X
+            qml.QueuingManager.remove(op)
+            qml.QueuingManager.append(op)  # requeue in proper place
+        return op
+
     if isinstance(op, qml.QubitUnitary):
         qml.QueuingManager.remove(op)
         return qml.ControlledQubitUnitary(
@@ -991,7 +1000,6 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
         result = op.base._controlled(op.control_wires[0])  # pylint: disable=protected-access
         # disallow decomposing to itself
-        # pylint: disable=unidiomatic-typecheck
         if type(result) != type(op):
             return [result]
         qml.QueuingManager.remove(result)

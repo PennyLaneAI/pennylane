@@ -635,7 +635,7 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
+def _diagonal_qu_resource(num_wires):
     if num_wires == 1:
         return {qml.RZ: 1, qml.GlobalPhase: 1}
     return {

@@ -361,7 +361,6 @@ def _unflatten_np(flat, model):
     Raises:
         ValueError: if ``flat`` has more elements than ``model``
     """
-    # pylint:disable=len-as-condition
     res, tail = _unflatten_np_dispatch(pnp.asarray(flat), model)
     if len(tail) != 0:
         raise ValueError("Flattened iterable has more elements than the model.")
