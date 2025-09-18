@@ -16,7 +16,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
@@ -153,6 +153,10 @@ def _resources_from_qfunc(
                     circuit_wires.append(op.wires)
                 elif op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
+            else:
+                raise ValueError(
+                    f"Queued object '{op}' is not a ResourceOperator or Operation, and cannot be processed."
+                )
         num_algo_qubits += len(Wires.all_wires(circuit_wires))
         wire_manager.algo_wires = num_algo_qubits
         # Obtain resources in the gate_set

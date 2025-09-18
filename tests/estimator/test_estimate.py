@@ -356,6 +356,18 @@ class TestEstimateResources:
         with pytest.raises(NotImplementedError):
             estimate(my_circuit)()
 
+    def test_unsupported_object_in_queue_raises_error(self):
+        """Test that a ValueError is raised for unsupported objects in the queue."""
+
+        def my_circuit():
+            qml.QueuingManager.append(52 + 30)
+
+        with pytest.raises(
+            ValueError,
+            match="Queued object.*is not a ResourceOperator or Operation, and cannot be processed.",
+        ):
+            estimate(my_circuit)()
+
     @pytest.mark.parametrize(
         "gate_set, expected_resources",
         (
