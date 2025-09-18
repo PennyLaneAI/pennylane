@@ -86,3 +86,13 @@ from .templates.subroutines import (
     QPE,
     IterativeQPE,
 )
+
+from .templates.trotter import (
+    TrotterCDF,
+    TrotterProduct,
+    TrotterTHC,
+    TrotterVibrational,
+    TrotterVibronic,
+)
+
+from .templates.compact_hamiltonian import CompactHamiltonian

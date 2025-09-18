@@ -19,7 +19,7 @@ from collections import defaultdict
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator import GateCount, WireResourceManager, resource_rep
+from pennylane.estimator import GateCount, resource_rep
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
 
@@ -104,7 +104,7 @@ class TestResourceTrotterProduct:
             match="All components of first_order_expansion must be instances of `ResourceOperator` in order to obtain resources.",
         ):
             qre.TrotterProduct(
-                [qre.X(), qre.Y(), qre.AllocWires(4)],
+                [qre.X(), qre.Y(), qre.Allocate(4)],
                 num_steps=10,
                 order=3,
             )
@@ -122,17 +122,17 @@ class TestTrotterCDF:
             100,
             2,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 0, "dirty": 0}, algo_wires=16, tight_budget=False
-                ),
+                "zeroed": 0,
+                "any_state": 0,
+                "algo_wires": 16,
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 7711424.0,
-                        "S": 201936.0,
-                        "Z": 134624.0,
-                        "Hadamard": 134624.0,
-                        "CNOT": 187312.0,
+                        "T": 7711424,
+                        "S": 201936,
+                        "Z": 134624,
+                        "Hadamard": 134624,
+                        "CNOT": 187312,
                     },
                 ),
             },
@@ -143,17 +143,17 @@ class TestTrotterCDF:
             1000,
             1,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 0, "dirty": 0}, algo_wires=20, tight_budget=False
-                ),
+                "zeroed": 0,
+                "any_state": 0,
+                "algo_wires": 20,
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 99920000.0,
-                        "S": 2700000.0,
-                        "Z": 1800000.0,
-                        "Hadamard": 1800000.0,
-                        "CNOT": 2420000.0,
+                        "T": 99920000,
+                        "S": 2700000,
+                        "Z": 1800000,
+                        "Hadamard": 1800000,
+                        "CNOT": 2420000,
                     },
                 ),
             },
@@ -164,17 +164,17 @@ class TestTrotterCDF:
             750,
             4,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 0, "dirty": 0}, algo_wires=24, tight_budget=False
-                ),
+                "zeroed": 0,
+                "any_state": 0,
+                "algo_wires": 24,
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 1593920064.0,
-                        "S": 41580792.0,
-                        "Z": 27720528.0,
-                        "Hadamard": 27720528.0,
-                        "CNOT": 40770264.0,
+                        "T": 1593920064,
+                        "S": 41580792,
+                        "Z": 27720528,
+                        "Hadamard": 27720528,
+                        "CNOT": 40770264,
                     },
                 ),
             },
@@ -188,7 +188,6 @@ class TestTrotterCDF:
         self, num_orbitals, num_fragments, num_steps, order, expected_res
     ):
         """Test the Resource TrotterCDF class for correct resources"""
-
         compact_ham = qre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
         )
@@ -197,14 +196,16 @@ class TestTrotterCDF:
             qre.TrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-        assert res.qubit_manager == expected_res["qubit_manager"]
-        assert res.clean_gate_counts == expected_res["gate_types"]
+        assert res.zeroed == expected_res["zeroed"]
+        assert res.any_state == expected_res["any_state"]
+        assert res.algo_wires == expected_res["algo_wires"]
+        assert res.gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         r"""Test that a TypeError is raised for unsupported Hamiltonian representations."""
         compact_ham = qre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=10)
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for Resource TrotterCDF"
+            TypeError, match="Unsupported Hamiltonian representation for TrotterCDF"
         ):
             qre.TrotterCDF(compact_ham, num_steps=100, order=2)
 
@@ -222,17 +223,17 @@ class TestTrotterTHC:
             100,
             2,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 0, "dirty": 0}, algo_wires=40, tight_budget=False
-                ),
+                "zeroed": 0,
+                "any_state": 0,
+                "algo_wires": 40,
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 9687424.0,
-                        "S": 261936.0,
-                        "Z": 174624.0,
-                        "Hadamard": 174624.0,
-                        "CNOT": 243312.0,
+                        "T": 9687424,
+                        "S": 261936,
+                        "Z": 174624,
+                        "Hadamard": 174624,
+                        "CNOT": 243312,
                     },
                 ),
             },
@@ -243,17 +244,17 @@ class TestTrotterTHC:
             1000,
             1,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 0, "dirty": 0}, algo_wires=80, tight_budget=False
-                ),
+                "zeroed": 0,
+                "any_state": 0,
+                "algo_wires": 80,
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 368720000.0,
-                        "S": 9900000.0,
-                        "Z": 6600000.0,
-                        "Hadamard": 6600000.0,
-                        "CNOT": 9620000.0,
+                        "T": 368720000,
+                        "S": 9900000,
+                        "Z": 6600000,
+                        "Hadamard": 6600000,
+                        "CNOT": 9620000,
                     },
                 ),
             },
@@ -271,15 +272,16 @@ class TestTrotterTHC:
             qre.TrotterTHC(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-
-        assert res.qubit_manager == expected_res["qubit_manager"]
-        assert res.clean_gate_counts == expected_res["gate_types"]
+        assert res.zeroed == expected_res["zeroed"]
+        assert res.any_state == expected_res["any_state"]
+        assert res.algo_wires == expected_res["algo_wires"]
+        assert res.gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
         compact_ham = qre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for Resource TrotterTHC"
+            TypeError, match="Unsupported Hamiltonian representation for TrotterTHC"
         ):
             qre.TrotterTHC(compact_ham, num_steps=100, order=2)
 
@@ -297,19 +299,19 @@ class TestTrotterVibrational:
             100,
             2,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=32, tight_budget=False
-                ),
+                "zeroed": 95,
+                "any_state": 0,
+                "algo_wires": 32,
                 "gate_types": defaultdict(
                     int,
                     {
                         "Z": 2,
                         "S": 2,
-                        "T": 7898.0,
-                        "X": 384064.0,
+                        "T": 7898,
+                        "X": 384064,
                         "Toffoli": 10069400,
-                        "CNOT": 14300800.0,
-                        "Hadamard": 30040840.0,
+                        "CNOT": 14300800,
+                        "Hadamard": 30040840,
                     },
                 ),
             },
@@ -321,19 +323,19 @@ class TestTrotterVibrational:
             10,
             1,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=24, tight_budget=False
-                ),
+                "zeroed": 127,
+                "any_state": 0,
+                "algo_wires": 24,
                 "gate_types": defaultdict(
                     int,
                     {
                         "Z": 3,
                         "S": 3,
-                        "T": 2327.0,
-                        "X": 7548.0,
+                        "T": 2327,
+                        "X": 7548,
                         "Toffoli": 398770,
-                        "CNOT": 489540.0,
-                        "Hadamard": 1159710.0,
+                        "CNOT": 489540,
+                        "Hadamard": 1159710,
                     },
                 ),
             },
@@ -345,19 +347,19 @@ class TestTrotterVibrational:
             20,
             1,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
-                ),
+                "zeroed": 67,
+                "any_state": 0,
+                "algo_wires": 8,
                 "gate_types": defaultdict(
                     int,
                     {
                         "Z": 1,
                         "S": 1,
-                        "T": 909.0,
-                        "X": 4016.0,
+                        "T": 909,
+                        "X": 4016,
                         "Toffoli": 37320,
-                        "CNOT": 82000.0,
-                        "Hadamard": 111140.0,
+                        "CNOT": 82000,
+                        "Hadamard": 111140,
                     },
                 ),
             },
@@ -379,16 +381,17 @@ class TestTrotterVibrational:
             qre.TrotterVibrational(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-
-        assert res.qubit_manager == expected_res["qubit_manager"]
-        assert res.clean_gate_counts == expected_res["gate_types"]
+        assert res.zeroed == expected_res["zeroed"]
+        assert res.any_state == expected_res["any_state"]
+        assert res.algo_wires == expected_res["algo_wires"]
+        assert res.gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
         compact_ham = qre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
         with pytest.raises(
             TypeError,
-            match="Unsupported Hamiltonian representation for Resource TrotterVibrational",
+            match="Unsupported Hamiltonian representation for TrotterVibrational",
         ):
             qre.TrotterVibrational(compact_ham, num_steps=100, order=2)
 
@@ -407,15 +410,15 @@ class TestResourceTrotterVibronic:
             100,
             2,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=33, tight_budget=False
-                ),
+                "zeroed": 95,
+                "any_state": 0,
+                "algo_wires": 33,
                 "gate_types": defaultdict(
                     int,
                     {
                         "Z": 2,
                         "S": 2,
-                        "T": 7898.0,
+                        "T": 7898,
                         "X": 153664,
                         "Hadamard": 30271242,
                         "Toffoli": 10146200,
@@ -432,15 +435,15 @@ class TestResourceTrotterVibronic:
             10,
             1,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=26, tight_budget=False
-                ),
+                "zeroed": 127,
+                "any_state": 0,
+                "algo_wires": 26,
                 "gate_types": defaultdict(
                     int,
                     {
                         "Z": 3,
                         "S": 3,
-                        "T": 2327.0,
+                        "T": 2327,
                         "X": 6048,
                         "Hadamard": 1168714,
                         "Toffoli": 401770,
@@ -457,15 +460,15 @@ class TestResourceTrotterVibronic:
             20,
             1,
             {
-                "qubit_manager": WireResourceManager(
-                    work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
-                ),
+                "zeroed": 67,
+                "any_state": 0,
+                "algo_wires": 8,
                 "gate_types": defaultdict(
                     int,
                     {
                         "Z": 1,
                         "S": 1,
-                        "T": 909.0,
+                        "T": 909,
                         "X": 16,
                         "Hadamard": 111140,
                         "Toffoli": 37320,
@@ -495,14 +498,15 @@ class TestResourceTrotterVibronic:
             qre.TrotterVibronic(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-
-        assert res.qubit_manager == expected_res["qubit_manager"]
-        assert res.clean_gate_counts == expected_res["gate_types"]
+        assert res.zeroed == expected_res["zeroed"]
+        assert res.any_state == expected_res["any_state"]
+        assert res.algo_wires == expected_res["algo_wires"]
+        assert res.gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
         compact_ham = qre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for Resource TrotterVibronic"
+            TypeError, match="Unsupported Hamiltonian representation for TrotterVibronic"
         ):
             qre.TrotterVibronic(compact_ham, num_steps=100, order=2)

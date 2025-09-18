@@ -26,6 +26,7 @@ from pennylane.estimator.resource_operator import (
     GateCount,
     ResourceOperator,
     resource_rep,
+    _dequeue
 )
 from pennylane.estimator.templates.subroutines import (
     BasisRotation,
@@ -119,7 +120,7 @@ class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
 
     def __init__(self, first_order_expansion, num_steps, order, wires=None):
 
-        self._dequeue(op_to_remove=first_order_expansion)
+        _dequeue(op_to_remove=first_order_expansion)
         self.queue()
 
         try:
@@ -325,7 +326,7 @@ class TrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
 
         if compact_ham.method_name != "cdf":
             raise TypeError(
-                f"Unsupported Hamiltonian representation for ResourceTrotterCDF."
+                f"Unsupported Hamiltonian representation for TrotterCDF."
                 f"This method works with cdf Hamiltonian, {compact_ham.method_name} provided"
             )
         self.num_steps = num_steps
@@ -595,7 +596,7 @@ class TrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
 
         if compact_ham.method_name != "thc":
             raise TypeError(
-                f"Unsupported Hamiltonian representation for ResourceTrotterTHC."
+                f"Unsupported Hamiltonian representation for TrotterTHC."
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
         self.num_steps = num_steps
