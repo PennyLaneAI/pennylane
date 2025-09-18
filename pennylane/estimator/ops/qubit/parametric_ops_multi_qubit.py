@@ -143,8 +143,7 @@ class MultiRZ(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
-        num_wires,
-        precision=None,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -170,6 +169,8 @@ class MultiRZ(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        num_wires = target_resource_params["num_wires"]
+        precision = target_resource_params["precision"]
         cnot = qre.resource_rep(qre.CNOT)
         ctrl_rz = qre.resource_rep(
             qre.Controlled,
@@ -392,8 +393,7 @@ class PauliRot(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_zero_ctrl,
-        pauli_string,
-        precision=None,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -425,6 +425,8 @@ class PauliRot(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        pauli_string = target_resource_params["pauli_string"]
+        precision = target_resource_params["precision"]
 
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
             ctrl_gp = qre.Controlled.resource_rep(

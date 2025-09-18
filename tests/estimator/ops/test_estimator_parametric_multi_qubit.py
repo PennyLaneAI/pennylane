@@ -127,7 +127,7 @@ class TestMultiRZ:
         )
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
@@ -372,7 +372,7 @@ class TestPauliRot:
         op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
