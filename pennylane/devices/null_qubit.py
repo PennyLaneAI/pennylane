@@ -318,7 +318,7 @@ class NullQubit(Device):
         else:
             target = self._target_device
 
-        program = target.preprocess_transforms(execution_config)
+        program, _ = target.preprocess(execution_config)
 
         for t in program:
             if t.transform == decompose.transform:

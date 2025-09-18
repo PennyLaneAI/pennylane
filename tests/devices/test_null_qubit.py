@@ -87,11 +87,32 @@ def test_set_device_target():
     assert default_dev._target_device is None
     assert default_dev.config_filepath is None
 
-    to_target = qml.devices.DefaultQubit()
+    # Pick something other than DefaultQubit, which is already the default
+    to_target = qml.devices.ReferenceQubit()
 
     dev = NullQubit(target_device=to_target)
     assert dev._target_device == to_target
     assert dev.config_filepath == to_target.config_filepath
+
+    program1, _ = dev.preprocess(ExecutionConfig())
+    program2, _ = to_target.preprocess(ExecutionConfig())
+
+    # Check that the preprocess function mimics the given target
+
+    assert len(program1) == len(program2)
+    for t1, t2 in zip(program1, program2):
+        assert t1.transform == t2.transform
+
+        assert len(t1.args) == len(t2.args)
+        for i, arg in enumerate(t1.args):
+            if not callable(arg):
+                assert arg == t2.args[i]
+
+        assert len(t1.kwargs) == len(t2.kwargs)
+        for k in t1.kwargs:
+            assert k in t2.kwargs
+            if not callable(t1.kwargs[k]):
+                assert t1.kwargs[k] == t2.kwargs[k]
 
 
 @pytest.mark.parametrize("shots", (None, 10))
