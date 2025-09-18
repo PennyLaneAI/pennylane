@@ -214,6 +214,8 @@ def measure(
 
     If a device doesn't support mid-circuit measurements natively, then the
     QNode will apply the :func:`defer_measurements` transform.
+    This will require one additional wire for each mid-circuit measurement.
+    Please refer to the :func:`defer_measurements` transform for more details.
 
     **Example:**
 
