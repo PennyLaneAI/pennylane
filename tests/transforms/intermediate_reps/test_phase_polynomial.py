@@ -86,16 +86,16 @@ class TestPhasePolynomial:
     def test_qfunc_input(self):
         """Test phase_polynomial works for qfunc inputs"""
 
-        def qfunc():
+        def qfunc(phi1, phi2):
             qml.CNOT((0, 1))
-            qml.RZ(0.5, 1)
+            qml.RZ(phi1, 1)
             qml.CNOT((1, 2))
             qml.CNOT((2, 0))
-            qml.RZ(0.3, 0)
+            qml.RZ(phi2, 0)
 
-        tape = qml.tape.make_qscript(qfunc)()
+        tape = qml.tape.make_qscript(qfunc)(0.5, 0.3)
 
-        pmat, ptab, angles = phase_polynomial(qfunc, wire_order=range(3))
+        pmat, ptab, angles = phase_polynomial(qfunc, wire_order=range(3))(0.5, 0.3)
         pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
 
         assert np.allclose(pmat, pmat_exp)
@@ -106,17 +106,17 @@ class TestPhasePolynomial:
         """Test phase_polynomial works for qnode inputs"""
 
         @qml.qnode(qml.device("default.qubit"))
-        def qnode():
+        def qnode(phi1, phi2):
             qml.CNOT((0, 1))
-            qml.RZ(0.5, 1)
+            qml.RZ(phi1, 1)
             qml.CNOT((1, 2))
             qml.CNOT((2, 0))
-            qml.RZ(0.3, 0)
+            qml.RZ(phi2, 0)
             return qml.expval(qml.Z(0))
 
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.workflow.construct_tape(qnode)(0.5, 0.3)
 
-        pmat, ptab, angles = phase_polynomial(qnode, wire_order=range(3))
+        pmat, ptab, angles = phase_polynomial(qnode, wire_order=range(3))(0.5, 0.3)
         pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
 
         assert np.allclose(pmat, pmat_exp)

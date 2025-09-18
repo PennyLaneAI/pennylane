@@ -80,14 +80,15 @@ class TestParityMatrix:
     def test_qfunc_input(self):
         """Test parity_matrix correctly handles a qfunc input"""
 
-        def qfunc():
-            qml.CNOT((0, 1))
-            qml.CNOT((1, 2))
-            qml.CNOT((2, 0))
+        def qfunc(wire1, wire2, wire3):
+            qml.CNOT((wire1, wire2))
+            qml.CNOT((wire2, wire3))
+            qml.CNOT((wire3, wire1))
+            return qml.expval(qml.Z(0))
 
-        tape = qml.tape.make_qscript(qfunc)()
+        tape = qml.tape.make_qscript(qfunc)(0, 1, 2)
 
-        _P1 = parity_matrix(qfunc, wire_order=range(3))
+        _P1 = parity_matrix(qfunc, wire_order=range(3))(0, 1, 2)
         _P2 = parity_matrix(tape, wire_order=range(3))
         assert np.allclose(_P1, _P2)
 
@@ -95,14 +96,14 @@ class TestParityMatrix:
         """Test parity_matrix correctly handles a qnode input"""
 
         @qml.qnode(qml.device("default.qubit"))
-        def qnode():
-            qml.CNOT((0, 1))
-            qml.CNOT((1, 2))
-            qml.CNOT((2, 0))
+        def qnode(wire1, wire2, wire3):
+            qml.CNOT((wire1, wire2))
+            qml.CNOT((wire2, wire3))
+            qml.CNOT((wire3, wire1))
             return qml.expval(qml.Z(0))
 
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.workflow.construct_tape(qnode)(0, 1, 2)
 
-        _P1 = parity_matrix(qnode, wire_order=range(3))
+        _P1 = parity_matrix(qnode, wire_order=range(3))(0, 1, 2)
         _P2 = parity_matrix(tape, wire_order=range(3))
         assert np.allclose(_P1, _P2)

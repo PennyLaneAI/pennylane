@@ -85,6 +85,7 @@ def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequenc
 
     Returns:
         tuple(TensorLike, TensorLike, TensorLike): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
+            Note that in the case of inputting a callable function, a new callable with the same call signature is returned.
 
     **Example**
 
@@ -166,10 +167,20 @@ def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequenc
 
     """
     if isinstance(circ, qml.workflow.QNode):
-        circ = qml.workflow.construct_tape(circ)()
 
-    elif callable(circ):
-        circ = qml.tape.make_qscript(circ)()
+        def wrapped(*args, **kwargs):
+            circ1 = qml.workflow.construct_tape(circ)(*args, **kwargs)
+            return phase_polynomial(circ1, wire_order)
+
+        return wrapped
+
+    if callable(circ):
+
+        def wrapped2(*args, **kwargs):
+            circ1 = qml.tape.make_qscript(circ)(*args, **kwargs)
+            return phase_polynomial(circ1, wire_order)
+
+        return wrapped2
 
     wires = circ.wires
 

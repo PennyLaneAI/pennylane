@@ -38,6 +38,7 @@ def parity_matrix(circ: QuantumScript | QNode | Callable, wire_order: Sequence =
 
     Returns:
         TensorLike: :math:`n \times n` Parity matrix for :math:`n` qubits.
+            Note that in the case of inputting a callable function, a new callable with the same call signature is returned.
 
     **Example**
 
@@ -76,10 +77,20 @@ def parity_matrix(circ: QuantumScript | QNode | Callable, wire_order: Sequence =
 
     """
     if isinstance(circ, qml.workflow.QNode):
-        circ = qml.workflow.construct_tape(circ)()
 
-    elif callable(circ):
-        circ = qml.tape.make_qscript(circ)()
+        def wrapped(*args, **kwargs):
+            circ1 = qml.workflow.construct_tape(circ)(*args, **kwargs)
+            return parity_matrix(circ1, wire_order)
+
+        return wrapped
+
+    if callable(circ):
+
+        def wrapped2(*args, **kwargs):
+            circ1 = qml.tape.make_qscript(circ)(*args, **kwargs)
+            return parity_matrix(circ1, wire_order)
+
+        return wrapped2
 
     wires = circ.wires
 
