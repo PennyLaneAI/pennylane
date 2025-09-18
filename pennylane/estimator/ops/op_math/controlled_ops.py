@@ -1009,7 +1009,7 @@ class Toffoli(ResourceOperator):
     @staticmethod
     def elbow_decomp(elbow: Literal["left", "right"] | None = "left"):
         """A function that prepares the resource decomposition obtained from Figure 4 of
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Args:
             elbow (str | None): One of "left" or "right". Defaults to "left".
