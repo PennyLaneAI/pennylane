@@ -89,7 +89,6 @@ def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int
     return f"{gate}{params} {wire_labels};"
 
 
-# pylint: disable=unused-argument
 @_obj_string.register
 def _mid_measure_str(op: MidMeasureMP, wires: Wires, bit_map: dict, precision: None | int) -> str:
     if op.reset:

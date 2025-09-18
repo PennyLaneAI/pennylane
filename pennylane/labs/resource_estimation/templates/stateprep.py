@@ -25,7 +25,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
+# pylint: disable=arguments-differ, too-many-arguments, unused-argument
 
 
 class ResourceUniformStatePrep(ResourceOperator):
