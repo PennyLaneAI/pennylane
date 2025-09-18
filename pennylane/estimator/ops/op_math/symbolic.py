@@ -111,8 +111,8 @@ class Adjoint(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator
-            that we want the adjoint of.
+             * base_cmpr_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator
+               that we want the adjoint of.
 
         """
         return {"base_cmpr_op": self.base_op}
@@ -291,11 +291,11 @@ class Controlled(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
-            operator to be controlled.
-            * num_ctrl_wires (int): the number of qubits the operation is controlled on
-            * num_zero_ctrl (int): the number of control qubits, that are controlled when in the
-            :math:`|0\rangle` state
+             * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
+               operator to be controlled.
+             * num_ctrl_wires (int): the number of qubits the operation is controlled on
+             * num_zero_ctrl (int): the number of control qubits, that are controlled when in the
+               :math:`|0\rangle` state
         """
 
         return {
