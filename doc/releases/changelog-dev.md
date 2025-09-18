@@ -28,6 +28,10 @@
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
+  * The resource operators for controlled operators have been added to `qml.estimator.ops.op_math`.
+    [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
+  * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
+    [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
