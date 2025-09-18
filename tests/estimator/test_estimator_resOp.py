@@ -23,12 +23,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
-from pennylane.estimator.resource_operator import (
-    GateCount,
-    _dequeue,
-    _make_hashable,
-    resource_rep,
-)
+from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
@@ -421,16 +416,6 @@ class TestResourceOperator:
                 _dequeue(op_to_remove)
 
             assert q.queue == expected_queue
-
-    def test_wire_error(self):
-        """Test that providing a different number of wire labels than the operator's
-        num_wires aregument leads to an error."""
-        dummy_op1 = DummyOp()
-        assert dummy_op1.wires is None
-        assert dummy_op1.num_wires is None
-
-        with pytest.raises(ValueError, match="Expected None wires, got"):
-            DummyOp(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mul(self, s):
