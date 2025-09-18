@@ -923,7 +923,7 @@ class TemporaryAND(ResourceOperator):
                 of the target operator.
 
         Resources:
-            The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 4 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
