@@ -306,7 +306,7 @@ class Controlled(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        base_cmpr_op,
+        base_cmpr_op: CompressedResourceOp,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
     ) -> CompressedResourceOp:
@@ -336,7 +336,7 @@ class Controlled(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, base_cmpr_op, num_ctrl_wires: int, num_zero_ctrl: int, **kwargs
+        cls, base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int, num_zero_ctrl: int, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
