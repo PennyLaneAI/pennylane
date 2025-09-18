@@ -347,10 +347,14 @@ class TestEstimateResources:
 
         assert actual_resources == expected_resources
 
-    # TODO: Implement this when mapping is merged
     def test_estimate_resources_from_pl_operator(self):
-        """Test that we can accurately obtain resources from qfunc"""
-        assert True
+        """Test that a NotImplementedError is raised for PennyLane operators."""
+
+        def my_circuit():
+            qml.Hadamard(wires=0)
+
+        with pytest.raises(NotImplementedError):
+            estimate(my_circuit)()
 
     @pytest.mark.parametrize(
         "gate_set, expected_resources",
