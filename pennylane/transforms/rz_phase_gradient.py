@@ -90,7 +90,7 @@ def rz_phase_gradient(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.RZ` gates.
-        angle_wires (Wires): The angiliary qubits that conditionally load the angle :math:`\phi` of
+        angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.RZ` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``angle_wires`` implicitly determines the precision
             with which the angle is represented.
