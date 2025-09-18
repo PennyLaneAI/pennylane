@@ -419,14 +419,14 @@ class SemiAdder(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, max_register_size, **kwargs
+        cls, ctrl_num_ctrl_wires, ctrl_num_zero_ctrl, max_register_size, **kwargs
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            ctrl_num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             max_register_size (int): the size of the larger of the two registers being added together
 
         Resources:
@@ -446,7 +446,7 @@ class SemiAdder(ResourceOperator):
                     qre.MultiControlledX,
                     {
                         "num_ctrl_wires": ctrl_num_ctrl_wires,
-                        "num_ctrl_values": ctrl_num_ctrl_values,
+                        "num_zero_ctrl": ctrl_num_zero_ctrl,
                     },
                 )
                 gate_lst.append(Allocate(1))
@@ -471,8 +471,8 @@ class SemiAdder(ResourceOperator):
 
             if ctrl_num_ctrl_wires > 1:
                 gate_lst.append(Deallocate(1))
-            elif ctrl_num_ctrl_values > 0:
-                gate_lst.append(GateCount(x, 2 * ctrl_num_ctrl_values))
+            elif ctrl_num_zero_ctrl > 0:
+                gate_lst.append(GateCount(x, 2 * ctrl_num_zero_ctrl))
 
             return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
@@ -612,7 +612,7 @@ class ControlledSequence(ResourceOperator):
             ctrl_pow_u = qre.Controlled.resource_rep(
                 qre.Pow.resource_rep(base_op, 2**z),
                 num_ctrl_wires=1,
-                num_ctrl_values=0,
+                num_zero_ctrl=0,
             )
             gate_counts.append(GateCount(ctrl_pow_u))
 
@@ -1049,7 +1049,7 @@ class QFT(ResourceOperator):
             ctrl_add = qre.Controlled.resource_rep(
                 qre.SemiAdder.resource_rep(max_register_size=size_reg),
                 num_ctrl_wires=1,
-                num_ctrl_values=0,
+                num_zero_ctrl=0,
             )
             gate_types.append(GateCount(ctrl_add))
 
@@ -1161,7 +1161,7 @@ class AQFT(ResourceOperator):
         cs = qre.Controlled.resource_rep(
             base_cmpr_op=resource_rep(qre.S),
             num_ctrl_wires=1,
-            num_ctrl_values=0,
+            num_zero_ctrl=0,
         )
 
         if order >= num_wires:
@@ -1795,7 +1795,7 @@ class QROM(ResourceOperator):
     def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires: int,
-        ctrl_num_ctrl_values: int,
+        ctrl_num_zero_ctrl: int,
         num_bitstrings,
         size_bitstring,
         num_bit_flips=None,
@@ -1807,7 +1807,7 @@ class QROM(ResourceOperator):
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            ctrl_num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
@@ -1837,9 +1837,9 @@ class QROM(ResourceOperator):
             in the decomposition.
         """
         gate_cost = []
-        if ctrl_num_ctrl_values:
+        if ctrl_num_zero_ctrl:
             x = qre.X.resource_rep()
-            gate_cost.append(GateCount(x, 2 * ctrl_num_ctrl_values))
+            gate_cost.append(GateCount(x, 2 * ctrl_num_zero_ctrl))
 
         if num_bit_flips is None:
             num_bit_flips = (num_bitstrings * size_bitstring) // 2
@@ -1857,13 +1857,9 @@ class QROM(ResourceOperator):
             return gate_cost
 
         gate_cost.append(Allocate(1))
-        gate_cost.append(
-            GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
-        )
+        gate_cost.append(GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0)))
         gate_cost.extend(single_ctrl_cost)
-        gate_cost.append(
-            GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
-        )
+        gate_cost.append(GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0)))
         gate_cost.append(Deallocate(1))
         return gate_cost
 
@@ -2274,7 +2270,7 @@ class SelectPauliRot(ResourceOperator):
                             {"max_register_size": num_prec_wires},
                         ),
                         "num_ctrl_wires": 1,
-                        "num_ctrl_values": 0,
+                        "num_zero_ctrl": 0,
                     },
                 )
             )

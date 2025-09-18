@@ -50,9 +50,7 @@ class TestResourceOutOfPlaceSquare:
             GateCount(resource_rep(qre.Toffoli), (register_size - 1) ** 2),
             GateCount(resource_rep(qre.CNOT), register_size),
         ]
-        assert (
-            qre.OutOfPlaceSquare.resource_decomp(register_size=register_size) == expected
-        )
+        assert qre.OutOfPlaceSquare.resource_decomp(register_size=register_size) == expected
 
 
 class TestResourcePhaseGradient:
@@ -67,9 +65,7 @@ class TestResourcePhaseGradient:
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5))
     def test_resource_rep(self, num_wires):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.PhaseGradient, num_wires, {"num_wires": num_wires}
-        )
+        expected = qre.CompressedResourceOp(qre.PhaseGradient, num_wires, {"num_wires": num_wires})
         assert qre.PhaseGradient.resource_rep(num_wires=num_wires) == expected
 
     @pytest.mark.parametrize(
@@ -147,7 +143,7 @@ class TestResourceOutMultiplier:
         b_register_size = 3
 
         toff = resource_rep(qre.Toffoli)
-        l_elbow = resource_rep(qre.TemporaryAND)
+        l_elbow = resource_rep(qre.TempAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         num_elbows = 12
@@ -158,9 +154,7 @@ class TestResourceOutMultiplier:
             GateCount(r_elbow, num_elbows),
             GateCount(toff, num_toff),
         ]
-        assert (
-            qre.OutMultiplier.resource_decomp(a_register_size, b_register_size) == expected
-        )
+        assert qre.OutMultiplier.resource_decomp(a_register_size, b_register_size) == expected
 
 
 class TestResourceSemiAdder:
@@ -200,15 +194,15 @@ class TestResourceSemiAdder:
                 [
                     qre.Allocate(2),
                     GateCount(resource_rep(qre.CNOT), 9),
-                    GateCount(resource_rep(qre.TemporaryAND), 2),
+                    GateCount(resource_rep(qre.TempAND), 2),
                     GateCount(
                         resource_rep(
                             qre.Adjoint,
-                            {"base_cmpr_op": resource_rep(qre.TemporaryAND)},
+                            {"base_cmpr_op": resource_rep(qre.TempAND)},
                         ),
                         2,
                     ),
-                    qre.FreeWires(2),
+                    qre.Deallocate(2),
                 ],
             ),
         ),
@@ -222,20 +216,18 @@ class TestResourceSemiAdder:
         op = qre.Controlled(
             qre.SemiAdder(max_register_size=5),
             num_ctrl_wires=1,
-            num_ctrl_values=0,
+            num_zero_ctrl=0,
         )
 
         expected_res = [
             qre.Allocate(4),
             GateCount(resource_rep(qre.CNOT), 24),
-            GateCount(resource_rep(qre.TemporaryAND), 8),
+            GateCount(resource_rep(qre.TempAND), 8),
             GateCount(
-                resource_rep(
-                    qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}
-                ),
+                resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TempAND)}),
                 8,
             ),
-            qre.FreeWires(4),
+            qre.Deallocate(4),
         ]
         assert op.resource_decomp(**op.resource_params) == expected_res
 
@@ -293,9 +285,7 @@ class TestResourceControlledSequence:
             },
         )
 
-        assert (
-            qre.ControlledSequence.resource_rep(base_cmpr_op, num_ctrl_wires) == expected
-        )
+        assert qre.ControlledSequence.resource_rep(base_cmpr_op, num_ctrl_wires) == expected
 
     @pytest.mark.parametrize(
         "base_op, num_ctrl_wires, expected_res",
@@ -393,9 +383,9 @@ class TestResourceControlledSequence:
                 ],
             ),
             (
-                qre.ChangeBasisOp(
+                qre.ChangeOpBasis(
                     compute_op=qre.AQFT(3, 5),
-                    base_op=qre.RZ(),
+                    target_op=qre.RZ(),
                 ),
                 3,
                 [
@@ -430,9 +420,7 @@ class TestResourceControlledSequence:
                             0,
                         )
                     ),
-                    GateCount(
-                        qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 5))
-                    ),
+                    GateCount(qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 5))),
                 ],
             ),
         ),
@@ -486,9 +474,7 @@ class TestResourceQPE:
     def test_resource_rep(self, base_cmpr_op, num_est_wires, adj_qft_cmpr_op):
         """Test the resource_rep method"""
         if adj_qft_cmpr_op is None:
-            adj_qft_cmpr_op = qre.Adjoint.resource_rep(
-                qre.QFT.resource_rep(num_est_wires)
-            )
+            adj_qft_cmpr_op = qre.Adjoint.resource_rep(qre.QFT.resource_rep(num_est_wires))
 
         expected = qre.CompressedResourceOp(
             qre.QPE,
@@ -500,9 +486,7 @@ class TestResourceQPE:
             },
         )
 
-        assert (
-            qre.QPE.resource_rep(base_cmpr_op, num_est_wires, adj_qft_cmpr_op) == expected
-        )
+        assert qre.QPE.resource_rep(base_cmpr_op, num_est_wires, adj_qft_cmpr_op) == expected
 
     @pytest.mark.parametrize(
         "base_op, num_est_wires, adj_qft_op, expected_res",
@@ -575,7 +559,7 @@ class TestResourceIterativeQPE:
             (qre.RX(precision=1e-5), 5),
             (qre.QubitUnitary(4, 1e-5), 7),
             (
-                qre.ChangeBasisOp(
+                qre.ChangeOpBasis(
                     qre.RY(precision=1e-3),
                     qre.RZ(precision=1e-5),
                 ),
@@ -598,7 +582,7 @@ class TestResourceIterativeQPE:
             (qre.RX(precision=1e-5), 5),
             (qre.QubitUnitary(4, 1e-5), 7),
             (
-                qre.ChangeBasisOp(
+                qre.ChangeOpBasis(
                     qre.RY(precision=1e-3),
                     qre.RZ(precision=1e-5),
                 ),
@@ -676,7 +660,7 @@ class TestResourceIterativeQPE:
                         )
                     ),
                     GateCount(qre.PhaseShift.resource_rep(), 10),
-                    FreeWires(1),
+                    Deallocate(1),
                 ],
             ),
             (
@@ -726,11 +710,11 @@ class TestResourceIterativeQPE:
                         )
                     ),
                     GateCount(qre.PhaseShift.resource_rep(), 6),
-                    FreeWires(1),
+                    Deallocate(1),
                 ],
             ),
             (
-                qre.ChangeBasisOp(
+                qre.ChangeOpBasis(
                     qre.RY(precision=1e-3),
                     qre.RZ(precision=1e-5),
                 ),
@@ -770,12 +754,10 @@ class TestResourceIterativeQPE:
                         )
                     ),
                     GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.RY.resource_rep(precision=1e-3)
-                        ),
+                        qre.Adjoint.resource_rep(qre.RY.resource_rep(precision=1e-3)),
                     ),
                     GateCount(qre.PhaseShift.resource_rep(), 3),
-                    FreeWires(1),
+                    Deallocate(1),
                 ],
             ),
         ),
@@ -846,7 +828,7 @@ class TestResourceQFT:
                         qre.Controlled.resource_rep(
                             qre.SemiAdder.resource_rep(max_register_size=1),
                             num_ctrl_wires=1,
-                            num_ctrl_values=0,
+                            num_zero_ctrl=0,
                         )
                     ),
                 ],
@@ -860,14 +842,14 @@ class TestResourceQFT:
                         qre.Controlled.resource_rep(
                             qre.SemiAdder.resource_rep(max_register_size=1),
                             num_ctrl_wires=1,
-                            num_ctrl_values=0,
+                            num_zero_ctrl=0,
                         )
                     ),
                     GateCount(
                         qre.Controlled.resource_rep(
                             qre.SemiAdder.resource_rep(max_register_size=2),
                             num_ctrl_wires=1,
-                            num_ctrl_values=0,
+                            num_zero_ctrl=0,
                         )
                     ),
                 ],
@@ -933,28 +915,28 @@ class TestResourceAQFT:
                         qre.Controlled.resource_rep(
                             base_cmpr_op=resource_rep(qre.S),
                             num_ctrl_wires=1,
-                            num_ctrl_values=0,
+                            num_zero_ctrl=0,
                         ),
                         4,
                     ),
                     Allocate(1),
-                    GateCount(resource_rep(qre.TemporaryAND), 1),
+                    GateCount(resource_rep(qre.TempAND), 1),
                     GateCount(qre.SemiAdder.resource_rep(1)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
                         1,
                     ),
-                    FreeWires(1),
+                    Deallocate(1),
                     Allocate(2),
-                    GateCount(resource_rep(qre.TemporaryAND), 2 * 2),
+                    GateCount(resource_rep(qre.TempAND), 2 * 2),
                     GateCount(qre.SemiAdder.resource_rep(2), 2),
                     GateCount(resource_rep(qre.Hadamard), 2),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
                         2 * 2,
                     ),
-                    FreeWires(2),
+                    Deallocate(2),
                     GateCount(resource_rep(qre.SWAP), 2),
                 ],
             ),
@@ -967,37 +949,37 @@ class TestResourceAQFT:
                         qre.Controlled.resource_rep(
                             base_cmpr_op=resource_rep(qre.S),
                             num_ctrl_wires=1,
-                            num_ctrl_values=0,
+                            num_zero_ctrl=0,
                         ),
                         4,
                     ),
                     Allocate(1),
-                    GateCount(resource_rep(qre.TemporaryAND), 1),
+                    GateCount(resource_rep(qre.TempAND), 1),
                     GateCount(qre.SemiAdder.resource_rep(1)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
                         1,
                     ),
-                    FreeWires(1),
+                    Deallocate(1),
                     Allocate(2),
-                    GateCount(resource_rep(qre.TemporaryAND), 2),
+                    GateCount(resource_rep(qre.TempAND), 2),
                     GateCount(qre.SemiAdder.resource_rep(2)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
                         2,
                     ),
-                    FreeWires(2),
+                    Deallocate(2),
                     Allocate(3),
-                    GateCount(resource_rep(qre.TemporaryAND), 3),
+                    GateCount(resource_rep(qre.TempAND), 3),
                     GateCount(qre.SemiAdder.resource_rep(3)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
                         3,
                     ),
-                    FreeWires(3),
+                    Deallocate(3),
                     GateCount(resource_rep(qre.SWAP), 2),
                 ],
             ),
@@ -1091,14 +1073,14 @@ class TestResourceSelect:
             ),
             GateCount(qre.X.resource_rep(), 4),
             GateCount(qre.CNOT.resource_rep(), 2),
-            GateCount(qre.TemporaryAND.resource_rep(), 2),
+            GateCount(qre.TempAND.resource_rep(), 2),
             GateCount(
                 qre.Adjoint.resource_rep(
-                    qre.TemporaryAND.resource_rep(),
+                    qre.TempAND.resource_rep(),
                 ),
                 2,
             ),
-            qre.FreeWires(1),
+            qre.Deallocate(1),
         ]
         assert qre.Select.resource_decomp(cmpr_ops, num_wires=4) == expected
 
@@ -1198,16 +1180,16 @@ class TestResourceQROM:
                     GateCount(qre.Hadamard.resource_rep(), 6),
                     GateCount(qre.X.resource_rep(), 14),
                     GateCount(qre.CNOT.resource_rep(), 36),
-                    GateCount(qre.TemporaryAND.resource_rep(), 6),
+                    GateCount(qre.TempAND.resource_rep(), 6),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
+                            qre.TempAND.resource_rep(),
                         ),
                         6,
                     ),
-                    qre.FreeWires(2),
+                    qre.Deallocate(2),
                     GateCount(qre.CSWAP.resource_rep(), 12),
-                    qre.FreeWires(3),
+                    qre.Deallocate(3),
                 ],
             ),
             (
@@ -1220,14 +1202,14 @@ class TestResourceQROM:
                     qre.Allocate(10),
                     GateCount(qre.X.resource_rep(), 97),
                     GateCount(qre.CNOT.resource_rep(), 98),
-                    GateCount(qre.TemporaryAND.resource_rep(), 48),
+                    GateCount(qre.TempAND.resource_rep(), 48),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
+                            qre.TempAND.resource_rep(),
                         ),
                         48,
                     ),
-                    qre.FreeWires(5),
+                    qre.Deallocate(5),
                     GateCount(qre.CSWAP.resource_rep(), 5),
                 ],
             ),
@@ -1242,16 +1224,16 @@ class TestResourceQROM:
                     GateCount(qre.Hadamard.resource_rep(), 4),
                     GateCount(qre.X.resource_rep(), 42),
                     GateCount(qre.CNOT.resource_rep(), 30),
-                    GateCount(qre.TemporaryAND.resource_rep(), 20),
+                    GateCount(qre.TempAND.resource_rep(), 20),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
+                            qre.TempAND.resource_rep(),
                         ),
                         20,
                     ),
-                    qre.FreeWires(3),
+                    qre.Deallocate(3),
                     GateCount(qre.CSWAP.resource_rep(), 0),
-                    qre.FreeWires(0),
+                    qre.Deallocate(0),
                 ],
             ),
             (
@@ -1277,7 +1259,7 @@ class TestResourceQROM:
                     GateCount(qre.Hadamard.resource_rep(), 4),
                     GateCount(qre.X.resource_rep(), 10),
                     GateCount(qre.CSWAP.resource_rep(), 120),
-                    qre.FreeWires(30),
+                    qre.Deallocate(30),
                 ],
             ),
         ),
@@ -1318,11 +1300,7 @@ class TestResourceQubitUnitary:
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5, 6))
     def test_resource_params(self, num_wires, precision):
         """Test that the resource params are correct."""
-        op = (
-            qre.QubitUnitary(num_wires, precision)
-            if precision
-            else qre.QubitUnitary(num_wires)
-        )
+        op = qre.QubitUnitary(num_wires, precision) if precision else qre.QubitUnitary(num_wires)
         assert op.resource_params == {"num_wires": num_wires, "precision": precision}
 
     @pytest.mark.parametrize("precision", (None, 1e-3, 1e-5))
@@ -1332,10 +1310,7 @@ class TestResourceQubitUnitary:
         expected = qre.CompressedResourceOp(
             qre.QubitUnitary, num_wires, {"num_wires": num_wires, "precision": precision}
         )
-        assert (
-            qre.QubitUnitary.resource_rep(num_wires=num_wires, precision=precision)
-            == expected
-        )
+        assert qre.QubitUnitary.resource_rep(num_wires=num_wires, precision=precision) == expected
 
     @pytest.mark.parametrize(
         "num_wires, precision, expected_res",
@@ -1436,10 +1411,7 @@ class TestResourceQubitUnitary:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[qre.QubitUnitary]
-            assert (
-                qre.QubitUnitary.resource_decomp(num_wires=num_wires, **kwargs)
-                == expected_res
-            )
+            assert qre.QubitUnitary.resource_decomp(num_wires=num_wires, **kwargs) == expected_res
         else:
             assert (
                 qre.QubitUnitary.resource_decomp(num_wires=num_wires, precision=precision)
@@ -1480,10 +1452,7 @@ class TestResourceSelectPauliRot:
                 "precision": precision,
             },
         )
-        assert (
-            qre.SelectPauliRot.resource_rep(num_ctrl_wires, rotation_axis, precision)
-            == expected
-        )
+        assert qre.SelectPauliRot.resource_rep(num_ctrl_wires, rotation_axis, precision) == expected
 
     @pytest.mark.parametrize(
         "num_ctrl_wires, rotation_axis, precision, expected_res",
@@ -1554,7 +1523,7 @@ class TestResourceSelectPauliRot:
                             {
                                 "base_cmpr_op": qre.SemiAdder.resource_rep(33),
                                 "num_ctrl_wires": 1,
-                                "num_ctrl_values": 0,
+                                "num_zero_ctrl": 0,
                             },
                         )
                     ),
@@ -1566,7 +1535,7 @@ class TestResourceSelectPauliRot:
                             },
                         )
                     ),
-                    FreeWires(33),
+                    Deallocate(33),
                     GateCount(resource_rep(qre.Hadamard), 2),
                 ],
             ),
@@ -1583,7 +1552,7 @@ class TestResourceSelectPauliRot:
                             {
                                 "base_cmpr_op": qre.SemiAdder.resource_rep(13),
                                 "num_ctrl_wires": 1,
-                                "num_ctrl_values": 0,
+                                "num_zero_ctrl": 0,
                             },
                         )
                     ),
@@ -1595,14 +1564,10 @@ class TestResourceSelectPauliRot:
                             },
                         )
                     ),
-                    FreeWires(13),
+                    Deallocate(13),
                     GateCount(resource_rep(qre.Hadamard), 2),
                     GateCount(resource_rep(qre.S)),
-                    GateCount(
-                        resource_rep(
-                            qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)}
-                        )
-                    ),
+                    GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)})),
                 ],
             ),
             (
@@ -1618,7 +1583,7 @@ class TestResourceSelectPauliRot:
                             {
                                 "base_cmpr_op": qre.SemiAdder.resource_rep(20),
                                 "num_ctrl_wires": 1,
-                                "num_ctrl_values": 0,
+                                "num_zero_ctrl": 0,
                             },
                         )
                     ),
@@ -1630,7 +1595,7 @@ class TestResourceSelectPauliRot:
                             },
                         )
                     ),
-                    FreeWires(20),
+                    Deallocate(20),
                 ],
             ),
         ),
