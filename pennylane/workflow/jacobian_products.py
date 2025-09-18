@@ -14,22 +14,26 @@
 """
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
+from __future__ import annotations
+
 import abc
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from cachetools import LRUCache
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.tape import QuantumScriptBatch
-from pennylane.typing import ResultBatch, TensorLike
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.typing import ResultBatch, TensorLike
 
 
 def _compute_vjps(jacs, dys, tapes):
@@ -37,10 +41,10 @@ def _compute_vjps(jacs, dys, tapes):
     f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
 
     vjps = []
-    for jac, dy, t in zip(jacs, dys, tapes):
+    for jac, dy, t in zip(jacs, dys, tapes, strict=True):
         multi = len(t.measurements) > 1
         if t.shots.has_partitioned_shots:
-            shot_vjps = [f[multi](d, j) for d, j in zip(dy, jac)]
+            shot_vjps = [f[multi](d, j) for d, j in zip(dy, jac, strict=True)]
             vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
         else:
             vjps.append(f[multi](dy, jac))
@@ -63,7 +67,7 @@ def _compute_jvps(jacs, tangents, tapes):
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
 
     jvps = []
-    for jac, dx, t in zip(jacs, tangents, tapes):
+    for jac, dx, t in zip(jacs, tangents, tapes, strict=True):
         multi = len(t.measurements) > 1
         if len(t.trainable_params) == 0:
             jvps.append(_zero_jvp(t))
@@ -263,8 +267,8 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: "qml.transforms.core.TransformDispatcher",
-        gradient_kwargs: Optional[dict] = None,
+        gradient_transform: qml.transforms.core.TransformDispatcher,
+        gradient_kwargs: dict | None = None,
         cache_full_jacobian: bool = False,
     ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -418,12 +422,9 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: "qml.devices.Device",
-        execution_config: Optional["qml.devices.ExecutionConfig"] = None,
+        device: qml.devices.Device,
+        execution_config: qml.devices.ExecutionConfig | None = None,
     ):
-        if execution_config is None:
-            execution_config = qml.devices.DefaultExecutionConfig
-
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "DeviceDerivatives created with (%s, %s)",
@@ -668,9 +669,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
-    def __init__(
-        self, device: "qml.devices.Device", execution_config: "qml.devices.ExecutionConfig"
-    ):
+    def __init__(self, device: qml.devices.Device, execution_config: qml.devices.ExecutionConfig):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device
@@ -692,7 +691,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         dy = qml.math.unwrap(dy)
         vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
         res = []
-        for t, r in zip(tapes, vjps):
+        for t, r in zip(tapes, vjps, strict=True):
             if len(t.trainable_params) == 1 and qml.math.shape(r) == ():
                 res.append((r,))
             else:

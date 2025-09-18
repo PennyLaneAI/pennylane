@@ -379,7 +379,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         B = np.eye(1 + 2 * len(dev_wires))
         B_inv = B.copy()
 
-        succ = tape.graph.descendants_in_order((op,))
+        succ = tape.graph.descendants((op,), sort=True)
         operation_descendents = itertools.filterfalse(
             lambda obj: isinstance(obj, MeasurementProcess), succ
         )

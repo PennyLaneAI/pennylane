@@ -12,15 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to construct an execution configuration from a QNode instance."""
+from __future__ import annotations
+
 import functools
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.math import Interface
 
 from .resolution import _resolve_execution_config
 
+if TYPE_CHECKING:
+    from pennylane.devices.execution_config import ExecutionConfig
 
-def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
+    from .qnode import QNode
+
+
+def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> ExecutionConfig:
     """Constructs the execution configuration of a QNode instance.
 
     Args:
@@ -108,7 +116,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
                 kwargs = {
                     **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
                 }
-            shots = kwargs.pop("shots", None)
+            shots = qnode._get_shots(kwargs)  # pylint: disable=protected-access
             tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
             batch, _ = qnode.transform_program((tape,))
             config = _resolve_execution_config(config, qnode.device, batch)

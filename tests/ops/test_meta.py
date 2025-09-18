@@ -270,9 +270,9 @@ class TestSnapshot:
         assert new_op.tag == "my tag"
 
     # pylint: disable=unused-argument
-    @pytest.mark.jax
+    @pytest.mark.capture
     @pytest.mark.parametrize("measurement", (None, "state"))
-    def test_capture_measurement(self, measurement, enable_disable_plxpr):
+    def test_capture_measurement(self, measurement):
         """Test that a snapshot can be captured into plxpr."""
 
         import jax

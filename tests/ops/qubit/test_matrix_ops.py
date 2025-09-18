@@ -25,7 +25,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
@@ -1024,7 +1024,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @jax.jit
         @qml.qnode(dev)
@@ -1047,7 +1047,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @jax.jit
         @qml.qnode(dev)
@@ -1069,7 +1069,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         within a QNode that uses TensorFlow autograph"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @tf.function
         @qml.qnode(dev)

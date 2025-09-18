@@ -14,13 +14,13 @@
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
 import warnings
-from functools import wraps
 from inspect import signature
 
 import numpy as np
 from autoray import numpy as anp
 
 from pennylane import math
+from pennylane.capture.autograph import wraps
 from pennylane.workflow.qnode import QNode
 
 

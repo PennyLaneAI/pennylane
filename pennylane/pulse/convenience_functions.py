@@ -13,7 +13,6 @@
 # limitations under the License.
 """This file contains convenience functions for pulse programming."""
 from collections.abc import Callable
-from typing import Optional, Union
 
 import numpy as np
 
@@ -80,9 +79,7 @@ def constant(scalar, time):
     return scalar
 
 
-def rect(
-    x: Union[float, Callable], windows: Optional[Union[tuple[float], list[tuple[float]]]] = None
-):
+def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None = None):
     """Takes a scalar or a scalar-valued function, x, and applies a rectangular window to it, such that the
     returned function is x inside the window and 0 outside it.
 
@@ -176,7 +173,7 @@ def rect(
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax==0.4.10 jaxlib==0.4.10"
+            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0"
         )
     if windows is not None:
         is_nested = any(hasattr(w, "__len__") for w in windows)
@@ -291,7 +288,7 @@ def pwc(timespan):
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax==0.4.3 jaxlib==0.4.3"
+            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0"
         )
 
     if isinstance(timespan, (tuple, list)):
@@ -365,7 +362,7 @@ def pwc_from_function(timespan, num_bins):
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax==0.4.3 jaxlib==0.4.3"
+            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0"
         )
 
     if isinstance(timespan, tuple):

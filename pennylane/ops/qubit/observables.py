@@ -19,21 +19,19 @@ excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 import warnings
 from collections.abc import Sequence
 from copy import copy
-from typing import Optional, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 
 
-class Hermitian(Observable):
+class Hermitian(Operator):
     r"""
     An arbitrary Hermitian observable.
 
@@ -57,6 +55,14 @@ class Hermitian(Observable):
         A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
+
+    .. warning::
+
+       ``Hermitian`` is not compatible with :func:`~.probs`. When using
+       :func:`~.probs` with a Hermitian observable, the output might be different than
+       expected as the lexicographical ordering of eigenvalues is not guaranteed and
+       the diagonalizing gates may exist in a degenerate subspace.
+
     """
 
     _queue_category = None
@@ -74,7 +80,7 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -92,7 +98,7 @@ class Hermitian(Observable):
         super().__init__(A, wires=wires, id=id)
 
     @staticmethod
-    def _validate_input(A: TensorLike, expected_mx_shape: Optional[int] = None):
+    def _validate_input(A: TensorLike, expected_mx_shape: int | None = None):
         """Validate the input matrix."""
         if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
@@ -105,9 +111,9 @@ class Hermitian(Observable):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
@@ -263,7 +269,7 @@ class Hermitian(Observable):
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
-class SparseHamiltonian(Observable):
+class SparseHamiltonian(Operator):
     r"""
     A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
@@ -307,7 +313,7 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H: csr_matrix, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, H: csr_matrix, wires: WiresLike, id: str | None = None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)
@@ -318,7 +324,7 @@ class SparseHamiltonian(Observable):
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
 
-    def __mul__(self, value: Union[int, float]) -> "qml.SparseHamiltonian":
+    def __mul__(self, value: int | float) -> "qml.SparseHamiltonian":
         r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
         if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
             raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
@@ -329,9 +335,9 @@ class SparseHamiltonian(Observable):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
@@ -369,8 +375,6 @@ class SparseHamiltonian(Observable):
         return H.toarray()
 
     # pylint: disable=arguments-differ
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
@@ -406,7 +410,7 @@ class SparseHamiltonian(Observable):
         return H
 
 
-class Projector(Observable):
+class Projector(Operator):
     r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
@@ -454,6 +458,7 @@ class Projector(Observable):
     is_hermitian = True
     name = "Projector"
     num_params = 1
+    _queue_category = None
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (1,)
@@ -496,7 +501,7 @@ class Projector(Observable):
             f"{len(wires)}, respectively."
         )
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
@@ -506,10 +511,11 @@ class BasisStateProjector(Projector, Operation):
     :math:`\phi` denotes a basis state."""
 
     grad_method = None
+    _queue_category = "_ops"
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
 
         if qml.math.get_interface(state) == "jax":
@@ -530,9 +536,9 @@ class BasisStateProjector(Projector, Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -691,19 +697,18 @@ class StateVectorProjector(Projector):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         super().__init__(state, wires=wires, id=id)
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
 
-    # pylint: disable=unused-argument
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -849,7 +854,9 @@ class StateVectorProjector(Projector):
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
 
-        if qml.math.get_interface(state_vector) == "tensorflow":
+        if (
+            qml.math.get_interface(state_vector) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             dtype_name = qml.math.get_dtype_name(state_vector)
             if dtype_name == "int32":
                 state_vector = qml.math.cast(state_vector, np.complex64)
@@ -857,7 +864,9 @@ class StateVectorProjector(Projector):
                 state_vector = qml.math.cast(state_vector, np.complex128)
 
         angle = qml.math.angle(state_vector[0])
-        if qml.math.get_interface(angle) == "tensorflow":
+        if (
+            qml.math.get_interface(angle) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             if qml.math.get_dtype_name(angle) == "float32":
                 angle = qml.math.cast(angle, np.complex64)
             else:

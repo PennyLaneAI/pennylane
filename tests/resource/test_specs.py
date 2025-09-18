@@ -15,6 +15,7 @@
 # pylint: disable=invalid-sequence-index
 from collections import defaultdict
 from contextlib import nullcontext
+from typing import Optional
 
 import pytest
 
@@ -67,7 +68,7 @@ class TestSpecsTransform:
 
     @pytest.mark.parametrize(
         "level,expected_gates,exptected_train_params",
-        [(0, 6, 1), (1, 4, 3), (2, 3, 3), (3, 1, 1), (None, 2, 2)],
+        [(0, 6, 1), (1, 4, 3), (2, 3, 3), (3, 1, 1), ("device", 2, 2)],
     )
     def test_int_specs_level(self, level, expected_gates, exptected_train_params):
         circ = self.sample_circuit()
@@ -85,7 +86,6 @@ class TestSpecsTransform:
             (0, slice(0, 0)),
             ("user", 3),
             ("user", slice(0, 3)),
-            (None, slice(0, None)),
             (-1, slice(0, -1)),
             ("device", slice(0, None)),
         ],
@@ -174,6 +174,26 @@ class TestSpecsTransform:
         if diff_method == "parameter-shift":
             assert info["num_gradient_executions"] == 6
 
+    @pytest.mark.parametrize("compute_depth", [True, False])
+    def test_specs_compute_depth(self, compute_depth):
+        """Test that the specs transform computes the depth of the circuit"""
+
+        x = pnp.array([0.1, 0.2])
+
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def circuit(x):
+            qml.RandomLayers(pnp.array([[1.0, 2.0]]), wires=(0, 1))
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.SWAP((0, 1))
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.X(0) + qml.Y(1))
+
+        info = qml.specs(circuit, compute_depth=compute_depth)(x)
+
+        assert info["resources"].depth == (6 if compute_depth else None)
+
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
@@ -206,7 +226,9 @@ class TestSpecsTransform:
                     return False
                 return True
 
-            def preprocess_transforms(self, execution_config=qml.devices.DefaultExecutionConfig):
+            def preprocess_transforms(
+                self, execution_config: Optional[qml.devices.ExecutionConfig] = None
+            ):
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
                     qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition
@@ -228,6 +250,7 @@ class TestSpecsTransform:
         assert specs["resources"].num_gates == 4
 
     def test_splitting_transforms(self):
+        """Test that the specs transform works with splitting transforms"""
         coeffs = [0.2, -0.543, 0.1]
         obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2), qml.Y(0) @ qml.X(2)]
         H = qml.Hamiltonian(coeffs, obs)

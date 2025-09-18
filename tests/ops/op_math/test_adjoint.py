@@ -48,8 +48,6 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, AdjointOperation)
 
         # checking we can call `dir` without problems
@@ -70,40 +68,11 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, AdjointOperation)
 
         # check operation-specific properties made it into the mapping
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
-
-    def test_observable(self):
-        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            # pylint: disable=too-few-public-methods
-            class CustomObs(qml.operation.Observable):
-                num_wires = 1
-                num_params = 0
-
-        base = CustomObs(wires=0)
-        ob = Adjoint(base)
-
-        assert isinstance(ob, Adjoint)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert isinstance(ob, qml.operation.Observable)
-        assert not isinstance(ob, AdjointOperation)
-
-        # Check some basic observable functionality
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.ops.Prod)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
 
     @pytest.mark.parametrize(
         "op",
@@ -1002,19 +971,6 @@ class TestAdjointConstructorOutsideofQueuing:
 
         assert isinstance(out, qml.RX)
         assert out.data == (-x,)
-
-    def test_observable(self):
-        """Test providing a preconstructed Observable outside of a queuing context."""
-
-        base = 1.0 * qml.PauliX(0)
-        obs = adjoint(base)
-
-        assert isinstance(obs, Adjoint)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert isinstance(base, qml.operation.Observable) == isinstance(
-                obs, qml.operation.Observable
-            )
-        assert obs.base is base
 
     def test_single_op_function(self):
         """Test the transform on a single op as a callable outside of a queuing context."""

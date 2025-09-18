@@ -13,7 +13,7 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for None"""
 
-from typing import Literal, Type
+from typing import Literal
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
@@ -29,7 +29,7 @@ class DatasetNone(DatasetAttribute[HDF5Array, type(None), type(None)]):
         return None
 
     @classmethod
-    def consumes_types(cls) -> tuple[Type[None]]:
+    def consumes_types(cls) -> tuple[type[None]]:
         return (type(None),)
 
     def hdf5_to_value(self, bind) -> None:

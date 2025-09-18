@@ -286,27 +286,29 @@ warnings and more severe, by making the following change:
 Running the following example will produce lots of output about the JIT
 process, and surrounding operations:
 
-.. code:: python
+.. code-block:: python
 
-   import pennylane as qml
-   import jax, jax.numpy as jnp
-   from jax import jacfwd, jacrev
-   import logging
+    from functools import partial
+    import pennylane as qml
+    import jax, jax.numpy as jnp
+    from jax import jacfwd, jacrev
+    import logging
 
-   # Enable logging
-   qml.logging.enable_logging()
+    # Enable logging
+    qml.logging.enable_logging()
 
-   # Get logger for use by this script only.
-   logger = logging.getLogger(__name__)
-   dev_name = "default.qubit"
-   num_wires = 2
-   num_shots = None
+    # Get logger for use by this script only.
+    logger = logging.getLogger(__name__)
+    dev_name = "default.qubit"
+    num_wires = 2
+    num_shots = None
 
-   @jax.jit
-   def circuit(key, param):
-       logger.info(f"Creating {dev_name} device with {num_wires} wires and {num_shots} shots with {key} PNRG")
-       dev = qml.device(dev_name, wires=num_wires, shots=num_shots, prng_key=key)
+    @jax.jit
+    def circuit(key, param):
+       logger.info(f"Creating {dev_name} device with {num_wires} wires with {key} PNRG")
+       dev = qml.device(dev_name, wires=num_wires, prng_key=key)
 
+       @partial(qml.set_shots, shots=num_shots)
        @qml.qnode(dev, interface="jax", diff_method="backprop")
        def my_circuit():
            qml.RX(param, wires=0)
@@ -319,15 +321,15 @@ process, and surrounding operations:
 
        return res
 
-   key1 = jax.random.PRNGKey(0)
-   key2 = jax.random.PRNGKey(1)
+    key1 = jax.random.PRNGKey(0)
+    key2 = jax.random.PRNGKey(1)
 
-   logger.info(f"Running circuit with key={key1}")
-   circuit(key1, jnp.pi/2)
-   logger.info(f"Running circuit with key={key2}")
-   circuit(key2, jnp.pi/2)
-   logger.info(f"Calculating jacobian circuit with key={key1}")
-   logger.info(f"Jacobian={jacfwd(lambda x: circuit(key1, x))(jnp.pi/3)}")
+    logger.info(f"Running circuit with key={key1}")
+    circuit(key1, jnp.pi/2)
+    logger.info(f"Running circuit with key={key2}")
+    circuit(key2, jnp.pi/2)
+    logger.info(f"Calculating jacobian circuit with key={key1}")
+    logger.info(f"Jacobian={jacfwd(lambda x: circuit(key1, x))(jnp.pi/3)}")
 
 We can examine the output of the log-statements, which shows debug level
 messages from JAX, and info-level messages for the given script. To modify the logger defined in the Python script, a new section can be added as:
@@ -351,22 +353,24 @@ Adding log-statements to the interface execution pipelines
 Similarly, for autograd (TF and Torch also), we can run examples that
 tie-into the execution pipeline for devices without backprop supports:
 
-.. code:: python
+.. code-block:: python
 
-   import pennylane as qml
-   import logging
+    from functools import partial
+    import pennylane as qml
+    import logging
 
-   qml.logging.enable_logging()
+    qml.logging.enable_logging()
 
-   logger = logging.getLogger(__name__)
-   dev_name = "lightning.qubit"
-   num_wires = 2
-   num_shots = None
+    logger = logging.getLogger(__name__)
+    dev_name = "lightning.qubit"
+    num_wires = 2
+    num_shots = None
 
-   def circuit(param):
-       logger.info(f"Creating {dev_name} device with {num_wires} wires and {num_shots} shots")
-       dev = qml.device(dev_name, wires=num_wires, shots=num_shots)
+    def circuit(param):
+       logger.info(f"Creating {dev_name} device with {num_wires} wires")
+       dev = qml.device(dev_name, wires=num_wires)
 
+       @partial(qml.set_shots, shots=num_shots)
        @qml.qnode(dev, diff_method="adjoint")
        def my_circuit(param):
            qml.RX(param, wires=0)
@@ -379,20 +383,20 @@ tie-into the execution pipeline for devices without backprop supports:
 
        return res
 
-   par = qml.numpy.array([0.1,0.2])
+    par = qml.numpy.array([0.1,0.2])
 
-   logger.info(f"Running circuit with par={par[0]}")
-   circuit(par[0])
-   logger.info(f"Running circuit with par={par[1]}")
-   circuit(par[1])
-   logger.info(f"Calculating jacobian circuit with par={par}")
-   logger.info(f"Jacobian={qml.jacobian(circuit)(par[0])}")
+    logger.info(f"Running circuit with par={par[0]}")
+    circuit(par[0])
+    logger.info(f"Running circuit with par={par[1]}")
+    circuit(par[1])
+    logger.info(f"Calculating jacobian circuit with par={par}")
+    logger.info(f"Jacobian={qml.jacobian(circuit)(par[0])}")
 
 By using ``lightning.qubit`` we can now treat the execution environment
 as a black-box, and see the log-level messages as they hit the custom
 functions as part of the execution pipeline.
 
-The above features have been added for Torch, Tensorflow, JAX and
+The above features have been added for PyTorch, JAX and
 autograd, and should produce a sufficient level of detail in the
 execution messages.
 

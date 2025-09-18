@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @qml.prod
@@ -80,6 +81,19 @@ def test_decomposition(op, expected):
     """Test that the decomposition of the Reflection operator is correct"""
     decomp = op.decomposition()
     assert decomp == expected
+
+
+@pytest.mark.parametrize(
+    ("op"),
+    [
+        qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0]),
+        qml.Reflection(qml.QFT(wires=[0, 1]), 0.5),
+    ],
+)
+def test_decomposition_new(op):
+    """Tests the decomposition rule implemented with the new system."""
+    for rule in qml.list_decomps(qml.Reflection):
+        _test_decomposition_rule(op, rule)
 
 
 def test_default_values():
@@ -164,15 +178,16 @@ class TestIntegration:
 
     # NOTE: the finite shot test of the results has a 3% chance to fail
     # due to the random nature of the sampling. Hence we just pin the salt
-    @pytest.mark.local_salt(1)
     @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit", shots=shots, wires=3, seed=seed)
+        dev = qml.device("default.qubit", wires=3, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
+        )
 
         x = qml.numpy.array(self.x, requires_grad=True)
         res = qnode(x)
@@ -185,7 +200,6 @@ class TestIntegration:
 
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -196,10 +210,12 @@ class TestIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
+        )
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -218,7 +234,6 @@ class TestIntegration:
 
         assert np.allclose(jac, self.exp_jac, atol=0.005)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):
@@ -227,10 +242,12 @@ class TestIntegration:
 
         import torch
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
+        )
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
@@ -251,9 +268,11 @@ class TestIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
+        )
 
         x = tf.Variable(self.x)
         with tf.GradientTape() as tape:

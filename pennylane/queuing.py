@@ -166,9 +166,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional, Union
 
-
-class QueuingError(Exception):
-    """Exception that is raised when there is a queuing error"""
+from pennylane.exceptions import QueuingError
 
 
 class WrappedObj:
@@ -535,10 +533,10 @@ def apply(op, context=QueuingManager):
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    # pylint: disable=unsupported-membership-test
-    if op in getattr(context, "queue", QueuingManager.active_context()):
-        # Queuing contexts can only contain unique objects.
-        # If the object to be queued already exists, copy it.
+    # Always make a copy since we don't want the provided op to be dequeued by a subsequent
+    # PennyLane Operator/Function.
+    # Note that queuing contexts can only contain unique objects.
+    with QueuingManager.stop_recording():
         op = copy.copy(op)
 
     if hasattr(op, "queue"):

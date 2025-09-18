@@ -23,7 +23,7 @@ from pennylane.capture.capture_meta import CaptureMeta
 
 jax = pytest.importorskip("jax")
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def test_custom_capture_meta():

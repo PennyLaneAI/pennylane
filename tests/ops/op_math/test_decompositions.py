@@ -1467,7 +1467,7 @@ class TestQubitUnitaryDecompositionGraph:
         assert qml.math.allclose(matrix, U, atol=1e-7)
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "gate_set",
         [
@@ -1526,7 +1526,7 @@ class TestQubitUnitaryDecompositionGraph:
         assert qml.math.allclose(matrix, U, atol=1e-7)
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "gate_set",
         [
@@ -1562,11 +1562,10 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "gate_set",
         [
-            # TODO: remove SelectPauliRot when decomposition is defined for it.
-            ("RX", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
-            ("RX", "RZ", "CNOT", "SelectPauliRot", "GlobalPhase"),
-            ("RZ", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
-            ("Rot", "CNOT", "SelectPauliRot", "GlobalPhase"),
+            ("RX", "RY", "CNOT", "GlobalPhase"),
+            ("RX", "RZ", "CNOT", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "GlobalPhase"),
+            ("Rot", "CNOT", "GlobalPhase"),
         ],
     )
     @pytest.mark.parametrize(

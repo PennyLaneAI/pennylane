@@ -20,7 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.wires import WireError, Wires
+from pennylane.exceptions import WireError
+from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -77,7 +78,7 @@ class TestWires:
         assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
 
     @pytest.mark.parametrize(
-        "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "ancilla"]]
+        "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "auxiliary"]]
     )
     def test_creation_from_different_wire_types(self, iterable):
         """Tests that a Wires object can be created from iterables of different

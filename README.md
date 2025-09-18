@@ -1,4 +1,24 @@
 <p align="center">
+<img width="200" height="46" alt="UFoundation_logosmall" src="https://github.com/user-attachments/assets/643e69cd-3d41-42f9-a9e8-ac113e8b6de3" />
+</p>
+
+<h2 align="center"> The 2025 Quantum Open Source Software Survey is now open. 👉 <a href="https://unitary.foundation/posts/2025_qoss_survey/" target="_blank">Take the survey!</a> 👈</h2>
+
+<p align="center">
+Take 10 minutes to share your voice and help build a better quantum computing ecosystem!
+</p>
+
+<p align="center"><img width="200" alt="UFoundation_logosmall" src="https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_UnitaryFundSurvey.png" /></p>
+
+<p align="center">
+Survey closes October 3, 2025
+</p>
+
+<br>
+<br>
+<br>
+
+<p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">
     <img src="https://img.shields.io/github/actions/workflow/status/PennyLaneAI/PennyLane/tests.yml?branch=master&style=flat-square" />
@@ -67,7 +87,7 @@ For more details and additional features, please see the [PennyLane website](htt
 
 ## Installation
 
-PennyLane requires Python version 3.10 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.11 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console
@@ -84,15 +104,15 @@ Get up and running quickly with PennyLane by following our [quickstart guide](ht
 
 Whether you're exploring quantum machine learning (QML), quantum computing, or quantum chemistry, PennyLane offers a wide range of tools and resources to support your research:
 
-<img src="./doc/_static/readme/research.png" align="right" width="350px">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/research.png" align="right" width="350px">
 
 ### Key Resources:
 
-* [Research-oriented Demos](https://pennylane.ai/qml/demonstrations.html)
+* [Research-oriented Demos](https://pennylane.ai/qml/demonstrations)
 * [Learn Quantum Programming](https://pennylane.ai/qml/) with the [Codebook](https://pennylane.ai/codebook/) and [Coding Challenges](https://pennylane.ai/challenges/)
-* [Frequently Asked Questions](https://pennylane.ai/faq.html)
-* [Glossary](https://pennylane.ai/qml/glossary.html)
-* [Videos](https://pennylane.ai/qml/videos.html)
+* [Frequently Asked Questions](https://pennylane.ai/faq)
+* [Glossary](https://pennylane.ai/qml/glossary)
+* [Videos](https://pennylane.ai/qml/videos)
 
 
 You can also check out our [documentation](https://pennylane.readthedocs.io) for [quickstart
@@ -103,10 +123,10 @@ quantum device.
 
 ## Demos
 
-Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
+Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations).
 
 <a href="https://pennylane.ai/qml/demonstrations">
-  <img src="./doc/_static/readme/demos.png" width="900px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
 </a>
 
 If you would like to contribute your own demo, see our [demo submission

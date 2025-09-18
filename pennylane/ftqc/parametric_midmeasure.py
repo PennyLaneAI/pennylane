@@ -15,17 +15,18 @@
 """This module contains the classes and functions for creating and diagonalizing
 mid-circuit measurements with a parameterized measurement axis."""
 
+import hashlib
 import uuid
-from collections.abc import Hashable
+from collections.abc import Hashable, Iterable
 from copy import copy
 from functools import lru_cache
-from typing import Iterable, Optional, Union
 
 import numpy as np
 
 from pennylane import capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.math import is_abstract, isscalar, ndim, unwrap
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
@@ -72,11 +73,11 @@ def _create_parametrized_mid_measure_primitive():
 
 
 def measure_arbitrary_basis(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     angle: float,
     plane: str,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the basis defined by the plane and angle on the
     supplied qubit.
@@ -185,9 +186,9 @@ def measure_arbitrary_basis(
 
 
 def measure_x(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the X basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
@@ -234,9 +235,9 @@ def measure_x(
 
 
 def measure_y(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the Y basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
@@ -283,9 +284,9 @@ def measure_y(
 
 
 def measure_z(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the Z basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
@@ -316,7 +317,7 @@ def measure_z(
 
 
 def _measure_impl(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     measurement_class=MidMeasureMP,
     **kwargs,
 ):
@@ -326,7 +327,7 @@ def _measure_impl(
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
     mp = measurement_class(wires=wires, id=measurement_id, **kwargs)
-    return MeasurementValue([mp], processing_fn=lambda v: v)
+    return MeasurementValue([mp])
 
 
 class ParametricMidMeasureMP(MidMeasureMP):
@@ -363,60 +364,65 @@ class ParametricMidMeasureMP(MidMeasureMP):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        wires: Optional[Wires],
+        wires: Wires | None,
         *,
-        angle: Optional[float],
-        plane: Optional[str],
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        id: Optional[str] = None,
+        angle: float | None,
+        plane: str | None,
+        reset: bool | None = False,
+        postselect: int | None = None,
+        id: str | None = None,
     ):
         self.batch_size = None
         super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
-        self.plane = plane
-        self.angle = angle
+        self.hyperparameters["plane"] = plane
+        self.hyperparameters["angle"] = angle
 
-    def _flatten(self):
-        metadata = (
-            ("angle", self.angle),
-            ("wires", self.raw_wires),
-            ("plane", self.plane),
-            ("reset", self.reset),
-            ("id", self.id),
-        )
-        return (None, None), metadata
+    @property
+    def plane(self) -> str | None:
+        """The plane the measurement basis lies in. Options are "XY", "ZX" and "YZ"""
+        return self.hyperparameters["plane"]
+
+    @property
+    def angle(self):
+        """The angle in radians"""
+        return self.hyperparameters["angle"]
 
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
+        if is_abstract(self.angle):  # pragma: no cover
+            # no unique value from tracer to values, hash based on object string
+            param_hash = hashlib.sha256(str(self).encode()).digest()
+        elif isscalar(self.angle) or ndim(self.angle) == 0:
+            # Values are 0-dim arrays or scalars, array-ify
+            param_hash = hashlib.sha256(unwrap(self.angle)).digest()
+        else:
+            # otherwise, use the existing array structure
+            param_hash = hashlib.sha256(self.angle).digest()
+
         fingerprint = (
             self.__class__.__name__,
             self.plane,
-            self.angle,
+            param_hash,
             tuple(self.wires.tolist()),
             self.id,
         )
 
         return hash(fingerprint)
 
-    # pylint: disable=too-many-positional-arguments, arguments-differ, arguments-renamed
+    # pylint: disable=too-many-positional-arguments, arguments-differ
     @classmethod
     def _primitive_bind_call(
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
     ):
         wires = () if wires is None else wires
-        return cls._wires_primitive.bind(
+        return cls._primitive.bind(
             *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id
         )
 
     def __repr__(self):
         """Representation of this class."""
         return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
-
-    @property
-    def has_diagonalizing_gates(self):
-        """Whether there are gates that need to be applied to diagonalize the measurement"""
-        return True
 
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
@@ -468,24 +474,20 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_x"
 
+    def _flatten(self):
+        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        return (), (self.wires, metadata)
+
     def __init__(
         self,
-        wires: Optional[Wires],
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        id: Optional[str] = None,
+        wires: Wires | None,
+        reset: bool | None = False,
+        postselect: int | None = None,
+        id: str | None = None,
     ):
         super().__init__(
             wires=Wires(wires), angle=0, plane="XY", reset=reset, postselect=postselect, id=id
         )
-
-    def _flatten(self):
-        metadata = (
-            ("wires", self.raw_wires),
-            ("reset", self.reset),
-            ("id", self.id),
-        )
-        return (None, None), metadata
 
     def __repr__(self):
         """Representation of this class."""
@@ -526,12 +528,16 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_y"
 
+    def _flatten(self):
+        metadata = (("reset", self.reset), ("postselect", self.postselect), ("id", self.id))
+        return (), (self.wires, metadata)
+
     def __init__(
         self,
-        wires: Optional[Wires],
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        id: Optional[str] = None,
+        wires: Wires | None,
+        reset: bool | None = False,
+        postselect: int | None = None,
+        id: str | None = None,
     ):
         super().__init__(
             wires=Wires(wires),
@@ -541,14 +547,6 @@ class YMidMeasureMP(ParametricMidMeasureMP):
             postselect=postselect,
             id=id,
         )
-
-    def _flatten(self):
-        metadata = (
-            ("wires", self.raw_wires),
-            ("reset", self.reset),
-            ("id", self.id),
-        )
-        return (None, None), metadata
 
     def __repr__(self):
         """Representation of this class."""
@@ -628,8 +626,9 @@ def diagonalize_mcms(tape):
 
     .. code-block:: python3
 
-        from pennylane.ftqc import diagonalize_mcms, ParametricMidMeasureMP
         from functools import partial
+
+        from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
 
         dev = qml.device("default.qubit")
 
@@ -740,8 +739,16 @@ def diagonalize_mcms(tape):
                 curr_idx += 1
 
                 # add conditional diagonalizing gates + computational basis MCM to the tape
-                expr_true = MeasurementValue(mps, processing_fn=true_cond.meas_val.processing_fn)
-                expr_false = MeasurementValue(mps, processing_fn=false_cond.meas_val.processing_fn)
+                p_fn = (
+                    true_cond.meas_val.processing_fn if true_cond.meas_val.has_processing else None
+                )
+                expr_true = MeasurementValue(mps, processing_fn=p_fn)
+                f_fn = (
+                    false_cond.meas_val.processing_fn
+                    if false_cond.meas_val.has_processing
+                    else None
+                )
+                expr_false = MeasurementValue(mps, processing_fn=f_fn)
 
                 with QueuingManager.stop_recording():
                     diag_gates_true = [
@@ -788,6 +795,5 @@ def diagonalize_mcms(tape):
             new_mp.mv.measurements = mps
             new_measurements.append(new_mp)
 
-    new_tape = tape.copy(operations=new_operations)
-
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
     return (new_tape,), null_postprocessing

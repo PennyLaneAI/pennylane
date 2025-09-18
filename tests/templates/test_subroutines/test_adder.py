@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_standard_validity_Adder():
@@ -107,8 +108,9 @@ class TestAdder:
         self, k, x_wires, mod, work_wires, x
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -119,7 +121,8 @@ class TestAdder:
             mod = 2 ** len(x_wires)
 
         # pylint: disable=bad-reversed-sequence
-        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x))))
+        out = list(circuit(x)[0, :])
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(out)))
         assert np.allclose(result, (x + k) % mod)
 
     @pytest.mark.parametrize(
@@ -193,9 +196,12 @@ class TestAdder:
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [3, 4]
-        adder_decomposition = qml.Adder(k, x_wires, mod, work_wires).compute_decomposition(
-            k, x_wires, mod, work_wires
+        adder_decomposition = (
+            qml.Adder(k, x_wires, mod, work_wires)
+            .compute_decomposition(k, x_wires, mod, work_wires)[0]
+            .decomposition()
         )
+
         op_list = []
         op_list.append(qml.QFT(work_wires[:1] + x_wires))
         op_list.append(qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]))
@@ -203,6 +209,48 @@ class TestAdder:
 
         for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("mod", [2, 4])
+    def test_controlled_decomposition(self, mod):
+        """Tests the decomposition works for the controlled adder."""
+
+        k = 4
+        x_wires = [2, 3]
+        control_wires = [1]
+        work_wires = [4, 5]
+        wire_order = control_wires + x_wires + work_wires
+
+        ctrl_op1 = qml.ops.Controlled(
+            qml.change_op_basis(
+                qml.QFT(work_wires[:1] + x_wires),
+                qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]),
+            ),
+            control_wires,
+            [1],
+        )
+
+        ctrl_op2 = qml.prod(
+            qml.adjoint(qml.QFT(work_wires[:1] + x_wires)),
+            qml.ctrl(
+                qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]),
+                control=control_wires,
+            ),
+            qml.QFT(work_wires[:1] + x_wires),
+        )
+
+        mat1, mat2 = qml.matrix(ctrl_op1, wire_order), qml.matrix(ctrl_op2, wire_order)
+        assert qml.math.allclose(mat1, mat2)
+
+    @pytest.mark.parametrize("mod", [7, 8])
+    def test_decomposition_new(self, mod):
+        """Tests the decomposition rule implemented with the new system."""
+
+        k = 4
+        x_wires = [2, 3, 4]
+        work_wires = [0, 1]
+        op = qml.Adder(k, x_wires, mod, work_wires)
+        for rule in qml.list_decomps(qml.Adder):
+            _test_decomposition_rule(op, rule)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
@@ -221,9 +269,10 @@ class TestAdder:
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [3, 4]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -231,5 +280,5 @@ class TestAdder:
             return qml.sample(wires=x_wires)
 
         # pylint: disable=bad-reversed-sequence
-        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :])))
         assert jax.numpy.allclose(result, (x + k) % mod)

@@ -15,20 +15,16 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
+# pylint: disable = wrong-import-position, wrong-import-order, ungrouped-imports
+
+from functools import partial
+
 import numpy as np
 import pytest
 from malt.core import converter
 
 import pennylane as qml
 from pennylane import grad, jacobian, measure
-
-pytestmark = pytest.mark.jax
-
-jax = pytest.importorskip("jax")
-
-# must be below jax importorskip
-# pylint: disable=wrong-import-position
-from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import (
     NESTED_OPTIONS,
     STANDARD_OPTIONS,
@@ -36,19 +32,22 @@ from pennylane.capture.autograph.transformer import (
     TRANSFORMER,
     PennyLaneTransformer,
     autograph_source,
+    disable_autograph,
     run_autograph,
 )
+
+pytestmark = pytest.mark.capture
+
+jax = pytest.importorskip("jax")
+from jax import make_jaxpr
+
+# must be below jax importorskip
+# pylint: disable=wrong-import-position
+from pennylane.exceptions import AutoGraphError
 
 check_cache = TRANSFORMER.has_cache
 
 # pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestPennyLaneTransformer:
@@ -113,13 +112,12 @@ class TestPennyLaneTransformer:
         assert new_fn(1.23) == 2.46
         assert "inner_factory.<locals>.<lambda>" in str(new_fn)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_transform_on_qnode(self, autograph):
+    def test_transform_on_qnode(self):
         """Test the transform method on a QNode updates the qnode.func"""
         transformer = PennyLaneTransformer()
         user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
-        @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circ(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
@@ -167,6 +165,7 @@ class TestPennyLaneTransformer:
         assert transformer.get_cached_function(fn)(1.7) == fn(1.7)
 
 
+# pylint: disable=too-many-public-methods
 class TestIntegration:
     """Test that the autograph transformations trigger correctly in different settings."""
 
@@ -248,11 +247,10 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_qnode(self, autograph):
+    def test_qnode(self):
         """Test autograph on a QNode."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circ(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -305,11 +303,10 @@ class TestIntegration:
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_adjoint_op(self, autograph):
+    def test_adjoint_of_operator_instance(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():
             qml.adjoint(qml.X(0))
             return qml.expval(qml.Z(0))
@@ -317,27 +314,141 @@ class TestIntegration:
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_ctrl_op(self, autograph):
-        """Test that controlled operators successfully pass through autograph"""
+    def test_adjoint_of_operator_type(self):
+        """Test that the adjoint of an operator successfully passes through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():
-            qml.X(1)
-            qml.ctrl(qml.X(0), 1)
+            qml.adjoint(qml.X)(0)
             return qml.expval(qml.Z(0))
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_adjoint_wrapper(self, autograph):
+    def test_adjoint_no_argument(self):
+        """Test that passing no argument to qml.adjoint raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.adjoint()
+            return qml.probs(wires=0)
+
+        with pytest.raises(ValueError, match="adjoint requires at least one argument"):
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
+
+    def test_adjoint_wrong_argument(self):
+        """Test that passing an invalid argument to qml.adjoint raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.adjoint(3)
+            return qml.probs(wires=0)
+
+        with pytest.raises(
+            ValueError, match="First argument to adjoint must be callable or an Operation"
+        ):
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
+
+    @pytest.mark.parametrize(
+        "func1, func2, prim1, prim2",
+        [
+            (qml.adjoint, partial(qml.ctrl, control=0), "adjoint_transform", "ctrl_transform"),
+            (partial(qml.ctrl, control=0), qml.adjoint, "ctrl_transform", "adjoint_transform"),
+            (qml.adjoint, qml.adjoint, "adjoint_transform", "adjoint_transform"),
+            (
+                partial(qml.ctrl, control=0),
+                partial(qml.ctrl, control=1),
+                "ctrl_transform",
+                "ctrl_transform",
+            ),
+        ],
+    )
+    def test_nested_adjoint_ctrl(self, func1, func2, prim1, prim2):
+        """Test that nested adjoint and ctrl successfully pass through autograph"""
+
+        # Build the nested operator
+        op = func2(qml.X)
+        final_op = func1(op)
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circ():
+            final_op(wires=2)
+            return qml.state()
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        qfunc_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        hop_outer = qfunc_jaxpr.eqns[0].primitive
+        hop_inner = qfunc_jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive
+        assert str(hop_outer) == prim1
+        assert str(hop_inner) == prim2
+
+    def test_ctrl_of_operator_instance(self):
+        """Test that controlled operators successfully pass through autograph"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circ():
+            qml.H(0)
+            qml.ctrl(qml.X(1), control=0)
+            return qml.state()
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
+        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
+        assert jax.numpy.allclose(result, expected_state)
+
+    def test_ctrl_of_operator_type(self):
+        """Test that controlled operators successfully pass through autograph"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circ():
+            qml.H(0)
+            qml.ctrl(qml.X, control=0)(1)
+            return qml.state()
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
+        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
+        assert jax.numpy.allclose(result, expected_state)
+
+    def test_ctrl_no_argument(self):
+        """Test that passing no argument to qml.ctrl raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.ctrl()
+            return qml.probs(wires=0)
+
+        with pytest.raises(ValueError, match="ctrl requires at least one argument"):
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
+
+    def test_ctrl_wrong_argument(self):
+        """Test that passing an invalid argument to qml.ctrl raises an error."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.ctrl(3)
+            return qml.probs(wires=0)
+
+        with pytest.raises(
+            ValueError, match="First argument to ctrl must be callable or an Operation"
+        ):
+            _ = qml.capture.make_plxpr(circ, autograph=True)()
+
+    def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
         def inner(x):
+            if x > 0:
+                qml.I(wires=0)  # Test will only pass if this is hit
+            else:
+                qml.RY(x, wires=0)
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circ(x: float):
             inner(x * 2)
             qml.adjoint(inner)(x)
@@ -346,22 +457,23 @@ class TestIntegration:
         ag_fn = run_autograph(circ)
         phi = np.pi / 2
         assert np.allclose(ag_fn(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+        assert not np.allclose(ag_fn(-phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
 
-    @pytest.mark.xfail(
-        reason="ctrl_transform_prim not working with autograph. See sc-84934",
-    )
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_ctrl_wrapper(self, autograph):
+    def test_ctrl_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 
         def inner(x):
+            if x == np.pi:
+                qml.I(wires=0)  # Test will only pass if this is hit
+            else:
+                qml.RX(x, wires=0)
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circ(x: float):
             qml.PauliX(1)
             qml.ctrl(inner, control=1)(x)
@@ -369,7 +481,7 @@ class TestIntegration:
 
         ag_fn = run_autograph(circ)
         assert np.allclose(ag_fn(np.pi), [0.0, 0.0, 0.0, 1.0])
-
+        assert not np.allclose(ag_fn(np.pi + 0.1), [0.0, 0.0, 0.0, 1.0])
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
@@ -406,8 +518,7 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_tape_transform(self, autograph):
+    def test_tape_transform(self):
         """Test if tape transform is applied when autograph is on."""
 
         dev = qml.device("default.qubit", wires=1)
@@ -417,7 +528,7 @@ class TestIntegration:
             raise NotImplementedError
 
         @my_quantum_transform
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RY(x, wires=0)
             qml.RX(x, wires=0)
@@ -434,8 +545,9 @@ class TestIntegration:
     )
     def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
+        dev = qml.device("default.qubit", wires=5, seed=seed)
 
+        @qml.set_shots(20)
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
         def circ(x):
             qml.RX(x, wires=0)
@@ -571,3 +683,56 @@ class TestCodePrinting:
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
+
+
+class TestDisableAutograph:
+    """Test ways of disabling autograph conversion"""
+
+    def test_disable_autograph_decorator(self):
+        """Test disabling autograph with decorator."""
+
+        @disable_autograph
+        def f():
+            x = 2
+            if x > 1:
+                y = x**2
+            else:
+                y = x**3
+            return y
+
+        def g(x: int, n: int):
+            for _ in range(n):
+                x = x + f()
+            return x
+
+        g_ag = run_autograph(g)
+        g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
+        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
+        # If autograph was disabled, the cond primitive will not be captured.
+        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+        assert g_ag(1, 3) == 13  # 1 + 4 * 3
+
+    def test_disable_autograph_context_manager(self):
+        """Test disabling autograph with context manager."""
+
+        def f():
+            x = 2
+            if x > 1:
+                y = x**2
+            else:
+                y = x**3
+            return y
+
+        def g(x: int, n: int):
+            for _ in range(n):
+                with disable_autograph:
+                    x += f()
+            return x
+
+        g_ag = run_autograph(g)
+        g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
+        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
+        # If autograph was disabled, the cond primitive will not be captured.
+        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+
+        assert g_ag(1, 3) == 13  # 1 + 4 * 3

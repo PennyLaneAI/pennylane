@@ -133,7 +133,7 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
     dense_coords = dense.nonzero()
     sparse_coords = sparse.nonzero()
 
-    coord_diff = set(zip(*dense_coords)) ^ set(zip(*sparse_coords))
+    coord_diff = set(zip(*dense_coords, strict=True)) ^ set(zip(*sparse_coords, strict=True))
     if coord_diff:
         return False
 
@@ -430,7 +430,9 @@ def is_abstract(tensor, like=None):
 
         return isinstance(tensor, DynamicJaxprTracer)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
         from tensorflow.python.framework.ops import EagerTensor
 
@@ -517,7 +519,9 @@ def requires_grad(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
@@ -569,7 +573,9 @@ def in_backprop(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()

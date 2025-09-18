@@ -39,7 +39,7 @@ from pennylane.transforms.unitary_to_rot import (
     unitary_to_rot_plxpr_to_plxpr,
 )
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class TestUnitaryToRotInterpreter:

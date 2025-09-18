@@ -96,7 +96,7 @@ def test_custom_operation():
 
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("op", [qml.TRX(np.pi, 0), qml.QutritBasisState([1], 0)])
-@pytest.mark.parametrize("interface", ("jax", "tensorflow", "torch", "autograd", "numpy"))
+@pytest.mark.parametrize("interface", ("jax", "torch", "autograd", "numpy"))
 def test_result_has_correct_interface(op, interface):
     """Test that even if no interface parameters are given, result is correct."""
     qs = qml.tape.QuantumScript([op], [qml.expval(qml.GellMann(0, 3))])

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import lru_cache, partial
-from typing import TYPE_CHECKING, Union, overload
+from typing import TYPE_CHECKING, overload
 from warnings import warn
 
 import pennylane as qml
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @lru_cache
-def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
+def _get_plxpr_map_wires():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -85,13 +85,13 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
             if not all(isinstance(v, int) and v >= 0 for v in self.wire_map.values()):
                 raise ValueError("Wire map values must be constant positive integers.")
 
-        def interpret_operation(self, op: "qml.operation.Operation"):
+        def interpret_operation(self, op: qml.operation.Operation):
             """Interpret an operation."""
             with qml.capture.pause():
                 op = op.map_wires(self.wire_map)
             return super().interpret_operation(op)
 
-        def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+        def interpret_measurement(self, measurement: qml.measurement.MeasurementProcess):
             """Interpret a measurement operation."""
             with qml.capture.pause():
                 measurement = measurement.map_wires(self.wire_map)
@@ -153,7 +153,7 @@ def map_wires(
     input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable, QuantumScriptBatch],
+    input: Operator | MeasurementProcess | QuantumScript | QNode | Callable | QuantumScriptBatch,
     wire_map: dict,
     queue=False,
     replace=False,
@@ -223,7 +223,7 @@ def map_wires(
             if replace:
                 QueuingManager.remove(input)
             if queue:
-                qml.apply(new_op)
+                new_op = qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
     return _map_wires_transform(input, wire_map=wire_map, queue=queue)

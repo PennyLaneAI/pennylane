@@ -13,7 +13,7 @@
 # limitations under the License.
 """Core API for registering xDSL transforms for use with PennyLane and Catalyst."""
 
-from typing import Callable
+from collections.abc import Callable
 
 from catalyst.from_plxpr import register_transform
 from xdsl.passes import ModulePass
@@ -27,7 +27,11 @@ def _create_null_transform(name: str) -> Callable:
     """Create a dummy tape transform. The tape transform raises an error if used."""
 
     def null_transform(_):
-        raise RuntimeError(f"Cannot apply the {name} pass without 'qml.qjit'.")
+        raise RuntimeError(
+            f"Cannot apply the {name} pass without '@qml.qjit'. Additionally, program capture "
+            "must be enabled using 'qml.capture.enable()'. Otherwise, the pass must be applied "
+            f"using the '@catalyst.passes.apply_pass(\"{name}\")' decorator."
+        )
 
     return null_transform
 

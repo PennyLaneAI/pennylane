@@ -16,8 +16,9 @@ This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
 import functools
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Literal
+from typing import Literal
 
 # pylint: disable=too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn
@@ -28,9 +29,10 @@ from scipy.special import factorial
 
 from pennylane import math, pytrees
 from pennylane.devices.preprocess import decompose
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -45,7 +47,7 @@ from .gradient_transform import (
 )
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def finite_diff_coeffs(n, approx_order, strategy):
     r"""Generate the finite difference shift values and corresponding
     term coefficients for a given derivative order, approximation accuracy,

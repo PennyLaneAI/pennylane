@@ -19,10 +19,10 @@ are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 
 QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
-:doc:`PyTorch <interfaces/torch>`, :doc:`TensorFlow <interfaces/tf>`, and
+:doc:`PyTorch <interfaces/torch>`, and
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy and JAX arrays or Pytorch/TensorFlow tensors) and
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and
 :doc:`optimizers <interfaces>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
@@ -85,7 +85,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2, shots=1000)
+    dev = qml.device('default.qubit', wires=2)
 
 PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
 ``'default.gaussian'``, ``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
@@ -110,8 +110,6 @@ Device options
 When loading a device, the name of the device must always be specified.
 Further options can then be passed as keyword arguments, and can differ based
 on the device. For a plugin device, refer to the plugin documentation for available device options.
-
-The two most important device options are the ``wires`` and ``shots`` arguments.
 
 Wires
 *****
@@ -153,52 +151,6 @@ Allowed wire labels can be of any type that is hashable, which allows two wires 
     For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
     will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
 
-Shots
-*****
-
-The ``shots`` argument is an integer that defines how many times the circuit should be evaluated (or "sampled")
-to estimate statistical quantities. On some supported simulator devices, ``shots=None`` computes
-measurement statistics *exactly*.
-
-Note that this argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
-will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not
-necessary to manually implement the ``shots`` keyword argument of the quantum function.
-
-It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
-QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
-allowing measurement statistics to be course-grained with a single QNode evaluation.
-
-Consider
-
->>> shots_list = [5, 10, 1000]
->>> dev = qml.device("default.qubit", wires=2, shots=shots_list)
-
-When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
-However, three sets of measurement statistics will be returned; using the first 5 shots,
-second set of 10 shots, and final 1000 shots, separately.
-
-For example:
-
-.. code-block:: python
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
-
-Executing this, we will get an output of shape ``(3, 2)``:
-
->>> results = circuit(0.5)
->>> results
-((array(0.6), array(1.)),
- (array(-0.4), array(1.)),
- (array(0.048), array(0.902)))
-
-We can index into this tuple and retrieve the results computed with only 5 shots:
-
->>> results[0]
-(array(0.6), array(1.))
 
 .. _intro_vcirc_qnode:
 
@@ -293,6 +245,67 @@ For example:
 
     result = circuit(0.543)
 
+Shots
+-----
+
+The shots is an integer that defines how many times the circuit should be evaluated (or "sampled")
+to estimate statistical quantities. On some supported simulator devices, ``shots=None`` computes
+measurement statistics *exactly*.
+
+The shots can be configured for a QNode using the :func:`~pennylane.set_shots` transform:
+
+.. code-block:: python
+
+    from functools import partial
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @partial(qml.set_shots, shots=10)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.CNOT([0, 1])
+        return qml.sample(qml.Z(1))
+
+    result = circuit(0.5)
+
+
+This transform can also be used to transform an existing QNode:
+
+>>> new_qnode = qml.set_shots(circuit, shots=100)
+>>> new_qnode(0.5)
+
+It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
+QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
+allowing measurement statistics to be course-grained with a single QNode evaluation.
+
+Consider
+
+.. code-block:: python
+
+    @partial(qml.set_shots, shots=[5, 10, 1000])
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+
+When this circuit is executed, a single execution of 1015 shots will be submitted.
+However, three sets of measurement statistics will be returned; using the first 5 shots,
+second set of 10 shots, and final 1000 shots, separately. Therefore, we will get an output
+of shape ``(3, 2)``:
+
+>>> results = circuit(0.5)
+>>> results
+((array(0.6), array(1.)),
+ (array(-0.4), array(1.)),
+ (array(0.048), array(0.902)))
+
+We can index into this tuple and retrieve the results computed with only 5 shots:
+
+>>> results[0]
+(array(0.6), array(1.))
+
+
 Parameter Broadcasting in QNodes
 --------------------------------
 
@@ -338,7 +351,7 @@ Importing circuits from other frameworks
 PennyLane supports creating customized PennyLane templates imported from other
 frameworks. By loading your existing quantum code as a PennyLane template, you
 add the ability to perform analytic differentiation, and interface with machine
-learning libraries such as PyTorch and TensorFlow. Currently, ``QuantumCircuit``
+learning libraries such as PyTorch or JAX. Currently, ``QuantumCircuit``
 objects from Qiskit, OpenQASM files, pyQuil ``programs``, and Quil files can
 be loaded by using the following functions:
 

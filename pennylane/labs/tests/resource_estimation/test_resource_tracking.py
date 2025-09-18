@@ -11,347 +11,366 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test the core resource tracking pipeline."""
+"""
+Test the core resource tracking functionality.
+"""
 from collections import defaultdict
-from copy import copy
 
-# pylint:disable=protected-access, no-self-use
 import pytest
 
-import pennylane as qml
-import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_tracking import (
-    DefaultGateSet,
-    _clean_gate_counts,
-    _counts_from_compressed_res_op,
-    _operations_to_compressed_reps,
-    _StandardGateSet,
-    get_resources,
-    resource_config,
-    resources_from_operation,
-    resources_from_qfunc,
-    resources_from_tape,
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
 )
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
+from pennylane.labs.resource_estimation.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    ResourcesNotDefined,
+    resource_rep,
+)
+from pennylane.labs.resource_estimation.resource_tracking import ResourceConfig, estimate
+from pennylane.labs.resource_estimation.resources_base import Resources
+
+# pylint: disable= no-self-use, arguments-differ
 
 
-class DummyOperation(qml.operation.Operation):
-    """Dummy class to test _operations_to_compressed_reps function."""
+class ResourceTestCNOT(ResourceOperator):
+    """Dummy class for testing"""
 
-    def __init__(self, wires=None):
+    num_wires = 2
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, 2, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def resource_decomp(cls, **kwargs):
+        raise ResourcesNotDefined
+
+
+class ResourceTestHadamard(ResourceOperator):
+    """Dummy class for testing"""
+
+    num_wires = 1
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, 1, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def resource_decomp(cls, **kwargs):
+        raise ResourcesNotDefined
+
+
+class ResourceTestT(ResourceOperator):
+    """Dummy class for testing"""
+
+    num_wires = 1
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, 1, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def resource_decomp(cls, **kwargs):
+        raise ResourcesNotDefined
+
+
+class ResourceTestZ(ResourceOperator):
+    """Dummy class for testing"""
+
+    num_wires = 1
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, 1, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def resource_decomp(cls, **kwargs):
+        t = resource_rep(ResourceTestT)
+        return [GateCount(t, count=4)]
+
+
+class ResourceTestRZ(ResourceOperator):
+    """Dummy class for testing"""
+
+    num_wires = 1
+    resource_keys = {"precision"}
+
+    def __init__(self, precision=None, wires=None) -> None:
+        self.precision = precision
         super().__init__(wires=wires)
 
-    def decomposition(self):
-        decomp = [
-            re.ResourceHadamard(wires=self.wires[0]),
-            re.ResourceHadamard(wires=self.wires[1]),
-            re.ResourceCNOT(wires=[self.wires[0], self.wires[1]]),
+    @classmethod
+    def resource_rep(cls, precision=None):
+        return CompressedResourceOp(cls, 1, {"precision": precision})
+
+    @property
+    def resource_params(self):
+        return {"precision": self.precision}
+
+    @classmethod
+    def resource_decomp(cls, precision):
+        t = resource_rep(ResourceTestT)
+        t_counts = round(1 / precision)
+        return [GateCount(t, count=t_counts)]
+
+
+class ResourceTestAlg1(ResourceOperator):
+    """Dummy class for testing"""
+
+    num_wires = 2
+    resource_keys = {"num_iter"}
+
+    def __init__(self, num_iter, wires=None) -> None:
+        self.num_iter = num_iter
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_rep(cls, num_iter):
+        return CompressedResourceOp(cls, 2, {"num_iter": num_iter})
+
+    @property
+    def resource_params(self):
+        return {"num_iter": self.num_iter}
+
+    @classmethod
+    def resource_decomp(cls, num_iter, **kwargs):
+        cnot = resource_rep(ResourceTestCNOT)
+        h = resource_rep(ResourceTestHadamard)
+
+        return [
+            AllocWires(num_wires=num_iter),
+            GateCount(h, num_iter),
+            GateCount(cnot, num_iter),
+            FreeWires(num_wires=num_iter - 1),
         ]
 
-        return decomp
+
+class ResourceTestAlg2(ResourceOperator):
+    """Dummy class for testing"""
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None) -> None:
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_rep(cls, num_wires):
+        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_decomp(cls, num_wires, **kwargs):
+        rz = resource_rep(ResourceTestRZ, {"precision": 1e-2})
+        alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
+
+        return [
+            AllocWires(num_wires=num_wires),
+            GateCount(rz, num_wires),
+            GateCount(alg1, num_wires // 2),
+            FreeWires(num_wires=num_wires),
+        ]
 
 
-class TestGetResources:
-    """Test the core resource tracking pipeline"""
+def mock_rotation_decomp(precision):
+    """A mock decomposition for rotation gates returning TestT gates for testing."""
+    t = resource_rep(ResourceTestT)
+    t_counts = round(1 / precision)
+    return [GateCount(t, count=t_counts)]
 
-    compressed_rep_data = (
-        (
-            [
-                re.ResourceHadamard(0),
-                re.ResourceRX(1.23, 1),
-                re.ResourceCNOT(wires=[1, 2]),
-            ],
-            [
-                re.CompressedResourceOp(re.ResourceHadamard, {}),
-                re.CompressedResourceOp(re.ResourceRX, {}),
-                re.CompressedResourceOp(re.ResourceCNOT, {}),
-            ],
-        ),
-        (
-            [
-                re.ResourceQFT(wires=[1, 2, 3]),
-                re.ResourceIdentity(wires=[1, 2, 3]),
-                re.ResourceRot(1.23, 0.45, -6, wires=0),
-                re.ResourceQFT(wires=[1, 2]),
-            ],
-            [
-                re.CompressedResourceOp(re.ResourceQFT, {"num_wires": 3}),
-                re.CompressedResourceOp(re.ResourceIdentity, {}),
-                re.CompressedResourceOp(re.ResourceRot, {}),
-                re.CompressedResourceOp(re.ResourceQFT, {"num_wires": 2}),
-            ],
-        ),
-        (
-            [
-                re.ResourceQFT(wires=[0, 1]),
-                DummyOperation(wires=["a", "b"]),
-                re.ResourceRY(-0.5, wires=1),
-            ],
-            [
-                re.CompressedResourceOp(re.ResourceQFT, {"num_wires": 2}),
-                re.CompressedResourceOp(re.ResourceHadamard, {}),
-                re.CompressedResourceOp(re.ResourceHadamard, {}),
-                re.CompressedResourceOp(re.ResourceCNOT, {}),
-                re.CompressedResourceOp(re.ResourceRY, {}),
-            ],
-        ),  # Test decomposition logic
-    )
 
-    @pytest.mark.parametrize("ops_lst, compressed_reps", compressed_rep_data)
-    def test_operations_to_compressed_reps(self, ops_lst, compressed_reps):
-        """Test that we can transform a list of operations into compressed reps"""
-        computed_compressed_reps = _operations_to_compressed_reps(ops_lst)
-        for computed_cr, expected_cr in zip(computed_compressed_reps, compressed_reps):
-            assert computed_cr == expected_cr
+class TestEstimateResources:
+    """Test that core resource estimation functionality"""
 
-    compressed_rep_counts = (
-        (
-            re.ResourceHadamard(wires=0).resource_rep_from_op(),
-            defaultdict(int, {re.CompressedResourceOp(re.ResourceHadamard, {}): 1}),
-        ),
-        (
-            re.ResourceRX(1.23, wires=0).resource_rep_from_op(),
-            defaultdict(int, {re.CompressedResourceOp(re.ResourceT, {}): 17}),
-        ),
-        (
-            re.ResourceIdentity(wires=[1, 2, 3]).resource_rep_from_op(),
-            defaultdict(int, {}),  # Identity has no resources
-        ),
-        (
-            re.ResourceControlledPhaseShift(1.23, wires=[0, 1]).resource_rep_from_op(),
-            defaultdict(
-                int,
-                {
-                    re.CompressedResourceOp(re.ResourceT, {}): 51,
-                    re.CompressedResourceOp(re.ResourceCNOT, {}): 2,
-                },
-            ),
-        ),
-        (
-            re.ResourceQFT(wires=[1, 2, 3, 4]).resource_rep_from_op(),
-            defaultdict(
-                int,
-                {
-                    re.CompressedResourceOp(re.ResourceT, {}): 306,
-                    re.CompressedResourceOp(re.ResourceCNOT, {}): 18,
-                    re.CompressedResourceOp(re.ResourceHadamard, {}): 4,
-                },
-            ),
-        ),
-    )
+    def test_estimate_resources_from_qfunc(self):
+        """Test that we can accurately obtain resources from qfunc"""
 
-    @pytest.mark.parametrize("op_in_gate_set", [True, False])
-    @pytest.mark.parametrize("scalar", [1, 2, 5])
-    @pytest.mark.parametrize("compressed_rep, expected_counts", compressed_rep_counts)
-    def test_counts_from_compressed_res(
-        self, scalar, compressed_rep, expected_counts, op_in_gate_set
-    ):
-        """Test that we can obtain counts from a compressed resource op"""
+        def my_circuit():
+            for w in range(5):
+                ResourceTestHadamard(wires=[w])
+            ResourceTestCNOT(wires=[0, 1])
+            ResourceTestRZ(wires=[1])
+            ResourceTestRZ(precision=1e-2, wires=[2])
+            ResourceTestCNOT(wires=[3, 4])
+            ResourceTestAlg1(num_iter=5, wires=[5, 6])
 
-        if op_in_gate_set:
-            # Test that we add op directly to counts if its in the gate_set
-            custom_gate_set = {compressed_rep._name}
-
-            base_gate_counts = defaultdict(int)
-            _counts_from_compressed_res_op(
-                compressed_rep,
-                gate_counts_dict=base_gate_counts,
-                gate_set=custom_gate_set,
-                scalar=scalar,
-            )
-
-            assert base_gate_counts == defaultdict(int, {compressed_rep: scalar})
-
-        else:
-            expected_counts = copy(expected_counts)
-            for resource_op, counts in expected_counts.items():  # scale expected counts
-                expected_counts[resource_op] = scalar * counts
-
-            base_gate_counts = defaultdict(int)
-            _counts_from_compressed_res_op(
-                compressed_rep,
-                gate_counts_dict=base_gate_counts,
-                gate_set=DefaultGateSet,
-                scalar=scalar,
-            )
-
-            assert base_gate_counts == expected_counts
-
-    @pytest.mark.parametrize(
-        "custom_config, num_T_gates",
-        (
-            (
-                {
-                    "error_rz": 10e-2,
-                },
-                13,
-            ),
-            (
-                {
-                    "error_rz": 10e-3,
-                },
-                17,
-            ),
-            (
-                {
-                    "error_rz": 10e-4,
-                },
-                21,
-            ),
-        ),
-    )
-    def test_counts_from_compressed_res_custom_config(self, custom_config, num_T_gates):
-        """Test that the function works with custom configs and a non-empty gate_counts_dict"""
-        base_gate_counts = defaultdict(
-            int, {re.ResourceT.resource_rep(): 3, re.ResourceS.resource_rep(): 5}
-        )
-
-        _counts_from_compressed_res_op(
-            re.ResourceRZ.resource_rep(),
-            base_gate_counts,
-            gate_set=DefaultGateSet,
-            config=custom_config,
-        )
-        expected_counts = defaultdict(
-            int, {re.ResourceT.resource_rep(): 3 + num_T_gates, re.ResourceS.resource_rep(): 5}
-        )
-
-        assert base_gate_counts == expected_counts
-
-    def test_clean_gate_counts(self):
-        """Test that the function groups operations by name instead of compressed representation."""
-
-        gate_counts = defaultdict(
+        expected_gates = defaultdict(
             int,
             {
-                re.ResourceQFT.resource_rep(5): 1,
-                re.ResourceHadamard.resource_rep(): 3,
-                re.ResourceCNOT.resource_rep(): 1,
-                re.ResourceQFT.resource_rep(3): 4,
+                resource_rep(ResourceTestT): round(1 / 1e-2) + round(1 / 1e-9),
+                resource_rep(ResourceTestCNOT): 7,
+                resource_rep(ResourceTestHadamard): 10,
             },
         )
+        expected_qubits = QubitManager(work_wires={"clean": 4, "dirty": 1}, algo_wires=7)
+        expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
 
-        expected_clean_counts = defaultdict(
-            int, {"CNOT": 1, "Hadamard": 3, "QFT(5)": 1, "QFT(3)": 4}
+        gate_set = {"TestCNOT", "TestT", "TestHadamard"}
+        custom_config = ResourceConfig()
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": 1e-9}
+        computed_resources = estimate(my_circuit, gate_set=gate_set, config=custom_config)()
+        assert computed_resources == expected_resources
+
+    def test_estimate_resources_from_resource_operator(self):
+        """Test that we can accurately obtain resources from qfunc"""
+        op = ResourceTestAlg2(num_wires=4)
+        actual_resources = estimate(op, gate_set={"TestRZ", "TestAlg1"})
+
+        expected_gates = defaultdict(
+            int,
+            {
+                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
+                resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
+            },
         )
+        expected_qubits = QubitManager(work_wires=4, algo_wires=4)
+        expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
 
-        assert _clean_gate_counts(gate_counts) == expected_clean_counts
+        assert actual_resources == expected_resources
+
+    def test_estimate_resources_from_resources_obj(self):
+        """Test that we can accurately obtain resources from qfunc"""
+        gates = defaultdict(
+            int,
+            {
+                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
+                resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
+            },
+        )
+        qubits = QubitManager(work_wires=0, algo_wires=4)
+        resources = Resources(qubit_manager=qubits, gate_types=gates)
+
+        gate_set = {"TestCNOT", "TestT", "TestHadamard"}
+        actual_resources = estimate(resources, gate_set=gate_set)
+
+        expected_gates = defaultdict(
+            int,
+            {
+                resource_rep(ResourceTestT): 4 * round(1 / 1e-2),
+                resource_rep(ResourceTestCNOT): 6,
+                resource_rep(ResourceTestHadamard): 6,
+            },
+        )
+        expected_qubits = QubitManager(
+            work_wires={"clean": 4, "dirty": 2}, algo_wires=4
+        )  # TODO: optimize allocation
+        expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
+
+        assert actual_resources == expected_resources
+
+    def test_estimate_resources_from_pl_operator(self):
+        """Test that we can accurately obtain resources from qfunc"""
+        assert True
 
     @pytest.mark.parametrize(
-        "op, expected_resources",
+        "gate_set, expected_resources",
         (
-            (re.ResourceHadamard(wires=0), re.Resources(1, 1, defaultdict(int, {"Hadamard": 1}))),
-            (re.ResourceRX(1.23, wires=1), re.Resources(1, 17, defaultdict(int, {"T": 17}))),
             (
-                re.ResourceQFT(wires=range(5)),
-                re.Resources(5, 541, defaultdict(int, {"Hadamard": 5, "CNOT": 26, "T": 510})),
+                {"TestRZ", "TestAlg1", "TestZ"},
+                Resources(
+                    qubit_manager=QubitManager(work_wires=4, algo_wires=4),
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
+                            resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
+                            resource_rep(ResourceTestZ): 4,
+                        },
+                    ),
+                ),
+            ),
+            (
+                {"TestCNOT", "TestT", "TestHadamard"},
+                Resources(
+                    qubit_manager=QubitManager(work_wires={"clean": 8, "dirty": 2}, algo_wires=4),
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(ResourceTestT): 416,
+                            resource_rep(ResourceTestCNOT): 6,
+                            resource_rep(ResourceTestHadamard): 6,
+                        },
+                    ),
+                ),
             ),
         ),
     )
-    def test_resources_from_operation(self, op, expected_resources):
-        """Test that we can extract the resources from an Operation."""
-        computed_resources = resources_from_operation(
-            op
-        )  # add tests that don't use default gate_set and config
+    def test_varying_gate_sets(self, gate_set, expected_resources):
+        """Test that changing the gate_set correctly updates the resources"""
+
+        def my_circ(num_wires):
+            ResourceTestAlg2(num_wires, wires=range(num_wires))
+            for w in range(num_wires):
+                ResourceTestZ(wires=w)
+
+        actual_resources = estimate(my_circ, gate_set=gate_set)(num_wires=4)
+        assert actual_resources == expected_resources
+
+    @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
+    def test_varying_config(self, error_val):
+        """Test that changing the resource_config correctly updates the resources"""
+        custom_config = ResourceConfig()
+        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": error_val}
+
+        op = ResourceTestRZ()  # don't specify precision
+        computed_resources = estimate(op, gate_set={"TestT"}, config=custom_config)
+
+        expected_resources = Resources(
+            qubit_manager=QubitManager(work_wires=0, algo_wires=1),
+            gate_types=defaultdict(int, {resource_rep(ResourceTestT): round(1 / error_val)}),
+        )
+
         assert computed_resources == expected_resources
 
-    @staticmethod
-    def my_qfunc():
-        """Dummy qfunc used to test resources_from_qfunc function."""
-        for w in range(2):
-            re.ResourceHadamard(w)
+    @pytest.mark.parametrize("error_val", (0.1, 0.01, 0.001))
+    def test_varying_single_qubit_rotation_precision(self, error_val):
+        """Test that setting the single_qubit_rotation_precision correctly updates the resources"""
+        custom_config = ResourceConfig()
+        custom_config.set_single_qubit_rot_precision(error_val)
 
-        re.ResourceCNOT([0, 1])
-        re.ResourceRX(1.23, 0)
-        re.ResourceRY(-4.56, 1)
+        custom_config.set_decomp(ResourceRX, mock_rotation_decomp)
+        custom_config.set_decomp(ResourceRY, mock_rotation_decomp)
+        custom_config.set_decomp(ResourceRZ, mock_rotation_decomp)
 
-        re.ResourceQFT(wires=[0, 1, 2])
-        return qml.expval(re.ResourceHadamard(2))
+        def my_circuit():
+            ResourceRX(wires=0)
+            ResourceRY(wires=1)
+            ResourceRZ(wires=2)
 
-    def test_resources_from_qfunc(self):
-        """Test the we can extract the resources from a quantum function."""
-        expected_resources_standard = re.Resources(
-            num_wires=3,
-            num_gates=24,
-            gate_types=defaultdict(
-                int, {"Hadamard": 5, "CNOT": 7, "SWAP": 1, "RX": 1, "RY": 1, "RZ": 9}
-            ),
+        computed_resources = estimate(my_circuit, gate_set={"TestT"}, config=custom_config)()
+
+        expected_t_count = 3 * round(1 / error_val)
+        expected_resources = Resources(
+            qubit_manager=QubitManager(work_wires=0, algo_wires=3),
+            gate_types=defaultdict(int, {resource_rep(ResourceTestT): expected_t_count}),
         )
 
-        computed_resources = resources_from_qfunc(self.my_qfunc, gate_set=_StandardGateSet)()
-        assert computed_resources == expected_resources_standard
-
-        expected_resources_custom = re.Resources(
-            num_wires=3,
-            num_gates=190,
-            gate_types=defaultdict(int, {"Hadamard": 5, "CNOT": 10, "T": 175}),
-        )
-
-        my_resource_config = copy(resource_config)
-        my_resource_config["error_rx"] = 10e-1
-        my_resource_config["error_ry"] = 10e-2
-        computed_resources = resources_from_qfunc(
-            self.my_qfunc, gate_set=DefaultGateSet, config=my_resource_config
-        )()
-
-        assert computed_resources == expected_resources_custom
-
-    my_tape = qml.tape.QuantumScript(
-        ops=[
-            re.ResourceHadamard(0),
-            re.ResourceHadamard(1),
-            re.ResourceCNOT([0, 1]),
-            re.ResourceRX(1.23, 0),
-            re.ResourceRY(-4.56, 1),
-            re.ResourceQFT(wires=[0, 1, 2]),
-        ],
-        measurements=[qml.expval(re.ResourceHadamard(2))],
-    )
-
-    def test_resources_from_tape(self):
-        """Test that we can extract the resources from a quantum tape"""
-        expected_resources_standard = re.Resources(
-            num_wires=3,
-            num_gates=24,
-            gate_types=defaultdict(
-                int, {"Hadamard": 5, "CNOT": 7, "SWAP": 1, "RX": 1, "RY": 1, "RZ": 9}
-            ),
-        )
-
-        computed_resources = resources_from_tape(self.my_tape, gate_set=_StandardGateSet)
-        assert computed_resources == expected_resources_standard
-
-        expected_resources_custom = re.Resources(
-            num_wires=3,
-            num_gates=190,
-            gate_types=defaultdict(int, {"Hadamard": 5, "CNOT": 10, "T": 175}),
-        )
-
-        my_resource_config = copy(resource_config)
-        my_resource_config["error_rx"] = 10e-1
-        my_resource_config["error_ry"] = 10e-2
-        computed_resources = resources_from_tape(
-            self.my_tape, gate_set=DefaultGateSet, config=my_resource_config
-        )
-
-        assert computed_resources == expected_resources_custom
-
-    def test_get_resources(self):
-        """Test that we can dispatch between each of the implementations above"""
-        op = re.ResourceControlledPhaseShift(1.23, wires=[0, 1])
-        tape = qml.tape.QuantumScript(ops=[op], measurements=[qml.expval(re.ResourceHadamard(0))])
-
-        def circuit():
-            re.ResourceControlledPhaseShift(1.23, wires=[0, 1])
-            return qml.expval(re.ResourceHadamard(0))
-
-        res_from_op = get_resources(op)
-        res_from_tape = get_resources(tape)
-        res_from_circuit = get_resources(circuit)()
-
-        expected_resources = re.Resources(
-            num_wires=2, num_gates=53, gate_types=defaultdict(int, {"CNOT": 2, "T": 51})
-        )
-
-        assert res_from_op == expected_resources
-        assert res_from_tape == expected_resources
-        assert res_from_circuit == expected_resources
+        assert computed_resources == expected_resources

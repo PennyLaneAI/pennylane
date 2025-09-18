@@ -43,11 +43,13 @@ compile your hybrid workflows:
 
 .. code-block:: python
 
+    from functools import partial
     from jax import numpy as jnp
 
-    dev = qml.device("lightning.qubit", wires=2, shots=1000)
+    dev = qml.device("lightning.qubit", wires=2)
 
     @qml.qjit
+    @partial(qml.set_shots, shots=1000)
     @qml.qnode(dev)
     def circuit(params):
         qml.Hadamard(0)

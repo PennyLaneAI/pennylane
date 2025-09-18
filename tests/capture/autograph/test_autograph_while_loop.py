@@ -22,7 +22,7 @@ from numpy.testing import assert_allclose
 import pennylane as qml
 from pennylane import while_loop
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
@@ -31,17 +31,10 @@ from jax import numpy as jnp
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
-from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.exceptions import AutoGraphError
 
 check_cache = TRANSFORMER.has_cache
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestWhileLoops:
@@ -84,11 +77,10 @@ class TestWhileLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_whileloop_qnode(self, autograph):
+    def test_whileloop_qnode(self):
         """Test while-loop used with a qnode"""
 
-        @qml.qnode(qml.device("default.qubit", wires=4), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(p):
             w = int(0)
             while w < 4:

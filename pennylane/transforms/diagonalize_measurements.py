@@ -264,7 +264,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
             wires_sampled_in_computational_basis.extend(list(m.wires))
 
     _visited_obs = (
-        set(qml.Z(w) for w in wires_sampled_in_computational_basis),
+        {qml.Z(w) for w in wires_sampled_in_computational_basis},
         set(wires_sampled_in_computational_basis),
     )  # tracks which observables and wires are already used and shouldn't be diagonalized
     diagonalizing_gates = []

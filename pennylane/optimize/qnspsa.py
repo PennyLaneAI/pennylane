@@ -82,6 +82,21 @@ class QNSPSAOptimizer:
 
     You can also find a walkthrough of the implementation in this `tutorial <demos/qnspsa>`__.
 
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default value: 1e-3).
+        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
+            for numerical stability (default value: 1e-3).
+        finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
+            gradient and the Fubini-Study metric tensor (default value: 1e-2).
+        resamplings (int): the number of samples to average for each parameter update (default value: 1).
+        blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
+            loss value no larger than the loss value before update, plus a tolerance. The tolerance
+            is set with the hyperparameter ``history_length``. The ``blocking`` option is
+            observed to help the optimizer to converge significantly faster (default value: True).
+        history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
+            the cost values in the last ``history_length`` steps (default value: 5).
+        seed (int): seed for the random sampling (default value: None).
+
     **Examples:**
 
     For VQE/VQE-like problems, the objective function can be defined within a qnode:
@@ -110,21 +125,6 @@ class QNSPSAOptimizer:
     Step 30: cost = 0.0910
     Step 40: cost = -0.9369
     Step 50: cost = -0.9984
-
-    Keyword Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default: 1e-3)
-        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
-            for numerical stability (default: 1e-3)
-        finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
-            gradient and the Fubini-Study metric tensor (default: 1e-2)
-        resamplings (int): the number of samples to average for each parameter update (default: 1)
-        blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
-            loss value no larger than the loss value before update, plus a tolerance. The tolerance
-            is set with the hyperparameter ``history_length``. The ``blocking`` option is
-            observed to help the optimizer to converge significantly faster (default: True)
-        history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
-            the cost values in the last ``history_length`` steps (default: 5)
-        seed (int): seed for the random sampling (default: None)
     """
 
     # pylint: disable=too-many-arguments

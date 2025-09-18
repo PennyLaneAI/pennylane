@@ -38,7 +38,7 @@ class FirstQuantization(Operation):
         omega (float): unit cell volume
         error (float): target error in the algorithm
         charge (int): total electric charge of the system
-        br (int): number of bits for ancilla qubit rotation
+        br (int): number of bits for auxiliary qubit rotation
         vectors (array[float]): lattice vectors
 
     **Example**
@@ -110,7 +110,7 @@ class FirstQuantization(Operation):
             )
 
         if self.vectors is not None:
-            self.omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+            self.omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
             recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
                 2
                 * np.pi
@@ -191,7 +191,7 @@ class FirstQuantization(Operation):
 
         Args:
             n (int): number of basis states to create an equal superposition for state preparation
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
 
         Returns:
             float: probability of success for state preparation
@@ -231,7 +231,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -430,7 +430,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
 
         Returns:
@@ -516,7 +516,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -564,7 +564,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -623,7 +623,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             cubic (bool): True if the unit cell is cubic
             vectors (array[float]): lattice vectors
@@ -712,14 +712,14 @@ class FirstQuantization(Operation):
             n (int): number of plane waves
             eta (int): number of electrons
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             vectors (array[float]): lattice vectors
 
         Returns:
             float: 1-norm of a first-quantized Hamiltonian in the plane-wave basis
         """
-        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+        omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
 
         recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2
@@ -831,7 +831,7 @@ class FirstQuantization(Operation):
             n (int): number of plane waves
             eta (int): number of electrons
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             vectors (array[float]): lattice vectors
 
@@ -848,7 +848,7 @@ class FirstQuantization(Operation):
             vectors,
         )
 
-        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+        omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
 
         recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2
@@ -932,7 +932,7 @@ class FirstQuantization(Operation):
             n (int): number of plane waves
             eta (int): number of electrons
             error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
+            br (int): number of bits for auxiliary qubit rotation
             charge (int): total electric charge of the system
             vectors (array[float]): lattice vectors
 
@@ -949,7 +949,7 @@ class FirstQuantization(Operation):
             vectors,
         )
 
-        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+        omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
 
         recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2

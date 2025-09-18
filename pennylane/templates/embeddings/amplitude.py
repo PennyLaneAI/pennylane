@@ -14,13 +14,10 @@
 r"""
 Contains the AmplitudeEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import StatePrep
 
-# tolerance for normalization
-TOLERANCE = 1e-10
 
-
+# pylint: disable=too-many-arguments
 class AmplitudeEmbedding(StatePrep):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
@@ -108,7 +105,7 @@ class AmplitudeEmbedding(StatePrep):
     """
 
     def __init__(
-        self, features, wires, pad_with=None, normalize=False, id=None, validate_norm=True
+        self, features, wires, *, pad_with=None, normalize=False, id=None, validate_norm=True
     ):
         super().__init__(
             features,

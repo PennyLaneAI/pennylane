@@ -22,6 +22,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -504,6 +505,7 @@ class PauliWord(dict):
             current_size *= 2
         return indices
 
+    @QueuingManager.stop_recording()
     def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
@@ -813,7 +815,7 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return Wires.all_wires((pw.wires for pw in self.keys()))
+        return Wires.all_wires(pw.wires for pw in self.keys())
 
     def to_mat(self, wire_order=None, format="dense", buffer_size=None):
         """Returns the matrix representation.
@@ -1002,6 +1004,7 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
+    @QueuingManager.stop_recording()
     def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
@@ -1013,7 +1016,9 @@ class PauliSentence(dict):
             pw_op = pw.operation(wire_order=list(wire_order))
             rep = PauliSentence({pw: coeff})
             summands.append(
-                pw_op if qml.math.all(coeff == 1) else SProd(coeff, pw_op, _pauli_rep=rep)
+                pw_op
+                if not math.is_abstract(coeff) and qml.math.all(coeff == 1)
+                else SProd(coeff, pw_op, _pauli_rep=rep)
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
@@ -1021,7 +1026,7 @@ class PauliSentence(dict):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
         items = list(self.items())
         for pw, coeff in items:
-            if abs(coeff) <= tol:
+            if not math.is_abstract(coeff) and abs(coeff) <= tol:
                 del self[pw]
         if len(self) == 0:
             self = PauliSentence({})  # pylint: disable=self-cls-assignment

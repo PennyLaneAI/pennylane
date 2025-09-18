@@ -72,7 +72,7 @@ class FermiWord(dict):
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
-        return set(i[1] for i in self.sorted_dic.keys())
+        return {i[1] for i in self.sorted_dic.keys()}
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in FermiWord."""
@@ -419,7 +419,6 @@ class FermiWord(dict):
         return fs
 
 
-# pylint: disable=useless-super-delegation
 class FermiSentence(dict):
     r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
     as FermiWord instances and the values correspond to coefficients.

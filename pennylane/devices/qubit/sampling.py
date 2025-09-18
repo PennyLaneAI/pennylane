@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to sample a state."""
-from typing import Union
+
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
-    CountsMP,
     ExpectationMP,
     SampleMeasurement,
     ShadowExpvalMP,
@@ -42,7 +41,7 @@ def jax_random_split(prng_key, num: int = 2):
     return split(prng_key, num=num)
 
 
-def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+def _group_measurements(mps: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP]):
     """
     Group the measurements such that:
       - measurements with pauli observables pairwise-commute in each group
@@ -204,7 +203,7 @@ def _apply_diagonalizing_gates(
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -308,15 +307,7 @@ def _measure_with_samples_diagonalizing_gates(
     wires = qml.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
-        processed = []
-        for mp in mps:
-            res = mp.process_samples(samples, wires)
-            if not isinstance(mp, CountsMP):
-                res = qml.math.squeeze(res)
-
-            processed.append(res)
-
-        return tuple(processed)
+        return tuple(mp.process_samples(samples, wires) for mp in mps)
 
     try:
         prng_key, _ = jax_random_split(prng_key)
@@ -345,7 +336,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,

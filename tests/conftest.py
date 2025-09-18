@@ -192,13 +192,6 @@ def enable_graph_decomposition():
 #######################################################################
 
 try:
-    import tensorflow as tf
-except (ImportError, ModuleNotFoundError) as e:
-    tf_available = False
-else:
-    tf_available = True
-
-try:
     import torch
     from torch.autograd import Variable
 
@@ -219,6 +212,20 @@ except ImportError as e:
 def pytest_generate_tests(metafunc):
     if jax_available:
         jax.config.update("jax_enable_x64", True)
+
+
+@pytest.fixture(
+    params=[
+        pytest.param("autograd", marks=pytest.mark.autograd),
+        pytest.param("jax", marks=pytest.mark.jax),
+        pytest.param("jax-jit", marks=pytest.mark.jax),
+        pytest.param("torch", marks=pytest.mark.torch),
+    ],
+    scope="function",
+)
+def interface(request):
+    """Automatically parametrize over all interfaces."""
+    yield request.param
 
 
 def pytest_collection_modifyitems(items, config):
@@ -248,7 +255,6 @@ def pytest_collection_modifyitems(items, config):
                     "autograd",
                     "data",
                     "torch",
-                    "tf",
                     "jax",
                     "qchem",
                     "qcut",
@@ -256,20 +262,24 @@ def pytest_collection_modifyitems(items, config):
                     "finite-diff",
                     "param-shift",
                     "external",
+                    "capture",
                 ]
                 for elem in markers
             )
             or not markers
         ):
             item.add_marker(pytest.mark.core)
+        if "capture" in markers:
+            item.fixturenames.append("enable_disable_plxpr")
+            if "jax" not in markers:
+                item.add_marker(pytest.mark.jax)
 
 
 def pytest_runtest_setup(item):
     """Automatically skip tests if interfaces are not installed"""
     # Autograd is assumed to be installed
-    interfaces = {"tf", "torch", "jax"}
+    interfaces = {"torch", "jax"}
     available_interfaces = {
-        "tf": tf_available,
         "torch": torch_available,
         "jax": jax_available,
     }
@@ -286,9 +296,9 @@ def pytest_runtest_setup(item):
 
     for b in marks:
         if b == "all_interfaces":
-            required_interfaces = {"tf", "torch", "jax"}
-            for interface in required_interfaces:
-                if interface not in allowed_interfaces:
+            required_interfaces = {"torch", "jax"}
+            for _interface in required_interfaces:
+                if _interface not in allowed_interfaces:
                     pytest.skip(
                         f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                     )

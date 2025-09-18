@@ -22,9 +22,9 @@ import pytest
 import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
+    CountsMP,
     DensityMatrixMP,
     ExpectationMP,
-    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
@@ -41,7 +41,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     AbstractMeasurement,
 )
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def _get_shapes_for(*measurements, shots=qml.measurements.Shots(None), num_device_wires=0):
@@ -98,11 +98,110 @@ def test_abstract_measurement():
     assert hash(am) == hash("AbstractMeasurement")
 
 
-def test_counts_no_measure():
-    """Test that counts can't be measured and raises a NotImplementedError."""
+class TestCounts:
 
-    with pytest.raises(NotImplementedError, match=r"CountsMP returns a dictionary"):
-        qml.counts()._abstract_eval()
+    def test_counts_no_implementation(self):
+        """Test that counts can't be measured and raises a NotImplementedError."""
+
+        with pytest.raises(
+            NotImplementedError,
+            match=r"Counts has no execution implementation with program capture.",
+        ):
+            qml.counts()
+
+    def test_warning_about_all_outcomes(self):
+        """Test a warning is raised about all_outcomes=False"""
+
+        def f():
+            return qml.counts(all_outcomes=False)
+
+        with pytest.warns(UserWarning, match="all_outcomes=True"):
+            jax.make_jaxpr(f)()
+
+    def test_counts_capture_jaxpr(self):
+        """Test that counts can be captured into jaxpr."""
+
+        def f():
+            return qml.counts(wires=(0, 1), all_outcomes=True)
+
+        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jaxpr.jaxpr
+
+        assert len(jaxpr.outvars) == 2
+
+        assert jaxpr.eqns[0].primitive == CountsMP._wires_primitive
+        assert len(jaxpr.eqns[0].invars) == 2
+
+        assert isinstance(jaxpr.outvars[0].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[0].aval.abstract_eval(num_device_wires=0, shots=50)
+        assert keys_shape[0] == (2**2,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[0].aval.abstract_eval(num_device_wires=0, shots=None)
+
+        assert isinstance(jaxpr.outvars[1].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[1].aval.abstract_eval(num_device_wires=0, shots=50)
+        assert keys_shape[0] == (2**2,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[1].aval.abstract_eval(num_device_wires=0, shots=None)
+
+    def test_counts_capture_jaxpr_all_wires(self):
+        """Test that counts can be captured into jaxpr."""
+
+        def f():
+            return qml.counts(all_outcomes=True)
+
+        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jaxpr.jaxpr
+
+        assert len(jaxpr.outvars) == 2
+
+        assert jaxpr.eqns[0].primitive == CountsMP._wires_primitive
+        assert len(jaxpr.eqns[0].invars) == 0
+
+        assert isinstance(jaxpr.outvars[0].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[0].aval.abstract_eval(num_device_wires=3, shots=50)
+        assert keys_shape[0] == (2**3,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[0].aval.abstract_eval(num_device_wires=3, shots=None)
+
+        assert isinstance(jaxpr.outvars[1].aval, AbstractMeasurement)
+        keys_shape = jaxpr.outvars[1].aval.abstract_eval(num_device_wires=3, shots=50)
+        assert keys_shape[0] == (2**3,)
+        assert keys_shape[1] == int
+
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.outvars[1].aval.abstract_eval(num_device_wires=3, shots=None)
+
+    def test_qnode_integration(self):
+        """Test that counts can integrate with capturing a qnode."""
+
+        def w():
+            @qml.qnode(qml.device("default.qubit", wires=2), shots=10)
+            def c():
+                return qml.counts(all_outcomes=True), qml.sample()
+
+            r = c()
+            assert isinstance(r, tuple)
+            assert len(r) == 2
+            assert isinstance(r[0], tuple)
+            assert len(r[0]) == 2
+            for i in (0, 1):
+                assert r[0][i].shape == (4,)
+                assert r[0][i].dtype == jax.numpy.int64
+
+            assert r[1].shape == (10, 2)
+            assert r[1].dtype == jax.numpy.int64
+
+            return r
+
+        jaxpr = jax.make_jaxpr(w)().jaxpr
+        assert len(jaxpr.outvars) == 3
 
 
 def test_primitive_none_behavior():
@@ -146,7 +245,6 @@ creation_funcs = [
     lambda: qml.purity(wires=(0, 1)),
     lambda: qml.mutual_info(wires0=(1, 3), wires1=(2, 4), log_base=2),
     lambda: qml.classical_shadow(wires=(0, 1), seed=84),
-    lambda: MidMeasureMP(qml.wires.Wires((0, 1))),
 ]
 
 
@@ -160,31 +258,6 @@ def test_capture_and_eval(func):
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
 
     qml.assert_equal(mp, out)
-
-
-def test_mid_measure():
-    """Test that mid circuit measurements can be captured and executed."""
-
-    def f(w):
-        return MidMeasureMP(qml.wires.Wires((w,)), reset=True, postselect=1)
-
-    jaxpr = jax.make_jaxpr(f)(2)
-
-    assert len(jaxpr.eqns) == 1
-    assert jaxpr.eqns[0].primitive == MidMeasureMP._wires_primitive
-    assert jaxpr.eqns[0].params == {"reset": True, "postselect": 1, "id": None}
-    mp = jaxpr.eqns[0].outvars[0].aval
-    assert isinstance(mp, AbstractMeasurement)
-    assert mp.n_wires == 1
-    assert mp._abstract_eval == MidMeasureMP._abstract_eval
-
-    shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(1))
-    assert shapes[0] == jax.core.ShapedArray(
-        (), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-    )
-
-    mp = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)[0]
-    assert mp == f(1)
 
 
 @pytest.mark.parametrize("state_wires, shape", [(None, 16), (qml.wires.Wires((0, 1, 2, 3, 4)), 32)])
@@ -437,9 +510,7 @@ class TestSample:
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )
         assert len(shapes) == 1
-        shape = (
-            (50, dim1_len) if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray)) else (50,)
-        )
+        shape = (50, dim1_len)
         assert shapes[0] == jax.core.ShapedArray(
             shape, jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )

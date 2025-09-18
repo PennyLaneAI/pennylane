@@ -23,7 +23,7 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 from pennylane.capture.primitives import cond_prim, for_loop_prim, measure_prim, while_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas

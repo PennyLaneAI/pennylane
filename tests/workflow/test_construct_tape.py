@@ -70,7 +70,7 @@ class TestConstructTape:
             qml.RX(-0.1, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        tape = construct_tape(circuit, level=level)(weights, order, shots=10)
+        tape = construct_tape(qml.set_shots(circuit, shots=10), level=level)(weights, order)
 
         trainable_params = [] if level == 0 else None
         expected_tape = qml.tape.QuantumScript(
@@ -90,7 +90,7 @@ class TestConstructTape:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Level requested corresponds to more than one tape."):
-            construct_tape(circuit, level=None)(0.5)
+            construct_tape(circuit, level="device")(0.5)
 
     def test_handle_qfunc_with_dynamic_shots(self):
         """Tests that dynamic shots can be handled properly."""

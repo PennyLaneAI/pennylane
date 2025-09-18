@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -88,7 +88,7 @@ class TestJVPIntegration:
     def test_jacobian_multiple_outputs(self, diff_method):
         """Test that finite diff can handle multiple outputs."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
             qml.RX(x, 0)
             mps = [

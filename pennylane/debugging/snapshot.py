@@ -68,7 +68,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
         tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        dictionary (dict) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     If tape splitting is carried out, the transform will be conservative about the wires that it includes in each tape.
@@ -89,6 +89,12 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
         For devices that do not support snapshots (e.g QPUs, external plug-in simulators), be mindful of
         additional costs that you might incur due to the 1 separate execution/snapshot behaviour.
+
+    .. warning::
+
+        ``Snapshot`` captures the internal execution state at a point in the circuit, but compilation transforms
+        (e.g., ``combine_global_phases``, ``merge_rotations``) may reorder or modify operations across the snapshot.
+        As a result, the captured state may differ from the original intent.
 
     **Example**
 

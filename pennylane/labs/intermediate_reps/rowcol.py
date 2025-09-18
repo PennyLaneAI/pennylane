@@ -13,7 +13,7 @@
 # limitations under the License.
 """CNOT routing algorithm ROWCOL as described in https://arxiv.org/abs/1910.14478."""
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import networkx as nx
 import numpy as np
@@ -259,7 +259,7 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
     visit_nodes = postorder_traverse(T, source=idx)
 
     # For some reason, Pylint does not understand this usage of the Walrus operator.
-    state = (P, cnots)  # pylint: disable=unused-variable
+    state = (P, cnots)
     if mode == "column":
         # For column mode use post-order and parities constraint in first pass (i.1.2)...
         _ = [

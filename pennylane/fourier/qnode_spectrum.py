@@ -14,13 +14,13 @@
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit including classical preprocessing within the QNode."""
 from collections import OrderedDict
-from functools import wraps
 from inspect import signature
 from itertools import product
 
 import numpy as np
 
 from pennylane import gradients, math, measurements, transforms, workflow
+from pennylane.capture.autograph import wraps
 
 from .utils import get_spectrum, join_spectra
 

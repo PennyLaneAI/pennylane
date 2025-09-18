@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the necessary helper functions for setting up the workflow for execution."""
-from collections.abc import Callable
+
+from __future__ import annotations
+
 from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import Literal, Union, get_args
+from typing import TYPE_CHECKING, Any, Literal, get_args
 from warnings import warn
 
 from packaging.version import Version
 
 import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, get_canonical_interface_name, get_interface
-from pennylane.tape import QuantumScriptBatch
+from pennylane.math import Interface, get_interface
 from pennylane.transforms.core import TransformDispatcher
 
 SupportedDiffMethods = Literal[
@@ -44,16 +46,21 @@ SupportedDiffMethods = Literal[
     "spsa",
 ]
 
+if TYPE_CHECKING:
+    from pennylane.devices.device_api import Device
+    from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
+
 
 def _get_jax_interface_name() -> Interface:
     """Check if we are in a jitting context by creating a dummy array and seeing if it's
     abstract.
     """
-    x = qml.math.asarray([0], like="jax")
-    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
+    x = math.asarray([0], like="jax")
+    return Interface.JAX_JIT if math.is_abstract(x) else Interface.JAX
 
 
-def _validate_jax_version():
+def _validate_jax_version() -> None:
     """Checks if the installed version of JAX is supported. If an unsupported version of
     JAX is installed, a ``RuntimeWarning`` is raised."""
     if not find_spec("jax"):
@@ -77,7 +84,8 @@ def _validate_jax_version():
 
 
 # pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph():
+# TensorFlow tests were disabled during deprecation
+def _use_tensorflow_autograph() -> bool:  # pragma: no cover
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
         import tensorflow as tf
@@ -91,7 +99,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
@@ -101,7 +109,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
     Returns:
         Interface: resolved interface
     """
-    interface = get_canonical_interface_name(interface)
+    interface = Interface(interface)
 
     if interface == Interface.AUTO:
         params = []
@@ -109,7 +117,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
         try:
-            interface = get_canonical_interface_name(interface)
+            interface = Interface(interface)
         except ValueError:
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
@@ -117,7 +125,9 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
     if interface in (Interface.JAX, Interface.JAX_JIT):
         _validate_jax_version()
 
-    if interface == Interface.TF and _use_tensorflow_autograph():
+    if (
+        interface == Interface.TF and _use_tensorflow_autograph()
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
         # pylint: disable=unused-import
@@ -135,11 +145,11 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
-) -> "qml.devices.MCMConfig":
+    mcm_config: MCMConfig, interface: Interface, finite_shots: bool
+) -> MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
     if not finite_shots:
         updated_values["postselect_mode"] = None
@@ -174,9 +184,7 @@ def _resolve_mcm_config(
     return replace(mcm_config, **updated_values)
 
 
-def _resolve_hadamard(
-    initial_config: "qml.devices.ExecutionConfig", device: "qml.devices.Device"
-) -> "qml.devices.ExecutionConfig":
+def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> ExecutionConfig:
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
@@ -203,20 +211,20 @@ def _resolve_hadamard(
 
 @debug_logger
 def _resolve_diff_method(
-    initial_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tape: "qml.tape.QuantumTape" = None,
-) -> "qml.devices.ExecutionConfig":
+    initial_config: ExecutionConfig,
+    device: Device,
+    tape: QuantumScript | None = None,
+) -> ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
 
     Args:
-        initial_config (qml.devices.ExecutionConfig): The initial execution configuration.
-        device (qml.devices.Device): A PennyLane device.
+        initial_config (ExecutionConfig): The initial execution configuration.
+        device (Device): A PennyLane device.
         tape (Optional[qml.tape.QuantumTape]): The circuit that will be differentiated. Should include shots information.
 
     Returns:
-        qml.devices.ExecutionConfig: Updated execution configuration with the resolved differentiation method.
+        ExecutionConfig: Updated execution configuration with the resolved differentiation method.
     """
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
@@ -225,7 +233,7 @@ def _resolve_diff_method(
         return initial_config
 
     if device.supports_derivatives(initial_config, circuit=tape):
-        new_config = device.setup_execution_config(initial_config)
+        new_config = device.setup_execution_config(initial_config, tape)
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
@@ -266,24 +274,24 @@ def _resolve_diff_method(
 
 
 def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    execution_config: ExecutionConfig,
+    device: Device,
     tapes: QuantumScriptBatch,
-) -> "qml.devices.ExecutionConfig":
+) -> ExecutionConfig:
     """Resolves the execution configuration for non-device specific properties.
 
     Args:
-        execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
-        device (qml.devices.Device): a Pennylane device
+        execution_config (ExecutionConfig): an execution config to be executed on the device
+        device (Device): a Pennylane device
         tapes (QuantumScriptBatch): a batch of tapes
 
     Returns:
-        qml.devices.ExecutionConfig: resolved execution configuration
+        ExecutionConfig: resolved execution configuration
     """
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
-    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
-        execution_config.gradient_method, Callable
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not callable(
+        execution_config.gradient_method
     ):
         updated_values["grad_on_execution"] = False
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
@@ -312,5 +320,5 @@ def _resolve_execution_config(
     updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
     execution_config = replace(execution_config, **updated_values)
-    execution_config = device.setup_execution_config(execution_config)
+    execution_config = device.setup_execution_config(execution_config, tapes[0])
     return execution_config

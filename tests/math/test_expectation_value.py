@@ -21,7 +21,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -52,8 +51,6 @@ class TestExpectationValueMath:
         np.array,
         jnp.array,
         torch.tensor,
-        tf.Variable,
-        tf.constant,
     ]
 
     @pytest.mark.parametrize("operator_and_states", ops_vs_vecstates)

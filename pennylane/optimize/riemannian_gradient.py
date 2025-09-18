@@ -174,15 +174,16 @@ class RiemannianGradientOptimizer:
     `Wiersema and Killoran (2022) <https://arxiv.org/abs/2202.06976>`_.
 
     Args:
-        circuit (.QNode): a user defined circuit that does not take any arguments and returns
+        circuit (QNode): a user-defined circuit that does not take any arguments and returns
             the expectation value of a ``qml.Hamiltonian``.
-        stepsize (float): the user-defined hyperparameter :math:`\epsilon`.
-        restriction (.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of
+        stepsize (float): the user-defined hyperparameter :math:`\epsilon` (default value: 0.01).
+        restriction (:class:`~.Hamiltonian`): restrict the Lie algebra to a corresponding subspace of
             the full Lie algebra. This restriction should be passed in the form of a
-            ``qml.Hamiltonian`` that consists only of Pauli words.
-        exact (bool): Flag that indicates wether we approximate the Riemannian gradient with a
-            Trotterization or calculate the exact evolution via a matrix exponential. The latter is
-            not hardware friendly and can only be done in simulation.
+            ``qml.Hamiltonian`` that consists only of Pauli words (default value: None).
+        exact (bool): a flag that indicates whether we approximate the Riemannian gradient with a
+            Trotterization (False) or calculate the exact evolution via a matrix exponential (True). The latter is
+            not hardware friendly and can only be done in simulation (default value: False).
+        trottersteps (int): the number of trotter steps to perform when ``exact = False`` (default value: 1).
 
     **Examples**
 
@@ -223,7 +224,6 @@ class RiemannianGradientOptimizer:
 
     >>> circuit()
     -2.2283086057521713
-
     """
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

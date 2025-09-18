@@ -14,7 +14,6 @@
 
 r"""This module contains the GraphStatePrep template."""
 
-from typing import Optional, Union
 
 import networkx as nx
 
@@ -185,10 +184,10 @@ class GraphStatePrep(Operation):
 
     def __init__(
         self,
-        graph: Union[nx.Graph, QubitGraph],
+        graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
-        wires: Optional[Wires] = None,
+        wires: Wires | None = None,
     ):
         self.hyperparameters["graph"] = graph
         self.hyperparameters["one_qubit_ops"] = one_qubit_ops
@@ -228,7 +227,7 @@ class GraphStatePrep(Operation):
     @staticmethod
     def compute_decomposition(
         wires: Wires,
-        graph: Union[nx.Graph, QubitGraph],
+        graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
     ):  # pylint: disable=arguments-differ

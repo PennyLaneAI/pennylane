@@ -11,30 +11,44 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains resource operators for PennyLane templates."""
+r"""This module contains experimental resource estimation functionality."""
 
 from .subroutines import (
+    ResourceOutOfPlaceSquare,
+    ResourcePhaseGradient,
+    ResourceOutMultiplier,
+    ResourceSemiAdder,
     ResourceQFT,
-    ResourceQuantumPhaseEstimation,
-    ResourceQPE,
+    ResourceAQFT,
     ResourceBasisRotation,
-    ResourcePrepSelPrep,
-    ResourceQubitization,
-    ResourceQROM,
-    ResourceReflection,
     ResourceSelect,
+    ResourceQROM,
+    ResourceSelectPauliRot,
+    ResourceQubitUnitary,
     ResourceControlledSequence,
-    ResourceModExp,
-    ResourceMultiplier,
-    ResourcePhaseAdder,
-    ResourceAmplitudeAmplification,
+    ResourceQPE,
+    ResourceIterativeQPE,
 )
-
-from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
+from .trotter import (
+    ResourceTrotterProduct,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
+)
 
 from .stateprep import (
-    ResourceSuperposition,
-    ResourceStatePrep,
-    ResourceBasisState,
-    ResourceMottonenStatePreparation,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
 )
+
+from .qubitize import ResourceQubitizeTHC
+from .compact_hamiltonian import CompactHamiltonian
+from .comparators import (
+    ResourceIntegerComparator,
+    ResourceSingleQubitComparator,
+    ResourceTwoQubitComparator,
+    ResourceRegisterComparator,
+)
+from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling, ResourcePrepTHC
+from .select import ResourceSelectTHC

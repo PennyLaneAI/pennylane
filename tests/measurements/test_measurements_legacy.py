@@ -48,8 +48,9 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = DefaultQubitLegacy(wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
@@ -83,8 +84,9 @@ class TestSampleMeasurement:
     def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = DefaultQubitLegacy(wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.PauliX(0)
@@ -121,8 +123,9 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = DefaultQubitLegacy(wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             return MyMeasurement()
@@ -158,19 +161,21 @@ class TestMeasurementTransform:
             def process(self, tape, device):
                 return {device.shots: len(tape)}
 
-        dev = DefaultQubitLegacy(wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {dev._shots: 1}  # pylint:disable=protected-access
+        assert circuit() == {1000: 1}  # pylint:disable=protected-access
 
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = DefaultQubitLegacy(wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             return qml.classical_shadow(wires=0)

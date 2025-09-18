@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 class TestFable:
@@ -412,3 +413,35 @@ class TestFable:
         # Test that the matrix was encoded up to a constant
         submat = circuit_mat[: input.shape[0], : input.shape[1]]
         assert np.allclose(input, submat)
+
+    @pytest.mark.parametrize(
+        ("input", "wires", "tol"),
+        [
+            (np.random.random((1, 2)), 3, 0),
+            (np.random.random((1, 1)), 3, 1),
+            (np.random.random((2, 1)), 3, 0),
+            (np.random.random((3, 2)), 5, 1),
+            (np.random.random((2, 3)), 5, 1),
+            (np.random.random((3, 4)), 5, 1),
+            (np.random.random((3, 5)), 7, 1),
+            (np.random.random((3, 7)), 7, 1),
+            (np.random.random((5, 5)), 7, 1),
+        ],
+    )
+    def test_decomposition_new(self, input, wires, tol):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.FABLE(input_matrix=input, wires=range(wires), tol=tol)
+
+        for rule in qml.list_decomps(qml.FABLE):
+            _test_decomposition_rule(op, rule)
+
+    def test_decomposition_new_fixed_input(self):
+        """Check the operation using the assert_valid function."""
+        matrix = np.array(
+            [[0.8488749045779405, 0.6727547394771869], [0.21985217715701366, 0.9938695727819239]]
+        )
+
+        op = qml.FABLE(matrix, wires=range(3), tol=0)
+
+        for rule in qml.list_decomps(qml.FABLE):
+            _test_decomposition_rule(op, rule)

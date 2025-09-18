@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (
     _state_preparation_pauli_words,
 )
@@ -59,6 +60,25 @@ class TestHelpers:
         """Test that the correct Pauli words are returned."""
         for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
             assert expected_pauli_words[idx] == pauli_word
+
+
+@pytest.mark.parametrize(
+    ("weights", "wires"),
+    [
+        ([0, 1], [0]),
+        ([0, 1, 2, 3, 4, 5], [0, 1]),
+        ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], [0, 1, 2]),
+    ],
+)
+# No capture test as JAX does not support indexing into arrays of strings
+def test_decomposition_new(weights, wires):
+    """Tests the decomposition rule implemented with the new system."""
+    weights = np.array(weights, dtype=float)
+
+    op = qml.ArbitraryStatePreparation(weights, wires=wires)
+
+    for rule in qml.list_decomps(qml.ArbitraryStatePreparation):
+        _test_decomposition_rule(op, rule)
 
 
 def test_standard_validity():

@@ -20,7 +20,7 @@ from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.exceptions import DeviceError
 
 jax = pytest.importorskip("jax")
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class TestPreprocess:
@@ -85,6 +85,11 @@ class TestPreprocess:
             mcm_method="single-branch-statistics", postselect_mode=None
         )
 
+    def test_default_mcm_method_deferred(self):
+        """Test that the default mcm_method is deferred."""
+        config = qml.device("default.qubit").setup_execution_config()
+        assert config.mcm_config.mcm_method == "deferred"
+
     def test_transform_program(self):
         """Test that the transform program returned by preprocess has the correct transforms."""
         dev = qml.device("default.qubit", wires=1)
@@ -129,10 +134,13 @@ class TestExecution:
         """Test that an error is raised if the device has partitioned shots."""
 
         jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.1)
-        dev = qml.device("default.qubit", wires=1, shots=(100, 100))
+        dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(DeviceError, match="Shot vectors are unsupported with jaxpr execution."):
-            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
+        with pytest.raises(
+            DeviceError,
+            match="Shot vectors are unsupported with jaxpr execution.",
+        ):
+            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2, shots=(100, 100))
 
     def test_use_device_prng(self):
         """Test that sampling depends on the device prng."""
@@ -140,8 +148,8 @@ class TestExecution:
         key1 = jax.random.PRNGKey(1234)
         key2 = jax.random.PRNGKey(1234)
 
-        dev1 = qml.device("default.qubit", wires=1, shots=100, seed=key1)
-        dev2 = qml.device("default.qubit", wires=1, shots=100, seed=key2)
+        dev1 = qml.device("default.qubit", wires=1, seed=key1)
+        dev2 = qml.device("default.qubit", wires=1, seed=key2)
 
         def f():
             qml.H(0)
@@ -149,21 +157,21 @@ class TestExecution:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        samples1 = dev1.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        samples2 = dev2.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        samples1 = dev1.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, shots=100)
+        samples2 = dev2.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, shots=100)
 
         assert qml.math.allclose(samples1, samples2)
 
     def test_no_prng_key(self):
         """Test that that sampling works without a provided prng key."""
 
-        dev = qml.device("default.qubit", wires=1, shots=100)
+        dev = qml.device("default.qubit", wires=1)
 
         def f():
             return qml.sample(wires=0)
 
         jaxpr = jax.make_jaxpr(f)()
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, shots=100)
         assert qml.math.allclose(res, jax.numpy.zeros(100))
 
     def test_simple_execution(self):

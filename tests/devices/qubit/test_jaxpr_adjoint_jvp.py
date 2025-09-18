@@ -24,7 +24,7 @@ jnp = pytest.importorskip("jax.numpy")
 # pylint: disable=wrong-import-position
 from pennylane.devices.qubit.jaxpr_adjoint import execute_and_jvp
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class TestErrors:
