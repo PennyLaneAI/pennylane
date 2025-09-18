@@ -14,7 +14,7 @@
 """SSAQubitMap class for a bidirectional map between wire labels and SSA qubits."""
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TypeAlias
 from uuid import UUID, uuid4
 
 from xdsl.dialects import builtin
@@ -61,6 +61,10 @@ class AbstractWire:
 # The allowed types for the keys and values in the bidirectional map.
 _valid_types = (int, AbstractWire, quantum.QubitSSAValue)
 
+# Key/value type aliases
+SSAQubitMapKey: TypeAlias = int | AbstractWire | quantum.QubitSSAValue
+SSAQubitMapValue: TypeAlias = int | AbstractWire | list[quantum.QubitSSAValue]
+
 
 @dataclass
 class SSAQubitMap:
@@ -69,9 +73,7 @@ class SSAQubitMap:
     wires: tuple[int, ...] | None = None
     """Tuple containing all available static wire labels. None if not provided."""
 
-    _map: dict[
-        int | AbstractWire | quantum.QubitSSAValue, int | AbstractWire | list[quantum.QubitSSAValue]
-    ] = field(default_factory=dict, init=False)
+    _map: dict[SSAQubitMapKey, SSAQubitMapValue] = field(default_factory=dict, init=False)
     """Internal map that stores the bidirectional mapping between wire labels and
     SSA qubits. If the key is an integer or ``AbstractWire``, then the value will be
     a list of all SSA qubits that correspond to that wire label. If the key is an
@@ -100,19 +102,17 @@ class SSAQubitMap:
                 f"to {self.wires}."
             )
 
-    def __contains__(self, key: int | AbstractWire | quantum.QubitSSAValue) -> bool:
+    def __contains__(self, key: SSAQubitMapKey) -> bool:
         """Check if the map contains a wire label or qubit."""
         return key in self._map
 
-    def __getitem__(
-        self, key: int | AbstractWire | quantum.QubitSSAValue
-    ) -> int | AbstractWire | list[quantum.QubitSSAValue]:
+    def __getitem__(self, key: SSAQubitMapKey) -> SSAQubitMapValue:
         """Get a value from the wire/qubit maps."""
         return self._map[key]
 
     def __setitem__(
         self,
-        key: int | AbstractWire | quantum.QubitSSAValue,
+        key: SSAQubitMapKey,
         value: quantum.QubitSSAValue | int | AbstractWire,
     ) -> None:
         """Update the wire/qubit maps."""
@@ -137,16 +137,12 @@ class SSAQubitMap:
         qubits.append(value)
         self._map[value] = key
 
-    def get(
-        self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None
-    ) -> int | AbstractWire | list[quantum.QubitSSAValue] | None:
+    def get(self, key: SSAQubitMapKey, default: Any | None = None) -> SSAQubitMapValue | None:
         """Return an item from the map without removing it, if it exists. Else, return
         the provided default value."""
         return self._map.get(key, default)
 
-    def pop(
-        self, key: int | AbstractWire | quantum.QubitSSAValue, default: Any | None = None
-    ) -> int | AbstractWire | list[quantum.QubitSSAValue] | None:
+    def pop(self, key: SSAQubitMapKey, default: Any | None = None) -> SSAQubitMapValue | None:
         """Remove and return an item from the map, if it exists. Else, return the
         provided default value."""
         if key not in self._map:
