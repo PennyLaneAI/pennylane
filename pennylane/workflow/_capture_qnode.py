@@ -548,7 +548,14 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
 
     """
+    qnode_func = partial(_bind_qnode, qnode)
+    for t in qnode.transform_program:
+        qnode_func = qml.transform(t.transform)(qnode_func, *t.args, **t.kwargs)
 
+    return qnode_func(*args, **kwargs)
+
+
+def _bind_qnode(qnode, *args, **kwargs):
     if qnode.device.wires is None:
         raise NotImplementedError(
             "devices must specify wires for integration with program capture."
