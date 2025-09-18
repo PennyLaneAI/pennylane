@@ -109,7 +109,7 @@ class TestCartanSubalgebra:
 class TestChangeBasisAdRep:
     """Tests for ``change_basis_ad_rep`` to change the adjoint representation into a new basis."""
 
-    def test_permutation(self):
+    def test_permutation(self, seed):
         """Test that a permutation is accounted for correctly."""
         ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1), qml.X(1)]
         dla = qml.lie_closure(ops)
@@ -122,7 +122,7 @@ class TestChangeBasisAdRep:
         new_adj = change_basis_ad_rep(adj, basis_change)
         assert np.allclose(new_adj, permuted_adj)
 
-    def test_tiny_skewed_basis(self):
+    def test_tiny_skewed_basis(self, seed):
         """Test that changing from a tiny orthonormal basis to a skewed basis works."""
         dla = [qml.X(0), qml.Y(0), qml.Z(0)]
         adj = qml.structure_constants(dla)
@@ -134,7 +134,7 @@ class TestChangeBasisAdRep:
         new_adj = change_basis_ad_rep(adj, basis_change)
         assert np.allclose(new_adj, skewed_adj)
 
-    def test_tiny_skewed_basis_from_non_ortho(self):
+    def test_tiny_skewed_basis_from_non_ortho(self, seed):
         """Test that changing from a tiny non-orthonormal basis to a skewed basis works."""
         ortho_dla = [qml.X(0), qml.Y(0), qml.Z(0)]  # only used to create adj rep.
         dla = [0.2 * qml.X(0) - 0.6 * qml.Y(0), 0.4 * qml.Y(0) + 0.9 * qml.Z(0), qml.Z(0)]
@@ -150,7 +150,7 @@ class TestChangeBasisAdRep:
         new_adj = change_basis_ad_rep(adj, basis_change)
         assert np.allclose(new_adj, skewed_adj)
 
-    def test_skewed_basis(self):
+    def test_skewed_basis(self, seed):
         """Test that changing from an orthonormal basis to a skewed basis works."""
         ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1)]
         dla = qml.lie_closure(ops)
@@ -163,7 +163,7 @@ class TestChangeBasisAdRep:
         new_adj = change_basis_ad_rep(adj, basis_change)
         assert np.allclose(new_adj, skewed_adj)
 
-    def test_skewed_basis_from_non_ortho(self):
+    def test_skewed_basis_from_non_ortho(self, seed):
         """Test that changing from a non-orthonormal basis to a skewed basis works."""
         ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1)]
         ortho_dla = qml.lie_closure(ops)  # only used to create adj rep.

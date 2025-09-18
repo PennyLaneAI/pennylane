@@ -930,6 +930,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
+
 * Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
   [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
 
