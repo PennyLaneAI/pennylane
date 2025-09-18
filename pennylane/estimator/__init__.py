@@ -86,3 +86,11 @@ from .templates.subroutines import (
     QPE,
     IterativeQPE,
 )
+
+from .templates.stateprep import (
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    PrepTHC,
+)

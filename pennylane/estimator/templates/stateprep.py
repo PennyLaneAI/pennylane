@@ -16,9 +16,9 @@ import math
 from typing import Dict
 
 import pennylane.numpy as np
-from pennylane.labs import resource_estimation as plre
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
-from pennylane.labs.resource_estimation.resource_operator import (
+import pennylane.estimator as qre
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.estimator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
@@ -28,7 +28,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
 
 
-class ResourceUniformStatePrep(ResourceOperator):
+class UniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition.
 
     This operation prepares a uniform superposition over a given number of
@@ -58,8 +58,8 @@ class ResourceUniformStatePrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> unif_state_prep = plre.ResourceUniformStatePrep(10)
-    >>> print(plre.estimate(unif_state_prep))
+    >>> unif_state_prep = qre.UniformStatePrep(10)
+    >>> print(qre.estimate(unif_state_prep))
     --- Resources: ---
      Total qubits: 5
      Total gates : 124
@@ -129,24 +129,22 @@ class ResourceUniformStatePrep(ResourceOperator):
         k = (num_states & -num_states).bit_length() - 1
         L = num_states // (2**k)
         if L == 1:
-            gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), k))
+            gate_lst.append(GateCount(resource_rep(qre.Hadamard), k))
             return gate_lst
 
         logl = int(math.ceil(math.log2(L)))
-        gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), k + 3 * logl))
+        gate_lst.append(GateCount(resource_rep(qre.Hadamard), k + 3 * logl))
         gate_lst.append(
-            GateCount(
-                resource_rep(plre.ResourceIntegerComparator, {"value": L, "register_size": logl}), 1
-            )
+            GateCount(resource_rep(qre.IntegerComparator, {"value": L, "register_size": logl}), 1)
         )
-        gate_lst.append(GateCount(resource_rep(plre.ResourceRZ), 2))
+        gate_lst.append(GateCount(resource_rep(qre.RZ), 2))
         gate_lst.append(
             GateCount(
                 resource_rep(
-                    plre.ResourceAdjoint,
+                    qre.Adjoint,
                     {
                         "base_cmpr_op": resource_rep(
-                            plre.ResourceIntegerComparator, {"value": L, "register_size": logl}
+                            qre.IntegerComparator, {"value": L, "register_size": logl}
                         )
                     },
                 ),
@@ -157,7 +155,7 @@ class ResourceUniformStatePrep(ResourceOperator):
         return gate_lst
 
 
-class ResourceAliasSampling(ResourceOperator):
+class AliasSampling(ResourceOperator):
     r"""Resource class for preparing a state using coherent alias sampling.
 
     Args:
@@ -173,8 +171,8 @@ class ResourceAliasSampling(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> alias_sampling = plre.ResourceAliasSampling(num_coeffs=100)
-    >>> print(plre.estimate(alias_sampling))
+    >>> alias_sampling = qre.AliasSampling(num_coeffs=100)
+    >>> print(qre.estimate(alias_sampling))
     --- Resources: ---
      Total qubits: 81
      Total gates : 6.157E+3
@@ -242,16 +240,16 @@ class ResourceAliasSampling(ResourceOperator):
 
         num_prec_wires = abs(math.floor(math.log2(precision)))
 
-        gate_lst.append(AllocWires(logl + 2 * num_prec_wires + 1))
+        gate_lst.append(Allocate(logl + 2 * num_prec_wires + 1))
 
         gate_lst.append(
-            GateCount(resource_rep(plre.ResourceUniformStatePrep, {"num_states": num_coeffs}), 1)
+            GateCount(resource_rep(qre.UniformStatePrep, {"num_states": num_coeffs}), 1)
         )
-        gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), num_prec_wires))
+        gate_lst.append(GateCount(resource_rep(qre.Hadamard), num_prec_wires))
         gate_lst.append(
             GateCount(
                 resource_rep(
-                    plre.ResourceQROM,
+                    qre.QROM,
                     {"num_bitstrings": num_coeffs, "size_bitstring": logl + num_prec_wires},
                 ),
                 1,
@@ -260,18 +258,18 @@ class ResourceAliasSampling(ResourceOperator):
         gate_lst.append(
             GateCount(
                 resource_rep(
-                    plre.ResourceRegisterComparator,
+                    qre.RegisterComparator,
                     {"first_register": num_prec_wires, "second_register": num_prec_wires},
                 ),
                 1,
             )
         )
-        gate_lst.append(GateCount(resource_rep(plre.ResourceCSWAP), logl))
+        gate_lst.append(GateCount(resource_rep(qre.CSWAP), logl))
 
         return gate_lst
 
 
-class ResourceMPSPrep(ResourceOperator):
+class MPSPrep(ResourceOperator):
     r"""Resource class for the MPSPrep template.
 
     The resource operation for preparing an initial state from a matrix product state (MPS)
@@ -294,8 +292,8 @@ class ResourceMPSPrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> mps = plre.ResourceMPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
-    >>> print(plre.estimate(mps, gate_set={"CNOT", "RZ", "RY"}))
+    >>> mps = qre.MPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
+    >>> print(qre.estimate(mps, gate_set={"CNOT", "RZ", "RY"}))
     --- Resources: ---
      Total qubits: 13
      Total gates : 1.654E+3
@@ -383,16 +381,16 @@ class ResourceMPSPrep(ResourceOperator):
             math.ceil(math.log2(max_bond_dim)), math.ceil(num_mps_matrices / 2)  # truncate bond dim
         )
 
-        gate_lst = [AllocWires(num_work_wires)]
+        gate_lst = [Allocate(num_work_wires)]
 
         for index in range(1, num_mps_matrices + 1):
             qubit_unitary_wires = min(index + 1, num_work_wires + 1, (num_mps_matrices - index) + 2)
-            qubit_unitary = plre.ResourceQubitUnitary.resource_rep(
+            qubit_unitary = qre.QubitUnitary.resource_rep(
                 num_wires=qubit_unitary_wires, precision=precision
             )
             gate_lst.append(GateCount(qubit_unitary))
 
-        gate_lst.append(FreeWires(num_work_wires))
+        gate_lst.append(Deallocate(num_work_wires))
         return gate_lst
 
     @classmethod
@@ -400,7 +398,7 @@ class ResourceMPSPrep(ResourceOperator):
         return f"MPSPrep({num_mps_matrices}, {max_bond_dim}, {precision})"
 
 
-class ResourceQROMStatePreparation(ResourceOperator):
+class QROMStatePreparation(ResourceOperator):
     r"""Resource class for the QROMStatePreparation template.
 
     This operation implements the state preparation method described
@@ -437,8 +435,8 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qrom_prep = plre.ResourceQROMStatePreparation(num_state_qubits=5, precision=1e-3)
-    >>> print(plre.estimate(qrom_prep, gate_set=plre.StandardGateSet))
+    >>> qrom_prep = qre.QROMStatePreparation(num_state_qubits=5, precision=1e-3)
+    >>> print(qre.estimate(qrom_prep, gate_set=qre.StandardGateSet))
     --- Resources: ---
      Total qubits: 28
      Total gates : 2.744E+3
@@ -453,12 +451,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
         This operation uses the :code:`QROM` subroutine to dynamically load the rotation angles.
 
         >>> gate_set = {"QROM", "Hadamard", "CNOT", "T", "Adjoint(QROM)"}
-        >>> qrom_prep = plre.ResourceQROMStatePreparation(
+        >>> qrom_prep = qre.QROMStatePreparation(
         ...     num_state_qubits = 4,
         ...     precision = 1e-2,
         ...     select_swap_depths = 2,  # default value is 1
         ... )
-        >>> res = plre.estimate(qrom_prep, gate_set)
+        >>> res = qre.estimate(qrom_prep, gate_set)
         >>> print(res)
         --- Resources: ---
          Total qubits: 21
@@ -495,12 +493,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
         of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
         is positive and real).
 
-        >>> qrom_prep = plre.ResourceQROMStatePreparation(
+        >>> qrom_prep = qre.QROMStatePreparation(
         ...     num_state_qubits = 4,
         ...     precision = 1e-2,
         ...     select_swap_depths = [1, None, 2, 2, None],
         ... )
-        >>> res = plre.estimate(qrom_prep, gate_set)
+        >>> res = qre.estimate(qrom_prep, gate_set)
         >>> for op in res.gate_types:
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
@@ -648,7 +646,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
             selswap_depths = [selswap_depths] * expected_size
 
         num_precision_wires = math.ceil(math.log2(math.pi / precision))
-        gate_counts.append(AllocWires(num_precision_wires))
+        gate_counts.append(Allocate(num_precision_wires))
 
         for j in range(num_state_qubits):
             num_bitstrings = 2**j
@@ -656,7 +654,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
             gate_counts.append(
                 GateCount(
-                    plre.ResourceQROM.resource_rep(
+                    qre.QROM.resource_rep(
                         num_bitstrings=num_bitstrings,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=num_bit_flips,
@@ -668,9 +666,9 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
             gate_counts.append(
                 GateCount(
-                    plre.ResourceAdjoint.resource_rep(
-                        plre.resource_rep(
-                            plre.ResourceQROM,
+                    qre.Adjoint.resource_rep(
+                        qre._rep(
+                            qre.QROM,
                             {
                                 "num_bitstrings": num_bitstrings,
                                 "num_bit_flips": num_bit_flips,
@@ -684,13 +682,13 @@ class ResourceQROMStatePreparation(ResourceOperator):
             )
 
         if use_phase_grad_trick:
-            semi_adder = plre.ResourceSemiAdder.resource_rep(max_register_size=num_precision_wires)
-            h = plre.ResourceHadamard.resource_rep()
-            s = plre.ResourceS.resource_rep()
-            s_dagg = plre.ResourceAdjoint.resource_rep(base_cmpr_op=s)
+            semi_adder = qre.SemiAdder.resource_rep(max_register_size=num_precision_wires)
+            h = qre.Hadamard.resource_rep()
+            s = qre.S.resource_rep()
+            s_dagg = qre.Adjoint.resource_rep(base_cmpr_op=s)
             gate_counts.append(
                 GateCount(
-                    plre.ResourceControlled.resource_rep(
+                    qre.Controlled.resource_rep(
                         base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
                     ),
                     count=num_state_qubits,
@@ -703,13 +701,13 @@ class ResourceQROMStatePreparation(ResourceOperator):
             )  # map RY rotations to RZ for phase grad
 
         else:
-            cry = plre.ResourceCRY.resource_rep()
+            cry = qre.CRY.resource_rep()
             gate_counts.append(GateCount(cry, num_precision_wires * num_state_qubits))
 
         if not positive_and_real:
             gate_counts.append(
                 GateCount(
-                    plre.ResourceQROM.resource_rep(
+                    qre.QROM.resource_rep(
                         num_bitstrings=2**num_state_qubits,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=((2**num_state_qubits) * num_precision_wires // 2),
@@ -721,9 +719,9 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
             gate_counts.append(
                 GateCount(
-                    plre.ResourceAdjoint.resource_rep(
-                        plre.resource_rep(
-                            plre.ResourceQROM,
+                    qre.Adjoint.resource_rep(
+                        qre._rep(
+                            qre.QROM,
                             {
                                 "num_bitstrings": 2**num_state_qubits,
                                 "size_bitstring": num_precision_wires,
@@ -737,21 +735,19 @@ class ResourceQROMStatePreparation(ResourceOperator):
             )
 
             if use_phase_grad_trick:
-                semi_adder = plre.ResourceSemiAdder.resource_rep(
-                    max_register_size=num_precision_wires
-                )
+                semi_adder = qre.SemiAdder.resource_rep(max_register_size=num_precision_wires)
                 gate_counts.append(
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
+                        qre.Controlled.resource_rep(
                             base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
                         ),
                     )
                 )
             else:
-                phase_shift = plre.ResourcePhaseShift.resource_rep()
+                phase_shift = qre.PhaseShift.resource_rep()
                 gate_counts.append(GateCount(phase_shift, num_precision_wires))
 
-        gate_counts.append(FreeWires(num_precision_wires))
+        gate_counts.append(Deallocate(num_precision_wires))
         return gate_counts
 
     @classmethod
@@ -839,7 +835,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         )
 
 
-class ResourcePrepTHC(ResourceOperator):
+class PrepTHC(ResourceOperator):
     r"""Resource class for preparing the state for tensor hypercontracted Hamiltonian. This operator customizes
     the Prepare circuit based on the structure of THC Hamiltonian.
 
@@ -860,8 +856,8 @@ class ResourcePrepTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = plre.estimate(plre.ResourcePrepTHC(compact_ham, coeff_precision=15))
+    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
+    >>> res = qre.estimate(qre.PrepTHC(compact_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
      Total qubits: 185
@@ -990,65 +986,63 @@ class ResourcePrepTHC(ResourceOperator):
 
         # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
-        gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
+        gate_list.append(Allocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
-        hadamard = resource_rep(plre.ResourceHadamard)
+        hadamard = resource_rep(qre.Hadamard)
 
-        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
 
         # Figure - 3
 
         # Inquality tests
-        toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+        toffoli = resource_rep(qre.Toffoli)
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Reflection on 5 registers
-        ccz = resource_rep(plre.ResourceCCZ)
+        ccz = resource_rep(qre.CCZ)
         gate_list.append(
-            plre.GateCount(
+            qre.GateCount(
                 resource_rep(
-                    plre.ResourceControlled,
+                    qre.Controlled,
                     {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
                 ),
                 1,
             )
         )
-        gate_list.append(plre.GateCount(toffoli, 2))
+        gate_list.append(qre.GateCount(toffoli, 2))
 
-        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
 
         # Rotate and invert the rotation of ancilla to obtain amplitude of success
-        gate_list.append(AllocWires(coeff_precision))
-        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision - 3)))
-        gate_list.append(FreeWires(coeff_precision))
+        gate_list.append(Allocate(coeff_precision))
+        gate_list.append(qre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(Deallocate(coeff_precision))
 
         # Reflecting about the success amplitude
-        gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
+        gate_list.append(qre.GateCount(ccz, 2 * m_register - 1))
 
-        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
 
         # Inequality tests
-        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Checking that inequality is satisfied
-        mcx = resource_rep(
-            plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
-        )
-        gate_list.append(plre.GateCount(mcx, 1))
-        gate_list.append(plre.GateCount(toffoli, 2))
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        gate_list.append(qre.GateCount(mcx, 1))
+        gate_list.append(qre.GateCount(toffoli, 2))
 
-        x = resource_rep(plre.ResourceX)
-        gate_list.append(plre.GateCount(x, 2))
+        x = resource_rep(qre.X)
+        gate_list.append(qre.GateCount(x, 2))
 
         # Figure- 4(Subprepare Circuit)
-        gate_list.append(plre.GateCount(hadamard, coeff_precision + 1))
+        gate_list.append(qre.GateCount(hadamard, coeff_precision + 1))
 
         # Contiguous register cost Eq.29 in arXiv:2011.03494
-        gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
+        gate_list.append(qre.GateCount(toffoli, m_register**2 + m_register - 1))
 
         # QROM for keep values Eq.31 in arXiv:2011.03494
         qrom_coeff = resource_rep(
-            plre.ResourceQROM,
+            qre.QROM,
             {
                 "num_bitstrings": num_coeff,
                 "size_bitstring": 2 * m_register + 2 + coeff_precision,
@@ -1056,30 +1050,30 @@ class ResourcePrepTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(plre.GateCount(qrom_coeff, 1))
+        gate_list.append(qre.GateCount(qrom_coeff, 1))
 
         # Inequality test between alt and keep registers
         comparator = resource_rep(
-            plre.ResourceRegisterComparator,
+            qre.RegisterComparator,
             {
                 "first_register": coeff_precision,
                 "second_register": coeff_precision,
                 "geq": False,
             },
         )
-        gate_list.append(plre.GateCount(comparator))
+        gate_list.append(qre.GateCount(comparator))
 
-        cz = resource_rep(plre.ResourceCZ)
-        gate_list.append(plre.GateCount(cz, 2))
-        gate_list.append(plre.GateCount(x, 2))
+        cz = resource_rep(qre.CZ)
+        gate_list.append(qre.GateCount(cz, 2))
+        gate_list.append(qre.GateCount(x, 2))
 
         # Swap \mu and \nu registers with alt registers
-        cswap = resource_rep(plre.ResourceCSWAP)
-        gate_list.append(plre.GateCount(cswap, 2 * m_register))
+        cswap = resource_rep(qre.CSWAP)
+        gate_list.append(qre.GateCount(cswap, 2 * m_register))
 
         # Swap \mu and \nu registers controlled on |+> state and success of inequality
-        gate_list.append(plre.GateCount(cswap, m_register))
-        gate_list.append(plre.GateCount(toffoli, 1))
+        gate_list.append(qre.GateCount(cswap, m_register))
+        gate_list.append(qre.GateCount(toffoli, 1))
 
         return gate_list
 
@@ -1114,65 +1108,63 @@ class ResourcePrepTHC(ResourceOperator):
         m_register = int(math.ceil(math.log2(tensor_rank + 1)))
         gate_list = []
 
-        hadamard = resource_rep(plre.ResourceHadamard)
-        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+        hadamard = resource_rep(qre.Hadamard)
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
 
         # Figure - 3
 
         # Inquality tests from arXiv:2011.03494
-        toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+        toffoli = resource_rep(qre.Toffoli)
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Reflection on 5 registers
-        ccz = resource_rep(plre.ResourceCCZ)
+        ccz = resource_rep(qre.CCZ)
         gate_list.append(
-            plre.GateCount(
+            qre.GateCount(
                 resource_rep(
-                    plre.ResourceControlled,
+                    qre.Controlled,
                     {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
                 ),
                 1,
             )
         )
-        gate_list.append(plre.GateCount(toffoli, 2))
+        gate_list.append(qre.GateCount(toffoli, 2))
 
-        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
 
         # Rotate and invert the rotation of ancilla to obtain amplitude of success
-        gate_list.append(AllocWires(coeff_precision))
-        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision - 3)))
-        gate_list.append(FreeWires(coeff_precision))
+        gate_list.append(Allocate(coeff_precision))
+        gate_list.append(qre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(Deallocate(coeff_precision))
 
         # Reflecting about the success amplitude
-        gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
+        gate_list.append(qre.GateCount(ccz, 2 * m_register - 1))
 
-        gate_list.append(plre.GateCount(hadamard, 2 * m_register))
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
 
         # Inequality tests
-        gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Checking that inequality is satisfied
-        mcx = resource_rep(
-            plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
-        )
-        gate_list.append(plre.GateCount(mcx, 1))
-        gate_list.append(plre.GateCount(toffoli, 2))
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        gate_list.append(qre.GateCount(mcx, 1))
+        gate_list.append(qre.GateCount(toffoli, 2))
 
-        x = resource_rep(plre.ResourceX)
-        gate_list.append(plre.GateCount(x, 2))
+        x = resource_rep(qre.X)
+        gate_list.append(qre.GateCount(x, 2))
 
         # Figure- 4 (Subprepare Circuit)
-        gate_list.append(plre.GateCount(hadamard, coeff_precision + 1))
+        gate_list.append(qre.GateCount(hadamard, coeff_precision + 1))
 
         # Contiguous register cost
-        gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
+        gate_list.append(qre.GateCount(toffoli, m_register**2 + m_register - 1))
 
         # Adjoint of QROM for keep values Eq.32 in arXiv:2011.03494
         qrom_adj = resource_rep(
-            plre.ResourceAdjoint,
+            qre.Adjoint,
             {
                 "base_cmpr_op": resource_rep(
-                    plre.ResourceQROM,
+                    qre.QROM,
                     {
                         "num_bitstrings": num_coeff,
                         "size_bitstring": 2 * m_register + 2 + coeff_precision,
@@ -1182,23 +1174,23 @@ class ResourcePrepTHC(ResourceOperator):
                 )
             },
         )
-        gate_list.append(plre.GateCount(qrom_adj, 1))
+        gate_list.append(qre.GateCount(qrom_adj, 1))
 
-        cz = resource_rep(plre.ResourceCZ)
-        gate_list.append(plre.GateCount(cz, 2))
-        gate_list.append(plre.GateCount(x, 2))
+        cz = resource_rep(qre.CZ)
+        gate_list.append(qre.GateCount(cz, 2))
+        gate_list.append(qre.GateCount(x, 2))
 
         # Swap \mu and \nu registers with alt registers
-        cswap = resource_rep(plre.ResourceCSWAP)
-        gate_list.append(plre.GateCount(cswap, 2 * m_register))
+        cswap = resource_rep(qre.CSWAP)
+        gate_list.append(qre.GateCount(cswap, 2 * m_register))
 
         # Swap \mu and \nu registers controlled on |+> state and success of inequality
-        gate_list.append(plre.GateCount(cswap, m_register))
-        gate_list.append(plre.GateCount(toffoli, 1))
+        gate_list.append(qre.GateCount(cswap, m_register))
+        gate_list.append(qre.GateCount(toffoli, 1))
 
         # Free Prepare Wires
         # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
-        gate_list.append(FreeWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
+        gate_list.append(Deallocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
         return gate_list

@@ -16,13 +16,14 @@ Tests for the state preparation subroutines resource operators.
 """
 import pytest
 
-import pennylane.labs.resource_estimation as plre
-from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
-from pennylane.labs.resource_estimation.templates.stateprep import (
-    ResourceAliasSampling,
-    ResourceMPSPrep,
-    ResourceQROMStatePreparation,
+import pennylane.estimator as qre
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.estimator import GateCount, resource_rep
+from pennylane.estimator.resource_config import ResourceConfig
+from pennylane.estimator.templates.stateprep import (
+    AliasSampling,
+    MPSPrep,
+    QROMStatePreparation,
 )
 
 # pylint: disable=no-self-use,too-many-arguments
@@ -37,7 +38,7 @@ class TestUniformStatePrep:
     )
     def test_resource_params(self, num_states):
         """Test that the resource params are correct."""
-        op = plre.ResourceUniformStatePrep(num_states)
+        op = qre.UniformStatePrep(num_states)
         assert op.resource_params == {"num_states": num_states}
 
     @pytest.mark.parametrize(
@@ -50,10 +51,10 @@ class TestUniformStatePrep:
     )
     def test_resource_rep(self, num_states, num_wires):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(
-            plre.ResourceUniformStatePrep, num_wires, {"num_states": num_states}
+        expected = qre.CompressedResourceOp(
+            qre.UniformStatePrep, num_wires, {"num_states": num_states}
         )
-        assert plre.ResourceUniformStatePrep.resource_rep(num_states) == expected
+        assert qre.UniformStatePrep.resource_rep(num_states) == expected
 
     @pytest.mark.parametrize(
         "num_states, expected_res",
@@ -61,20 +62,18 @@ class TestUniformStatePrep:
             (
                 10,
                 [
-                    GateCount(resource_rep(plre.ResourceHadamard), 10),
+                    GateCount(resource_rep(qre.Hadamard), 10),
                     GateCount(
-                        resource_rep(
-                            plre.ResourceIntegerComparator, {"value": 5, "register_size": 3}
-                        ),
+                        resource_rep(qre.IntegerComparator, {"value": 5, "register_size": 3}),
                         1,
                     ),
-                    GateCount(resource_rep(plre.ResourceRZ), 2),
+                    GateCount(resource_rep(qre.RZ), 2),
                     GateCount(
                         resource_rep(
-                            plre.ResourceAdjoint,
+                            qre.Adjoint,
                             {
                                 "base_cmpr_op": resource_rep(
-                                    plre.ResourceIntegerComparator, {"value": 5, "register_size": 3}
+                                    qre.IntegerComparator, {"value": 5, "register_size": 3}
                                 )
                             },
                         ),
@@ -85,20 +84,18 @@ class TestUniformStatePrep:
             (
                 6,
                 [
-                    GateCount(resource_rep(plre.ResourceHadamard), 7),
+                    GateCount(resource_rep(qre.Hadamard), 7),
                     GateCount(
-                        resource_rep(
-                            plre.ResourceIntegerComparator, {"value": 3, "register_size": 2}
-                        ),
+                        resource_rep(qre.IntegerComparator, {"value": 3, "register_size": 2}),
                         1,
                     ),
-                    GateCount(resource_rep(plre.ResourceRZ), 2),
+                    GateCount(resource_rep(qre.RZ), 2),
                     GateCount(
                         resource_rep(
-                            plre.ResourceAdjoint,
+                            qre.Adjoint,
                             {
                                 "base_cmpr_op": resource_rep(
-                                    plre.ResourceIntegerComparator, {"value": 3, "register_size": 2}
+                                    qre.IntegerComparator, {"value": 3, "register_size": 2}
                                 )
                             },
                         ),
@@ -109,14 +106,14 @@ class TestUniformStatePrep:
             (
                 4,
                 [
-                    GateCount(resource_rep(plre.ResourceHadamard), 2),
+                    GateCount(resource_rep(qre.Hadamard), 2),
                 ],
             ),
         ),
     )
     def test_resources(self, num_states, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceUniformStatePrep.resource_decomp(num_states) == expected_res
+        assert qre.UniformStatePrep.resource_decomp(num_states) == expected_res
 
 
 class TestAliasSampling:
@@ -132,7 +129,7 @@ class TestAliasSampling:
     )
     def test_resource_params(self, num_coeffs, precision):
         """Test that the resource params are correct."""
-        op = plre.ResourceAliasSampling(num_coeffs, precision=precision)
+        op = qre.AliasSampling(num_coeffs, precision=precision)
         assert op.resource_params == {"num_coeffs": num_coeffs, "precision": precision}
 
     @pytest.mark.parametrize(
@@ -145,12 +142,12 @@ class TestAliasSampling:
     )
     def test_resource_rep(self, num_coeffs, precision, num_wires):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(
-            plre.ResourceAliasSampling,
+        expected = qre.CompressedResourceOp(
+            qre.AliasSampling,
             num_wires,
             {"num_coeffs": num_coeffs, "precision": precision},
         )
-        assert plre.ResourceAliasSampling.resource_rep(num_coeffs, precision) == expected
+        assert qre.AliasSampling.resource_rep(num_coeffs, precision) == expected
 
     @pytest.mark.parametrize(
         "num_coeffs, precision, expected_res",
@@ -159,69 +156,63 @@ class TestAliasSampling:
                 10,
                 None,
                 [
-                    AllocWires(65),
-                    GateCount(resource_rep(plre.ResourceUniformStatePrep, {"num_states": 10})),
-                    GateCount(resource_rep(plre.ResourceHadamard), 30),
+                    Allocate(65),
+                    GateCount(resource_rep(qre.UniformStatePrep, {"num_states": 10})),
+                    GateCount(resource_rep(qre.Hadamard), 30),
                     GateCount(
-                        resource_rep(
-                            plre.ResourceQROM, {"num_bitstrings": 10, "size_bitstring": 34}
-                        ),
+                        resource_rep(qre.QROM, {"num_bitstrings": 10, "size_bitstring": 34}),
                         1,
                     ),
                     GateCount(
                         resource_rep(
-                            plre.ResourceRegisterComparator,
+                            qre.RegisterComparator,
                             {"first_register": 30, "second_register": 30},
                         ),
                         1,
                     ),
-                    GateCount(resource_rep(plre.ResourceCSWAP), 4),
+                    GateCount(resource_rep(qre.CSWAP), 4),
                 ],
             ),
             (
                 6,
                 None,
                 [
-                    AllocWires(64),
-                    GateCount(resource_rep(plre.ResourceUniformStatePrep, {"num_states": 6})),
-                    GateCount(resource_rep(plre.ResourceHadamard), 30),
+                    Allocate(64),
+                    GateCount(resource_rep(qre.UniformStatePrep, {"num_states": 6})),
+                    GateCount(resource_rep(qre.Hadamard), 30),
                     GateCount(
-                        resource_rep(
-                            plre.ResourceQROM, {"num_bitstrings": 6, "size_bitstring": 33}
-                        ),
+                        resource_rep(qre.QROM, {"num_bitstrings": 6, "size_bitstring": 33}),
                         1,
                     ),
                     GateCount(
                         resource_rep(
-                            plre.ResourceRegisterComparator,
+                            qre.RegisterComparator,
                             {"first_register": 30, "second_register": 30},
                         ),
                         1,
                     ),
-                    GateCount(resource_rep(plre.ResourceCSWAP), 3),
+                    GateCount(resource_rep(qre.CSWAP), 3),
                 ],
             ),
             (
                 4,
                 1e-6,
                 [
-                    AllocWires(43),
-                    GateCount(resource_rep(plre.ResourceUniformStatePrep, {"num_states": 4})),
-                    GateCount(resource_rep(plre.ResourceHadamard), 20),
+                    Allocate(43),
+                    GateCount(resource_rep(qre.UniformStatePrep, {"num_states": 4})),
+                    GateCount(resource_rep(qre.Hadamard), 20),
                     GateCount(
-                        resource_rep(
-                            plre.ResourceQROM, {"num_bitstrings": 4, "size_bitstring": 22}
-                        ),
+                        resource_rep(qre.QROM, {"num_bitstrings": 4, "size_bitstring": 22}),
                         1,
                     ),
                     GateCount(
                         resource_rep(
-                            plre.ResourceRegisterComparator,
+                            qre.RegisterComparator,
                             {"first_register": 20, "second_register": 20},
                         ),
                         1,
                     ),
-                    GateCount(resource_rep(plre.ResourceCSWAP), 2),
+                    GateCount(resource_rep(qre.CSWAP), 2),
                 ],
             ),
         ),
@@ -231,9 +222,9 @@ class TestAliasSampling:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[ResourceAliasSampling]
-            assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, **kwargs) == expected_res
+            assert qre.AliasSampling.resource_decomp(num_coeffs, **kwargs) == expected_res
         else:
-            assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision) == expected_res
+            assert qre.AliasSampling.resource_decomp(num_coeffs, precision) == expected_res
 
 
 class TestPrepTHC:
@@ -242,14 +233,14 @@ class TestPrepTHC:
     @pytest.mark.parametrize(
         "compact_ham, coeff_prec, selswap_depth",
         (
-            (plre.CompactHamiltonian.thc(58, 160), 13, 1),
-            (plre.CompactHamiltonian.thc(10, 50), None, None),
-            (plre.CompactHamiltonian.thc(4, 20), None, 2),
+            (qre.CompactHamiltonian.thc(58, 160), 13, 1),
+            (qre.CompactHamiltonian.thc(10, 50), None, None),
+            (qre.CompactHamiltonian.thc(4, 20), None, 2),
         ),
     )
     def test_resource_params(self, compact_ham, coeff_prec, selswap_depth):
         """Test that the resource params are correct."""
-        op = plre.ResourcePrepTHC(compact_ham, coeff_prec, selswap_depth)
+        op = qre.PrepTHC(compact_ham, coeff_prec, selswap_depth)
         assert op.resource_params == {
             "compact_ham": compact_ham,
             "coeff_precision": coeff_prec,
@@ -259,15 +250,15 @@ class TestPrepTHC:
     @pytest.mark.parametrize(
         "compact_ham, coeff_prec, selswap_depth, num_wires",
         (
-            (plre.CompactHamiltonian.thc(58, 160), 13, 1, 16),
-            (plre.CompactHamiltonian.thc(10, 50), None, None, 12),
-            (plre.CompactHamiltonian.thc(4, 20), None, 2, 10),
+            (qre.CompactHamiltonian.thc(58, 160), 13, 1, 16),
+            (qre.CompactHamiltonian.thc(10, 50), None, None, 12),
+            (qre.CompactHamiltonian.thc(4, 20), None, 2, 10),
         ),
     )
     def test_resource_rep(self, compact_ham, coeff_prec, selswap_depth, num_wires):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(
-            plre.ResourcePrepTHC,
+        expected = qre.CompressedResourceOp(
+            qre.PrepTHC,
             num_wires,
             {
                 "compact_ham": compact_ham,
@@ -275,7 +266,7 @@ class TestPrepTHC:
                 "select_swap_depth": selswap_depth,
             },
         )
-        assert plre.ResourcePrepTHC.resource_rep(compact_ham, coeff_prec, selswap_depth) == expected
+        assert qre.PrepTHC.resource_rep(compact_ham, coeff_prec, selswap_depth) == expected
 
     # We are comparing the Toffoli and qubit cost here
     # Expected number of Toffolis and qubits were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
@@ -284,19 +275,19 @@ class TestPrepTHC:
         "compact_ham, coeff_prec, selswap_depth, expected_res",
         (
             (
-                plre.CompactHamiltonian.thc(58, 160),
+                qre.CompactHamiltonian.thc(58, 160),
                 13,
                 1,
                 {"algo_qubits": 16, "ancilla_qubits": 86, "toffoli_gates": 13156},
             ),
             (
-                plre.CompactHamiltonian.thc(10, 50),
+                qre.CompactHamiltonian.thc(10, 50),
                 None,
                 None,
                 {"algo_qubits": 12, "ancilla_qubits": 174, "toffoli_gates": 579},
             ),
             (
-                plre.CompactHamiltonian.thc(4, 20),
+                qre.CompactHamiltonian.thc(4, 20),
                 None,
                 2,
                 {"algo_qubits": 10, "ancilla_qubits": 109, "toffoli_gates": 279},
@@ -306,10 +297,8 @@ class TestPrepTHC:
     def test_resources(self, compact_ham, coeff_prec, selswap_depth, expected_res):
         """Test that the resources are correct."""
 
-        prep_cost = plre.estimate(
-            plre.ResourcePrepTHC(
-                compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth
-            )
+        prep_cost = qre.estimate(
+            qre.PrepTHC(compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth)
         )
         assert prep_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
         assert (
@@ -323,26 +312,24 @@ class TestPrepTHC:
         with pytest.raises(
             TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
         ):
-            plre.ResourcePrepTHC(plre.CompactHamiltonian.cdf(58, 160))
+            qre.PrepTHC(qre.CompactHamiltonian.cdf(58, 160))
 
         with pytest.raises(
             TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
         ):
-            plre.ResourcePrepTHC.resource_rep(plre.CompactHamiltonian.cdf(58, 160))
+            qre.PrepTHC.resource_rep(qre.CompactHamiltonian.cdf(58, 160))
 
     def test_typeerror_precision(self):
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
             TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
         ):
-            plre.ResourcePrepTHC(plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
+            qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
 
         with pytest.raises(
             TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
         ):
-            plre.ResourcePrepTHC.resource_rep(
-                plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5
-            )
+            qre.PrepTHC.resource_rep(qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
 
 
 class TestMPSPrep:
@@ -359,9 +346,9 @@ class TestMPSPrep:
     def test_resource_params(self, num_mps, bond_dim, precision):
         """Test that the resource params are correct."""
         if precision is None:
-            op = plre.ResourceMPSPrep(num_mps, bond_dim)
+            op = qre.MPSPrep(num_mps, bond_dim)
         else:
-            op = plre.ResourceMPSPrep(num_mps, bond_dim, precision)
+            op = qre.MPSPrep(num_mps, bond_dim, precision)
 
         assert op.resource_params == {
             "num_mps_matrices": num_mps,
@@ -379,8 +366,8 @@ class TestMPSPrep:
     )
     def test_resource_rep(self, num_mps, bond_dim, precision):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(
-            plre.ResourceMPSPrep,
+        expected = qre.CompressedResourceOp(
+            qre.MPSPrep,
             num_mps,
             {
                 "num_mps_matrices": num_mps,
@@ -390,7 +377,7 @@ class TestMPSPrep:
         )
 
         assert (
-            plre.ResourceMPSPrep.resource_rep(
+            qre.MPSPrep.resource_rep(
                 num_mps_matrices=num_mps, max_bond_dim=bond_dim, precision=precision
             )
             == expected
@@ -404,14 +391,14 @@ class TestMPSPrep:
                 4,
                 None,
                 [
-                    AllocWires(2),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=2, precision=1e-9)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=2, precision=1e-9)),
-                    FreeWires(2),
+                    Allocate(2),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=2, precision=1e-9)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-9)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=2, precision=1e-9)),
+                    Deallocate(2),
                 ],
             ),
             (
@@ -419,16 +406,16 @@ class TestMPSPrep:
                 5,
                 1e-3,
                 [
-                    AllocWires(3),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=2, precision=1e-3)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-3)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-3)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=2, precision=1e-3)),
-                    FreeWires(3),
+                    Allocate(3),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=2, precision=1e-3)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-3)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=4, precision=1e-3)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-3)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=2, precision=1e-3)),
+                    Deallocate(3),
                 ],
             ),
             (
@@ -436,18 +423,18 @@ class TestMPSPrep:
                 32,
                 1e-4,
                 [
-                    AllocWires(5),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=2, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=4, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=5, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=6, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=6, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=5, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=4, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=3, precision=1e-4)),
-                    GateCount(plre.ResourceQubitUnitary.resource_rep(num_wires=2, precision=1e-4)),
-                    FreeWires(5),
+                    Allocate(5),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=2, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=4, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=5, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=6, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=6, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=5, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=4, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=3, precision=1e-4)),
+                    GateCount(qre.QubitUnitary.resource_rep(num_wires=2, precision=1e-4)),
+                    Deallocate(5),
                 ],
             ),
         ),
@@ -457,20 +444,20 @@ class TestMPSPrep:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[ResourceMPSPrep]
-            actual = plre.ResourceMPSPrep.resource_decomp(
+            actual = qre.MPSPrep.resource_decomp(
                 num_mps_matrices=num_mps, max_bond_dim=bond_dim, **kwargs
             )
             assert actual == expected_res
 
         else:
-            actual = plre.ResourceMPSPrep.resource_decomp(
+            actual = qre.MPSPrep.resource_decomp(
                 num_mps_matrices=num_mps,
                 max_bond_dim=bond_dim,
                 precision=precision,
             )
             assert actual == expected_res
 
-        assert plre.ResourceMPSPrep
+        assert qre.MPSPrep
 
     @pytest.mark.parametrize(
         "num_mps, bond_dim, precision, expected_name",
@@ -482,7 +469,7 @@ class TestMPSPrep:
     )
     def test_tracking_name(self, num_mps, bond_dim, precision, expected_name):
         """Test that the tracking name is as expected."""
-        assert plre.ResourceMPSPrep.tracking_name(num_mps, bond_dim, precision) == expected_name
+        assert qre.MPSPrep.tracking_name(num_mps, bond_dim, precision) == expected_name
 
 
 class TestQROMStatePrep:
@@ -504,7 +491,7 @@ class TestQROMStatePrep:
     def test_resource_params(self, num_state_qubits, precision, positive_and_real, selswap_depths):
         """Test that the resource params are as expected"""
         if all((_ is None for _ in (precision, positive_and_real, selswap_depths))):
-            op = plre.ResourceQROMStatePreparation(num_state_qubits)  # check default values
+            op = qre.QROMStatePreparation(num_state_qubits)  # check default values
             expected_params = {
                 "num_state_qubits": num_state_qubits,
                 "precision": None,
@@ -512,7 +499,7 @@ class TestQROMStatePrep:
                 "selswap_depths": 1,
             }
         else:
-            op = plre.ResourceQROMStatePreparation(
+            op = qre.QROMStatePreparation(
                 num_state_qubits, precision, positive_and_real, selswap_depths
             )
             expected_params = {
@@ -538,9 +525,9 @@ class TestQROMStatePrep:
     def test_resource_rep(self, num_state_qubits, precision, positive_and_real, selswap_depths):
         """Test that the resource rep is constructed as expected"""
         if all((_ is None for _ in (precision, positive_and_real, selswap_depths))):
-            actual_resource_rep = plre.ResourceQROMStatePreparation.resource_rep(num_state_qubits)
-            expected = plre.CompressedResourceOp(
-                plre.ResourceQROMStatePreparation,
+            actual_resource_rep = qre.QROMStatePreparation.resource_rep(num_state_qubits)
+            expected = qre.CompressedResourceOp(
+                qre.QROMStatePreparation,
                 num_state_qubits,
                 {
                     "num_state_qubits": num_state_qubits,
@@ -550,14 +537,14 @@ class TestQROMStatePrep:
                 },
             )
         else:
-            actual_resource_rep = plre.ResourceQROMStatePreparation.resource_rep(
+            actual_resource_rep = qre.QROMStatePreparation.resource_rep(
                 num_state_qubits,
                 precision,
                 positive_and_real,
                 selswap_depths,
             )
-            expected = plre.CompressedResourceOp(
-                plre.ResourceQROMStatePreparation,
+            expected = qre.CompressedResourceOp(
+                qre.QROMStatePreparation,
                 num_state_qubits,
                 {
                     "num_state_qubits": num_state_qubits,
@@ -578,24 +565,24 @@ class TestQROMStatePrep:
         with pytest.raises(
             TypeError, match="`select_swap_depths` must be an integer, None or iterable"
         ):
-            plre.ResourceQROMStatePreparation(10, select_swap_depths=sel_swapdepths)
+            qre.QROMStatePreparation(10, select_swap_depths=sel_swapdepths)
 
         with pytest.raises(
             TypeError, match="`selswap_depths` must be an integer, None or iterable"
         ):
-            plre.ResourceQROMStatePreparation.resource_rep(10, selswap_depths=sel_swapdepths)
+            qre.QROMStatePreparation.resource_rep(10, selswap_depths=sel_swapdepths)
 
         # test incorrect size
         sel_swapdepths = [1]
         with pytest.raises(
             ValueError, match="Expected the length of `select_swap_depths` to be 11, got 1"
         ):
-            plre.ResourceQROMStatePreparation(10, select_swap_depths=sel_swapdepths)
+            qre.QROMStatePreparation(10, select_swap_depths=sel_swapdepths)
 
         with pytest.raises(
             ValueError, match="Expected the length of `selswap_depths` to be 11, got 1"
         ):
-            plre.ResourceQROMStatePreparation.resource_rep(10, selswap_depths=sel_swapdepths)
+            qre.QROMStatePreparation.resource_rep(10, selswap_depths=sel_swapdepths)
 
     # Computed resources by hand:
     @pytest.mark.parametrize(
@@ -607,9 +594,9 @@ class TestQROMStatePrep:
                 False,
                 1,
                 [
-                    AllocWires(32),
+                    Allocate(32),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=32,
                             num_bit_flips=16,
@@ -618,8 +605,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=32,
                                 num_bit_flips=16,
@@ -629,7 +616,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=32,
                             num_bit_flips=32,
@@ -638,8 +625,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=32,
                                 num_bit_flips=32,
@@ -649,7 +636,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=32,
                             num_bit_flips=64,
@@ -658,8 +645,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=32,
                                 num_bit_flips=64,
@@ -669,7 +656,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=32,
                             num_bit_flips=128,
@@ -678,8 +665,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=32,
                                 num_bit_flips=128,
@@ -689,7 +676,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=16,
                             size_bitstring=32,
                             num_bit_flips=256,
@@ -698,8 +685,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=32,
                                 num_bit_flips=256,
@@ -709,21 +696,21 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(32),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(32),
                             1,
                             0,
                         ),
                         5,
                     ),
-                    GateCount(plre.ResourceHadamard.resource_rep(), 64),
-                    GateCount(plre.ResourceS.resource_rep(), 32),
+                    GateCount(qre.Hadamard.resource_rep(), 64),
+                    GateCount(qre.S.resource_rep(), 32),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(plre.ResourceS.resource_rep()),
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
                         32,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=32,
                             size_bitstring=32,
                             num_bit_flips=512,
@@ -732,8 +719,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=32,
                                 size_bitstring=32,
                                 num_bit_flips=512,
@@ -743,13 +730,13 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(32),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(32),
                             1,
                             0,
                         ),
                     ),
-                    FreeWires(32),
+                    Deallocate(32),
                 ],
             ),
             (
@@ -758,9 +745,9 @@ class TestQROMStatePrep:
                 False,
                 1,
                 [
-                    AllocWires(19),
+                    Allocate(19),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=19,
                             num_bit_flips=9,
@@ -769,8 +756,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=19,
                                 num_bit_flips=9,
@@ -780,7 +767,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=19,
                             num_bit_flips=19,
@@ -789,8 +776,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=19,
                                 num_bit_flips=19,
@@ -800,7 +787,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=19,
                             num_bit_flips=38,
@@ -809,8 +796,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=19,
                                 num_bit_flips=38,
@@ -820,7 +807,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=19,
                             num_bit_flips=76,
@@ -829,8 +816,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=19,
                                 num_bit_flips=76,
@@ -840,21 +827,21 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(19),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(19),
                             1,
                             0,
                         ),
                         4,
                     ),
-                    GateCount(plre.ResourceHadamard.resource_rep(), 38),
-                    GateCount(plre.ResourceS.resource_rep(), 19),
+                    GateCount(qre.Hadamard.resource_rep(), 38),
+                    GateCount(qre.S.resource_rep(), 19),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(plre.ResourceS.resource_rep()),
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
                         19,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=16,
                             size_bitstring=19,
                             num_bit_flips=152,
@@ -863,8 +850,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=19,
                                 num_bit_flips=152,
@@ -874,13 +861,13 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(19),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(19),
                             1,
                             0,
                         ),
                     ),
-                    FreeWires(19),
+                    Deallocate(19),
                 ],
             ),
             (
@@ -889,9 +876,9 @@ class TestQROMStatePrep:
                 False,
                 2,
                 [
-                    AllocWires(15),
+                    Allocate(15),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
@@ -900,8 +887,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -911,7 +898,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
@@ -920,8 +907,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -931,7 +918,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
@@ -940,8 +927,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -951,21 +938,21 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(15),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(15),
                             1,
                             0,
                         ),
                         3,
                     ),
-                    GateCount(plre.ResourceHadamard.resource_rep(), 30),
-                    GateCount(plre.ResourceS.resource_rep(), 15),
+                    GateCount(qre.Hadamard.resource_rep(), 30),
+                    GateCount(qre.S.resource_rep(), 15),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(plre.ResourceS.resource_rep()),
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
                         15,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
@@ -974,8 +961,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
@@ -985,13 +972,13 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(15),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(15),
                             1,
                             0,
                         ),
                     ),
-                    FreeWires(15),
+                    Deallocate(15),
                 ],
             ),
             (
@@ -1000,9 +987,9 @@ class TestQROMStatePrep:
                 True,
                 [1, 2, 2],
                 [
-                    AllocWires(15),
+                    Allocate(15),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
@@ -1011,8 +998,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1022,7 +1009,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
@@ -1031,8 +1018,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1042,7 +1029,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
@@ -1051,8 +1038,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1062,20 +1049,20 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(15),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(15),
                             1,
                             0,
                         ),
                         3,
                     ),
-                    GateCount(plre.ResourceHadamard.resource_rep(), 30),
-                    GateCount(plre.ResourceS.resource_rep(), 15),
+                    GateCount(qre.Hadamard.resource_rep(), 30),
+                    GateCount(qre.S.resource_rep(), 15),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(plre.ResourceS.resource_rep()),
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
                         15,
                     ),
-                    FreeWires(15),
+                    Deallocate(15),
                 ],
             ),
             (
@@ -1084,9 +1071,9 @@ class TestQROMStatePrep:
                 False,
                 [None, 1, None, 4],
                 [
-                    AllocWires(15),
+                    Allocate(15),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
@@ -1095,8 +1082,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1106,7 +1093,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
@@ -1115,8 +1102,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1126,7 +1113,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
@@ -1135,8 +1122,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1146,21 +1133,21 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(15),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(15),
                             1,
                             0,
                         ),
                         3,
                     ),
-                    GateCount(plre.ResourceHadamard.resource_rep(), 30),
-                    GateCount(plre.ResourceS.resource_rep(), 15),
+                    GateCount(qre.Hadamard.resource_rep(), 30),
+                    GateCount(qre.S.resource_rep(), 15),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(plre.ResourceS.resource_rep()),
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
                         15,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
@@ -1169,8 +1156,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
@@ -1180,13 +1167,13 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceControlled.resource_rep(
-                            plre.ResourceSemiAdder.resource_rep(15),
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(15),
                             1,
                             0,
                         ),
                     ),
-                    FreeWires(15),
+                    Deallocate(15),
                 ],
             ),
         ),
@@ -1199,14 +1186,14 @@ class TestQROMStatePrep:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[ResourceQROMStatePreparation]
-            actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
+            actual_resources = qre.QROMStatePreparation.resource_decomp(
                 num_state_qubits=num_state_qubits,
                 positive_and_real=positive_and_real,
                 selswap_depths=selswap_depths,
                 **kwargs,
             )
         else:
-            actual_resources = plre.ResourceQROMStatePreparation.resource_decomp(
+            actual_resources = qre.QROMStatePreparation.resource_decomp(
                 num_state_qubits=num_state_qubits,
                 precision=precision,
                 positive_and_real=positive_and_real,
@@ -1224,9 +1211,9 @@ class TestQROMStatePrep:
                 False,
                 1,
                 [
-                    AllocWires(32),
+                    Allocate(32),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=32,
                             num_bit_flips=16,
@@ -1235,8 +1222,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=32,
                                 num_bit_flips=16,
@@ -1246,7 +1233,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=32,
                             num_bit_flips=32,
@@ -1255,8 +1242,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=32,
                                 num_bit_flips=32,
@@ -1266,7 +1253,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=32,
                             num_bit_flips=64,
@@ -1275,8 +1262,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=32,
                                 num_bit_flips=64,
@@ -1286,7 +1273,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=32,
                             num_bit_flips=128,
@@ -1295,8 +1282,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=32,
                                 num_bit_flips=128,
@@ -1306,7 +1293,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=16,
                             size_bitstring=32,
                             num_bit_flips=256,
@@ -1315,8 +1302,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=32,
                                 num_bit_flips=256,
@@ -1326,11 +1313,11 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(),
+                        qre.CRY.resource_rep(),
                         160,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=32,
                             size_bitstring=32,
                             num_bit_flips=512,
@@ -1339,8 +1326,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=32,
                                 size_bitstring=32,
                                 num_bit_flips=512,
@@ -1350,10 +1337,10 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(),
+                        qre.PhaseShift.resource_rep(),
                         32,
                     ),
-                    FreeWires(32),
+                    Deallocate(32),
                 ],
             ),
             (
@@ -1362,9 +1349,9 @@ class TestQROMStatePrep:
                 False,
                 1,
                 [
-                    AllocWires(19),
+                    Allocate(19),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=19,
                             num_bit_flips=9,
@@ -1373,8 +1360,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=19,
                                 num_bit_flips=9,
@@ -1384,7 +1371,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=19,
                             num_bit_flips=19,
@@ -1393,8 +1380,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=19,
                                 num_bit_flips=19,
@@ -1404,7 +1391,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=19,
                             num_bit_flips=38,
@@ -1413,8 +1400,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=19,
                                 num_bit_flips=38,
@@ -1424,7 +1411,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=19,
                             num_bit_flips=76,
@@ -1433,8 +1420,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=19,
                                 num_bit_flips=76,
@@ -1444,11 +1431,11 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(),
+                        qre.CRY.resource_rep(),
                         76,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=16,
                             size_bitstring=19,
                             num_bit_flips=152,
@@ -1457,8 +1444,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=16,
                                 size_bitstring=19,
                                 num_bit_flips=152,
@@ -1468,10 +1455,10 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(),
+                        qre.PhaseShift.resource_rep(),
                         19,
                     ),
-                    FreeWires(19),
+                    Deallocate(19),
                 ],
             ),
             (
@@ -1480,9 +1467,9 @@ class TestQROMStatePrep:
                 False,
                 2,
                 [
-                    AllocWires(15),
+                    Allocate(15),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
@@ -1491,8 +1478,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1502,7 +1489,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
@@ -1511,8 +1498,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1522,7 +1509,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
@@ -1531,8 +1518,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1542,11 +1529,11 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(),
+                        qre.CRY.resource_rep(),
                         45,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
@@ -1555,8 +1542,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
@@ -1566,10 +1553,10 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(),
+                        qre.PhaseShift.resource_rep(),
                         15,
                     ),
-                    FreeWires(15),
+                    Deallocate(15),
                 ],
             ),
             (
@@ -1578,9 +1565,9 @@ class TestQROMStatePrep:
                 True,
                 [1, 2, 2],
                 [
-                    AllocWires(15),
+                    Allocate(15),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
@@ -1589,8 +1576,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1600,7 +1587,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
@@ -1609,8 +1596,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1620,7 +1607,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
@@ -1629,8 +1616,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1640,10 +1627,10 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(),
+                        qre.CRY.resource_rep(),
                         45,
                     ),
-                    FreeWires(15),
+                    Deallocate(15),
                 ],
             ),
             (
@@ -1652,9 +1639,9 @@ class TestQROMStatePrep:
                 False,
                 [None, 1, None, 4],
                 [
-                    AllocWires(15),
+                    Allocate(15),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
@@ -1663,8 +1650,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
@@ -1674,7 +1661,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
@@ -1683,8 +1670,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
@@ -1694,7 +1681,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
@@ -1703,8 +1690,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
@@ -1714,11 +1701,11 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(),
+                        qre.CRY.resource_rep(),
                         45,
                     ),
                     GateCount(
-                        plre.ResourceQROM.resource_rep(
+                        qre.QROM.resource_rep(
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
@@ -1727,8 +1714,8 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceAdjoint.resource_rep(
-                            plre.ResourceQROM.resource_rep(
+                        qre.Adjoint.resource_rep(
+                            qre.QROM.resource_rep(
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
@@ -1738,10 +1725,10 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(),
+                        qre.PhaseShift.resource_rep(),
                         15,
                     ),
-                    FreeWires(15),
+                    Deallocate(15),
                 ],
             ),
         ),
@@ -1753,14 +1740,14 @@ class TestQROMStatePrep:
         if precision is None:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[ResourceQROMStatePreparation]
-            actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
+            actual_resources = qre.QROMStatePreparation.controlled_ry_resource_decomp(
                 num_state_qubits=num_state_qubits,
                 positive_and_real=positive_and_real,
                 selswap_depths=selswap_depths,
                 **kwargs,
             )
         else:
-            actual_resources = plre.ResourceQROMStatePreparation.controlled_ry_resource_decomp(
+            actual_resources = qre.QROMStatePreparation.controlled_ry_resource_decomp(
                 num_state_qubits=num_state_qubits,
                 precision=precision,
                 positive_and_real=positive_and_real,
