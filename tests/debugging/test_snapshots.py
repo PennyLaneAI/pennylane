@@ -804,7 +804,7 @@ class TestSnapshotMCMS:
         assert qml.math.allclose(qml.math.mean(res[0]), 0, atol=0.1)
 
         assert len(res[1]) == 1000
-        assert qml.math.allclose(qml.math.mean(res[1], 1))
+        assert qml.math.allclose(qml.math.mean(res[1]), 1)
 
         # postselection not applied to snapshots
         assert len(res["tag"]) == 1000
