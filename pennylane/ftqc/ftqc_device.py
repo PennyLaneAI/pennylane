@@ -31,7 +31,7 @@ from pennylane.devices.preprocess import (
 )
 from pennylane.ftqc import (
     GraphStatePrep,
-    convert_to_mbqc_formalism,
+    convert_to_mbqc_formalism_with_pauli_tracker,
     convert_to_mbqc_gateset,
 )
 from pennylane.tape.qscript import QuantumScript
@@ -237,29 +237,45 @@ class FTQCBackend(ABC):
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
 
         """
+
         if execution_config is None:
             execution_config = ExecutionConfig()
 
         preprocess_transforms = self.preprocess_transforms(execution_config)
-        sequences, mcm_corrections = convert_to_mbqc_formalism(
-            sequences, diagonalize_mcms=True, pauli_tracker=True
-        )
-        sequences, postprocess_fns = preprocess_transforms(sequences)
+
+        mbqc_sequences = []
+        online_corrections = []
+        # ToDo: I believe this this could be applied to the full set of sequences in one go
+        # if we get it from a transform that just processes the tapes and returns the tapes and postprocessing
+        # that would also move us closer to putting it the correct place in the pipeline if we can sort out the
+        # diagonalization bug that's stopping us from appending measurement
+        offline_corrections = []
+        for sequence in sequences:
+            new_seq, online, offline = convert_to_mbqc_formalism_with_pauli_tracker(sequence)
+            mbqc_sequences.append(new_seq)
+            online_corrections.append(online)
+            offline_corrections.append(offline)
+
+        preprocess_transforms = self.preprocess_transforms(execution_config)
+        mbqc_sequences, postprocess_fns = preprocess_transforms(mbqc_sequences)
 
         results = []
-        for sequence in sequences:
+        for sequence, byops_fns, correction_fn in zip(
+            mbqc_sequences, online_corrections, offline_corrections
+        ):
             if isinstance(sequence, QuantumScriptSequence):
-                results.append(self._execute_sequence(sequence, execution_config))
+                res = self._execute_sequence(sequence, execution_config, byops_fns)
+                res = correction_fn(res)
+                results.append(res)
             else:
                 raise TypeError(
                     f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
                 )
 
-        results = mcm_corrections(results)
         return postprocess_fns(results)
 
     @abstractmethod
-    def _execute_sequence(self, sequence, execution_config):
+    def _execute_sequence(self, sequence, execution_config, online_corrections):
         """Execute a single QuantumScriptSecuence.
 
         Args:
@@ -283,7 +299,7 @@ class LightningQubitBackend(FTQCBackend):
             config_filepath=Path(__file__).parent / "lightning_backend.toml",
         )
 
-    def _execute_sequence(self, sequence, execution_config):
+    def _execute_sequence(self, sequence, execution_config, online_corrections):
         """Execute a single QuantumScriptSecuence.
 
         Args:
@@ -308,10 +324,20 @@ class LightningQubitBackend(FTQCBackend):
         for _ in range(sequence.shots.total_shots):
             self.device._statevector.reset_state()
 
-            for segment in sequence.intermediate_tapes:
+            for segment, corr in zip(sequence.intermediate_tapes, online_corrections):
+
+                mcms = self.simulate(
+                    segment,
+                    self.device._statevector,
+                    mcmc=mcmc,
+                    postselect_mode=postselect_mode,
+                )
+
+                ops = corr(mid_meas=mcms)  # ToDo: are these in the correct order?
+                corrections = QuantumScript(ops, shots=1)
 
                 _ = self.simulate(
-                    segment,
+                    corrections,
                     self.device._statevector,
                     mcmc=mcmc,
                     postselect_mode=postselect_mode,
@@ -323,6 +349,7 @@ class LightningQubitBackend(FTQCBackend):
                 mcmc=mcmc,
                 postselect_mode=postselect_mode,
             )
+
             results.append(list(res))
         return tuple(results)
 
@@ -375,7 +402,7 @@ class NullQubitBackend(FTQCBackend):
             config_filepath=Path(__file__).parent / "null_backend.toml",
         )
 
-    def _execute_sequence(self, sequence, execution_config):
+    def _execute_sequence(self, sequence, execution_config, online_corrections):
         """Execute a single QuantumScriptSecuence.
 
         Args:

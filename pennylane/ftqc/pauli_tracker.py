@@ -486,7 +486,21 @@ def apply_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement
 
     """
     by_ops = _parse_mid_measurements(tape, mid_meas)
-
     x_record, _ = _get_xz_record(tape, by_ops)
-
     return _correct_samples(tape, x_record, measurement_vals)
+
+
+def get_byproduct_ops(tape: QuantumScript, mid_meas: list, wire_map: dict):
+    """docstring"""
+    by_ops = _parse_mid_measurements(tape, mid_meas)
+    x_record, z_record = _get_xz_record(tape, by_ops)
+
+    ops = []
+
+    for w, (x, z) in enumerate(zip(x_record, z_record)):
+        if z:
+            ops.append(Z(wire_map[w]))
+        if x:
+            ops.append(X(wire_map[w]))
+
+    return ops

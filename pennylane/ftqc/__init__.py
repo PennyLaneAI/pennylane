@@ -26,7 +26,11 @@ Modules
 
 """
 from .operations import RotXZX
-from .decomposition import convert_to_mbqc_formalism, convert_to_mbqc_gateset
+from .decomposition import (
+    convert_to_mbqc_formalism,
+    convert_to_mbqc_gateset,
+    convert_to_mbqc_formalism_with_pauli_tracker,
+)
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
@@ -59,6 +63,7 @@ __all__ = [
     "measure_y",
     "measure_z",
     "diagonalize_mcms",
+    "convert_to_mbqc_formalism_with_pauli_tracker",
     "convert_to_mbqc_formalism",
     "convert_to_mbqc_gateset",
     "generate_lattice",
