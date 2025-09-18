@@ -191,6 +191,7 @@ class Adjoint(ResourceOperator):
         return [GateCount(base_cmpr_op)]
 
     @staticmethod
+    # pylint: disable=arguments-renamed
     def tracking_name(base_cmpr_op: CompressedResourceOp) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
