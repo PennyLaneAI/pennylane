@@ -57,7 +57,7 @@ def rz_phase_gradient(
     r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
 
-    For example, a :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
+    For example, an :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
     is translated into the following routine, where the angle is conditionally prepared on the ``angle_wires`` in binary
     and added to a ``phase_grad_wires`` register semi-inplace via :class:`~.SemiAdder`.
 
