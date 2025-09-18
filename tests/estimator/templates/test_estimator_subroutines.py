@@ -19,8 +19,9 @@ import math
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
-from pennylane.labs.resource_estimation.resource_config import ResourceConfig
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.estimator import GateCount, resource_rep
+from pennylane.estimator.resource_config import ResourceConfig
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -146,7 +147,7 @@ class TestResourceOutMultiplier:
         b_register_size = 3
 
         toff = resource_rep(qre.Toffoli)
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         num_elbows = 12
@@ -197,13 +198,13 @@ class TestResourceSemiAdder:
             (
                 3,
                 [
-                    qre.AllocWires(2),
+                    qre.Allocate(2),
                     GateCount(resource_rep(qre.CNOT), 9),
-                    GateCount(resource_rep(qre.TempAND), 2),
+                    GateCount(resource_rep(qre.TemporaryAND), 2),
                     GateCount(
                         resource_rep(
                             qre.Adjoint,
-                            {"base_cmpr_op": resource_rep(qre.TempAND)},
+                            {"base_cmpr_op": resource_rep(qre.TemporaryAND)},
                         ),
                         2,
                     ),
@@ -225,12 +226,12 @@ class TestResourceSemiAdder:
         )
 
         expected_res = [
-            qre.AllocWires(4),
+            qre.Allocate(4),
             GateCount(resource_rep(qre.CNOT), 24),
-            GateCount(resource_rep(qre.TempAND), 8),
+            GateCount(resource_rep(qre.TemporaryAND), 8),
             GateCount(
                 resource_rep(
-                    qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TempAND)}
+                    qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}
                 ),
                 8,
             ),
@@ -623,7 +624,7 @@ class TestResourceIterativeQPE:
                 5,
                 [
                     GateCount(qre.Hadamard.resource_rep(), 10),
-                    AllocWires(1),
+                    Allocate(1),
                     GateCount(
                         qre.Controlled.resource_rep(
                             qre.Pow.resource_rep(
@@ -683,7 +684,7 @@ class TestResourceIterativeQPE:
                 4,
                 [
                     GateCount(qre.Hadamard.resource_rep(), 8),
-                    AllocWires(1),
+                    Allocate(1),
                     GateCount(
                         qre.Controlled.resource_rep(
                             qre.Pow.resource_rep(
@@ -736,7 +737,7 @@ class TestResourceIterativeQPE:
                 3,
                 [
                     GateCount(qre.Hadamard.resource_rep(), 6),
-                    AllocWires(1),
+                    Allocate(1),
                     GateCount(qre.RY.resource_rep(precision=1e-3)),
                     GateCount(
                         qre.Controlled.resource_rep(
@@ -936,21 +937,21 @@ class TestResourceAQFT:
                         ),
                         4,
                     ),
-                    AllocWires(1),
-                    GateCount(resource_rep(qre.TempAND), 1),
+                    Allocate(1),
+                    GateCount(resource_rep(qre.TemporaryAND), 1),
                     GateCount(qre.SemiAdder.resource_rep(1)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         1,
                     ),
                     FreeWires(1),
-                    AllocWires(2),
-                    GateCount(resource_rep(qre.TempAND), 2 * 2),
+                    Allocate(2),
+                    GateCount(resource_rep(qre.TemporaryAND), 2 * 2),
                     GateCount(qre.SemiAdder.resource_rep(2), 2),
                     GateCount(resource_rep(qre.Hadamard), 2),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         2 * 2,
                     ),
                     FreeWires(2),
@@ -970,30 +971,30 @@ class TestResourceAQFT:
                         ),
                         4,
                     ),
-                    AllocWires(1),
-                    GateCount(resource_rep(qre.TempAND), 1),
+                    Allocate(1),
+                    GateCount(resource_rep(qre.TemporaryAND), 1),
                     GateCount(qre.SemiAdder.resource_rep(1)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         1,
                     ),
                     FreeWires(1),
-                    AllocWires(2),
-                    GateCount(resource_rep(qre.TempAND), 2),
+                    Allocate(2),
+                    GateCount(resource_rep(qre.TemporaryAND), 2),
                     GateCount(qre.SemiAdder.resource_rep(2)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         2,
                     ),
                     FreeWires(2),
-                    AllocWires(3),
-                    GateCount(resource_rep(qre.TempAND), 3),
+                    Allocate(3),
+                    GateCount(resource_rep(qre.TemporaryAND), 3),
                     GateCount(qre.SemiAdder.resource_rep(3)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         3,
                     ),
                     FreeWires(3),
@@ -1066,7 +1067,7 @@ class TestResourceSelect:
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
 
         expected = [
-            qre.AllocWires(1),
+            qre.Allocate(1),
             GateCount(
                 qre.Controlled.resource_rep(
                     qre.RX.resource_rep(),
@@ -1090,10 +1091,10 @@ class TestResourceSelect:
             ),
             GateCount(qre.X.resource_rep(), 4),
             GateCount(qre.CNOT.resource_rep(), 2),
-            GateCount(qre.TempAND.resource_rep(), 2),
+            GateCount(qre.TemporaryAND.resource_rep(), 2),
             GateCount(
                 qre.Adjoint.resource_rep(
-                    qre.TempAND.resource_rep(),
+                    qre.TemporaryAND.resource_rep(),
                 ),
                 2,
             ),
@@ -1193,14 +1194,14 @@ class TestResourceQROM:
                 None,
                 True,
                 [
-                    qre.AllocWires(5),
+                    qre.Allocate(5),
                     GateCount(qre.Hadamard.resource_rep(), 6),
                     GateCount(qre.X.resource_rep(), 14),
                     GateCount(qre.CNOT.resource_rep(), 36),
-                    GateCount(qre.TempAND.resource_rep(), 6),
+                    GateCount(qre.TemporaryAND.resource_rep(), 6),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TempAND.resource_rep(),
+                            qre.TemporaryAND.resource_rep(),
                         ),
                         6,
                     ),
@@ -1216,13 +1217,13 @@ class TestResourceQROM:
                 2,
                 False,
                 [
-                    qre.AllocWires(10),
+                    qre.Allocate(10),
                     GateCount(qre.X.resource_rep(), 97),
                     GateCount(qre.CNOT.resource_rep(), 98),
-                    GateCount(qre.TempAND.resource_rep(), 48),
+                    GateCount(qre.TemporaryAND.resource_rep(), 48),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TempAND.resource_rep(),
+                            qre.TemporaryAND.resource_rep(),
                         ),
                         48,
                     ),
@@ -1237,14 +1238,14 @@ class TestResourceQROM:
                 1,
                 True,
                 [
-                    qre.AllocWires(3),
+                    qre.Allocate(3),
                     GateCount(qre.Hadamard.resource_rep(), 4),
                     GateCount(qre.X.resource_rep(), 42),
                     GateCount(qre.CNOT.resource_rep(), 30),
-                    GateCount(qre.TempAND.resource_rep(), 20),
+                    GateCount(qre.TemporaryAND.resource_rep(), 20),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TempAND.resource_rep(),
+                            qre.TemporaryAND.resource_rep(),
                         ),
                         20,
                     ),
@@ -1260,7 +1261,7 @@ class TestResourceQROM:
                 128,  # This will get turncated to 16 as the max depth
                 False,
                 [
-                    qre.AllocWires(30),
+                    qre.Allocate(30),
                     GateCount(qre.X.resource_rep(), 5),
                     GateCount(qre.CSWAP.resource_rep(), 30),
                 ],
@@ -1272,7 +1273,7 @@ class TestResourceQROM:
                 16,
                 True,
                 [
-                    qre.AllocWires(30),
+                    qre.Allocate(30),
                     GateCount(qre.Hadamard.resource_rep(), 4),
                     GateCount(qre.X.resource_rep(), 10),
                     GateCount(qre.CSWAP.resource_rep(), 120),
@@ -1545,7 +1546,7 @@ class TestResourceSelectPauliRot:
                 "X",
                 None,
                 [
-                    AllocWires(33),
+                    Allocate(33),
                     GateCount(qre.QROM.resource_rep(2, 33, 33, False)),
                     GateCount(
                         resource_rep(
@@ -1574,7 +1575,7 @@ class TestResourceSelectPauliRot:
                 "Y",
                 1e-3,
                 [
-                    AllocWires(13),
+                    Allocate(13),
                     GateCount(qre.QROM.resource_rep(4, 13, 26, False)),
                     GateCount(
                         resource_rep(
@@ -1609,7 +1610,7 @@ class TestResourceSelectPauliRot:
                 "Z",
                 1e-5,
                 [
-                    AllocWires(20),
+                    Allocate(20),
                     GateCount(qre.QROM.resource_rep(32, 20, 320, False)),
                     GateCount(
                         resource_rep(
