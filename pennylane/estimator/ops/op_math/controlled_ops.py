@@ -968,7 +968,7 @@ class Toffoli(ResourceOperator):
         super().__init__(wires=wires)
 
     @staticmethod
-    def elbow_decomp(elbow="left"):
+    def elbow_decomp(elbow: Literal["left", "right"] | None = "left"):
         """A function that prepares the resource decomposition obtained from Figure 4 of
         `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
 
