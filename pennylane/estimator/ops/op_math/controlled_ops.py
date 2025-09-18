@@ -491,7 +491,7 @@ class CSWAP(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Resources:
-            The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
+            The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/abs/2305.18128>`_.
 
             The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
             defined as:
