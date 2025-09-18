@@ -1319,7 +1319,7 @@ class MultiControlledX(ResourceOperator):
             gate_lst.append(GateCount(toffoli))
             return gate_lst
 
-        l_elbow = resource_rep(TempAND)
+        l_elbow = resource_rep(TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         res = [

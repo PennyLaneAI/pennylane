@@ -539,8 +539,8 @@ class TestMultiControlledX:
         assert MultiControlledX.resource_decomp(5, 2) == [
             GateCount(X.resource_rep(), 4),
             Allocate(3),
-            GateCount(TempAND.resource_rep(), 3),
-            GateCount(qre.Adjoint.resource_rep(TempAND.resource_rep()), 3),
+            GateCount(TemporaryAND.resource_rep(), 3),
+            GateCount(qre.Adjoint.resource_rep(TemporaryAND.resource_rep()), 3),
             GateCount(Toffoli.resource_rep(), 1),
             Deallocate(3),
         ]
