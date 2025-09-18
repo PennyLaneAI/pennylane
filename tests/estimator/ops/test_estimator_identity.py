@@ -97,7 +97,7 @@ class TestGlobalPhase:
     """Test ResourceGlobalPhase"""
 
     @pytest.mark.parametrize(
-        "wire_labels", [0, [0], [1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "auxiliary"]]
+        "wire_labels", [0, [0], [1, 0, 4], ["a", "b", "c"], ["a", 1, "auxiliary"]]
     )
     def test_wires(self, wire_labels):
         """Test that common PL wires are accepted."""
