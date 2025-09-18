@@ -321,8 +321,8 @@ class CustomCallApiVersionAttr(EnumAttribute[CustomCallApiVersion], SpacedOpaque
 class OutputOperandAlias(ParametrizedAttribute):
     """
     This attribute captures the alias relationship of the output to one of the
-    operands for a CustomCall op, denoted by `operand_index`. The
-    `output_tuple_indices` and `operand_tuple_indices` are used to index into
+    operands for a ``CustomCall`` op, denoted by ``operand_index``. The
+    ``output_tuple_indices`` and ``operand_tuple_indices`` are used to index into
     output and operand types. These indices lists are empty if the corresponding
     types are not tuple types, and can be arbitrarily long in case of
     arbitrarily nested tuple types.
