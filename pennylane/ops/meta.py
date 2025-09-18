@@ -124,8 +124,6 @@ class WireCut(Operation):
                 f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
@@ -264,7 +262,6 @@ class Snapshot(Operation):
     def _unflatten(cls, data, metadata):
         return cls(tag=metadata[0], measurement=data[0], shots=metadata[1])
 
-    # pylint: disable=W0613
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []

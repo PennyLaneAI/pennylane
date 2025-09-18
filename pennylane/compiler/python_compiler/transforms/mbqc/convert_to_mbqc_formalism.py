@@ -42,7 +42,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
     name = "convert-to-mbqc-formalism"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
         pattern_rewriter.PatternRewriteWalker(
@@ -60,7 +60,7 @@ convert_to_mbqc_formalism_pass = compiler_transform(ConvertToMBQCFormalismPass)
 
 class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
-):  # pylint: disable=too-few-public-methods, no-self-use, unpacking-non-sequence
+):  # pylint: disable=too-few-public-methods,no-self-use
     """RewritePattern for converting to the MBQC formalism."""
 
     def _prep_graph_state(
@@ -112,7 +112,7 @@ class ConvertToMBQCFormalismPattern(
         qubit: QubitType,
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
-    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    ):
         """Insert an arbitrary basis measure related operations to the IR.
         Args:
             angle (float) : The angle of measurement basis.
@@ -544,7 +544,7 @@ class ConvertToMBQCFormalismPattern(
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, root: func.FuncOp | IfOp | WhileOp | ForOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ, cell-var-from-loop
+    ):
         """Match and rewrite for converting to the MBQC formalism."""
 
         for region in root.regions:

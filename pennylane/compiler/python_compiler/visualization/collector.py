@@ -56,7 +56,6 @@ class QMLCollector:
         self.wire_to_ssa_qubits: dict[int, SSAValue] = {}
         self.quantum_register: SSAValue | None = None
 
-    # pylint: disable=unused-argument
     @singledispatchmethod
     def handle(self, _: Any) -> Operator | MeasurementProcess | None:
         """Default handler for unsupported operations. If the operation is not recognized, return None."""
