@@ -126,7 +126,6 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     spoofed_dev = NullQubit(
         target_device=original_device,
         wires=original_device.wires,
-        shots=original_device.shots,
         track_resources=True,
         resources_filename=_RESOURCE_TRACKING_FILEPATH,
         compute_depth=compute_depth,
