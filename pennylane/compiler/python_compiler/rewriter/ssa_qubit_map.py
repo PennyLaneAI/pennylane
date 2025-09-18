@@ -14,7 +14,7 @@
 """SSAQubitMap class for a bidirectional map between wire labels and SSA qubits."""
 
 from dataclasses import dataclass, field
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, get_args
 from uuid import UUID, uuid4
 
 from xdsl.dialects import builtin
@@ -58,9 +58,6 @@ class AbstractWire:
         return self.uuid == other.uuid
 
 
-# The allowed types for the keys and values in the bidirectional map.
-_valid_types = (int, AbstractWire, quantum.QubitSSAValue)
-
 # Key/value type aliases
 SSAQubitMapKey: TypeAlias = int | AbstractWire | quantum.QubitSSAValue
 SSAQubitMapValue: TypeAlias = int | AbstractWire | list[quantum.QubitSSAValue]
@@ -87,10 +84,10 @@ class SSAQubitMap:
         # We use ``xdsl.utils.hints.isa`` here instead of ``isinstance`` because that is
         # designed to allow checking the input object againt generic types, which
         # ``isinstance`` cannot handle.
-        if not any(isa(obj, hint) for hint in _valid_types):
+        if not isa(obj, SSAQubitMapKey):
             raise AssertionError(
                 f"{obj} is not a valid key or value for an SSAQubitMap. Valid keys and values "
-                f"must be of one of the following types: {_valid_types}."
+                f"must be of one of the following types: {get_args(SSAQubitMapKey)}."
             )
 
     def _assert_valid_wire_label(self, wire: int | AbstractWire) -> None:
@@ -192,10 +189,7 @@ class SSAQubitMap:
 
             else:
                 self._assert_valid_wire_label(k)
-                assert isinstance(v, list), f"The key {k} maps to an invalid type {v}."
-
-                for _q in v:
-                    self._assert_valid_type(_q)
+                assert isa(v, SSAQubitMapValue), f"The key {k} maps to an invalid type {v}."
 
                 wire_keys.add(k)
                 all_qubit_values.extend(v)

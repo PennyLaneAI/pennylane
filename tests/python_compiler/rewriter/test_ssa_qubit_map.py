@@ -14,6 +14,7 @@
 """Tests for the RewriteContext class and associated utilities."""
 # pylint: disable=wrong-import-position
 
+from re import escape
 from uuid import UUID
 
 import pytest
@@ -296,9 +297,12 @@ class TestSSAQubitMap:
         for v in valid_types:
             ssa_qubit_map._assert_valid_type(v)
 
-        invalid_type = "foo"
-        with pytest.raises(AssertionError, match=f"{invalid_type} is not a valid key or value"):
-            ssa_qubit_map._assert_valid_type(invalid_type)
+        invalid_types = ["foo", _create_ssa_values([builtin.i64])[0], 1.5]
+        for invalid_type in invalid_types:
+            with pytest.raises(
+                AssertionError, match=escape(f"{invalid_type} is not a valid key or value")
+            ):
+                ssa_qubit_map._assert_valid_type(invalid_type)
 
     def test_assert_valid_wire_label(self):
         """Test that the _assert_valid_wire_label method works correctly."""
@@ -324,11 +328,19 @@ class TestSSAQubitMap:
         """Test that a valid SSAQubitMap's verify method raises an error if the wire keys
         map to values that are invalid."""
         # pylint: disable=protected-access
-        ssa_qubit_map = SSAQubitMap()
-        ssa_qubit_map._map[0] = "foo"
+        ssa_qubit_map1 = SSAQubitMap()
+        ssa_qubit_map1._map[0] = "foo"
 
         with pytest.raises(AssertionError, match=f"The key {0} maps to an invalid type {'foo'}."):
-            ssa_qubit_map.verify()
+            ssa_qubit_map1.verify()
+
+        ssa_qubit_map2 = SSAQubitMap()
+        ssa_qubit_map2._map[0] = [1, 2]
+
+        with pytest.raises(
+            AssertionError, match=escape(f"The key {0} maps to an invalid type {[1, 2]}.")
+        ):
+            ssa_qubit_map2.verify()
 
     def test_verify_different_wire_keys_values_errors(self):
         """Test that a valid SSAQubitMap's verify method raises an error if the wire keys
