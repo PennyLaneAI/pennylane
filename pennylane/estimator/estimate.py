@@ -323,7 +323,8 @@ def _ops_to_compressed_reps(
     for op in ops:  # Skipping measurement processes here
         if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
-
+        elif isinstance(op, Operator):
+            raise NotImplementedError
         # TODO: Restore logic to handle PennyLanec operators when mappings are merged.
 
     return cmp_rep_ops
