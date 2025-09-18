@@ -602,7 +602,7 @@ class ControlledSequence(ResourceOperator):
         base_op = base_cmpr_op
 
         if base_cmpr_op.op_type == qre.ChangeOpBasis:
-            base_op = base_cmpr_op.params["cmpr_base_op"]
+            base_op = base_cmpr_op.params["cmpr_target_op"]
             compute_op = base_cmpr_op.params["cmpr_compute_op"]
             uncompute_op = base_cmpr_op.params["cmpr_uncompute_op"]
 
@@ -882,7 +882,7 @@ class IterativeQPE(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, base_cmpr_op, num_iter, **kwargs):
+    def resource_decomp(cls, base_cmpr_op, num_iter):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -906,7 +906,7 @@ class IterativeQPE(ResourceOperator):
         ]
 
         # Here we want to use this particular decomposition, not any random one the user might override
-        gate_counts += ControlledSequence.resource_decomp(base_cmpr_op, num_iter, **kwargs)
+        gate_counts += ControlledSequence.resource_decomp(base_cmpr_op, num_iter)
 
         num_phase_gates = num_iter * (num_iter - 1) // 2
         gate_counts.append(
