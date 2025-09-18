@@ -178,7 +178,7 @@ def _resources_from_resource(
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Further process resources from a Resources object (i.e. a Resources object that
-    contains high-level operators can be re-estimated in terms of a new gate set)."""
+    contains high-level operators can be analyzed with respect to a lower-level gate set)."""
 
     wire_manager = WireResourceManager(zeroed, any_state, obj.algo_wires, tight_budget)
     gate_counts = defaultdict(int)
