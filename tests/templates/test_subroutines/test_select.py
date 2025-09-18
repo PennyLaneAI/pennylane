@@ -23,7 +23,10 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.subroutines.select import _partial_select, _select_decomp_unary
+from pennylane.templates.subroutines.select import (
+    _partial_select,
+    _select_decomp_unary,
+)
 
 
 @pytest.mark.parametrize(
