@@ -16,9 +16,9 @@ import math
 from collections import defaultdict
 
 from pennylane import numpy as qnp
-from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
-from pennylane.labs.resource_estimation.resource_operator import (
+from pennylane import estimator as qre
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
 
 
-class ResourceOutOfPlaceSquare(ResourceOperator):
+class OutOfPlaceSquare(ResourceOperator):
     r"""Resource class for the OutofPlaceSquare gate.
 
     This operation takes two quantum registers. The input register is of size :code:`register_size`
@@ -49,7 +49,7 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> out_square = plre.ResourceOutOfPlaceSquare(register_size=3)
+    >>> out_square = plqre.OutOfPlaceSquare(register_size=3)
     >>> print(plre.estimate(out_square))
     --- Resources: ---
     Total qubits: 9
@@ -111,13 +111,13 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         """
         gate_lst = []
 
-        gate_lst.append(GateCount(resource_rep(re.ResourceToffoli), (register_size - 1) ** 2))
-        gate_lst.append(GateCount(resource_rep(re.ResourceCNOT), register_size))
+        gate_lst.append(GateCount(resource_rep(qre.Toffoli), (register_size - 1) ** 2))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), register_size))
 
         return gate_lst
 
 
-class ResourcePhaseGradient(ResourceOperator):
+class PhaseGradient(ResourceOperator):
     r"""Resource class for the PhaseGradient gate.
 
     This operation prepares the phase gradient state
@@ -137,7 +137,7 @@ class ResourcePhaseGradient(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> phase_grad = plre.ResourcePhaseGradient(num_wires=5)
+    >>> phase_grad = plqre.PhaseGradient(num_wires=5)
     >>> gate_set={"Z", "S", "T", "RZ", "Hadamard"}
     >>> print(plre.estimate(phase_grad, gate_set))
     --- Resources: ---
@@ -198,23 +198,23 @@ class ResourcePhaseGradient(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        gate_counts = [GateCount(resource_rep(re.ResourceHadamard), num_wires)]
+        gate_counts = [GateCount(resource_rep(qre.Hadamard), num_wires)]
         if num_wires > 0:
-            gate_counts.append(GateCount(resource_rep(re.ResourceZ)))
+            gate_counts.append(GateCount(resource_rep(qre.Z)))
 
         if num_wires > 1:
-            gate_counts.append(GateCount(resource_rep(re.ResourceS)))
+            gate_counts.append(GateCount(resource_rep(qre.S)))
 
         if num_wires > 2:
-            gate_counts.append(GateCount(resource_rep(re.ResourceT)))
+            gate_counts.append(GateCount(resource_rep(qre.T)))
 
         if num_wires > 3:
-            gate_counts.append(GateCount(resource_rep(re.ResourceRZ), num_wires - 3))
+            gate_counts.append(GateCount(resource_rep(qre.RZ), num_wires - 3))
 
         return gate_counts
 
 
-class ResourceOutMultiplier(ResourceOperator):
+class OutMultiplier(ResourceOperator):
     r"""Resource class for the OutMultiplier gate.
 
     Args:
@@ -232,7 +232,7 @@ class ResourceOutMultiplier(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> out_mul = plre.ResourceOutMultiplier(4, 4)
+    >>> out_mul = plqre.OutMultiplier(4, 4)
     >>> print(plre.estimate(out_mul))
     --- Resources: ---
     Total qubits: 16
@@ -300,9 +300,9 @@ class ResourceOutMultiplier(ResourceOperator):
         """
         l = max(a_num_qubits, b_num_qubits)
 
-        toff = resource_rep(re.ResourceToffoli)
-        l_elbow = resource_rep(re.ResourceTempAND)
-        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
+        toff = resource_rep(qre.Toffoli)
+        l_elbow = resource_rep(qre.TempAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         toff_count = 2 * a_num_qubits * b_num_qubits - l
         elbow_count = toff_count // 2
@@ -318,7 +318,7 @@ class ResourceOutMultiplier(ResourceOperator):
         return gate_lst
 
 
-class ResourceSemiAdder(ResourceOperator):
+class SemiAdder(ResourceOperator):
     r"""Resource class for the SemiOutAdder gate.
 
     Args:
@@ -335,7 +335,7 @@ class ResourceSemiAdder(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> semi_add = plre.ResourceSemiAdder(max_register_size=4)
+    >>> semi_add = plqre.SemiAdder(max_register_size=4)
     >>> print(plre.estimate(semi_add))
     --- Resources: ---
     Total qubits: 11
@@ -395,26 +395,26 @@ class ResourceSemiAdder(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        cnot = resource_rep(re.ResourceCNOT)
+        cnot = resource_rep(qre.CNOT)
         if max_register_size == 1:
             return [GateCount(cnot)]
 
-        x = resource_rep(re.ResourceX)
-        toff = resource_rep(re.ResourceToffoli)
+        x = resource_rep(qre.X)
+        toff = resource_rep(qre.Toffoli)
         if max_register_size == 2:
             return [GateCount(cnot, 2), GateCount(x, 2), GateCount(toff)]
 
         cnot_count = (6 * (max_register_size - 2)) + 3
         elbow_count = max_register_size - 1
 
-        l_elbow = resource_rep(re.ResourceTempAND)
-        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
+        l_elbow = resource_rep(qre.TempAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
         return [
-            AllocWires(max_register_size - 1),
+            Allocate(max_register_size - 1),
             GateCount(cnot, cnot_count),
             GateCount(l_elbow, elbow_count),
             GateCount(r_elbow, elbow_count),
-            FreeWires(max_register_size - 1),
+            Deallocate(max_register_size - 1),
         ]  # Obtained resource from Fig1 and Fig2 https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
     @classmethod
@@ -443,43 +443,43 @@ class ResourceSemiAdder(ResourceOperator):
 
             if ctrl_num_ctrl_wires > 1:
                 mcx = resource_rep(
-                    re.ResourceMultiControlledX,
+                    qre.MultiControlledX,
                     {
                         "num_ctrl_wires": ctrl_num_ctrl_wires,
                         "num_ctrl_values": ctrl_num_ctrl_values,
                     },
                 )
-                gate_lst.append(AllocWires(1))
+                gate_lst.append(Allocate(1))
                 gate_lst.append(GateCount(mcx, 2))
 
             cnot_count = (7 * (max_register_size - 2)) + 3
             elbow_count = 2 * (max_register_size - 1)
 
-            x = resource_rep(re.ResourceX)
-            cnot = resource_rep(re.ResourceCNOT)
-            l_elbow = resource_rep(re.ResourceTempAND)
-            r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
+            x = resource_rep(qre.X)
+            cnot = resource_rep(qre.CNOT)
+            l_elbow = resource_rep(qre.TempAND)
+            r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
             gate_lst.extend(
                 [
-                    AllocWires(max_register_size - 1),
+                    Allocate(max_register_size - 1),
                     GateCount(cnot, cnot_count),
                     GateCount(l_elbow, elbow_count),
                     GateCount(r_elbow, elbow_count),
-                    FreeWires(max_register_size - 1),
+                    Deallocate(max_register_size - 1),
                 ],
             )
 
             if ctrl_num_ctrl_wires > 1:
-                gate_lst.append(FreeWires(1))
+                gate_lst.append(Deallocate(1))
             elif ctrl_num_ctrl_values > 0:
                 gate_lst.append(GateCount(x, 2 * ctrl_num_ctrl_values))
 
             return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
-        raise re.ResourcesNotDefined
+        raise qre.sNotDefined
 
 
-class ResourceControlledSequence(ResourceOperator):
+class ControlledSequence(ResourceOperator):
     r"""Resource class for the ControlledSequence gate.
 
     This operator represents a sequence of controlled gates, one for each control wire, with the
@@ -507,8 +507,8 @@ class ResourceControlledSequence(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> ctrl_seq = plre.ResourceControlledSequence(
-    ...     base = plre.ResourceRX(),
+    >>> ctrl_seq = plqre.ControlledSequence(
+    ...     base = plqre.RX(),
     ...     num_control_wires = 3,
     ... )
     >>> gate_set={"CRX"}
@@ -601,7 +601,7 @@ class ResourceControlledSequence(ResourceOperator):
         gate_counts = []
         base_op = base_cmpr_op
 
-        if base_cmpr_op.op_type == re.ResourceChangeBasisOp:
+        if base_cmpr_op.op_type == qre.ChangeBasisOp:
             base_op = base_cmpr_op.params["cmpr_base_op"]
             compute_op = base_cmpr_op.params["cmpr_compute_op"]
             uncompute_op = base_cmpr_op.params["cmpr_uncompute_op"]
@@ -609,20 +609,20 @@ class ResourceControlledSequence(ResourceOperator):
             gate_counts.append(GateCount(compute_op))
 
         for z in range(num_ctrl_wires):
-            ctrl_pow_u = re.ResourceControlled.resource_rep(
-                re.ResourcePow.resource_rep(base_op, 2**z),
+            ctrl_pow_u = qre.Controlled.resource_rep(
+                qre.Pow.resource_rep(base_op, 2**z),
                 num_ctrl_wires=1,
                 num_ctrl_values=0,
             )
             gate_counts.append(GateCount(ctrl_pow_u))
 
-        if base_cmpr_op.op_type == re.ResourceChangeBasisOp:
+        if base_cmpr_op.op_type == qre.ChangeBasisOp:
             gate_counts.append(GateCount(uncompute_op))
 
         return gate_counts
 
 
-class ResourceQPE(ResourceOperator):
+class QPE(ResourceOperator):
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
     Args:
@@ -644,7 +644,7 @@ class ResourceQPE(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
-    >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5)
+    >>> qpe = plqre.QPE(plqre.RX(precision=1e-3), 5)
     >>> print(plre.estimate(qpe, gate_set))
     --- Resources: ---
      Total qubits: 6
@@ -663,7 +663,7 @@ class ResourceQPE(ResourceOperator):
 
         For example, consider the cost using the default QFT implmentation below:
 
-        >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5, adj_qft_op=None)
+        >>> qpe = plqre.QPE(plqre.RX(precision=1e-3), 5, adj_qft_op=None)
         >>> print(plre.estimate(qpe))
         --- Resources: ---
          Total qubits: 6
@@ -675,9 +675,9 @@ class ResourceQPE(ResourceOperator):
 
         Now we use the :class:`~.pennylane.labs.resource_estimation.ResourceAQFT` class:
 
-        >>> aqft = plre.ResourceAQFT(order=3, num_wires=5)
-        >>> adj_aqft = plre.ResourceAdjoint(aqft)
-        >>> qpe = plre.ResourceQPE(plre.ResourceRX(precision=1e-3), 5, adj_qft_op=adj_aqft)
+        >>> aqft = plqre.AQFT(order=3, num_wires=5)
+        >>> adj_aqft = plqre.Adjoint(aqft)
+        >>> qpe = plqre.QPE(plqre.RX(precision=1e-3), 5, adj_qft_op=adj_aqft)
         >>> print(plre.estimate(qpe))
         --- Resources: ---
          Total qubits: 8
@@ -785,11 +785,11 @@ class ResourceQPE(ResourceOperator):
             in (section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
             Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
         """
-        hadamard = resource_rep(re.ResourceHadamard)
+        hadamard = resource_rep(qre.Hadamard)
         ctrl_op = ResourceControlledSequence.resource_rep(base_cmpr_op, num_estimation_wires)
         if adj_qft_cmpr_op is None:
             adj_qft_cmpr_op = resource_rep(
-                re.ResourceAdjoint,
+                qre.Adjoint,
                 {
                     "base_cmpr_op": resource_rep(ResourceQFT, {"num_wires": num_estimation_wires}),
                 },
@@ -809,7 +809,7 @@ class ResourceQPE(ResourceOperator):
         return f"QPE({base_name}, {num_estimation_wires}, adj_qft={adj_qft_name})"
 
 
-class ResourceIterativeQPE(ResourceOperator):
+class IterativeQPE(ResourceOperator):
     r"""Resource class for Iterative Quantum Phase Estimation (IQPE).
 
     Args:
@@ -826,7 +826,7 @@ class ResourceIterativeQPE(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> gate_set = {"Hadamard", "CRX", "PhaseShift"}
-    >>> iqpe = plre.ResourceIterativeQPE(plre.ResourceRX(), 5)
+    >>> iqpe = plqre.IterativeQPE(plqre.RX(), 5)
     >>> print(plre.estimate(iqpe, gate_set))
     --- Resources: ---
      Total qubits: 2
@@ -901,8 +901,8 @@ class ResourceIterativeQPE(ResourceOperator):
             in the decomposition.
         """
         gate_counts = [
-            GateCount(resource_rep(re.ResourceHadamard), 2 * num_iter),
-            AllocWires(1),
+            GateCount(resource_rep(qre.Hadamard), 2 * num_iter),
+            Allocate(1),
         ]
 
         # Here we want to use this particular decomposition, not any random one the user might override
@@ -910,14 +910,14 @@ class ResourceIterativeQPE(ResourceOperator):
 
         num_phase_gates = num_iter * (num_iter - 1) // 2
         gate_counts.append(
-            GateCount(re.ResourcePhaseShift.resource_rep(), num_phase_gates)
+            GateCount(qre.PhaseShift.resource_rep(), num_phase_gates)
         )  # Classically controlled PS
 
-        gate_counts.append(FreeWires(1))
+        gate_counts.append(Deallocate(1))
         return gate_counts
 
 
-class ResourceQFT(ResourceOperator):
+class QFT(ResourceOperator):
     r"""Resource class for QFT.
 
     Args:
@@ -935,7 +935,7 @@ class ResourceQFT(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qft = plre.ResourceQFT(3)
+    >>> qft = plqre.QFT(3)
     >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
     >>> print(plre.estimate(qft, gate_set))
     --- Resources: ---
@@ -995,9 +995,9 @@ class ResourceQFT(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        hadamard = resource_rep(re.ResourceHadamard)
-        swap = resource_rep(re.ResourceSWAP)
-        ctrl_phase_shift = resource_rep(re.ResourceControlledPhaseShift)
+        hadamard = resource_rep(qre.Hadamard)
+        swap = resource_rep(qre.SWAP)
+        ctrl_phase_shift = resource_rep(qre.ControlledPhaseShift)
 
         if num_wires == 1:
             return [
@@ -1034,8 +1034,8 @@ class ResourceQFT(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        hadamard = resource_rep(re.ResourceHadamard)
-        swap = resource_rep(re.ResourceSWAP)
+        hadamard = resource_rep(qre.Hadamard)
+        swap = resource_rep(qre.SWAP)
 
         if num_wires == 1:
             return [GateCount(hadamard)]
@@ -1046,8 +1046,8 @@ class ResourceQFT(ResourceOperator):
         ]
 
         for size_reg in range(1, num_wires):
-            ctrl_add = re.ResourceControlled.resource_rep(
-                re.ResourceSemiAdder.resource_rep(max_register_size=size_reg),
+            ctrl_add = qre.Controlled.resource_rep(
+                qre.SemiAdder.resource_rep(max_register_size=size_reg),
                 num_ctrl_wires=1,
                 num_ctrl_values=0,
             )
@@ -1061,7 +1061,7 @@ class ResourceQFT(ResourceOperator):
         return f"QFT({num_wires})"
 
 
-class ResourceAQFT(ResourceOperator):
+class AQFT(ResourceOperator):
     r"""Resource class for the Approximate QFT.
 
     .. note::
@@ -1087,7 +1087,7 @@ class ResourceAQFT(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> aqft = plre.ResourceAQFT(order=2, num_wires=3)
+    >>> aqft = plqre.AQFT(order=2, num_wires=3)
     >>> gate_set = {"SWAP", "Hadamard", "T", "CNOT"}
     >>> print(plre.estimate(aqft, gate_set))
     --- Resources: ---
@@ -1156,10 +1156,10 @@ class ResourceAQFT(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        hadamard = resource_rep(re.ResourceHadamard)
-        swap = resource_rep(re.ResourceSWAP)
-        cs = re.ResourceControlled.resource_rep(
-            base_cmpr_op=resource_rep(re.ResourceS),
+        hadamard = resource_rep(qre.Hadamard)
+        swap = resource_rep(qre.SWAP)
+        cs = qre.Controlled.resource_rep(
+            base_cmpr_op=resource_rep(qre.S),
             num_ctrl_wires=1,
             num_ctrl_values=0,
         )
@@ -1177,34 +1177,34 @@ class ResourceAQFT(ResourceOperator):
             for index in range(2, order):
                 addition_reg_size = index - 1
 
-                temp_and = resource_rep(re.ResourceTempAND)
-                temp_and_dag = re.ResourceAdjoint.resource_rep(temp_and)
-                in_place_add = re.ResourceSemiAdder.resource_rep(addition_reg_size)
+                temp_and = resource_rep(qre.TempAND)
+                temp_and_dag = qre.Adjoint.resource_rep(temp_and)
+                in_place_add = qre.SemiAdder.resource_rep(addition_reg_size)
 
                 cost_iter = [
-                    AllocWires(addition_reg_size),
+                    Allocate(addition_reg_size),
                     GateCount(temp_and, addition_reg_size),
                     GateCount(in_place_add),
                     GateCount(hadamard),
                     GateCount(temp_and_dag, addition_reg_size),
-                    FreeWires(addition_reg_size),
+                    Deallocate(addition_reg_size),
                 ]
                 gate_types.extend(cost_iter)
 
             addition_reg_size = order - 1
             repetitions = num_wires - order
 
-            temp_and = resource_rep(re.ResourceTempAND)
-            temp_and_dag = re.ResourceAdjoint.resource_rep(temp_and)
-            in_place_add = re.ResourceSemiAdder.resource_rep(addition_reg_size)
+            temp_and = resource_rep(qre.TempAND)
+            temp_and_dag = qre.Adjoint.resource_rep(temp_and)
+            in_place_add = qre.SemiAdder.resource_rep(addition_reg_size)
 
             cost_iter = [
-                AllocWires(addition_reg_size),
+                Allocate(addition_reg_size),
                 GateCount(temp_and, addition_reg_size * repetitions),
                 GateCount(in_place_add, repetitions),
                 GateCount(hadamard, repetitions),
                 GateCount(temp_and_dag, addition_reg_size * repetitions),
-                FreeWires(addition_reg_size),
+                Deallocate(addition_reg_size),
             ]
             gate_types.extend(cost_iter)
 
@@ -1218,7 +1218,7 @@ class ResourceAQFT(ResourceOperator):
         return f"AQFT({order}, {num_wires})"
 
 
-class ResourceBasisRotation(ResourceOperator):
+class BasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
@@ -1239,7 +1239,7 @@ class ResourceBasisRotation(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> basis_rot = plre.ResourceBasisRotation(dim_N = 5)
+    >>> basis_rot = plqre.BasisRotation(dim_N = 5)
     >>> print(plre.estimate(basis_rot))
     --- Resources: ---
     Total qubits: 5
@@ -1277,8 +1277,8 @@ class ResourceBasisRotation(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        phase_shift = resource_rep(re.ResourcePhaseShift)
-        single_excitation = resource_rep(re.ResourceSingleExcitation)
+        phase_shift = resource_rep(qre.PhaseShift)
+        single_excitation = resource_rep(qre.SingleExcitation)
 
         se_count = dim_N * (dim_N - 1) // 2
         ps_count = dim_N + se_count
@@ -1318,7 +1318,7 @@ class ResourceBasisRotation(ResourceOperator):
         return f"BasisRotation({dim_N})"
 
 
-class ResourceSelect(ResourceOperator):
+class Select(ResourceOperator):
     r"""Resource class for the Select gate.
 
     Args:
@@ -1341,8 +1341,8 @@ class ResourceSelect(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> ops = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
-    >>> select_op = plre.ResourceSelect(select_ops=ops)
+    >>> ops = [plqre.X(), plqre.Y(), plqre.Z()]
+    >>> select_op = plqre.Select(select_ops=ops)
     >>> print(plre.estimate(select_op))
     --- Resources: ---
     Total qubits: 4
@@ -1409,17 +1409,17 @@ class ResourceSelect(ResourceOperator):
             in the decomposition.
         """
         gate_types = []
-        x = re.ResourceX.resource_rep()
-        cnot = re.ResourceCNOT.resource_rep()
-        l_elbow = resource_rep(re.ResourceTempAND)
-        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
+        x = qre.X.resource_rep()
+        cnot = qre.CNOT.resource_rep()
+        l_elbow = resource_rep(qre.TempAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         num_ops = len(cmpr_ops)
         work_qubits = math.ceil(math.log2(num_ops)) - 1
 
-        gate_types.append(AllocWires(work_qubits))
+        gate_types.append(Allocate(work_qubits))
         for cmp_rep in cmpr_ops:
-            ctrl_op = re.ResourceControlled.resource_rep(cmp_rep, 1, 0)
+            ctrl_op = qre.Controlled.resource_rep(cmp_rep, 1, 0)
             gate_types.append(GateCount(ctrl_op))
 
         gate_types.append(GateCount(x, 2 * (num_ops - 1)))  # conjugate 0 controlled toffolis
@@ -1427,7 +1427,7 @@ class ResourceSelect(ResourceOperator):
         gate_types.append(GateCount(l_elbow, num_ops - 1))
         gate_types.append(GateCount(r_elbow, num_ops - 1))
 
-        gate_types.append(FreeWires(work_qubits))
+        gate_types.append(Deallocate(work_qubits))
         return gate_types
 
     @staticmethod
@@ -1453,7 +1453,7 @@ class ResourceSelect(ResourceOperator):
             in the decomposition.
         """
         gate_types = defaultdict(int)
-        x = re.ResourceX.resource_rep()
+        x = qre.X.resource_rep()
 
         num_ops = len(cmpr_ops)
         num_ctrl_wires = int(qnp.ceil(qnp.log2(num_ops)))
@@ -1463,7 +1463,7 @@ class ResourceSelect(ResourceOperator):
         gate_types[x] = num_zero_controls * 2  # conjugate 0 controls
 
         for cmp_rep in cmpr_ops:
-            ctrl_op = re.ResourceControlled.resource_rep(
+            ctrl_op = qre.Controlled.resource_rep(
                 cmp_rep,
                 num_ctrl_wires,
                 0,
@@ -1509,7 +1509,7 @@ class ResourceSelect(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
 
-class ResourceQROM(ResourceOperator):
+class QROM(ResourceOperator):
     r"""Resource class for the QROM template.
 
     Args:
@@ -1539,7 +1539,7 @@ class ResourceQROM(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qrom = plre.ResourceQROM(
+    >>> qrom = plqre.QROM(
     ...     num_bitstrings=10,
     ...     size_bitstring=4,
     ... )
@@ -1663,13 +1663,13 @@ class ResourceQROM(ResourceOperator):
         if L_opt > 1:
             num_alloc_wires += l - 1  # + work_wires for UI trick
 
-        gate_cost.append(AllocWires(num_alloc_wires))
+        gate_cost.append(Allocate(num_alloc_wires))
 
-        x = resource_rep(re.ResourceX)
-        cnot = resource_rep(re.ResourceCNOT)
-        l_elbow = resource_rep(re.ResourceTempAND)
-        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
-        hadamard = resource_rep(re.ResourceHadamard)
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TempAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+        hadamard = resource_rep(qre.Hadamard)
 
         swap_clean_prefactor = 1
         select_clean_prefactor = 1
@@ -1693,7 +1693,7 @@ class ResourceQROM(ResourceOperator):
             gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 2)))
             gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 2)))
 
-            gate_cost.append(FreeWires(l - 1))  # release UI trick work wires
+            gate_cost.append(Deallocate(l - 1))  # release UI trick work wires
 
         else:
             gate_cost.append(
@@ -1703,11 +1703,11 @@ class ResourceQROM(ResourceOperator):
             )
 
         # SWAP cost:
-        ctrl_swap = resource_rep(re.ResourceCSWAP)
+        ctrl_swap = resource_rep(qre.CSWAP)
         gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
 
         if clean:
-            gate_cost.append(FreeWires((W_opt - 1) * size_bitstring))  # release Swap registers
+            gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
 
         return gate_cost
 
@@ -1736,13 +1736,13 @@ class ResourceQROM(ResourceOperator):
         if L_opt > 1:
             num_alloc_wires += l  # + work_wires for UI trick
 
-        gate_cost.append(AllocWires(num_alloc_wires))
+        gate_cost.append(Allocate(num_alloc_wires))
 
-        x = resource_rep(re.ResourceX)
-        cnot = resource_rep(re.ResourceCNOT)
-        l_elbow = resource_rep(re.ResourceTempAND)
-        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
-        hadamard = resource_rep(re.ResourceHadamard)
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TempAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+        hadamard = resource_rep(qre.Hadamard)
 
         swap_clean_prefactor = 1
         select_clean_prefactor = 1
@@ -1766,7 +1766,7 @@ class ResourceQROM(ResourceOperator):
             gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 1)))
             gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 1)))
 
-            gate_cost.append(FreeWires(l))  # release UI trick work wires
+            gate_cost.append(Deallocate(l))  # release UI trick work wires
         else:
             gate_cost.append(
                 GateCount(
@@ -1777,17 +1777,17 @@ class ResourceQROM(ResourceOperator):
 
         # SWAP cost:
         w = math.ceil(math.log2(W_opt))
-        ctrl_swap = re.ResourceCSWAP.resource_rep()
-        gate_cost.append(AllocWires(1))  # need one temporary qubit for l/r-elbow to control SWAP
+        ctrl_swap = qre.CSWAP.resource_rep()
+        gate_cost.append(Allocate(1))  # need one temporary qubit for l/r-elbow to control SWAP
 
         gate_cost.append(GateCount(l_elbow, w))
         gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
         gate_cost.append(GateCount(r_elbow, w))
 
-        gate_cost.append(FreeWires(1))  # temp wires
+        gate_cost.append(Deallocate(1))  # temp wires
         if clean:
             gate_cost.append(
-                FreeWires((W_opt - 1) * size_bitstring)
+                Deallocate((W_opt - 1) * size_bitstring)
             )  # release Swap registers + temp wires
         return gate_cost
 
@@ -1838,7 +1838,7 @@ class ResourceQROM(ResourceOperator):
         """
         gate_cost = []
         if ctrl_num_ctrl_values:
-            x = re.ResourceX.resource_rep()
+            x = qre.X.resource_rep()
             gate_cost.append(GateCount(x, 2 * ctrl_num_ctrl_values))
 
         if num_bit_flips is None:
@@ -1856,15 +1856,15 @@ class ResourceQROM(ResourceOperator):
             gate_cost.extend(single_ctrl_cost)
             return gate_cost
 
-        gate_cost.append(AllocWires(1))
+        gate_cost.append(Allocate(1))
         gate_cost.append(
-            GateCount(re.ResourceMultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
+            GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
         )
         gate_cost.extend(single_ctrl_cost)
         gate_cost.append(
-            GateCount(re.ResourceMultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
+            GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
         )
-        gate_cost.append(FreeWires(1))
+        gate_cost.append(Deallocate(1))
         return gate_cost
 
     @property
@@ -1950,7 +1950,7 @@ class ResourceQROM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
 
-class ResourceQubitUnitary(ResourceOperator):
+class QubitUnitary(ResourceOperator):
     r"""Resource class for the QubitUnitary template.
 
     Args:
@@ -1978,7 +1978,7 @@ class ResourceQubitUnitary(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qu = plre.ResourceQubitUnitary(num_wires=3)
+    >>> qu = plqre.QubitUnitary(num_wires=3)
     >>> print(plre.estimate(qu, gate_set))
     --- Resources: ---
      Total qubits: 3
@@ -2054,10 +2054,10 @@ class ResourceQubitUnitary(ResourceOperator):
         """
         gate_lst = []
 
-        one_qubit_decomp_cost = [GateCount(resource_rep(re.ResourceRZ, {"precision": precision}))]
+        one_qubit_decomp_cost = [GateCount(resource_rep(qre.RZ, {"precision": precision}))]
         two_qubit_decomp_cost = [
-            GateCount(resource_rep(re.ResourceRZ, {"precision": precision}), 4),
-            GateCount(resource_rep(re.ResourceCNOT), 3),
+            GateCount(resource_rep(qre.RZ, {"precision": precision}), 4),
+            GateCount(resource_rep(qre.CNOT), 3),
         ]
 
         if num_wires == 1:
@@ -2093,7 +2093,7 @@ class ResourceQubitUnitary(ResourceOperator):
         return gate_lst
 
 
-class ResourceSelectPauliRot(ResourceOperator):
+class SelectPauliRot(ResourceOperator):
     r"""Resource class for the SelectPauliRot gate.
 
     Args:
@@ -2115,7 +2115,7 @@ class ResourceSelectPauliRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> mltplxr = plre.ResourceSelectPauliRot(
+    >>> mltplxr = plqre.SelectPauliRot(
     ...     rotation_axis = "Y",
     ...     num_ctrl_wires = 4,
     ...     precision = 1e-3,
@@ -2207,13 +2207,13 @@ class ResourceSelectPauliRot(ResourceOperator):
             in the decomposition.
         """
         rotation_gate_map = {
-            "X": re.ResourceRX,
-            "Y": re.ResourceRY,
-            "Z": re.ResourceRZ,
+            "X": qre.RX,
+            "Y": qre.RY,
+            "Z": qre.RZ,
         }
 
         gate = resource_rep(rotation_gate_map[rotation_axis], {"precision": precision})
-        cnot = resource_rep(re.ResourceCNOT)
+        cnot = resource_rep(qre.CNOT)
 
         gate_lst = [
             GateCount(gate, 2**num_ctrl_wires),
@@ -2253,7 +2253,7 @@ class ResourceSelectPauliRot(ResourceOperator):
         gate_lst = []
 
         qrom = resource_rep(
-            re.ResourceQROM,
+            qre.QROM,
             {
                 "num_bitstrings": 2**num_ctrl_wires,
                 "num_bit_flips": 2**num_ctrl_wires * num_prec_wires // 2,
@@ -2262,15 +2262,15 @@ class ResourceSelectPauliRot(ResourceOperator):
             },
         )
 
-        gate_lst.append(AllocWires(num_prec_wires))
+        gate_lst.append(Allocate(num_prec_wires))
         gate_lst.append(GateCount(qrom))
         gate_lst.append(
             GateCount(
                 resource_rep(
-                    re.ResourceControlled,
+                    qre.Controlled,
                     {
                         "base_cmpr_op": resource_rep(
-                            re.ResourceSemiAdder,
+                            qre.SemiAdder,
                             {"max_register_size": num_prec_wires},
                         ),
                         "num_ctrl_wires": 1,
@@ -2279,12 +2279,12 @@ class ResourceSelectPauliRot(ResourceOperator):
                 )
             )
         )
-        gate_lst.append(GateCount(resource_rep(re.ResourceAdjoint, {"base_cmpr_op": qrom})))
-        gate_lst.append(FreeWires(num_prec_wires))
+        gate_lst.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom})))
+        gate_lst.append(Deallocate(num_prec_wires))
 
-        h = resource_rep(re.ResourceHadamard)
-        s = resource_rep(re.ResourceS)
-        s_dagg = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
+        h = resource_rep(qre.Hadamard)
+        s = resource_rep(qre.S)
+        s_dagg = resource_rep(qre.Adjoint, {"base_cmpr_op": s})
 
         if rotation_axis == "X":
             gate_lst.append(GateCount(h, 2))
