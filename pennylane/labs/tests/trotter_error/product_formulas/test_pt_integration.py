@@ -96,14 +96,19 @@ params = [
     ("serial", 1, "state", 2),
     ("mp_pool", 2, "state", 2),
     ("mp_pool", 2, "commutator", 2),
+    ("mp_pool", 2, "mvp", 2),
     ("cf_procpool", 2, "state", 2),
     ("cf_procpool", 2, "commutator", 2),
+    ("cf_procpool", 2, "mvp", 2),
     ("cf_threadpool", 2, "state", 2),
     ("cf_threadpool", 2, "commutator", 2),
+    ("cf_threadpool", 2, "mvp", 2),
     ("mpi4py_pool", 2, "state", 2),
     ("mpi4py_pool", 2, "commutator", 2),
+    ("mpi4py_pool", 2, "mvp", 2),
     ("mpi4py_comm", 2, "state", 2),
     ("mpi4py_comm", 2, "commutator", 2),
+    ("mpi4py_comm", 2, "mvp", 2),
 ]
 
 
