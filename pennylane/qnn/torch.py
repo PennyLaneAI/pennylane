@@ -355,7 +355,7 @@ class TorchLayer(Module):
         self._signature_validation(qnode, weight_shapes)
 
         self.qnode = qnode
-        if self.qnode.interface not in ("auto", "torch", "pytorch"):
+        if self.qnode.interface not in ("auto", "torch"):
             raise ValueError(f"Invalid interface '{self.qnode.interface}' for TorchLayer")
 
         self.qnode_weights: dict[str, torch.nn.Parameter] = {}

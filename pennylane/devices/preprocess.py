@@ -22,7 +22,7 @@ from collections.abc import Callable, Sequence
 from copy import copy
 
 import pennylane as qml
-from pennylane.decomposition.decomposition_graph import DecompGraphSolution
+from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import (
     AllocationError,
     DecompositionUndefinedError,
@@ -31,13 +31,16 @@ from pennylane.exceptions import (
     WireError,
 )
 from pennylane.math import requires_grad
-from pennylane.measurements import SampleMeasurement, StateMeasurement
+from pennylane.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import resolve_dynamic_wires
 from pennylane.transforms.core import transform
-from pennylane.transforms.decompose import _operator_decomposition_gen
+from pennylane.transforms.decompose import (
+    _construct_and_solve_decomp_graph,
+    _operator_decomposition_gen,
+)
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -294,8 +297,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     stopping_condition_shots: Callable[[Operator], bool] | None = None,
     skip_initial_state_prep: bool = True,
     decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
-    graph_solution: DecompGraphSolution | None = None,
-    num_available_work_wires: int | None = 0,
+    device_wires: Wires | None = None,
+    target_gates: set | None = None,
     name: str = "device",
     error: type[Exception] | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -317,6 +320,10 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
+        device_wires (Wires): The device wires. If provided along with ``target_gates``, will be
+            used to automatically set up graph decomposition when enabled.
+        target_gates (set): The target gate set for graph decomposition. If provided along with
+            ``device_wires``, will automatically enable graph-based decomposition when available.
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
@@ -377,6 +384,28 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
+    # Compute parameters for graph decomposition if device_wires and target_gates are provided
+    if device_wires is None:
+        num_available_work_wires = device_wires  # no constraint on work wires
+    else:
+        # Calculate work wires as device wires that are not used by the tape
+        num_available_work_wires = len(set(device_wires) - set(tape.wires))
+
+    graph_solution = None
+    if target_gates is not None and enabled_graph():
+
+        # Filter out MeasurementProcess instances that shouldn't be decomposed
+        decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
+
+        # Construct and solve the decomposition graph
+        graph_solution = _construct_and_solve_decomp_graph(
+            operations=decomposable_ops,
+            target_gates=target_gates,
+            num_work_wires=num_available_work_wires,
+            fixed_decomps=None,
+            alt_decomps=None,
+        )
+
     if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
         prep_op = [tape[0]]
     else:
@@ -392,7 +421,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                num_available_work_wires=num_available_work_wires,
+                max_work_wires=num_available_work_wires,
                 graph_solution=graph_solution,
                 custom_decomposer=decomposer,
                 strict=True,
@@ -741,7 +770,7 @@ def _get_diagonalized_tape_and_wires(tape):
 
 @transform
 def device_resolve_dynamic_wires(
-    tape: QuantumScript, wires: None | Wires
+    tape: QuantumScript, wires: None | Wires, allow_resets: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Allocate dynamic wires in a manner consistent with the provided device wires.
 
@@ -784,7 +813,9 @@ def device_resolve_dynamic_wires(
         zeroed = ()
         min_int = max((i for i in tape.wires if isinstance(i, int)), default=-1) + 1
     try:
-        return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
+        return resolve_dynamic_wires(
+            tape, zeroed=zeroed, min_int=min_int, allow_resets=allow_resets
+        )
     except AllocationError as e:
         raise AllocationError(
             f"Not enough available wires on device with wires {wires} for requested dynamic wires."

@@ -42,7 +42,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
     name = "convert-to-mbqc-formalism"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
         pattern_rewriter.PatternRewriteWalker(
@@ -60,7 +60,7 @@ convert_to_mbqc_formalism_pass = compiler_transform(ConvertToMBQCFormalismPass)
 
 class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
-):  # pylint: disable=too-few-public-methods, no-self-use, unpacking-non-sequence
+):  # pylint: disable=too-few-public-methods,no-self-use
     """RewritePattern for converting to the MBQC formalism."""
 
     def _prep_graph_state(
@@ -112,7 +112,7 @@ class ConvertToMBQCFormalismPattern(
         qubit: QubitType,
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
-    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    ):
         """Insert an arbitrary basis measure related operations to the IR.
         Args:
             angle (float) : The angle of measurement basis.
@@ -544,7 +544,7 @@ class ConvertToMBQCFormalismPattern(
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, root: func.FuncOp | IfOp | WhileOp | ForOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ, cell-var-from-loop
+    ):
         """Match and rewrite for converting to the MBQC formalism."""
 
         for region in root.regions:
@@ -596,9 +596,6 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate the non-result auxiliary qubits and target qubit in the qreg
-                    # TODOs: the following line will lead to failure, the error msg is :
-                    # RuntimeError: [/__w/catalyst/catalyst/runtime/lib/backend/common/QubitManager.hpp:47][Function:_remove_simulator_qubit_id] Error in Catalyst Runtime: Invalid simulator qubit index
-                    # While, if we replace [5] with [1, 5], there is no error for the unit test
                     self._deallocate_aux_qubits(graph_qubits_dict, [5], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
@@ -645,11 +642,6 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate non-result aux_qubits and the target/control qubits in the qreg
-                    # TODOs: the following line will lead to failure, the error msg is :
-                    # RuntimeError: [/__w/catalyst/catalyst/runtime/lib/backend/common/QubitManager.hpp:47][Function:_remove_simulator_qubit_id] Error in Catalyst Runtime: Invalid simulator qubit index
-                    # While, if we replace [9, 15] with [1,7,9, 15], there is no error for the unit test
-                    # It could be fixed by the [PR <https://github.com/PennyLaneAI/catalyst/pull/2000>_], we should
-                    # revisit this later once the PR above is merged.
                     self._deallocate_aux_qubits(graph_qubits_dict, [9, 15], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit

@@ -118,6 +118,11 @@ PennyLane also provides higher-level classes for converting QNodes into ``torch.
 
     pennylane.qnn.TorchLayer
 
+.. warning::
+
+    PennyLane's QNodes currently promote all ``torch.float32`` (single-precision) inputs to ``torch.float64`` 
+    (double-precision) during execution. This may result in higher memory usage than expected.
+
 
 .. note::
 
