@@ -27,6 +27,6 @@ from .controlled_ops import (
     CY,
     CZ,
     MultiControlledX,
-    TempAND,
+    TemporaryAND,
     Toffoli,
 )

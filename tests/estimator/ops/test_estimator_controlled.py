@@ -28,13 +28,10 @@ from pennylane.estimator.ops.op_math.controlled_ops import (
     ControlledPhaseShift,
     CRot,
     MultiControlledX,
-    TempAND,
+    TemporaryAND,
     Toffoli,
 )
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
@@ -352,10 +349,10 @@ class TestCNOT:
         assert self.op.pow_resource_decomp(z) == expected_res
 
 
-class TestTempAND:
-    """Test the Resource TempAND operation"""
+class TestTemporaryAND:
+    """Test the Resource TemporaryAND operation"""
 
-    op = TempAND(wires=[0, 1, 2])
+    op = TemporaryAND(wires=[0, 1, 2])
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -364,7 +361,7 @@ class TestTempAND:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(TempAND, 3, {})
+        expected_rep = CompressedResourceOp(TemporaryAND, 3, {})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
