@@ -64,8 +64,6 @@ from .ops.op_math import (
     Toffoli,
     Adjoint,
     Controlled,
-    Adjoint,
-    Controlled,
     Pow,
     Prod,
     ChangeOpBasis,
