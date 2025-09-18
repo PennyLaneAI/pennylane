@@ -293,7 +293,7 @@ def allocate(
         **Efficient wire management**
 
         For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic
-        allocation calls in the most resource-efficient manner before sending the program to the
+        allocation calls in a resource-efficient manner before sending the program to the
         device. Consider the following circuit, which contains two dynamic allocations within a
         ``for`` loop.
 
