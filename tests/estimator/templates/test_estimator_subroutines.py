@@ -1086,7 +1086,7 @@ class TestResourceSelect:
 
 
 class TestResourceQROM:
-    """Test the ResourceQROM class."""
+    """Test the resource QROM class."""
 
     def test_select_swap_depth_errors(self):
         """Test that the correct error is raised when invalid values of

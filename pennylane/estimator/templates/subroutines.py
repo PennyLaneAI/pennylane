@@ -25,6 +25,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.wires import Wires
+from pennylane.estimator.resource_operator import _dequeue
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
 
@@ -525,7 +526,7 @@ class ControlledSequence(ResourceOperator):
     resource_keys = {"base_cmpr_op", "num_ctrl_wires"}
 
     def __init__(self, base: ResourceOperator, num_control_wires, wires=None) -> None:
-        self.dequeue(op_to_remove=base)
+        _dequeue(op_to_remove=base)
         self.queue()
         base_cmpr_op = base.resource_rep_from_op()
 
@@ -601,7 +602,7 @@ class ControlledSequence(ResourceOperator):
         gate_counts = []
         base_op = base_cmpr_op
 
-        if base_cmpr_op.op_type == qre.ChangeBasisOp:
+        if base_cmpr_op.op_type == qre.ChangeOpBasis:
             base_op = base_cmpr_op.params["cmpr_base_op"]
             compute_op = base_cmpr_op.params["cmpr_compute_op"]
             uncompute_op = base_cmpr_op.params["cmpr_uncompute_op"]
@@ -616,7 +617,7 @@ class ControlledSequence(ResourceOperator):
             )
             gate_counts.append(GateCount(ctrl_pow_u))
 
-        if base_cmpr_op.op_type == qre.ChangeBasisOp:
+        if base_cmpr_op.op_type == qre.ChangeOpBasis:
             gate_counts.append(GateCount(uncompute_op))
 
         return gate_counts
@@ -698,7 +699,7 @@ class QPE(ResourceOperator):
         wires=None,
     ):
         remove_ops = [base, adj_qft_op] if adj_qft_op is not None else [base]
-        self.dequeue(remove_ops)
+        _dequeue(remove_ops)
         self.queue()
 
         base_cmpr_op = base.resource_rep_from_op()
@@ -729,7 +730,7 @@ class QPE(ResourceOperator):
                 * num_estimation_wires (int): the number of wires used for measuring out the phase
                 * adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
-                  default :class:`~.pennylane.labs.resource_estimation.ResourceQFT` will be used.
+                  default :class:`~.pennylane.labs.resource_estimation.QFT` will be used.
         """
 
         return {
@@ -754,7 +755,7 @@ class QPE(ResourceOperator):
             num_estimation_wires (int): the number of wires used for measuring out the phase
             adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
-                default :class:`~.pennylane.labs.resource_estimation.ResourceQFT` will be used.
+                default :class:`~.pennylane.labs.resource_estimation.QFT` will be used.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -778,7 +779,7 @@ class QPE(ResourceOperator):
             num_estimation_wires (int): the number of wires used for measuring out the phase
             adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
-                default :class:`~.pennylane.labs.resource_estimation.ResourceQFT` will be used.
+                default :class:`~.pennylane.labs.resource_estimation.QFT` will be used.
 
         Resources:
             The resources are obtained from the standard decomposition of QPE as presented
@@ -786,12 +787,12 @@ class QPE(ResourceOperator):
             Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
         """
         hadamard = resource_rep(qre.Hadamard)
-        ctrl_op = ResourceControlledSequence.resource_rep(base_cmpr_op, num_estimation_wires)
+        ctrl_op = ControlledSequence.resource_rep(base_cmpr_op, num_estimation_wires)
         if adj_qft_cmpr_op is None:
             adj_qft_cmpr_op = resource_rep(
                 qre.Adjoint,
                 {
-                    "base_cmpr_op": resource_rep(ResourceQFT, {"num_wires": num_estimation_wires}),
+                    "base_cmpr_op": resource_rep(QFT, {"num_wires": num_estimation_wires}),
                 },
             )
 
@@ -840,7 +841,7 @@ class IterativeQPE(ResourceOperator):
     resource_keys = {"base_cmpr_op", "num_iter"}
 
     def __init__(self, base: ResourceOperator, num_iter: int):
-        self.dequeue(base)
+        _dequeue(base)
         self.queue()
 
         self.base_cmpr_op = base.resource_rep_from_op()
@@ -906,7 +907,7 @@ class IterativeQPE(ResourceOperator):
         ]
 
         # Here we want to use this particular decomposition, not any random one the user might override
-        gate_counts += ResourceControlledSequence.resource_decomp(base_cmpr_op, num_iter, **kwargs)
+        gate_counts += ControlledSequence.resource_decomp(base_cmpr_op, num_iter, **kwargs)
 
         num_phase_gates = num_iter * (num_iter - 1) // 2
         gate_counts.append(
@@ -1356,7 +1357,7 @@ class Select(ResourceOperator):
     resource_keys = {"num_wires", "cmpr_ops"}
 
     def __init__(self, select_ops, wires=None) -> None:
-        self.dequeue(op_to_remove=select_ops)
+        _dequeue(op_to_remove=select_ops)
         self.queue()
         num_select_ops = len(select_ops)
         num_ctrl_wires = math.ceil(math.log2(num_select_ops))
@@ -1652,7 +1653,7 @@ class QROM(ResourceOperator):
             max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
-        W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
+        W_opt = select_swap_depth or QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
         L_opt = math.ceil(num_bitstrings / W_opt)
@@ -2067,7 +2068,7 @@ class QubitUnitary(ResourceOperator):
 
         for index in range(2, num_wires):
             multiplex_z = resource_rep(
-                ResourceSelectPauliRot,
+                SelectPauliRot,
                 {
                     "num_ctrl_wires": index,
                     "rotation_axis": "Z",
@@ -2075,7 +2076,7 @@ class QubitUnitary(ResourceOperator):
                 },
             )
             multiplex_y = resource_rep(
-                ResourceSelectPauliRot,
+                SelectPauliRot,
                 {
                     "num_ctrl_wires": index,
                     "rotation_axis": "Y",
