@@ -138,6 +138,13 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
+  with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
+  subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
+  discretization schemes.
+  [(#8213)](https://github.com/PennyLaneAI/pennylane/pull/8213)
+
+
 <h3>Improvements 🛠</h3>
 
 * The JAX version is now included in :func:`pennylane.about`.
