@@ -1242,7 +1242,7 @@ class MultiControlledX(ResourceOperator):
 
     Resources:
         The resources are obtained based on the unary iteration technique described in
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
         resources are defined as the following rules:
 
         * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
