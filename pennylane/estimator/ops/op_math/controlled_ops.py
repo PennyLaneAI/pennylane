@@ -833,6 +833,8 @@ class TempAND(ResourceOperator):
     This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
     with its adjoint.
 
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.TemporaryAND`.
+
     **Example**
 
     The resources for this operation are computed using:
