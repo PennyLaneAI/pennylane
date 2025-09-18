@@ -27,10 +27,10 @@ from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=unused-argument, no-member
+# pylint: disable=unused-argument
 
 
-class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+class CompressedResourceOp:
     r"""Instantiate a light weight class corresponding to the operator type and parameters.
 
     This class provides a minimal representation of an operation, containing
@@ -217,6 +217,17 @@ class ResourceOperator(ABC):
 
         self.queue()
         super().__init__()
+
+    def __eq__(self, other):
+        """Return True if the operators are equal."""
+        if not isinstance(other, ResourceOperator):
+            return False
+
+        return (
+            self.__class__ is other.__class__
+            and self.resource_params == other.resource_params
+            and self.num_wires == other.num_wires
+        )
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
