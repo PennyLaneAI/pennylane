@@ -73,8 +73,8 @@ class Adjoint(ResourceOperator):
      Total wires: 3
         algorithmic wires: 3
         allocated wires: 0
-        	 zero state: 0
-        	 any state: 0
+                 zero state: 0
+                 any state: 0
      Total gates : 7
       'SWAP': 1,
       'ControlledPhaseShift': 3,
@@ -85,8 +85,8 @@ class Adjoint(ResourceOperator):
      Total wires: 3
         algorithmic wires: 3
         allocated wires: 0
-	         zero state: 0
-        	 any state: 0
+                 zero state: 0
+                 any state: 0
      Total gates : 7
       'Adjoint(ControlledPhaseShift)': 3,
       'Adjoint(SWAP)': 1,
@@ -239,8 +239,8 @@ class Controlled(ResourceOperator):
      Total wires: 2
         algorithmic wires: 2
         allocated wires: 0
-        	 zero state: 0
-        	 any state: 0
+                 zero state: 0
+                 any state: 0
      Total gates : 1
       'CNOT': 1
     >>>
@@ -249,8 +249,8 @@ class Controlled(ResourceOperator):
      Total wires: 3
         algorithmic wires: 3
         allocated wires: 0
-        	 zero state: 0
-        	 any state: 0
+                 zero state: 0
+                 any state: 0
      Total gates : 5
       'Toffoli': 1,
       'X': 4
