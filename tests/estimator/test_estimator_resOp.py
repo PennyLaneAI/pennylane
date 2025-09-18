@@ -181,9 +181,6 @@ class DummyOp(ResourceOperator):
         self.x = x
         super().__init__(wires=wires)
 
-    def __eq__(self, other: object) -> bool:
-        return (self.__class__.__name__ == other.__class__.__name__) and (self.x == other.x)
-
     @property
     def resource_params(self):
         """dummy resource params method"""
@@ -385,9 +382,17 @@ class TestResourceOperator:
     def test_equality_method(self):
         """Test that the __eq__ method for the ResourceOperator is correct."""
 
+        dop1 = DummyOp(1.1)
+        dop2 = DummyOp(2.2)
+        dop3 = DummyOp(1.1)
+        dop1.num_wires = 1
+        dop3.num_wires = 3
+
         assert qre_ops.X() == qre_ops.X()
         assert qre_ops.SWAP() == qre_ops.SWAP()
         assert qre_ops.X() != qre_ops.SWAP()
+        assert dop1 != dop2
+        assert dop1 != dop3
 
     def test_equality_false(self):
         """Test that the __eq__ method returns False if the input operator is not ResourceOperator."""
