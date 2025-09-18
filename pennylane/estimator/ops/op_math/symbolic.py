@@ -24,7 +24,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
@@ -58,6 +58,7 @@ class Adjoint(ResourceOperator):
 
     We can see how the resources differ by choosing a suitable gateset and estimating resources:
 
+    >>> from pennylane import estimator as qre
     >>> gate_set = {
     ...     "SWAP",
     ...     "Adjoint(SWAP)",
@@ -67,23 +68,30 @@ class Adjoint(ResourceOperator):
     ...     "Adjoint(ControlledPhaseShift)",
     ... }
     >>>
-    >>> print(qml.estimator.estimate(qft, gate_set))
+    >>> print(qre.estimate(qft, gate_set))
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 7
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-    {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+        	 zero state: 0
+        	 any state: 0
+     Total gates : 7
+      'SWAP': 1,
+      'ControlledPhaseShift': 3,
+      'Hadamard': 3
     >>>
-    >>> print(qml.estimator.estimate(adj_qft, gate_set))
+    >>> print(qre.estimate(adj_qft, gate_set))
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 7
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-    {'Adjoint(ControlledPhaseShift)': 3, 'Adjoint(SWAP)': 1, 'Adjoint(Hadamard)': 3}
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+	         zero state: 0
+        	 any state: 0
+     Total gates : 7
+      'Adjoint(ControlledPhaseShift)': 3,
+      'Adjoint(SWAP)': 1,
+      'Adjoint(Hadamard)': 3
+
     """
 
     resource_keys = {"base_cmpr_op"}
@@ -132,7 +140,6 @@ class Adjoint(ResourceOperator):
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
                 compressed resource representation for the operator we want the adjoint of.
-            wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
             This symbolic operation represents the adjoint of some base operation. The resources are
@@ -147,44 +154,6 @@ class Adjoint(ResourceOperator):
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
-
-        .. seealso:: :class:`~.ops.op_math.adjoint.AdjointOperation`
-
-        **Example**
-
-        The adjoint operation can be constructed like this:
-
-        >>> qft = qml.estimator.QFT(num_wires=3)
-        >>> adj_qft = qml.estimator.Adjoint(qft)
-
-        We can see how the resources differ by choosing a suitable gateset and estimating resources:
-
-        >>> gate_set = {
-        ...     "SWAP",
-        ...     "Adjoint(SWAP)",
-        ...     "Hadamard",
-        ...     "Adjoint(Hadamard)",
-        ...     "ControlledPhaseShift",
-        ...     "Adjoint(ControlledPhaseShift)",
-        ... }
-        >>>
-        >>> print(qml.estimator.estimate(qft, gate_set))
-        --- Resources: ---
-        Total qubits: 3
-        Total gates : 7
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-        Gate breakdown:
-        {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
-        >>>
-        >>> print(qml.estimator.estimate(adj_qft, gate_set))
-        --- Resources: ---
-        Total qubits: 3
-        Total gates : 7
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-        Gate breakdown:
-        {'Adjoint(ControlledPhaseShift)': 3, 'Adjoint(SWAP)': 1, 'Adjoint(Hadamard)': 3}
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
@@ -258,29 +227,33 @@ class Controlled(ResourceOperator):
 
     The controlled operation can be constructed like this:
 
-    >>> x = qml.estimator.X()
-    >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_zero_ctrl=0)
-    >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_zero_ctrl=2)
+    >>> from pennylane import estimator as qre
+    >>> x = qre.X()
+    >>> cx = qre.Controlled(x, num_ctrl_wires=1, num_zero_ctrl=0)
+    >>> ccx = qre.Controlled(x, num_ctrl_wires=2, num_zero_ctrl=2)
 
     We can observe the expected gates when we estimate the resources.
 
-    >>> print(qml.estimator.estimate(cx))
+    >>> print(qre.estimate(cx))
     --- Resources: ---
-    Total qubits: 2
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
-    Gate breakdown:
-    {'CNOT': 1}
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+        	 zero state: 0
+        	 any state: 0
+     Total gates : 1
+      'CNOT': 1
     >>>
-    >>> print(qml.estimator.estimate(ccx))
+    >>> print(qre.estimate(ccx))
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 5
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-    {'X': 4, 'Toffoli': 1}
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+        	 zero state: 0
+        	 any state: 0
+     Total gates : 5
+      'Toffoli': 1,
+      'X': 4
 
     """
 
@@ -291,7 +264,7 @@ class Controlled(ResourceOperator):
         base_op: ResourceOperator,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
-        wires=None,
+        wires: WiresLike = None,
     ) -> None:
         _dequeue(op_to_remove=base_op)
         self.queue()
@@ -334,8 +307,8 @@ class Controlled(ResourceOperator):
     def resource_rep(
         cls,
         base_cmpr_op,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -363,7 +336,7 @@ class Controlled(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, base_cmpr_op, num_ctrl_wires, num_zero_ctrl, **kwargs
+        cls, base_cmpr_op, num_ctrl_wires: int, num_zero_ctrl: int, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -390,36 +363,6 @@ class Controlled(ResourceOperator):
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
-
-        .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Controlled`.
-
-        **Example**
-
-        The controlled operation can be constructed like this:
-
-        >>> x = qml.estimator.X()
-        >>> cx = qml.estimator.Controlled(x, num_ctrl_wires=1, num_zero_ctrl=0)
-        >>> ccx = qml.estimator.Controlled(x, num_ctrl_wires=2, num_zero_ctrl=2)
-
-        We can observe the expected gates when we estimate the resources.
-
-        >>> print(qml.estimator.estimate(cx))
-        --- Resources: ---
-        Total qubits: 2
-        Total gates : 1
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
-        Gate breakdown:
-        {'CNOT': 1}
-        >>>
-        >>> print(qml.estimator.estimate(ccx))
-        --- Resources: ---
-        Total qubits: 3
-        Total gates : 5
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-        Gate breakdown:
-        {'X': 4, 'Toffoli': 1}
 
         """
 
@@ -459,8 +402,8 @@ class Controlled(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_zero_ctrl,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
