@@ -527,7 +527,7 @@ class ConvertToMBQCFormalismPattern(
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Deallocate non-result auxiliary qubits in the graph qubit dict.
+        """Deallocate non-result qubits in the graph qubit dict.
         Args:
             graph_qubits_dict (dict) : A dict stores all qubits in a graph state.
             res_aux_qb (list[int]) : A list of keys of result auxiliary qubits.
