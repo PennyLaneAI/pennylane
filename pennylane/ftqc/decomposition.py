@@ -71,8 +71,8 @@ def correct_final_samples(results, tape):
         measurements = shot_res[0]
         mcms = shot_res[1:]
         ####
-        # hack work-around because null.qubit
-        # nests the MCMs for unknown reasons
+        # hack work-around because null.qubit nests 
+        # the MCMs after we un-squeezed samples
         if np.shape(mcms[0]):
             mcms = [m[0][0] for m in mcms]
         ####
@@ -216,8 +216,7 @@ def convert_to_mbqc_formalism_with_pauli_tracker(sequence):
     This version always diagonalizes MCMs, otherwise the Pauli tracking fails because of
     difficulty identifying separately diagonalized MCMs.
 
-    On this branch, the transform has been extended so it can be used directly on the experimental
-    QuantumScriptSequence class"""
+    This function specifically expects a QuantumScriptSequence, not a standard QuantumScript; its not possible to inject the online corrections in a standard QuantumScript"""
 
     if len(sequence.measurements) != 1 or not isinstance(sequence.measurements[0], (SampleMP)):
         raise NotImplementedError(
