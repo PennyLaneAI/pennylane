@@ -1094,18 +1094,13 @@ add_decomps(Select, _select_decomp_unary)
 def _select_resources_multi_control_work_wire(op_reps, num_control_wires, num_work_wires, partial):
     resources = defaultdict(int)
     if partial:
-        if len(op_reps) == 1:
-            resources[op_reps[0]] += 1
-        else:
-            # Use dummy control values, we will only care about the length of the outputs
-            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
-                resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-                resources[
-                    _multi_controlled_rep(
-                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
-                    )
-                ] += 2
+        # Use dummy control values, we will only care about the length of the outputs
+        ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
+        for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
+            resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
+            resources[
+                _multi_controlled_rep(resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1)
+            ] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
@@ -1126,6 +1121,13 @@ def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
 @register_condition(_work_wire_condition)
 @register_resources(_select_resources_multi_control_work_wire)
 def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
+    """
+    Multi-controlled gate decomposition, in which, instead of directly controlling the target operator with all control
+    wires, an ancillary work qubit is employed to encode whether the control condition is satisfied. The target operator
+    is then applied as a single-qubit controlled gate from this ancilla.
+    An example of this decomposition can be found in Figure 1(a):  https://arxiv.org/abs/1812.00954
+    """
+
     if len(ops) == 0:
         return []
 
