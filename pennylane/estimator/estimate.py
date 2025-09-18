@@ -17,7 +17,7 @@ from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
 from pennylane.measurements.measurements import MeasurementProcess
-from pennylane.operation import Operation, Operator
+from pennylane.operation import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
@@ -35,7 +35,7 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 
 def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
-    """Maps an instance of :class:`~.Operation` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`."""
+    """Maps an instance of :class:`~.Operator` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`."""
 
 
 def estimate(
@@ -46,13 +46,13 @@ def estimate(
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
-    r"""Estimate the quantum resources required by a circuit or operation
+    r"""Estimate the quantum resources required by a circuit or operator
     with respect to a given gateset.
 
     Args:
-        workflow (Callable | ResourceOperator | Resources): The quantum circuit or operation
+        workflow (Callable | ResourceOperator | Resources): The quantum circuit or operator
             for which to estimate resources.
-        gate_set (set[str] | None): A set of names (strings) of the fundamental operations to track
+        gate_set (set[str] | None): A set of names (strings) of the fundamental operators to track
             counts for throughout the quantum workflow.
         zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
@@ -135,7 +135,7 @@ def _resources_from_qfunc(
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Callable[..., Resources]:
-    """Get resources from a quantum function which queues operations"""
+    """Get resources from a quantum function which queues operators"""
 
     if isinstance(obj, QNode):
         raise NotImplementedError("Support for QNodes has not yet been implemented.")
@@ -149,14 +149,14 @@ def _resources_from_qfunc(
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
-            if isinstance(op, (ResourceOperator, Operation, MeasurementProcess)):
+            if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
                 if op.wires:
                     circuit_wires.append(op.wires)
                 elif op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
             else:
                 raise ValueError(
-                    f"Queued object '{op}' is not a ResourceOperator or Operation, and cannot be processed."
+                    f"Queued object '{op}' is not a ResourceOperator or Operator, and cannot be processed."
                 )
         num_algo_qubits += len(Wires.all_wires(circuit_wires))
         wire_manager.algo_wires = num_algo_qubits
@@ -242,14 +242,14 @@ def _update_counts_from_compressed_res_op(
     scalar: int = 1,
     config: ResourceConfig | None = None,
 ) -> None:
-    """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
+    """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
     Args:
-        comp_res_op (CompressedResourceOp): operation in compressed representation to extract resources from
+        comp_res_op (CompressedResourceOp): operator in compressed representation to extract resources from
         gate_counts_dict (dict): base dictionary to modify with the resource counts
         wire_manager (WireResourceManager): the `WireResourceManager` that tracks and manages the
             `zeroed`, `any_state`, and `algo_wires` wires.
-        gate_set (set[str]): the set of operations to track resources with respect to
+        gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
         config (dict | None): additional parameters to specify the resources from an operator. Defaults to ResourceConfig.
     """
@@ -313,12 +313,12 @@ def _sum_allocated_wires(decomp):
 
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
-    ops: Iterable[Operation | ResourceOperator],
+    ops: Iterable[Operator | ResourceOperator],
 ) -> list[CompressedResourceOp]:
-    """Convert the sequence of operations to a list of compressed resource ops.
+    """Convert the sequence of operators to a list of compressed resource ops.
 
     Args:
-        ops (Iterable[Union[Operation, ResourceOperator]]): set of operations to convert
+        ops (Iterable[Union[Operator, ResourceOperator]]): set of operators to convert
 
     Returns:
         List[CompressedResourceOp]: set of converted compressed resource ops
