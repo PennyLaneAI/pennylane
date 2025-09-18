@@ -34,6 +34,7 @@ class TestIdentity:
         """Test that common PL wires are accepted."""
         op = Identity(wire_labels)
         assert op.wires == Wires(wire_labels)
+        assert op.num_wires == len(Wires(wire_labels))
 
     def test_resources(self):
         """ResourceIdentity should have empty resources"""
