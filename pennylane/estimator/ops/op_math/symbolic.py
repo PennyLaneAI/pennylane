@@ -35,8 +35,8 @@ class Adjoint(ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator that we
-            want the adjoint of.
+        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator for which
+            to retrieve the adjoint.
 
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
