@@ -17,17 +17,16 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 
 import numpy as np
 
-from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
+from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
+from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.estimator.ops.op_math.symbolic import Prod, Controlled
-from pennylane.estimator.ops.qubit.non_parametric_ops import X, T, Hadamard
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
 from pennylane.estimator.templates.subroutines import (
     BasisRotation,
     OutMultiplier,
@@ -36,6 +35,7 @@ from pennylane.estimator.templates.subroutines import (
     Select,
     SemiAdder,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ, too-many-arguments, super-init-not-called

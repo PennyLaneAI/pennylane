@@ -15,15 +15,15 @@ r"""Resource operators for PennyLane subroutine templates."""
 import math
 from collections import defaultdict
 
-from pennylane import numpy as qnp
 from pennylane import estimator as qre
-from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane import numpy as qnp
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
