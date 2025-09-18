@@ -1453,7 +1453,7 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         # This should not raise an error even though there's no graph-based decomposition
         program = dev.preprocess_transforms()
         (out_tape,), _ = program([tape])
-        
+
         qml.assert_equal(out_tape, tape)
 
         # NullQubit should accept the operator even if it's not decomposed at preprocessing
