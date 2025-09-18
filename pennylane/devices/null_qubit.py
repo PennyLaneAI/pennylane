@@ -243,6 +243,9 @@ class NullQubit(Device):
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+
+        if isinstance(target_device, NullQubit):
+            target_device = target_device._target_device
         self._target_device = target_device
 
         # this is required by Catalyst to toggle the tracker at runtime
