@@ -28,7 +28,6 @@ Resource Estimation Base Classes:
     ~resource_operator.ResourceOperator
     ~resource_operator.CompressedResourceOp
     ~resource_operator.GateCount
-    ~resource_operator.ResourcesNotDefined
     ~resource_operator.resource_rep
 
 
@@ -40,4 +39,3 @@ Resource Operators:
     :no-inherited-members:
     :classes-only:
     :noindex:
-

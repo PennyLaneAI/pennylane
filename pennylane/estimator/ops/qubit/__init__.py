@@ -22,7 +22,6 @@ from .non_parametric_ops import (
     Z,
     SWAP,
 )
-
 from .parametric_ops_single_qubit import (
     PhaseShift,
     RX,
@@ -31,14 +30,6 @@ from .parametric_ops_single_qubit import (
     Rot,
 )
 
-from .parametric_ops_multi_qubit import (
-    IsingXX,
-    IsingXY,
-    IsingYY,
-    IsingZZ,
-    MultiRZ,
-    PauliRot,
-    PSWAP,
-)
+from .parametric_ops_multi_qubit import MultiRZ, PauliRot
 
 from .qchem_ops import SingleExcitation

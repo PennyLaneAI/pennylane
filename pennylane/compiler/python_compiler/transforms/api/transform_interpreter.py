@@ -28,7 +28,7 @@ See here (link valid with xDSL 0.46): https://github.com/xdslproject/xdsl/blob/3
 import io
 from collections.abc import Callable
 
-from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
+from catalyst.compiler import _quantum_opt
 from xdsl.context import Context
 from xdsl.dialects import builtin
 from xdsl.dialects.transform import NamedSequenceOp
@@ -56,47 +56,59 @@ class TransformFunctionsExt(TransformFunctions):
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         # The signature of the callback function is assumed to be
-        # the one used in xDSL:
-        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass) -> None:
+        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass, pass_level=None) -> None
         self.callback = callback
+        self.pass_level = 0
+
+    def _pre_pass_callback(self, compilation_pass, module):
+        """Callback wrapper to run the callback function before the pass."""
+        if not self.callback:
+            return
+        if self.pass_level == 0:
+            # Since this is the first pass, there is no previous pass
+            self.callback(None, module, compilation_pass, pass_level=0)
+
+    def _post_pass_callback(self, compilation_pass, module):
+        """Increment level and run callback if defined."""
+        if not self.callback:
+            return
+        self.pass_level += 1
+        self.callback(compilation_pass, module, None, pass_level=self.pass_level)
 
     @impl(ApplyRegisteredPassOp)
-    def run_apply_registered_pass_op(  # pragma: no cover
+    def run_apply_registered_pass_op(
         self,
         _interpreter: Interpreter,
         op: ApplyRegisteredPassOp,
         args: PythonValues,
     ) -> PythonValues:
-        """Try to run the pass in xDSL, if it can't run on catalyst"""
+        """Try to run the pass in xDSL, if not found then run it in Catalyst."""
 
-        pass_name = op.pass_name.data  # pragma: no cover
+        pass_name = op.pass_name.data
         module = args[0]
 
+        # ---- xDSL path ----
         if pass_name in self.passes:
-            # pragma: no cover
             pass_class = self.passes[pass_name]()
             pass_instance = pass_class(**op.options.data)
             pipeline = PassPipeline((pass_instance,))
+            self._pre_pass_callback(pass_instance, module)
             pipeline.apply(self.ctx, module)
-            if self.callback:
-                next_pass = None
-                self.callback(pass_instance, module, next_pass)
+            self._post_pass_callback(pass_instance, module)
             return (module,)
 
-        # pragma: no cover
+        # ---- Catalyst path ----
         buffer = io.StringIO()
-
         Printer(stream=buffer, print_generic_format=True).print_op(module)
+
         schedule = f"--{pass_name}"
+        self._pre_pass_callback(pass_name, module)
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 
         data = Parser(self.ctx, modified).parse_module()
         rewriter = Rewriter()
         rewriter.replace_op(module, data)
-        if self.callback:
-            previous_pass = None
-            next_pass = None
-            self.callback(previous_pass, data, next_pass)
+        self._post_pass_callback(pass_name, data)
         return (data,)
 
 
@@ -129,4 +141,6 @@ class TransformInterpreterPass(ModulePass):
         interpreter = Interpreter(op)
         interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes, self.callback))
         schedule.parent_op().detach()
+        if self.callback:
+            self.callback(None, op, None, pass_level=0)
         interpreter.call_op(schedule, (op,))

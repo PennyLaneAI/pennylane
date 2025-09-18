@@ -76,7 +76,7 @@ class TestMultiRZ:
             qre.GateCount(qre.MultiRZ.resource_rep(num_wires=num_wires, precision=precision))
         ]
         assert (
-            qre.MultiRZ.adjoint_resource_decomp(num_wires=num_wires, precision=precision)
+            qre.MultiRZ.adjoint_resource_decomp({"num_wires": num_wires, "precision": precision})
             == expected
         )
 
@@ -115,19 +115,19 @@ class TestMultiRZ:
         ),
     )
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_ctrl_values, expected_res", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, expected_res):
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
 
         op = qre.MultiRZ(num_wires=3, precision=1e-3)
         op2 = qre.Controlled(
             op,
             num_ctrl_wires,
-            num_ctrl_values,
+            num_zero_ctrl,
         )
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
@@ -139,7 +139,7 @@ class TestMultiRZ:
         """Test that the pow decomposition is correct."""
         op = qre.MultiRZ(num_wires, precision=precision)
         expected_res = [qre.GateCount(qre.MultiRZ.resource_rep(num_wires, precision))]
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
 
 
 class TestPauliRot:
@@ -233,6 +233,14 @@ class TestPauliRot:
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
+    @pytest.mark.parametrize(
+        "pauli_string, expected", (("X", qre.RX), ("Y", qre.RY), ("Z", qre.RZ))
+    )
+    def test_resource_decomp_single_pauli_string(self, pauli_string, expected):
+        """Test that the resources method produces the correct result for a single pauli string."""
+        expected = [qre.GateCount(expected.resource_rep(precision=1e-3))]
+        assert qre.PauliRot.resource_decomp(pauli_string=pauli_string, precision=1e-3) == expected
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_word", pauli_words)
     def test_adjoint_decomp(self, pauli_word, precision):
@@ -241,7 +249,9 @@ class TestPauliRot:
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
         assert (
-            qre.PauliRot.adjoint_resource_decomp(pauli_string=pauli_word, precision=precision)
+            qre.PauliRot.adjoint_resource_decomp(
+                target_resource_params={"pauli_string": pauli_word, "precision": precision}
+            )
             == expected
         )
 
@@ -348,17 +358,23 @@ class TestPauliRot:
             0,
             [qre.GateCount(qre.Controlled.resource_rep(qre.RY.resource_rep(precision=1e-5), 2, 0))],
         ),
+        (
+            "Z",
+            2,
+            1,
+            [qre.GateCount(qre.Controlled.resource_rep(qre.RZ.resource_rep(precision=1e-5), 2, 1))],
+        ),
     )
 
-    @pytest.mark.parametrize("pauli_word, num_ctrl_wires, num_ctrl_values, expected_res", ctrl_data)
-    def test_resource_controlled(self, num_ctrl_wires, num_ctrl_values, pauli_word, expected_res):
+    @pytest.mark.parametrize("pauli_word, num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
+    def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, pauli_word, expected_res):
         """Test that the controlled resources are as expected"""
 
         op = qre.PauliRot(pauli_word, precision=1e-5)
-        op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
+        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
@@ -372,301 +388,4 @@ class TestPauliRot:
         expected_res = [
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
-
-
-class TestIsingXX:
-    """Test the Resource IsingXX class."""
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_params(self, precision):
-        """Test that the resource params are correct."""
-        if precision:
-            op = qre.IsingXX(precision=precision)
-        else:
-            op = qre.IsingXX()
-
-        assert op.resource_params == {"precision": precision}
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_rep(self, precision):
-        """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.IsingXX, 2, {"precision": precision})
-        assert qre.IsingXX.resource_rep(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources(self, precision):
-        """Test that the resources are correct."""
-        expected = [
-            qre.GateCount(qre.CNOT.resource_rep(), 2),
-            qre.GateCount(qre.RX.resource_rep(precision=precision)),
-        ]
-        assert qre.IsingXX.resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_pow(self, precision):
-        """Test that the pow resources are correct."""
-        expected = [qre.GateCount(qre.IsingXX.resource_rep(precision=precision))]
-        assert qre.IsingXX.pow_resource_decomp(pow_z=3, precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_adjoint(self, precision):
-        """Test that the adjoint resources are correct."""
-        expected = [qre.GateCount(qre.IsingXX.resource_rep(precision=precision))]
-        assert qre.IsingXX.adjoint_resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_controlled(self, precision):
-        """Test that the controlled resources are correct."""
-        expected = [
-            qre.GateCount(qre.CNOT.resource_rep(), 2),
-            qre.GateCount(
-                qre.Controlled.resource_rep(
-                    qre.RX.resource_rep(precision=precision),
-                    3,
-                    2,
-                )
-            ),
-        ]
-        op = qre.Controlled(qre.IsingXX(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(**op.resource_params) == expected
-
-
-class TestIsingXY:
-    """Test the Resource IsingXY class."""
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_params(self, precision):
-        """Test that the resource params are correct."""
-        if precision:
-            op = qre.IsingXY(precision=precision)
-        else:
-            op = qre.IsingXY()
-
-        assert op.resource_params == {"precision": precision}
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_rep(self, precision):
-        """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.IsingXY, 2, {"precision": precision})
-        assert qre.IsingXY.resource_rep(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources(self, precision):
-        """Test that the resources are correct."""
-        expected = [
-            qre.GateCount(qre.Hadamard.resource_rep(), 2),
-            qre.GateCount(qre.CY.resource_rep(), 2),
-            qre.GateCount(qre.RY.resource_rep(precision=precision)),
-            qre.GateCount(qre.RX.resource_rep(precision=precision)),
-        ]
-        assert qre.IsingXY.resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_pow(self, precision):
-        """Test that the pow resources are correct."""
-        expected = [qre.GateCount(qre.IsingXY.resource_rep(precision=precision))]
-        assert qre.IsingXY.pow_resource_decomp(pow_z=3, precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_adjoint(self, precision):
-        """Test that the adjoint resources are correct."""
-        expected = [qre.GateCount(qre.IsingXY.resource_rep(precision=precision))]
-        assert qre.IsingXY.adjoint_resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_controlled(self, precision):
-        """Test that the controlled resources are correct."""
-        expected = [
-            qre.GateCount(qre.Hadamard.resource_rep(), 2),
-            qre.GateCount(qre.CY.resource_rep(), 2),
-            qre.GateCount(
-                qre.Controlled.resource_rep(
-                    qre.RY.resource_rep(precision=precision),
-                    3,
-                    2,
-                )
-            ),
-            qre.GateCount(
-                qre.Controlled.resource_rep(
-                    qre.RX.resource_rep(precision=precision),
-                    3,
-                    2,
-                )
-            ),
-        ]
-        op = qre.Controlled(qre.IsingXY(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(**op.resource_params) == expected
-
-
-class TestIsingYY:
-    """Test the Resource IsingYY class."""
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_params(self, precision):
-        """Test that the resource params are correct."""
-        if precision:
-            op = qre.IsingYY(precision=precision)
-        else:
-            op = qre.IsingYY()
-
-        assert op.resource_params == {"precision": precision}
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_rep(self, precision):
-        """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.IsingYY, 2, {"precision": precision})
-        assert qre.IsingYY.resource_rep(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources(self, precision):
-        """Test that the resources are correct."""
-        expected = [
-            qre.GateCount(qre.CY.resource_rep(), 2),
-            qre.GateCount(qre.RY.resource_rep(precision=precision)),
-        ]
-        assert qre.IsingYY.resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_pow(self, precision):
-        """Test that the pow resources are correct."""
-        expected = [qre.GateCount(qre.IsingYY.resource_rep(precision=precision))]
-        assert qre.IsingYY.pow_resource_decomp(pow_z=3, precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_adjoint(self, precision):
-        """Test that the adjoint resources are correct."""
-        expected = [qre.GateCount(qre.IsingYY.resource_rep(precision=precision))]
-        assert qre.IsingYY.adjoint_resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_controlled(self, precision):
-        """Test that the controlled resources are correct."""
-        expected = [
-            qre.GateCount(qre.CY.resource_rep(), 2),
-            qre.GateCount(
-                qre.Controlled.resource_rep(
-                    qre.RY.resource_rep(precision=precision),
-                    3,
-                    2,
-                )
-            ),
-        ]
-        op = qre.Controlled(qre.IsingYY(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(**op.resource_params) == expected
-
-
-class TestIsingZZ:
-    """Test the Resource IsingZZ class."""
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_params(self, precision):
-        """Test that the resource params are correct."""
-        if precision:
-            op = qre.IsingZZ(precision=precision)
-        else:
-            op = qre.IsingZZ()
-
-        assert op.resource_params == {"precision": precision}
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_rep(self, precision):
-        """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.IsingZZ, 2, {"precision": precision})
-        assert qre.IsingZZ.resource_rep(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources(self, precision):
-        """Test that the resources are correct."""
-        expected = [
-            qre.GateCount(qre.CNOT.resource_rep(), 2),
-            qre.GateCount(qre.RZ.resource_rep(precision=precision)),
-        ]
-        assert qre.IsingZZ.resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_pow(self, precision):
-        """Test that the pow resources are correct."""
-        expected = [qre.GateCount(qre.IsingZZ.resource_rep(precision=precision))]
-        assert qre.IsingZZ.pow_resource_decomp(pow_z=3, precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_adjoint(self, precision):
-        """Test that the adjoint resources are correct."""
-        expected = [qre.GateCount(qre.IsingZZ.resource_rep(precision=precision))]
-        assert qre.IsingZZ.adjoint_resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_controlled(self, precision):
-        """Test that the controlled resources are correct."""
-        expected = [
-            qre.GateCount(qre.CNOT.resource_rep(), 2),
-            qre.GateCount(
-                qre.Controlled.resource_rep(
-                    qre.RZ.resource_rep(precision=precision),
-                    3,
-                    2,
-                )
-            ),
-        ]
-        op = qre.Controlled(qre.IsingZZ(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(**op.resource_params) == expected
-
-
-class TestPSWAP:
-    """Test the Resource PSWAP class."""
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_params(self, precision):
-        """Test that the resource params are correct."""
-        if precision:
-            op = qre.PSWAP(precision=precision)
-        else:
-            op = qre.PSWAP()
-
-        assert op.resource_params == {"precision": precision}
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resource_rep(self, precision):
-        """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.PSWAP, 2, {"precision": precision})
-        assert qre.PSWAP.resource_rep(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources(self, precision):
-        """Test that the resources are correct."""
-        expected = [
-            qre.GateCount(qre.SWAP.resource_rep()),
-            qre.GateCount(qre.PhaseShift.resource_rep(precision=precision)),
-            qre.GateCount(qre.CNOT.resource_rep(), 2),
-        ]
-        assert qre.PSWAP.resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_adjoint(self, precision):
-        """Test that the adjoint resources are correct."""
-        expected = [qre.GateCount(qre.PSWAP.resource_rep(precision=precision))]
-        assert qre.PSWAP.adjoint_resource_decomp(precision=precision) == expected
-
-    @pytest.mark.parametrize("precision", (None, 1e-3))
-    def test_resources_controlled(self, precision):
-        """Test that the controlled resources are correct."""
-        expected = [
-            qre.GateCount(
-                qre.Controlled.resource_rep(
-                    qre.SWAP.resource_rep(),
-                    3,
-                    2,
-                )
-            ),
-            qre.GateCount(qre.CNOT.resource_rep(), 2),
-            qre.GateCount(
-                qre.Controlled.resource_rep(
-                    qre.PhaseShift.resource_rep(precision=precision),
-                    3,
-                    2,
-                )
-            ),
-        ]
-        op = qre.Controlled(qre.PSWAP(precision=precision), num_ctrl_wires=3, num_ctrl_values=2)
-        assert op.resource_decomp(**op.resource_params) == expected
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res

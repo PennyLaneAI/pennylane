@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Test the base and abstract Resource class
+This submodule tests the base classes for resource operators.
 """
 from collections import defaultdict
 from collections.abc import Hashable
@@ -26,7 +26,6 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesNotDefined,
     _dequeue,
     _make_hashable,
     resource_rep,
@@ -306,6 +305,67 @@ class CNOT(DummyOp):
     num_wires = 2
 
 
+class DummyOp_decomps(ResourceOperator):
+    """Class for testing the resource_decomp methods"""
+
+    resource_keys = {"max_register_size"}
+
+    def __init__(self, max_register_size, wires=None):
+        self.max_register_size = max_register_size
+        self.num_wires = 2 * max_register_size
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources."""
+        return {"max_register_size": self.max_register_size}
+
+    @classmethod
+    def resource_rep(cls, max_register_size):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+        """
+        num_wires = 2 * max_register_size
+        return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
+
+    @classmethod
+    def resource_decomp(cls, max_register_size):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+        """
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(rx, max_register_size)]
+
+    @classmethod
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        cnot = resource_rep(CNOT, {"x": None})
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(cnot, max_register_size), GateCount(rx, max_register_size)]
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        rx = resource_rep(RX, {"x": 1})
+        h = resource_rep(Hadamard, {"x": None})
+        return [GateCount(rx, max_register_size), GateCount(h, 2 * max_register_size)]
+
+    @classmethod
+    def pow_resource_decomp(cls, pow_z, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(rx, max_register_size * pow_z)]
+
+
 class TestResourceOperator:
     """Tests for the ResourceOperator class"""
 
@@ -369,10 +429,10 @@ class TestResourceOperator:
         num_wires aregument leads to an error."""
         dummy_op1 = DummyOp()
         assert dummy_op1.wires is None
-        assert dummy_op1.num_wires == 1
+        assert dummy_op1.num_wires is None
 
-        with pytest.raises(ValueError, match="Expected 1 wires, got"):
-            dummy_op2 = DummyOp(wires=[0, 1, 2])
+        with pytest.raises(ValueError, match="Expected None wires, got"):
+            DummyOp(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mul(self, s):
@@ -381,7 +441,7 @@ class TestResourceOperator:
         resources = s * op
 
         gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): s})
-        expected_resources = Resources(0, algo=1, gate_types=gt)
+        expected_resources = Resources(0, algo_wires=1, gate_types=gt)
         assert resources == expected_resources
 
     @pytest.mark.parametrize("s", [1, 2, 3])
@@ -391,10 +451,10 @@ class TestResourceOperator:
         resources = s @ op
 
         gt = defaultdict(int, {DummyCmprsRep("CNOT", None): s})
-        expected_resources = Resources(0, algo=s * 2, gate_types=gt)
+        expected_resources = Resources(0, algo_wires=s * 2, gate_types=gt)
         assert resources == expected_resources
 
-    def test_add(self):
+    def test_add_series(self):
         """Test addition dunder method between two ResourceOperator classes"""
         op1 = RX(1.23)
         op2 = CNOT()
@@ -407,14 +467,14 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
-    def test_add_resources(self):
+    def test_add_series_resources(self):
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        res2 = Resources(zeroed=0, algo=2, gate_types=gt2)
+        res2 = Resources(zeroed=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_series(res2)
 
         gt = defaultdict(
@@ -424,17 +484,17 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=2, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
-    def test_add_error(self):
+    def test_add_series_error(self):
         """Test addition dunder method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
             op1 = RX(1.23)
             _ = op1.add_series(True)
 
-    def test_and(self):
-        """Test and dunder method between two ResourceOperator classes"""
+    def test_add_parallel(self):
+        """Test add_parallel method between two ResourceOperator classes"""
         op1 = RX(1.23)
         op2 = CNOT()
         resources = op1.add_parallel(op2)
@@ -446,14 +506,14 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
-    def test_and_resources(self):
+    def test_add_parallel_resources(self):
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        res2 = Resources(zeroed=0, any_state=0, algo=2, gate_types=gt2)
+        res2 = Resources(zeroed=0, any_state=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_parallel(res2)
 
         gt = defaultdict(
@@ -463,34 +523,54 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo=3, gate_types=gt)
+        expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
-    def test_and_error(self):
-        """Test and dunder method raises error when adding with unsupported type"""
+    def test_parallel_add_error(self):
+        """Test add_parallel method raises error when adding with unsupported type"""
         with pytest.raises(TypeError, match="Cannot add resource operator"):
             op1 = RX(1.23)
             _ = op1.add_parallel(True)
 
+    def test_mul_error(self):
+        """Test multiply dunder method raises error when multiplying with unsupported type"""
+        with pytest.raises(TypeError, match="Cannot multiply resource operator"):
+            op1 = RX(1.23)
+            _ = op1 * 0.2
+
+    def test_matmul_error(self):
+        """Test multiply dunder method raises error when multiplying with unsupported type"""
+        with pytest.raises(TypeError, match="Cannot multiply resource operator"):
+            op1 = RX(1.23)
+            _ = op1 @ 0.2
+
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
         op1 = X
-        assert op1.resource_keys == set()
+        assert op1.resource_keys == set()  # pylint: disable=comparison-with-callable
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
-            X.adjoint_resource_decomp()
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.adjoint_resource_decomp(target_resource_params=dummy_params) == [
+            GateCount(DummyCmprsRep("RX", 1), 10),
+            GateCount(DummyCmprsRep("Hadamard", None), 20),
+        ]
 
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
-            X.controlled_resource_decomp(ctrl_num_ctrl_wires=2, ctrl_num_ctrl_values=0)
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.controlled_resource_decomp(
+            num_ctrl_wires=2, num_zero_ctrl=0, target_resource_params=dummy_params
+        ) == [GateCount(DummyCmprsRep("CNOT", None), 10), GateCount(DummyCmprsRep("RX", 1), 10)]
 
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
-        with pytest.raises(ResourcesNotDefined):
-            X.pow_resource_decomp(2)
+
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.pow_resource_decomp(
+            pow_z=2, target_resource_params=dummy_params
+        ) == [GateCount(DummyCmprsRep("RX", 1), 20)]
 
     def test_tracking_name(self):
         """Test that correct tracking name is returned."""

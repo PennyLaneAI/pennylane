@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=protected-access
 from .decompositions.controlled_decompositions import (
     _mcx_many_workers,
     _mcx_one_worker,

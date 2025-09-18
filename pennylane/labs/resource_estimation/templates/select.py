@@ -57,7 +57,7 @@ class ResourceSelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = plre.estimate_resources(plre.ResourceSelectTHC(compact_ham, rotation_precision=15))
+    >>> res = plre.estimate(plre.ResourceSelectTHC(compact_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
      Total qubits: 371
@@ -161,7 +161,7 @@ class ResourceSelectTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def default_resource_decomp(
+    def resource_decomp(
         cls, compact_ham, rotation_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -194,10 +194,6 @@ class ResourceSelectTHC(ResourceOperator):
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
-
-        rotation_precision = (
-            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
-        )
 
         gate_list = []
         # Total select cost from Eq. 43 in arXiv:2011.03494
@@ -291,7 +287,7 @@ class ResourceSelectTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def default_controlled_resource_decomp(
+    def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
@@ -330,10 +326,6 @@ class ResourceSelectTHC(ResourceOperator):
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
-
-        rotation_precision = (
-            rotation_precision or kwargs["config"]["qubitization_rotation_precision"]
-        )
 
         gate_list = []
 

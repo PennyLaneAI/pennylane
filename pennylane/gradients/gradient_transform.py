@@ -20,9 +20,6 @@ from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, Varianc
 from pennylane.pytrees import flatten, unflatten
 from pennylane.tape import QuantumScript
 
-# pylint: disable=too-few-public-methods
-
-
 SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
     "argnum",

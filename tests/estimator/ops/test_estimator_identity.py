@@ -18,10 +18,7 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator.ops import GlobalPhase, Identity
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
@@ -107,7 +104,7 @@ class TestGlobalPhase:
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
-        op = GlobalPhase(wires=0)
+        op = GlobalPhase(wires=[0])
         expected = []
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -117,11 +114,16 @@ class TestGlobalPhase:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        op = GlobalPhase(wires=0)
+        op = GlobalPhase(wires=[0])
         assert op.adjoint_resource_decomp() == [GateCount(GlobalPhase.resource_rep(), 1)]
 
     globalphase_ctrl_data = (
         ([1], [1], [GateCount(qre.PhaseShift.resource_rep(), 1)]),
+        (
+            [1],
+            [0],
+            [GateCount(qre.PhaseShift.resource_rep(), 1), GateCount(qre.X.resource_rep(), 2)],
+        ),
         (
             [1, 2],
             [1, 1],

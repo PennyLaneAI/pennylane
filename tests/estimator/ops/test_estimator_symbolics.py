@@ -17,7 +17,9 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import GateCount, ResourcesNotDefined
+from pennylane.estimator.resource_operator import GateCount
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
@@ -57,9 +59,9 @@ class TestAdjoint:
             """Dummy class with no default adjoint decomp"""
 
             @classmethod
-            def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+            def adjoint_resource_decomp(cls, target_resource_params=None) -> list[GateCount]:
                 """No default resources"""
-                raise ResourcesNotDefined
+                raise ResourcesUndefinedError
 
         op = ResourceDummyS()  # no default_adjoint_decomp defined
         adj_op = qre.Adjoint(op)
@@ -90,6 +92,29 @@ class TestAdjoint:
         expected_res = [GateCount(base_op.resource_rep_from_op())]
         assert adj_adj_op.resource_decomp(**adj_adj_op.resource_params) == expected_res
 
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.Adjoint.tracking_name(qre.T.resource_rep()) == "Adjoint(T)"
+        assert qre.Adjoint.tracking_name(qre.S.resource_rep()) == "Adjoint(S)"
+        assert qre.Adjoint.tracking_name(qre.CNOT.resource_rep()) == "Adjoint(CNOT)"
+
+    # pylint: disable=protected-access, import-outside-toplevel
+    def test_apply_adj(self):
+        """Test that the apply_adj method is working correctly."""
+        from pennylane.estimator.ops.op_math.symbolic import _apply_adj
+
+        assert _apply_adj(Allocate(1)) == Deallocate(1)
+        assert _apply_adj(Deallocate(1)) == Allocate(1)
+
+        expected_res = GateCount(qre.Adjoint.resource_rep(qre.T.resource_rep()), 1)
+        assert _apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
+
+    # pylint: disable=protected-access
+    def test_apply_adj_raises(self):
+        """Test that the apply_adj method is working correctly."""
+        with pytest.raises(TypeError):
+            qre.ops.op_math.symbolic._apply_adj(1)
+
 
 class TestControlled:
     """Tests for the Controlled resource Op"""
@@ -112,9 +137,11 @@ class TestControlled:
     )
     def test_init(self, ctrl_wires, ctrl_values, base_type, base_args):
         """Test that the operator is instantiated correctly"""
+        wires = list(range(ctrl_wires))
+        wires.extend(base_args.get("wires", [ctrl_wires]))
         with AnnotatedQueue() as q:
             base_op = base_type(**base_args)
-            ctrl_base_op = qre.Controlled(base_op, ctrl_wires, ctrl_values)
+            ctrl_base_op = qre.Controlled(base_op, ctrl_wires, ctrl_values, wires=wires)
 
         assert base_op not in q.queue
         assert ctrl_base_op.num_wires == base_op.num_wires + ctrl_wires
@@ -137,20 +164,20 @@ class TestControlled:
 
             @classmethod
             def controlled_resource_decomp(
-                cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, **kwargs
+                cls, num_ctrl_wires, num_zero_ctrl, **kwargs
             ) -> list[GateCount]:
                 """No default resources"""
-                raise ResourcesNotDefined
+                raise ResourcesUndefinedError
 
         op = ResourceDummyZ()  # no default_ctrl_decomp defined
-        ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_ctrl_values=2)
+        ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
         expected_res = [
             GateCount(qre.resource_rep(qre.X), 4),
             GateCount(
                 qre.Controlled.resource_rep(
                     qre.resource_rep(qre.S),
                     num_ctrl_wires=3,
-                    num_ctrl_values=0,
+                    num_zero_ctrl=0,
                 ),
                 2,
             ),
@@ -176,18 +203,33 @@ class TestControlled:
     def test_ctrl_resource_decomp(self, ctrl_wires, ctrl_values, base_op):
         """Test that the control of this operator produces resources as expected."""
         ctrl_op = qre.Controlled(base_op, ctrl_wires, ctrl_values)
-        ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=2, num_ctrl_values=1)
+        ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=2, num_zero_ctrl=1)
 
         expected_res = [
             GateCount(
                 qre.Controlled.resource_rep(
                     base_op.resource_rep_from_op(),
                     num_ctrl_wires=ctrl_wires + 2,
-                    num_ctrl_values=ctrl_values + 1,
+                    num_zero_ctrl=ctrl_values + 1,
                 )
             )
         ]
         assert ctrl_ctrl_op.resource_decomp(**ctrl_ctrl_op.resource_params) == expected_res
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert (
+            qre.Controlled.tracking_name(qre.T.resource_rep(), 1, 0)
+            == "C(T, num_ctrl_wires=1,num_zero_ctrl=0)"
+        )
+        assert (
+            qre.Controlled.tracking_name(qre.S.resource_rep(), 2, 0)
+            == "C(S, num_ctrl_wires=2,num_zero_ctrl=0)"
+        )
+        assert (
+            qre.Controlled.tracking_name(qre.CNOT.resource_rep(), 3, 2)
+            == "C(CNOT, num_ctrl_wires=3,num_zero_ctrl=2)"
+        )
 
 
 class TestPow:
@@ -232,7 +274,7 @@ class TestPow:
             @classmethod
             def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
                 """No default resources"""
-                raise ResourcesNotDefined
+                raise ResourcesUndefinedError
 
         op = ResourceDummyX()  # no default_pow_decomp defined
         pow_op = qre.Pow(op, 7)
@@ -251,17 +293,23 @@ class TestPow:
     def test_pow_resource_decomp(self, base_op, z):
         """Test that the power of this operator produces resources as expected."""
         pow_op = qre.Pow(base_op, z)
-        pow_pow_op = qre.Pow(pow_op, z=5)
+        pow_pow_op = qre.Pow(pow_op, pow_z=5)
 
         expected_res = [
             GateCount(
                 qre.Pow.resource_rep(
                     base_op.resource_rep_from_op(),
-                    z=5 * z,
+                    pow_z=5 * z,
                 )
             )
         ]
         assert pow_pow_op.resource_decomp(**pow_pow_op.resource_params) == expected_res
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.Pow.tracking_name(qre.T.resource_rep(), 1) == "Pow(T, 1)"
+        assert qre.Pow.tracking_name(qre.S.resource_rep(), 2) == "Pow(S, 2)"
+        assert qre.Pow.tracking_name(qre.CNOT.resource_rep(), 3) == "Pow(CNOT, 3)"
 
 
 class TestProd:
@@ -307,6 +355,19 @@ class TestProd:
         ]
         assert prod_op.resource_decomp(**prod_op.resource_params) == expected_res
 
+    def test_resource_init_wires(self):
+        """Test that the operator initializes correctly with wires."""
+        prod_op = qre.Prod([qre.X(), qre.Y()], wires=[0, 1])
+        assert prod_op.num_wires == 2
+        assert prod_op.wires == Wires([0, 1])
+
+        prod_op = qre.Prod([qre.X(), qre.Y()])
+        assert prod_op.wires is None
+
+    def test_resource_init_raises(self):
+        """Test that the operator raises an error if the resource operator is not a ResourceOperator."""
+        with pytest.raises(ValueError, match="All factors of the Product must be"):
+            qre.Prod([qre.X(), 3])
 
 class TestChangeOpBasis:
     """Tests for the ChangeOpBasis resource Op"""
@@ -325,6 +386,20 @@ class TestChangeOpBasis:
 
         assert cb_op.num_wires == 3
         assert cb_op.wires == Wires([0, 1, 2])
+
+    def test_resource_init_raises(self):
+        """Test that the operator raises an error if the resource operator is not a ResourceOperator."""
+        with pytest.raises(ValueError, match="All ops of the ChangeOpBasis must be"):
+            qre.ChangeOpBasis(qre.X(), 3, qre.X())
+
+    def test_resource_init_wires(self):
+        """Test that the operator initializes correctly with wires."""
+        cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.X(), wires=[0, 1])
+        assert cb_op.num_wires == 2
+        assert cb_op.wires == Wires([0, 1])
+
+        cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
+        assert cb_op.wires is None
 
     def test_resource_decomp(self):
         """Test that we can obtain the resources as expected"""
@@ -349,7 +424,7 @@ class TestChangeOpBasis:
                     qre.Pow,
                     {
                         "base_cmpr_op": (qre.T.resource_rep()),
-                        "z": 6,
+                        "pow_z": 6,
                     },
                 ),
             ),

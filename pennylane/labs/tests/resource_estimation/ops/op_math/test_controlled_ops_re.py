@@ -659,7 +659,7 @@ class TestResourceCRX:
 
     def test_resource_keys(self):
         """test that the resource keys are correct"""
-        assert self.op.resource_keys == {"eps"}
+        assert self.op.resource_keys == {"precision"}
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -673,12 +673,12 @@ class TestResourceCRX:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRX, 2, {"eps": None})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRX, 2, {"precision": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = {"eps": None}
+        expected_params = {"precision": None}
         assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
@@ -732,7 +732,7 @@ class TestResourceCRY:
 
     def test_resource_keys(self):
         """test that the resource keys are correct"""
-        assert self.op.resource_keys == {"eps"}
+        assert self.op.resource_keys == {"precision"}
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -745,12 +745,12 @@ class TestResourceCRY:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRY, 2, {"eps": None})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRY, 2, {"precision": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = {"eps": None}
+        expected_params = {"precision": None}
         assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
@@ -803,7 +803,7 @@ class TestResourceCRZ:
 
     def test_resource_keys(self):
         """test that the resource keys are correct"""
-        assert self.op.resource_keys == {"eps"}
+        assert self.op.resource_keys == {"precision"}
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -816,12 +816,12 @@ class TestResourceCRZ:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRZ, 2, {"eps": None})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRZ, 2, {"precision": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = {"eps": None}
+        expected_params = {"precision": None}
         assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
@@ -874,7 +874,7 @@ class TestResourceCRot:
 
     def test_resource_keys(self):
         """test that the resource keys are correct"""
-        assert self.op.resource_keys == {"eps"}
+        assert self.op.resource_keys == {"precision"}
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -887,12 +887,12 @@ class TestResourceCRot:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRot, 2, {"eps": None})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRot, 2, {"precision": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = {"eps": None}
+        expected_params = {"precision": None}
         assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
@@ -944,7 +944,7 @@ class TestResourceControlledPhaseShift:
     def test_resource_keys(self):
         """test that the resource keys are correct"""
         op = re.ResourceControlledPhaseShift()
-        assert op.resource_keys == {"eps"}
+        assert op.resource_keys == {"precision"}
 
     def test_resources(self):
         """Test the resources method"""
@@ -953,7 +953,7 @@ class TestResourceControlledPhaseShift:
 
         expected = [
             re.GateCount(re.CompressedResourceOp(re.ResourceCNOT, 2, {}), 2),
-            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, 1, {"eps": None}), 3),
+            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, 1, {"precision": None}), 3),
         ]
 
         assert op.resource_decomp(**op.resource_params) == expected
@@ -963,14 +963,14 @@ class TestResourceControlledPhaseShift:
 
         op = re.ResourceControlledPhaseShift()
         assert op.resource_params == {
-            "eps": None
+            "precision": None
         }  # pylint: disable=use-implicit-booleaness-not-comparison
 
     def test_resource_rep(self):
         """Test the compressed representation"""
 
         op = re.ResourceControlledPhaseShift()
-        expected = re.CompressedResourceOp(re.ResourceControlledPhaseShift, 2, {"eps": None})
+        expected = re.CompressedResourceOp(re.ResourceControlledPhaseShift, 2, {"precision": None})
 
         assert op.resource_rep() == expected
 
@@ -989,7 +989,7 @@ class TestResourceControlledPhaseShift:
 
         expected = [
             re.GateCount(re.CompressedResourceOp(re.ResourceCNOT, 2, {}), 2),
-            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, 1, {"eps": None}), 3),
+            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, 1, {"precision": None}), 3),
         ]
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -1003,7 +1003,7 @@ class TestResourceControlledPhaseShift:
 
         op = re.ResourceControlledPhaseShift()
 
-        assert op.default_adjoint_resource_decomp() == [
+        assert op.adjoint_resource_decomp() == [
             re.GateCount(re.ResourceControlledPhaseShift.resource_rep(), 1)
         ]
 
@@ -1014,7 +1014,7 @@ class TestResourceControlledPhaseShift:
         """Test that the adjoint resources are correct."""
 
         op = re.ResourceControlledPhaseShift
-        assert op.default_pow_resource_decomp(z) == expected_res
+        assert op.pow_resource_decomp(z) == expected_res
 
     ctrl_data = (
         (
