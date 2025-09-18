@@ -92,121 +92,6 @@ def test_invalid_mcm_method_raises_error(backend):
         )
 
 
-@pytest.mark.parametrize(
-    "wires",
-    [
-        [0, 1],
-        pytest.param(
-            ["a", "b"],
-            marks=pytest.mark.xfail(reason="string wire labels raise error with pauli tracker"),
-        ),
-    ],
-)
-@pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
-def test_executing_arbitrary_circuit(wires, backend_cls, mocker):
-    """Test that an arbitrary circuit (containing non-MBQC gates) is preprocessed
-    to be expressed in the MBQC formalism before executing, and executes as expected"""
-
-    qml.decomposition.enable_graph()
-
-    backend = backend_cls()
-    dev = FTQCQubit(wires=wires, backend=backend)
-
-    spy = mocker.spy(backend_cls, "_execute_sequence")
-
-    def circ():
-        qml.RY(1.2, wires[1])  # tape and device wire order do not match
-        qml.RX(0.45, wires[0])
-        # observables don't commute
-        return qml.expval(qml.Y(wires[1])), qml.expval(qml.Y(wires[0])), qml.expval(qml.X(wires[1]))
-
-    ftqc_circ = qml.qnode(device=dev)(circ)
-    ftqc_circ = qml.set_shots(ftqc_circ, shots=2000)
-
-    ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=wires))(circ)
-
-    # the processed circuit is two tapes (split_non_commuting), returning
-    # only samples, and expressed in the MBQC formalism
-    tapes, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
-    assert len(tapes) == 2
-    for sequence in tapes:
-        assert isinstance(sequence, QuantumScriptSequence)
-        assert all(isinstance(mp, qml.measurements.SampleMP) for mp in sequence.measurements)
-
-    # circuit executes
-    res = ftqc_circ()
-
-    # the call arguments are (device, script, config, online_corrections)
-    (_, script, _, _), _ = spy.call_args
-
-    for tape in script:
-        assert all(
-            # Z and Adjoint from diagonalization
-            isinstance(op, (Adjoint, Conditional, CZ, H, MidMeasureMP, Z))
-            for op in tape.operations
-        )
-
-    expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
-
-    assert np.allclose(res, expected_res, atol=0.05)
-
-
-@pytest.mark.parametrize(
-    "wires",
-    [
-        [0, 1],
-        pytest.param(
-            ["a", "b"],
-            marks=pytest.mark.xfail(reason="string wire labels raise error with pauli tracker"),
-        ),
-    ],
-)
-@pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
-def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls, mocker):
-    """Test that an arbitrary circuit (containing non-MBQC gates) is preprocessed
-    to be expressed in the MBQC formalism before executing, and executes as expected"""
-
-    qml.decomposition.enable_graph()
-
-    backend = backend_cls()
-    dev = FTQCQubit(wires=wires, backend=backend)
-
-    spy = mocker.spy(backend_cls, "_execute_sequence")
-
-    def circ():
-        qml.RX(np.pi / 4, wires[1])
-        qml.CNOT([wires[1], wires[0]])
-        return qml.expval(qml.Z(wires[0]))
-
-    ftqc_circ = qml.qnode(device=dev)(circ)
-    ftqc_circ = qml.set_shots(ftqc_circ, shots=3000)
-
-    ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=wires))(circ)
-
-    # the processed circuit is two tapes (split_non_commuting), returning
-    # only samples, and expressed in the MBQC formalism
-    sequences, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
-    assert len(sequences) == 1
-    assert isinstance(sequences[0], QuantumScriptSequence)
-
-    # circuit executes
-    res = ftqc_circ()
-
-    # check executed tape was converted to the MBQC formalism as expected
-    # the call arguments are (device, script, config, online_corrections)
-    (_, script, _, _), _ = spy.call_args
-    for tape in script:
-        assert all(
-            # Z and Adjoint from diagonalization
-            isinstance(op, (Adjoint, Conditional, CZ, H, MidMeasureMP, Z))
-            for op in tape.operations
-        )
-
-    expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
-
-    assert np.allclose(res, expected_res, atol=0.05)
-
-
 class TestQuantumScriptSequence:
     """Test the behaviour of the class introduced to represent a QuantumScript
     that is broken into multipe execution steps (potentially with additional runtime
@@ -332,13 +217,13 @@ class TestQuantumScriptSequence:
         assert copied_sequence.num_wires == 3
         assert copied_sequence.wires == qml.wires.Wires([0, 1, 12])
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_sequence_copy_updates_tapes(self):
         """Test that copying a sequence works as expected when updating tapes"""
 
         sequence = self.get_test_sequence()
 
         # get some new, modified tapes and make an updated copy
-        qml.decomposition.enable_graph()
         new_tapes = []
         for tape in sequence.tapes:
             new_tape, fn = qml.transforms.decompose(tape, gate_set={qml.Rot, qml.GlobalPhase})
@@ -475,7 +360,7 @@ class TestQuantumScriptSequence:
         (i.e. that the segments of the circuit are executed in series while preserving
         the state, as expected). It bypasses conversion to MBQC formalism and corrections."""
 
-        dev = qml.device("lightning.qubit", wires=3)
+        dev = qml.device("lightning.qubit", wires=4)
         backend = LightningQubitBackend()
 
         @qml.qnode(dev)
@@ -487,7 +372,7 @@ class TestQuantumScriptSequence:
             RZ(0.54, 1)
             H(0)
             S(1)
-            H(2)
+            qml.CNOT([2, 3])
             RotXZX(0.82, 0.66, 0.26, 2)
             H(2)
             H(0)
@@ -567,3 +452,226 @@ class TestBackendExecution:
         assert len(results) == 3000
         for r in results:
             assert np.allclose(r, 0)
+
+
+class TestEndToEndExecution:
+    """Test that end to end execution with the FTQCDevice and one of its
+    backends works as expected"""
+
+    @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_circuit_is_processed_as_expected(self, backend_cls, mocker):
+        """Test that conversion to the MBQC formalism of an arbitrary circuit
+        works as expected in the E2E execution pipeline"""
+
+        dev = FTQCQubit(wires=[0, 1], backend=backend_cls())
+
+        spy1 = mocker.spy(FTQCQubit, "execute")
+        spy2 = mocker.spy(backend_cls, "_execute_sequence")
+
+        @qml.set_shots(1)
+        @qml.qnode(dev)
+        def circ():
+            qml.H(0)
+            qml.RY(1.2, 0)
+            qml.RX(0.45, 1)
+            qml.S(1)
+            qml.RY(0.37, 0)
+            return qml.expval(qml.Y(1)), qml.expval(qml.X(1)), qml.expval(qml.Y(0))
+
+        _ = circ()
+
+        # confirm circuits that were passed to the execute functions match expectations
+        (_, circuits), _ = spy1.call_args  # (dev, circuits)
+        (_, last_sequence, _, online_corrections), _ = (
+            spy2.call_args
+        )  # (dev, sequence, config, online_corrections)
+
+        # the processed circuit that will be passed to execute is two QuantumScriptSequences
+        # because of non-commuting observables, returns only samples, and is expressed in
+        # the MBQC gateset. Each of the two sequences is split into three sections because there
+        # are two non-Clifford gates on wire 0 that aren't at the beginning of the circuit
+        assert len(circuits) == 2
+        for sequence in circuits:
+            assert len(sequence.tapes) == 3
+            assert isinstance(sequence, QuantumScriptSequence)
+            assert all(isinstance(mp, qml.measurements.SampleMP) for mp in sequence.measurements)
+            for inner_tape in sequence.tapes:
+                assert all(
+                    # Z and Adjoint from diagonalization
+                    isinstance(op, (RotXZX, qml.RZ, H, S, qml.CNOT, X, Y, Z))
+                    for op in inner_tape.operations
+                )
+
+        # the sequences passed to _execute_sequence have been further processed to
+        # convert them to the MBQC formalism. The online corrections passed in match
+        # up with the inner (non-final) tapes in the sequence
+        for inner_tape in last_sequence:
+            assert all(
+                # Z and Adjoint from diagonalization
+                isinstance(op, (Adjoint, Conditional, CZ, H, MidMeasureMP, Z))
+                for op in inner_tape.operations
+            )
+            assert len(online_corrections) == len(last_sequence.inner_tapes)
+
+    @pytest.mark.parametrize("obs", [X, Y, Z])
+    @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_circuit_only_offline_corrections(self, obs, backend_cls, mocker):
+        """Test that a circuit with a single MBQC gate executes and returns results
+        as expected. Since there is only a single gate, there is no need to flush the
+        buffer for the pauli tracker at any point in execution, and all corrections will
+        be done offline after readout."""
+
+        ftqc_dev = FTQCQubit(wires=1, backend=backend_cls())
+        ref_dev = qml.device("lightning.qubit", wires=1)
+
+        spy = mocker.spy(FTQCQubit, "execute")
+
+        def circ():
+            RotXZX(0.23, 1.2, 0, 0)
+            return qml.expval(obs(0))
+
+        ref_circ = qml.qnode(ref_dev)(circ)
+
+        ftqc_circ = qml.qnode(ftqc_dev)(circ)
+        ftqc_circ = qml.set_shots(ftqc_circ, shots=2000)
+        res = ftqc_circ()
+
+        # confirm that we are testing the case with a single circuit, with only
+        # online corrections (only one tape in the sequence)
+        (_, circuits), _ = spy.call_args
+        assert len(circuits) == 1
+        for sequence in circuits:
+            assert len(sequence.tapes) == 1
+
+        # confirm the results are what we expect
+        expected_res = (1.0) if backend_cls is NullQubitBackend else ref_circ()
+        assert np.allclose(res, expected_res, atol=0.05)
+
+    @pytest.mark.parametrize("obs", [X, Y, Z])
+    @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_circuit_online_corrections(self, obs, backend_cls, mocker):
+        """Test that a circuit that requires online corrections before a non-Clifford
+        gate executes and returns the expected results"""
+
+        ftqc_dev = FTQCQubit(wires=1, backend=backend_cls())
+        ref_dev = qml.device("lightning.qubit", wires=1)
+
+        spy = mocker.spy(FTQCQubit, "execute")
+
+        def circ():
+            qml.RY(1.2, 0)  # tape and device wire order do not match
+            qml.RX(0.45, 0)
+            return qml.expval(obs(0))
+
+        ref_circ = qml.qnode(ref_dev)(circ)
+
+        ftqc_circ = qml.qnode(ftqc_dev)(circ)
+        ftqc_circ = qml.set_shots(ftqc_circ, shots=2000)
+        res = ftqc_circ()
+
+        # confirm that we are testing the case with a single circuit both online and
+        # offline corrections (more than one tape in the sequence)
+        (_, circuits), _ = spy.call_args
+        assert len(circuits) == 1
+        for sequence in circuits:
+            assert len(sequence.tapes) == 2
+
+        # confirm the results are what we expect
+        expected_res = (1.0) if backend_cls is NullQubitBackend else ref_circ()
+        assert np.allclose(res, expected_res, atol=0.05)
+
+    @pytest.mark.parametrize(
+        "wires",
+        [
+            [0, 1],
+            pytest.param(
+                ["a", "b"],
+                marks=pytest.mark.xfail(reason="string wire labels raise error with pauli tracker"),
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_circuit_non_commuting_observables(self, wires, backend_cls, mocker):
+        """Test that an arbitrary circuit (containing non-MBQC gates) with non-commuting
+        observables executes and returns expected results"""
+
+        ftqc_dev = FTQCQubit(wires=wires, backend=backend_cls())
+        ref_dev = qml.device("lightning.qubit", wires=wires)
+
+        spy = mocker.spy(FTQCQubit, "execute")
+
+        def circ():
+            qml.RY(0.8, wires[1])  # tape and device wire order do not match
+            qml.RX(0.45, wires[0])
+            qml.RZ(0.2, wires[0])
+            # observables don't commute
+            return (
+                qml.expval(qml.Z(wires[1])),
+                qml.expval(qml.Z(wires[0])),
+                qml.expval(qml.X(wires[1])),
+                qml.expval(qml.Y(wires[0])),
+            )
+
+        ref_circ = qml.qnode(ref_dev)(circ)
+
+        ftqc_circ = qml.qnode(ftqc_dev)(circ)
+        ftqc_circ = qml.set_shots(ftqc_circ, shots=2000)
+        res = ftqc_circ()
+
+        # confirm that we are testing the case with multiple circuits (non-commuting observables)
+        # and both online and offline corrections (more than one tape in the sequence)
+        (_, circuits), _ = spy.call_args
+        assert len(circuits) == 2
+        for sequence in circuits:
+            assert len(sequence.tapes) == 2
+
+        # confirm the results are what we expect
+        expected_res = (1.0, 1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
+        assert np.allclose(res, expected_res, atol=0.05)
+
+    @pytest.mark.parametrize(
+        "wires",
+        [
+            [0, 1],
+            pytest.param(
+                ["a", "b"],
+                marks=pytest.mark.xfail(reason="string wire labels raise error with pauli tracker"),
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_executing_circuit_two_qubit_gate(self, wires, backend_cls, mocker):
+        """Test that a circuit with a 2-qubit gate executes and returns expected
+        results"""
+
+        ftqc_dev = FTQCQubit(wires=wires, backend=backend_cls())
+        ref_dev = qml.device("lightning.qubit", wires=wires)
+
+        spy = mocker.spy(FTQCQubit, "execute")
+
+        def circ():
+            qml.RX(np.pi / 4, wires[1])
+            qml.CY([wires[1], wires[0]])
+            return qml.expval(qml.Z(wires[0]))
+
+        ref_circ = qml.qnode(ref_dev)(circ)
+
+        ftqc_circ = qml.qnode(ftqc_dev)(circ)
+        ftqc_circ = qml.set_shots(ftqc_circ, shots=3000)
+        res = ftqc_circ()
+
+        # confirm that we are testing the case with multiple circuits (non-commuting observables)
+        # and only offline corrections (the only tape in each sequence is the final tape)
+        (_, circuits), _ = spy.call_args
+        assert len(circuits) == 1
+        for sequence in circuits:
+            assert len(sequence.tapes) == 2
+
+        expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
+
+        assert np.allclose(res, expected_res, atol=0.05)
