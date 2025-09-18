@@ -306,7 +306,6 @@ def _sum_allocated_wires(decomp):
     return s
 
 
-# pylint: disable=too-many-function-args
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
     ops: Iterable[Operation | ResourceOperator],
