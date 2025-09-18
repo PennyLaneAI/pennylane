@@ -117,7 +117,7 @@ def _estimate_resources_dispatch(
     any_state: int = 0,
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
-) -> Resources | Callable:
+) -> Resources | Callable[..., Resources]:
     """Internal singledispatch function for resource estimation."""
     raise TypeError(
         f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Resources, Callable, ResourceOperator, or list"
