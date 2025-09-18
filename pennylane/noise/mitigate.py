@@ -200,8 +200,9 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
         ops.extend((adjoint(op) for op in reversed(base_ops)))
         ops.extend((copy.copy(op) for op in base_ops))
 
-    ops.extend((adjoint(op) for op in reversed(base_ops[num_to_fold:])))
-    ops.extend((copy.copy(op) for op in base_ops[-num_to_fold:]))
+    if num_to_fold:
+        ops.extend((adjoint(op) for op in reversed(base_ops[-num_to_fold:])))
+        ops.extend((copy.copy(op) for op in base_ops[-num_to_fold:]))
 
     new_tape = tape.copy(ops=ops)
     return [new_tape], lambda x: x[0]
