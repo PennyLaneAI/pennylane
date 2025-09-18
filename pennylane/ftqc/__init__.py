@@ -26,7 +26,11 @@ Modules
 
 """
 from .operations import RotXZX
-from .decomposition import convert_to_mbqc_formalism, convert_to_mbqc_gateset
+from .decomposition import (
+    convert_to_mbqc_formalism,
+    convert_to_mbqc_formalism_with_pauli_tracker,
+    convert_to_mbqc_gateset,
+)
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
@@ -42,7 +46,7 @@ from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
 from .utils import QubitMgr
-from .pauli_tracker import get_byproduct_corrections
+from .pauli_tracker import apply_byproduct_corrections
 
 __all__ = [
     "GraphStatePrep",
@@ -59,9 +63,10 @@ __all__ = [
     "measure_y",
     "measure_z",
     "diagonalize_mcms",
+    "convert_to_mbqc_formalism_with_pauli_tracker",
     "convert_to_mbqc_formalism",
     "convert_to_mbqc_gateset",
     "generate_lattice",
     "make_graph_state",
-    "get_byproduct_corrections",
+    "apply_byproduct_corrections",
 ]

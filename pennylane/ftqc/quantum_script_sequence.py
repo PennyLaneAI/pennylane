@@ -63,15 +63,23 @@ def split_at_non_clifford_gates(tape):
     >>> seq.measurements
     [expval(Z(0))]
     """
+    # will store all the segments of tape operations, split each time
+    # we hit a non-Clifford gate that requires flushing the pauli tracker
     all_operations = []
-    current_ops = [tape.operations[0]]
 
-    for op in tape.operations[1:]:
-        # if its a non-Clifford gate, start a new list
-        if isinstance(op, (RotXZX, RZ)):
+    # stores current operations and wire info for each segment
+    current_ops = []
+    ops_on_wires = []
+
+    for op in tape.operations:
+        used_wire = any(w in ops_on_wires for w in op.wires)
+        # non-Clifford gate + already operations on that wire = start a new segment
+        if isinstance(op, (RotXZX, RZ)) and used_wire:
             all_operations.append(current_ops)
             current_ops = []
+            ops_on_wires = []
         current_ops.append(op)
+        ops_on_wires.extend(op.wires)
     all_operations.append(current_ops)
 
     tapes = []

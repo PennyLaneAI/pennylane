@@ -756,7 +756,7 @@ def _get_diagonalized_tape_and_wires(tape):
     """Apply the diagonalize_measurements transform to the tape and extract a list of
     all the wires present in the measurements"""
 
-    (diagonalized_tape,), _ = qml.transforms.diagonalize_measurements(tape)
+    (diagonalized_tape,), _ = qml.transforms.diagonalize_measurements(tape, use_op_gates_only=True)
 
     measured_wires = set()
     for m in diagonalized_tape.measurements:

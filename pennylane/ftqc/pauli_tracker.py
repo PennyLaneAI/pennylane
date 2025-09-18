@@ -340,7 +340,6 @@ def _get_xz_record(tape: QuantumScript, by_ops: list[tuple[int, int]]):
         # Assign the updated the xz to the x, z record
         for idx, wire in enumerate(wires):
             x_record[wire], z_record[wire] = new_xz[idx]
-
     return x_record, z_record
 
 
@@ -364,7 +363,7 @@ def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals
     return correct_meas
 
 
-def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_vals: list):
+def apply_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_vals: list):
     r"""Correct sample results offline based on the executed quantum script and the mid-circuit measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     and non-Clifford gates. Note that byproduct operations are stored as a list and accessed in a stack manner. The calculation iteratively
@@ -397,7 +396,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
             from pennylane.ftqc import diagonalize_mcms, generate_lattice, measure_x, measure_y
             from pennylane.ftqc import GraphStatePrep
 
-            from pennylane.ftqc.pauli_tracker import get_byproduct_corrections
+            from pennylane.ftqc.pauli_tracker import apply_byproduct_corrections
             import numpy as np
 
 
@@ -468,7 +467,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
             for i in range(num_shots):
                 mid_meas = [row[i] for row in mid_meas_res]
-                corrected_meas_res.extend(get_byproduct_corrections(script, mid_meas, [meas_res[i]]))
+                corrected_meas_res.extend(apply_byproduct_corrections(script, mid_meas, [meas_res[i]]))
 
             res_corrected = 1 - 2*np.sum(corrected_meas_res) / num_shots
 
@@ -487,7 +486,21 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
     """
     by_ops = _parse_mid_measurements(tape, mid_meas)
-
     x_record, _ = _get_xz_record(tape, by_ops)
-
     return _correct_samples(tape, x_record, measurement_vals)
+
+
+def get_byproduct_ops(tape: QuantumScript, mid_meas: list, wire_map: dict):
+    """docstring"""
+    by_ops = _parse_mid_measurements(tape, mid_meas)
+    x_record, z_record = _get_xz_record(tape, by_ops)
+
+    ops = []
+
+    for w, (x, z) in enumerate(zip(x_record, z_record)):
+        if z:
+            ops.append(Z(wire_map[w]))
+        if x:
+            ops.append(X(wire_map[w]))
+
+    return ops

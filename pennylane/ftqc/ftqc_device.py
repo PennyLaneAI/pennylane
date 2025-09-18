@@ -15,6 +15,7 @@
 Contains an implementation of a PennyLane frontend (Device) for an FTQC/MBQC based
 device
 """
+from abc import ABC, abstractmethod
 from dataclasses import replace
 from pathlib import Path
 
@@ -30,9 +31,8 @@ from pennylane.devices.preprocess import (
 )
 from pennylane.ftqc import (
     GraphStatePrep,
-    convert_to_mbqc_formalism,
+    convert_to_mbqc_formalism_with_pauli_tracker,
     convert_to_mbqc_gateset,
-    diagonalize_mcms,
 )
 from pennylane.tape.qscript import QuantumScript
 from pennylane.transforms import combine_global_phases, split_non_commuting
@@ -64,6 +64,23 @@ class FTQCQubit(Device):
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
     def preprocess_transforms(self, execution_config=None):
+        """Returns the transform program to preprocess a circuit for execution.
+
+        Args:
+            execution_config (ExecutionConfig): The execution configuration object
+
+        Returns:
+            TransformProgram: A transform program that is called before execution
+
+        The transform program is composed of a list of individual transforms. For this device,
+        it processes a general circuit to one that is expressed in the gate-set needed for
+        conversion to the textbook MBQC formalism, including (but not limited to):
+
+        * Splitting a circuit with measurements of non-commuting observables or Hamiltonians into multiple executions.
+        * Diagonalizing and converting all measurements to be derived from sampling the computational basis.
+        * Decomposition of operations and measurements to the MBQC gate-set
+        * Validation of wires, measurements, and observables.
+        """
 
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -79,36 +96,13 @@ class FTQCQubit(Device):
             name=self.name,
         )
 
-        # convert to mbqc formalism
+        # convert to mbqc gate set
         program.add_transform(split_non_commuting)
         program.add_transform(measurements_from_samples)
 
         program.add_transform(convert_to_mbqc_gateset)
         program.add_transform(combine_global_phases)
         program.add_transform(split_at_non_clifford_gates)
-        program.add_transform(convert_to_mbqc_formalism)
-
-        # validate that conversion didn't use too many wires
-        program.add_transform(
-            validate_device_wires,
-            wires=self.backend.wires,
-            name=f"{self.name}.{self.backend.name}",
-        )
-
-        # set up for backend execution (MCM handling, decomposing GraphStatePrep)
-        if self.backend.diagonalize_mcms:
-            program.add_transform(diagonalize_mcms)
-        program.add_transform(
-            qml.devices.preprocess.mid_circuit_measurements,
-            device=self,
-            mcm_config=execution_config.mcm_config,
-        )
-        program.add_transform(
-            qml.devices.preprocess.decompose,
-            stopping_condition=lambda op: not isinstance(op, GraphStatePrep),
-            skip_initial_state_prep=True,
-            name=self.name,
-        )
 
         return program
 
@@ -174,17 +168,63 @@ class FTQCQubit(Device):
 
 
 # pylint: disable=too-few-public-methods
-class LightningQubitBackend:
-    """Wrapper for using lightning.qubit as a backend for the ftqc.qubit device"""
+class FTQCBackend(ABC):
+    """Wrapper base class for the backends for the ftqc.qubit device"""
 
-    name = "lightning"
-    config_filepath = Path(__file__).parent / "lightning_backend.toml"
-
-    def __init__(self):
-        self.diagonalize_mcms = True
-        self.wires = qml.wires.Wires(range(25))
-        self.device = qml.device("lightning.qubit")
+    def __init__(self, name, max_wires, device, config_filepath):
+        self.name = name
+        self.wires = qml.wires.Wires(range(max_wires))
+        self.device = device
+        self.config_filepath = config_filepath
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
+
+    def preprocess_transforms(self, execution_config=None):
+        """Returns the transform program to preprocess a circuit for execution on the backend.
+
+        Args:
+            execution_config (ExecutionConfig): The execution configuration object
+
+        Returns:
+            TransformProgram: A transform program that is called before execution
+
+        The transform program is composed of a list of individual transforms. For this device,
+        it assumes the circuit is expressed in the MBQC formalism. Transforms for backend include:
+
+        * Any handling needed for the backed to process mid-circuit measurements
+        * Decomposition of graph state operations to their component parts
+        * Validation of wires
+        """
+
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
+        program = qml.transforms.core.TransformProgram()
+
+        # validate that conversion to MBQC didn't use too many wires
+        program.add_transform(
+            validate_device_wires,
+            wires=self.wires,
+            name=f"{self.name} FTQC backend",
+        )
+
+        # ToDo: does this even make sense anymore? Its not based on device, the method
+        # requires the MCMs added by one-shot
+        # handle mcms based on device
+        program.add_transform(
+            qml.devices.preprocess.mid_circuit_measurements,
+            device=self,
+            mcm_config=execution_config.mcm_config,
+        )
+
+        # decompose GraphStatePrep to the operations to make the graph state
+        program.add_transform(
+            qml.devices.preprocess.decompose,
+            stopping_condition=lambda op: not isinstance(op, GraphStatePrep),
+            skip_initial_state_prep=True,
+            name=self.name,
+        )
+
+        return program
 
     def execute(self, sequences, execution_config=None):
         """Execute a sequence or a batch of sequences and turn it into results.
@@ -195,22 +235,47 @@ class LightningQubitBackend:
 
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+
         """
+
         if execution_config is None:
             execution_config = ExecutionConfig()
 
-        results = []
+        preprocess_transforms = self.preprocess_transforms(execution_config)
+
+        mbqc_sequences = []
+        online_corrections = []
+        # ToDo: I believe this this could be applied to the full set of sequences in one go
+        # if we get it from a transform that just processes the tapes and returns the tapes and postprocessing
+        # that would also move us closer to putting it the correct place in the pipeline if we can sort out the
+        # diagonalization bug that's stopping us from appending measurement
+        offline_corrections = []
         for sequence in sequences:
+            new_seq, online, offline = convert_to_mbqc_formalism_with_pauli_tracker(sequence)
+            mbqc_sequences.append(new_seq)
+            online_corrections.append(online)
+            offline_corrections.append(offline)
+
+        preprocess_transforms = self.preprocess_transforms(execution_config)
+        mbqc_sequences, postprocess_fns = preprocess_transforms(mbqc_sequences)
+
+        results = []
+        for sequence, byops_fns, correction_fn in zip(
+            mbqc_sequences, online_corrections, offline_corrections
+        ):
             if isinstance(sequence, QuantumScriptSequence):
-                results.append(self._execute_sequence(sequence, execution_config))
+                res = self._execute_sequence(sequence, execution_config, byops_fns)
+                res = correction_fn(res)
+                results.append(res)
             else:
                 raise TypeError(
                     f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
                 )
 
-        return tuple(results)
+        return postprocess_fns(results)
 
-    def _execute_sequence(self, sequence, execution_config):
+    @abstractmethod
+    def _execute_sequence(self, sequence, execution_config, online_corrections):
         """Execute a single QuantumScriptSecuence.
 
         Args:
@@ -220,7 +285,30 @@ class LightningQubitBackend:
         Returns:
             tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
+        raise NotImplementedError
 
+
+class LightningQubitBackend(FTQCBackend):
+    """Wrapper for using lightning.qubit as a backend for the ftqc.qubit device"""
+
+    def __init__(self):
+        super().__init__(
+            name="lightning",
+            max_wires=25,
+            device=qml.device("lightning.qubit"),
+            config_filepath=Path(__file__).parent / "lightning_backend.toml",
+        )
+
+    def _execute_sequence(self, sequence, execution_config, online_corrections):
+        """Execute a single QuantumScriptSecuence.
+
+        Args:
+            circuits (QuantumScriptSequence): the sequence of quantum scripts to be executed
+            execution_config (ExecutionConfig): a datastructure with additional information required for execution
+
+        Returns:
+            tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+        """
         # pylint: disable=protected-access
         mcmc = {
             "mcmc": self.device._mcmc,
@@ -236,10 +324,20 @@ class LightningQubitBackend:
         for _ in range(sequence.shots.total_shots):
             self.device._statevector.reset_state()
 
-            for segment in sequence.intermediate_tapes:
+            for segment, corr in zip(sequence.intermediate_tapes, online_corrections):
+
+                mcms = self.simulate(
+                    segment,
+                    self.device._statevector,
+                    mcmc=mcmc,
+                    postselect_mode=postselect_mode,
+                )
+
+                ops = corr(mid_meas=mcms)  # ToDo: are these in the correct order?
+                corrections = QuantumScript(ops, shots=1)
 
                 _ = self.simulate(
-                    segment,
+                    corrections,
                     self.device._statevector,
                     mcmc=mcmc,
                     postselect_mode=postselect_mode,
@@ -251,6 +349,7 @@ class LightningQubitBackend:
                 mcmc=mcmc,
                 postselect_mode=postselect_mode,
             )
+
             results.append(list(res))
         return tuple(results)
 
@@ -292,40 +391,31 @@ class LightningQubitBackend:
         )
 
 
-class NullQubitBackend:
+class NullQubitBackend(FTQCBackend):
     """Wrapper for using null.qubit as a backend for the ftqc.qubit device"""
 
-    name = "null"
-    config_filepath = Path(__file__).parent / "null_backend.toml"
-
     def __init__(self):
-        self.diagonalize_mcms = False
-        self.wires = qml.wires.Wires(range(1000))
-        self.device = qml.device("null.qubit")
+        super().__init__(
+            name="null",
+            max_wires=1000,
+            device=qml.device("null.qubit"),
+            config_filepath=Path(__file__).parent / "null_backend.toml",
+        )
 
-        self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
-
-    def execute(self, sequences, execution_config):
-        """Mock execution of a sequence or a batch of sequences and turn it into null results.
+    def _execute_sequence(self, sequence, execution_config, online_corrections):
+        """Execute a single QuantumScriptSecuence.
 
         Args:
-            sequences (Sequence[QuantumScriptSequence]]): the quantum circuits to be executed
+            circuits (QuantumScriptSequence): the sequence of quantum scripts to be executed
             execution_config (ExecutionConfig): a datastructure with additional information required for execution
 
         Returns:
-            TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+            tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
-        tapes_to_execute = []
-        for sequence in sequences:
-            if isinstance(sequence, QuantumScriptSequence):
-                shots = sequence.shots.total_shots
-                final_tape = sequence.final_tape
-                tapes_to_execute.append(final_tape.copy(shots=shots))
-            else:
-                raise TypeError(
-                    f"Expected input of type QuantumScriptSequence but recieved {type(sequence)}"
-                )
+        results = []
 
-        return tuple(
-            self.device.execute(tapes_to_execute, execution_config),
-        )
+        for _ in range(sequence.shots.total_shots):
+            res = self.device.execute(sequence.final_tape)
+            results.append(list(res))
+
+        return tuple(results)
