@@ -57,7 +57,7 @@ from .ops.op_math import (
     CY,
     CZ,
     MultiControlledX,
-    TempAND,
+    TemporaryAND,
     Toffoli,
     Adjoint,
     Controlled,
