@@ -965,7 +965,7 @@ class Toffoli(ResourceOperator):
 
     Resources:
         If `elbow` is provided, resources are obtained from Figure 4 of
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         If `elbow` is `None`, the resources are obtained from Figure 1 of
         `Jones (2012) <https://arxiv.org/pdf/1212.5069>`_.
