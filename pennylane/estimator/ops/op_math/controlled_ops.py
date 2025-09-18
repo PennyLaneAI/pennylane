@@ -924,7 +924,7 @@ class Toffoli(ResourceOperator):
     Args:
         wires (Sequence[int] | None): the subsystem the gate acts on
         elbow (str | None): String identifier to determine if this is a special type of
-            Toffoli gate (left or right elbow). Default value is `None`.
+            Toffoli gate. Available options are `left`, `right`, and `None`.
 
     Resources:
         If `elbow` is provided, resources are obtained from Figure 4 of
