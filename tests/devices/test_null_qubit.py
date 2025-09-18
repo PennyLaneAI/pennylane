@@ -1433,3 +1433,32 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         assert len(out_tape.operations) == 2
         assert out_tape.operations[0].name == "Hadamard"
         assert out_tape.operations[1].name == "Hadamard"
+
+    def test_operator_without_graph_decomposition_runs_without_error(self):
+        """Test that an operator with no graph-based decomposition outside the gateset
+        still runs without error on NullQubit."""
+
+        # Create a custom operator that's not in the standard gateset
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 2
+
+            def decomposition(self):
+                # Legacy decomposition only (no graph-based decomposition registered)
+                return [qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])]
+
+        # Create a tape with this custom operator
+        tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1])], [qml.expval(qml.Z(0))])
+        dev = qml.device("null.qubit", wires=3)
+
+        # This should not raise an error even though there's no graph-based decomposition
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
+
+        # NullQubit should accept the operator even if it's not decomposed at preprocessing
+        # The key point is that it runs without error
+
+        # Execution should work without error
+        result = dev.execute([out_tape])
+
+        # Should return 0 (as expected for NullQubit)
+        assert result[0] == 0
