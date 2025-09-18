@@ -419,14 +419,12 @@ class SemiAdder(ResourceOperator):
         ]  # Obtained resource from Fig1 and Fig2 https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
     @classmethod
-    def controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_zero_ctrl, max_register_size, **kwargs
-    ):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, max_register_size, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             max_register_size (int): the size of the larger of the two registers being added together
 
@@ -442,12 +440,12 @@ class SemiAdder(ResourceOperator):
         if max_register_size > 2:
             gate_lst = []
 
-            if ctrl_num_ctrl_wires > 1:
+            if num_ctrl_wires > 1:
                 mcx = resource_rep(
                     qre.MultiControlledX,
                     {
-                        "num_ctrl_wires": ctrl_num_ctrl_wires,
-                        "num_zero_ctrl": ctrl_num_zero_ctrl,
+                        "num_ctrl_wires": num_ctrl_wires,
+                        "num_zero_ctrl": num_zero_ctrl,
                     },
                 )
                 gate_lst.append(Allocate(1))
@@ -470,10 +468,10 @@ class SemiAdder(ResourceOperator):
                 ],
             )
 
-            if ctrl_num_ctrl_wires > 1:
+            if num_ctrl_wires > 1:
                 gate_lst.append(Deallocate(1))
-            elif ctrl_num_zero_ctrl > 0:
-                gate_lst.append(GateCount(x, 2 * ctrl_num_zero_ctrl))
+            elif num_zero_ctrl > 0:
+                gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
             return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
