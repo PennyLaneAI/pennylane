@@ -57,28 +57,28 @@ def rz_phase_gradient(
     r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
 
-    For example, an :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
+    For example, a :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
     is translated into the following routine, where the angle is conditionally prepared on the ``angle_wires`` in binary
     and added to a ``phase_grad_wires`` register semi-inplace via :class:`~.SemiAdder`.
 
     .. code-block::
 
         target: ─RZ(ϕ)─ = ────╭●──────────────╭●────exp(iϕ/2)─┤
-         aux_0:           ────├|0⟩─╭SemiAdder─├|0⟩────────────┤
-         aux_1:           ────├|1⟩─├SemiAdder─├|1⟩────────────┤
-         aux_2:           ────╰|0⟩─├SemiAdder─╰|0⟩────────────┤
+         ang_0:           ────├|0⟩─╭SemiAdder─├|0⟩────────────┤
+         ang_1:           ────├|1⟩─├SemiAdder─├|1⟩────────────┤
+         ang_2:           ────╰|0⟩─├SemiAdder─╰|0⟩────────────┤
          phg_0:           ─────────├SemiAdder─────────────────┤
          phg_1:           ─────────├SemiAdder─────────────────┤
          phg_2:           ─────────╰SemiAdder─────────────────┤
 
     For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
     state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
-    The state is not modified and can be re-used at a later stage.
-    It is important to stress that this transform does not prepare the state.
+    Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
+    rather assumes it has been prepared on those wires at an earlier stage.
 
 
-    Note that :class:`~.SemiAdder` we requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
-    :math:`\text{SemiAdder}|x\rangle_\text{aux} |y\rangle_\text{qft} = |x\rangle_\text{aux} |x + y\rangle_\text{qft}`.
+    Note that :class:`~.SemiAdder` requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
+    :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
 
     More details can be found on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
     and Figure 17a in `arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__ (a generalization to
@@ -90,7 +90,7 @@ def rz_phase_gradient(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.RZ` gates.
-        angle_wires (Wires): The auxiliary qubits that conditionally load the angle :math:`\phi` of
+        angle_wires (Wires): The angiliary qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.RZ` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``angle_wires`` implicitly determines the precision
             with which the angle is represented.
@@ -119,7 +119,7 @@ def rz_phase_gradient(
         precision = 3
         phi = (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi
         wire = "targ"
-        angle_wires = [f"aux_{i}" for i in range(precision)]
+        angle_wires = [f"ang_{i}" for i in range(precision)]
         phase_grad_wires = [f"phg_{i}" for i in range(precision)]
         work_wires = [f"work_{i}" for i in range(precision - 1)]
         wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
@@ -158,9 +158,9 @@ def rz_phase_gradient(
 
     >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
       targ: ──H─╭●──────────────╭●───╭GlobalPhase(2.75)──H─┤  Probs
-     aux_0: ────├|Ψ⟩─╭SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
-     aux_1: ────├|Ψ⟩─├SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
-     aux_2: ────╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─├GlobalPhase(2.75)────┤
+     ang_0: ────├|Ψ⟩─╭SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
+     ang_1: ────├|Ψ⟩─├SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
+     ang_2: ────╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─├GlobalPhase(2.75)────┤
      phg_0: ────╭QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
      phg_1: ────├QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
      phg_2: ──X─╰QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
