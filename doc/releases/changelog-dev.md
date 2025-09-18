@@ -1101,8 +1101,10 @@
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
 
-* Added a `graph_state_utils` submodule to `python_compiler.transforms.mbqc` for common utilities for MBQC workflows.
+* Added a `graph_state_utils` submodule to `python_compiler.transforms.mbqc` for common utilities
+  for MBQC workflows.
   [(#8219)](https://github.com/PennyLaneAI/pennylane/pull/8219)
+  [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
 * Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
