@@ -19,7 +19,7 @@ from collections import defaultdict
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.labs.resource_estimation import GateCount, QubitManager, resource_rep
+from pennylane.estimator import GateCount, WireResourceManager, resource_rep
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
 
@@ -122,7 +122,7 @@ class TestTrotterCDF:
             100,
             2,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 0, "dirty": 0}, algo_wires=16, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -143,7 +143,7 @@ class TestTrotterCDF:
             1000,
             1,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 0, "dirty": 0}, algo_wires=20, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -164,7 +164,7 @@ class TestTrotterCDF:
             750,
             4,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 0, "dirty": 0}, algo_wires=24, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -222,7 +222,7 @@ class TestTrotterTHC:
             100,
             2,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 0, "dirty": 0}, algo_wires=40, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -243,7 +243,7 @@ class TestTrotterTHC:
             1000,
             1,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 0, "dirty": 0}, algo_wires=80, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -297,7 +297,7 @@ class TestTrotterVibrational:
             100,
             2,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=32, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -321,7 +321,7 @@ class TestTrotterVibrational:
             10,
             1,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=24, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -345,7 +345,7 @@ class TestTrotterVibrational:
             20,
             1,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -407,7 +407,7 @@ class TestResourceTrotterVibronic:
             100,
             2,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=33, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -432,7 +432,7 @@ class TestResourceTrotterVibronic:
             10,
             1,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=26, tight_budget=False
                 ),
                 "gate_types": defaultdict(
@@ -457,7 +457,7 @@ class TestResourceTrotterVibronic:
             20,
             1,
             {
-                "qubit_manager": QubitManager(
+                "qubit_manager": WireResourceManager(
                     work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
                 ),
                 "gate_types": defaultdict(

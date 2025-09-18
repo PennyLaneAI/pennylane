@@ -41,7 +41,7 @@ from pennylane.wires import Wires
 # pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
 
-class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
+class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian operator.
 
@@ -244,7 +244,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         return gate_list
 
 
-class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
+class TrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of compressed double factorized Hamiltonian.
 
@@ -514,7 +514,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         return gate_list
 
 
-class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
+class TrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of tensor hypercontracted Hamiltonian.
 
@@ -787,7 +787,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         return gate_list
 
 
-class ResourceTrotterVibrational(ResourceOperator):
+class TrotterVibrational(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of vibrational Hamiltonian.
 
@@ -877,7 +877,7 @@ class ResourceTrotterVibrational(ResourceOperator):
 
         if compact_ham.method_name != "vibrational":
             raise TypeError(
-                f"Unsupported Hamiltonian representation for ResourceTrotterVibrational."
+                f"Unsupported Hamiltonian representation for TrotterVibrational."
                 f"This method works with vibrational Hamiltonian, {compact_ham.method_name} provided"
             )
 
@@ -1003,11 +1003,11 @@ class ResourceTrotterVibrational(ResourceOperator):
             cached_tree[len_path].append(cur_path)
 
         if len_path < taylor_degree and index + 1:
-            gate_cache_curr, cached_tree = ResourceTrotterVibrational._cached_terms(
+            gate_cache_curr, cached_tree = TrotterVibrational._cached_terms(
                 grid_size, taylor_degree, coeff_precision, cached_tree, path + [index], index
             )  # Depth first search traversal with current element
             gate_cache += gate_cache_curr
-            gate_cache_next, cached_tree = ResourceTrotterVibrational._cached_terms(
+            gate_cache_next, cached_tree = TrotterVibrational._cached_terms(
                 grid_size, taylor_degree, coeff_precision, cached_tree, path, index - 1
             )  # Depth first search traversal with next element
             gate_cache += gate_cache_next
@@ -1030,13 +1030,13 @@ class ResourceTrotterVibrational(ResourceOperator):
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibrational._cached_terms(
+        gate_cache, cached_tree = TrotterVibrational._cached_terms(
             grid_size, kinetic_deg, coeff_precision, cached_tree, path=[], index=num_modes - 1
         )
         gate_lst += gate_cache * num_rep
 
         cached_tree = {index: [] for index in range(1, taylor_degree + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibrational._cached_terms(
+        gate_cache, cached_tree = TrotterVibrational._cached_terms(
             grid_size, taylor_degree, coeff_precision, cached_tree, path=[], index=num_modes - 1
         )
         gate_lst += gate_cache * num_rep
@@ -1117,11 +1117,9 @@ class ResourceTrotterVibrational(ResourceOperator):
         gate_list.append(GateCount(x, num_modes * grid_size))
 
         if order == 1:
-            gate_list += ResourceTrotterVibrational._rep_circuit(
-                compact_ham, coeff_precision, num_steps
-            )
+            gate_list += TrotterVibrational._rep_circuit(compact_ham, coeff_precision, num_steps)
         else:
-            gate_list += ResourceTrotterVibrational._rep_circuit(
+            gate_list += TrotterVibrational._rep_circuit(
                 compact_ham, coeff_precision, 2 * num_steps * (5 ** (k - 1))
             )
 
@@ -1137,7 +1135,7 @@ class ResourceTrotterVibrational(ResourceOperator):
         return gate_list
 
 
-class ResourceTrotterVibronic(ResourceOperator):
+class TrotterVibronic(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of real-space vibronic Hamiltonian.
 
@@ -1228,7 +1226,7 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         if compact_ham.method_name != "vibronic":
             raise TypeError(
-                f"Unsupported Hamiltonian representation for ResourceTrotterVibronic."
+                f"Unsupported Hamiltonian representation for TrotterVibronic."
                 f"This method works with vibronic Hamiltonian, {compact_ham.method_name} provided"
             )
 
@@ -1369,7 +1367,7 @@ class ResourceTrotterVibronic(ResourceOperator):
             cached_tree[len_path].append(cur_path)
 
         if len_path < taylor_degree and index + 1:
-            gate_cache_curr, cached_tree = ResourceTrotterVibronic._cached_terms(
+            gate_cache_curr, cached_tree = TrotterVibronic._cached_terms(
                 num_states,
                 grid_size,
                 taylor_degree,
@@ -1379,7 +1377,7 @@ class ResourceTrotterVibronic(ResourceOperator):
                 index,
             )  # DFS with current element
             gate_cache += gate_cache_curr
-            gate_cache_next, cached_tree = ResourceTrotterVibronic._cached_terms(
+            gate_cache_next, cached_tree = TrotterVibronic._cached_terms(
                 num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index - 1
             )  # DFS with next element
             gate_cache += gate_cache_next
@@ -1402,7 +1400,7 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibronic._cached_terms(
+        gate_cache, cached_tree = TrotterVibronic._cached_terms(
             num_states,
             grid_size,
             kinetic_deg,
@@ -1414,7 +1412,7 @@ class ResourceTrotterVibronic(ResourceOperator):
         gate_lst += gate_cache * num_rep
 
         cached_tree = {index: [] for index in range(1, taylor_degree + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibronic._cached_terms(
+        gate_cache, cached_tree = TrotterVibronic._cached_terms(
             num_states,
             grid_size,
             taylor_degree,
@@ -1504,11 +1502,9 @@ class ResourceTrotterVibronic(ResourceOperator):
         gate_list.append(GateCount(resource_rep(Hadamard), int(np.ceil(np.log2(num_states)))))
 
         if order == 1:
-            gate_list += ResourceTrotterVibronic._rep_circuit(
-                compact_ham, coeff_precision, num_steps
-            )
+            gate_list += TrotterVibronic._rep_circuit(compact_ham, coeff_precision, num_steps)
         else:
-            gate_list += ResourceTrotterVibronic._rep_circuit(
+            gate_list += TrotterVibronic._rep_circuit(
                 compact_ham, coeff_precision, 2 * num_steps * (5 ** (k - 1))
             )
 
