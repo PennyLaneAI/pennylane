@@ -797,6 +797,7 @@ class TestSumOfTermsDifferentiability:
         assert g1 == 0
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("config", [None, ExecutionConfig(gradient_method="device")])
 class TestDeviceDifferentiation:
     """Tests device differentiation integration with NullQubit."""
@@ -1363,3 +1364,69 @@ def test_execute_plxpr_shots():
     assert qml.math.allclose(res[0], 0)
     assert qml.math.allclose(res[1], 0)
     assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
+    """Tests for NullQubit features that require graph mode enabled.
+    The legacy decomposition mode should not be able to run these tests.
+    NOTE: All tests in this suite will auto-enable graph mode via fixture.
+    """
+
+    def test_insufficient_work_wires_causes_fallback(self):
+        """Test that if a decomposition requires more work wires than available on null.qubit,
+        that decomposition is discarded and fallback is used."""
+
+        class MyNullQubitOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        @qml.register_resources({qml.H: 2})
+        def decomp_fallback(wires):
+            qml.H(wires)
+            qml.H(wires)
+
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
+        def decomp_with_work_wire(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
+
+        tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
+        dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
+
+        assert len(out_tape.operations) == 2
+        assert out_tape.operations[0].name == "Hadamard"
+        assert out_tape.operations[1].name == "Hadamard"
+
+    def test_operator_without_graph_decomposition_runs_without_error(self):
+        """Test that an operator with no graph-based decomposition outside the gateset
+        still runs without error on NullQubit."""
+
+        # Create a custom operator that's not in the standard gateset
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 2
+
+            def decomposition(self):
+                # Legacy decomposition only (no graph-based decomposition registered)
+                return [qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])]
+
+        # Create a tape with this custom operator
+        tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1])], [qml.expval(qml.Z(0))])
+        dev = qml.device("null.qubit", wires=3)
+
+        # This should not raise an error even though there's no graph-based decomposition
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
+
+        qml.assert_equal(out_tape, tape)
+
+        # NullQubit should accept the operator even if it's not decomposed at preprocessing
+        # The key point is that it runs without error
+
+        # Execution should work without error
+        result = dev.execute([out_tape])
+
+        # Should return 0 (as expected for NullQubit)
+        assert result[0] == 0
