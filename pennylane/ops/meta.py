@@ -278,7 +278,6 @@ class Snapshot(Operation):
     def _unflatten(cls, data, metadata):
         return cls(tag=metadata[0], measurement=data[0], shots=metadata[1])
 
-    # pylint: disable=W0613
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []

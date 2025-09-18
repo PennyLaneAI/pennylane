@@ -20,6 +20,9 @@
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
   * The :class:`~.estimator.Resources` class was added as a container class for resources.
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
+  * The resource operators for ``Identity``, ``GlobalPhase`` and non-parametric operators
+    have been added to `qml.estimator.ops`.
+    [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
   * The test files were renamed to avoid the dual definition error with labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
@@ -49,7 +52,11 @@
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
 
-* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for
+  The decompositions for several templates have also been updated to use this pattern, including:
+  :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
+  [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
+
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
@@ -415,6 +422,9 @@
 
 * :func:`~.tape.plxpr_to_tape` now supports converting circuits containing dynamic wire allocation.
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
+
+* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
+  [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -980,6 +990,7 @@
 
 * Improve type hinting internally.
   [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
+  [(#8284)](https://github.com/PennyLaneAI/pennylane/pull/8284)
 
 * The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
   as jaxprs with no output.
@@ -1100,6 +1111,9 @@
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
 <h3>Documentation 📝</h3>
+
+* The documentation of `qml.device` has been updated.
+  [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
