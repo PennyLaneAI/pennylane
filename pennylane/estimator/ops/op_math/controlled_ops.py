@@ -830,7 +830,7 @@ class TemporaryAND(ResourceOperator):
     Args:
         wires (Sequence[int] | None): the wires the operation acts on
 
-    This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
+    This gate was introduced in Fig 4 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ along
     with its adjoint.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.TemporaryAND`.
