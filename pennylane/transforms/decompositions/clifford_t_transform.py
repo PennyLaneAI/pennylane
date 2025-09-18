@@ -607,7 +607,11 @@ def clifford_t_decomposition(
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    [new_tape], _ = cancel_inverses(new_tape)
+    if not is_qjit:
+        # This is skipped for qjit because when qjit is enabled, the circuit may contain
+        # higher-level operations such as Cond and ForLoop whose wires attribute does not
+        # reflect the wires of all operators within its scope.
+        [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
