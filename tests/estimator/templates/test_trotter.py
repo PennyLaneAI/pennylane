@@ -18,7 +18,7 @@ from collections import defaultdict
 
 import pytest
 
-import pennylane.labs.resource_estimation as plre
+import pennylane.estimator as qre
 from pennylane.labs.resource_estimation import GateCount, QubitManager, resource_rep
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
@@ -30,35 +30,35 @@ class TestResourceTrotterProduct:
     # Expected resources were obtained manually using the recursion expression
     op_data = [  # ops, num_wires, num_steps, order, expected_res
         (
-            [plre.ResourceX(wires=0), plre.ResourceY(wires=1), plre.ResourceZ(wires=0)],
+            [qre.X(wires=0), qre.Y(wires=1), qre.Z(wires=0)],
             2,
             2,
             1,
             [
-                GateCount(resource_rep(plre.ResourceX), 2),
-                GateCount(resource_rep(plre.ResourceY), 2),
-                GateCount(resource_rep(plre.ResourceZ), 2),
+                GateCount(resource_rep(qre.X), 2),
+                GateCount(resource_rep(qre.Y), 2),
+                GateCount(resource_rep(qre.Z), 2),
             ],
         ),
         (
-            [plre.ResourceX(), plre.ResourceY()],
+            [qre.X(), qre.Y()],
             1,
             10,
             2,
             [
-                GateCount(resource_rep(plre.ResourceX), 11),
-                GateCount(resource_rep(plre.ResourceY), 10),
+                GateCount(resource_rep(qre.X), 11),
+                GateCount(resource_rep(qre.Y), 10),
             ],
         ),
         (
-            [plre.ResourceRX(precision=1e-3), plre.ResourceRY(precision=1e-3), plre.ResourceZ()],
+            [qre.RX(precision=1e-3), qre.RY(precision=1e-3), qre.Z()],
             1,
             10,
             4,
             [
-                GateCount(resource_rep(plre.ResourceRX, {"precision": 1e-3}), 51),
-                GateCount(resource_rep(plre.ResourceZ), 50),
-                GateCount(resource_rep(plre.ResourceRY, {"precision": 1e-3}), 100),
+                GateCount(resource_rep(qre.RX, {"precision": 1e-3}), 51),
+                GateCount(resource_rep(qre.Z), 50),
+                GateCount(resource_rep(qre.RY, {"precision": 1e-3}), 100),
             ],
         ),
     ]
@@ -66,7 +66,7 @@ class TestResourceTrotterProduct:
     @pytest.mark.parametrize("ops, num_wires, num_steps, order, _", op_data)
     def test_resource_params(self, ops, num_wires, num_steps, order, _):
         """Test that the resource params are correct"""
-        trotter = plre.ResourceTrotterProduct(ops, num_steps=num_steps, order=order)
+        trotter = qre.TrotterProduct(ops, num_steps=num_steps, order=order)
         assert trotter.resource_params == {
             "first_order_expansion": tuple(op.resource_rep_from_op() for op in ops),
             "num_steps": num_steps,
@@ -78,8 +78,8 @@ class TestResourceTrotterProduct:
     def test_resource_rep(self, ops, num_wires, num_steps, order, _):
         """Test that the resource params are correct"""
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
-        expected = plre.CompressedResourceOp(
-            plre.ResourceTrotterProduct,
+        expected = qre.CompressedResourceOp(
+            qre.TrotterProduct,
             num_wires,
             {
                 "first_order_expansion": cmpr_ops,
@@ -88,18 +88,13 @@ class TestResourceTrotterProduct:
                 "num_wires": num_wires,
             },
         )
-        assert (
-            plre.ResourceTrotterProduct.resource_rep(cmpr_ops, num_steps, order, num_wires)
-            == expected
-        )
+        assert qre.TrotterProduct.resource_rep(cmpr_ops, num_steps, order, num_wires) == expected
 
     @pytest.mark.parametrize("ops, num_wires, num_steps, order, expected_res", op_data)
     def test_resources(self, ops, num_wires, num_steps, order, expected_res):
         """Test the resources method returns the correct dictionary"""
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
-        computed_res = plre.ResourceTrotterProduct.resource_decomp(
-            cmpr_ops, num_steps, order, num_wires
-        )
+        computed_res = qre.TrotterProduct.resource_decomp(cmpr_ops, num_steps, order, num_wires)
         assert computed_res == expected_res
 
     def test_attribute_error(self):
@@ -108,15 +103,15 @@ class TestResourceTrotterProduct:
             ValueError,
             match="All components of first_order_expansion must be instances of `ResourceOperator` in order to obtain resources.",
         ):
-            plre.ResourceTrotterProduct(
-                [plre.ResourceX(), plre.ResourceY(), plre.AllocWires(4)],
+            qre.TrotterProduct(
+                [qre.X(), qre.Y(), qre.AllocWires(4)],
                 num_steps=10,
                 order=3,
             )
 
 
 class TestTrotterCDF:
-    """Tests for ResourceTrotterCDF class"""
+    """Tests for Resource TrotterCDF class"""
 
     # Expected resources were obtained manually based on
     # https://arxiv.org/abs/2506.15784
@@ -192,30 +187,30 @@ class TestTrotterCDF:
     def test_resource_trotter_cdf(
         self, num_orbitals, num_fragments, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for correct resources"""
+        """Test the Resource TrotterCDF class for correct resources"""
 
-        compact_ham = plre.CompactHamiltonian.cdf(
+        compact_ham = qre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
         )
 
         def circ():
-            plre.ResourceTrotterCDF(compact_ham, num_steps=num_steps, order=order)
+            qre.TrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate(circ)()
+        res = qre.estimate(circ)()
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         r"""Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = plre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=10)
+        compact_ham = qre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=10)
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for ResourceTrotterCDF"
+            TypeError, match="Unsupported Hamiltonian representation for Resource TrotterCDF"
         ):
-            plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
+            qre.TrotterCDF(compact_ham, num_steps=100, order=2)
 
 
 class TestTrotterTHC:
-    """Tests for ResourceTrotterCDF class"""
+    """Tests for Resource TrotterTHC class"""
 
     # Expected resources were obtained manually
     # based on https://arxiv.org/abs/2407.04432
@@ -269,30 +264,28 @@ class TestTrotterTHC:
         "num_orbitals, tensor_rank, num_steps, order, expected_res", hamiltonian_data
     )
     def test_resource_trotter_thc(self, num_orbitals, tensor_rank, num_steps, order, expected_res):
-        """Test the ResourceTrotterTHC class for correct resources"""
-        compact_ham = plre.CompactHamiltonian.thc(
-            num_orbitals=num_orbitals, tensor_rank=tensor_rank
-        )
+        """Test the Resource TrotterTHC class for correct resources"""
+        compact_ham = qre.CompactHamiltonian.thc(num_orbitals=num_orbitals, tensor_rank=tensor_rank)
 
         def circ():
-            plre.ResourceTrotterTHC(compact_ham, num_steps=num_steps, order=order)
+            qre.TrotterTHC(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate(circ)()
+        res = qre.estimate(circ)()
 
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
+        compact_ham = qre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for ResourceTrotterTHC"
+            TypeError, match="Unsupported Hamiltonian representation for Resource TrotterTHC"
         ):
-            plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
+            qre.TrotterTHC(compact_ham, num_steps=100, order=2)
 
 
 class TestTrotterVibrational:
-    """Test the ResourceTrotterVibrational class"""
+    """Test the Resource TrotterVibrational class"""
 
     # Expected resources were obtained manually based on
     # https://arxiv.org/pdf/2504.10602
@@ -377,30 +370,31 @@ class TestTrotterVibrational:
     def test_resource_trotter_vibrational(
         self, num_modes, grid_size, taylor_degree, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterVibrational class for correct resources"""
-        compact_ham = plre.CompactHamiltonian.vibrational(
+        """Test the Resource TrotterVibrational class for correct resources"""
+        compact_ham = qre.CompactHamiltonian.vibrational(
             num_modes=num_modes, grid_size=grid_size, taylor_degree=taylor_degree
         )
 
         def circ():
-            plre.ResourceTrotterVibrational(compact_ham, num_steps=num_steps, order=order)
+            qre.TrotterVibrational(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate(circ)()
+        res = qre.estimate(circ)()
 
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
+        compact_ham = qre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for ResourceTrotterVibrational"
+            TypeError,
+            match="Unsupported Hamiltonian representation for Resource TrotterVibrational",
         ):
-            plre.ResourceTrotterVibrational(compact_ham, num_steps=100, order=2)
+            qre.TrotterVibrational(compact_ham, num_steps=100, order=2)
 
 
 class TestResourceTrotterVibronic:
-    """Test the ResourceTrotterVibronic class"""
+    """Test the Resource TrotterVibronic class"""
 
     # Expected resources were obtained manually based on
     # https://arxiv.org/abs/2411.13669
@@ -489,8 +483,8 @@ class TestResourceTrotterVibronic:
     def test_resource_trotter_vibronic(
         self, num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterVibronic class for correct resources"""
-        compact_ham = plre.CompactHamiltonian.vibronic(
+        """Test the Resource TrotterVibronic class for correct resources"""
+        compact_ham = qre.CompactHamiltonian.vibronic(
             num_modes=num_modes,
             num_states=num_states,
             grid_size=grid_size,
@@ -498,17 +492,17 @@ class TestResourceTrotterVibronic:
         )
 
         def circ():
-            plre.ResourceTrotterVibronic(compact_ham, num_steps=num_steps, order=order)
+            qre.TrotterVibronic(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate(circ)()
+        res = qre.estimate(circ)()
 
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
+        compact_ham = qre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for ResourceTrotterVibronic"
+            TypeError, match="Unsupported Hamiltonian representation for Resource TrotterVibronic"
         ):
-            plre.ResourceTrotterVibronic(compact_ham, num_steps=100, order=2)
+            qre.TrotterVibronic(compact_ham, num_steps=100, order=2)

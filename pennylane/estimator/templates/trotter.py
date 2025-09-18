@@ -17,13 +17,24 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 
 import numpy as np
 
-from pennylane.labs import resource_estimation as plre
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
-from pennylane.labs.resource_estimation.resource_operator import (
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
+)
+from pennylane.estimator.ops.op_math.symbolic import Prod, Controlled
+from pennylane.estimator.ops.qubit.non_parametric_ops import X, T, Hadamard
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
+from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
+from pennylane.estimator.templates.subroutines import (
+    BasisRotation,
+    OutMultiplier,
+    OutOfPlaceSquare,
+    PhaseGradient,
+    Select,
+    SemiAdder,
 )
 from pennylane.wires import Wires
 
@@ -88,11 +99,11 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
     **Example**
 
-    >>> import pennylane.labs.resource_estimation as plre
+    >>> import pennylane.labs.resource_estimation as qre
     >>> num_steps, order = (1, 2)
-    >>> first_order_expansion = [plre.ResourceRX(), plre.ResourceRY()] # H = X + Y
+    >>> first_order_expansion = [qre.RX(), qre.RY()] # H = X + Y
     >>> gate_set = {"RX", "RY"}
-    >>> res = plre.estimate(plre.ResourceTrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
+    >>> res = qre.estimate(TrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
     >>> print(res)
     --- Resources: ---
      Total qubits: 1
@@ -108,7 +119,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
     def __init__(self, first_order_expansion, num_steps, order, wires=None):
 
-        self.dequeue(op_to_remove=first_order_expansion)
+        self._dequeue(op_to_remove=first_order_expansion)
         self.queue()
 
         try:
@@ -217,18 +228,18 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
         if order == 1:
             for op in first_order_expansion:
-                gate_list.append(plre.GateCount(op, num_steps))
+                gate_list.append(GateCount(op, num_steps))
             return gate_list
 
         # For first and last fragment
         first_frag = first_order_expansion[0]
         last_frag = first_order_expansion[-1]
-        gate_list.append(plre.GateCount(first_frag, num_steps * (5 ** (k - 1)) + 1))
-        gate_list.append(plre.GateCount(last_frag, num_steps * (5 ** (k - 1))))
+        gate_list.append(GateCount(first_frag, num_steps * (5 ** (k - 1)) + 1))
+        gate_list.append(GateCount(last_frag, num_steps * (5 ** (k - 1))))
 
         # For rest of the fragments
         for op in first_order_expansion[1:-1]:
-            gate_list.append(plre.GateCount(op, 2 * num_steps * (5 ** (k - 1))))
+            gate_list.append(GateCount(op, 2 * num_steps * (5 ** (k - 1))))
 
         return gate_list
 
@@ -294,10 +305,10 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
     **Example**
 
-    >>> import pennylane.labs.resource_estimation as plre
+    >>> import pennylane.labs.resource_estimation as qre
     >>> num_steps, order = (1, 2)
-    >>> compact_ham = plre.CompactHamiltonian.cdf(num_orbitals = 4, num_fragments = 4)
-    >>> res = plre.estimate(plre.ResourceTrotterCDF(compact_ham, num_steps, order))
+    >>> compact_ham = qre.CompactHamiltonian.cdf(num_orbitals = 4, num_fragments = 4)
+    >>> res = qre.estimate(TrotterCDF(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 8
@@ -387,40 +398,36 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         num_frags = compact_ham.params["num_fragments"]
 
         op_onebody = resource_rep(
-            plre.ResourceProd,
-            {"cmpr_factors_and_counts": ((plre.ResourceRZ.resource_rep(), 2 * num_orb),)},
+            Prod,
+            {"cmpr_factors_and_counts": ((RZ.resource_rep(), 2 * num_orb),)},
         )
 
         op_twobody = resource_rep(
-            plre.ResourceProd,
+            Prod,
             {
                 "cmpr_factors_and_counts": (
-                    (plre.ResourceMultiRZ.resource_rep(num_wires=2), (2 * num_orb - 1) * num_orb),
+                    (MultiRZ.resource_rep(num_wires=2), (2 * num_orb - 1) * num_orb),
                 )
             },
         )
 
-        basis_rot = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
+        basis_rot = resource_rep(BasisRotation, {"dim_N": num_orb})
 
         if order == 1:
-            gate_list.append(plre.GateCount(basis_rot, 2 * num_frags * num_steps))
+            gate_list.append(GateCount(basis_rot, 2 * num_frags * num_steps))
 
-            gate_list.append(plre.GateCount(op_onebody, num_steps))
-            gate_list.append(plre.GateCount(op_twobody, (num_frags - 1) * num_steps))
+            gate_list.append(GateCount(op_onebody, num_steps))
+            gate_list.append(GateCount(op_twobody, (num_frags - 1) * num_steps))
             return gate_list
 
         # For first and last fragment
-        gate_list.append(plre.GateCount(basis_rot, 4 * num_steps * (5 ** (k - 1)) + 2))
-        gate_list.append(plre.GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
-        gate_list.append(plre.GateCount(op_twobody, num_steps * (5 ** (k - 1))))
+        gate_list.append(GateCount(basis_rot, 4 * num_steps * (5 ** (k - 1)) + 2))
+        gate_list.append(GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
+        gate_list.append(GateCount(op_twobody, num_steps * (5 ** (k - 1))))
 
         # For rest of the fragments
-        gate_list.append(
-            plre.GateCount(basis_rot, 4 * num_steps * (num_frags - 2) * (5 ** (k - 1)))
-        )
-        gate_list.append(
-            plre.GateCount(op_twobody, 2 * num_steps * (num_frags - 2) * (5 ** (k - 1)))
-        )
+        gate_list.append(GateCount(basis_rot, 4 * num_steps * (num_frags - 2) * (5 ** (k - 1))))
+        gate_list.append(GateCount(op_twobody, 2 * num_steps * (num_frags - 2) * (5 ** (k - 1))))
 
         return gate_list
 
@@ -453,13 +460,13 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         num_frags = compact_ham.params["num_fragments"]
 
         op_onebody = resource_rep(
-            plre.ResourceProd,
+            Prod,
             {
                 "cmpr_factors_and_counts": tuple(
                     resource_rep(
-                        plre.ResourceControlled,
+                        Controlled,
                         {
-                            "base_cmpr_op": plre.ResourceRZ.resource_rep(),
+                            "base_cmpr_op": RZ.resource_rep(),
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
@@ -470,13 +477,13 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         )
 
         op_twobody = resource_rep(
-            plre.ResourceProd,
+            Prod,
             {
                 "cmpr_factors_and_counts": tuple(
                     resource_rep(
-                        plre.ResourceControlled,
+                        Controlled,
                         {
-                            "base_cmpr_op": plre.ResourceMultiRZ.resource_rep(num_wires=2),
+                            "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
@@ -486,27 +493,23 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
             },
         )
 
-        basis_rot = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
+        basis_rot = resource_rep(BasisRotation, {"dim_N": num_orb})
 
         if order == 1:
-            gate_list.append(plre.GateCount(basis_rot, 2 * num_frags * num_steps))
+            gate_list.append(GateCount(basis_rot, 2 * num_frags * num_steps))
 
-            gate_list.append(plre.GateCount(op_onebody, num_steps))
-            gate_list.append(plre.GateCount(op_twobody, (num_frags - 1) * num_steps))
+            gate_list.append(GateCount(op_onebody, num_steps))
+            gate_list.append(GateCount(op_twobody, (num_frags - 1) * num_steps))
             return gate_list
 
         # For first and last fragment
-        gate_list.append(plre.GateCount(basis_rot, 4 * num_steps * (5 ** (k - 1)) + 2))
-        gate_list.append(plre.GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
-        gate_list.append(plre.GateCount(op_twobody, num_steps * (5 ** (k - 1))))
+        gate_list.append(GateCount(basis_rot, 4 * num_steps * (5 ** (k - 1)) + 2))
+        gate_list.append(GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
+        gate_list.append(GateCount(op_twobody, num_steps * (5 ** (k - 1))))
 
         # For rest of the fragments
-        gate_list.append(
-            plre.GateCount(basis_rot, 4 * num_steps * (num_frags - 2) * (5 ** (k - 1)))
-        )
-        gate_list.append(
-            plre.GateCount(op_twobody, 2 * num_steps * (num_frags - 2) * (5 ** (k - 1)))
-        )
+        gate_list.append(GateCount(basis_rot, 4 * num_steps * (num_frags - 2) * (5 ** (k - 1))))
+        gate_list.append(GateCount(op_twobody, 2 * num_steps * (num_frags - 2) * (5 ** (k - 1))))
 
         return gate_list
 
@@ -571,10 +574,10 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
     The resources can be computed as:
 
-    >>> import pennylane.labs.resource_estimation as plre
+    >>> import pennylane.labs.resource_estimation as qre
     >>> num_steps, order = (1, 2)
-    >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
-    >>> res = plre.estimate(plre.ResourceTrotterTHC(compact_ham, num_steps, order))
+    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
+    >>> res = qre.estimate(TrotterTHC(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 8
@@ -665,39 +668,39 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         tensor_rank = compact_ham.params["tensor_rank"]
 
         op_onebody = resource_rep(
-            plre.ResourceProd,
-            {"cmpr_factors_and_counts": ((plre.ResourceRZ.resource_rep(), 2 * num_orb),)},
+            Prod,
+            {"cmpr_factors_and_counts": ((RZ.resource_rep(), 2 * num_orb),)},
         )
 
         op_twobody = resource_rep(
-            plre.ResourceProd,
+            Prod,
             {
                 "cmpr_factors_and_counts": (
                     (
-                        plre.ResourceMultiRZ.resource_rep(num_wires=2),
+                        MultiRZ.resource_rep(num_wires=2),
                         (2 * tensor_rank - 1) * tensor_rank,
                     ),
                 )
             },
         )
 
-        basis_rot_onebody = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
-        basis_rot_twobody = resource_rep(plre.ResourceBasisRotation, {"dim_N": tensor_rank})
+        basis_rot_onebody = resource_rep(BasisRotation, {"dim_N": num_orb})
+        basis_rot_twobody = resource_rep(BasisRotation, {"dim_N": tensor_rank})
 
         if order == 1:
-            gate_list.append(plre.GateCount(basis_rot_onebody, 2 * num_steps))
-            gate_list.append(plre.GateCount(basis_rot_twobody, 2 * num_steps))
-            gate_list.append(plre.GateCount(op_onebody, num_steps))
-            gate_list.append(plre.GateCount(op_twobody, num_steps))
+            gate_list.append(GateCount(basis_rot_onebody, 2 * num_steps))
+            gate_list.append(GateCount(basis_rot_twobody, 2 * num_steps))
+            gate_list.append(GateCount(op_onebody, num_steps))
+            gate_list.append(GateCount(op_twobody, num_steps))
             return gate_list
 
         # For one-body tensor
-        gate_list.append(plre.GateCount(basis_rot_onebody, 2 * num_steps * (5 ** (k - 1)) + 2))
-        gate_list.append(plre.GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
+        gate_list.append(GateCount(basis_rot_onebody, 2 * num_steps * (5 ** (k - 1)) + 2))
+        gate_list.append(GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
 
         # For two-body tensor
-        gate_list.append(plre.GateCount(basis_rot_twobody, 2 * num_steps * (5 ** (k - 1))))
-        gate_list.append(plre.GateCount(op_twobody, num_steps * (5 ** (k - 1))))
+        gate_list.append(GateCount(basis_rot_twobody, 2 * num_steps * (5 ** (k - 1))))
+        gate_list.append(GateCount(op_twobody, num_steps * (5 ** (k - 1))))
 
         return gate_list
 
@@ -730,13 +733,13 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         tensor_rank = compact_ham.params["tensor_rank"]
 
         op_onebody = resource_rep(
-            plre.ResourceProd,
+            Prod,
             {
                 "cmpr_factors_and_counts": tuple(
                     resource_rep(
-                        plre.ResourceControlled,
+                        Controlled,
                         {
-                            "base_cmpr_op": plre.ResourceRZ.resource_rep(),
+                            "base_cmpr_op": RZ.resource_rep(),
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
@@ -747,13 +750,13 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         )
 
         op_twobody = resource_rep(
-            plre.ResourceProd,
+            Prod,
             {
                 "cmpr_factors_and_counts": tuple(
                     resource_rep(
-                        plre.ResourceControlled,
+                        Controlled,
                         {
-                            "base_cmpr_op": plre.ResourceMultiRZ.resource_rep(num_wires=2),
+                            "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
@@ -763,23 +766,23 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             },
         )
 
-        basis_rot_onebody = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
-        basis_rot_twobody = resource_rep(plre.ResourceBasisRotation, {"dim_N": tensor_rank})
+        basis_rot_onebody = resource_rep(BasisRotation, {"dim_N": num_orb})
+        basis_rot_twobody = resource_rep(BasisRotation, {"dim_N": tensor_rank})
 
         if order == 1:
-            gate_list.append(plre.GateCount(basis_rot_onebody, 2 * num_steps))
-            gate_list.append(plre.GateCount(basis_rot_twobody, 2 * num_steps))
-            gate_list.append(plre.GateCount(op_onebody, num_steps))
-            gate_list.append(plre.GateCount(op_twobody, num_steps))
+            gate_list.append(GateCount(basis_rot_onebody, 2 * num_steps))
+            gate_list.append(GateCount(basis_rot_twobody, 2 * num_steps))
+            gate_list.append(GateCount(op_onebody, num_steps))
+            gate_list.append(GateCount(op_twobody, num_steps))
             return gate_list
 
         # For one-body tensor
-        gate_list.append(plre.GateCount(basis_rot_onebody, 2 * num_steps * (5 ** (k - 1)) + 2))
-        gate_list.append(plre.GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
+        gate_list.append(GateCount(basis_rot_onebody, 2 * num_steps * (5 ** (k - 1)) + 2))
+        gate_list.append(GateCount(op_onebody, num_steps * (5 ** (k - 1)) + 1))
 
         # For two-body tensor
-        gate_list.append(plre.GateCount(basis_rot_twobody, 2 * num_steps * (5 ** (k - 1))))
-        gate_list.append(plre.GateCount(op_twobody, num_steps * (5 ** (k - 1))))
+        gate_list.append(GateCount(basis_rot_twobody, 2 * num_steps * (5 ** (k - 1))))
+        gate_list.append(GateCount(op_twobody, num_steps * (5 ** (k - 1))))
 
         return gate_list
 
@@ -845,11 +848,11 @@ class ResourceTrotterVibrational(ResourceOperator):
 
     **Example**
 
-    >>> import pennylane.labs.resource_estimation as plre
-    >>> compact_ham = plre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
+    >>> import pennylane.labs.resource_estimation as qre
+    >>> compact_ham = qre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
-    >>> res = plre.estimate(plre.ResourceTrotterVibrational(compact_ham, num_steps, order))
+    >>> res = qre.estimate(qre.TrotterVibrational(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 83.0
@@ -950,60 +953,52 @@ class ResourceTrotterVibrational(ResourceOperator):
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
         gate_cache = []
 
-        x = plre.ResourceX.resource_rep()
+        x = X.resource_rep()
         if 1 < len_path <= taylor_degree and cur_path not in cached_tree[len_path]:
 
             if len(cached_tree[len_path]):
                 prev_state = cached_tree[len_path][-1]
 
                 if len_path == 2 and prev_state[0] == prev_state[1]:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
-                    gate_cache.append(plre.GateCount(out_square, 1))
+                    out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size)
+                    gate_cache.append(GateCount(out_square, 1))
                 elif len_path == 4 and len(set(prev_state)) == 1:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(
-                        register_size=grid_size * 2
-                    )
-                    gate_cache.append(plre.GateCount(out_square, 1))
+                    out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
+                    gate_cache.append(GateCount(out_square, 1))
                 else:
-                    multiplier = plre.ResourceOutMultiplier.resource_rep(
-                        grid_size, grid_size * (len_path - 1)
-                    )
-                    gate_cache.append(plre.GateCount(multiplier, 1))
+                    multiplier = OutMultiplier.resource_rep(grid_size, grid_size * (len_path - 1))
+                    gate_cache.append(GateCount(multiplier, 1))
 
             # Add the Square / Multiplier for current state
             if len_path == 2 and cur_path[-1] == cur_path[-2]:
-                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
-                gate_cache.append(plre.GateCount(out_square, 1))
+                out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size)
+                gate_cache.append(GateCount(out_square, 1))
             elif len_path == 4 and len(set(cur_path)) == 1:
-                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
-                gate_cache.append(plre.GateCount(out_square, 1))
+                out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
+                gate_cache.append(GateCount(out_square, 1))
             else:
-                multiplier = plre.ResourceOutMultiplier.resource_rep(
-                    grid_size, grid_size * (len_path - 1)
-                )
-                gate_cache.append(plre.GateCount(multiplier, 1))
+                multiplier = OutMultiplier.resource_rep(grid_size, grid_size * (len_path - 1))
+                gate_cache.append(GateCount(multiplier, 1))
 
             # Add the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            gate_cache.append(plre.GateCount(x, coeff_wires / 2))
+            gate_cache.append(GateCount(x, coeff_wires / 2))
 
             # Add the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
-            gate_cache.append(plre.GateCount(multiplier, 1))
+            multiplier = OutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
+            gate_cache.append(GateCount(multiplier, 1))
 
             # Add the Adder for Resource state
-            adder = plre.ResourceSemiAdder.resource_rep(
-                max_register_size=2 * max(coeff_wires, 2 * grid_size)
-            )
-            gate_cache.append(plre.GateCount(adder, 1))
+            adder = SemiAdder.resource_rep(max_register_size=2 * max(coeff_wires, 2 * grid_size))
+            gate_cache.append(GateCount(adder, 1))
 
             # Adjoint the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
-            gate_cache.append(plre.GateCount(multiplier, 1))
+            multiplier = OutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
+            gate_cache.append(GateCount(multiplier, 1))
 
             # Adjoint the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            gate_cache.append(plre.GateCount(x, coeff_wires / 2))
+            gate_cache.append(GateCount(x, coeff_wires / 2))
 
             cached_tree[len_path].append(cur_path)
 
@@ -1030,8 +1025,8 @@ class ResourceTrotterVibrational(ResourceOperator):
         gate_lst = []
         # Shifted QFT for kinetic part
 
-        t = plre.ResourceT.resource_rep()
-        gate_lst.append(plre.GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        t = T.resource_rep()
+        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
@@ -1051,27 +1046,25 @@ class ResourceTrotterVibrational(ResourceOperator):
             last_state = cached_tree[idx][-1]
             if idx == 2 and last_state[-1] == last_state[-2]:
                 gate_lst.append(
-                    plre.GateCount(
-                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep
-                    )
+                    GateCount(OutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep)
                 )
             elif idx == 4 and len(set(last_state)) == 1:
                 gate_lst.append(
-                    plre.GateCount(
-                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2),
+                    GateCount(
+                        OutOfPlaceSquare.resource_rep(register_size=grid_size * 2),
                         num_rep,
                     )
                 )
             else:
                 gate_lst.append(
-                    plre.GateCount(
-                        plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)),
+                    GateCount(
+                        OutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)),
                         num_rep,
                     )
                 )
 
         # Shifted QFT Adjoint
-        gate_lst.append(plre.GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
 
         return gate_lst
 
@@ -1108,20 +1101,20 @@ class ResourceTrotterVibrational(ResourceOperator):
         phase_grad_wires = abs(np.floor(np.log2(phase_grad_precision)))
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
 
-        x = plre.ResourceX.resource_rep()
+        x = X.resource_rep()
 
-        phase_grad = plre.ResourcePhaseGradient.resource_rep(phase_grad_wires)
+        phase_grad = PhaseGradient.resource_rep(phase_grad_wires)
 
         # Allocate the phase gradient registers
-        gate_list.append(AllocWires(phase_grad_wires * (taylor_degree - 1)))
+        gate_list.append(Allocate(phase_grad_wires * (taylor_degree - 1)))
         # Resource Registers
         gate_list.append(GateCount(phase_grad, taylor_degree - 1))
 
         # Allocate auxiliary registers for the coefficients
-        gate_list.append(AllocWires(4 * grid_size + 2 * coeff_wires))
+        gate_list.append(Allocate(4 * grid_size + 2 * coeff_wires))
 
         # Basis state prep per mode, implemented only for the first step
-        gate_list.append(plre.GateCount(x, num_modes * grid_size))
+        gate_list.append(GateCount(x, num_modes * grid_size))
 
         if order == 1:
             gate_list += ResourceTrotterVibrational._rep_circuit(
@@ -1133,13 +1126,13 @@ class ResourceTrotterVibrational(ResourceOperator):
             )
 
         # Adjoint of Basis state prep, implemented only for the last step
-        gate_list.append(plre.GateCount(x, num_modes * grid_size))
+        gate_list.append(GateCount(x, num_modes * grid_size))
 
         # Free auxiliary registers for the coefficients
-        gate_list.append(FreeWires(4 * grid_size + 2 * coeff_wires))
+        gate_list.append(Deallocate(4 * grid_size + 2 * coeff_wires))
 
         # Deallocate the phase gradient registers
-        gate_list.append(FreeWires(phase_grad_wires * (taylor_degree - 1)))
+        gate_list.append(Deallocate(phase_grad_wires * (taylor_degree - 1)))
 
         return gate_list
 
@@ -1206,11 +1199,11 @@ class ResourceTrotterVibronic(ResourceOperator):
 
     **Example**
 
-    >>> import pennylane.labs.resource_estimation as plre
-    >>> compact_ham = plre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
+    >>> import pennylane.labs.resource_estimation as qre
+    >>> compact_ham = qre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
-    >>> res = plre.estimate(plre.ResourceTrotterVibronic(compact_ham, num_steps, order))
+    >>> res = qre.estimate(qre.TrotterVibronic(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 85.0
@@ -1325,65 +1318,53 @@ class ResourceTrotterVibronic(ResourceOperator):
                 prev_state = cached_tree[len_path][-1]
 
                 if len_path == 2 and prev_state[0] == prev_state[1]:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
-                    gate_cache.append(plre.GateCount(out_square, 1))
+                    out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size)
+                    gate_cache.append(GateCount(out_square, 1))
                 elif len_path == 4 and len(set(prev_state)) == 1:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(
-                        register_size=grid_size * 2
-                    )
-                    gate_cache.append(plre.GateCount(out_square, 1))
+                    out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
+                    gate_cache.append(GateCount(out_square, 1))
                 else:
-                    multiplier = plre.ResourceOutMultiplier.resource_rep(
-                        grid_size, grid_size * (len_path - 1)
-                    )
-                    gate_cache.append(plre.GateCount(multiplier, 1))
+                    multiplier = OutMultiplier.resource_rep(grid_size, grid_size * (len_path - 1))
+                    gate_cache.append(GateCount(multiplier, 1))
 
             # Add the Square / Multiplier for current state
             if len_path == 2 and cur_path[-1] == cur_path[-2]:
-                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
-                gate_cache.append(plre.GateCount(out_square, 1))
+                out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size)
+                gate_cache.append(GateCount(out_square, 1))
             elif len_path == 4 and len(set(cur_path)) == 1:
-                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
-                gate_cache.append(plre.GateCount(out_square, 1))
+                out_square = OutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
+                gate_cache.append(GateCount(out_square, 1))
             else:
-                multiplier = plre.ResourceOutMultiplier.resource_rep(
-                    grid_size, grid_size * (len_path - 1)
-                )
-                gate_cache.append(plre.GateCount(multiplier, 1))
+                multiplier = OutMultiplier.resource_rep(grid_size, grid_size * (len_path - 1))
+                gate_cache.append(GateCount(multiplier, 1))
 
             # Add the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
             coeff_unitaries = (
                 resource_rep(
-                    plre.ResourceProd,
-                    {
-                        "cmpr_factors_and_counts": (
-                            (plre.ResourceX.resource_rep(), int(coeff_wires / 2)),
-                        )
-                    },
+                    Prod,
+                    {"cmpr_factors_and_counts": ((X.resource_rep(), int(coeff_wires / 2)),)},
                 ),
             ) * num_states
 
-            select_op = resource_rep(plre.ResourceSelect, {"cmpr_ops": coeff_unitaries})
-            gate_cache.append(plre.GateCount(select_op, 1))
+            select_op = resource_rep(Select, {"cmpr_ops": coeff_unitaries})
+            gate_cache.append(GateCount(select_op, 1))
 
             # Add the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
-            gate_cache.append(plre.GateCount(multiplier, 1))
+            multiplier = OutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
+            gate_cache.append(GateCount(multiplier, 1))
 
             # Add the Adder for Resource state
-            adder = plre.ResourceSemiAdder.resource_rep(
-                max_register_size=2 * max(coeff_wires, 2 * grid_size)
-            )
-            gate_cache.append(plre.GateCount(adder, 1))
+            adder = SemiAdder.resource_rep(max_register_size=2 * max(coeff_wires, 2 * grid_size))
+            gate_cache.append(GateCount(adder, 1))
 
             # Adjoint the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
-            gate_cache.append(plre.GateCount(multiplier, 1))
+            multiplier = OutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
+            gate_cache.append(GateCount(multiplier, 1))
 
             # Adjoint the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            gate_cache.append(plre.GateCount(select_op, 1))
+            gate_cache.append(GateCount(select_op, 1))
 
             cached_tree[len_path].append(cur_path)
 
@@ -1416,8 +1397,8 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         gate_lst = []
         # Shifted QFT for kinetic part
-        t = plre.ResourceT.resource_rep()
-        gate_lst.append(plre.GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        t = T.resource_rep()
+        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
@@ -1449,27 +1430,25 @@ class ResourceTrotterVibronic(ResourceOperator):
             last_state = cached_tree[idx][-1]
             if idx == 2 and last_state[-1] == last_state[-2]:
                 gate_lst.append(
-                    plre.GateCount(
-                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep
-                    )
+                    GateCount(OutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep)
                 )
             elif idx == 4 and len(set(last_state)) == 1:
                 gate_lst.append(
-                    plre.GateCount(
-                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2),
+                    GateCount(
+                        OutOfPlaceSquare.resource_rep(register_size=grid_size * 2),
                         num_rep,
                     )
                 )
             else:
                 gate_lst.append(
-                    plre.GateCount(
-                        plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)),
+                    GateCount(
+                        OutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)),
                         num_rep,
                     )
                 )
 
         # Shifted QFT Adjoint
-        gate_lst.append(plre.GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
 
         return gate_lst
 
@@ -1506,25 +1485,23 @@ class ResourceTrotterVibronic(ResourceOperator):
         phase_grad_wires = abs(np.floor(np.log2(phase_grad_precision)))
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
 
-        x = plre.ResourceX.resource_rep()
+        x = X.resource_rep()
 
-        phase_grad = plre.ResourcePhaseGradient.resource_rep(phase_grad_wires)
+        phase_grad = PhaseGradient.resource_rep(phase_grad_wires)
 
         # Allocate the phase gradient registers
-        gate_list.append(AllocWires(phase_grad_wires * (taylor_degree - 1)))
+        gate_list.append(Allocate(phase_grad_wires * (taylor_degree - 1)))
         # Resource Registers
         gate_list.append(GateCount(phase_grad, taylor_degree - 1))
 
         # Allocate auxiliary registers for the coefficients
-        gate_list.append(AllocWires(4 * grid_size + 2 * coeff_wires))
+        gate_list.append(Allocate(4 * grid_size + 2 * coeff_wires))
 
         # Basis state prep per mode, implemented only for the first step
-        gate_list.append(plre.GateCount(x, num_modes * grid_size))
+        gate_list.append(GateCount(x, num_modes * grid_size))
 
         # electronic state
-        gate_list.append(
-            plre.GateCount(resource_rep(plre.ResourceHadamard), int(np.ceil(np.log2(num_states))))
-        )
+        gate_list.append(GateCount(resource_rep(Hadamard), int(np.ceil(np.log2(num_states)))))
 
         if order == 1:
             gate_list += ResourceTrotterVibronic._rep_circuit(
@@ -1536,17 +1513,15 @@ class ResourceTrotterVibronic(ResourceOperator):
             )
 
         # Adjoint for electronic state
-        gate_list.append(
-            plre.GateCount(resource_rep(plre.ResourceHadamard), int(np.ceil(np.log2(num_states))))
-        )
+        gate_list.append(GateCount(resource_rep(Hadamard), int(np.ceil(np.log2(num_states)))))
 
         # Adjoint of Basis state prep, implemented only for the first step
-        gate_list.append(plre.GateCount(x, num_modes * grid_size))
+        gate_list.append(GateCount(x, num_modes * grid_size))
 
         # Free auxiliary registers for the coefficients
-        gate_list.append(FreeWires(4 * grid_size + 2 * coeff_wires))
+        gate_list.append(Deallocate(4 * grid_size + 2 * coeff_wires))
 
         # Deallocate the phase gradient registers
-        gate_list.append(FreeWires(phase_grad_wires * (taylor_degree - 1)))
+        gate_list.append(Deallocate(phase_grad_wires * (taylor_degree - 1)))
 
         return gate_list
