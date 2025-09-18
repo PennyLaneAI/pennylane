@@ -268,7 +268,7 @@ def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
     visit_nodes = postorder_traverse(T, source=idx)
 
     # For some reason, Pylint does not understand this usage of the Walrus operator.
-    state = (P, cnots)  # pylint: disable=unused-variable
+    state = (P, cnots)
     if mode == "column":
         # For column mode use post-order and parities constraint in first pass (i.1.2)...
         _ = [
