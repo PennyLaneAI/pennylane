@@ -45,9 +45,7 @@ class Hadamard(ResourceOperator):
     def __init__(self, wires=None):
         """Initializes the ``Hadamard`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
-            raise ValueError(
-                f"The total number of wires needed for `Hadamard` operator is 1, provided {len(Wires(wires))}."
-            )
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -158,9 +156,7 @@ class S(ResourceOperator):
     def __init__(self, wires=None):
         """Initializes the ``S`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
-            raise ValueError(
-                f"The total number of wires needed for `S` operator is 1, provided {len(Wires(wires))}."
-            )
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -309,9 +305,7 @@ class SWAP(ResourceOperator):
     def __init__(self, wires=None):
         """Initializes the ``SWAP`` operator."""
         if wires is not None and len(Wires(wires)) != 2:
-            raise ValueError(
-                f"The total number of wires needed for `SWAP` operator are 2, provided {len(Wires(wires))}."
-            )
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -441,9 +435,7 @@ class T(ResourceOperator):
     def __init__(self, wires=None):
         """Initializes the ``T`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
-            raise ValueError(
-                f"The total number of wires needed for `T` operator is 1, provided {len(Wires(wires))}."
-            )
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -588,9 +580,7 @@ class X(ResourceOperator):
     def __init__(self, wires=None):
         """Initializes the ``X`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
-            raise ValueError(
-                f"The total number of wires needed for `X` operator is 1, provided {len(Wires(wires))}."
-            )
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -720,9 +710,7 @@ class Y(ResourceOperator):
     def __init__(self, wires=None):
         """Initializes the ``Y`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
-            raise ValueError(
-                f"The total number of wires needed for `Y` operator is 1, provided {len(Wires(wires))}."
-            )
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -848,9 +836,7 @@ class Z(ResourceOperator):
     def __init__(self, wires=None):
         """Initializes the ``Z`` operator."""
         if wires is not None and len(Wires(wires)) != 1:
-            raise ValueError(
-                f"The total number of wires needed for `Z` operator is 1, provided {len(Wires(wires))}."
-            )
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod

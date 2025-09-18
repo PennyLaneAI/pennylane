@@ -26,10 +26,7 @@ class TestHadamard:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(
-            ValueError,
-            match="The total number of wires needed for `Hadamard` operator is 1, provided 2",
-        ):
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             Hadamard(wires=[0, 1])
 
     def test_resources(self):
@@ -95,10 +92,7 @@ class TestSWAP:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(
-            ValueError,
-            match="The total number of wires needed for `SWAP` operator are 2, provided 4.",
-        ):
+        with pytest.raises(ValueError, match="Expected 2 wires, got 4"):
             SWAP(wires=[0, 1, "a", "b"])
 
     def test_resources_raises(self):
@@ -170,9 +164,7 @@ class TestS:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(
-            ValueError, match="The total number of wires needed for `S` operator is 1, provided 2"
-        ):
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             S(wires=[0, 1])
 
     def test_resources(self):
@@ -270,9 +262,7 @@ class TestT:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(
-            ValueError, match="The total number of wires needed for `T` operator is 1, provided 2"
-        ):
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             T(wires=[0, 1])
 
     def test_resources(self):
@@ -364,9 +354,7 @@ class TestX:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(
-            ValueError, match="The total number of wires needed for `X` operator is 1, provided 2"
-        ):
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             X(wires=[0, 1])
 
     def test_resources(self):
@@ -426,9 +414,7 @@ class TestY:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(
-            ValueError, match="The total number of wires needed for `Y` operator is 1, provided 2"
-        ):
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             Y(wires=[0, 1])
 
     def test_resources(self):
@@ -489,9 +475,7 @@ class TestZ:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(
-            ValueError, match="The total number of wires needed for `Z` operator is 1, provided 2"
-        ):
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             Z(wires=[0, 1])
 
     def test_resources(self):
