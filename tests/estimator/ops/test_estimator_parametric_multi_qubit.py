@@ -23,6 +23,11 @@ import pennylane.estimator as qre
 class TestMultiRZ:
     """Test the Resource MultiRZ class."""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 2"):
+            qre.MultiRZ(num_wires=4, wires=[0, 1])
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_resource_params(self, num_wires, precision):
@@ -146,6 +151,11 @@ class TestPauliRot:
     """Test the Resource PauliRot class."""
 
     pauli_words = ("I", "XYZ", "XXX", "XIYIZIX", "III")
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
+            qre.PauliRot(pauli_string="XYZ", precision=1e-3, wires=[0, 1])
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_string", pauli_words)

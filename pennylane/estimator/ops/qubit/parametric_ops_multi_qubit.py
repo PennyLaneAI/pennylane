@@ -15,7 +15,7 @@ r"""Resource operators for parametric multi qubit operations."""
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, signature-differs
 
@@ -63,6 +63,8 @@ class MultiRZ(ResourceOperator):
     ) -> None:
         self.num_wires = num_wires
         self.precision = precision
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -259,6 +261,9 @@ class PauliRot(ResourceOperator):
         self.precision = precision
         self.pauli_string = pauli_string
         self.num_wires = len(pauli_string)
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
