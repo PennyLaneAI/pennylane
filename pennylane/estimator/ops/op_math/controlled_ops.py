@@ -825,7 +825,7 @@ class CNOT(ResourceOperator):
 
 
 class TempAND(ResourceOperator):
-    r"""Resource class representing a temporary `AND`-gate.
+    r"""Resource class representing a `TemporaryAND` gate.
 
     Args:
         wires (Sequence[int] | None): the wires the operation acts on
