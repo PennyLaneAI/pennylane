@@ -119,14 +119,11 @@ class MultiRZ(ResourceOperator):
         )
 
     @classmethod
-    def adjoint_resource_decomp(
-        cls, num_wires: int, precision: float | None = None
-    ) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            num_wires (int): the number of qubits the operation acts upon
-            precision (float): error threshold for Clifford + T decomposition of this operation
+            target_resource_params (dict): A dictionary containing the resource parameters of the target operator
 
         Resources:
             The adjoint of this operator just changes the sign of the phase, thus
@@ -137,6 +134,8 @@ class MultiRZ(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        num_wires = target_resource_params["num_wires"]
+        precision = target_resource_params["precision"]
         return [GateCount(cls.resource_rep(num_wires=num_wires, precision=precision))]
 
     @classmethod
@@ -268,7 +267,7 @@ class PauliRot(ResourceOperator):
 
         Args:
             pauli_string (str): a string describing the pauli operators that define the rotation
-            precision (float, optional): error threshold for Clifford + T decomposition of this operation
+            precision (float | None): error threshold for Clifford + T decomposition of this operation
 
         Resources:
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
@@ -362,7 +361,7 @@ class PauliRot(ResourceOperator):
 
         Args:
             pauli_string (str): a string describing the pauli operators that define the rotation
-            precision (float, optional): error threshold for Clifford + T decomposition of this operation
+            precision (float | None): error threshold for Clifford + T decomposition of this operation
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:: the operator in a compressed representation
@@ -373,14 +372,11 @@ class PauliRot(ResourceOperator):
         )
 
     @classmethod
-    def adjoint_resource_decomp(
-        cls, pauli_string: str, precision: float | None = None
-    ) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            pauli_string (str): a string describing the pauli operators that define the rotation
-            precision (float, optional): error threshold for Clifford + T decomposition of this operation
+            target_resource_params (dict): A dictionary containing the resource parameters of the target operator
 
         Resources:
             The adjoint of this operator just changes the sign of the phase, thus
@@ -391,6 +387,8 @@ class PauliRot(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        precision = target_resource_params["precision"]
+        pauli_string = target_resource_params["pauli_string"]
         return [GateCount(cls.resource_rep(pauli_string=pauli_string, precision=precision))]
 
     @classmethod

@@ -76,7 +76,7 @@ class TestMultiRZ:
             qre.GateCount(qre.MultiRZ.resource_rep(num_wires=num_wires, precision=precision))
         ]
         assert (
-            qre.MultiRZ.adjoint_resource_decomp(num_wires=num_wires, precision=precision)
+            qre.MultiRZ.adjoint_resource_decomp({"num_wires": num_wires, "precision": precision})
             == expected
         )
 
@@ -249,7 +249,9 @@ class TestPauliRot:
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
         assert (
-            qre.PauliRot.adjoint_resource_decomp(pauli_string=pauli_word, precision=precision)
+            qre.PauliRot.adjoint_resource_decomp(
+                target_resource_params={"pauli_string": pauli_word, "precision": precision}
+            )
             == expected
         )
 

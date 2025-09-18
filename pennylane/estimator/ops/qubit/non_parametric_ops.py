@@ -806,11 +806,15 @@ class X(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+    def pow_resource_decomp(
+        cls, pow_z: int, target_resource_params: dict | None = None
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            target_resource_params (dict): A dictionary containing the resource parameters
+                of the target operator.
 
         Resources:
             The X-gate raised to even powers produces identity and raised

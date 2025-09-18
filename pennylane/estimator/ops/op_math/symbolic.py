@@ -25,7 +25,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
@@ -515,7 +515,7 @@ class Pow(ResourceOperator):
     Args:
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator that we
             want to exponentiate.
-        z (float): the exponent (default value is 1)
+        pow_z (float): the exponent (default value is 1)
 
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
@@ -536,7 +536,7 @@ class Pow(ResourceOperator):
 
     We obtain the expected resources.
 
-    >>> print(qre.estimation(z_2, gate_set={"Identity", "Z"}))
+    >>> print(qre.estimate(z_2, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -545,7 +545,7 @@ class Pow(ResourceOperator):
     Gate breakdown:
     {'Identity': 1}
     >>>
-    >>> print(qre.estimation(z_5, gate_set={"Identity", "Z"}))
+    >>> print(qre.estimate(z_5, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -558,12 +558,12 @@ class Pow(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "z"}
 
-    def __init__(self, base_op: ResourceOperator, z: int) -> None:
+    def __init__(self, base_op: ResourceOperator, pow_z: int) -> None:
         _dequeue(op_to_remove=base_op)
         self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
-        self.z = z
+        self.pow_z = pow_z
         self.base_op = base_cmpr_op
         self.wires = base_op.wires
         self.num_wires = base_cmpr_op.num_wires
@@ -580,34 +580,36 @@ class Pow(ResourceOperator):
         """
         return {
             "base_cmpr_op": self.base_op,
-            "z": self.z,
+            "pow_z": self.pow_z,
         }
 
     @classmethod
-    def resource_rep(cls, base_cmpr_op: CompressedResourceOp, z) -> CompressedResourceOp:
+    def resource_rep(cls, base_cmpr_op: CompressedResourceOp, pow_z: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation.
 
         Args:
             base_class (Type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): The class type of the base operator to be raised to some power.
             base_params (dict): the resource parameters required to extract the cost of the base operator
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = base_cmpr_op.num_wires
-        return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op, "z": z})
+        return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op, "pow_z": pow_z})
 
     @classmethod
-    def resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
+    def resource_decomp(
+        cls, base_cmpr_op: CompressedResourceOp, pow_z: int, **kwargs
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
                 compressed resource representation for the operator we want to exponentiate.
-            z (float): the exponent (default value is 1)
+            pow_z (float): the exponent (default value is 1)
 
         Resources:
             The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
@@ -657,27 +659,25 @@ class Pow(ResourceOperator):
         base_params = {key: value for key, value in base_params.items() if value is not None}
         kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
 
-        if z == 0:
+        if pow_z == 0:
             return [GateCount(resource_rep(qre.Identity))]
 
-        if z == 1:
+        if pow_z == 1:
             return [GateCount(base_cmpr_op)]
 
         try:
-            return base_class.pow_resource_decomp(pow_z=z, **base_params, **kwargs)
+            return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
         except ResourcesUndefinedError:
-            return [GateCount(base_cmpr_op, z)]
+            return [GateCount(base_cmpr_op, pow_z)]
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, base_cmpr_op, z):
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            pow_z (int): the exponent that the pow-operator is being raised to
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
-                compressed resource representation for the operator we want to exponentiate.
-            z (float): the exponent that the base operator is being raised to (default value is 1)
+            pow_z (float): The exponent that the base operator is being raised to, default value is 1.
+            target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
             The resources are derived by simply adding together the :math:`z` exponent and the
@@ -689,13 +689,15 @@ class Pow(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        z = target_resource_params.get("pow_z", 1)
+        base_cmpr_op = target_resource_params.get("base_cmpr_op")
         return [GateCount(cls.resource_rep(base_cmpr_op, pow_z * z))]
 
     @staticmethod
-    def tracking_name(base_cmpr_op: CompressedResourceOp, z: int) -> str:
+    def tracking_name(base_cmpr_op: CompressedResourceOp, pow_z: int) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
-        return f"Pow({base_name}, {z})"
+        return f"Pow({base_name}, {pow_z})"
 
 
 class Prod(ResourceOperator):
@@ -756,7 +758,7 @@ class Prod(ResourceOperator):
     def __init__(
         self,
         res_ops: Iterable[ResourceOperator | tuple[int, ResourceOperator]],
-        wires=None,
+        wires: WiresLike = None,
     ) -> None:
 
         ops = []
@@ -952,7 +954,7 @@ class ChangeOpBasis(ResourceOperator):
         compute_op: ResourceOperator,
         target_op: ResourceOperator,
         uncompute_op: None | ResourceOperator = None,
-        wires=None,
+        wires: WiresLike = None,
     ) -> None:
         ops_to_remove = (
             [compute_op, target_op, uncompute_op] if uncompute_op else [compute_op, target_op]
