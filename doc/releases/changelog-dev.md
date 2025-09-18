@@ -1257,6 +1257,9 @@
 * Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
+* Fixes a bug where :func:`~.transforms.cancel_inverses` and :func:`~.transforms.merge_rotations` is incorrect when the circuit contains operators on abstract wires.
+  [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
