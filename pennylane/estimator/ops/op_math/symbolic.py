@@ -412,7 +412,7 @@ class Controlled(ResourceOperator):
         Args:
             num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
-            num_zero_ctrl (int): The subset of those control qubits, which further control
+            num_zero_ctrl (int): The subset of those control qubits which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
             target_resource_params (dict): A dictionary containing the resource parameters of the
                 target operator.
