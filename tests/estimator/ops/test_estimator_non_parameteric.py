@@ -15,10 +15,7 @@
 import pytest
 
 from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
@@ -26,6 +23,14 @@ from pennylane.exceptions import ResourcesUndefinedError
 
 class TestHadamard:
     """Tests for Hadamard resource operator"""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(
+            ValueError,
+            match="The total number of wires needed for `Hadamard` operator is 1, provided 2",
+        ):
+            Hadamard(wires=[0, 1])
 
     def test_resources(self):
         """Test that Hadamard resource operator does not implement a decomposition"""
@@ -87,6 +92,14 @@ class TestHadamard:
 
 class TestSWAP:
     """Tests for SWAP resource operator"""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(
+            ValueError,
+            match="The total number of wires needed for `SWAP` operator are 2, provided 4.",
+        ):
+            SWAP(wires=[0, 1, "a", "b"])
 
     def test_resources_raises(self):
         """Test that decomposition of SWAP is not defined"""
@@ -154,6 +167,13 @@ class TestSWAP:
 
 class TestS:
     """Tests for S resource operator"""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(
+            ValueError, match="The total number of wires needed for `S` operator is 1, provided 2"
+        ):
+            S(wires=[0, 1])
 
     def test_resources(self):
         """Test that S decomposes into two T gates"""
@@ -248,6 +268,13 @@ class TestS:
 class TestT:
     """Tests for T resource operator"""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(
+            ValueError, match="The total number of wires needed for `T` operator is 1, provided 2"
+        ):
+            T(wires=[0, 1])
+
     def test_resources(self):
         """Test that there is no further decomposition of the T gate."""
         op = T(0)
@@ -335,6 +362,13 @@ class TestT:
 class TestX:
     """Tests for the X resource operator gate"""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(
+            ValueError, match="The total number of wires needed for `X` operator is 1, provided 2"
+        ):
+            X(wires=[0, 1])
+
     def test_resources(self):
         """Tests for the X resource operator gate"""
         expected = [
@@ -389,6 +423,13 @@ class TestX:
 
 class TestY:
     """Tests for the resource Y gate"""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(
+            ValueError, match="The total number of wires needed for `Y` operator is 1, provided 2"
+        ):
+            Y(wires=[0, 1])
 
     def test_resources(self):
         """Test that T does not implement a decomposition"""
@@ -445,6 +486,13 @@ class TestY:
 
 class TestZ:
     """Tests for the Z resource operator gate"""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(
+            ValueError, match="The total number of wires needed for `Z` operator is 1, provided 2"
+        ):
+            Z(wires=[0, 1])
 
     def test_resources(self):
         """Test that Z resource operator implements the correct decomposition"""
