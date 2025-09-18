@@ -799,6 +799,7 @@ class X(ResourceOperator):
         target_resource_params: dict | None = None,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
+
         Args:
             num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
@@ -817,6 +818,7 @@ class X(ResourceOperator):
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
+
         """
         if num_ctrl_wires > 2:
             mcx = resource_rep(
