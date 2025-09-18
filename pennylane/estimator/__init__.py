@@ -94,3 +94,10 @@ from .templates.stateprep import (
     AliasSampling,
     PrepTHC,
 )
+
+from .templates.comparators import (
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
+)

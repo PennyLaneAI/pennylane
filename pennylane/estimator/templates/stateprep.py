@@ -667,7 +667,7 @@ class QROMStatePreparation(ResourceOperator):
             gate_counts.append(
                 GateCount(
                     qre.Adjoint.resource_rep(
-                        qre._rep(
+                        qre.resource_rep(
                             qre.QROM,
                             {
                                 "num_bitstrings": num_bitstrings,
@@ -689,7 +689,7 @@ class QROMStatePreparation(ResourceOperator):
             gate_counts.append(
                 GateCount(
                     qre.Controlled.resource_rep(
-                        base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
+                        base_cmpr_op=semi_adder, num_ctrl_wires=1, num_zero_ctrl=0
                     ),
                     count=num_state_qubits,
                 )
@@ -720,7 +720,7 @@ class QROMStatePreparation(ResourceOperator):
             gate_counts.append(
                 GateCount(
                     qre.Adjoint.resource_rep(
-                        qre._rep(
+                        qre.resource_rep(
                             qre.QROM,
                             {
                                 "num_bitstrings": 2**num_state_qubits,
@@ -739,7 +739,7 @@ class QROMStatePreparation(ResourceOperator):
                 gate_counts.append(
                     GateCount(
                         qre.Controlled.resource_rep(
-                            base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
+                            base_cmpr_op=semi_adder, num_ctrl_wires=1, num_zero_ctrl=0
                         ),
                     )
                 )
@@ -1004,7 +1004,7 @@ class PrepTHC(ResourceOperator):
             qre.GateCount(
                 resource_rep(
                     qre.Controlled,
-                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
                 ),
                 1,
             )
@@ -1027,7 +1027,7 @@ class PrepTHC(ResourceOperator):
         gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Checking that inequality is satisfied
-        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0})
         gate_list.append(qre.GateCount(mcx, 1))
         gate_list.append(qre.GateCount(toffoli, 2))
 
@@ -1123,7 +1123,7 @@ class PrepTHC(ResourceOperator):
             qre.GateCount(
                 resource_rep(
                     qre.Controlled,
-                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
                 ),
                 1,
             )
@@ -1146,7 +1146,7 @@ class PrepTHC(ResourceOperator):
         gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Checking that inequality is satisfied
-        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0})
         gate_list.append(qre.GateCount(mcx, 1))
         gate_list.append(qre.GateCount(toffoli, 2))
 
