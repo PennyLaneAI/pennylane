@@ -19,6 +19,7 @@ from functools import singledispatch, wraps
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
+from pennylane.workflow.qnode import QNode
 
 from .resource_config import ResourceConfig
 from .resource_operator import (
@@ -134,6 +135,9 @@ def _resources_from_qfunc(
     config: ResourceConfig | None = None,
 ) -> Callable[..., Resources]:
     """Get resources from a quantum function which queues operations"""
+
+    if isinstance(obj, QNode):
+        raise NotImplementedError("Support for QNodes has not yet been implemented.")
 
     @wraps(obj)
     def wrapper(*args, **kwargs):

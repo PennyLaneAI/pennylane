@@ -18,6 +18,7 @@ from collections import defaultdict
 
 import pytest
 
+import pennylane as qml
 from pennylane.estimator.estimate import estimate
 from pennylane.estimator.ops.qubit import X
 from pennylane.estimator.resource_config import ResourceConfig
@@ -211,6 +212,20 @@ class TestEstimateResources:
         """Test that a TypeError is raised when an unsupported type is passed to the estimate function."""
         with pytest.raises(TypeError, match="Could not obtain resources for obj of type"):
             estimate(({1, 2, 3}))
+
+    def test_estimate_raises_error_for_qnode(self):
+        """Test that a NotImplementedError is raised for QNodes."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def my_circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            NotImplementedError, match="Support for QNodes has not yet been implemented."
+        ):
+            estimate(my_circuit)
 
     def test_qfunc_with_num_wires(self):
         """Test that the number of wires is correctly inferred from a qfunc
