@@ -177,8 +177,10 @@ class DummyOp(ResourceOperator):
 
     resource_keys = {"x"}
 
-    def __init__(self, x=None, wires=None):
+    def __init__(self, x=None, wires=None, num_wires=None):
         self.x = x
+        if num_wires:
+            self.num_wires = num_wires
         super().__init__(wires=wires)
 
     @property
