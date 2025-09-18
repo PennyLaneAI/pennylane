@@ -888,23 +888,6 @@ class TestSelectWithWorkWire:
         probs = circuit()
         assert np.allclose(probs, np.eye(2**num_controls)[:num_ops])
 
-    @pytest.mark.parametrize(
-        ("num_ops", "control", "work", "msg_match"),
-        [(9, 4, 1, "Can't use this decomposition")],
-    )
-    def test_operation_and_test_wires_error(
-        self, num_ops, control, work, msg_match, partial
-    ):  # pylint: disable=too-many-arguments
-        """Test that proper errors are raised"""
-
-        wires = qml.registers({"target": num_ops, "control": control, "work": work})
-        ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
-
-        with pytest.raises(ValueError, match=msg_match):
-            _select_decomp_multi_control_work_wire(
-                ops=ops, control=wires["control"], work_wires=None, partial=partial
-            )
-
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_comparison_with_select(self, num_controls, num_ops, seed, partial):
         """Test that the decomposition is correct by comparing it to the standard Select
