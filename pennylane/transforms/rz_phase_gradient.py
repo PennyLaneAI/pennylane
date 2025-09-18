@@ -38,7 +38,9 @@ def _rz_phase_gradient(
     phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Function that transforms the RZ gate to the phase gradient circuit
-    The precision is implicitly defined by the length of ``angle_wires``"""
+    The precision is implicitly defined by the length of ``angle_wires``
+    Note that the global phases are collected and added as one big global phasein the main function
+    """
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
