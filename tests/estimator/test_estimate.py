@@ -360,7 +360,7 @@ class TestEstimateResources:
         """Test that a ValueError is raised for unsupported objects in the queue."""
 
         def my_circuit():
-            qml.QueuingManager.append(52 + 30)
+            qml.QueuingManager.append(0)  # Arbitrarily queue something
 
         with pytest.raises(
             ValueError,
