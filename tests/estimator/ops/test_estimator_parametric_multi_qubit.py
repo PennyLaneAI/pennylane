@@ -139,7 +139,7 @@ class TestMultiRZ:
         """Test that the pow decomposition is correct."""
         op = qre.MultiRZ(num_wires, precision=precision)
         expected_res = [qre.GateCount(qre.MultiRZ.resource_rep(num_wires, precision))]
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
 
 
 class TestPauliRot:
@@ -386,4 +386,4 @@ class TestPauliRot:
         expected_res = [
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
