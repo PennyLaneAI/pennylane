@@ -1589,9 +1589,7 @@ class TestMeasurementsEqual:
     @pytest.mark.jax
     def test_observables_different_interfaces(self):
         """Check that the check_interface keyword is used when comparing observables."""
-
         import jax
-
         M1 = np.eye(2)
         M2 = jax.numpy.eye(2)
         ob1 = qml.Hermitian(M1, 0)
@@ -1599,7 +1597,18 @@ class TestMeasurementsEqual:
 
         assert qml.equal(qml.expval(ob1), qml.expval(ob2), check_interface=True) is False
         assert qml.equal(qml.expval(ob1), qml.expval(ob2), check_interface=False) is True
+       
+    @pytest.mark.jax 
+    def test_observables_different_interfaces_assert_equal(self):
+        import jax
+        M1 = np.eye(2)
+        M2 = jax.numpy.eye(2)
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
 
+        with pytest.raises(AssertionError, match="interface"):
+            qml.assert_equal(qml.expval(ob1), qml.expval(ob2), check_interface=True)
+    
     def test_observables_different_trainability(self):
         """Check the check_trainability keyword argument affects comparisons of measurements."""
         M1 = qml.numpy.eye(2, requires_grad=True)
@@ -1622,6 +1631,15 @@ class TestMeasurementsEqual:
         assert qml.equal(qml.expval(ob1), qml.expval(ob2)) is False
         assert qml.equal(qml.expval(ob1), qml.expval(ob2), atol=1e-1) is True
 
+    def test_observables_atol_assert_equal(self):
+        M1 = np.eye(2)
+        M2 = M1 + 1e-3
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        with pytest.raises(AssertionError, match="Eigenvalues are not close"):
+            qml.assert_equal(qml.expval(ob1), qml.expval(ob2))
+
     def test_observables_rtol(self):
         """Check rtol affects comparison of measurement observables."""
         M1 = np.eye(2)
@@ -1633,6 +1651,15 @@ class TestMeasurementsEqual:
         assert qml.equal(qml.expval(ob1), qml.expval(ob2)) is False
         assert qml.equal(qml.expval(ob1), qml.expval(ob2), rtol=1e-2) is True
 
+    def test_observables_rtol_assert_equal(self):
+        M1 = np.eye(2)
+        M2 = np.diag([1 + 1e-3, 1 - 1e-3])
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        with pytest.raises(AssertionError, match="Eigenvalues are not close"):
+            qml.assert_equal(qml.expval(ob1), qml.expval(ob2))
+
     def test_eigvals_atol(self):
         """Check atol affects comparisons of eigenvalues."""
         m1 = ProbabilityMP(eigvals=(1, 1e-3))
@@ -1641,6 +1668,13 @@ class TestMeasurementsEqual:
         assert qml.equal(m1, m2) is False
         assert qml.equal(m1, m2, atol=1e-2) is True
 
+    def test_eigvals_atol_assert_equal(self):
+        m1 = ProbabilityMP(eigvals=(1, 1e-3))
+        m2 = ProbabilityMP(eigvals=(1, 0))
+
+        with pytest.raises(AssertionError, match="Eigenvalues are not close"):
+            qml.assert_equal(m1, m2
+
     def test_eigvals_rtol(self):
         """Check that rtol affects comparisons of eigenvalues."""
         m1 = ProbabilityMP(eigvals=(1 + 1e-3, 0))
@@ -1648,6 +1682,13 @@ class TestMeasurementsEqual:
 
         assert qml.equal(m1, m2) is False
         assert qml.equal(m1, m2, rtol=1e-2) is True
+
+    def test_eigvals_rtol_assert_equal(self):
+        m1 = ProbabilityMP(eigvals=(1 + 1e-3, 0))
+        m2 = ProbabilityMP(eigvals=(1, 0))
+
+        with pytest.raises(AssertionError, match="Eigenvalues are not close"):
+            qml.assert_equal(m1, m2)
 
     def test_observables_equal_but_wire_order_not(self):
         """Test that when the wire orderings are not equal but the observables are, that
@@ -1681,6 +1722,22 @@ class TestMeasurementsEqual:
             is True
         )
 
+    def test_mid_measure_assert_equal(self):
+        mp = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id")
+
+        mp1 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1, 0]), reset=True, id="test_id")
+        mp2 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=False, id="test_id")
+        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="foo")
+
+        with pytest.raises(AssertionError, match="wires"):
+            qml.assert_equal(mp, mp1)
+
+        with pytest.raises(AssertionError, match="reset"):
+            qml.assert_equal(mp, mp2)
+
+        with pytest.raises(AssertionError, match="id"):
+            qml.assert_equal(mp, mp3)
+
     def test_equal_measurement_value(self):
         """Test that MeasurementValue's are equal when their measurements are the same."""
         mv1 = qml.measure(0)
@@ -1696,6 +1753,12 @@ class TestMeasurementsEqual:
         mv1 = qml.measure(0)
         mv2 = qml.measure(1)
         assert qml.equal(mv1, mv2) is False
+
+    def test_different_measurement_value_assert_equal(self):
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        with pytest.raises(AssertionError, match="wires"):
+            qml.assert_equal(mv1, mv2)
 
     def test_composed_measurement_value(self):
         """Test that composition of MeasurementValue's are checked correctly."""
@@ -1730,6 +1793,23 @@ class TestMeasurementsEqual:
         assert qml.equal(mp1, mp3) is False
         assert qml.equal(mp1, mp4) is False
 
+    def test_mv_list_as_op_assert_equal(self):
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
+
+        mp1 = qml.probs(op=[mv1, mv2])
+        mp3 = qml.probs(op=[mv1, mv3])
+        mp4 = qml.probs(op=[mv2, mv1])
+
+        with pytest.raises(AssertionError, match="MeasurementValue"):
+            qml.assert_equal(mp1, mp3)
+
+        with pytest.raises(AssertionError, match="order"):
+            qml.assert_equal(mp1, mp4)
+
     def test_mv_list_and_arithmetic_as_op(self):
         """Test that comparing measurements using composite measurement values and
         a list of measurement values fails."""
@@ -1739,6 +1819,15 @@ class TestMeasurementsEqual:
         mp2 = qml.sample(op=[m0, m1])
 
         assert qml.equal(mp1, mp2) is False
+
+    def test_mv_list_and_arithmetic_as_op_assert_equal(self):
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        mp1 = qml.sample(op=m0 * m1)
+        mp2 = qml.sample(op=[m0, m1])
+
+        with pytest.raises(AssertionError, match="different structures"):
+            qml.assert_equal(mp1, mp2)
 
     @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts])
     def test_mv_arithmetic_as_op(self, mp_fn):
@@ -1759,6 +1848,19 @@ class TestMeasurementsEqual:
         assert qml.equal(mp1, mp2) is True
         assert qml.equal(mp1, mp3) is True
         assert qml.equal(mp1, mp4) is False
+
+    def test_mv_arithmetic_as_op_assert_equal(self):
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
+
+        mp1 = qml.expval(op=mv1 * mv2)
+        mp4 = qml.expval(op=mv1 * mv3)
+
+        with pytest.raises(AssertionError, match="MeasurementValue"):
+            qml.assert_equal(mp1, mp4)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts, qml.probs])
@@ -1784,6 +1886,25 @@ class TestMeasurementsEqual:
         res = eq_traced(m1, m2)
         assert res[0]
         assert not res[1]
+    
+    @pytest.mark.jax
+    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts, qml.probs])
+    def test_abstract_mv_equality_assert_equal(self, mp_fn):
+        import jax
+        m1 = True
+        m2 = False
+
+        @jax.jit
+        def eq_traced(a, b):
+            mp1 = mp_fn(op=a)
+            mp2 = mp_fn(op=a)
+            mp3 = mp_fn(op=b)
+            return mp1, mp2, mp3
+
+        mp1, mp2, mp3 = eq_traced(m1, m2)
+
+        with pytest.raises(AssertionError, match="abstract"):
+            qml.assert_equal(mp1, mp3)
 
     def test_shadow_expval_list_versus_operator(self):
         """Check that if one shadow expval has an operator and the other has a list, they are not equal."""
@@ -1793,13 +1914,19 @@ class TestMeasurementsEqual:
         m2 = qml.shadow_expval(H=[op])
         assert qml.equal(m1, m2) is False
 
+    def test_shadow_expval_list_versus_operator_assert_equal(self):
+        op = qml.X(0)
+        m1 = qml.shadow_expval(H=op)
+        m2 = qml.shadow_expval(H=[op])
+
+        with pytest.raises(AssertionError, match="Shadow"):
+            qml.assert_equal(m1, m2)
 
 def test_unsupported_object_type_not_implemented():
     dev = qml.device("default.qubit", wires=1)
 
     with pytest.raises(NotImplementedError, match="Comparison of"):
         qml.equal(dev, dev)
-
 
 class TestSymbolicOpComparison:
     """Test comparison for subclasses of SymbolicOp"""
