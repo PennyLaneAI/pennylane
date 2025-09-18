@@ -415,6 +415,7 @@ def _fanout_2(control, wires_control, wires_target):
 
     for c1, c2, target in zip(wires_control_half1, wires_control_half2, wires_target_half2):
         Toffoli([c1, c2, target])
+    return
 
 
 def _semiadder_log_depth_resources(num_y_wires):
