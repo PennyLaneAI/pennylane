@@ -627,7 +627,7 @@ class T(ResourceOperator):
             used to flip the control qubit if it is zero-controlled.
 
             In the case where multiple controlled wires are provided, we can collapse the control
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
+            wires by introducing one auxiliary qubit in a `zeroed` state, which is reset at the end.
             In this case the cost increases by two additional ``MultiControlledX`` gates,
             as described in (Lemma 7.11) `Barenco et al. <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
