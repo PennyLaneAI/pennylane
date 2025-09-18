@@ -22,7 +22,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments,unused-argument
+# pylint: disable=arguments-differ
 
 
 class ResourceCH(ResourceOperator):
@@ -1051,6 +1051,7 @@ class ResourceToffoli(ResourceOperator):
             FreeWires(2),
         ]
 
+    # pylint: disable=unused-argument
     @classmethod
     def textbook_resource_decomp(cls, elbow=None, **kwargs) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
@@ -1124,6 +1125,7 @@ class ResourceToffoli(ResourceOperator):
         adj_elbow = "left" if elbow == "right" else "right"
         return [GateCount(cls.resource_rep(elbow=adj_elbow))]
 
+    # pylint: disable=unused-argument
     @classmethod
     def controlled_resource_decomp(
         cls,
@@ -1257,12 +1259,7 @@ class ResourceMultiControlledX(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
-        cls,
-        num_ctrl_wires,
-        num_ctrl_values,
-        **kwargs,  # pylint: disable=unused-argument
-    ) -> list[GateCount]:
+    def resource_decomp(cls, num_ctrl_wires, num_ctrl_values, **kwargs) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 

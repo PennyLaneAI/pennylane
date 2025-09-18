@@ -48,8 +48,6 @@ from pennylane.compiler.python_compiler.xdsl_extras.constraints import (
     NestedTupleOfConstraint,
 )
 
-# pylint: disable=fixme
-
 
 def _create_param_constrained_type(
     base_attr: type, widths: list[int], signedness: Signedness | None = None

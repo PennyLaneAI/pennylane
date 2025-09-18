@@ -165,7 +165,6 @@ def _parity_transforms() -> dict:
     }
 
 
-# pylint: disable=import-outside-toplevel,too-many-branches
 def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
     r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.
 
