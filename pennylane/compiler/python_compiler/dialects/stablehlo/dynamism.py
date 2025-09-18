@@ -44,7 +44,7 @@ class DynamicBroadcastInDimOp(IRDLOperation):
     """
     This operation is functionally identical to
     [broadcast_in_dim](https://github.com/openxla/stablehlo/blob/main/docs/spec.md#broadcast_in_dim)
-    op, but the result shape is specified dynamically via `output_dimensions`.
+    op, but the result shape is specified dynamically via ``output_dimensions``.
 
     It also accepts optional attributes to express static knowledge about the
     expanding behavior of dimensions. If not specified, all dimensions are

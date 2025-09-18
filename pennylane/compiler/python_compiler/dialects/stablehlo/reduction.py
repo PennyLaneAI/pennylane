@@ -42,8 +42,8 @@ from .types import HLO_Tensor
 @irdl_op_definition
 class ReduceOp(IRDLOperation):
     """
-    Applies a reduction function `body` to `inputs` and `init_values` along the
-    `dimensions` and produces a `result` tensor.
+    Applies a reduction function ``body`` to ``inputs`` and ``init_values`` along the
+    ``dimensions`` and produces a ``result`` tensor.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#reduce

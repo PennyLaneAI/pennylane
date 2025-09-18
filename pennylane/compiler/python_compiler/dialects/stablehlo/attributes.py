@@ -343,7 +343,7 @@ class OutputOperandAlias(ParametrizedAttribute):
 
     The output and the 0th operand are both tuples. The aliasing shows the
     relationship between the 0th element in output tuple with the 1st element in
-    the 0th operand. And both of them are of the same type: tensor<2x3xf32>.
+    the 0th operand. And both of them are of the same type: ``tensor<2x3xf32>``.
     ```
     """
 

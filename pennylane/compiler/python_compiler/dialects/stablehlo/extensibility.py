@@ -51,13 +51,13 @@ from .attributes import CustomCallApiVersion, CustomCallApiVersionAttr, OutputOp
 @irdl_op_definition
 class CustomCallOp(IRDLOperation):
     """
-    Encapsulates an implementation-defined operation `call_target_name` that
-    takes `inputs` and `called_computations` and produces `results`.
+    Encapsulates an implementation-defined operation ``call_target_name`` that
+    takes ``inputs`` and ``called_computations`` and produces ``results``.
 
     Depending on the API version there are two ways to pass extra bits of static
     information to the external function:
-    1. Use `API_VERSION_TYPED_FFI` which allows passing a dictionary attribute.
-    2. Use a previous API version with a StringAttr to encode backend config.
+    1. Use ``API_VERSION_TYPED_FFI`` which allows passing a dictionary attribute.
+    2. Use a previous API version with a ``StringAttr`` to encode backend config.
 
     See:
     https://github.com/openxla/stablehlo/blob/main/docs/spec.md#custom_call
