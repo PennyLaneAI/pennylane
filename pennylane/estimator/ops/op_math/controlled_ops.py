@@ -578,7 +578,7 @@ class CCZ(ResourceOperator):
     r"""Resource class for the CCZ gate.
 
     Args:
-        wires (Sequence[int] | None): the subsystem the gate acts on
+        wires (Sequence[int] | None): the wire the operation acts on
 
     Resources:
         The resources are derived from the following identity:
