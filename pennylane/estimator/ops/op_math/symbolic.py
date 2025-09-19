@@ -682,7 +682,7 @@ class Prod(ResourceOperator):
 
     def __init__(
         self,
-        res_ops: Iterable[ResourceOperator | tuple[int, ResourceOperator]],
+        res_ops: Iterable[ResourceOperator | tuple[ResourceOperator, int]],
         wires: WiresLike = None,
     ) -> None:
 
