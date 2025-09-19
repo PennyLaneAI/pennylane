@@ -349,23 +349,33 @@ class TestCNOT:
         assert self.op.adjoint_resource_decomp() == expected_res
 
     ctrl_data = (
-        (["c1"], [0]),
-        (["c1"], [1]),
-        (["c1", "c2"], [0, 1]),
+        (
+            ["c1"],
+            [1],
+            [GateCount(Toffoli.resource_rep(), 1)],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [GateCount(MultiControlledX.resource_rep(3, 0), 1)],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [GateCount(MultiControlledX.resource_rep(4, 2), 1)],
+        ),
     )
 
-    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ctrl_data)
-    def test_resource_controlled(self, ctrl_wires, ctrl_values):
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
         num_zero_ctrl = len([v for v in ctrl_values if not v])
 
-        if num_ctrl_wires == 1 and num_zero_ctrl == 0:
-            expected_res = [GateCount(Toffoli.resource_rep(), 1)]
-            assert self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == expected_res
-        else:
-            with pytest.raises(ResourcesUndefinedError):
-                self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl)
+        assert self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == expected_res
 
     pow_data = (
         (1, [GateCount(op.resource_rep(), 1)]),
