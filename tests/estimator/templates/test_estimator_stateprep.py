@@ -1650,3 +1650,111 @@ class TestQROMStatePrep:
             )
 
         assert actual_resources == expected_res
+
+class TestPrepTHC:
+    """Test the PrepTHC class."""
+
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth",
+        (
+            (qre.CompactHamiltonian.thc(58, 160), 13, 1),
+            (qre.CompactHamiltonian.thc(10, 50), None, None),
+            (qre.CompactHamiltonian.thc(4, 20), None, 2),
+        ),
+    )
+    def test_resource_params(self, compact_ham, coeff_prec, selswap_depth):
+        """Test that the resource params are correct."""
+        op = qre.PrepTHC(compact_ham, coeff_prec, selswap_depth)
+        assert op.resource_params == {
+            "compact_ham": compact_ham,
+            "coeff_precision": coeff_prec,
+            "select_swap_depth": selswap_depth,
+        }
+
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth, num_wires",
+        (
+            (qre.CompactHamiltonian.thc(58, 160), 13, 1, 16),
+            (qre.CompactHamiltonian.thc(10, 50), None, None, 12),
+            (qre.CompactHamiltonian.thc(4, 20), None, 2, 10),
+        ),
+    )
+    def test_resource_rep(self, compact_ham, coeff_prec, selswap_depth, num_wires):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.PrepTHC,
+            num_wires,
+            {
+                "compact_ham": compact_ham,
+                "coeff_precision": coeff_prec,
+                "select_swap_depth": selswap_depth,
+            },
+        )
+        assert qre.PrepTHC.resource_rep(compact_ham, coeff_prec, selswap_depth) == expected
+
+    # We are comparing the Toffoli and qubit cost here
+    # Expected number of Toffolis and qubits were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
+    # The numbers were adjusted slightly to account for a different QROM decomposition
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth, expected_res",
+        (
+            (
+                qre.CompactHamiltonian.thc(58, 160),
+                13,
+                1,
+                {"algo_qubits": 16, "ancilla_qubits": 86, "toffoli_gates": 13156},
+            ),
+            (
+                qre.CompactHamiltonian.thc(10, 50),
+                None,
+                None,
+                {"algo_qubits": 12, "ancilla_qubits": 174, "toffoli_gates": 579},
+            ),
+            (
+                qre.CompactHamiltonian.thc(4, 20),
+                None,
+                2,
+                {"algo_qubits": 10, "ancilla_qubits": 109, "toffoli_gates": 279},
+            ),
+        ),
+    )
+    def test_resources(self, compact_ham, coeff_prec, selswap_depth, expected_res):
+        """Test that the resources are correct."""
+
+        prep_cost = qre.estimate(
+            qre.PrepTHC(
+                compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth
+            )
+        )
+        assert prep_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
+        assert (
+            prep_cost.qubit_manager.clean_qubits + prep_cost.qubit_manager.dirty_qubits
+            == expected_res["ancilla_qubits"]
+        )
+        assert prep_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+
+    def test_incompatible_hamiltonian(self):
+        """Test that an error is raised for incompatible Hamiltonians."""
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for PrepTHC."
+        ):
+            qre.PrepTHC(qre.CompactHamiltonian.cdf(58, 160))
+
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for PrepTHC."
+        ):
+            qre.PrepTHC.resource_rep(qre.CompactHamiltonian.cdf(58, 160))
+
+    def test_typeerror_precision(self):
+        "Test that an error is raised when wrong type is provided for precision."
+        with pytest.raises(
+            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+        ):
+            qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
+
+        with pytest.raises(
+            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+        ):
+            qre.PrepTHC.resource_rep(
+                qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5
+            )
