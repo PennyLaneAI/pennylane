@@ -954,27 +954,26 @@ class ChangeOpBasis(ResourceOperator):
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
-        num_wires: int,
-    ):  # pylint: disable=unused-argument
+    ):
         r"""Returns a list representing the resources of the operator. Each object represents a
-            quantum gate and the number of times it occurs in the decomposition.
+        quantum gate and the number of times it occurs in the decomposition.
 
-            Args:
-                cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
-                    to the compute operation.
-                cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
-                    to the base operation.
-                cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): An optional compressed resource operator, corresponding
-                    to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
-                num_wires (int): an optional integer representing the number of wires this operator acts upon
+        Args:
+            cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                to the compute operation.
+            cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                to the base operation.
+            cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): An optional compressed resource operator, corresponding
+                to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
 
-            Resources:
-                This symbolic class represents a product of the three provided operations. The resources are
-                defined trivially as the sum of the costs of each.
+        Resources:
+            This symbolic class represents a product of the three provided operations. The resources are
+            defined trivially as the sum of the costs of each.
 
-            .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.ChangeOpBasis`.
+        .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.ChangeOpBasis`.
 
         **Example**
+
         The change of basis operation can be constructed as follows with each operation defining the
         compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
         >>> from pennylane import estimator as qre
