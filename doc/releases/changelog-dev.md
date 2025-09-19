@@ -34,6 +34,9 @@
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
 
+  * Added functionality to map PennyLane operations
+    to their associated resource operators for resource estimation.
+    [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
@@ -46,6 +49,7 @@
   * The resource operators for ``Identity``, ``GlobalPhase`` and non-parametric operators
     have been added to `qml.estimator.ops`.
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
+    [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
   * The test files were renamed to avoid the dual definition error with labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
@@ -1137,6 +1141,9 @@
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
 <h3>Documentation 📝</h3>
+
+* Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
+  [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
 * The documentation of `qml.device` has been updated.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
