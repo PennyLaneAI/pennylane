@@ -39,12 +39,9 @@ class Adjoint(ResourceOperator):
             to retrieve the adjoint.
 
     Resources:
-        This symbolic operation represents the adjoint of some base operation. The resources are
-        determined as follows. If the base operation implements the
+        This symbolic operation represents the adjoint of some base operation. If the base operation implements the
         :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
-        this.
-
-        Otherwise, the adjoint resources are given as the adjoint of each operation in the
+        this object. Otherwise, the adjoint resources are given as the adjoint of each operation in the
         base operation's resources.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Adjoint`.
