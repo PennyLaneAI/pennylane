@@ -438,45 +438,44 @@ class SemiAdder(ResourceOperator):
             in the decomposition.
         """
         max_register_size = target_resource_params["max_register_size"]
-        if max_register_size > 2:
-            gate_lst = []
+        if max_register_size <= 2:
+            raise re.ResourcesNotDefined
+        gate_lst = []
 
-            if num_ctrl_wires > 1:
-                mcx = resource_rep(
-                    qre.MultiControlledX,
-                    {
-                        "num_ctrl_wires": num_ctrl_wires,
-                        "num_zero_ctrl": num_zero_ctrl,
-                    },
-                )
-                gate_lst.append(Allocate(1))
-                gate_lst.append(GateCount(mcx, 2))
-
-            cnot_count = (7 * (max_register_size - 2)) + 3
-            elbow_count = 2 * (max_register_size - 1)
-
-            x = resource_rep(qre.X)
-            cnot = resource_rep(qre.CNOT)
-            l_elbow = resource_rep(qre.TempAND)
-            r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
-            gate_lst.extend(
-                [
-                    Allocate(max_register_size - 1),
-                    GateCount(cnot, cnot_count),
-                    GateCount(l_elbow, elbow_count),
-                    GateCount(r_elbow, elbow_count),
-                    Deallocate(max_register_size - 1),
-                ],
+        if num_ctrl_wires > 1:
+            mcx = resource_rep(
+                qre.MultiControlledX,
+                {
+                    "num_ctrl_wires": num_ctrl_wires,
+                    "num_zero_ctrl": num_zero_ctrl,
+                },
             )
+            gate_lst.append(Allocate(1))
+            gate_lst.append(GateCount(mcx, 2))
 
-            if num_ctrl_wires > 1:
-                gate_lst.append(Deallocate(1))
-            elif num_zero_ctrl > 0:
-                gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+        cnot_count = (7 * (max_register_size - 2)) + 3
+        elbow_count = 2 * (max_register_size - 1)
 
-            return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TempAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+        gate_lst.extend(
+            [
+                Allocate(max_register_size - 1),
+                GateCount(cnot, cnot_count),
+                GateCount(l_elbow, elbow_count),
+                GateCount(r_elbow, elbow_count),
+                Deallocate(max_register_size - 1),
+            ],
+        )
 
-        raise qre.sNotDefined
+        if num_ctrl_wires > 1:
+            gate_lst.append(Deallocate(1))
+        elif num_zero_ctrl > 0:
+            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+
+        return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
 
 class ControlledSequence(ResourceOperator):
