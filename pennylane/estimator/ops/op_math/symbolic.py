@@ -36,8 +36,8 @@ class Adjoint(ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator that we
-            want the adjoint of.
+        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator for which
+            to retrieve the adjoint.
 
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
@@ -347,7 +347,7 @@ class Controlled(ResourceOperator):
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_zero_ctrl (int): the number of control qubits, that are controlled when in the
+            num_zero_ctrl (int): the number of control qubits that are controlled when in the
                 :math:`|0\rangle` state
 
         Resources:
@@ -413,7 +413,7 @@ class Controlled(ResourceOperator):
         Args:
             num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
-            num_zero_ctrl (int): The subset of those control qubits, which further control
+            num_zero_ctrl (int): The subset of those control qubits which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
             target_resource_params (dict): A dictionary containing the resource parameters of the
                 target operator.

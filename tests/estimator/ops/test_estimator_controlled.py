@@ -44,6 +44,11 @@ class TestCH:
 
     op = CH(wires=[0, 1])
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            CH(wires=[0, 1, 2])
+
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
 
@@ -91,6 +96,11 @@ class TestCY:
     """Test the Resource CY operation"""
 
     op = CY(wires=[0, 1])
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            CY(wires=[0, 1, 2])
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -143,6 +153,11 @@ class TestCZ:
     """Test the Resource CZ operation"""
 
     op = CZ(wires=[0, 1])
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            CZ(wires=[0, 1, 2])
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -201,6 +216,11 @@ class TestCSWAP:
 
     op = CSWAP(wires=[0, 1, 2])
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
+            CSWAP(wires=[0, 1])
+
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
         expected_resources = [
@@ -248,6 +268,11 @@ class TestCCZ:
     """Test the Resource CCZ operation"""
 
     op = CCZ(wires=[0, 1, 2])
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
+            CCZ(wires=[0, 1])
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -297,6 +322,11 @@ class TestCNOT:
     """Test Resource CNOT operation"""
 
     op = CNOT([0, 1])
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            CNOT(wires=[0, 1, 2])
 
     def test_resources(self):
         """Test that the resources method is not implemented"""
@@ -355,6 +385,11 @@ class TestTemporaryAND:
 
     op = TemporaryAND(wires=[0, 1, 2])
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
+            TemporaryAND(wires=[0, 1])
+
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
         expected_resources = [GateCount(Toffoli.resource_rep(elbow="left"), 1)]
@@ -390,6 +425,11 @@ class TestToffoli:
     """Test the Resource Toffoli operation"""
 
     op = Toffoli(wires=[0, 1, 2])
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
+            Toffoli(wires=[0, 1])
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -516,6 +556,11 @@ class TestMultiControlledX:
         ],
     )
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 2"):
+            MultiControlledX(num_ctrl_wires=3, num_zero_ctrl=0, wires=[0, 1])
+
     @staticmethod
     def _prep_params(num_control, num_zero_ctrl):
         return {
@@ -622,6 +667,11 @@ class TestCRX:
 
     op = CRX(wires=[0, 1])
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            CRX(wires=[0, 1, 2])
+
     def test_resource_keys(self):
         """test that the resource keys are correct"""
         assert self.op.resource_keys == {"precision"}
@@ -678,6 +728,11 @@ class TestCRY:
     """Test the Resource CRY operation"""
 
     op = CRY(wires=[0, 1])
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            CRY(wires=[0, 1, 2])
 
     def test_resource_keys(self):
         """test that the resource keys are correct"""
@@ -789,6 +844,11 @@ class TestCRot:
 
     op = CRot(wires=[0, 1])
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            CRZ(wires=[0, 1, 2])
+
     def test_resource_keys(self):
         """test that the resource keys are correct"""
         assert self.op.resource_keys == {"precision"}
@@ -841,6 +901,11 @@ class TestCRot:
 
 class TestControlledPhaseShift:
     """Test Resource ControlledPhaseShift"""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            ControlledPhaseShift(wires=[0, 1, 2])
 
     def test_resource_keys(self):
         """test that the resource keys are correct"""
