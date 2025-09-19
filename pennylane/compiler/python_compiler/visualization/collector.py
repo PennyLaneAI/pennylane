@@ -17,6 +17,7 @@ which collects and maps PennyLane operations and measurements from xDSL."""
 from functools import singledispatchmethod
 from typing import Any
 
+import xdsl
 from xdsl.dialects import builtin, func
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
@@ -61,8 +62,11 @@ class QMLCollector:
         self.quantum_register: SSAValue | None = None
 
     @singledispatchmethod
-    def handle(self, _: Any) -> Operator | MeasurementProcess | None:
-        """Default handler for unsupported operations. If the operation is not recognized, return None."""
+    def handle(self, xdsl_op: xdsl.ir.Operation) -> Operator | MeasurementProcess | None:
+        """Default handler for unsupported operations."""
+        if len(xdsl_op.regions) > 0:
+            raise NotImplementedError("xDSL operation with regions are not yet supported.")
+
         return None
 
     ############################################################
@@ -98,19 +102,6 @@ class QMLCollector:
         if not self.wire_to_ssa_qubits:
             raise NotImplementedError("No wires extracted from the register found.")
         return xdsl_to_qml_op(xdsl_op)
-
-    @handle.register
-    def _(self, _: AdjointOp) -> None:
-        raise NotImplementedError("AdjointOp operations are not yet supported.")
-
-    ############################################################
-    ### Control Flow
-    ############################################################
-
-    # pylint: disable=unused-argument
-    @handle.register
-    def _(self, _: IfOp | WhileOp | ForOp) -> None:
-        raise NotImplementedError("Control flow operations (If, While, For) are not yet supported.")
 
     ############################################################
     ### Internal Methods
