@@ -117,7 +117,7 @@ class Hadamard(ResourceOperator):
             For a single control wire, the cost is a single instance of ``CH``.
             Two additional ``X`` gates are used to flip the control qubit if it is zero-controlled.
             In the case where multiple controlled wires are provided, the resources are derived from
-            the following identities (as presented in this `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
+            the following identities:
 
             .. math::
 
