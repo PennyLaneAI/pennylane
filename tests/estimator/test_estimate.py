@@ -347,15 +347,6 @@ class TestEstimateResources:
 
         assert actual_resources == expected_resources
 
-    def test_estimate_resources_from_pl_operator(self):
-        """Test that a NotImplementedError is raised for PennyLane operators."""
-
-        def my_circuit():
-            qml.Hadamard(wires=0)
-
-        with pytest.raises(NotImplementedError):
-            estimate(my_circuit)()
-
     def test_unsupported_object_in_queue_raises_error(self):
         """Test that a ValueError is raised for unsupported objects in the queue."""
 
@@ -367,6 +358,20 @@ class TestEstimateResources:
             match="Queued object.*is not a ResourceOperator or Operator, and cannot be processed.",
         ):
             estimate(my_circuit)()
+
+    def test_estimate_resources_from_pl_op_dispatch(self):
+        """Test that the dispatch for PennyLane operators correctly maps to a
+        ResourceOperator without further decomposition."""
+        op = qml.PauliX(0)
+
+        actual_resources = estimate(op)
+
+        expected_gates = defaultdict(int, {resource_rep(X): 1})
+        expected_resources = Resources(
+            zeroed=0, any_state=0, algo_wires=1, gate_types=expected_gates
+        )
+
+        assert actual_resources == expected_resources
 
     @pytest.mark.parametrize(
         "gate_set, expected_resources",

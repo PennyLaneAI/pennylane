@@ -17,12 +17,13 @@ from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
 from pennylane.measurements.measurements import MeasurementProcess
-from pennylane.operation import Operator
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
 
 from .resource_config import ResourceConfig
+from .resource_mapping import _map_to_resource_op
 from .resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -32,10 +33,6 @@ from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 # pylint: disable=protected-access,too-many-arguments
-
-
-def map_to_resource_op():  # TODO: Import this function instead when the mapping PR is merged
-    """Maps an instance of :class:`~.Operator` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`."""
 
 
 def estimate(
@@ -230,8 +227,26 @@ def _resources_from_resource_operator(
     )
 
 
-# TODO: Restore logic to handle PennyLanec operators when mappings are merged.
-# Define a _resources_from_pl_ops dispatch
+@_estimate_resources_dispatch.register
+def _resources_from_pl_ops(
+    obj: Operation,
+    gate_set: set[str] | None = None,
+    zeroed: int = 0,
+    any_state: int = 0,
+    tight_budget: bool = None,
+    config: ResourceConfig | None = None,
+) -> Resources:
+    """Extract resources from a pl operator."""
+    obj = _map_to_resource_op(obj)
+    resources = 1 * obj
+    return _resources_from_resource(
+        obj=resources,
+        gate_set=gate_set,
+        zeroed=zeroed,
+        any_state=any_state,
+        tight_budget=tight_budget,
+        config=config,
+    )
 
 
 def _update_counts_from_compressed_res_op(
@@ -328,8 +343,7 @@ def _ops_to_compressed_reps(
         if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
         elif isinstance(op, Operator):
-            raise NotImplementedError
-        # TODO: Restore logic to handle PennyLanec operators when mappings are merged.
+            cmp_rep_ops.append(_map_to_resource_op(op).resource_rep_from_op())
 
     return cmp_rep_ops
 
