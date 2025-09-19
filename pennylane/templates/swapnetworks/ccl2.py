@@ -153,7 +153,7 @@ class TwoLocalSwapNetwork(Operation):
     @staticmethod
     def compute_decomposition(
         weights=None, wires=None, acquaintances=None, fermionic=True, shift=False, **kwargs
-    ):  # pylint: disable=arguments-differ too-many-arguments
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

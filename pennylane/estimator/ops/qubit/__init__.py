@@ -11,21 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""PennyLane-xDSL transformations API specifically for the MBQC transform."""
+r"""This module contains experimental resource estimation functionality."""
 
-from .graph_state_utils import (
-    get_num_aux_wires,
-    get_graph_state_edges,
-    n_vertices_from_packed_adj_matrix,
-    edge_iter,
-    generate_adj_matrix,
+from .non_parametric_ops import (
+    Hadamard,
+    S,
+    T,
+    X,
+    Y,
+    Z,
+    SWAP,
 )
-
-
-__all__ = [
-    "get_num_aux_wires",
-    "get_graph_state_edges",
-    "n_vertices_from_packed_adj_matrix",
-    "edge_iter",
-    "generate_adj_matrix",
-]
+from .parametric_ops_single_qubit import (
+    PhaseShift,
+    RX,
+    RY,
+    RZ,
+    Rot,
+)

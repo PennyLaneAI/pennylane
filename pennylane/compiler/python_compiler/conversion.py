@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utilities for translating JAX to xDSL"""
+"""Utilities for converting to xDSL module."""
 
 from collections.abc import Callable, Sequence
 from functools import wraps
@@ -24,89 +24,45 @@ from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-n
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xContext
-from xdsl.dialects import arith as xarith
 from xdsl.dialects import builtin as xbuiltin
 from xdsl.dialects import func as xfunc
-from xdsl.dialects import scf as xscf
-from xdsl.dialects import tensor as xtensor
 from xdsl.ir import Dialect as xDialect
-from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from .dialects import MBQC, QEC, Catalyst, Quantum, StableHLO, Transform
+from .parser import QuantumParser
 
 JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
 
-class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-methods
-    """A subclass of ``xdsl.parser.Parser`` that automatically loads relevant dialects
-    into the input context.
-
-    Args:
-        ctx (xdsl.context.Context): Context to use for parsing.
-        input (str): Input program string to parse.
-        name (str): The name for the input. ``"<unknown>"`` by default.
-        extra_dialects (Sequence[xdsl.ir.Dialect]): Any additional dialects
-            that should be loaded into the context before parsing.
-    """
-
-    default_dialects: tuple[xDialect] = (
-        xarith.Arith,
-        xbuiltin.Builtin,
-        xfunc.Func,
-        xscf.Scf,
-        StableHLO,
-        xtensor.Tensor,
-        Transform,
-        Quantum,
-        MBQC,
-        Catalyst,
-        QEC,
-    )
-
-    def __init__(
-        self,
-        ctx: xContext,
-        input: str,
-        name: str = "<unknown>",
-        extra_dialects: Sequence[xDialect] | None = (),
-    ) -> None:
-        super().__init__(ctx, input, name)
-
-        extra_dialects = extra_dialects or ()
-        for dialect in self.default_dialects + tuple(extra_dialects):
-            if self.ctx.get_optional_dialect(dialect.name) is None:
-                self.ctx.load_dialect(dialect)
-
-
-def _module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
-    """Get the module from the jax.jitted function"""
+def _mlir_module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
+    """Get the MLIR module from a jax.jitted function"""
     return func.lower(*args, **kwargs).compiler_ir()
 
 
-def module(func: JaxJittedFunction) -> Callable[..., jModule]:
-    """Decorator for _module_inline"""
+def mlir_module(func: JaxJittedFunction) -> Callable[..., jModule]:
+    """Returns a wrapper that creates an MLIR module from a jax.jitted function."""
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> jModule:
-        return _module_inline(func, *args, **kwargs)
+        return _mlir_module_inline(func, *args, **kwargs)
 
     return wrapper
 
 
-def _generic_inline(func: JaxJittedFunction, *args, **kwargs) -> str:  # pragma: no cover
-    """Create the generic textual representation for the jax.jit'ed function"""
+def _generic_str_inline(func: JaxJittedFunction, *args, **kwargs) -> str:  # pragma: no cover
+    """Create the generic textual representation for a jax.jitted function"""
     lowered = func.lower(*args, **kwargs)
     mod = lowered.compiler_ir()
     return mod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
 
 
-def generic(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
-    """Decorator for _generic_inline."""
+def generic_str(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
+    """Returns a wrapper that creates the generic textual representation for a
+    jax.jitted function."""
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> str:
-        return _generic_inline(func, *args, **kwargs)
+        return _generic_str_inline(func, *args, **kwargs)
 
     return wrapper
 
@@ -114,27 +70,28 @@ def generic(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
 def parse_generic_to_xdsl_module(
     program: str, extra_dialects: Sequence[xDialect] | None = None
 ) -> xbuiltin.ModuleOp:  # pragma: no cover
-    """Parses generic MLIR program to xDSL module"""
+    """Parses a generic MLIR program string to an xDSL module."""
     ctx = xContext(allow_unregistered=True)
     parser = QuantumParser(ctx, program, extra_dialects=extra_dialects)
     moduleOp: xbuiltin.ModuleOp = parser.parse_module()
     return moduleOp
 
 
-def parse_generic_to_jax_module(program: str) -> jModule:  # pragma: no cover
-    """Parses an MLIR program in string representation to a jax Module"""
+def parse_generic_to_mlir_module(program: str) -> jModule:  # pragma: no cover
+    """Parses a generic MLIR program string to an MLIR module."""
     with jContext() as ctx:
         ctx.allow_unregistered_dialects = True
         jstablehlo.register_dialect(ctx)  # pylint: disable=no-member
         return jModule.parse(program)
 
 
-def jax_from_docstring(func: Callable) -> jModule:  # pragma: no cover
-    """Parses an MLIR program in string representation located in the docstring."""
+def mlir_from_docstring(func: Callable) -> jModule:  # pragma: no cover
+    """Returns a wrapper that parses an MLIR program string located in the docstring
+    into an MLIR module."""
 
     @wraps(func)
     def wrapper(*_, **__):
-        return parse_generic_to_jax_module(func.__doc__)
+        return parse_generic_to_mlir_module(func.__doc__)
 
     return wrapper
 
@@ -142,12 +99,14 @@ def jax_from_docstring(func: Callable) -> jModule:  # pragma: no cover
 def _xdsl_module_inline(
     func: JaxJittedFunction, *args, **kwargs
 ) -> xbuiltin.ModuleOp:  # pragma: no cover
-    generic_repr = _generic_inline(func, *args, **kwargs)
+    """Get the xDSL module from a jax.jitted function"""
+    generic_repr = _generic_str_inline(func, *args, **kwargs)
     return parse_generic_to_xdsl_module(generic_repr)
 
 
 def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:  # pragma: no cover
-    """Parses a docstring into an xdsl module"""
+    """Returns a wrapper that parses an MLIR program string located in the docstring
+    into an xDSL module."""
 
     @wraps(func)
     def wrapper(*_, **__):
@@ -157,7 +116,7 @@ def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:  # pragma: no cove
 
 
 def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  # pragma: no cover
-    """Decorator for _xdsl_module_inline"""
+    """Returns a wrapper that creates an xDSL module from a jax.jitted function."""
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> xbuiltin.ModuleOp:
@@ -170,7 +129,10 @@ def inline_module(
     from_mod: xbuiltin.ModuleOp, to_mod: xbuiltin.ModuleOp, change_main_to: str = None
 ) -> None:
     """Inline the contents of one xDSL module into another xDSL module. The inlined body is appended
-    to the end of ``to_mod``."""
+    to the end of ``to_mod``.
+
+    If ``from_mod`` has a ``main`` function, its name is changed to ``change_main_to`` if specified.
+    """
     if change_main_to:
         main = xSymbolTable.lookup_symbol(from_mod, "main")
         if main is not None:
@@ -181,11 +143,17 @@ def inline_module(
         xSymbolTable.insert_or_update(to_mod, op.clone())
 
 
-def inline_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs) -> None:
+def inline_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp) -> Callable[..., None]:
     """Inline a ``jax.jit``-ed Python function to an xDSL module. The inlined body is appended
-    to the end of ``mod``."""
-    func_mod = _xdsl_module_inline(func, *args, **kwargs)
-    inline_module(func_mod, mod, change_main_to=func.__name__)
+    to the end of ``mod`` in-place. The name of the entry point function of ``func`` is the same
+    as the name of ``func``."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        func_mod = _xdsl_module_inline(func, *args, **kwargs)
+        inline_module(func_mod, mod, change_main_to=func.__name__)
+
+    return wrapper
 
 
 def xdsl_from_qjit(func: QJIT) -> Callable[..., xbuiltin.ModuleOp]:
@@ -194,10 +162,10 @@ def xdsl_from_qjit(func: QJIT) -> Callable[..., xbuiltin.ModuleOp]:
     @wraps(func)
     def wrapper(*args, **kwargs):
         func.jaxpr, *_ = func.capture(args, **kwargs)
-        mlir_module = func.generate_ir()
-        generic_str = mlir_module.operation.get_asm(
+        _mlir_module = func.generate_ir()
+        _generic_str = _mlir_module.operation.get_asm(
             binary=False, print_generic_op_form=True, assume_verified=True
         )
-        return parse_generic_to_xdsl_module(generic_str)
+        return parse_generic_to_xdsl_module(_generic_str)
 
     return wrapper

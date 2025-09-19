@@ -413,7 +413,6 @@ class BoseWord(dict):
         return bs
 
 
-# pylint: disable=useless-super-delegation
 class BoseSentence(dict):
     r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.

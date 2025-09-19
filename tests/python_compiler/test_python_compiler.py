@@ -38,18 +38,22 @@ from xdsl.interpreters import Interpreter
 import pennylane as qml
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler.python_compiler import Compiler
-from pennylane.compiler.python_compiler.dialects import transform
-from pennylane.compiler.python_compiler.jax_utils import (
-    jax_from_docstring,
-    module,
+from pennylane.compiler.python_compiler.conversion import (
+    mlir_from_docstring,
+    mlir_module,
     xdsl_from_docstring,
 )
-from pennylane.compiler.python_compiler.transforms.api import (
+from pennylane.compiler.python_compiler.dialects import transform
+from pennylane.compiler.python_compiler.pass_api import (
     ApplyTransformSequence,
     TransformFunctionsExt,
     TransformInterpreterPass,
     available_passes,
     compiler_transform,
+)
+from pennylane.compiler.python_compiler.transforms import (
+    iterative_cancel_inverses_pass,
+    merge_rotations_pass,
 )
 
 
@@ -77,7 +81,7 @@ def test_compiler():
     and returns a valid
     """
 
-    @module
+    @mlir_module
     @jax.jit
     def identity(x):
         return x
@@ -93,7 +97,7 @@ def test_generic_catalyst_program():
     test that actually will trigger the transform interpreter
     """
 
-    @jax_from_docstring
+    @mlir_from_docstring
     def program():
         """
         "builtin.module"() <{sym_name = "circuit"}> ({
@@ -443,8 +447,8 @@ class TestCallbackIntegration:
             print(module)
 
         @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @iterative_cancel_inverses_pass
+        @merge_rotations_pass
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
             qml.RX(0.1, 0)

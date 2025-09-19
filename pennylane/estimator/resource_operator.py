@@ -29,10 +29,8 @@ from pennylane.wires import Wires
 
 from .resources_base import Resources
 
-# pylint: disable=unused-argument, no-member
 
-
-class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+class CompressedResourceOp:
     r"""Defines a lightweight class corresponding to the operator type and its parameters.
 
     This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`, containing
@@ -213,16 +211,26 @@ class ResourceOperator(ABC):
 
     num_wires: int | None = None
 
+    # pylint: disable=unused-argument
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
         if wires is not None:
             wires = Wires(wires)
-            if len(wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
             self.wires = wires
 
         self.queue()
         super().__init__()
+
+    def __eq__(self, other):
+        """Return True if the operators are equal."""
+        if not isinstance(other, ResourceOperator):
+            return False
+
+        return (
+            self.__class__ is other.__class__
+            and self.resource_params == other.resource_params
+            and self.num_wires == other.num_wires
+        )
 
     def queue(self, context: QueuingManager = QueuingManager) -> "ResourceOperator":
         """Append the operator to the Operator queue."""
@@ -364,6 +372,7 @@ class ResourceOperator(ABC):
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
+    # pylint: disable=unused-argument
     @classmethod
     def make_tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""

@@ -14,31 +14,36 @@
 """This file contains the implementation of the QMLCollector class,
 which collects and maps PennyLane operations and measurements from xDSL."""
 
+from __future__ import annotations
+
 import inspect
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
-import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from pennylane.measurements import expval, measure, probs, sample, state, var
+from pennylane.operation import Operator
+from pennylane.ops import __all__ as ops_all
+
+from ..dialects.quantum import (
     ComputationalBasisOp,
     CustomOp,
 )
-from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import (
     GlobalPhaseOp,
     HamiltonianOp,
     MeasureOp,
     NamedObsOp,
     TensorOp,
 )
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
-from pennylane.ops import __all__ as ops_all
-from pennylane.typing import Callable
 
+if TYPE_CHECKING:
+    from pennylane.measurements import MeasurementProcess
 from_str_to_PL_gate = {
     name: getattr(ops, name)
     for name in ops_all
@@ -46,12 +51,12 @@ from_str_to_PL_gate = {
 }
 
 from_str_to_PL_measurement = {
-    "quantum.state": qml.state,
-    "quantum.probs": qml.probs,
-    "quantum.sample": qml.sample,
-    "quantum.expval": qml.expval,
-    "quantum.var": qml.var,
-    "quantum.measure": qml.measure,
+    "quantum.state": state,
+    "quantum.probs": probs,
+    "quantum.sample": sample,
+    "quantum.expval": expval,
+    "quantum.var": var,
+    "quantum.measure": measure,
 }
 
 # pylint: disable=too-many-return-statements
@@ -103,11 +108,11 @@ def _extract_dense_constant_value(op) -> float | int:
 def _apply_adjoint_and_ctrls(qml_op: Operator, xdsl_op) -> Operator:
     """Apply adjoint and control modifiers to a gate if needed."""
     if xdsl_op.properties.get("adjoint"):
-        qml_op = qml.adjoint(qml_op)
+        qml_op = ops.op_math.adjoint(qml_op)
     ctrls = ssa_to_qml_wires(xdsl_op, control=True)
     if ctrls:
         cvals = ssa_to_qml_params(xdsl_op, control=True)
-        qml_op = qml.ctrl(qml_op, control=ctrls, control_values=cvals)
+        qml_op = ops.op_math.ctrl(qml_op, control=ctrls, control_values=cvals)
     return qml_op
 
 
@@ -206,7 +211,7 @@ def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
     match op.name:
 
         case "quantum.gphase":
-            gate = qml.GlobalPhase(ssa_to_qml_params(op, single=True), wires=ssa_to_qml_wires(op))
+            gate = ops.GlobalPhase(ssa_to_qml_params(op, single=True), wires=ssa_to_qml_wires(op))
 
         case _:
             gate_cls = resolve_gate(op.properties.get("gate_name").data)
@@ -225,11 +230,11 @@ def xdsl_to_qml_obs_op(
         case "quantum.namedobs":
             return resolve_gate(op.type.data.value)(wires=ssa_to_qml_wires_named(op))
         case "quantum.tensor":
-            return qml.prod(*(xdsl_to_qml_obs_op(operand.owner) for operand in op.operands))
+            return ops.op_math.prod(*(xdsl_to_qml_obs_op(operand.owner) for operand in op.operands))
         case "quantum.hamiltonian":
             coeffs = _extract(op, "coeffs", resolve_constant_params, single=True)
             ops_list = [xdsl_to_qml_obs_op(term.owner) for term in op.terms]
-            return qml.Hamiltonian(coeffs, ops_list)
+            return ops.LinearCombination(coeffs, ops_list)
         case "quantum.compbasis":
             return _extract(op, "qubits", resolve_constant_wire)
         case _:

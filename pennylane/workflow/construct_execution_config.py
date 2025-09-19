@@ -23,10 +23,12 @@ from pennylane.math import Interface
 from .resolution import _resolve_execution_config
 
 if TYPE_CHECKING:
+    from pennylane.devices.execution_config import ExecutionConfig
+
     from .qnode import QNode
 
 
-def construct_execution_config(qnode: QNode, resolve: bool = True):
+def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> ExecutionConfig:
     """Constructs the execution configuration of a QNode instance.
 
     Args:

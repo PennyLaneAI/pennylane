@@ -28,7 +28,7 @@ See here (link valid with xDSL 0.46): https://github.com/xdslproject/xdsl/blob/3
 import io
 from collections.abc import Callable
 
-from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
+from catalyst.compiler import _quantum_opt
 from xdsl.context import Context
 from xdsl.dialects import builtin
 from xdsl.dialects.transform import NamedSequenceOp
@@ -40,7 +40,7 @@ from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils.exceptions import PassFailedException
 
-from ...dialects.transform import ApplyRegisteredPassOp
+from ..dialects.transform import ApplyRegisteredPassOp
 
 
 # pylint: disable=too-few-public-methods
