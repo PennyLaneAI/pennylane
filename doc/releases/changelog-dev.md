@@ -257,6 +257,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
+  [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
+
+* Adds a warning about the experimental, unmaintained nature of native plxpr execution.
+  [(#8291)](https://github.com/PennyLaneAI/pennylane/pull/8291)
+
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
 
@@ -539,6 +545,9 @@
 
 * :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
+
+* The :func:`~.noise.fold_global` transform is refactored to collect operators into a list directly rather than relying on queuing.
+  [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -930,6 +939,9 @@
   be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
+* :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at `qml.tape`.
+  [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
+
 <h3>Deprecations 👋</h3>
 
 * Setting shots on a device through the `shots=` kwarg, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use the `set_shots` transform on the `QNode` instead.
@@ -1046,6 +1058,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
+  [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
 * Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
