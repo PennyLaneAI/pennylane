@@ -307,7 +307,7 @@ class TrotterCDF(ResourceOperator):
      Total qubits: 8
      Total gates : 2.238E+4
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 8
+      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 8
      Gate breakdown:
       {'T': 2.075E+4, 'S': 504.0, 'Z': 336.0, 'Hadamard': 336.0, 'CNOT': 448.0}
     """
