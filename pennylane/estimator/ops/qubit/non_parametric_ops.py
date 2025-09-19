@@ -21,6 +21,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
 
@@ -40,6 +41,12 @@ class Hadamard(ResourceOperator):
     """
 
     num_wires = 1
+
+    def __init__(self, wires=None):
+        """Initializes the ``Hadamard`` operator."""
+        if wires is not None and len(Wires(wires)) != 1:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -156,6 +163,12 @@ class S(ResourceOperator):
     """
 
     num_wires = 1
+
+    def __init__(self, wires=None):
+        """Initializes the ``S`` operator."""
+        if wires is not None and len(Wires(wires)) != 1:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -311,6 +324,12 @@ class SWAP(ResourceOperator):
 
     num_wires = 2
 
+    def __init__(self, wires=None):
+        """Initializes the ``SWAP`` operator."""
+        if wires is not None and len(Wires(wires)) != 2:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -445,6 +464,12 @@ class T(ResourceOperator):
     """
 
     num_wires = 1
+
+    def __init__(self, wires=None):
+        """Initializes the ``T`` operator."""
+        if wires is not None and len(Wires(wires)) != 1:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -596,6 +621,12 @@ class X(ResourceOperator):
 
     num_wires = 1
 
+    def __init__(self, wires=None):
+        """Initializes the ``X`` operator."""
+        if wires is not None and len(Wires(wires)) != 1:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -731,6 +762,12 @@ class Y(ResourceOperator):
 
     num_wires = 1
 
+    def __init__(self, wires=None):
+        """Initializes the ``Y`` operator."""
+        if wires is not None and len(Wires(wires)) != 1:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -861,6 +898,12 @@ class Z(ResourceOperator):
     """
 
     num_wires = 1
+
+    def __init__(self, wires=None):
+        """Initializes the ``Z`` operator."""
+        if wires is not None and len(Wires(wires)) != 1:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
