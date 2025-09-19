@@ -42,6 +42,7 @@ def test_error_with_bad_key():
         _ = out["bad_value"]
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
@@ -366,3 +367,115 @@ class TestSpecsTransform:
         # At the device level, approximations don't exist anymore and therefore
         # we should expect an empty errors dictionary.
         assert dev_specs["errors"] == {}
+
+    def test_error_with_non_qnode(self):
+        """Test that a helpful error message is raised if the input is not a QNode."""
+
+        def f():
+            return 0
+
+        with pytest.raises(
+            ValueError, match="qml.specs can only be applied to a QNode or qjit'd QNode"
+        ):
+            qml.specs(f)()
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestSpecsGraphModeExclusive:
+    """Tests for qml.specs features that require graph mode enabled.
+    The legacy decomposition mode should not be able to run these tests.
+
+    NOTE: All tests in this suite will auto-enable graph mode via fixture.
+    """
+
+    @pytest.mark.parametrize(
+        "num_device_wires, expected_decomp",
+        [
+            (None, "PauliX"),  # unlimited wires: enough for work_wires=5, so use X decomposition
+            (6, "PauliX"),  # 6 wires: enough for work_wires=5, so use X decomposition
+            (4, "Hadamard"),  # 4 wires: insufficient for work_wires=5, so use H fallback
+        ],
+    )
+    def test_specs_max_work_wires_calculation(self, num_device_wires, expected_decomp):
+        """Test that qml.specs correctly calculates max_work_wires and uses appropriate decomposition."""
+
+        class MyCustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        @qml.register_resources({qml.H: 2})  # Fallback: 2 H gates
+        def decomp_fallback(wires):
+            qml.H(wires)
+            qml.H(wires)
+
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})  # Needs 5 work wires
+        def decomp_with_work_wire(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
+
+        # Test with parametrized number of device wires
+        dev = qml.device("default.qubit", wires=num_device_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            MyCustomOp(0)  # Uses only wire 0
+            return qml.expval(qml.Z(0))
+
+        specs = qml.specs(circuit, level="device")()
+
+        # Work wires calculation should be: device_wires - tape_wires
+        if num_device_wires:
+            assert specs["num_device_wires"] == num_device_wires
+        assert specs["num_tape_wires"] == 1
+
+        # Check that the correct decomposition was used
+        assert expected_decomp in specs["resources"].gate_types
+
+    def test_specs_max_work_wires_with_insufficient_wires(self):
+        """Test that qml.specs correctly reports work wires when decomposition fallback is used."""
+
+        class MyLimitedOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        @qml.register_resources({qml.H: 1})  # Fallback that uses 1 H gate
+        def simple_decomp(wires):
+            qml.H(wires)
+
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 10})  # Needs 10 work wires
+        def work_wire_decomp(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
+
+        # Device with only 2 wires - insufficient for the 10 work wires needed
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            MyLimitedOp(0)  # Uses wire 0, fallback should be used
+            return qml.expval(qml.Z(0))
+
+        specs = qml.specs(circuit, level="device")()
+
+        # Should report 1 work wire available (2 device wires - 1 tape wire)
+        assert specs["num_device_wires"] == 2
+        assert specs["num_tape_wires"] == 1
+        # Fallback decomposition should be used (H gate)
+        assert "Hadamard" in specs["resources"].gate_types
+
+    def test_specs_max_work_wires_no_available_wires(self):
+        """Test qml.specs when all device wires are used by the circuit."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.CNOT([0, 1])  # Uses both available wires
+            return qml.expval(qml.Z(0))
+
+        specs = qml.specs(circuit)()
+
+        # No work wires available (2 device wires - 2 tape wires = 0)
+        assert specs["num_device_wires"] == 2
+        assert specs["num_tape_wires"] == 2
