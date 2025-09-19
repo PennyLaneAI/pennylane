@@ -32,8 +32,6 @@ from pennylane.wires import Wires, WiresLike
 class Adjoint(ResourceOperator):
     r"""Resource class for the symbolic Adjoint operation.
 
-    A symbolic class used to represent the adjoint of some base operation.
-
     Args:
         base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator for which
             to retrieve the adjoint.
@@ -195,9 +193,6 @@ class Adjoint(ResourceOperator):
 
 class Controlled(ResourceOperator):
     r"""Resource class for the symbolic Controlled operation.
-
-    A symbolic class used to represent the application of some base operation controlled on the
-    state of some control qubits.
 
     Args:
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base operator to be
