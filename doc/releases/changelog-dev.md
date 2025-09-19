@@ -46,10 +46,12 @@
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
   * The :class:`~.estimator.Resources` class was added as a container class for resources.
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * The resource operators for ``Identity``, ``GlobalPhase`` and non-parametric operators
-    have been added to `qml.estimator.ops`.
+  * The resource operators for ``Identity``, ``GlobalPhase``, non-parametric operators and single-qubit
+    parametric operators have been added to `qml.estimator.ops`.
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
+    [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
     [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
+
   * The test files were renamed to avoid the dual definition error with labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
