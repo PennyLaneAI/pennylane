@@ -30,7 +30,7 @@ from .subroutines import (
     IterativeQPE,
 )
 
-from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling, PrepTHC
+from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling
 
 from .comparators import (
     IntegerComparator,

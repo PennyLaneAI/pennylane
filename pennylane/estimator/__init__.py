@@ -92,7 +92,6 @@ from .templates.stateprep import (
     QROMStatePreparation,
     UniformStatePrep,
     AliasSampling,
-    PrepTHC,
 )
 
 from .templates.comparators import (

@@ -54,7 +54,7 @@ class SingleQubitComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> single_qubit_compare = qre.ResourceSingleQubitComparator()
+    >>> single_qubit_compare = qre.SingleQubitComparator()
     >>> print(qre.estimate(single_qubit_compare))
     --- Resources: ---
      Total qubits: 4
@@ -117,9 +117,9 @@ class SingleQubitComparator(ResourceOperator):
         """
         gate_lst = []
 
-        gate_lst.append(GateCount(resource_rep(qre.ResourceTempAND), 1))
-        gate_lst.append(GateCount(resource_rep(qre.ResourceCNOT), 4))
-        gate_lst.append(GateCount(resource_rep(qre.ResourceX), 3))
+        gate_lst.append(GateCount(resource_rep(qre.TempAND), 1))
+        gate_lst.append(GateCount(resource_rep(qre.CNOT), 4))
+        gate_lst.append(GateCount(resource_rep(qre.X), 3))
 
         return gate_lst
 
@@ -155,7 +155,7 @@ class TwoQubitComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> two_qubit_compare = qre.ResourceTwoQubitComparator()
+    >>> two_qubit_compare = qre.TwoQubitComparator()
     >>> print(qre.estimate(two_qubit_compare))
     --- Resources: ---
      Total qubits: 5
@@ -221,9 +221,9 @@ class TwoQubitComparator(ResourceOperator):
         gate_list = []
 
         gate_list.append(Allocate(1))
-        gate_list.append(GateCount(resource_rep(qre.ResourceCSWAP), 2))
-        gate_list.append(GateCount(resource_rep(qre.ResourceCNOT), 3))
-        gate_list.append(GateCount(resource_rep(qre.ResourceX), 1))
+        gate_list.append(GateCount(resource_rep(qre.CSWAP), 2))
+        gate_list.append(GateCount(resource_rep(qre.CNOT), 3))
+        gate_list.append(GateCount(resource_rep(qre.X), 1))
         gate_list.append(Deallocate(1))
 
         return gate_list
@@ -251,9 +251,9 @@ class TwoQubitComparator(ResourceOperator):
         gate_list = []
 
         gate_list.append(Allocate(2))
-        gate_list.append(GateCount(resource_rep(qre.ResourceTempAND), 2))
-        gate_list.append(GateCount(resource_rep(qre.ResourceCNOT), 8))
-        gate_list.append(GateCount(resource_rep(qre.ResourceX), 3))
+        gate_list.append(GateCount(resource_rep(qre.TempAND), 2))
+        gate_list.append(GateCount(resource_rep(qre.CNOT), 8))
+        gate_list.append(GateCount(resource_rep(qre.X), 3))
 
         return gate_list
 
@@ -307,7 +307,7 @@ class IntegerComparator(ResourceOperator):
     The resources for this operation are computed using:
 
 
-    >>> integer_compare = qre.ResourceIntegerComparator(value=4, register_size=6)
+    >>> integer_compare = qre.IntegerComparator(value=4, register_size=6)
     >>> print(qre.estimate(integer_compare))
     --- Resources: ---
      Total qubits: 9
@@ -410,12 +410,12 @@ class IntegerComparator(ResourceOperator):
 
         if value == 0:
             if geq:
-                gate_lst.append(GateCount(resource_rep(qre.ResourceX), 1))
+                gate_lst.append(GateCount(resource_rep(qre.X), 1))
             return gate_lst
 
         if value > 2 ** (register_size) - 1:
             if not geq:
-                gate_lst.append(GateCount(resource_rep(qre.ResourceX), 1))
+                gate_lst.append(GateCount(resource_rep(qre.X), 1))
             return gate_lst
 
         binary_str = format(value, f"0{register_size}b")
@@ -425,15 +425,15 @@ class IntegerComparator(ResourceOperator):
 
             if first_zero == -1:
                 mcx = resource_rep(
-                    qre.ResourceMultiControlledX,
-                    {"num_ctrl_wires": register_size, "num_ctrl_values": 0},
+                    qre.MultiControlledX,
+                    {"num_ctrl_wires": register_size, "num_zero_ctrl": 0},
                 )
                 gate_lst.append(GateCount(mcx, 1))
                 return gate_lst
 
             mcx = resource_rep(
-                qre.ResourceMultiControlledX,
-                {"num_ctrl_wires": first_zero + 1, "num_ctrl_values": 1},
+                qre.MultiControlledX,
+                {"num_ctrl_wires": first_zero + 1, "num_zero_ctrl": 1},
             )
             gate_lst.append(GateCount(mcx, 1))
 
@@ -441,8 +441,8 @@ class IntegerComparator(ResourceOperator):
                 gate_lst.append(
                     GateCount(
                         resource_rep(
-                            qre.ResourceMultiControlledX,
-                            {"num_ctrl_wires": first_zero + 1, "num_ctrl_values": 1},
+                            qre.MultiControlledX,
+                            {"num_ctrl_wires": first_zero + 1, "num_zero_ctrl": 1},
                         ),
                         1,
                     )
@@ -451,8 +451,8 @@ class IntegerComparator(ResourceOperator):
             gate_lst.append(
                 GateCount(
                     resource_rep(
-                        qre.ResourceMultiControlledX,
-                        {"num_ctrl_wires": register_size, "num_ctrl_values": 0},
+                        qre.MultiControlledX,
+                        {"num_ctrl_wires": register_size, "num_zero_ctrl": 0},
                     ),
                     1,
                 )
@@ -461,14 +461,14 @@ class IntegerComparator(ResourceOperator):
 
         last_significant = binary_str.rfind("1")
 
-        gate_lst.append(GateCount(resource_rep(qre.ResourceX), 2 * (last_significant + 1)))
+        gate_lst.append(GateCount(resource_rep(qre.X), 2 * (last_significant + 1)))
 
         first_significant = binary_str.find("1")
         gate_lst.append(
             GateCount(
                 resource_rep(
-                    qre.ResourceMultiControlledX,
-                    {"num_ctrl_wires": first_significant + 1, "num_ctrl_values": 0},
+                    qre.MultiControlledX,
+                    {"num_ctrl_wires": first_significant + 1, "num_zero_ctrl": 0},
                 ),
                 1,
             )
@@ -478,8 +478,8 @@ class IntegerComparator(ResourceOperator):
             gate_lst.append(
                 GateCount(
                     resource_rep(
-                        qre.ResourceMultiControlledX,
-                        {"num_ctrl_wires": first_significant + 1, "num_ctrl_values": 0},
+                        qre.MultiControlledX,
+                        {"num_ctrl_wires": first_significant + 1, "num_zero_ctrl": 0},
                     ),
                     1,
                 )
@@ -514,7 +514,7 @@ class RegisterComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> register_compare = qre.ResourceRegisterComparator(4, 6)
+    >>> register_compare = qre.RegisterComparator(4, 6)
     >>> print(qre.estimate(register_compare))
     --- Resources: ---
      Total qubits: 11
@@ -600,8 +600,8 @@ class RegisterComparator(ResourceOperator):
         gate_list = []
         compare_register = min(first_register, second_register)
 
-        one_qubit_compare = resource_rep(qre.ResourceSingleQubitComparator)
-        two_qubit_compare = qre.ResourceTwoQubitComparator.tempand_based_decomp(**kwargs)
+        one_qubit_compare = resource_rep(qre.SingleQubitComparator)
+        two_qubit_compare = qre.TwoQubitComparator.tempand_based_decomp(**kwargs)
 
         if first_register == second_register:
 
@@ -614,12 +614,12 @@ class RegisterComparator(ResourceOperator):
 
             gate_list.append(
                 GateCount(
-                    resource_rep(qre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}),
+                    resource_rep(qre.Adjoint, {"base_cmpr_op": one_qubit_compare}),
                     1,
                 )
             )
-            gate_list.append(GateCount(resource_rep(qre.ResourceX), 1))
-            gate_list.append(GateCount(resource_rep(qre.ResourceCNOT), 1))
+            gate_list.append(GateCount(resource_rep(qre.X), 1))
+            gate_list.append(GateCount(resource_rep(qre.CNOT), 1))
 
             return gate_list
 
@@ -633,24 +633,20 @@ class RegisterComparator(ResourceOperator):
             gate_list.append(_apply_adj(op) * (compare_register - 1))
 
         gate_list.append(
-            GateCount(resource_rep(qre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}), 1)
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": one_qubit_compare}), 1)
         )
-        mcx = resource_rep(
-            qre.ResourceMultiControlledX, {"num_ctrl_wires": diff, "num_ctrl_values": diff}
-        )
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": diff, "num_zero_ctrl": diff})
         gate_list.append(GateCount(mcx, 2))
 
         # collecting the results
         gate_list.append(
             GateCount(
-                resource_rep(
-                    qre.ResourceMultiControlledX, {"num_ctrl_wires": 2, "num_ctrl_values": 1}
-                ),
+                resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 2, "num_zero_ctrl": 1}),
                 2,
             )
         )
 
         if geq:
-            gate_list.append(GateCount(resource_rep(qre.ResourceX), 1))
+            gate_list.append(GateCount(resource_rep(qre.X), 1))
 
         return gate_list
