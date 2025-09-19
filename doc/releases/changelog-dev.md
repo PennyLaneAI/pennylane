@@ -1283,6 +1283,9 @@
 * Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
+* Fixed the link to the Introduction to mid-circuit measurements tutorial in the documentation for Dynamic quantum circuits.
+  [(#8068)](https://github.com/PennyLaneAI/pennylane/pull/8068)
+
 * Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
@@ -1431,4 +1434,5 @@ Alex Preciado,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
-Jake Zaia
+Jake Zaia,
+Gabriela Sanchez Diaz
