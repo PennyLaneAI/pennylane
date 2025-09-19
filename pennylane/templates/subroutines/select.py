@@ -1091,7 +1091,7 @@ add_decomps(Select, _select_decomp_unary)
 # Decomposition of Select using one work wire to control the target operations
 
 
-def _select_resources_multi_control_work_wire(op_reps, num_control_wires, num_work_wires, partial):
+def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_work_wires, partial):
     resources = defaultdict(int)
 
     if partial:
@@ -1130,7 +1130,7 @@ def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
 
 
 @register_condition(_work_wire_condition)
-@register_resources(_select_resources_multi_control_work_wire)
+@register_resources(_select_multi_control_work_wire_resources)
 def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
     """
     Multi-controlled gate decomposition, in which, instead of directly controlling the target operator with all control
