@@ -116,7 +116,7 @@ class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
 
     """
 
-    resource_keys = {"first_order_expansion", "num_steps", "order", "num_wires"}
+    resource_keys = {"first_order_expansion", "num_steps", "order"}
 
     def __init__(self, first_order_expansion, num_steps, order, wires=None):
 
@@ -162,19 +162,17 @@ class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
                   in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the Suzuki-Trotter approximation, must be 1 or even
-                * num_wires (int): the number of wires on which the operator acts
 
         """
         return {
             "first_order_expansion": self.first_order_expansion,
             "num_steps": self.num_steps,
             "order": self.order,
-            "num_wires": self.num_wires,
         }
 
     @classmethod
     def resource_rep(
-        cls, first_order_expansion, num_steps, order, num_wires
+        cls, first_order_expansion, num_steps, order, 
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -185,7 +183,6 @@ class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the Suzuki-Trotter approximation, must be 1 or even
-            num_wires (int): the number of wires on which the operator acts
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -194,18 +191,15 @@ class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
             "first_order_expansion": first_order_expansion,
             "num_steps": num_steps,
             "order": order,
-            "num_wires": num_wires,
         }
-        return CompressedResourceOp(cls, num_wires, params)
+        return CompressedResourceOp(cls, params)
 
     @classmethod
     def resource_decomp(
         cls,
         first_order_expansion,
         num_steps,
-        order,
-        num_wires,  # pylint: disable=unused-argument
-        **kwargs,
+        order
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -377,7 +371,7 @@ class TrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, compact_ham, num_steps, order) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -434,7 +428,7 @@ class TrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
 
     @classmethod
     def controlled_resource_decomp(
-        cls, compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl, **kwargs
+        cls, compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
     ):
         """Returns the controlled resource decomposition.
 
@@ -647,7 +641,7 @@ class TrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, compact_ham, num_steps, order, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, compact_ham, num_steps, order) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -707,7 +701,7 @@ class TrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
 
     @classmethod
     def controlled_resource_decomp(
-        cls, compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl, **kwargs
+        cls, compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
     ):
         """Returns the controlled resource decomposition.
 
@@ -1071,7 +1065,7 @@ class TrotterVibrational(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
+        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1453,7 +1447,7 @@ class TrotterVibronic(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
+        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
