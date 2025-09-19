@@ -30,6 +30,7 @@ k_delta_sz_init_state_wires = [
 ]
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
 def test_standard_validity(k, delta_sz, init_state, wires):
     """Test standard validity criteria for kUpCCGSD."""

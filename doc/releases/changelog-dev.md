@@ -83,7 +83,7 @@
   :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
   [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
 
-* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
@@ -166,6 +166,9 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* Templates have been made compatible with `qml.capture`.
+  [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
 
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)

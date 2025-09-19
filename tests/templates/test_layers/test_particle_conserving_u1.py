@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("init_state", [np.array([1, 1, 0]), None])
 def test_standard_validity(init_state):
     """Check the operation using the assert_valid function."""

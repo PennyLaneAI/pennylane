@@ -112,6 +112,7 @@ def test_order_states(basis_states, exp_map):
     assert order_states(basis_states) == exp_map
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 

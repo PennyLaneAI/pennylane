@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Run standard tests of operation validity."""
     op = qml.AllSinglesDoubles(

@@ -28,6 +28,7 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
 )
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Run standard tests of operation validity."""
     shape = (3,)

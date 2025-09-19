@@ -26,6 +26,7 @@ from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
