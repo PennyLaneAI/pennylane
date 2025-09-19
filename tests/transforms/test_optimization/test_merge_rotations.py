@@ -463,15 +463,25 @@ class TestMergeRotationsInterfaces:
                     qml.RX(0.5, wires=0),
                     qml.CNOT([w, 1]),
                     qml.RX(0.5, wires=0),
-                    qml.RZ(0.5, wires=0),
-                    qml.RZ(0.5, wires=0),
-                ],
-                [qml.state()],
+                ]
             )
             [tape], _ = merge_rotations(tape)
             return len(tape.operations)
 
-        assert f(0) == 4
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = merge_rotations(tape)
+            return len(tape.operations)
+
+        assert f(0) == 3
+        assert f2(0) == 2
 
 
 ### Tape

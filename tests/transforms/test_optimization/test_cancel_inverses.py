@@ -369,13 +369,18 @@ class TestCancelInversesInterfaces:
 
         @jax.jit
         def f(w):
-            tape = qml.tape.QuantumScript(
-                [qml.H(0), qml.CNOT([w, 1]), qml.H(0), qml.X(0), qml.X(0)], [qml.state()]
-            )
+            tape = qml.tape.QuantumScript([qml.H(0), qml.CNOT([w, 1]), qml.H(0)])
             [tape], _ = cancel_inverses(tape)
             return len(tape.operations)
 
-        assert f(0) == 4
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript([qml.X(0), qml.X(0), qml.CNOT([w, 1])])
+            [tape], _ = cancel_inverses(tape)
+            return len(tape.operations)
+
+        assert f(0) == 3
+        assert f2(0) == 1
 
 
 ### Tape
