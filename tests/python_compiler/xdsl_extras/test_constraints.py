@@ -36,7 +36,7 @@ from xdsl.irdl import (
 from xdsl.irdl.constraints import ConstraintContext
 from xdsl.utils.exceptions import VerifyException
 
-from pennylane.compiler.python_compiler.jax_utils import QuantumParser
+from pennylane.compiler.python_compiler import QuantumParser
 from pennylane.compiler.python_compiler.xdsl_extras import (
     MemRefConstraint,
     NestedTupleOfConstraint,
