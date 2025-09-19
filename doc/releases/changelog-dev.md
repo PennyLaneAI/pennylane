@@ -1041,6 +1041,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
+  [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
+
 * `default.tensor` now supports graph decomposition mode during preprocessing.
   [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
 
@@ -1215,8 +1218,10 @@
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
 
-* Add a `mbqc` submodule to the `python_compiler` module for common utils of MBQC workflows.
+* Added a `graph_state_utils` submodule to `python_compiler.transforms.mbqc` for common utilities
+  for MBQC workflows.
   [(#8219)](https://github.com/PennyLaneAI/pennylane/pull/8219)
+  [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
 * Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
