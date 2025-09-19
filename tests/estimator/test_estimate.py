@@ -235,8 +235,6 @@ class TestEstimateResources:
         assert resources.gate_counts["RX"] == 1
         assert resources.gate_types[RX.resource_rep(precision=0.3)] == 1
 
-
-
     def test_qfunc_with_num_wires(self):
         """Test that the number of wires is correctly inferred from a qfunc
         when the num_wires argument is used."""
