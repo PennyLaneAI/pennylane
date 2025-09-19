@@ -3067,14 +3067,17 @@ def test_qsvt():
     op3 = qml.QSVT(qml.X(0), projectors[:1])
     op4 = qml.QSVT(qml.X(0), projectors[::-1])
 
+    for op in [op1, op2, op3, op4]:
+        qml.assert_equal(op, op)
+
     with pytest.raises(AssertionError, match=r"different block encodings"):
         qml.assert_equal(op1, op2)
 
     with pytest.raises(AssertionError, match=r"different number of projectors"):
         qml.assert_equal(op1, op3)
 
-    # with pytest.raises(AssertionError, match=r"different projectors at position 0"):
-    qml.assert_equal(op1, op4)
+    with pytest.raises(AssertionError, match=r"different projectors at position 0"):
+        qml.assert_equal(op1, op4)
 
 
 def test_select():
