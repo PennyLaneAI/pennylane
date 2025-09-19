@@ -892,7 +892,7 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-def qnode(device, **kwargs) -> Callable:
+def qnode(device, **kwargs) -> Callable[[Callable], QNode]:
     """Docstring will be updated below."""
     return functools.partial(QNode, device=device, **kwargs)
 
