@@ -175,6 +175,10 @@
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
   [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
 
+* A new decomposition has been added to :class:`qml.Select`. It achieves cost reductions by adding
+  one `work_wire`. This decomposition is useful to perform efficient `qml.QROM` decompositions.
+  [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
