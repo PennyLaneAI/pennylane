@@ -77,7 +77,7 @@ def phase_polynomial(
             return parity_matrix, np.array(parity_table).T, angles
 
     Args:
-        circ (QNode or QuantumTape or Callable): Quantum circuit containing only CNOT and RZ gates.
+        circ (QNode or QuantumScript or Callable): Quantum circuit containing only CNOT and RZ gates.
         wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:

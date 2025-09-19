@@ -31,7 +31,7 @@ def parity_matrix(
     r"""Compute the `parity matrix intermediate representation <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ of a CNOT circuit.
 
     Args:
-        circ (QNode or QuantumTape or Callable): Quantum circuit containing only CNOT gates.
+        circ (QNode or QuantumScript or Callable): Quantum circuit containing only CNOT gates.
         wire_order (Sequence): Wire order indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
 
     Returns:
