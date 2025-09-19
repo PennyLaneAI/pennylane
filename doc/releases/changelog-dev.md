@@ -1277,6 +1277,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Return `dtype` of `qml.samples` when using `mcm_method="tree-traversal"` is now `int` - consistent with other MCMs.
+  [(#8274)](https://github.com/PennyLaneAI/pennylane/pull/8274)
+
 * Autograph will now be correctly applied to the wrapped functions of :func:`~pennylane.adjoint`
   and :func:`~pennylane.ctrl`.
   [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
