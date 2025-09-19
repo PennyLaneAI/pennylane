@@ -904,7 +904,7 @@ class TemporaryAND(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Resources:
-            The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 4 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -923,7 +923,7 @@ class TemporaryAND(ResourceOperator):
                 of the target operator.
 
         Resources:
-            The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 4 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -965,10 +965,10 @@ class Toffoli(ResourceOperator):
 
     Resources:
         If `elbow` is provided, resources are obtained from Figure 4 of
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         If `elbow` is `None`, the resources are obtained from Figure 1 of
-        `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
+        `Jones (2012) <https://arxiv.org/pdf/1212.5069>`_.
 
         The circuit which applies the Toffoli gate on target wire 'target' with control wires
         ('c1', 'c2') is defined as:
@@ -1009,7 +1009,7 @@ class Toffoli(ResourceOperator):
     @staticmethod
     def elbow_decomp(elbow: Literal["left", "right"] | None = "left"):
         """A function that prepares the resource decomposition obtained from Figure 4 of
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Args:
             elbow (str | None): One of "left" or "right". Defaults to "left".
@@ -1052,7 +1052,7 @@ class Toffoli(ResourceOperator):
             `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
 
             If `elbow` is `None`, the resources are obtained from Figure 1 of
-            `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
+            `Jones (2012) <https://arxiv.org/pdf/1212.5069>`_.
 
             The circuit which applies the Toffoli gate on target wire 'target' with control wires
             ('c1', 'c2') is defined as:
@@ -1241,7 +1241,7 @@ class MultiControlledX(ResourceOperator):
 
     Resources:
         The resources are obtained based on the unary iteration technique described in
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
         resources are defined as the following rules:
 
         * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
@@ -1250,7 +1250,7 @@ class MultiControlledX(ResourceOperator):
 
         * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
 
-        * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+        * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.MultiControlledX`.
 
@@ -1320,7 +1320,7 @@ class MultiControlledX(ResourceOperator):
 
         Resources:
             The resources are obtained based on the unary iteration technique described in
-            `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+            `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
             resources are defined as the following rules:
 
             * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
@@ -1329,7 +1329,7 @@ class MultiControlledX(ResourceOperator):
 
             * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
 
-            * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+            * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
