@@ -55,6 +55,17 @@ def get_qnode_output_eqns(jaxpr):
     return qnode_output_eqns
 
 
+def test_warning_about_execution_pipeline_unmaintained():
+    """Test that a warning is raised saying the native execution is unmaintained."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def c():
+        return qml.probs()
+
+    with pytest.warns(UserWarning, match="Executing PennyLane programs with capture enabled"):
+        c()
+
+
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
