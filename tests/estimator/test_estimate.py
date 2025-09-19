@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.estimator.estimate import estimate
-from pennylane.estimator.ops.qubit import X
+from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -358,6 +358,28 @@ class TestEstimateResources:
             match="Queued object.*is not a ResourceOperator or Operator, and cannot be processed.",
         ):
             estimate(my_circuit)()
+
+    def test_estimate_resources_from_qfunc_with_pl_op(self):
+        """Test that PennyLane operators are correctly mapped to resource operators
+        when processing a qfunc."""
+
+        def my_circuit():
+            qml.Hadamard(0)
+            qml.PauliX(1)
+
+        actual_resources = estimate(my_circuit, gate_set={"Hadamard", "X"})()
+
+        expected_gates = defaultdict(
+            int,
+            {
+                resource_rep(Hadamard): 1,
+                resource_rep(X): 1,
+            },
+        )
+        expected_resources = Resources(
+            zeroed=0, any_state=0, algo_wires=2, gate_types=expected_gates
+        )
+        assert actual_resources == expected_resources
 
     def test_estimate_resources_from_pl_op_dispatch(self):
         """Test that the dispatch for PennyLane operators correctly maps to a
