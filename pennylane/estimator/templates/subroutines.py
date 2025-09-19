@@ -1663,8 +1663,11 @@ class QROM(ResourceOperator):
             max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
-        W_opt = select_swap_depth or QROM._t_optimized_select_swap_width(
-            num_bitstrings, size_bitstring
+        W_opt = (
+            select_swap_depth
+            or QROM._t_optimized_select_swap_width(  # pylint: disable=protected-access
+                num_bitstrings, size_bitstring
+            )
         )
         L_opt = math.ceil(num_bitstrings / W_opt)
         l = math.ceil(math.log2(L_opt))
@@ -1736,7 +1739,7 @@ class QROM(ResourceOperator):
             max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
-        W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
+        W_opt = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
         L_opt = math.ceil(num_bitstrings / W_opt)
