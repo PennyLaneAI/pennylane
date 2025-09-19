@@ -25,10 +25,9 @@ from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
 from pennylane import ops
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import expval, measure, probs, sample, state, var
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
-from pennylane.typing import Callable
 
 from ..dialects.quantum import (
     ComputationalBasisOp,
@@ -42,9 +41,6 @@ from ..dialects.quantum import (
     NamedObsOp,
     TensorOp,
 )
-from pennylane.measurements import expval, measure, probs, sample, state, var
-from pennylane.operation import Operator
-from pennylane.ops import __all__ as ops_all
 
 if TYPE_CHECKING:
     from pennylane.measurements import MeasurementProcess
