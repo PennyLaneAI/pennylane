@@ -150,7 +150,7 @@ class TestSnapshotTape:
         qml.device("default.mixed", wires=2),
         # Two non-supported devices
         qml.device("default.qutrit", wires=2),
-        # qml.device("lightning.qubit", wires=2),
+        qml.device("lightning.qubit", wires=2),
     ],
 )
 class TestSnapshotGeneral:
