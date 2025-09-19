@@ -174,7 +174,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     **Integration with Mid-Circuit Measurements:**
 
-    Mid circuit measurements can be handled either by executing the circuit ``shots`` times (``mcm_method="one-shot"``),
+    Mid-circuit measurements can be handled either by executing the circuit ``shots`` times (``mcm_method="one-shot"``),
     or constructing and executing a tree of all possible branches (``mcm_method="tree-traversal"``).
 
     .. code-block:: python
