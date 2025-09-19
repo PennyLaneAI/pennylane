@@ -649,3 +649,7 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[15])
                     # Remove op operation
                     rewriter.erase_op(op)
+                elif isinstance(op, CustomOp):
+                    raise NotImplementedError(
+                        f"{op.gate_name.data} cannot be converted to the MBQC formalism."
+                    )
