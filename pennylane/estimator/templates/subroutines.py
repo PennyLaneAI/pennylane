@@ -683,7 +683,7 @@ class QPE(ResourceOperator):
          Gate breakdown:
           {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
 
-        Now we use the :class:`~.pennylane.estimator.ResourceAQFT` class:
+        Now we use the :class:`~.pennylane.estimator.AQFT` class:
 
         >>> aqft = qre.AQFT(order=3, num_wires=5)
         >>> adj_aqft = qre.Adjoint(aqft)
@@ -1030,7 +1030,7 @@ class QFT(ResourceOperator):
 
             This decomposition assumes an appropriately sized phase gradient state is available.
             Users should ensure the cost of constructing such a state has been accounted for.
-            See also :class:`~.pennylane.estimator.ResourcePhaseGradient`.
+            See also :class:`~.pennylane.estimator.PhaseGradient`.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -1078,7 +1078,7 @@ class AQFT(ResourceOperator):
 
         This operation assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.estimator.ResourcePhaseGradient`.
+        See also :class:`~.pennylane.estimator.PhaseGradient`.
 
     Args:
         order (int): the maximum number of controlled phaseshifts to which the operation is truncated
@@ -1969,7 +1969,7 @@ class QubitUnitary(ResourceOperator):
         The resources are defined by combining the two equalities in `Möttönen and Vartiainen
         (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_ , we can express an :math:`n`
         qubit unitary as four :math:`n - 1` qubit unitaries and three multiplexed rotations
-        via ( :class:`~.estimator.ResourceSelectPauliRot` ). Specifically, the cost
+        via ( :class:`~.pennylane.estimator.SelectPauliRot` ). Specifically, the cost
         is given by:
 
         * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
@@ -2045,7 +2045,7 @@ class QubitUnitary(ResourceOperator):
             The resources are defined by combining the two equalities in `Möttönen and Vartiainen
             (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_, we can express an :math:`n`-
             qubit unitary as four :math:`n - 1`-qubit unitaries and three multiplexed rotations
-            via (:class:`~.estimator.ResourceSelectPauliRot`). Specifically, the cost
+            via (:class:`~.pennylane.estimator.SelectPauliRot`). Specifically, the cost
             is given by:
 
             * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
@@ -2248,9 +2248,9 @@ class SelectPauliRot(ResourceOperator):
         Resources:
             The resources are obtained from the construction scheme given in `O'Brien and Sünderhauf
             (2025), Fig 4 <https://arxiv.org/pdf/2409.07332>`_. Specifically, the resources
-            use two :code:`~.estimator.ResourceQROM`s to digitally load and unload
+            use two :code:`~.pennylane.estimator.QROM`s to digitally load and unload
             the phase angles up to some precision. These are then applied using a single controlled
-            :code:`~.estimator.ResourceSemiAdder`.
+            :code:`~.pennylane.estimator.SemiAdder`.
 
             .. note::
 
