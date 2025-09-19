@@ -75,30 +75,35 @@ def parity_matrix(
 
     """
 
-    wires = circ.wires
+    def postprocessing_fn(tapes):
+        # This is required in a qml.transforms.transform (see docs therein)
+        circ = tapes[0]
+        wires = circ.wires
+        print(wire_order, "here")
 
-    if wire_order is None:
-        wire_order = wires
+        if wire_order is None:
+            wire_order = wires
 
-    if not qml.wires.Wires(wire_order).contains_wires(wires):
-        raise qml.wires.WireError(
-            f"The provided wire_order {wire_order} does not contain all wires of the circuit {wires}"
-        )
+        if not qml.wires.Wires(wire_order).contains_wires(wires):
+            raise qml.wires.WireError(
+                f"The provided wire_order {wire_order} does not contain all wires of the circuit {wires}"
+            )
 
-    if any(op.name != "CNOT" for op in circ.operations):
-        raise TypeError(
-            f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {circ.operations}"
-        )
+        if any(op.name != "CNOT" for op in circ.operations):
+            raise TypeError(
+                f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {circ.operations}"
+            )
 
-    wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
+        wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
 
-    P = np.eye(len(wire_order), dtype=int)
-    for op in circ.operations:
+        P = np.eye(len(wire_order), dtype=int)
+        for op in circ.operations:
 
-        control, target = op.wires
-        P[wire_map[target]] += P[wire_map[control]]
+            control, target = op.wires
+            P[wire_map[target]] += P[wire_map[control]]
+        
+        return P
 
-    def null_postprocessing(x):
-        return x[0]
+    
 
-    return [P % 2], null_postprocessing
+    return [circ], postprocessing_fn
