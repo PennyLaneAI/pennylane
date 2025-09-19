@@ -21,10 +21,13 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TensorLike
 
 
 @partial(transform, is_informative=True)
-def parity_matrix(circ: QuantumScript, wire_order: Sequence = None):
+def parity_matrix(
+    circ: QuantumScript, wire_order: Sequence = None
+) -> tuple[TensorLike, PostprocessingFn]:
     r"""Compute the `parity matrix intermediate representation <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ of a CNOT circuit.
 
     Args:

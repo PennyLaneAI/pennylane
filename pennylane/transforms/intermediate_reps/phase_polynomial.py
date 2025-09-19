@@ -20,10 +20,13 @@ import numpy as np
 
 from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TensorLike
 
 
 @partial(transform, is_informative=True)
-def phase_polynomial(circ: QuantumScript, wire_order: Sequence = None):
+def phase_polynomial(
+    circ: QuantumScript, wire_order: Sequence = None
+) -> tuple[tuple[TensorLike, TensorLike, TensorLike], PostprocessingFn]:
     r"""
     `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of :class:`~.CNOT` and :class:`~.RZ` gates.
 
