@@ -33,19 +33,14 @@ from pennylane.wires import Wires, WiresLike
 class Adjoint(ResourceOperator):
     r"""Resource class for the symbolic Adjoint operation.
 
-    A symbolic class used to represent the adjoint of some base operation.
-
     Args:
         base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator for which
             to retrieve the adjoint.
 
     Resources:
-        This symbolic operation represents the adjoint of some base operation. The resources are
-        determined as follows. If the base operation implements the
+        This symbolic operation represents the adjoint of some base operation. If the base operation implements the
         :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
-        this.
-
-        Otherwise, the adjoint resources are given as the adjoint of each operation in the
+        this object. Otherwise, the adjoint resources are given as the adjoint of each operation in the
         base operation's resources.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Adjoint`.
@@ -146,9 +141,7 @@ class Adjoint(ResourceOperator):
             This symbolic operation represents the adjoint of some base operation. The resources are
             determined as follows. If the base operation implements the
             :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
-            this.
-
-            Otherwise, the adjoint resources are given as the adjoint of each operation in the
+            this method. Otherwise, the adjoint resources are given as the adjoint of each operation in the
             base operation's resources.
 
         Returns:
@@ -202,9 +195,6 @@ class Adjoint(ResourceOperator):
 class Controlled(ResourceOperator):
     r"""Resource class for the symbolic Controlled operation.
 
-    A symbolic class used to represent the application of some base operation controlled on the
-    state of some control qubits.
-
     Args:
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base operator to be
             controlled.
@@ -215,9 +205,7 @@ class Controlled(ResourceOperator):
     Resources:
         The resources are determined as follows. If the base operator implements the
         :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
-        this.
-
-        Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
+        this object. Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
         which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
         to an additional cost of two ``X`` gates per :code:`num_zero_ctrl`.
         Secondly, the base operation resources are extracted and we add to the cost the controlled
@@ -353,9 +341,7 @@ class Controlled(ResourceOperator):
         Resources:
             The resources are determined as follows. If the base operator implements the
             :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
-            this.
-
-            Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
+            this method. Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
             which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
             to an additional cost of two ``X`` gates per :code:`num_zero_ctrl`.
             Secondly, the base operation resources are extracted and we add to the cost the controlled
@@ -968,27 +954,26 @@ class ChangeOpBasis(ResourceOperator):
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
-        num_wires: int,
-    ):  # pylint: disable=unused-argument
+    ):
         r"""Returns a list representing the resources of the operator. Each object represents a
-            quantum gate and the number of times it occurs in the decomposition.
+        quantum gate and the number of times it occurs in the decomposition.
 
-            Args:
-                cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
-                    to the compute operation.
-                cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
-                    to the base operation.
-                cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): An optional compressed resource operator, corresponding
-                    to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
-                num_wires (int): an optional integer representing the number of wires this operator acts upon
+        Args:
+            cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                to the compute operation.
+            cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                to the base operation.
+            cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): An optional compressed resource operator, corresponding
+                to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
 
-            Resources:
-                This symbolic class represents a product of the three provided operations. The resources are
-                defined trivially as the sum of the costs of each.
+        Resources:
+            This symbolic class represents a product of the three provided operations. The resources are
+            defined trivially as the sum of the costs of each.
 
-            .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.ChangeOpBasis`.
+        .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.ChangeOpBasis`.
 
         **Example**
+
         The change of basis operation can be constructed as follows with each operation defining the
         compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
         >>> from pennylane import estimator as qre

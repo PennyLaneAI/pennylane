@@ -6,20 +6,21 @@ qml.estimator
 .. automodule:: pennylane.estimator
 
 
-Qubit Management Classes:
--------------------------
+Resource Estimation Functions:
+------------------------------
 
-.. automodsumm:: pennylane.estimator.wires_manager
+.. currentmodule:: pennylane.estimator
+
+.. autosummary::
     :toctree: api
-    :no-inherited-members:
-    :classes-only:
-    :skip: QueuingManager
+
+    ~estimate.estimate
+    ~resource_operator.resource_rep
+    
 
 
 Resource Estimation Base Classes:
 ---------------------------------
-
-.. currentmodule:: pennylane.estimator
 
 .. autosummary::
     :toctree: api
@@ -28,7 +29,17 @@ Resource Estimation Base Classes:
     ~resource_operator.ResourceOperator
     ~resource_operator.CompressedResourceOp
     ~resource_operator.GateCount
-    ~resource_operator.resource_rep
+    ~resource_config.ResourceConfig
+
+
+Qubit Management Classes:
+-------------------------
+
+.. automodsumm:: pennylane.estimator.wires_manager
+    :toctree: api
+    :no-inherited-members:
+    :classes-only:
+    :skip: QueuingManager
 
 
 Resource Operators:

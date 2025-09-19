@@ -1033,7 +1033,7 @@ class QuantumScript:
             [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
         """
-        return qml.tape.tape.expand_tape(
+        return qml.tape.expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )
 
