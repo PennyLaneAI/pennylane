@@ -204,7 +204,8 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     Note that for a single shot ``"one-shot"`` execution, the results will not be in a list.
 
-    >>> qml.snapshots(qml.set_shots(one_shot, 1))(1.0)
+    >>> one_shot = qml.set_shots(c, 1).update(mcm_method="one-shot")
+    >>> qml.snapshots(one_shot)(1.0)
     {0: array([0., 1.]),
     1: array([0., 1.]),
     2: array([0., 1.]),
