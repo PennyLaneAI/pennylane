@@ -13,12 +13,9 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-)
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
 
@@ -47,8 +44,10 @@ class Identity(ResourceOperator):
 
     def __init__(self, wires=None):
         """Initializes the ``Identity`` operator."""
-        if wires is not None and not isinstance(wires, int):
-            self.num_wires = len(wires)
+        if wires:
+            self.num_wires = len(Wires(wires))
+        else:
+            self.num_wires = 1
         super().__init__(wires=wires)
 
     @property
@@ -161,8 +160,10 @@ class GlobalPhase(ResourceOperator):
 
     def __init__(self, wires=None):
         """Initializes the ``GlobalPhase`` operator."""
-        if wires is not None and not isinstance(wires, int):
-            self.num_wires = len(wires)
+        if wires:
+            self.num_wires = len(Wires(wires))
+        else:
+            self.num_wires = 1
         super().__init__(wires=wires)
 
     @property
