@@ -39,10 +39,10 @@ from pennylane.estimator.templates.subroutines import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
+# pylint: disable=arguments-differ, too-many-arguments
 
 
-class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
+class TrotterProduct(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian operator.
 
@@ -239,7 +239,7 @@ class TrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
         return gate_list
 
 
-class TrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
+class TrotterCDF(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of compressed double factorized Hamiltonian.
 
@@ -509,7 +509,7 @@ class TrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
         return gate_list
 
 
-class TrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
+class TrotterTHC(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of tensor hypercontracted Hamiltonian.
 
