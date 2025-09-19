@@ -13,7 +13,6 @@
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
 
-import copy
 from collections.abc import Sequence
 from typing import Any
 
@@ -193,16 +192,12 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
     n_ops = len(base_ops)
     num_to_fold = int(math.round(fraction_scale * n_ops / 2))
 
-    ops = []
-    ops.extend((copy.copy(op) for op in base_ops))
+    adjoints = [adjoint(op) for op in base_ops]
 
-    for _ in range(num_global_folds):
-        ops.extend((adjoint(op) for op in reversed(base_ops)))
-        ops.extend((copy.copy(op) for op in base_ops))
+    ops = base_ops + (adjoints[::-1] + base_ops) * num_global_folds
 
     if num_to_fold:
-        ops.extend((adjoint(op) for op in reversed(base_ops[-num_to_fold:])))
-        ops.extend((copy.copy(op) for op in base_ops[-num_to_fold:]))
+        ops += adjoints[: -num_to_fold - 1 : -1] + base_ops[-num_to_fold:]
 
     new_tape = tape.copy(ops=ops)
     return [new_tape], lambda x: x[0]
