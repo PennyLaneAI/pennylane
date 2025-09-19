@@ -22,6 +22,8 @@ Resource Estimation Functions:
 Resource Estimation Base Classes:
 ---------------------------------
 
+.. currentmodule:: pennylane.estimator
+
 .. autosummary::
     :toctree: api
 
