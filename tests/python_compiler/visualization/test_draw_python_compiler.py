@@ -476,6 +476,18 @@ class Testdraw:
         with pytest.warns(UserWarning):
             draw(circ)(0.1)
 
+    def adjoint_op_not_implemented(self):
+        """Test that NotImplementedError is raised when AdjointOp is used."""
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit():
+            qml.adjoint(qml.QubitUnitary)(jax.numpy.array([[0, 1], [1, 0]]), wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(circuit)())
+
     def test_cond_not_implemented(self):
         """Test that NotImplementedError is raised when cond is used."""
 

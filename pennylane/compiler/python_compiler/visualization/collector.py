@@ -21,6 +21,9 @@ from xdsl.dialects import builtin, func
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
 
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    AdjointOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
@@ -96,13 +99,17 @@ class QMLCollector:
             raise NotImplementedError("No wires extracted from the register found.")
         return xdsl_to_qml_op(xdsl_op)
 
+    @handle.register
+    def _(self, _: AdjointOp) -> None:
+        raise NotImplementedError("AdjointOp operations are not yet supported.")
+
     ############################################################
     ### Control Flow
     ############################################################
 
     # pylint: disable=unused-argument
     @handle.register
-    def _(self, op: IfOp | WhileOp | ForOp) -> None:
+    def _(self, _: IfOp | WhileOp | ForOp) -> None:
         raise NotImplementedError("Control flow operations (If, While, For) are not yet supported.")
 
     ############################################################
