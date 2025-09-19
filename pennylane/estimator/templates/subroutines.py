@@ -1804,19 +1804,19 @@ class QROM(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires: int,
-        ctrl_num_zero_ctrl: int,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips=None,
-        select_swap_depth=None,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int = None,
+        select_swap_depth: int = None,
         clean=True,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
@@ -1846,9 +1846,9 @@ class QROM(ResourceOperator):
             in the decomposition.
         """
         gate_cost = []
-        if ctrl_num_zero_ctrl:
+        if num_zero_ctrl:
             x = qre.X.resource_rep()
-            gate_cost.append(GateCount(x, 2 * ctrl_num_zero_ctrl))
+            gate_cost.append(GateCount(x, 2 * num_zero_ctrl))
 
         if num_bit_flips is None:
             num_bit_flips = (num_bitstrings * size_bitstring) // 2
@@ -1861,14 +1861,14 @@ class QROM(ResourceOperator):
             clean,
         )
 
-        if ctrl_num_ctrl_wires == 1:
+        if num_ctrl_wires == 1:
             gate_cost.extend(single_ctrl_cost)
             return gate_cost
 
         gate_cost.append(Allocate(1))
-        gate_cost.append(GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0)))
+        gate_cost.append(GateCount(qre.MultiControlledX.resource_rep(num_ctrl_wires, 0)))
         gate_cost.extend(single_ctrl_cost)
-        gate_cost.append(GateCount(qre.MultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0)))
+        gate_cost.append(GateCount(qre.MultiControlledX.resource_rep(num_ctrl_wires, 0)))
         gate_cost.append(Deallocate(1))
         return gate_cost
 
