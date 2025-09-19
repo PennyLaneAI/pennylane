@@ -13,23 +13,17 @@
 # limitations under the License.
 """Phase polynomial intermediate representation"""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from functools import partial
 
 import numpy as np
 
-import pennylane as qml
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from pennylane.tape import QuantumScript
-    from pennylane.workflow import QNode
+from pennylane.tape import QuantumScript
+from pennylane.transforms import transform
 
 
-def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequence = None):
+@partial(transform, is_informative=True)
+def phase_polynomial(circ: QuantumScript, wire_order: Sequence = None):
     r"""
     `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of :class:`~.CNOT` and :class:`~.RZ` gates.
 
@@ -166,21 +160,6 @@ def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequenc
         True
 
     """
-    if isinstance(circ, qml.workflow.QNode):
-
-        def wrapped(*args, **kwargs):
-            circ1 = qml.workflow.construct_tape(circ)(*args, **kwargs)
-            return phase_polynomial(circ1, wire_order)
-
-        return wrapped
-
-    if callable(circ):
-
-        def wrapped2(*args, **kwargs):
-            circ1 = qml.tape.make_qscript(circ)(*args, **kwargs)
-            return phase_polynomial(circ1, wire_order)
-
-        return wrapped2
 
     wires = circ.wires
 
@@ -213,4 +192,7 @@ def phase_polynomial(circ: QuantumScript | QNode | Callable, wire_order: Sequenc
 
         i += 1
 
-    return parity_matrix, np.array(parity_table).T, np.array(angles)
+    def null_postprocessing(x):
+        return x[0]
+
+    return [(parity_matrix, np.array(parity_table).T, np.array(angles))], null_postprocessing

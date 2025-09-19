@@ -13,19 +13,14 @@
 # limitations under the License.
 """Parity matrix representation"""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from functools import partial
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
-
-if TYPE_CHECKING:
-    from pennylane.tape import QuantumScript
 
 
 @partial(transform, is_informative=True)
@@ -76,21 +71,6 @@ def parity_matrix(circ: QuantumScript, wire_order: Sequence = None):
     For more details, see the `compilation page <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ on the parity matrix intermediate representation.
 
     """
-    # if isinstance(circ, qml.workflow.QNode):
-
-    #     def wrapped(*args, **kwargs):
-    #         circ1 = qml.workflow.construct_tape(circ)(*args, **kwargs)
-    #         return parity_matrix(circ1, wire_order)
-
-    #     return wrapped
-
-    # if callable(circ):
-
-    #     def wrapped2(*args, **kwargs):
-    #         circ1 = qml.tape.make_qscript(circ)(*args, **kwargs)
-    #         return parity_matrix(circ1, wire_order)
-
-    #     return wrapped2
 
     wires = circ.wires
 
@@ -115,4 +95,7 @@ def parity_matrix(circ: QuantumScript, wire_order: Sequence = None):
         control, target = op.wires
         P[wire_map[target]] += P[wire_map[control]]
 
-    return [P % 2], lambda x: x[0]
+    def null_postprocessing(x):
+        return x[0]
+
+    return [P % 2], null_postprocessing
