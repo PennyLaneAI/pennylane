@@ -70,17 +70,19 @@ Compilation transforms using ZX calculus
 
 There is a set of transforms that use ZX calculus to optimize circuits.
 
+.. currentmodule:: pennylane.transforms
 .. autosummary::
     :toctree: api
 
-    ~transforms.zx.optimize_t_count
-    ~transforms.zx.push_hadamards
-    ~transforms.zx.reduce_non_clifford
-    ~transforms.zx.todd
+    zx.optimize_t_count
+    zx.push_hadamards
+    zx.reduce_non_clifford
+    zx.todd
 
 The following utility functions assist when working explicitly with ZX diagrams,
 for example when writing custom ZX compilation passes.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
