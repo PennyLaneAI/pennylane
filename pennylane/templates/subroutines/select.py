@@ -1123,8 +1123,8 @@ def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
 def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
     """
     Multi-controlled gate decomposition, in which, instead of directly controlling the target operator with all control
-    wires, an ancillary work qubit is employed to encode whether the control condition is satisfied. The target operator
-    is then applied as a single-qubit controlled gate from this ancilla.
+    wires, an auxiliary qubit is employed to encode whether the control condition is satisfied. The target operator
+    is then applied as a single-qubit controlled gate from this auxiliary qubit.
     An example of this decomposition can be found in Figure 1(a):  https://arxiv.org/abs/1812.00954
     """
 

@@ -744,10 +744,10 @@ class TestUnaryIterator:
         control = list(range(num_controls))
         work = list(range(num_controls, 2 * num_controls - 1))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             _select_decomp_unary(ops=[], control=control, work_wires=work, partial=partial)
 
-        assert tape.operations == []
+        assert len(q) == 0
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_identity_with_basis_states(self, num_controls, num_ops, partial):
@@ -853,12 +853,12 @@ class TestSelectWithWorkWire:
         control = list(range(num_controls))
         work = ["a"]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             _select_decomp_multi_control_work_wire(
                 ops=[], control=control, work_wires=work, partial=partial
             )
 
-        assert tape.operations == []
+        assert len(q) == 0
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_identity_with_basis_states(self, num_controls, num_ops, partial):
