@@ -731,8 +731,8 @@ class Prod(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * num_wires (int): the number of wires this operator acts upon
-                * cmpr_factors_and_counts (Tuple[Tuple[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, int]]):
+                * num_wires (int): the number of wires the operator acts upon
+                * cmpr_factors_and_counts (Tuple[Tuple[:class:`~.estimator.CompressedResourceOp`, int]]):
                   A sequence of tuples containing the operations, in the compressed representation, and
                   a count for how many times they are repeated corresponding to the factors in the product.
 
