@@ -23,4 +23,9 @@ from .qubit import (
     X,
     Y,
     Z,
+    PhaseShift,
+    RX,
+    RY,
+    RZ,
+    Rot,
 )
