@@ -22,7 +22,7 @@ pytestmark = pytest.mark.external
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
-from pennylane.compiler.python_compiler.mbqc.graph_state_utils import (
+from pennylane.compiler.python_compiler.transforms.mbqc.graph_state_utils import (
     _adj_matrix_generation_helper,
     edge_iter,
     get_graph_state_edges,
