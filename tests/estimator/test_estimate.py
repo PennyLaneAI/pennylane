@@ -211,7 +211,7 @@ class TestEstimateResources:
 
     def test_estimate_with_unsupported_dispatch(self):
         """Test that a TypeError is raised when an unsupported type is passed to the estimate function."""
-        with pytest.raises(TypeError, match="Could not obtain resources for obj of type"):
+        with pytest.raises(TypeError, match="Could not obtain resources for workflow of type"):
             estimate(({1, 2, 3}))
 
     def test_estimate_qnode(self):
@@ -326,7 +326,7 @@ class TestEstimateResources:
         assert actual_resources == expected_resources
 
     def test_estimate_resources_from_resources_obj(self):
-        """Test that we can accurately obtain resources from resources obj"""
+        """Test that we can accurately obtain resources from resources workflow"""
         gates = defaultdict(
             int,
             {
