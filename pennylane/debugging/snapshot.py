@@ -202,6 +202,14 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     2: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
     'execution_results': array([1., 0.])}
 
+    Note that for a single shot ``"one-shot"`` execution, the results will not be in a list.
+
+    >>> qml.snapshots(qml.set_shots(one_shot, 1))(1.0)
+    {0: array([0., 1.]),
+    1: array([0., 1.]),
+    2: array([0., 1.]),
+    'execution_results': array([0., 1.])}
+
     With ``"tree-traversal"``, we have different numbers of probabilities based on the number of mcm's earlier
     in the circuit. Before any mcm's, we have one state. After the first mcm, we have two states.  And after
     two mcm's, we have four states.
