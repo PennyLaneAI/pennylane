@@ -637,9 +637,8 @@ class Prod(ResourceOperator):
     **Example**
 
     The product of operations can be constructed from a list of operations or
-    a nested tuple where each operator is accompanied with the number of counts.
-    Note, each operation in the product must be a valid
-    :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
+    a nested tuple where each operator is accompanied by its count.
+    Each operation in the product must be a valid :class:`~.estimator.ResourceOperator`.
 
     We can construct a product operator as follows:
 
