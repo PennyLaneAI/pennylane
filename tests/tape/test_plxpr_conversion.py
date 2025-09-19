@@ -17,12 +17,14 @@ Tests for CollectOpsandMeas and plxpr_to_tape
 import pytest
 
 import pennylane as qml
+from pennylane.ops.op_math.condition import Conditional
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
@@ -440,7 +442,11 @@ class TestPlxprToTape:
         x = jax.numpy.array(0.5)
         jaxpr = jax.make_jaxpr(f)(x)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
-        assert tape  # TODO
+        assert len(tape.operations) == 5
+        assert isinstance(tape.operations[0], MidMeasureMP)
+        assert isinstance(tape.operations[1], MidMeasureMP)
+        for i in range(2, 5):
+            assert isinstance(tape.operations[i], Conditional)
 
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_transform(self, lazy):
