@@ -459,8 +459,7 @@ class Pow(ResourceOperator):
     A symbolic class used to represent some base operation raised to a power.
 
     Args:
-        base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator that we
-            want to exponentiate.
+        base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator to exponentiate.
         pow_z (int): the exponent (default value is 1)
 
     Resources:
