@@ -62,9 +62,7 @@ def test_warning_about_execution_pipeline_unmaintained():
     def c():
         return qml.probs()
 
-    with pytest.warns(
-        UserWarning, match="Executing PennyLane programs with capture enabled"
-    ):
+    with pytest.warns(UserWarning, match="Executing PennyLane programs with capture enabled"):
         c()
 
 
