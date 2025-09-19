@@ -24,7 +24,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 from pennylane.estimator.resource_operator import _dequeue
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
@@ -39,7 +39,7 @@ class OutOfPlaceSquare(ResourceOperator):
 
     Args:
         register_size (int): the size of the input register
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix G, lemma 7 in `PRX Quantum, 2, 040332 (2021)
@@ -50,8 +50,9 @@ class OutOfPlaceSquare(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> out_square = plqre.OutOfPlaceSquare(register_size=3)
-    >>> print(plre.estimate(out_square))
+    >>> import pennylane.estimator as qre
+    >>> out_square = qre.OutOfPlaceSquare(register_size=3)
+    >>> print(qre.estimate(out_square))
     --- Resources: ---
     Total qubits: 9
     Total gates : 7
@@ -63,7 +64,7 @@ class OutOfPlaceSquare(ResourceOperator):
 
     resource_keys = {"register_size"}
 
-    def __init__(self, register_size: int, wires=None):
+    def __init__(self, register_size: int, wires: WiresLike = None):
         self.register_size = register_size
         self.num_wires = 3 * register_size
         super().__init__(wires=wires)
@@ -106,7 +107,7 @@ class OutOfPlaceSquare(ResourceOperator):
             the resources are given as :math:`(n - 1)^2` Toffoli gates, and :math:`n` CNOT gates.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -126,7 +127,7 @@ class PhaseGradient(ResourceOperator):
 
     Args:
         num_wires (int): the number of qubits to prepare in the phase gradient state
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The phase gradient state is defined as an equal superposition of phaseshifts where each shift
@@ -138,9 +139,10 @@ class PhaseGradient(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> phase_grad = plqre.PhaseGradient(num_wires=5)
+    >>> import pennylane.estimator as qre
+    >>> phase_grad = qre.PhaseGradient(num_wires=5)
     >>> gate_set={"Z", "S", "T", "RZ", "Hadamard"}
-    >>> print(plre.estimate(phase_grad, gate_set))
+    >>> print(qre.estimate(phase_grad, gate_set))
     --- Resources: ---
     Total qubits: 5
     Total gates : 10
@@ -152,7 +154,7 @@ class PhaseGradient(ResourceOperator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_wires, wires=None):
+    def __init__(self, num_wires: int, wires: WiresLike = None):
         self.num_wires = num_wires
         super().__init__(wires=wires)
 
@@ -195,7 +197,7 @@ class PhaseGradient(ResourceOperator):
             a Z-gate, S-gate and a T-gate.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -221,7 +223,7 @@ class OutMultiplier(ResourceOperator):
     Args:
         a_num_qubits (int): the size of the first input register
         b_num_qubits (int): the size of the second input register
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix G, lemma 10 in `PRX Quantum, 2, 040332 (2021)
@@ -233,8 +235,9 @@ class OutMultiplier(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> out_mul = plqre.OutMultiplier(4, 4)
-    >>> print(plre.estimate(out_mul))
+    >>> import pennylane.estimator as qre
+    >>> out_mul = qre.OutMultiplier(4, 4)
+    >>> print(qre.estimate(out_mul))
     --- Resources: ---
     Total qubits: 16
     Total gates : 70
@@ -246,7 +249,7 @@ class OutMultiplier(ResourceOperator):
 
     resource_keys = {"a_num_qubits", "b_num_qubits"}
 
-    def __init__(self, a_num_qubits, b_num_qubits, wires=None) -> None:
+    def __init__(self, a_num_qubits: int, b_num_qubits: int, wires: WiresLike = None) -> None:
         self.num_wires = a_num_qubits + b_num_qubits + 2 * max((a_num_qubits, b_num_qubits))
         self.a_num_qubits = a_num_qubits
         self.b_num_qubits = b_num_qubits
@@ -288,14 +291,13 @@ class OutMultiplier(ResourceOperator):
         Args:
             a_num_qubits (int): the size of the first input register
             b_num_qubits (int): the size of the second input register
-            wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
             The resources are obtained from appendix G, lemma 10 in `PRX Quantum, 2, 040332 (2021)
             <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -324,7 +326,7 @@ class SemiAdder(ResourceOperator):
 
     Args:
         max_register_size (int): the size of the larger of the two registers being added together
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from figures 1 and 2 in `Gidney (2018)
@@ -336,8 +338,9 @@ class SemiAdder(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> semi_add = plqre.SemiAdder(max_register_size=4)
-    >>> print(plre.estimate(semi_add))
+    >>> import pennylane.estimator as qre
+    >>> semi_add = qre.SemiAdder(max_register_size=4)
+    >>> print(qre.estimate(semi_add))
     --- Resources: ---
     Total qubits: 11
     Total gates : 30
@@ -349,7 +352,7 @@ class SemiAdder(ResourceOperator):
 
     resource_keys = {"max_register_size"}
 
-    def __init__(self, max_register_size, wires=None):
+    def __init__(self, max_register_size: int, wires: WiresLike = None):
         self.max_register_size = max_register_size
         self.num_wires = 2 * max_register_size
         super().__init__(wires=wires)
@@ -392,7 +395,7 @@ class SemiAdder(ResourceOperator):
             <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -433,50 +436,49 @@ class SemiAdder(ResourceOperator):
             <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
         max_register_size = target_resource_params["max_register_size"]
-        if max_register_size > 2:
-            gate_lst = []
+        if max_register_size <= 2:
+            raise re.ResourcesNotDefined
+        gate_lst = []
 
-            if num_ctrl_wires > 1:
-                mcx = resource_rep(
-                    qre.MultiControlledX,
-                    {
-                        "num_ctrl_wires": num_ctrl_wires,
-                        "num_zero_ctrl": num_zero_ctrl,
-                    },
-                )
-                gate_lst.append(Allocate(1))
-                gate_lst.append(GateCount(mcx, 2))
-
-            cnot_count = (7 * (max_register_size - 2)) + 3
-            elbow_count = 2 * (max_register_size - 1)
-
-            x = resource_rep(qre.X)
-            cnot = resource_rep(qre.CNOT)
-            l_elbow = resource_rep(qre.TempAND)
-            r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
-            gate_lst.extend(
-                [
-                    Allocate(max_register_size - 1),
-                    GateCount(cnot, cnot_count),
-                    GateCount(l_elbow, elbow_count),
-                    GateCount(r_elbow, elbow_count),
-                    Deallocate(max_register_size - 1),
-                ],
+        if num_ctrl_wires > 1:
+            mcx = resource_rep(
+                qre.MultiControlledX,
+                {
+                    "num_ctrl_wires": num_ctrl_wires,
+                    "num_zero_ctrl": num_zero_ctrl,
+                },
             )
+            gate_lst.append(Allocate(1))
+            gate_lst.append(GateCount(mcx, 2))
 
-            if num_ctrl_wires > 1:
-                gate_lst.append(Deallocate(1))
-            elif num_zero_ctrl > 0:
-                gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+        cnot_count = (7 * (max_register_size - 2)) + 3
+        elbow_count = 2 * (max_register_size - 1)
 
-            return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TempAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+        gate_lst.extend(
+            [
+                Allocate(max_register_size - 1),
+                GateCount(cnot, cnot_count),
+                GateCount(l_elbow, elbow_count),
+                GateCount(r_elbow, elbow_count),
+                Deallocate(max_register_size - 1),
+            ],
+        )
 
-        raise qre.sNotDefined
+        if num_ctrl_wires > 1:
+            gate_lst.append(Deallocate(1))
+        elif num_zero_ctrl > 0:
+            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+
+        return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
 
 class ControlledSequence(ResourceOperator):
@@ -486,10 +488,10 @@ class ControlledSequence(ResourceOperator):
     base operator (:code:`base`) raised to decreasing powers of 2.
 
     Args:
-        base (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+        base (~.pennylane.estimator.ResourceOperator): The operator that we
             will be applying controlled powers of.
         num_control_wires (int): the number of controlled wires to run the sequence over
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained as a direct result of the definition of the operator:
@@ -507,12 +509,13 @@ class ControlledSequence(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> ctrl_seq = plqre.ControlledSequence(
-    ...     base = plqre.RX(),
+    >>> import pennylane.estimator as qre
+    >>> ctrl_seq = qre.ControlledSequence(
+    ...     base = qre.RX(),
     ...     num_control_wires = 3,
     ... )
     >>> gate_set={"CRX"}
-    >>> print(plre.estimate(ctrl_seq, gate_set))
+    >>> print(qre.estimate(ctrl_seq, gate_set))
     --- Resources: ---
      Total qubits: 4
      Total gates : 3
@@ -524,7 +527,9 @@ class ControlledSequence(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_ctrl_wires"}
 
-    def __init__(self, base: ResourceOperator, num_control_wires, wires=None) -> None:
+    def __init__(
+        self, base: ResourceOperator, num_control_wires: int, wires: WiresLike = None
+    ) -> None:
         _dequeue(op_to_remove=base)
         self.queue()
         base_cmpr_op = base.resource_rep_from_op()
@@ -594,7 +599,7 @@ class ControlledSequence(ResourceOperator):
                 t: ──╰U⁴──╰U²──╰U¹────┤
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -626,11 +631,11 @@ class QPE(ResourceOperator):
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
     Args:
-        base (~.pennylane.labs.resource_estimation.ResourceOperator): the phase estimation operator
+        base (~.pennylane.estimator.ResourceOperator): the phase estimation operator
         num_estimation_wires (int): the number of wires used for measuring out the phase
-        adj_qft_op (Union[~.pennylane.labs.resource_estimation.ResourceOperator, None]): An optional
+        adj_qft_op (Union[~.pennylane.estimator.ResourceOperator, None]): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the standard decomposition of QPE as presented
@@ -643,9 +648,10 @@ class QPE(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
-    >>> qpe = plqre.QPE(plqre.RX(precision=1e-3), 5)
-    >>> print(plre.estimate(qpe, gate_set))
+    >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5)
+    >>> print(qre.estimate(qpe, gate_set))
     --- Resources: ---
      Total qubits: 6
      Total gates : 11
@@ -663,8 +669,9 @@ class QPE(ResourceOperator):
 
         For example, consider the cost using the default QFT implmentation below:
 
-        >>> qpe = plqre.QPE(plqre.RX(precision=1e-3), 5, adj_qft_op=None)
-        >>> print(plre.estimate(qpe))
+        >>> import pennylane.estimator as qre
+        >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=None)
+        >>> print(qre.estimate(qpe))
         --- Resources: ---
          Total qubits: 6
          Total gates : 1.586E+3
@@ -673,12 +680,12 @@ class QPE(ResourceOperator):
          Gate breakdown:
           {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
 
-        Now we use the :class:`~.pennylane.labs.resource_estimation.ResourceAQFT` class:
+        Now we use the :class:`~.pennylane.estimator.ResourceAQFT` class:
 
-        >>> aqft = plqre.AQFT(order=3, num_wires=5)
-        >>> adj_aqft = plqre.Adjoint(aqft)
-        >>> qpe = plqre.QPE(plqre.RX(precision=1e-3), 5, adj_qft_op=adj_aqft)
-        >>> print(plre.estimate(qpe))
+        >>> aqft = qre.AQFT(order=3, num_wires=5)
+        >>> adj_aqft = qre.Adjoint(aqft)
+        >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=adj_aqft)
+        >>> print(qre.estimate(qpe))
         --- Resources: ---
          Total qubits: 8
          Total gates : 321
@@ -695,7 +702,7 @@ class QPE(ResourceOperator):
         base: ResourceOperator,
         num_estimation_wires: int,
         adj_qft_op: ResourceOperator = None,
-        wires=None,
+        wires: WiresLike = None,
     ):
         remove_ops = [base, adj_qft_op] if adj_qft_op is not None else [base]
         _dequeue(remove_ops)
@@ -729,7 +736,7 @@ class QPE(ResourceOperator):
                 * num_estimation_wires (int): the number of wires used for measuring out the phase
                 * adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
-                  default :class:`~.pennylane.labs.resource_estimation.QFT` will be used.
+                  default :class:`~.pennylane.estimator.QFT` will be used.
         """
 
         return {
@@ -754,7 +761,7 @@ class QPE(ResourceOperator):
             num_estimation_wires (int): the number of wires used for measuring out the phase
             adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
-                default :class:`~.pennylane.labs.resource_estimation.QFT` will be used.
+                default :class:`~.pennylane.estimator.QFT` will be used.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -778,7 +785,7 @@ class QPE(ResourceOperator):
             num_estimation_wires (int): the number of wires used for measuring out the phase
             adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
-                default :class:`~.pennylane.labs.resource_estimation.QFT` will be used.
+                default :class:`~.pennylane.estimator.QFT` will be used.
 
         Resources:
             The resources are obtained from the standard decomposition of QPE as presented
@@ -813,7 +820,7 @@ class IterativeQPE(ResourceOperator):
     r"""Resource class for Iterative Quantum Phase Estimation (IQPE).
 
     Args:
-        base (~.pennylane.labs.resource_estimation.ResourceOperator): the phase estimation operator
+        base (~.pennylane.estimator.ResourceOperator): the phase estimation operator
         num_iter (int): the number of mid-circuit measurements made to read out the phase
 
     Resources:
@@ -825,9 +832,10 @@ class IterativeQPE(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> gate_set = {"Hadamard", "CRX", "PhaseShift"}
-    >>> iqpe = plqre.IterativeQPE(plqre.RX(), 5)
-    >>> print(plre.estimate(iqpe, gate_set))
+    >>> iqpe = qre.IterativeQPE(qre.RX(), 5)
+    >>> print(qre.estimate(iqpe, gate_set))
     --- Resources: ---
      Total qubits: 2
      Total gates : 25
@@ -896,7 +904,7 @@ class IterativeQPE(ResourceOperator):
             <https://arxiv.org/abs/quant-ph/0610214v3>`_.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -922,7 +930,7 @@ class QFT(ResourceOperator):
 
     Args:
         num_wires (int): the number of qubits the operation acts upon
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the standard decomposition of QFT as presented
@@ -935,9 +943,10 @@ class QFT(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qft = plqre.QFT(3)
+    >>> import pennylane.estimator as qre
+    >>> qft = qre.QFT(3)
     >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
-    >>> print(plre.estimate(qft, gate_set))
+    >>> print(qre.estimate(qft, gate_set))
     --- Resources: ---
      Total qubits: 3
      Total gates : 7
@@ -949,7 +958,7 @@ class QFT(ResourceOperator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_wires, wires=None) -> None:
+    def __init__(self, num_wires: int, wires: WiresLike = None) -> None:
         self.num_wires = num_wires
         super().__init__(wires=wires)
 
@@ -991,7 +1000,7 @@ class QFT(ResourceOperator):
             <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1019,7 +1028,7 @@ class QFT(ResourceOperator):
 
             This decomposition assumes an appropriately sized phase gradient state is available.
             Users should ensure the cost of constructing such a state has been accounted for.
-            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+            See also :class:`~.pennylane.estimator.ResourcePhaseGradient`.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -1030,7 +1039,7 @@ class QFT(ResourceOperator):
             Specifically, following the figure titled "8 qubit Quantum Fourier Transform with gradient shifts"
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1068,12 +1077,12 @@ class AQFT(ResourceOperator):
 
         This operation assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+        See also :class:`~.pennylane.estimator.ResourcePhaseGradient`.
 
     Args:
         order (int): the maximum number of controlled phaseshifts to which the operation is truncated
         num_wires (int): the number of qubits the operation acts upon
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from (Fig. 4) of `arXiv:1803.04933, <https://arxiv.org/abs/1803.04933>`_
@@ -1087,9 +1096,10 @@ class AQFT(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> aqft = plqre.AQFT(order=2, num_wires=3)
+    >>> import pennylane.estimator as qre
+    >>> aqft = qre.AQFT(order=2, num_wires=3)
     >>> gate_set = {"SWAP", "Hadamard", "T", "CNOT"}
-    >>> print(plre.estimate(aqft, gate_set))
+    >>> print(qre.estimate(aqft, gate_set))
     --- Resources: ---
      Total qubits: 4
      Total gates : 57
@@ -1101,7 +1111,7 @@ class AQFT(ResourceOperator):
 
     resource_keys = {"order, num_wires"}
 
-    def __init__(self, order, num_wires, wires=None) -> None:
+    def __init__(self, order: int, num_wires: int, wires: WiresLike = None) -> None:
         self.order = order
         self.num_wires = num_wires
 
@@ -1152,7 +1162,7 @@ class AQFT(ResourceOperator):
             operations.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1224,7 +1234,7 @@ class BasisRotation(ResourceOperator):
     Args:
         dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the
             number of columns of the matrix.
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
@@ -1239,8 +1249,9 @@ class BasisRotation(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> basis_rot = plqre.BasisRotation(dim_N = 5)
-    >>> print(plre.estimate(basis_rot))
+    >>> import pennylane.estimator as qre
+    >>> basis_rot = qre.BasisRotation(dim_N = 5)
+    >>> print(qre.estimate(basis_rot))
     --- Resources: ---
     Total qubits: 5
     Total gates : 1.740E+3
@@ -1252,7 +1263,7 @@ class BasisRotation(ResourceOperator):
 
     resource_keys = {"dim_N"}
 
-    def __init__(self, dim_N, wires=None):
+    def __init__(self, dim_N: int, wires: WiresLike = None):
         self.num_wires = dim_N
         super().__init__(wires=wires)
 
@@ -1273,7 +1284,7 @@ class BasisRotation(ResourceOperator):
             of the :class:`~.ResourcePhaseShift` gate.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1323,7 +1334,7 @@ class Select(ResourceOperator):
 
     Args:
         select_ops (list[~.ResourceOperator]): the set of operations to select over
-        wires (Sequence[int], optional): The wires the operation acts on. If :code:`select_ops`
+        wires (Sequence[int], None): The wires the operation acts on. If :code:`select_ops`
             provide wire labels, then this is just the set of control wire labels. Otherwise, it
             also includes the target wire labels of the selected operators.
 
@@ -1341,9 +1352,10 @@ class Select(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> ops = [plqre.X(), plqre.Y(), plqre.Z()]
-    >>> select_op = plqre.Select(select_ops=ops)
-    >>> print(plre.estimate(select_op))
+    >>> import pennylane.estimator as qre
+    >>> ops = [qre.X(), qre.Y(), qre.Z()]
+    >>> select_op = qre.Select(select_ops=ops)
+    >>> print(qre.estimate(select_op))
     --- Resources: ---
     Total qubits: 4
     Total gates : 24
@@ -1355,7 +1367,7 @@ class Select(ResourceOperator):
 
     resource_keys = {"num_wires", "cmpr_ops"}
 
-    def __init__(self, select_ops, wires=None) -> None:
+    def __init__(self, select_ops: list, wires: WiresLike = None) -> None:
         _dequeue(op_to_remove=select_ops)
         self.queue()
         num_select_ops = len(select_ops)
@@ -1404,7 +1416,7 @@ class Select(ResourceOperator):
             to select.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1448,7 +1460,7 @@ class Select(ResourceOperator):
             controlled on the associated bitstring.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1487,7 +1499,7 @@ class Select(ResourceOperator):
         return {"cmpr_ops": self.cmpr_ops, "num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, cmpr_ops, num_wires=None) -> CompressedResourceOp:
+    def resource_rep(cls, cmpr_ops, num_wires: WiresLike = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1524,7 +1536,7 @@ class QROM(ResourceOperator):
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
             :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
             determines the optimal depth.
-        wires (Sequence[int], optional): The wires the operation acts on (control and target).
+        wires (Sequence[int], None): The wires the operation acts on (control and target).
             Excluding any additional qubits allocated during the decomposition (e.g select-swap wires).
 
     Resources:
@@ -1539,11 +1551,12 @@ class QROM(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qrom = plqre.QROM(
+    >>> import pennylane.estimator as qre
+    >>> qrom = qre.QROM(
     ...     num_bitstrings=10,
     ...     size_bitstring=4,
     ... )
-    >>> print(plre.estimate(qrom))
+    >>> print(qre.estimate(qrom))
     --- Resources: ---
     Total qubits: 11
     Total gates : 178
@@ -1580,12 +1593,12 @@ class QROM(ResourceOperator):
 
     def __init__(
         self,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips=None,
-        clean=True,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int = None,
+        clean: bool = True,
         select_swap_depth=None,
-        wires=None,
+        wires: WiresLike = None,
     ) -> None:
         self.clean = clean
         self.num_bitstrings = num_bitstrings
@@ -1626,14 +1639,13 @@ class QROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            clean (bool, optional): Determine if allocated qubits should be reset after the computation
-                (at the cost of higher gate counts). Defaults to :code`True`.
             select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
                 determines the optimal depth.
-            wires (Sequence[int], optional): the wires the operation acts on
+            clean (bool, optional): Determine if allocated qubits should be reset after the computation
+                (at the cost of higher gate counts). Defaults to :code`True`.
 
         Resources:
             The resources for QROM are taken from the following two papers:
@@ -1830,7 +1842,7 @@ class QROM(ResourceOperator):
             unitaries to select.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1951,13 +1963,13 @@ class QubitUnitary(ResourceOperator):
         num_wires (int): the number of qubits the operation acts upon
         precision (Union[float, None], optional): The precision used when preparing the single qubit
             rotations used to synthesize the n-qubit unitary.
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are defined by combining the two equalities in `Möttönen and Vartiainen
         (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_ , we can express an :math:`n`
         qubit unitary as four :math:`n - 1` qubit unitaries and three multiplexed rotations
-        via ( :class:`~.labs.resource_estimation.ResourceSelectPauliRot` ). Specifically, the cost
+        via ( :class:`~.estimator.ResourceSelectPauliRot` ). Specifically, the cost
         is given by:
 
         * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
@@ -1972,8 +1984,9 @@ class QubitUnitary(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qu = plqre.QubitUnitary(num_wires=3)
-    >>> print(plre.estimate(qu, gate_set))
+    >>> import pennylane.estimator as qre
+    >>> qu = qre.QubitUnitary(num_wires=3)
+    >>> print(qre.estimate(qu, gate_set))
     --- Resources: ---
      Total qubits: 3
      Total gates : 52
@@ -1985,7 +1998,7 @@ class QubitUnitary(ResourceOperator):
 
     resource_keys = {"num_wires", "precision"}
 
-    def __init__(self, num_wires, precision=None, wires=None):
+    def __init__(self, num_wires: int, precision: float | None = None, wires: WiresLike = None):
         self.num_wires = num_wires
         self.precision = precision
         super().__init__(wires=wires)
@@ -2032,7 +2045,7 @@ class QubitUnitary(ResourceOperator):
             The resources are defined by combining the two equalities in `Möttönen and Vartiainen
             (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_, we can express an :math:`n`-
             qubit unitary as four :math:`n - 1`-qubit unitaries and three multiplexed rotations
-            via (:class:`~.labs.resource_estimation.ResourceSelectPauliRot`). Specifically, the cost
+            via (:class:`~.estimator.ResourceSelectPauliRot`). Specifically, the cost
             is given by:
 
             * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
@@ -2042,7 +2055,7 @@ class QubitUnitary(ResourceOperator):
             * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2093,8 +2106,8 @@ class SelectPauliRot(ResourceOperator):
     Args:
         rotation_axis (str): the rotation axis used in the multiplexer
         num_ctrl_wires (int): the number of control wires of the multiplexer
-        precision (float): the precision used in the single qubit rotations
-        wires (Sequence[int], optional): the wires the operation acts on
+        precision (float | None): the precision used in the single qubit rotations
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the construction scheme given in `Möttönen and Vartiainen
@@ -2109,12 +2122,13 @@ class SelectPauliRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> mltplxr = plqre.SelectPauliRot(
+    >>> import pennylane.estimator as qre
+    >>> mltplxr = qre.SelectPauliRot(
     ...     rotation_axis = "Y",
     ...     num_ctrl_wires = 4,
     ...     precision = 1e-3,
     ... )
-    >>> print(plre.estimate(mltplxr, plre.StandardGateSet))
+    >>> print(qre.estimate(mltplxr, qre.StandardGateSet))
     --- Resources: ---
      Total qubits: 5
      Total gates : 32
@@ -2126,7 +2140,13 @@ class SelectPauliRot(ResourceOperator):
 
     resource_keys = {"num_ctrl_wires", "rotation_axis", "precision"}
 
-    def __init__(self, rotation_axis: str, num_ctrl_wires: int, precision=None, wires=None) -> None:
+    def __init__(
+        self,
+        rotation_axis: str,
+        num_ctrl_wires: int,
+        precision: float | None = None,
+        wires: WiresLike = None,
+    ) -> None:
         if rotation_axis not in ("X", "Y", "Z"):
             raise ValueError("The `rotation_axis` argument must be one of ('X', 'Y', 'Z')")
 
@@ -2161,7 +2181,7 @@ class SelectPauliRot(ResourceOperator):
         Args:
             rotation_axis (str): the rotation axis used in the multiplexer
             num_ctrl_wires (int): the number of control wires of the multiplexer
-            precision (float): the precision used in the single qubit rotations
+            precision (float | None): the precision used in the single qubit rotations
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -2186,7 +2206,6 @@ class SelectPauliRot(ResourceOperator):
             rotation_axis (str): the rotation axis used in the multiplexer
             num_ctrl_wires (int): the number of control wires of the multiplexer
             precision (float): the precision used in the single qubit rotations
-            wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
             The resources are obtained from the construction scheme given in `Möttönen and Vartiainen
@@ -2196,7 +2215,7 @@ class SelectPauliRot(ResourceOperator):
             :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2225,21 +2244,20 @@ class SelectPauliRot(ResourceOperator):
             rotation_axis (str): the rotation axis used in the multiplexer
             num_ctrl_wires (int): the number of control wires of the multiplexer
             precision (float): the precision used in the single qubit rotations
-            wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
             The resources are obtained from the construction scheme given in `O'Brien and Sünderhauf
             (2025), Fig 4 <https://arxiv.org/pdf/2409.07332>`_. Specifically, the resources
-            use two :code:`~.labs.resource_estimation.ResourceQROM`s to digitally load and unload
+            use two :code:`~.estimator.ResourceQROM`s to digitally load and unload
             the phase angles up to some precision. These are then applied using a single controlled
-            :code:`~.labs.resource_estimation.ResourceSemiAdder`.
+            :code:`~.estimator.ResourceSemiAdder`.
 
             .. note::
 
                 This method assumes a phase gradient state is prepared on an auxiliary register.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.estimator.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
