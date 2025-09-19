@@ -218,9 +218,12 @@ class TestOutMultiplier:
             3,
             [9, 10],
         )
-        multiplier_decomposition = OutMultiplier(
-            x_wires, y_wires, output_wires, mod, work_wires
-        ).compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)
+        multiplier_decomposition = (
+            OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
+            .decomposition()
+        )
+
         op_list = []
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires

@@ -256,7 +256,6 @@ def fold_global_tape(circuit, scale_factor):
     return QuantumScript.from_queue(new_circuit_q)
 
 
-# TODO: make this a pennylane.math function
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
     x = math.convert_like(x, y[0])

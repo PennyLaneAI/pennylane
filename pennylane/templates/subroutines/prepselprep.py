@@ -20,12 +20,12 @@ import copy
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
+    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import GlobalPhase, Prod, StatePrep, adjoint, prod
+from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires
@@ -148,15 +148,12 @@ class PrepSelPrep(Operation):
     def compute_decomposition(lcu, control):
         coeffs, ops = _get_new_terms(lcu)
 
-        decomp_ops = [
-            AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
-            Select(ops, control, partial=True),
-            adjoint(
-                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+        return [
+            change_op_basis(
+                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
+                Select(ops, control, partial=True),
             ),
         ]
-
-        return decomp_ops
 
     def __copy__(self):
         """Copy this op"""
@@ -225,20 +222,28 @@ def _prepselprep_resources(op_reps, num_control):
         resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     return {
-        resource_rep(StatePrep, num_wires=num_control): 1,
-        resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control, partial=True): 1,
-        adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
+        change_op_basis_resource_rep(
+            resource_rep(StatePrep, num_wires=num_control),
+            resource_rep(
+                Select,
+                op_reps=prod_reps,
+                num_control_wires=num_control,
+                partial=True,
+                num_work_wires=0,
+            ),
+        ): 1,
     }
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 @register_resources(_prepselprep_resources)
 def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     coeffs, ops = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)
-    StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
-    Select(ops, control, partial=True)
-    adjoint(StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
+    change_op_basis(
+        StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control),
+        Select(ops, control, partial=True),
+    )
 
 
 add_decomps(PrepSelPrep, _prepselprep_decomp)
