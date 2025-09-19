@@ -59,6 +59,7 @@ from .elementwise_binary import (
 from .elementwise_other import (
     ClampOp,
     CompareOp,
+    ConstantOp,
     MapOp,
     ReducePrecisionOp,
     SelectOp,
@@ -100,6 +101,7 @@ OPERATIONS = [
     ClampOp,
     CompareOp,
     ComplexOp,
+    ConstantOp,
     ConvertOp,
     CosineOp,
     DivideOp,
@@ -160,7 +162,9 @@ ATTRIBUTES = [
 ]
 
 # Operations/attributes from upstream that should be deleted/replaced in the local version
-UPSTREAM_OPERATIONS_TO_DELETE = []
+UPSTREAM_OPERATIONS_TO_DELETE = [
+    xstablehlo.ConstantOp,
+]
 UPSTREAM_ATTRIBUTES_TO_DELETE = []
 
 
