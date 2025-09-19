@@ -15,17 +15,18 @@ r"""Resource operators for PennyLane subroutine templates."""
 import math
 from collections import defaultdict
 
-from pennylane import numpy as qnp
 from pennylane import estimator as qre
-from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane import numpy as qnp
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _dequeue,
     resource_rep,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
-from pennylane.estimator.resource_operator import _dequeue
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
 
@@ -442,7 +443,7 @@ class SemiAdder(ResourceOperator):
         """
         max_register_size = target_resource_params["max_register_size"]
         if max_register_size <= 2:
-            raise qre.ResourcesNotDefined
+            raise ResourcesUndefinedError
         gate_lst = []
 
         if num_ctrl_wires > 1:
@@ -808,7 +809,6 @@ class QPE(ResourceOperator):
             GateCount(adj_qft_cmpr_op),
         ]
 
-    @staticmethod
     def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = self.base_cmpr_op.name
@@ -1064,7 +1064,6 @@ class QFT(ResourceOperator):
 
         return gate_types
 
-    @staticmethod
     def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"QFT({self.num_wires})"
@@ -1222,7 +1221,6 @@ class AQFT(ResourceOperator):
 
         return gate_types
 
-    @staticmethod
     def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"AQFT({self.order}, {self.num_wires})"
@@ -1323,7 +1321,6 @@ class BasisRotation(ResourceOperator):
         num_wires = dim_N
         return CompressedResourceOp(cls, num_wires, params)
 
-    @staticmethod
     def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"BasisRotation({self.num_wires})"
