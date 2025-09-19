@@ -39,7 +39,7 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ, too-many-arguments
+# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
 
 class TrotterProduct(ResourceOperator):
@@ -208,7 +208,6 @@ class TrotterProduct(ResourceOperator):
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the Suzuki-Trotter approximation, must be 1 or even
-            num_wires (int): the number of wires on which the operator acts
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
