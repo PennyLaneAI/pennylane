@@ -184,8 +184,8 @@ class PhaseGradient(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_wires):
-        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
-        number of times it occurs in the circuit.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             num_wires (int): the number of qubits to prepare in the phase gradient state
