@@ -22,17 +22,12 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.estimator.ops as qre_ops
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
-from pennylane.estimator.resource_operator import (
-    GateCount,
-    ResourcesUndefinedError,
-    _dequeue,
-    _make_hashable,
-    resource_rep,
-)
+from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 from pennylane.queuing import AnnotatedQueue
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
+# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
 
 class DummyX(ResourceOperator):
@@ -177,12 +172,11 @@ class DummyOp(ResourceOperator):
 
     resource_keys = {"x"}
 
-    def __init__(self, x=None, wires=None):
+    def __init__(self, x=None, wires=None, num_wires=None):
         self.x = x
+        if num_wires:
+            self.num_wires = num_wires
         super().__init__(wires=wires)
-
-    def __eq__(self, other: object) -> bool:
-        return (self.__class__.__name__ == other.__class__.__name__) and (self.x == other.x)
 
     @property
     def resource_params(self):
@@ -304,6 +298,67 @@ class CNOT(DummyOp):
     num_wires = 2
 
 
+class DummyOp_decomps(ResourceOperator):
+    """Class for testing the resource_decomp methods"""
+
+    resource_keys = {"max_register_size"}
+
+    def __init__(self, max_register_size, wires=None):
+        self.max_register_size = max_register_size
+        self.num_wires = 2 * max_register_size
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources."""
+        return {"max_register_size": self.max_register_size}
+
+    @classmethod
+    def resource_rep(cls, max_register_size):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+        """
+        num_wires = 2 * max_register_size
+        return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
+
+    @classmethod
+    def resource_decomp(cls, max_register_size):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+        """
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(rx, max_register_size)]
+
+    @classmethod
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        cnot = resource_rep(CNOT, {"x": None})
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(cnot, max_register_size), GateCount(rx, max_register_size)]
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        rx = resource_rep(RX, {"x": 1})
+        h = resource_rep(Hadamard, {"x": None})
+        return [GateCount(rx, max_register_size), GateCount(h, 2 * max_register_size)]
+
+    @classmethod
+    def pow_resource_decomp(cls, pow_z, target_resource_params):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+        """
+        max_register_size = target_resource_params["max_register_size"]
+        rx = resource_rep(RX, {"x": 1})
+        return [GateCount(rx, max_register_size * pow_z)]
+
+
 class TestResourceOperator:
     """Tests for the ResourceOperator class"""
 
@@ -320,6 +375,25 @@ class TestResourceOperator:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
+
+    def test_equality_method(self):
+        """Test that the __eq__ method for the ResourceOperator is correct."""
+
+        dop1 = DummyOp(1.1)
+        dop2 = DummyOp(2.2)
+        dop3 = DummyOp(1.1)
+        dop1.num_wires = 1
+        dop3.num_wires = 3
+
+        assert qre_ops.X() == qre_ops.X()
+        assert qre_ops.SWAP() == qre_ops.SWAP()
+        assert qre_ops.X() != qre_ops.SWAP()
+        assert dop1 != dop2
+        assert dop1 != dop3
+
+    def test_equality_false(self):
+        """Test that the __eq__ method returns False if the input operator is not ResourceOperator."""
+        assert not qre_ops.X() == qml.X(0)
 
     ops_to_queue = [
         Hadamard(wires=[0]),
@@ -361,16 +435,6 @@ class TestResourceOperator:
                 _dequeue(op_to_remove)
 
             assert q.queue == expected_queue
-
-    def test_wire_error(self):
-        """Test that providing a different number of wire labels than the operator's
-        num_wires aregument leads to an error."""
-        dummy_op1 = DummyOp()
-        assert dummy_op1.wires is None
-        assert dummy_op1.num_wires is None
-
-        with pytest.raises(ValueError, match="Expected None wires, got"):
-            DummyOp(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("s", [1, 2, 3])
     def test_mul(self, s):
@@ -485,22 +549,30 @@ class TestResourceOperator:
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
         op1 = X
-        assert op1.resource_keys == set()
+        assert op1.resource_keys == set()  # pylint: disable=comparison-with-callable
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""
-        with pytest.raises(ResourcesUndefinedError):
-            X.adjoint_resource_decomp()
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.adjoint_resource_decomp(target_resource_params=dummy_params) == [
+            GateCount(DummyCmprsRep("RX", 1), 10),
+            GateCount(DummyCmprsRep("Hadamard", None), 20),
+        ]
 
     def test_controlled_resource_decomp(self):
         """Test that default controlled operator returns the correct error."""
-        with pytest.raises(ResourcesUndefinedError):
-            X.controlled_resource_decomp(ctrl_num_ctrl_wires=2, ctrl_num_ctrl_values=0)
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.controlled_resource_decomp(
+            num_ctrl_wires=2, num_zero_ctrl=0, target_resource_params=dummy_params
+        ) == [GateCount(DummyCmprsRep("CNOT", None), 10), GateCount(DummyCmprsRep("RX", 1), 10)]
 
     def test_pow_resource_decomp(self):
         """Test that default power operator returns the correct error."""
-        with pytest.raises(ResourcesUndefinedError):
-            X.pow_resource_decomp(2)
+
+        dummy_params = {"max_register_size": 10}
+        assert DummyOp_decomps.pow_resource_decomp(
+            pow_z=2, target_resource_params=dummy_params
+        ) == [GateCount(DummyCmprsRep("RX", 1), 20)]
 
     def test_tracking_name(self):
         """Test that correct tracking name is returned."""
