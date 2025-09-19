@@ -370,14 +370,16 @@ def rowcol(
     3: ─╭●─╰●───────╰X────╰X─╭●─╰●─╰●─┤
     4: ─╰X───────────────────╰X───────┤
 
-    We can confirm that this circuit indeed implements the original parity matrix:
+    We can confirm that this circuit indeed implements the original circuit:
 
     >>> from pennylane.transforms import parity_matrix
     >>> import numpy as np
-    >>> P1 = parity_matrix(new_qfunc, wire_order=range(5))
-    >>> P2 = parity_matrix(qfunc, wire_order=range(5))
-    >>> np.allclose(P1, P2)
+    >>> U1 = qml.matrix(new_qfunc, wire_order=range(5))()
+    >>> U2 = qml.matrix(qfunc, wire_order=range(5))()
+    >>> np.allclose(U1, U2)
     True
+
+    The same is true for the :func:`~.parity_matrix` of both circuits.
 
     Please see `the compilation page on RowCol <https://pennylane.ai/compilation/rowcol-algorithm>`__ for more details and step-by-step explanations of the algorithm.
 
