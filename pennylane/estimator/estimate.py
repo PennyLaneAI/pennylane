@@ -47,7 +47,7 @@ def estimate(
     with respect to a given gateset.
 
     Args:
-        workflow (Callable | ResourceOperator | Resources): The quantum circuit or operator
+        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources`): The quantum circuit or operator
             for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to track
             counts for throughout the quantum workflow.
@@ -55,10 +55,10 @@ def estimate(
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires may be allocated when they
             exceed the available amount. The default is ``False``.
-        config (ResourceConfig | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
+        config (`~.pennylane.estimator.resource_operator.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
     Returns:
-        Resources | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
+        :class:`~.pennylane.estimator.resource_operator.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
 
     Raises:
         TypeError: could not obtain resources for obj of type :code:`type(obj)`
@@ -260,9 +260,9 @@ def _update_counts_from_compressed_res_op(
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
     Args:
-        comp_res_op (CompressedResourceOp): operator in compressed representation to extract resources from
+        comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
         gate_counts_dict (dict): base dictionary to modify with the resource counts
-        wire_manager (WireResourceManager): the `WireResourceManager` that tracks and manages the
+        wire_manager (:class:`~.pennylane.estimator.wires_manager.WireResourceManager`): the `WireResourceManager` that tracks and manages the
             `zeroed`, `any_state`, and `algo_wires` wires.
         gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
@@ -333,7 +333,7 @@ def _ops_to_compressed_reps(
     """Convert the sequence of operators to a list of compressed resource ops.
 
     Args:
-        ops (Iterable[Union[Operator, ResourceOperator]]): set of operators to convert
+        ops (Iterable[Union[Operator, :class:`~.pennylane.estimator.resource_operator.ResourceOperator`]]): set of operators to convert
 
     Returns:
         List[CompressedResourceOp]: set of converted compressed resource ops
@@ -358,8 +358,8 @@ def _get_decomposition(
     handling standard, custom, and symbolic operator rules using a mapping.
 
     Args:
-        comp_res_op (CompressedResourceOp): The operator to find the decomposition for.
-        config (ResourceConfig): The configuration object containing decomposition rules.
+        comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The operator to find the decomposition for.
+        config (``~.pennylane.estimator.resource_operator.ResourceConfig`): The configuration object containing decomposition rules.
 
     Returns:
         A tuple containing the decomposition function and its associated kwargs.
