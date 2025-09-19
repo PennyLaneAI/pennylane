@@ -15,7 +15,7 @@
 which collects and maps PennyLane operations and measurements from xDSL."""
 
 from functools import singledispatchmethod
-from typing import Any, Union
+from typing import Any
 
 from xdsl.dialects import builtin, func
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
@@ -58,7 +58,7 @@ class QMLCollector:
         self.quantum_register: SSAValue | None = None
 
     @singledispatchmethod
-    def handle(self, _: Any) -> Union[Operator, MeasurementProcess, None]:
+    def handle(self, _: Any) -> Operator | MeasurementProcess | None:
         """Default handler for unsupported operations. If the operation is not recognized, return None."""
         return None
 

@@ -15,8 +15,8 @@
 """Utilities for graph state representations"""
 
 import math
-from collections.abc import Sequence
-from typing import Generator, TypeAlias
+from collections.abc import Generator, Sequence
+from typing import TypeAlias
 
 from pennylane.exceptions import CompileError
 
