@@ -114,6 +114,11 @@ def test_set_device_target():
             if not callable(t1.kwargs[k]):
                 assert t1.kwargs[k] == t2.kwargs[k]
 
+    # Check that passing a NullQubit device takes the underlying target
+    dev2 = NullQubit(target_device=dev)
+    assert dev2._target_device == to_target
+    assert dev2.config_filepath == to_target.config_filepath
+
 
 @pytest.mark.parametrize("shots", (None, 10))
 def test_supports_operator_without_decomp(shots):
