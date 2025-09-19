@@ -542,6 +542,9 @@
 * Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
+* Fixed the link to the Introduction to mid-circuit measurements tutorial in the documentation for Dynamic quantum circuits.
+  [(#8068)](https://github.com/PennyLaneAI/pennylane/pull/8068)
+
 <h3>Bug fixes 🐛</h3>
 
 * Simplifying operators raised to integer powers no longer causes recursion errors.
@@ -613,4 +616,5 @@ Alex Preciado,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
-Jake Zaia
+Jake Zaia,
+Gabriela Sanchez Diaz
