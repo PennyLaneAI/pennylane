@@ -164,7 +164,7 @@ qnode_prim.prim_type = "higher_order"
 def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
     warn(
-        "Native execution of plxpr is an unmaintained experimental feature. Plxpr should only be used as a frontend for catalyst.",
+        "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
         UserWarning,
     )
 
