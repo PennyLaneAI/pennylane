@@ -49,7 +49,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
         tree (nx.Graph): Tree graph to traverse. Must contain ``source``. Must contain
             ``source_parent`` if it is not None. Typing assumes integer-labeled nodes.
         source (int): Node to start the traversal from
-        source_parent (Optional[int]): Parent node of ``source`` in ``tree``. Should not provided
+        source_parent (Optional[int]): Parent node of ``source`` in ``tree``. Should not be provided
             manually but is used in recursion.
 
     Returns:
@@ -86,10 +86,10 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     The post-order traversal reads ``[8, 3, 4, 5, 1, 6, 7, 2, 0]``.
     For the output convention of this function, each node is accompanied by its
     parent node, because this is useful information needed down the line, and it is not easy to
-    retrieve from the ``nx.Graph`` itself. In addition, the last entry, which always is the root
+    retrieve from the ``nx.Graph`` itself. In addition, the last entry, which is always the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
-    >>> from pennylane.labs.intermediate_reps import postorder_traverse
+    >>> from pennylane.transforms.intermediate_reps import postorder_traverse
     >>> traversal = postorder_traverse(G, 0)
     >>> print(traversal)
     [(8, 3), (3, 1), (4, 1), (5, 1), (1, 0), (6, 2), (7, 2), (2, 0)]
@@ -135,7 +135,7 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
         tree (nx.Graph): Tree graph to traverse. Must contain ``source``. Must contain
             ``source_parent`` if it is not None. Typing assumes integer-labeled nodes.
         source (int): Node to start the traversal from
-        source_parent (Optional[int]): Parent node of ``source`` in ``tree``. Should not provided
+        source_parent (Optional[int]): Parent node of ``source`` in ``tree``. Should not be provided
             manually but is used in recursion.
 
     Returns:
