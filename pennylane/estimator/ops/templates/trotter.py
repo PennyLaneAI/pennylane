@@ -21,13 +21,6 @@ from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-    _dequeue,
-    resource_rep,
-)
 from pennylane.estimator.ops.templates.subroutines import (
     BasisRotation,
     OutMultiplier,
@@ -35,6 +28,13 @@ from pennylane.estimator.ops.templates.subroutines import (
     PhaseGradient,
     Select,
     SemiAdder,
+)
+from pennylane.estimator.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    _dequeue,
+    resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
