@@ -118,4 +118,10 @@ from .ops.templates import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    TrotterCDF,
+    TrotterProduct,
+    TrotterTHC,
+    TrotterVibrational,
+    TrotterVibronic,
+    CompactHamiltonian,
 )
