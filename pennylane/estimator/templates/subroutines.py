@@ -21,12 +21,11 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _dequeue,
     resource_rep,
 )
-
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
-from pennylane.estimator.resource_operator import _dequeue
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
 
