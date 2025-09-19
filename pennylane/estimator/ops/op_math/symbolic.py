@@ -345,9 +345,7 @@ class Controlled(ResourceOperator):
         Resources:
             The resources are determined as follows. If the base operator implements the
             :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
-            this.
-
-            Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
+            this method. Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
             which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
             to an additional cost of two ``X`` gates per :code:`num_zero_ctrl`.
             Secondly, the base operation resources are extracted and we add to the cost the controlled
