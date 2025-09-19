@@ -30,9 +30,9 @@ from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
 
-from ..dialects import mbqc, quantum
-from ..mbqc import edge_iter, n_vertices_from_packed_adj_matrix
-from .api import compiler_transform
+from ...dialects import mbqc, quantum
+from ...pass_api import compiler_transform
+from .graph_state_utils import edge_iter, n_vertices_from_packed_adj_matrix
 
 DenselyPackedAdjMatrix: TypeAlias = Sequence[int] | Sequence[bool]
 
