@@ -220,20 +220,19 @@ class TestEstimateResources:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit(precision):
             qml.Hadamard(wires=0)
             X()
-            RX(0.3, 0)
+            RX(precision=precision, wires=0)
             return qml.expval(qml.Z(0))
 
-        resources = estimate(circuit)()
+        resources = estimate(circuit, gate_set={"Hadamard", "X", "RX"})(1e-3)
 
-        assert isinstance(resources, Resources)
         assert resources.algo_wires == 2
         assert resources.gate_counts["Hadamard"] == 1
         assert resources.gate_counts["X"] == 1
         assert resources.gate_counts["RX"] == 1
-        assert resources.gate_types[RX.resource_rep(precision=0.3)] == 1
+        assert resources.gate_types[RX.resource_rep(precision=1e-3)] == 1
 
     def test_qfunc_with_num_wires(self):
         """Test that the number of wires is correctly inferred from a qfunc
