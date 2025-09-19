@@ -143,9 +143,7 @@ class Adjoint(ResourceOperator):
             This symbolic operation represents the adjoint of some base operation. The resources are
             determined as follows. If the base operation implements the
             :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
-            this.
-
-            Otherwise, the adjoint resources are given as the adjoint of each operation in the
+            this method. Otherwise, the adjoint resources are given as the adjoint of each operation in the
             base operation's resources.
 
         Returns:
