@@ -108,7 +108,7 @@ class UniformStatePrep(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_states": num_states})
 
     @classmethod
-    def resource_decomp(cls, num_states, **kwargs):
+    def resource_decomp(cls, num_states):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -216,7 +216,7 @@ class AliasSampling(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, num_coeffs, precision=None, **kwargs) -> list[GateCount]:
+    def resource_decomp(cls, num_coeffs, precision=None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -356,7 +356,6 @@ class MPSPrep(ResourceOperator):
         num_mps_matrices,
         max_bond_dim,
         precision=None,
-        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -605,7 +604,6 @@ class QROMStatePreparation(ResourceOperator):
         positive_and_real,
         precision=None,
         selswap_depths=1,
-        **kwargs,
     ):
         r"""A private function which implements two variants of the decomposition of QROMStatePrep,
         based on the value of the :code:`use_phase_grad_trick` argument.
@@ -757,7 +755,6 @@ class QROMStatePreparation(ResourceOperator):
         positive_and_real,
         precision=None,
         selswap_depths=1,
-        **kwargs,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -788,13 +785,10 @@ class QROMStatePreparation(ResourceOperator):
             positive_and_real=positive_and_real,
             precision=precision,
             selswap_depths=selswap_depths,
-            **kwargs,
         )
 
     @classmethod
-    def resource_decomp(
-        cls, num_state_qubits, positive_and_real, precision=None, selswap_depths=1, **kwargs
-    ):
+    def resource_decomp(cls, num_state_qubits, positive_and_real, precision=None, selswap_depths=1):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -831,7 +825,6 @@ class QROMStatePreparation(ResourceOperator):
             positive_and_real=positive_and_real,
             precision=precision,
             selswap_depths=selswap_depths,
-            **kwargs,
         )
 
 
@@ -952,7 +945,7 @@ class PrepTHC(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1079,7 +1072,7 @@ class PrepTHC(ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(
-        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
