@@ -608,6 +608,7 @@ def simulate_tree_mcm(
 
 
 def _finalize_debugger(debugger):
+    """Ensures all snapshot results are wrapped in a list for consistency."""
     if not debugger or not debugger.active:
         return
     for tag, results in debugger.snapshots.items():
