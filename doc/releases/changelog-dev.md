@@ -254,6 +254,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds a warning about the experimental, unmaintained nature of native plxpr execution.
+  [(#8291)](https://github.com/PennyLaneAI/pennylane/pull/8291)
+
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
 
@@ -1049,6 +1052,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
+  [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
 * Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
