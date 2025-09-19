@@ -342,7 +342,7 @@ class TestProd:
             qre.CZ(wires=[1, 2]),
             (qre.Hadamard(), 4),
             qre.RX(precision=1e-4, wires=3),
-            (qre.CNOT(), 2),
+            [qre.CNOT(), 2],
         ]
         prod_op = qre.Prod(res_ops=ops)
 
