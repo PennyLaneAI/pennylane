@@ -28,7 +28,7 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
-from pennylane.estimator.templates.subroutines import (
+from pennylane.estimator.ops.templates.subroutines import (
     BasisRotation,
     OutMultiplier,
     OutOfPlaceSquare,

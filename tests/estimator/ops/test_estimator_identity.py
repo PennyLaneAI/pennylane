@@ -19,12 +19,23 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator.ops import GlobalPhase, Identity
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
 
 class TestIdentity:
     """Test ResourceIdentity"""
+
+    @pytest.mark.parametrize(
+        "wire_labels", [0, [0], [1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "auxiliary"]]
+    )
+    def test_wires(self, wire_labels):
+        """Test that common PL wires are accepted."""
+        op = Identity(wire_labels)
+        assert op.wires == Wires(wire_labels)
+        assert op.num_wires == len(Wires(wire_labels))
 
     def test_resources(self):
         """ResourceIdentity should have empty resources"""
@@ -86,6 +97,15 @@ class TestIdentity:
 
 class TestGlobalPhase:
     """Test ResourceGlobalPhase"""
+
+    @pytest.mark.parametrize(
+        "wire_labels", [0, [0], [1, 0, 4], ["a", "b", "c"], ["a", 1, "auxiliary"]]
+    )
+    def test_wires(self, wire_labels):
+        """Test that common PL wires are accepted."""
+        op = GlobalPhase(wire_labels)
+        assert op.wires == Wires(wire_labels)
+        assert op.num_wires == len(Wires(wire_labels))
 
     def test_resources(self):
         """ResourceGlobalPhase should have empty resources"""

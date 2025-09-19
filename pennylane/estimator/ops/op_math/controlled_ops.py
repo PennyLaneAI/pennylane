@@ -24,7 +24,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= arguments-differ, signature-differs
 
@@ -59,6 +59,11 @@ class CH(ResourceOperator):
     """
 
     num_wires = 2
+
+    def __init__(self, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -198,6 +203,11 @@ class CY(ResourceOperator):
 
     num_wires = 2
 
+    def __init__(self, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -328,6 +338,11 @@ class CZ(ResourceOperator):
     """
 
     num_wires = 2
+
+    def __init__(self, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -467,6 +482,11 @@ class CSWAP(ResourceOperator):
 
     num_wires = 3
 
+    def __init__(self, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -601,6 +621,11 @@ class CCZ(ResourceOperator):
 
     num_wires = 3
 
+    def __init__(self, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -724,6 +749,11 @@ class CNOT(ResourceOperator):
 
     num_wires = 2
 
+    def __init__(self, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -830,7 +860,7 @@ class TemporaryAND(ResourceOperator):
     Args:
         wires (Sequence[int] | None): the wires the operation acts on
 
-    This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
+    This gate was introduced in Fig 4 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ along
     with its adjoint.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.TemporaryAND`.
@@ -844,6 +874,11 @@ class TemporaryAND(ResourceOperator):
     """
 
     num_wires = 3
+
+    def __init__(self, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -869,7 +904,7 @@ class TemporaryAND(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Resources:
-            The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 4 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -888,7 +923,7 @@ class TemporaryAND(ResourceOperator):
                 of the target operator.
 
         Resources:
-            The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 4 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -930,10 +965,10 @@ class Toffoli(ResourceOperator):
 
     Resources:
         If `elbow` is provided, resources are obtained from Figure 4 of
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         If `elbow` is `None`, the resources are obtained from Figure 1 of
-        `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
+        `Jones (2012) <https://arxiv.org/pdf/1212.5069>`_.
 
         The circuit which applies the Toffoli gate on target wire 'target' with control wires
         ('c1', 'c2') is defined as:
@@ -966,13 +1001,15 @@ class Toffoli(ResourceOperator):
     def __init__(
         self, elbow: Literal["left", "right"] | None = None, wires: WiresLike = None
     ) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.elbow = elbow
         super().__init__(wires=wires)
 
     @staticmethod
     def elbow_decomp(elbow: Literal["left", "right"] | None = "left"):
         """A function that prepares the resource decomposition obtained from Figure 4 of
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Args:
             elbow (str | None): One of "left" or "right". Defaults to "left".
@@ -1015,7 +1052,7 @@ class Toffoli(ResourceOperator):
             `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
 
             If `elbow` is `None`, the resources are obtained from Figure 1 of
-            `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
+            `Jones (2012) <https://arxiv.org/pdf/1212.5069>`_.
 
             The circuit which applies the Toffoli gate on target wire 'target' with control wires
             ('c1', 'c2') is defined as:
@@ -1204,7 +1241,7 @@ class MultiControlledX(ResourceOperator):
 
     Resources:
         The resources are obtained based on the unary iteration technique described in
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+        `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
         resources are defined as the following rules:
 
         * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
@@ -1213,7 +1250,7 @@ class MultiControlledX(ResourceOperator):
 
         * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
 
-        * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+        * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.MultiControlledX`.
 
@@ -1232,6 +1269,8 @@ class MultiControlledX(ResourceOperator):
         self.num_zero_ctrl = num_zero_ctrl
 
         self.num_wires = num_ctrl_wires + 1
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -1281,7 +1320,7 @@ class MultiControlledX(ResourceOperator):
 
         Resources:
             The resources are obtained based on the unary iteration technique described in
-            `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
+            `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
             resources are defined as the following rules:
 
             * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
@@ -1290,7 +1329,7 @@ class MultiControlledX(ResourceOperator):
 
             * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
 
-            * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
+            * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.pennylane.estimator.ops.Toffoli`.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -1447,6 +1486,8 @@ class CRX(ResourceOperator):
     num_wires = 2
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -1596,6 +1637,8 @@ class CRY(ResourceOperator):
     num_wires = 2
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -1744,6 +1787,8 @@ class CRZ(ResourceOperator):
     num_wires = 2
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -1902,6 +1947,8 @@ class CRot(ResourceOperator):
     num_wires = 2
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -2061,6 +2108,8 @@ class ControlledPhaseShift(ResourceOperator):
     num_wires = 2
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 

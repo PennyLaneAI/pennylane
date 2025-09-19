@@ -18,7 +18,7 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.templates import QubitUnitary, SelectPauliRot
+from pennylane.estimator.ops.templates import QubitUnitary, SelectPauliRot
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -50,11 +50,31 @@ class ResourceConfig:
         self._ctrl_custom_decomps = {}
         self._pow_custom_decomps = {}
 
+    @property
+    def custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom base decompositions."""
+        return self._custom_decomps
+
+    @property
+    def adj_custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom adjoint decompositions."""
+        return self._adj_custom_decomps
+
+    @property
+    def ctrl_custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom controlled decompositions."""
+        return self._ctrl_custom_decomps
+
+    @property
+    def pow_custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom power decompositions."""
+        return self._pow_custom_decomps
+
     def __str__(self) -> str:
-        decomps = [op.__name__ for op in self._custom_decomps]
-        adj_decomps = [f"Adjoint({op.__name__})" for op in self._adj_custom_decomps]
-        ctrl_decomps = [f"Controlled({op.__name__})" for op in self._ctrl_custom_decomps]
-        pow_decomps = [f"Pow({op.__name__})" for op in self._pow_custom_decomps]
+        decomps = [op.__name__ for op in self.custom_decomps]
+        adj_decomps = [f"Adjoint({op.__name__})" for op in self.adj_custom_decomps]
+        ctrl_decomps = [f"Controlled({op.__name__})" for op in self.ctrl_custom_decomps]
+        pow_decomps = [f"Pow({op.__name__})" for op in self.pow_custom_decomps]
 
         all_op_strings = decomps + adj_decomps + ctrl_decomps + pow_decomps
         op_names = ", ".join(all_op_strings)
@@ -72,7 +92,7 @@ class ResourceConfig:
         )
 
     def __repr__(self) -> str:
-        return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
+        return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self.custom_decomps}, adj_custom_decomps = {self.adj_custom_decomps}, ctrl_custom_decomps = {self.ctrl_custom_decomps}, pow_custom_decomps = {self.pow_custom_decomps})"
 
     def set_precision(self, op_type: type[ResourceOperator], precision: float) -> None:
         r"""Sets the precision for a given resource operator.
