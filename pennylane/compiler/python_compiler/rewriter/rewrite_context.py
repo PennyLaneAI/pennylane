@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""PennyLane-xDSL API for pattern rewriting."""
+"""RewriteContext class for keeping stateful information for rewrites."""
 
-from .rewrite_context import RewriteContext
-from .ssa_qubit_map import AbstractWire, SSAQubitMap
+from dataclasses import dataclass
 
-__all__ = [
-    "AbstractWire",
-    "RewriteContext",
-    "SSAQubitMap",
-]
+
+@dataclass
+class RewriteContext:
+    """Class to carry stateful information during rewrites."""
