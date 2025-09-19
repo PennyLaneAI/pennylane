@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.labs.intermediate_reps import parity_matrix
+from pennylane.transforms import parity_matrix
 
 circ1 = qml.tape.QuantumScript(
     [
@@ -76,3 +76,34 @@ class TestParityMatrix:
 
         with pytest.raises(TypeError, match="parity_matrix requires all input circuits"):
             _ = parity_matrix(circ)
+
+    def test_qfunc_input(self):
+        """Test parity_matrix correctly handles a qfunc input"""
+
+        def qfunc(wire1, wire2, wire3):
+            qml.CNOT((wire1, wire2))
+            qml.CNOT((wire2, wire3))
+            qml.CNOT((wire3, wire1))
+            return qml.expval(qml.Z(0))
+
+        tape = qml.tape.make_qscript(qfunc)(0, 1, 2)
+
+        _P1 = parity_matrix(qfunc, wire_order=range(3))(0, 1, 2)
+        _P2 = parity_matrix(tape, wire_order=range(3))
+        assert np.allclose(_P1, _P2)
+
+    def test_qnode_input(self):
+        """Test parity_matrix correctly handles a qnode input"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def qnode(wire1, wire2, wire3):
+            qml.CNOT((wire1, wire2))
+            qml.CNOT((wire2, wire3))
+            qml.CNOT((wire3, wire1))
+            return qml.expval(qml.Z(0))
+
+        tape = qml.workflow.construct_tape(qnode)(0, 1, 2)
+
+        _P1 = parity_matrix(qnode, wire_order=range(3))(0, 1, 2)
+        _P2 = parity_matrix(tape, wire_order=range(3))
+        assert np.allclose(_P1, _P2)

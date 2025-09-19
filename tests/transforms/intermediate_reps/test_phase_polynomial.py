@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.labs.intermediate_reps import phase_polynomial
+from pennylane.transforms import phase_polynomial
 
 # trivial example
 circ0 = qml.tape.QuantumScript([])
@@ -47,6 +47,13 @@ angles1 = np.array([1, 2, 3])
 class TestPhasePolynomial:
     """Tests for qml.labs.dla.phase_polynomials.phase_polynomial"""
 
+    def test_TypeError_input(self):
+        """Test that a TypeError is raised for the wrong inputs"""
+        with pytest.raises(
+            TypeError, match="phase_polynomial can only handle CNOT and RZ operators"
+        ):
+            _ = phase_polynomial(qml.tape.QuantumScript([qml.RX(0.5, 0)]))
+
     @pytest.mark.parametrize(
         "circ, res",
         (
@@ -64,14 +71,6 @@ class TestPhasePolynomial:
         assert np.allclose(ptab, ptab_true)
         assert np.allclose(angles, angles_true)
 
-    def test_verbose(self, capsys):
-        """Test the verbose output of phase_polynomial"""
-        _ = phase_polynomial(circ1, verbose=True)
-        captured = capsys.readouterr()
-        assert "Operator CNOT - #0" in captured.out
-        assert "Operator RZ - #1" in captured.out
-        assert "Operator CNOT - #2" in captured.out
-
     def test_wire_order_string_wires(self):
         """Test wire_order with string wires"""
         wire_order_abcd = ["a", "b", "c", "d"]
@@ -83,3 +82,43 @@ class TestPhasePolynomial:
         assert np.allclose(pmat, pmat1)
         assert np.allclose(ptab, ptab1)
         assert np.allclose(angles, angles1)
+
+    def test_qfunc_input(self):
+        """Test phase_polynomial works for qfunc inputs"""
+
+        def qfunc(phi1, phi2):
+            qml.CNOT((0, 1))
+            qml.RZ(phi1, 1)
+            qml.CNOT((1, 2))
+            qml.CNOT((2, 0))
+            qml.RZ(phi2, 0)
+
+        tape = qml.tape.make_qscript(qfunc)(0.5, 0.3)
+
+        pmat, ptab, angles = phase_polynomial(qfunc, wire_order=range(3))(0.5, 0.3)
+        pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
+
+        assert np.allclose(pmat, pmat_exp)
+        assert np.allclose(ptab, ptab_exp)
+        assert np.allclose(angles, angles_exp)
+
+    def test_qnode_input(self):
+        """Test phase_polynomial works for qnode inputs"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def qnode(phi1, phi2):
+            qml.CNOT((0, 1))
+            qml.RZ(phi1, 1)
+            qml.CNOT((1, 2))
+            qml.CNOT((2, 0))
+            qml.RZ(phi2, 0)
+            return qml.expval(qml.Z(0))
+
+        tape = qml.workflow.construct_tape(qnode)(0.5, 0.3)
+
+        pmat, ptab, angles = phase_polynomial(qnode, wire_order=range(3))(0.5, 0.3)
+        pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
+
+        assert np.allclose(pmat, pmat_exp)
+        assert np.allclose(ptab, ptab_exp)
+        assert np.allclose(angles, angles_exp)

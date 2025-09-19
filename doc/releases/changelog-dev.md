@@ -165,6 +165,13 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* New intermediate representations (IRs) :func:`~transforms.parity_matrix` and 
+  :func:`~transforms.phase_polynomial` are available in PennyLane. These IRs are 
+  used in compilation passes to optimize CNOT and phase polynomial circuits, respectively. 
+  Also added :func:`~transforms.rowcol`, which uses the parity matrix as its IR for CNOT
+  routing under constraint connectivity.
+  [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
+
 <h3>Improvements 🛠</h3>
 
 * The JAX version is now included in :func:`pennylane.about`.
