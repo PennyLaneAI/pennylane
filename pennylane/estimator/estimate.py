@@ -132,7 +132,7 @@ def _resources_from_qfunc(
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Callable[..., Resources]:
-    """Get resources from a quantum function which queues operators"""
+    """Estimate resources for a quantum function which queues operators"""
 
     if isinstance(workflow, QNode):
         workflow = workflow.func
