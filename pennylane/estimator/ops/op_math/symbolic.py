@@ -594,7 +594,7 @@ class Pow(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            pow_z (int): The exponent that the base operator is being raised to, default value is 1.
+            pow_z (int): The exponent that the base operator is being raised to. Default value is 1.
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
