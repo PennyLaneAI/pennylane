@@ -36,7 +36,7 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 
 def estimate(
-    workflow: ResourceOperator | Callable | Resources,
+    workflow: Callable | ResourceOperator | Resources,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -110,7 +110,7 @@ def estimate(
 
 @singledispatch
 def _estimate_resources_dispatch(
-    workflow: ResourceOperator | Callable | Resources | list,
+    workflow: Callable | ResourceOperator | Resources,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
