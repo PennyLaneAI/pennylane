@@ -1022,7 +1022,7 @@ class Y(ResourceOperator):
             it is zero-controlled. In the case where multiple controlled wires
             are provided, the resources are derived from the following identity:
 
-                .. math:: \hat{Y} = \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}.
+            .. math:: \hat{Y} = \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}.
 
             Specifically, the resources are given by a ``X`` gate conjugated with
             a pair of ``S`` gates. By replacing the ``X`` gate with a ``MultiControlledX``
