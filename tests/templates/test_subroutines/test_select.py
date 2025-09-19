@@ -865,8 +865,6 @@ class TestSelectWithWorkWire:
         """Test that the decomposition is correct by asserting that the identity
         matrix is created by preparing the i-th computational basis state conditioned on the
         i-th basis state in the control qubits."""
-        if not partial:
-            pytest.xfail(reason="partial=False not supported with unary iteration yet.")
 
         dev = qml.device("default.qubit")
 
