@@ -32,7 +32,7 @@ from .resource_operator import (
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=too-many-arguments
 
 
 def estimate(
