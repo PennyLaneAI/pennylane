@@ -22,8 +22,9 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
-from pennylane.operation import Channel
+from pennylane.operation import Channel, Operator
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.typing import TensorLike
 
 from .einsum_manpulation import get_einsum_mapping
 
@@ -375,7 +376,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger, **_):
     of apply_operation, as well as conditionally in other dispatches.
     """
     if op in diagonal_in_z_basis:
-        return apply_diagonal_unitary(op, state, is_state_batched, debugger, **_)
+        return apply_diagonal_unitary(op, state, is_state_batched, **_)
     num_op_wires = len(op.wires)
     interface = math.get_interface(state)
 
@@ -625,24 +626,23 @@ def apply_grover(
     return state
 
 
-def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=None, **_):
-    """_summary_
+def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bool = False, **_):
+    """Apply a diagonal unitary operation to the density matrix state using its eigenvalues.
 
     Args:
-        op (_type_): _description_
-        state (_type_): _description_
-        is_state_batched (bool, optional): _description_. Defaults to False.
-        debugger (_type_, optional): _description_. Defaults to None.
+        op (qml.Operation): The diagonal unitary operation to apply.
+        state (TensorLike): The density matrix state to apply the operation to.
+        is_state_batched (bool, optional): Whether the state has a batch dimension. Defaults to False.
 
     Returns:
-        _type_: _description_
+        TensorLike: The transformed density matrix state.
     """
     channel_wires = op.wires
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
-    eigvals = op.eigvals()
-    eigvals = math.stack(eigvals)
-    eigvals = math.reshape(eigvals, [2] * len(channel_wires))
+    eigvals = math.stack(op.eigvals())
+    expand_shape = [-1, 2 * len(channel_wires)] if bool(op.batch_size) else [2] * len(channel_wires)
+    eigvals = math.reshape(eigvals, expand_shape)
     eigvals = math.cast_like(eigvals, state)
 
     state_indices = alphabet[: 2 * num_wires + is_state_batched]
@@ -653,8 +653,9 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     row_indices = "".join(alphabet_array[row_wires_list].tolist())
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
-    # Basically, we want to do, lambda_a rho_ab lambda_b
-    einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
+    # Use ellipsis to represent the batch dimensions as eigvals.shape = (batch, 2 * len(channel_wires))
+    ellipsis = "..." if bool(op.batch_size) else ""
+    einsum_indices = f"{ellipsis}{row_indices},{ellipsis}{state_indices},{ellipsis}{col_indices}->{ellipsis}{state_indices}"
 
     return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
 

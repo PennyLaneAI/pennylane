@@ -15,14 +15,23 @@
 """This module contains additional utilities and functionality not available upstream in xDSL."""
 
 from .constraints import MemRefConstraint, TensorConstraint, NestedTupleOfConstraint
-from .traits import Elementwise, SameOperandsAndResultShape, SameOperandsElementType
+from .traits import (
+    AllMatchSameOperatorTrait,
+    Elementwise,
+    SameOperandsAndResultElementType,
+    SameOperandsAndResultShape,
+    SameOperandsElementType,
+)
 
 __all__ = [
     # Constraints
+    "NestedTupleOfConstraint",
     "MemRefConstraint",
     "TensorConstraint",
     # Traits
+    "AllMatchSameOperatorTrait",
     "Elementwise",
+    "SameOperandsAndResultElementType",
     "SameOperandsAndResultShape",
     "SameOperandsElementType",
 ]

@@ -60,6 +60,28 @@ from .elementwise_other import (
     SelectOp,
 )
 
+from .control_flow import (
+    IfOp,
+    WhileOp,
+    OptimizationBarrierOp,
+)
+
+from .data_movement import (
+    BroadcastInDimOp,
+    ConcatenateOp,
+    DynamicSliceOp,
+    GatherOp,
+    ReshapeOp,
+    ScatterOp,
+    SliceOp,
+)
+
+from .attributes import (
+    GatherDimensionNumbers,
+    ResultAccuracyModeAttr,
+    ScatterDimensionNumbers,
+)
+
 # Import the main StableHLO dialect
 from .dialect import StableHLO
 
@@ -67,7 +89,7 @@ from .dialect import StableHLO
 __all__ = [
     # Main dialect
     "StableHLO",
-    # Unary operations
+    # Elementwise unary operations
     "ConvertOp",
     "CosineOp",
     "ExponentialMinusOneOp",
@@ -88,17 +110,33 @@ __all__ = [
     "SqrtOp",
     "TanOp",
     "TanhOp",
-    # Binary operations
+    # Elementwise binary operations
     "ComplexOp",
     "DivideOp",
     "MaximumOp",
     "MinimumOp",
     "PowerOp",
     "RemainderOp",
-    # Other operations
+    # Elementwise other operations
     "ClampOp",
     "CompareOp",
     "MapOp",
     "ReducePrecisionOp",
     "SelectOp",
+    # Control flow operations
+    "IfOp",
+    "WhileOp",
+    "OptimizationBarrierOp",
+    # Data movement operations
+    "BroadcastInDimOp",
+    "ConcatenateOp",
+    "DynamicSliceOp",
+    "GatherOp",
+    "ReshapeOp",
+    "ScatterOp",
+    "SliceOp",
+    # Attributes
+    "GatherDimensionNumbers",
+    "ResultAccuracyModeAttr",
+    "ScatterDimensionNumbers",
 ]

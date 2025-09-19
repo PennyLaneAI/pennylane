@@ -278,7 +278,7 @@ def _flip_control_adjoint_resource(
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-):  # pylint: disable=unused-argument, too-many-arguments
+):  # pylint: disable=too-many-arguments
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(
@@ -318,13 +318,13 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
     }
 
 
-# pylint: disable=protected-access,unused-argument,too-many-arguments
+# pylint: disable=protected-access,unused-argument
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     base_op = base._unflatten(*base._flatten())
-    with allocation.allocate(1, True, True) as work_wires:
+    with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qml.ctrl(qml.X(work_wires[0]), control=control_wires)
         qml.ctrl(base_op, control=work_wires[0])
         qml.ctrl(qml.X(work_wires[0]), control=control_wires)

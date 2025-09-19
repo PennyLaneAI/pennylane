@@ -40,8 +40,6 @@ from .utils import (
     unwrap_controls,
 )
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=ungrouped-imports
 if TYPE_CHECKING:
     from pennylane.operation import Operator
     from pennylane.tape import QuantumScript

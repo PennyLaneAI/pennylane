@@ -20,7 +20,7 @@ Contains concurrent executor abstractions for task-based workloads backed by mpi
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from ..base import ExecBackendConfig, ExtExec
+from pennylane.concurrency.executors.base import ExecBackendConfig, ExtExec
 
 
 # pylint: disable=import-outside-toplevel

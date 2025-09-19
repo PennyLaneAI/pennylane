@@ -190,8 +190,8 @@ class TestPrepSelPrep:
 
     lcu1 = qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
     ops1 = [
-        qml.Z(2) @ qml.GlobalPhase(0, 2),
-        qml.prod((qml.X(1) @ qml.X(2)), qml.GlobalPhase(0, [1, 2])),
+        qml.Z(2) @ qml.GlobalPhase(0, [2]),
+        qml.prod(qml.X(1) @ qml.X(2), qml.GlobalPhase(0, [1, 2])),
     ]
     coeffs1 = lcu1.terms()[0]
 
@@ -202,15 +202,12 @@ class TestPrepSelPrep:
                 lcu1,
                 [0],
                 [
-                    qml.AmplitudeEmbedding(
-                        qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
-                    ),
-                    qml.Select(ops1, control=[0]),
-                    qml.ops.Adjoint(
+                    qml.ops.ChangeOpBasis(
                         qml.AmplitudeEmbedding(
                             qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
-                        )
-                    ),
+                        ),
+                        qml.Select(ops1, control=[0]),
+                    )
                 ],
             )
         ],
@@ -231,11 +228,11 @@ class TestPrepSelPrep:
             qml.assert_equal(op1, exp_op)
 
         # Test that PrepSelPrep de-queues its input
-        with qml.queuing.AnnotatedQueue() as q0:
-            qml.apply(lcu)
-            prepselprep = qml.PrepSelPrep(lcu, control=control)
+        with qml.queuing.AnnotatedQueue() as q2:
+            op = qml.apply(lcu)
+            prepselprep = qml.PrepSelPrep(op, control=control)
 
-        assert len(q0.queue) == 1 and q0.queue[0] == prepselprep
+        assert len(q2.queue) == 1 and q2.queue[0] == prepselprep
 
     def test_copy(self):
         """Test the copy function"""
@@ -344,15 +341,30 @@ class TestPrepSelPrep:
         decomp = qml.list_decomps(qml.PrepSelPrep)[0]
 
         resource_obj = decomp.compute_resources(**op.resource_params)
-        assert resource_obj.num_gates == 3
+        assert resource_obj.num_gates == 1
 
         expected_counts = {
-            qml.resource_rep(qml.Select, op_reps=op_reps, num_control_wires=2, partial=True): 1,
+            qml.resource_rep(
+                qml.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
+            ): 1,
             qml.resource_rep(qml.StatePrep, num_wires=2): 1,
             qml.resource_rep(
                 qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
             ): 1,
         }
+        expected_counts = {
+            qml.resource_rep(
+                qml.ops.ChangeOpBasis,
+                compute_op=qml.resource_rep(qml.StatePrep, num_wires=2),
+                target_op=qml.resource_rep(
+                    qml.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
+                ),
+                uncompute_op=qml.resource_rep(
+                    qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
+                ),
+            ): 1,
+        }
+
         assert resource_obj.gate_counts == expected_counts
 
         decomp = qml.list_decomps(qml.PrepSelPrep)[0]
@@ -360,7 +372,7 @@ class TestPrepSelPrep:
         with qml.queuing.AnnotatedQueue() as q:
             decomp(*op.data, wires=op.wires, **op.hyperparameters)
 
-        q = q.queue
+        q = q.queue[0].decomposition()
 
         phase_ops = [qml.prod(op, qml.GlobalPhase(0, wires=op.wires)) for op in ops]
 
@@ -382,19 +394,20 @@ class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
-    exp_grad = [0.41177732, -0.21262349, 1.6437038, -0.74256516]
+    # TODO: We really shouldn't be hardcoding the expected derivative here [sc-98529]
+    exp_grad = [-0.57485039, 0.31253535, -0.717947, 0.48489061]
 
     @pytest.mark.torch
     def test_torch(self):
         """Test the torch interface"""
         import torch
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -408,12 +421,12 @@ class TestInterfaces:
     def test_autograd(self):
         """Test the autograd interface"""
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -429,12 +442,12 @@ class TestInterfaces:
         """Test the jax interface"""
         import jax
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
@@ -449,13 +462,13 @@ class TestInterfaces:
         """Test that jax jit works"""
         import jax
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("reference.qubit", wires=5)
 
         @jax.jit
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
             )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))

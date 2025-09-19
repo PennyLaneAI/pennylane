@@ -717,7 +717,7 @@ class TestVectorValuedQNode:
         assert np.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("interface", ["auto", "jax", "jax-python"])
+@pytest.mark.parametrize("interface", ["auto", "jax"])
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     remains differentiable."""

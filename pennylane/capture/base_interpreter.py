@@ -14,11 +14,11 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
+# pylint: disable=no-self-use
+
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
-
-# pylint: disable=no-self-use, wrong-import-position
 from importlib.metadata import version
 
 import jax
@@ -119,7 +119,7 @@ class PlxprInterpreter:
             def interpret_operation(self, op):
                 new_op = qml.simplify(op)
                 if new_op is op:
-                    # simplify didnt create a new operator, so it didnt get captured
+                    # simplify didn't create a new operator, so it didn't get captured
                     data, struct = jax.tree_util.tree_flatten(new_op)
                     new_op = jax.tree_util.tree_unflatten(struct, data)
                 return new_op
@@ -247,7 +247,7 @@ class PlxprInterpreter:
 
         .. code-block:: python
 
-            my_primitive = jax.extend.core.Primitive("my_primitve")
+            my_primitive = jax.extend.core.Primitive("my_primitive")
 
             @Interpreter_Type.register(my_primitive)
             def handle_my_primitive(self: Interpreter_Type, *invals, **params)
@@ -645,7 +645,6 @@ else:  # pragma: no cover
     from jax._src.pjit import pjit_p
 
 
-# pylint: disable=protected-access
 @FlattenedInterpreter.register_primitive(pjit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:

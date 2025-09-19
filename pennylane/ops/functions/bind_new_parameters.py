@@ -14,7 +14,7 @@
 """
 This module contains the qml.bind_new_parameters function.
 """
-# pylint: disable=missing-docstring
+# pylint:disable=missing-function-docstring
 
 import copy
 from collections.abc import Sequence
@@ -22,6 +22,16 @@ from functools import singledispatch
 
 from pennylane import ops
 from pennylane.operation import Operator
+from pennylane.ops import (
+    Adjoint,
+    CompositeOp,
+    Identity,
+    Pow,
+    Projector,
+    ScalarSymbolicOp,
+    SProd,
+    SymbolicOp,
+)
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     ApproxTimeEvolution,
@@ -29,12 +39,9 @@ from pennylane.templates.subroutines import (
     ControlledSequence,
     FermionicDoubleExcitation,
     QDrift,
+    TrotterProduct,
 )
 from pennylane.typing import TensorLike
-
-from ..identity import Identity
-from ..op_math import Adjoint, CompositeOp, Pow, ScalarSymbolicOp, SProd, SymbolicOp
-from ..qubit import Projector
 
 
 @singledispatch
@@ -71,6 +78,15 @@ def bind_new_parameters_approx_time_evolution(
     n = op.hyperparameters["n"]
 
     return ApproxTimeEvolution(new_hamiltonian, time, n)
+
+
+@bind_new_parameters.register
+def _(op: TrotterProduct, params: Sequence[TensorLike]):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[:-1])
+    time = params[-1]
+
+    hp = op.hyperparameters
+    return TrotterProduct(new_hamiltonian, time, n=hp["n"], order=hp["order"])
 
 
 @bind_new_parameters.register
