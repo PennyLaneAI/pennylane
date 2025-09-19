@@ -89,7 +89,7 @@ class OutOfPlaceSquare(ResourceOperator):
             register_size (int): the size of the input register
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         num_wires = 3 * register_size
         return CompressedResourceOp(cls, num_wires, {"register_size": register_size})
@@ -178,7 +178,7 @@ class PhaseGradient(ResourceOperator):
             num_wires (int): the number of qubits to prepare in the phase gradient state
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
@@ -277,7 +277,7 @@ class OutMultiplier(ResourceOperator):
             b_num_qubits (int): the size of the second input register
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         num_wires = a_num_qubits + b_num_qubits + 2 * max((a_num_qubits, b_num_qubits))
         return CompressedResourceOp(
@@ -378,7 +378,7 @@ class SemiAdder(ResourceOperator):
             max_register_size (int): the size of the larger of the two registers being added together
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         num_wires = 2 * max_register_size
         return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
@@ -575,7 +575,7 @@ class ControlledSequence(ResourceOperator):
             num_ctrl_wires (int): the number of controlled wires to run the sequence over
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         params = {"base_cmpr_op": base_cmpr_op, "num_ctrl_wires": num_ctrl_wires}
         num_wires = num_ctrl_wires + base_cmpr_op.num_wires
@@ -767,7 +767,7 @@ class QPE(ResourceOperator):
                 default :class:`~.pennylane.estimator.QFT` will be used.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         params = {
             "base_cmpr_op": base_cmpr_op,
@@ -884,7 +884,7 @@ class IterativeQPE(ResourceOperator):
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         num_wires = base_cmpr_op.num_wires
         return CompressedResourceOp(
@@ -983,7 +983,7 @@ class QFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, num_wires, params)
@@ -1142,7 +1142,7 @@ class AQFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         params = {"order": order, "num_wires": num_wires}
         return CompressedResourceOp(cls, num_wires, params)
@@ -1317,7 +1317,7 @@ class BasisRotation(ResourceOperator):
                 as the number of columns of the matrix.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         params = {"dim_N": dim_N}
         num_wires = dim_N
@@ -1510,7 +1510,7 @@ class Select(ResourceOperator):
                 required and the number of wires targeted by the :code:`select_ops`.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         num_ctrl_wires = math.ceil(math.log2(len(cmpr_ops)))
         fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
@@ -1928,7 +1928,7 @@ class QROM(ResourceOperator):
                 determines the optimal depth.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         if num_bit_flips is None:
             num_bit_flips = num_bitstrings * size_bitstring // 2
@@ -2026,7 +2026,7 @@ class QubitUnitary(ResourceOperator):
                 qubit rotations used to synthesize the n-qubit unitary.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         params = {"num_wires": num_wires, "precision": precision}
         return CompressedResourceOp(cls, num_wires, params)
@@ -2184,7 +2184,7 @@ class SelectPauliRot(ResourceOperator):
             precision (float | None): the precision used in the single qubit rotations
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            ~.pennylane.estimator.CompressedResourceOp: the operator in a compressed representation
         """
         num_wires = num_ctrl_wires + 1
         return CompressedResourceOp(
