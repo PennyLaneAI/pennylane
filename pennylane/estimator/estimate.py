@@ -36,7 +36,7 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 
 def estimate(
-    workflow: Callable | ResourceOperator | Resources,
+    workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -47,7 +47,7 @@ def estimate(
     with respect to a given gateset.
 
     Args:
-        workflow (Callable | ResourceOperator | Resources): The quantum circuit or operator
+        workflow (Callable | ResourceOperator | Resources | Qnode): The quantum circuit or operator
             for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to track
             counts for throughout the quantum workflow.
@@ -110,7 +110,7 @@ def estimate(
 
 @singledispatch
 def _estimate_resources_dispatch(
-    workflow: Callable | ResourceOperator | Resources,
+    workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
