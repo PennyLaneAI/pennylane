@@ -230,7 +230,7 @@ class OutMultiplier(ResourceOperator):
         The resources are obtained from appendix G, lemma 10 in `PRX Quantum, 2, 040332 (2021)
         <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_.
 
-    .. seealso:: :class:`~.OutMultiplier`
+    .. seealso:: :class:`~.pennylane.OutMultiplier`
 
     **Example**
 
@@ -333,7 +333,7 @@ class SemiAdder(ResourceOperator):
         The resources are obtained from figures 1 and 2 in `Gidney (2018)
         <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
 
-    .. seealso:: :class:`~.SemiAdder`
+    .. seealso:: :class:`~.pennylane.SemiAdder`
 
     **Example**
 
@@ -506,7 +506,7 @@ class ControlledSequence(ResourceOperator):
             2: ──│────│────╭●─────┤
             t: ──╰U⁴──╰U²──╰U¹────┤
 
-    .. seealso:: :class:`~.ControlledSequence`
+    .. seealso:: :class:`~.pennylane.ControlledSequence`
 
     **Example**
 
@@ -645,7 +645,7 @@ class QPE(ResourceOperator):
         in (Section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
         Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-    .. seealso:: :class:`~.QuantumPhaseEstimation`
+    .. seealso:: :class:`~.pennylane.QuantumPhaseEstimation`
 
     **Example**
 
@@ -828,7 +828,7 @@ class IterativeQPE(ResourceOperator):
     Resources:
         The resources are obtained following the construction from `arXiv:0610214v3 <https://arxiv.org/abs/quant-ph/0610214v3>`_.
 
-    .. seealso:: :func:`~.iterative_qpe`
+    .. seealso:: :func:`~.pennylane.iterative_qpe`
 
     **Example**
 
@@ -939,7 +939,7 @@ class QFT(ResourceOperator):
         in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
         <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-    .. seealso:: :class:`~.QFT`
+    .. seealso:: :class:`~.pennylane.pennylane.QFT`
 
     **Example**
 
@@ -1091,7 +1091,7 @@ class AQFT(ResourceOperator):
         gates and the classical measure-and-reset (Fig. 2) are accounted for as :code:`TemporaryAND`
         operations.
 
-    .. seealso:: :class:`~.AQFT`
+    .. seealso:: :class:`~.pennylane.AQFT`
 
     **Example**
 
@@ -1243,7 +1243,7 @@ class BasisRotation(ResourceOperator):
         :class:`~.ResourceSingleExcitation` gate, and :math:`dim_N \times (1 + (dim_N - 1) / 2)` instances
         of the :class:`~.ResourcePhaseShift` gate.
 
-    .. seealso:: :class:`~.BasisRotation`
+    .. seealso:: :class:`~.pennylane.BasisRotation`
 
     **Example**
 
@@ -1345,7 +1345,7 @@ class Select(ResourceOperator):
         where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
         to select.
 
-    .. seealso:: :class:`~.Select`
+    .. seealso:: :class:`~.pennylane.Select`
 
     **Example**
 
@@ -1544,7 +1544,7 @@ class QROM(ResourceOperator):
         :code:`zeroed = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
         (Figure 4) for :code:`zeroed = True`.
 
-    .. seealso:: :class:`~.QROM`
+    .. seealso:: :class:`~.pennylane.QROM`
 
     **Example**
 
@@ -1977,7 +1977,7 @@ class QubitUnitary(ResourceOperator):
 
         * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
 
-    .. seealso:: :class:`~.QubitUnitary`
+    .. seealso:: :class:`~.pennylane.QubitUnitary`
 
     **Example**
 
@@ -2115,7 +2115,7 @@ class SelectPauliRot(ResourceOperator):
         gate and :math:`2^{n}` instances of the single qubit rotation gate (:code:`RX`,
         :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
 
-    .. seealso:: :class:`~.SelectPauliRot`
+    .. seealso:: :class:`~.pennylane.SelectPauliRot`
 
     **Example**
 
