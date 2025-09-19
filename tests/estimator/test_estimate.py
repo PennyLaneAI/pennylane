@@ -213,19 +213,23 @@ class TestEstimateResources:
         with pytest.raises(TypeError, match="Could not obtain resources for obj of type"):
             estimate(({1, 2, 3}))
 
-    def test_estimate_raises_error_for_qnode(self):
-        """Test that a NotImplementedError is raised for QNodes."""
-        dev = qml.device("default.qubit", wires=1)
+    def test_estimate_qnode_no_args(self):
+        """Test that a QNode with no arguments can be estimated."""
+
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def my_circuit():
+        def circuit():
             qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            X()
+            return qml.expval(qml.Z(0))
 
-        with pytest.raises(
-            NotImplementedError, match="Support for QNodes has not yet been implemented."
-        ):
-            estimate(my_circuit)
+        resources = estimate(circuit)()
+
+        assert isinstance(resources, Resources)
+        assert resources.algo_wires == 2
+        assert resources.gate_counts["Hadamard"] == 1
+        assert resources.gate_counts["X"] == 1
 
     def test_qfunc_with_num_wires(self):
         """Test that the number of wires is correctly inferred from a qfunc

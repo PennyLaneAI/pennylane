@@ -135,7 +135,7 @@ def _resources_from_qfunc(
     """Get resources from a quantum function which queues operators"""
 
     if isinstance(obj, QNode):
-        raise NotImplementedError("Support for QNodes has not yet been implemented.")
+        obj = obj.func
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
