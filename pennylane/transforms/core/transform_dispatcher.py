@@ -108,7 +108,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
             self._original_device = original_device
 
         def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform.transform})"
 
         def preprocess(
             self,
@@ -142,7 +142,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
             self._original_device = original_device
 
         def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform.transform})"
 
         def preprocess_transforms(
             self,
@@ -370,7 +370,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         if self.expand_transform:
             qnode.transform_program.push_back(
                 TransformContainer(
-                    self._expand_transform,
+                    TransformDispatcher(self._expand_transform),
                     args=targs,
                     kwargs=tkwargs,
                     use_argnum=self._use_argnum_in_expand,
@@ -378,13 +378,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
         qnode.transform_program.push_back(
             TransformContainer(
-                self._transform,
+                self,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=self._classical_cotransform,
-                plxpr_transform=self._plxpr_transform,
-                is_informative=self._is_informative,
-                final_transform=self._final_transform,
             )
         )
         return qnode
@@ -481,9 +477,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             raise TransformError("Device transform does not support final transforms.")
 
         if type(original_device).preprocess != qml.devices.Device.preprocess:
-            return _preprocess_device(original_device, self.transform, targs, tkwargs)
+            return _preprocess_device(original_device, self, targs, tkwargs)
 
-        return _preprocess_transforms_device(original_device, self.transform, targs, tkwargs)
+        return _preprocess_transforms_device(original_device, self, targs, tkwargs)
 
     def _batch_transform(self, original_batch, targs, tkwargs):
         """Apply the transform on a batch of tapes."""
@@ -543,37 +539,39 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        transform,
-        args=None,
-        kwargs=None,
-        classical_cotransform=None,
-        plxpr_transform=None,
-        is_informative=False,
-        final_transform=False,
-        use_argnum=False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        transform: TransformDispatcher,
+        args: tuple | list = (),
+        kwargs: None | dict = None,
+        use_argnum: bool = False,
+        **transform_config,
+    ):
+        if not isinstance(transform, TransformDispatcher):
+            transform = TransformDispatcher(transform, **transform_config)
+        elif transform_config:
+            raise ValueError(
+                f"transform_config kwargs {transform_config} cannot be passed if a TransformDispatcher is provided."
+            )
         self._transform = transform
-        self._args = args or []
+        self._args = tuple(args)
         self._kwargs = kwargs or {}
-        self._classical_cotransform = classical_cotransform
-        self._plxpr_transform = plxpr_transform
-        self._is_informative = is_informative
-        self._final_transform = is_informative or final_transform
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
+        return f"<{self._transform.transform.__name__}({self._args}, {self._kwargs})>"
+
+    def __call__(self, obj):
+        return self._transform(obj, *self.args, **self.kwargs)
 
     def __iter__(self):
         return iter(
             (
-                self._transform,
+                self._transform.transform,
                 self._args,
                 self._kwargs,
-                self._classical_cotransform,
-                self._plxpr_transform,
-                self._is_informative,
-                self.final_transform,
+                self._transform._classical_cotransform,
+                self._transform._plxpr_transform,
+                self._transform._is_informative,
+                self._transform.final_transform,
             )
         )
 
@@ -592,37 +590,37 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
     @property
     def transform(self):
         """The stored quantum transform."""
-        return self._transform
+        return self._transform.transform
 
     @property
-    def args(self):
+    def args(self) -> tuple:
         """The stored quantum transform's ``args``."""
         return self._args
 
     @property
-    def kwargs(self):
+    def kwargs(self) -> dict:
         """The stored quantum transform's ``kwargs``."""
         return self._kwargs
 
     @property
     def classical_cotransform(self):
         """The stored quantum transform's classical co-transform."""
-        return self._classical_cotransform
+        return self._transform.classical_cotransform
 
     @property
     def plxpr_transform(self):
         """The stored quantum transform's PLxPR transform."""
-        return self._plxpr_transform
+        return self._transform.plxpr_transform
 
     @property
-    def is_informative(self):
+    def is_informative(self) -> bool:
         """``True`` if the transform is informative."""
-        return self._is_informative
+        return self._transform.is_informative
 
     @property
-    def final_transform(self):
+    def final_transform(self) -> bool:
         """``True`` if the transform needs to be executed"""
-        return self._final_transform
+        return self._transform.final_transform
 
 
 def _create_transform_primitive(name):
