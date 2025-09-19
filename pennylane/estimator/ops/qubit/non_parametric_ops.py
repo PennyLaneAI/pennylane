@@ -654,7 +654,7 @@ class T(ResourceOperator):
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one auxiliary qubit in a `zeroed` state, which is reset at the end.
             In this case the cost increases by two additional ``MultiControlledX`` gates,
-            as described in (Lemma 7.11) `Barenco et al. <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            as described in (Lemma 7.11) `Barenco et al. arXiv:quant-ph/9503016 <https://arxiv.org/abs/quant-ph/9503016>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
