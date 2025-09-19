@@ -32,6 +32,11 @@
     [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
   * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
+  * The ``CompactHamiltonian`` class was added to `qml.estimator.templates` as a compact representation for the Hamiltonian of a quantum system.
+    [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
+  * The resource templates related to Trotter were added to `qml.estimator.templates`.
+    [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
+
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
