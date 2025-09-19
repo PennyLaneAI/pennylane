@@ -76,10 +76,25 @@ from .data_movement import (
     SliceOp,
 )
 
+from .dynamism import (
+    DynamicBroadcastInDimOp,
+)
+
+from .reduction import (
+    ReduceOp,
+)
+
+from .extensibility import (
+    CustomCallOp,
+)
+
 from .attributes import (
     GatherDimensionNumbers,
     ResultAccuracyModeAttr,
     ScatterDimensionNumbers,
+    CustomCallApiVersion,
+    CustomCallApiVersionAttr,
+    OutputOperandAlias,
 )
 
 # Import the main StableHLO dialect
@@ -135,8 +150,17 @@ __all__ = [
     "ReshapeOp",
     "ScatterOp",
     "SliceOp",
+    # Dynamism operations
+    "DynamicBroadcastInDimOp",
+    # Reduction operations
+    "ReduceOp",
+    # Extensibility operations
+    "CustomCallOp",
     # Attributes
     "GatherDimensionNumbers",
     "ResultAccuracyModeAttr",
     "ScatterDimensionNumbers",
+    "CustomCallApiVersion",
+    "CustomCallApiVersionAttr",
+    "OutputOperandAlias",
 ]

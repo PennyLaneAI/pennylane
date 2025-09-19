@@ -41,19 +41,19 @@ class TestResourceConfig:
     def test_initialization_of_custom_decomps(self):
         """Test that the custom decomposition dictionaries initialize as empty."""
         config = ResourceConfig()
-        assert config._pow_custom_decomps == {}
-        assert config._custom_decomps == {}
-        assert config._adj_custom_decomps == {}
-        assert config._ctrl_custom_decomps == {}
+        assert config.pow_custom_decomps == {}
+        assert config.custom_decomps == {}
+        assert config.adj_custom_decomps == {}
+        assert config.ctrl_custom_decomps == {}
 
     # pylint: disable=use-implicit-booleaness-not-comparison
     @pytest.mark.parametrize(
         "decomp_type, target_dict_name",
         [
-            (None, "_custom_decomps"),
-            ("adj", "_adj_custom_decomps"),
-            ("ctrl", "_ctrl_custom_decomps"),
-            ("pow", "_pow_custom_decomps"),
+            (None, "custom_decomps"),
+            ("adj", "adj_custom_decomps"),
+            ("ctrl", "ctrl_custom_decomps"),
+            ("pow", "pow_custom_decomps"),
         ],
     )
     def test_set_decomp(self, decomp_type, target_dict_name):
@@ -66,14 +66,30 @@ class TestResourceConfig:
         assert target_dict[DummyOp] is dummy_decomp_func
 
         all_dicts = [
-            "_custom_decomps",
-            "_adj_custom_decomps",
-            "_ctrl_custom_decomps",
-            "_pow_custom_decomps",
+            "custom_decomps",
+            "adj_custom_decomps",
+            "ctrl_custom_decomps",
+            "pow_custom_decomps",
         ]
         for dict_name in all_dicts:
             if dict_name != target_dict_name:
                 assert getattr(config, dict_name) == {}
+
+    def test_public_accessors_for_decomps(self):
+        """Test that the public properties correctly return the custom decomposition dictionaries."""
+        config = ResourceConfig()
+
+        # Set one of each type
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="base")
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="adj")
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="ctrl")
+        config.set_decomp(DummyOp, dummy_decomp_func, decomp_type="pow")
+
+        # Check properties
+        assert config.custom_decomps == {DummyOp: dummy_decomp_func}
+        assert config.adj_custom_decomps == {DummyOp: dummy_decomp_func}
+        assert config.ctrl_custom_decomps == {DummyOp: dummy_decomp_func}
+        assert config.pow_custom_decomps == {DummyOp: dummy_decomp_func}
 
     def test_str_representation(self):
         """Test the user-friendly string representation of the ResourceConfig class."""
@@ -105,9 +121,9 @@ class TestResourceConfig:
         repr_str = repr(config)
         expected_repr_str = (
             f"ResourceConfig(precisions = {config.resource_op_precisions}, "
-            f"custom_decomps = {{}}, adj_custom_decomps = {{}}, "
-            f"ctrl_custom_decomps = {{{DummyOp}: {dummy_decomp_func}}}, "
-            f"pow_custom_decomps = {{}})"
+            f"custom_decomps = {config.custom_decomps}, adj_custom_decomps = {config.adj_custom_decomps}, "
+            f"ctrl_custom_decomps = {config.ctrl_custom_decomps}, "
+            f"pow_custom_decomps = {config.pow_custom_decomps})"
         )
 
         assert repr_str == expected_repr_str
