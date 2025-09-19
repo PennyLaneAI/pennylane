@@ -172,7 +172,10 @@ class TrotterProduct(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, first_order_expansion, num_steps, order, 
+        cls,
+        first_order_expansion,
+        num_steps,
+        order,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -195,12 +198,7 @@ class TrotterProduct(ResourceOperator):
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def resource_decomp(
-        cls,
-        first_order_expansion,
-        num_steps,
-        order
-    ) -> list[GateCount]:
+    def resource_decomp(cls, first_order_expansion, num_steps, order) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -1447,7 +1445,12 @@ class TrotterVibronic(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision,
+        cls,
+        compact_ham,
+        num_steps,
+        order,
+        phase_grad_precision,
+        coeff_precision,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.

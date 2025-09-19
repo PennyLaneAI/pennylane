@@ -28,10 +28,9 @@ class TestResourceTrotterProduct:
     """Test the ResourceTrotterProduct class"""
 
     # Expected resources were obtained manually using the recursion expression
-    op_data = [  # ops, num_wires, num_steps, order, expected_res
+    op_data = [  # ops, num_steps, order, expected_res
         (
             [qre.X(wires=0), qre.Y(wires=1), qre.Z(wires=0)],
-            2,
             2,
             1,
             [
@@ -42,7 +41,6 @@ class TestResourceTrotterProduct:
         ),
         (
             [qre.X(), qre.Y()],
-            1,
             10,
             2,
             [
@@ -52,7 +50,6 @@ class TestResourceTrotterProduct:
         ),
         (
             [qre.RX(precision=1e-3), qre.RY(precision=1e-3), qre.Z()],
-            1,
             10,
             4,
             [
@@ -63,38 +60,31 @@ class TestResourceTrotterProduct:
         ),
     ]
 
-    @pytest.mark.parametrize("ops, num_wires, num_steps, order, _", op_data)
-    def test_resource_params(self, ops, num_wires, num_steps, order, _):
+    @pytest.mark.parametrize("ops, num_steps, order, _", op_data)
+    def test_resource_params(self, ops, num_steps, order, _):
         """Test that the resource params are correct"""
         trotter = qre.TrotterProduct(ops, num_steps=num_steps, order=order)
         assert trotter.resource_params == {
             "first_order_expansion": tuple(op.resource_rep_from_op() for op in ops),
             "num_steps": num_steps,
             "order": order,
-            "num_wires": num_wires,
         }
 
-    @pytest.mark.parametrize("ops, num_wires, num_steps, order, _", op_data)
-    def test_resource_rep(self, ops, num_wires, num_steps, order, _):
+    @pytest.mark.parametrize("ops, num_steps, order, _", op_data)
+    def test_resource_rep(self, ops, num_steps, order, _):
         """Test that the resource params are correct"""
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
         expected = qre.CompressedResourceOp(
             qre.TrotterProduct,
-            num_wires,
-            {
-                "first_order_expansion": cmpr_ops,
-                "num_steps": num_steps,
-                "order": order,
-                "num_wires": num_wires,
-            },
+            {"first_order_expansion": cmpr_ops, "num_steps": num_steps, "order": order},
         )
-        assert qre.TrotterProduct.resource_rep(cmpr_ops, num_steps, order, num_wires) == expected
+        assert qre.TrotterProduct.resource_rep(cmpr_ops, num_steps, order) == expected
 
-    @pytest.mark.parametrize("ops, num_wires, num_steps, order, expected_res", op_data)
-    def test_resources(self, ops, num_wires, num_steps, order, expected_res):
+    @pytest.mark.parametrize("ops, num_steps, order, expected_res", op_data)
+    def test_resources(self, ops, num_steps, order, expected_res):
         """Test the resources method returns the correct dictionary"""
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
-        computed_res = qre.TrotterProduct.resource_decomp(cmpr_ops, num_steps, order, num_wires)
+        computed_res = qre.TrotterProduct.resource_decomp(cmpr_ops, num_steps, order)
         assert computed_res == expected_res
 
     def test_attribute_error(self):
