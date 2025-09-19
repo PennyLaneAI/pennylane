@@ -1063,6 +1063,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
+  [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
+
 * Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
