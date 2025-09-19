@@ -20,22 +20,22 @@ from typing import Any
 from xdsl.dialects import builtin, func
 from xdsl.ir import SSAValue
 
-from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operator
+
+from ..dialects.quantum import AllocOp as AllocOpPL
+from ..dialects.quantum import (
     CustomOp,
     ExpvalOp,
 )
-from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import (
     GlobalPhaseOp,
     ProbsOp,
     SampleOp,
     StateOp,
     VarianceOp,
 )
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
-
 from .xdsl_conversion import (
     dispatch_wires_extract,
     xdsl_to_qml_meas,
