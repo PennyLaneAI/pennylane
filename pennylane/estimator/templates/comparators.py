@@ -22,6 +22,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
+from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ,unused-argument
 
@@ -33,7 +34,7 @@ class SingleQubitComparator(ResourceOperator):
     by applying the operation's adjoint.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
@@ -67,7 +68,7 @@ class SingleQubitComparator(ResourceOperator):
 
     num_wires = 4
 
-    def __init__(self, wires=None):
+    def __init__(self, wires: WiresLike = None):
         super().__init__(wires=wires)
 
     @property
@@ -132,7 +133,7 @@ class TwoQubitComparator(ResourceOperator):
     by applying the operation's adjoint.
 
     Args:
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
@@ -168,7 +169,7 @@ class TwoQubitComparator(ResourceOperator):
 
     num_wires = 4
 
-    def __init__(self, wires=None):
+    def __init__(self, wires: WiresLike = None):
         super().__init__(wires=wires)
 
     @property
@@ -270,7 +271,7 @@ class IntegerComparator(ResourceOperator):
         register_size (int): size of the register for basis state
         geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
             ``False``, the comparison made will be :math:`n \lt L`.
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         This decomposition uses the minimum number of ``MultiControlledX`` gates.
@@ -320,7 +321,7 @@ class IntegerComparator(ResourceOperator):
 
     resource_keys = {"value", "register_size", "geq"}
 
-    def __init__(self, value, register_size, geq=False, wires=None):
+    def __init__(self, value: int, register_size: int, geq: bool = False, wires: WiresLike = None):
         self.value = value
         self.register_size = register_size
         self.geq = geq
@@ -501,7 +502,7 @@ class RegisterComparator(ResourceOperator):
         second_register (int): the size of the second register
         geq (bool): If set to ``True``, the comparison made will be :math:`a \geq b`. If
             ``False``, the comparison made will be :math:`a \lt b`.
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B of `arXiv:1711.10460
@@ -527,7 +528,9 @@ class RegisterComparator(ResourceOperator):
 
     resource_keys = {"first_register", "second_register", "geq"}
 
-    def __init__(self, first_register, second_register, geq=False, wires=None):
+    def __init__(
+        self, first_register: int, second_register: int, geq: bool = False, wires: WiresLike = None
+    ):
         self.first_register = first_register
         self.second_register = second_register
         self.geq = geq

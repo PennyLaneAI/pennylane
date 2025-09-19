@@ -25,6 +25,8 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 
+from pennylane.wires import WiresLike
+
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
 
 
@@ -47,7 +49,7 @@ class UniformStatePrep(ResourceOperator):
 
     Args:
         num_states (int): the number of states in the uniform superposition
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
@@ -71,7 +73,7 @@ class UniformStatePrep(ResourceOperator):
 
     resource_keys = {"num_states"}
 
-    def __init__(self, num_states, wires=None):
+    def __init__(self, num_states: int, wires: WiresLike = None):
         self.num_states = num_states
         k = (num_states & -num_states).bit_length() - 1
         L = num_states // (2**k)
@@ -161,7 +163,7 @@ class AliasSampling(ResourceOperator):
     Args:
         num_coeffs (int): the number of unique coefficients in the state
         precision (float): the precision with which the coefficients are loaded
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
@@ -184,7 +186,7 @@ class AliasSampling(ResourceOperator):
 
     resource_keys = {"num_coeffs", "precision"}
 
-    def __init__(self, num_coeffs, precision=None, wires=None):
+    def __init__(self, num_coeffs: int, precision: float | None = None, wires: WiresLike = None):
         self.num_coeffs = num_coeffs
         self.precision = precision
         self.num_wires = int(math.ceil(math.log2(num_coeffs)))
@@ -279,11 +281,11 @@ class MPSPrep(ResourceOperator):
         num_mps_matrices (int): the number of matrices in the MPS representation
         max_bond_dim (int): the bond dimension of the MPS representation
         precision (Union[None, float], optional): the precision used when loading the MPS matricies
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources for MPSPrep are according to the decomposition, which uses the generic
-        :class:`~.labs.resource_estimation.ResourceQubitUnitary`. The decomposition is based on
+        :class:`~.pennylane.estimator.QubitUnitary`. The decomposition is based on
         the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
     .. seealso:: :class:`~.MPSPrep`
@@ -305,7 +307,13 @@ class MPSPrep(ResourceOperator):
 
     resource_keys = {"num_mps_matrices", "max_bond_dim", "precision"}
 
-    def __init__(self, num_mps_matrices, max_bond_dim, precision=None, wires=None):
+    def __init__(
+        self,
+        num_mps_matrices: int,
+        max_bond_dim: int,
+        precision: float | None = None,
+        wires: WiresLike = None,
+    ):
         self.num_wires = num_mps_matrices
         self.precision = precision
         self.max_bond_dim = max_bond_dim
@@ -368,7 +376,7 @@ class MPSPrep(ResourceOperator):
 
         Resources:
             The resources for MPSPrep are estimated according to the decomposition, which uses the generic
-            :class:`~.labs.resource_estimation.ResourceQubitUnitary`. The decomposition is based on
+            :class:`~.pennylane.estimator.QubitUnitary`. The decomposition is based on
             the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
         Returns:
@@ -402,13 +410,13 @@ class QROMStatePreparation(ResourceOperator):
 
     This operation implements the state preparation method described
     in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-    :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+    :class:`~.pennylane.estimator.QROM` to dynamically load the rotation angles.
 
     .. note::
 
         This decomposition assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+        See also :class:`~.pennylane.pennylane.estimator.PhaseGradient`.
 
     Args:
         num_state_qubits (int): number of qubits required to represent the state-vector
@@ -418,13 +426,13 @@ class QROMStatePreparation(ResourceOperator):
             and positive
         select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth
-        wires (Sequence[int], optional): The wires to prepare the target state on. This excludes any
+        wires (Sequence[int], None): The wires to prepare the target state on. This excludes any
             additional qubits allocated during the decomposition (via select-swap).
 
     Resources:
         The resources for QROMStatePreparation are computed according to the decomposition described
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-        :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+        :class:`~.pennylane.estimator.QROM` to dynamically load the rotation angles.
         These rotations gates are implemented using an in-place controlled-adder operation
         (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to a phase gradient.
 
@@ -472,7 +480,7 @@ class QROMStatePreparation(ResourceOperator):
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_ for more details.
 
         The ``select_swap_depths`` parameter allows a user to configure the ``select_swap_depth`` of
-        each individual :class:`~.labs.resource_estimation.ResourceQROM` used. The
+        each individual :class:`~.pennylane.estimator.QROM` used. The
         ``select_swap_depths`` argument can be one of :code:`(int, None, Iterable(int, None))`.
 
         If an integer or :code:`None` is passed (the default value for this parameter is 1), then that
@@ -513,11 +521,11 @@ class QROMStatePreparation(ResourceOperator):
 
     def __init__(
         self,
-        num_state_qubits,
-        precision=None,
-        positive_and_real=False,
-        select_swap_depths=1,
-        wires=None,
+        num_state_qubits: int,
+        precision: float | None = None,
+        positive_and_real: bool = False,
+        select_swap_depths: int = 1,
+        wires: WiresLike = None,
     ):
         # Overriding the default init method to allow for CompactState as an input.
         self.num_wires = num_state_qubits
@@ -625,7 +633,7 @@ class QROMStatePreparation(ResourceOperator):
         Resources:
             The resources for QROMStatePreparation are according to the decomposition as described
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            :class:`~.pennylane.estimator.QROM` to dynamically load the rotation angles.
 
             Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently. If
             :code:`use_phase_grad_trick == True` then these rotations gates are implmented using an
@@ -771,7 +779,7 @@ class QROMStatePreparation(ResourceOperator):
         Resources:
             The resources for QROMStatePreparation are according to the decomposition as described
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            :class:`~.pennylane.estimator.QROM` to dynamically load the rotation angles.
             Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently.
 
         Returns:
@@ -796,7 +804,7 @@ class QROMStatePreparation(ResourceOperator):
 
             This decomposition assumes an appropriately sized phase gradient state is available.
             Users should ensure the cost of constructing such a state has been accounted for.
-            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+            See also :class:`~.pennylane.pennylane.estimator.PhaseGradient`.
 
         Args:
             num_state_qubits (int): number of qubits required to represent the state-vector
@@ -810,7 +818,7 @@ class QROMStatePreparation(ResourceOperator):
         Resources:
             The resources for QROMStatePreparation are according to the decomposition as described
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            :class:`~.pennylane.estimator.QROM` to dynamically load the rotation angles.
             These rotations gates are implmented using an inplace controlled-adder operation
             (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to phase gradient.
 
