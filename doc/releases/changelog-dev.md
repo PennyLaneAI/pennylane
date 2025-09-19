@@ -536,6 +536,9 @@
 * :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
 
+* The :func:`~.noise.fold_global` transform is refactored to collect operators into a list directly rather than relying on queuing.
+  [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -926,6 +929,9 @@
 * `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
   be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
+
+* :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at `qml.tape`.
+  [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
 
 <h3>Deprecations 👋</h3>
 
