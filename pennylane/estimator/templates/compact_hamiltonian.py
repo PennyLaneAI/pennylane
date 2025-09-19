@@ -48,7 +48,7 @@ class CompactHamiltonian:
      Total qubits: 80
      Total gates : 3.960E+7
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 80
+      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 80
      Gate breakdown:
       {'T': 3.638E+7, 'S': 9.699E+5, 'Z': 6.466E+5, 'Hadamard': 6.466E+5, 'CNOT': 9.553E+5}
 
