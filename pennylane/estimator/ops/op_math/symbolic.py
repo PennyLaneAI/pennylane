@@ -461,7 +461,7 @@ class Pow(ResourceOperator):
     Args:
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator that we
             want to exponentiate.
-        pow_z (float): the exponent (default value is 1)
+        pow_z (int): the exponent (default value is 1)
 
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
