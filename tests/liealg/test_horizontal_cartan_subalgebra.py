@@ -111,10 +111,11 @@ class TestChangeBasisAdRep:
 
     def test_permutation(self, seed):
         """Test that a permutation is accounted for correctly."""
+        rng = np.random.default_rng(seed)
         ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1), qml.X(1)]
         dla = qml.lie_closure(ops)
         adj = qml.structure_constants(dla)
-        perm = np.random.permutation(len(dla))
+        perm = rng.permutation(len(dla))
         permuted_dla = [dla[i] for i in perm]
         permuted_adj = qml.structure_constants(permuted_dla)
 
@@ -124,9 +125,10 @@ class TestChangeBasisAdRep:
 
     def test_tiny_skewed_basis(self, seed):
         """Test that changing from a tiny orthonormal basis to a skewed basis works."""
+        rng = np.random.default_rng(seed)
         dla = [qml.X(0), qml.Y(0), qml.Z(0)]
         adj = qml.structure_constants(dla)
-        coeffs = np.random.random((len(dla), len(dla)))
+        coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -136,11 +138,12 @@ class TestChangeBasisAdRep:
 
     def test_tiny_skewed_basis_from_non_ortho(self, seed):
         """Test that changing from a tiny non-orthonormal basis to a skewed basis works."""
+        rng = np.random.default_rng(seed)
         ortho_dla = [qml.X(0), qml.Y(0), qml.Z(0)]  # only used to create adj rep.
         dla = [0.2 * qml.X(0) - 0.6 * qml.Y(0), 0.4 * qml.Y(0) + 0.9 * qml.Z(0), qml.Z(0)]
 
         adj = qml.structure_constants(dla, is_orthogonal=False)
-        coeffs = np.random.random((len(dla), len(dla)))
+        coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -152,10 +155,11 @@ class TestChangeBasisAdRep:
 
     def test_skewed_basis(self, seed):
         """Test that changing from an orthonormal basis to a skewed basis works."""
+        rng = np.random.default_rng(seed)
         ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1)]
         dla = qml.lie_closure(ops)
         adj = qml.structure_constants(dla)
-        coeffs = np.random.random((len(dla), len(dla)))
+        coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -165,14 +169,15 @@ class TestChangeBasisAdRep:
 
     def test_skewed_basis_from_non_ortho(self, seed):
         """Test that changing from a non-orthonormal basis to a skewed basis works."""
+        rng = np.random.default_rng(seed)
         ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1)]
         ortho_dla = qml.lie_closure(ops)  # only used to create adj rep.
 
-        coeffs = np.random.random((len(ortho_dla), len(ortho_dla)))
+        coeffs = rng.random((len(ortho_dla), len(ortho_dla)))
         dla = [qml.sum(*(c * op for c, op in zip(_coeffs, ortho_dla))) for _coeffs in coeffs]
         adj = qml.structure_constants(dla, is_orthogonal=False)
 
-        coeffs = np.random.random((len(dla), len(dla)))
+        coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -254,7 +259,7 @@ def _generate_test_cases(seed_value):
     return ps_test_cases, op_test_cases, dense_test_cases
 
 
-class TestData:
+class TestData:  # pylint: disable=attribute-defined-outside-init
     """A base class to provide shared, seed-dependent test case fixtures."""
 
     @pytest.fixture(autouse=True)
