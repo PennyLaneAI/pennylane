@@ -19,7 +19,6 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator.ops import GlobalPhase, Identity
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
