@@ -99,7 +99,7 @@ def rz_phase_gradient(
             E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) 2\pi` is exactly represented by three bits as ``111``.
         phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them.
             Needs to be at least the length of ``angle_wires`` and will only
-            use the first ``len(angle_wires)`` according to the precision with which the angle is decomposed.
+            use the first ``len(angle_wires)``.
         work_wires (Wires): Additional work wires to realize the :class:`~.SemiAdder` between the ``angle_wires`` and
             ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b=len(phase_grad_wires)`` is
             the precision of the angle :math:`\phi`.
@@ -159,15 +159,15 @@ def rz_phase_gradient(
     Overall, the full circuit looks like the following:
 
     >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H─╭●──────────────╭●───╭GlobalPhase(2.75)──H─┤  Probs
-     ang_0: ────├|Ψ⟩─╭SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
-     ang_1: ────├|Ψ⟩─├SemiAdder─├|Ψ⟩─├GlobalPhase(2.75)────┤
-     ang_2: ────╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─├GlobalPhase(2.75)────┤
-     phg_0: ────╭QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
-     phg_1: ────├QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
-     phg_2: ──X─╰QFT─├SemiAdder──────├GlobalPhase(2.75)────┤
-    work_0: ─────────├SemiAdder──────├GlobalPhase(2.75)────┤
-    work_1: ─────────╰SemiAdder──────╰GlobalPhase(2.75)────┤
+      targ: ──H──────╭(|Ψ⟩)@SemiAdder@(|Ψ⟩)──H─╭GlobalPhase(2.75)─┤  Probs
+     ang_0: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     ang_1: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     ang_2: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     phg_0: ────╭QFT─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     phg_1: ────├QFT─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     phg_2: ──X─╰QFT─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+    work_0: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+    work_1: ─────────╰(|Ψ⟩)@SemiAdder@(|Ψ⟩)────╰GlobalPhase(2.75)─┤
 
     The additional work wires are required by the :class:`~.SemiAdder`.
     Executing the circuit, we get the expected result:
