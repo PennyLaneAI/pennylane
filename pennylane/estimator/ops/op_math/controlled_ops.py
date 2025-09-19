@@ -825,7 +825,16 @@ class CNOT(ResourceOperator):
         if num_ctrl_wires == 1 and num_zero_ctrl == 0:
             return [GateCount(resource_rep(Toffoli))]
 
-        raise ResourcesUndefinedError
+        mcx = resource_rep(
+            MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [
+            GateCount(mcx),
+        ]
 
     @classmethod
     def pow_resource_decomp(
