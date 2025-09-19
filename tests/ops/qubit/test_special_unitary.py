@@ -743,7 +743,7 @@ class TestSpecialUnitary:
 
     @pytest.mark.torch
     @pytest.mark.jax
-    @pytest.mark.parametrize(interface, ["jax", "torch"])
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
     def test_large_wire_jacobian_regression(self, interface):
         """Regression test for compute_matrix with num_wires > 5.
 
