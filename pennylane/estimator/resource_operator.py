@@ -216,8 +216,6 @@ class ResourceOperator(ABC):
         self.wires = None
         if wires is not None:
             wires = Wires(wires)
-            if len(wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
             self.wires = wires
 
         self.queue()
