@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""This module contains the ResourceConfig class, which tracks the configuration for resource estimation"""
-
 from __future__ import annotations
 
 from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from pennylane.estimator.templates import QubitUnitary, SelectPauliRot
+
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
-
-from pennylane.estimator.templates import QubitUnitary, SelectPauliRot
 
 
 class DecompositionType(StrEnum):
