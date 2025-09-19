@@ -20,13 +20,16 @@ import xdsl
 from xdsl.dialects import builtin, func
 from xdsl.ir import SSAValue
 
-from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operator
+
+from ..dialects.quantum import AllocOp as AllocOpPL
+from ..dialects.quantum import (
     CustomOp,
     ExpvalOp,
 )
-from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import (
     GlobalPhaseOp,
     MeasureOp,
     MultiRZOp,

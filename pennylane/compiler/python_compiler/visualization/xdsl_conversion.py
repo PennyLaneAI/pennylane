@@ -28,8 +28,8 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
 )
-from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import (
     GlobalPhaseOp,
     MeasureOp,
     MultiRZOp,
