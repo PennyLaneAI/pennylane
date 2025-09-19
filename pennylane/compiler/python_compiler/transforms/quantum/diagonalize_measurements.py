@@ -36,8 +36,8 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.ops import Hadamard, PauliX, PauliY
 
-from ..dialects.quantum import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
-from .api import compiler_transform
+from ...dialects.quantum import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
+from ...pass_api import compiler_transform
 
 
 def _generate_mapping():
