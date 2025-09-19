@@ -216,12 +216,21 @@ class ResourceOperator(ABC):
         self.wires = None
         if wires is not None:
             wires = Wires(wires)
-            if len(wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
             self.wires = wires
 
         self.queue()
         super().__init__()
+
+    def __eq__(self, other):
+        """Return True if the operators are equal."""
+        if not isinstance(other, ResourceOperator):
+            return False
+
+        return (
+            self.__class__ is other.__class__
+            and self.resource_params == other.resource_params
+            and self.num_wires == other.num_wires
+        )
 
     def queue(self, context: QueuingManager = QueuingManager) -> "ResourceOperator":
         """Append the operator to the Operator queue."""
