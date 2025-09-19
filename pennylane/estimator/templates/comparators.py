@@ -61,7 +61,7 @@ class SingleQubitComparator(ResourceOperator):
      Total qubits: 4
      Total gates : 8
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 4
+      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 4
      Gate breakdown:
       {'Toffoli': 1, 'CNOT': 4, 'X': 3}
     """
@@ -140,7 +140,7 @@ class TwoQubitComparator(ResourceOperator):
         <https://arxiv.org/pdf/1711.10460>`_. Specifically,
         the resources are given as :math:`2` ``CSWAP`` gates,
         :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
-        requires one clean auxiliary qubit.
+        requires one zeroed auxiliary qubit.
         The circuit which applies the comparison operation on registers :math:`(x0,x1)`
         and :math:`(y0, y1)` is defined as:
 
@@ -162,7 +162,7 @@ class TwoQubitComparator(ResourceOperator):
      Total qubits: 5
      Total gates : 10
      Qubit breakdown:
-      clean qubits: 1, dirty qubits: 0, algorithmic qubits: 4
+      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 4
      Gate breakdown:
       {'Toffoli': 2, 'CNOT': 7, 'X': 1}
     """
@@ -201,7 +201,7 @@ class TwoQubitComparator(ResourceOperator):
             <https://arxiv.org/pdf/1711.10460>`_. Specifically,
             the resources are given as :math:`2` ``CSWAP`` gates,
             :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
-            requires one clean auxiliary qubit.
+            requires one zeroed auxiliary qubit.
             The circuit which applies the comparison operation on registers :math:`(x0,x1)`
             and :math:`(y0, y1)` is defined as:
 
@@ -314,7 +314,7 @@ class IntegerComparator(ResourceOperator):
      Total qubits: 9
      Total gates : 19
      Qubit breakdown:
-      clean qubits: 2, dirty qubits: 0, algorithmic qubits: 7
+      zeroed qubits: 2, any_state qubits: 0, algorithmic qubits: 7
      Gate breakdown:
       {'X': 8, 'Toffoli': 3, 'Hadamard': 6, 'CNOT': 2}
     """
@@ -521,7 +521,7 @@ class RegisterComparator(ResourceOperator):
      Total qubits: 11
      Total gates : 89
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 11
+      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 11
      Gate breakdown:
       {'Toffoli': 17, 'CNOT': 51, 'X': 18, 'Hadamard': 3}
     """
