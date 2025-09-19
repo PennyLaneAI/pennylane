@@ -19,6 +19,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
+from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ
 
@@ -68,12 +69,12 @@ class SingleExcitation(ResourceOperator):
     num_wires = 2
     resource_keys = {"precision"}
 
-    def __init__(self, precision=None, wires=None) -> None:
+    def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
         self.precision = precision
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls, precision=None, **kwargs):
+    def resource_decomp(cls, precision=None) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:
@@ -133,7 +134,7 @@ class SingleExcitation(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision=None):
+    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 

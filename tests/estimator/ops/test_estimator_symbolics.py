@@ -59,7 +59,7 @@ class TestAdjoint:
             """Dummy class with no default adjoint decomp"""
 
             @classmethod
-            def adjoint_resource_decomp(cls, **kwargs) -> list[GateCount]:
+            def adjoint_resource_decomp(cls, target_resource_params=None) -> list[GateCount]:
                 """No default resources"""
                 raise ResourcesUndefinedError
 
@@ -293,13 +293,13 @@ class TestPow:
     def test_pow_resource_decomp(self, base_op, z):
         """Test that the power of this operator produces resources as expected."""
         pow_op = qre.Pow(base_op, z)
-        pow_pow_op = qre.Pow(pow_op, z=5)
+        pow_pow_op = qre.Pow(pow_op, pow_z=5)
 
         expected_res = [
             GateCount(
                 qre.Pow.resource_rep(
                     base_op.resource_rep_from_op(),
-                    z=5 * z,
+                    pow_z=5 * z,
                 )
             )
         ]
@@ -425,7 +425,7 @@ class TestChangeOpBasis:
                     qre.Pow,
                     {
                         "base_cmpr_op": (qre.T.resource_rep()),
-                        "z": 6,
+                        "pow_z": 6,
                     },
                 ),
             ),

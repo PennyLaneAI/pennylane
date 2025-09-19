@@ -16,8 +16,6 @@
 
 from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-few-public-methods
-
 
 class WireResourceManager:
     r"""Manages and tracks the auxiliary and algorithmic wires used in a quantum circuit.

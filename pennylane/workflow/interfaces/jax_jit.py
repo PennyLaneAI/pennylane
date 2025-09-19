@@ -43,8 +43,8 @@ import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
+from pennylane.workflow.jacobian_products import _compute_jvps
 
-from ..jacobian_products import _compute_jvps
 from .jax import _NonPytreeWrapper
 
 Zero = jax.custom_derivatives.SymbolicZero

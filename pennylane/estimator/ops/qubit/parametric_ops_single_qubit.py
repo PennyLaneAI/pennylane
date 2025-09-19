@@ -176,7 +176,6 @@ class PhaseShift(ResourceOperator):
         Raises:
             ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        print("target_resource_params:", target_resource_params)
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
             gate_types = [
