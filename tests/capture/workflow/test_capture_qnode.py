@@ -63,7 +63,7 @@ def test_warning_about_execution_pipeline_unmaintained():
         return qml.probs()
 
     with pytest.warns(
-        UserWarning, match="Native execution of plxpr is an unmaintained experimental"
+        UserWarning, match="Executing PennyLane programs with capture enabled"
     ):
         c()
 
