@@ -163,6 +163,11 @@ qnode_prim.prim_type = "higher_order"
 @qnode_prim.def_impl
 def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
+    warn(
+        "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
+        UserWarning,
+    )
+
     execution_config = device.setup_execution_config(execution_config)
 
     if shots_len == 0:
