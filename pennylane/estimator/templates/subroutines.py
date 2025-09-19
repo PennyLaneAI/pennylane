@@ -428,8 +428,8 @@ class SemiAdder(ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            max_register_size (int): the size of the larger of the two registers being added together
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): dictionary containing the size of the larger of the two registers being added together
 
         Resources:
             The resources are obtained from figure 4a in `Gidney (2018)
@@ -442,7 +442,7 @@ class SemiAdder(ResourceOperator):
         """
         max_register_size = target_resource_params["max_register_size"]
         if max_register_size <= 2:
-            raise re.ResourcesNotDefined
+            raise qre.ResourcesNotDefined
         gate_lst = []
 
         if num_ctrl_wires > 1:
@@ -809,11 +809,11 @@ class QPE(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(base_cmpr_op, num_estimation_wires, adj_qft_cmpr_op) -> str:
+    def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = base_cmpr_op.name
-        adj_qft_name = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.name
-        return f"QPE({base_name}, {num_estimation_wires}, adj_qft={adj_qft_name})"
+        base_name = self.base_cmpr_op.name
+        adj_qft_name = None if self.adj_qft_cmpr_op is None else self.adj_qft_cmpr_op.name
+        return f"QPE({base_name}, {self.num_estimation_wires}, adj_qft={adj_qft_name})"
 
 
 class IterativeQPE(ResourceOperator):
@@ -1065,9 +1065,9 @@ class QFT(ResourceOperator):
         return gate_types
 
     @staticmethod
-    def tracking_name(num_wires) -> str:
+    def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"QFT({num_wires})"
+        return f"QFT({self.num_wires})"
 
 
 class AQFT(ResourceOperator):
@@ -1223,9 +1223,9 @@ class AQFT(ResourceOperator):
         return gate_types
 
     @staticmethod
-    def tracking_name(order, num_wires) -> str:
+    def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"AQFT({order}, {num_wires})"
+        return f"AQFT({self.order}, {self.num_wires})"
 
 
 class BasisRotation(ResourceOperator):
@@ -1323,10 +1323,10 @@ class BasisRotation(ResourceOperator):
         num_wires = dim_N
         return CompressedResourceOp(cls, num_wires, params)
 
-    @classmethod
-    def tracking_name(cls, dim_N) -> str:
+    @staticmethod
+    def tracking_name(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"BasisRotation({dim_N})"
+        return f"BasisRotation({self.num_wires})"
 
 
 class Select(ResourceOperator):

@@ -22,10 +22,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
 
-from .templates import (
-    SelectPauliRot,
-    QubitUnitary,
-)
+from .templates import QubitUnitary, SelectPauliRot
 
 
 class DecompositionType(StrEnum):
