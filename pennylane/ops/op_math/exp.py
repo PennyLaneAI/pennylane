@@ -287,7 +287,6 @@ class Exp(ScalarSymbolicOp, Operation):
     @property
     @queuing.QueuingManager.stop_recording()
     def has_decomposition(self):
-        # TODO: Support nested sums in method
         base = self.base.simplify()
         coeff = self.coeff
         if isinstance(base, SProd):
