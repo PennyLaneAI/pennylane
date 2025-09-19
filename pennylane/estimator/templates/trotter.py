@@ -110,7 +110,7 @@ class TrotterProduct(ResourceOperator):
      Total qubits: 1
      Total gates : 3
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 1
      Gate breakdown:
       {'RX': 2, 'RY': 1}
 
