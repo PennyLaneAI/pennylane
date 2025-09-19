@@ -28,6 +28,10 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
 )
+from pennylane.measurements import MidMeasureMP, expval, measure, probs, sample, state, var
+from pennylane.operation import Operator
+from pennylane.ops import __all__ as ops_all
+
 from ..dialects.quantum import ExtractOp as ExtractOpPL
 from ..dialects.quantum import (
     GlobalPhaseOp,
@@ -38,9 +42,6 @@ from ..dialects.quantum import (
     SetBasisStateOp,
     SetStateOp,
 )
-from pennylane.measurements import MidMeasureMP, expval, measure, probs, sample, state, var
-from pennylane.operation import Operator
-from pennylane.ops import __all__ as ops_all
 
 if TYPE_CHECKING:
     from pennylane.measurements import MeasurementProcess

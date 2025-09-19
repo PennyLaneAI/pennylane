@@ -41,9 +41,6 @@ from ..dialects.quantum import (
     StateOp,
     VarianceOp,
 )
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
-
 from .xdsl_conversion import dispatch_wires_extract, xdsl_to_qml_measurement, xdsl_to_qml_op
 
 
