@@ -25,6 +25,9 @@ if TYPE_CHECKING:
 from .templates import (
     SelectPauliRot,
     QubitUnitary,
+    AliasSampling,
+    MPSPrep,
+    QROMStatePreparation,
 )
 
 
@@ -48,6 +51,9 @@ class ResourceConfig:
         self.resource_op_precisions = {
             SelectPauliRot: {"precision": _DEFAULT_PRECISION},
             QubitUnitary: {"precision": _DEFAULT_PRECISION},
+            AliasSampling: {"precision": _DEFAULT_PRECISION},
+            MPSPrep: {"precision": _DEFAULT_PRECISION},
+            QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
