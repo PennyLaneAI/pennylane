@@ -21,7 +21,12 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
-from pennylane.transforms.core import TransformContainer, TransformError, transform
+from pennylane.transforms.core import (
+    TransformContainer,
+    TransformDispatcher,
+    TransformError,
+    transform,
+)
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
@@ -185,6 +190,7 @@ class TestTransformContainer:
         t5_copy = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
         assert t5 == t5_copy
 
+    @pytest.mark.jax  # needs jax to have non-none plxpr transform
     def test_the_transform_container_attributes(self):
         """Test the transform container attributes."""
         container = qml.transforms.core.TransformContainer(
@@ -236,6 +242,23 @@ class TestTransformContainer:
 
         new_c = container(c)
         assert container == new_c.transform_program[0]
+
+    def test_construction_fallback(self):
+        """Test that a TransformContainer can still be constructed in the old way."""
+
+        c = TransformContainer(first_valid_transform, is_informative=True)
+
+        assert isinstance(c._transform, TransformDispatcher)  # pylint: disable=protected-access
+        assert c.is_informative
+        assert c._transform.is_informative  # pylint: disable=protected-access
+
+    def test_error_if_extra_kwargs_when_dispatcher(self):
+        """Test that a ValueError is raised if extra kwargs are passed when a TransformDispatcher is provided."""
+
+        with pytest.raises(
+            ValueError, match="cannot be passed if a TransformDispatcher is provided"
+        ):
+            _ = TransformContainer(qml.transform(first_valid_transform), is_informative=True)
 
 
 class TestTransformDispatcher:  # pylint: disable=too-many-public-methods

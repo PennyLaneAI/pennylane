@@ -140,6 +140,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
+ of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
+ [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
+
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
 

@@ -543,10 +543,13 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         args: tuple | list = (),
         kwargs: None | dict = None,
         use_argnum: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        **transform_config,
+    ):
         if not isinstance(transform, TransformDispatcher):
+            transform = TransformDispatcher(transform, **transform_config)
+        elif transform_config:
             raise ValueError(
-                "The transform argument to TransformContainer must now be a TransformDispatcher."
+                f"transform_config kwargs {transform_config} cannot be passed if a TransformDispatcher is provided."
             )
         self._transform = transform
         self._args = tuple(args)
