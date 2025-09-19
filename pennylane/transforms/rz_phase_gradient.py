@@ -25,8 +25,8 @@ from pennylane.wires import Wires
 
 
 def _binary_repr_int(phi, precision):
-    # reasoning for +1e-10 term:
-    # due to the devision by pi, we obtain 14.999.. instead of 15 for, e.g., (1, 1, 1, 1) pi
+    # Reasoning for +1e-10 term:
+    # due to the division by pi, we obtain 14.999.. instead of 15 for, e.g., (1, 1, 1, 1) pi
     # at the same time, we want to floor off any additional floats when converting to the desired precision,
     # e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
     # so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
@@ -39,7 +39,7 @@ def _rz_phase_gradient(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Function that transforms the RZ gate to the phase gradient circuit
     The precision is implicitly defined by the length of ``angle_wires``
-    Note that the global phases are collected and added as one big global phasein the main function
+    Note that the global phases are collected and added as one big global phase in the main function
     """
 
     precision = len(angle_wires)
