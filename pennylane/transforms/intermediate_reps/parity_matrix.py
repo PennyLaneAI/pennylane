@@ -12,20 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Parity matrix representation"""
-from __future__ import annotations
 
 from collections.abc import Sequence
 from functools import partial
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
-
-if TYPE_CHECKING:
-    from pennylane.tape import QuantumScript
-    from pennylane.typing import PostprocessingFn, TensorLike
+from pennylane.typing import PostprocessingFn, TensorLike
 
 
 @partial(transform, is_informative=True)
