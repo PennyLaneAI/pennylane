@@ -28,6 +28,10 @@
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
+  * The resource operators for controlled operators have been added to `qml.estimator.ops.op_math`.
+    [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
+  * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
+    [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
 
 * Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
@@ -420,6 +424,9 @@
 
 * :func:`~.tape.plxpr_to_tape` now supports converting circuits containing dynamic wire allocation.
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
+
+* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
+  [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -1106,6 +1113,9 @@
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
 <h3>Documentation 📝</h3>
+
+* The documentation of `qml.device` has been updated.
+  [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)

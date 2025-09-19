@@ -13,10 +13,9 @@
 # limitations under the License.
 r"""Resource operators for controlled operations."""
 
-import pennylane.estimator as qre
-
 from typing import Literal
 
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -445,7 +444,7 @@ class CSWAP(ResourceOperator):
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
-        The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
+        The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/abs/2305.18128>`_.
 
         The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
         defined as:
@@ -492,7 +491,7 @@ class CSWAP(ResourceOperator):
         r"""Returns a list representing the resources of the operator.
 
         Resources:
-            The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
+            The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/abs/2305.18128>`_.
 
             The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
             defined as:
@@ -579,7 +578,7 @@ class CCZ(ResourceOperator):
     r"""Resource class for the CCZ gate.
 
     Args:
-        wires (Sequence[int] | None): the subsystem the gate acts on
+        wires (Sequence[int] | None): the wire the operation acts on
 
     Resources:
         The resources are derived from the following identity:
@@ -825,20 +824,22 @@ class CNOT(ResourceOperator):
         )
 
 
-class TempAND(ResourceOperator):
-    r"""Resource class representing a temporary `AND`-gate.
+class TemporaryAND(ResourceOperator):
+    r"""Resource class representing a `TemporaryAND` gate.
 
     Args:
         wires (Sequence[int] | None): the wires the operation acts on
 
     This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
-    with its adjoint (uncompute).
+    with its adjoint.
+
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.TemporaryAND`.
 
     **Example**
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.TempAND.resource_decomp()
+    >>> qml.estimator.TemporaryAND.resource_decomp()
     [(1 x Toffoli)]
     """
 
@@ -925,7 +926,7 @@ class Toffoli(ResourceOperator):
     Args:
         wires (Sequence[int] | None): the subsystem the gate acts on
         elbow (str | None): String identifier to determine if this is a special type of
-            Toffoli gate (left or right elbow). Default value is `None`.
+            Toffoli gate. Available options are `left`, `right`, and `None`.
 
     Resources:
         If `elbow` is provided, resources are obtained from Figure 4 of
@@ -969,7 +970,7 @@ class Toffoli(ResourceOperator):
         super().__init__(wires=wires)
 
     @staticmethod
-    def elbow_decomp(elbow="left"):
+    def elbow_decomp(elbow: Literal["left", "right"] | None = "left"):
         """A function that prepares the resource decomposition obtained from Figure 4 of
         `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
 
@@ -1221,7 +1222,7 @@ class MultiControlledX(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qml.estimator.MultiControlledX.resource_decomp(num_ctrl_wires=5, num_zero_ctrl=2)
-    [(4 x X), AllocWires(3), (3 x TempAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
+    [(4 x X), AllocWires(3), (3 x TemporaryAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
     """
 
     resource_keys = {"num_ctrl_wires", "num_zero_ctrl"}
@@ -1318,7 +1319,7 @@ class MultiControlledX(ResourceOperator):
             gate_lst.append(GateCount(toffoli))
             return gate_lst
 
-        l_elbow = resource_rep(TempAND)
+        l_elbow = resource_rep(TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         res = [
@@ -1422,8 +1423,8 @@ class CRX(ResourceOperator):
             The default value is `None` which corresponds to using the precision stated in the config.
 
     Resources:
-        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+        The resources are taken from Figure 1b of `arXiv:2110.10292
+        <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
@@ -1482,8 +1483,8 @@ class CRX(ResourceOperator):
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
-            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+            The resources are taken from Figure 1b of `arXiv:2110.10292
+            <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
@@ -1571,8 +1572,8 @@ class CRY(ResourceOperator):
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
-        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+        The resources are taken from Figure 1b of `arXiv:2110.10292
+        <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
@@ -1630,8 +1631,8 @@ class CRY(ResourceOperator):
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
-            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+            The resources are taken from Figure 1b of `arXiv:2110.10292
+            <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
@@ -1719,8 +1720,8 @@ class CRZ(ResourceOperator):
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
-        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+        The resources are taken from Figure 1b of `arXiv:2110.10292
+        <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
 
@@ -1779,8 +1780,8 @@ class CRZ(ResourceOperator):
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
-            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+            The resources are taken from Figure 1b of `arXiv:2110.10292
+            <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
 
@@ -1865,12 +1866,12 @@ class CRot(ResourceOperator):
 
     Args:
         wires (Sequence[int] | None): the wire the operation acts on
-        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
+        precision (float | None): The error threshold for Clifford + T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
-        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+        The resources are taken from Figure 1b of `arXiv:2110.10292
+        <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
         .. math::
 
@@ -1937,8 +1938,8 @@ class CRot(ResourceOperator):
                 The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
-            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
-            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+            The resources are taken from Figure 1b of `arXiv:2110.10292
+            <https://arxiv.org/abs/2110.10292>`_. In combination with the following identity:
 
             .. math::
 
@@ -2033,7 +2034,7 @@ class ControlledPhaseShift(ResourceOperator):
 
     Args:
         wires (Sequence[int] | None): the wire the operation acts on
-        precision (float | None): The error threshold for clifford plus T decomposition of the rotation gate.
+        precision (float | None): The error threshold for Clifford + T decomposition of the rotation gate.
             The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:

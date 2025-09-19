@@ -120,6 +120,27 @@ class TestPauliRotation:
         ]
         assert resource_op_class(precision).pow_resource_decomp(z, {"precision": None}) == expected
 
+    params_ctrl_classes = (
+        (qre.RX, qre.CRX),
+        (qre.RY, qre.CRY),
+        (qre.RZ, qre.CRZ),
+    )
+
+    @pytest.mark.parametrize("resource_class, controlled_class", params_ctrl_classes)
+    @pytest.mark.parametrize("precision", params_errors)
+    def test_controlled_decomposition_single_control(
+        self, resource_class, controlled_class, precision
+    ):
+        """Test that the controlled decompositions are correct."""
+        expected = [qre.GateCount(controlled_class.resource_rep(precision=precision), 1)]
+        assert resource_class.controlled_resource_decomp(1, 0, {"precision": precision}) == expected
+
+        expected = [
+            qre.GateCount(controlled_class.resource_rep(precision=precision), 1),
+            qre.GateCount(qre.X.resource_rep(), 2),
+        ]
+        assert resource_class.controlled_resource_decomp(1, 1, {"precision": precision}) == expected
+
     ctrl_res_data = (
         (
             [1, 2],

@@ -23,6 +23,11 @@ import pennylane.estimator as qre
 class TestMultiRZ:
     """Test the Resource MultiRZ class."""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 2"):
+            qre.MultiRZ(num_wires=4, wires=[0, 1])
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_resource_params(self, num_wires, precision):
@@ -76,7 +81,7 @@ class TestMultiRZ:
             qre.GateCount(qre.MultiRZ.resource_rep(num_wires=num_wires, precision=precision))
         ]
         assert (
-            qre.MultiRZ.adjoint_resource_decomp(num_wires=num_wires, precision=precision)
+            qre.MultiRZ.adjoint_resource_decomp({"num_wires": num_wires, "precision": precision})
             == expected
         )
 
@@ -127,7 +132,7 @@ class TestMultiRZ:
         )
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
@@ -139,13 +144,18 @@ class TestMultiRZ:
         """Test that the pow decomposition is correct."""
         op = qre.MultiRZ(num_wires, precision=precision)
         expected_res = [qre.GateCount(qre.MultiRZ.resource_rep(num_wires, precision))]
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
 
 
 class TestPauliRot:
     """Test the Resource PauliRot class."""
 
     pauli_words = ("I", "XYZ", "XXX", "XIYIZIX", "III")
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
+            qre.PauliRot(pauli_string="XYZ", precision=1e-3, wires=[0, 1])
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_string", pauli_words)
@@ -249,7 +259,9 @@ class TestPauliRot:
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
         assert (
-            qre.PauliRot.adjoint_resource_decomp(pauli_string=pauli_word, precision=precision)
+            qre.PauliRot.adjoint_resource_decomp(
+                target_resource_params={"pauli_string": pauli_word, "precision": precision}
+            )
             == expected
         )
 
@@ -372,7 +384,7 @@ class TestPauliRot:
         op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
         assert (
-            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, **op.resource_params)
+            op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
             == expected_res
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_res
@@ -386,4 +398,4 @@ class TestPauliRot:
         expected_res = [
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
-        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
+        assert op.pow_resource_decomp(z, op.resource_params) == expected_res
