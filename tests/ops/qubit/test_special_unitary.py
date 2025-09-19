@@ -741,8 +741,8 @@ class TestSpecialUnitary:
         expected = tape.jacobian(loss, theta)
         assert np.allclose(jac, expected)
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["jax", "torch"])
+    @pytest.mark.torch
+    @pytest.mark.jax
     def test_large_wire_jacobian_regression(self, interface):
         """Regression test for compute_matrix with num_wires > 5.
 
