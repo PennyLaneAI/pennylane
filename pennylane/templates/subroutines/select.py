@@ -1093,14 +1093,25 @@ add_decomps(Select, _select_decomp_unary)
 
 def _select_resources_multi_control_work_wire(op_reps, num_control_wires, num_work_wires, partial):
     resources = defaultdict(int)
+
     if partial:
-        # Use dummy control values, we will only care about the length of the outputs
-        ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-        for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
-            resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
+        if len(op_reps) == 1:
+            resources[_multi_controlled_rep(op_reps[0], 1, [1], num_work_wires - 1)] += 1
             resources[
-                _multi_controlled_rep(resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1)
+                _multi_controlled_rep(
+                    resource_rep(X), num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                )
             ] += 2
+        else:
+            # Use dummy control values, we will only care about the length of the outputs
+            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
+            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
+                resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
+                resources[
+                    _multi_controlled_rep(
+                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
+                    )
+                ] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
@@ -1131,12 +1142,21 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
     if len(ops) == 0:
         return []
 
-    if not work_wires:
-        raise ValueError("Can't use this decomposition with less than 1 work wire.")
-
     if partial:
         if len(ops) == 1:
-            apply(ops[0])
+            ctrl(
+                X(work_wires[:1]),
+                control,
+                control_values=[0] * len(control),
+                work_wires=work_wires[1:],
+            )
+            ctrl(ops[0], control=work_wires[:1], work_wires=work_wires[1:])
+            ctrl(
+                X(work_wires[:1]),
+                control,
+                control_values=[0] * len(control),
+                work_wires=work_wires[1:],
+            )
             return []
 
         ctrls_and_ctrl_states = _partial_select(len(ops), control)
