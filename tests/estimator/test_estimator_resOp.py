@@ -22,11 +22,12 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.estimator.ops as qre_ops
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 from pennylane.queuing import AnnotatedQueue
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself, too-many-arguments
+# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
 
 class DummyX(ResourceOperator):
@@ -171,12 +172,11 @@ class DummyOp(ResourceOperator):
 
     resource_keys = {"x"}
 
-    def __init__(self, x=None, wires=None):
+    def __init__(self, x=None, wires=None, num_wires=None):
         self.x = x
+        if num_wires:
+            self.num_wires = num_wires
         super().__init__(wires=wires)
-
-    def __eq__(self, other: object) -> bool:
-        return (self.__class__.__name__ == other.__class__.__name__) and (self.x == other.x)
 
     @property
     def resource_params(self):
@@ -375,6 +375,25 @@ class TestResourceOperator:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
+
+    def test_equality_method(self):
+        """Test that the __eq__ method for the ResourceOperator is correct."""
+
+        dop1 = DummyOp(1.1)
+        dop2 = DummyOp(2.2)
+        dop3 = DummyOp(1.1)
+        dop1.num_wires = 1
+        dop3.num_wires = 3
+
+        assert qre_ops.X() == qre_ops.X()
+        assert qre_ops.SWAP() == qre_ops.SWAP()
+        assert qre_ops.X() != qre_ops.SWAP()
+        assert dop1 != dop2
+        assert dop1 != dop3
+
+    def test_equality_false(self):
+        """Test that the __eq__ method returns False if the input operator is not ResourceOperator."""
+        assert not qre_ops.X() == qml.X(0)
 
     ops_to_queue = [
         Hadamard(wires=[0]),
