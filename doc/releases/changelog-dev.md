@@ -1386,7 +1386,7 @@
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
 * Fixes a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, :func:`~.transforms.single_qubit_fusion`,
-  and :func:`~.transforms.commute_controlled` are incorrect when the circuit contains operators on abstract wires.
+  :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
 <h3>Contributors ✍️</h3>

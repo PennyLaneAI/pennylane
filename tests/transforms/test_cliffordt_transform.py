@@ -600,6 +600,39 @@ class TestCliffordCompile:
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
 
+    @pytest.mark.jax
+    def test_abstract_wires(self):
+        """Tests that rotations do not merge across operators with abstract wires."""
+
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = clifford_t_decomposition(tape)
+            return len(tape.operations)
+
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = clifford_t_decomposition(tape)
+            return len(tape.operations)
+
+        assert f(0) == 48168
+        assert f2(0) == 24277
+
 
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
