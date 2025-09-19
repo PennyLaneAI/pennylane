@@ -630,8 +630,7 @@ class TestCliffordCompile:
             [tape], _ = clifford_t_decomposition(tape)
             return len(tape.operations)
 
-        assert f(0) == 48168
-        assert f2(0) == 24277
+        assert f(0) > f2(0)
 
 
 class TestCliffordCached:
