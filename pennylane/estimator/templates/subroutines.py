@@ -304,7 +304,7 @@ class OutMultiplier(ResourceOperator):
         l = max(a_num_qubits, b_num_qubits)
 
         toff = resource_rep(qre.Toffoli)
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         toff_count = 2 * a_num_qubits * b_num_qubits - l
@@ -411,7 +411,7 @@ class SemiAdder(ResourceOperator):
         cnot_count = (6 * (max_register_size - 2)) + 3
         elbow_count = max_register_size - 1
 
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
         return [
             Allocate(max_register_size - 1),
@@ -461,7 +461,7 @@ class SemiAdder(ResourceOperator):
 
         x = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
         gate_lst.extend(
             [
@@ -1087,7 +1087,7 @@ class AQFT(ResourceOperator):
     Resources:
         The resources are obtained from (Fig. 4) of `arXiv:1803.04933, <https://arxiv.org/abs/1803.04933>`_
         excluding the allocation and instantiation of the phase gradient state. The phased :code:`Toffoli`
-        gates and the classical measure-and-reset (Fig. 2) are accounted for as :code:`TempAND`
+        gates and the classical measure-and-reset (Fig. 2) are accounted for as :code:`TemporaryAND`
         operations.
 
     .. seealso:: :class:`~.AQFT`
@@ -1158,7 +1158,7 @@ class AQFT(ResourceOperator):
         Resources:
             The resources are obtained from (Fig. 4) `arXiv:1803.04933 <https://arxiv.org/abs/1803.04933>`_
             excluding the allocation and instantiation of the phase gradient state. The phased Toffoli
-            gates and the classical measure-and-reset (Fig. 2) are accounted for as `TempAND`
+            gates and the classical measure-and-reset (Fig. 2) are accounted for as `TemporaryAND`
             operations.
 
         Returns:
@@ -1187,7 +1187,7 @@ class AQFT(ResourceOperator):
             for index in range(2, order):
                 addition_reg_size = index - 1
 
-                temp_and = resource_rep(qre.TempAND)
+                temp_and = resource_rep(qre.TemporaryAND)
                 temp_and_dag = qre.Adjoint.resource_rep(temp_and)
                 in_place_add = qre.SemiAdder.resource_rep(addition_reg_size)
 
@@ -1204,7 +1204,7 @@ class AQFT(ResourceOperator):
             addition_reg_size = order - 1
             repetitions = num_wires - order
 
-            temp_and = resource_rep(qre.TempAND)
+            temp_and = resource_rep(qre.TemporaryAND)
             temp_and_dag = qre.Adjoint.resource_rep(temp_and)
             in_place_add = qre.SemiAdder.resource_rep(addition_reg_size)
 
@@ -1423,7 +1423,7 @@ class Select(ResourceOperator):
         gate_types = []
         x = qre.X.resource_rep()
         cnot = qre.CNOT.resource_rep()
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         num_ops = len(cmpr_ops)
@@ -1678,7 +1678,7 @@ class QROM(ResourceOperator):
 
         x = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
         hadamard = resource_rep(qre.Hadamard)
 
@@ -1751,7 +1751,7 @@ class QROM(ResourceOperator):
 
         x = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
         hadamard = resource_rep(qre.Hadamard)
 
