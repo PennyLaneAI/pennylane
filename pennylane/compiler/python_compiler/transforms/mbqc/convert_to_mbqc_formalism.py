@@ -523,20 +523,20 @@ class ConvertToMBQCFormalismPattern(
     def _deallocate_aux_qubits(
         self,
         graph_qubits_dict: dict,
-        res_target_qb: list[int],
+        res_aux_qb: list[int],
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Deallocate the auxiliary qubits in the graph qubit dict.
+        """Deallocate non-result qubits in the graph qubit dict.
         Args:
             graph_qubits_dict (dict) : A dict stores all qubits in a graph state.
-            res_target_qb (list[int]) : A list of keys of result auxiliary and target (in the global register) qubits.
+            res_aux_qb (list[int]) : A list of keys of result auxiliary qubits.
             insert_before (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
         """
         # Deallocate non result aux_qubits
         for node in graph_qubits_dict:
-            if node not in res_target_qb:
+            if node not in res_aux_qb:
                 dealloc_qubit_op = DeallocQubitOp(graph_qubits_dict[node])
                 rewriter.insert_op(dealloc_qubit_op, InsertPoint.before(insert_before))
 
@@ -642,7 +642,7 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate non-result aux_qubits and the target/control qubits in the qreg
-                    self._deallocate_aux_qubits(graph_qubits_dict, [9, 15], op, rewriter)
+                    self._deallocate_aux_qubits(graph_qubits_dict, [7, 15], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[7])
