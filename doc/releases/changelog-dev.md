@@ -1116,6 +1116,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
+  [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
+
 * The documentation of `qml.device` has been updated.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
