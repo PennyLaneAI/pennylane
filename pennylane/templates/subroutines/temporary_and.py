@@ -58,8 +58,8 @@ class TemporaryAND(Operation):
 
     .. code-block::
 
-        dev = qml.device("default.qubit", shots=1)
-        @qml.qnode(dev)
+        @qml.set_shots(1)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             # |0000⟩
             qml.X(0) # |1000⟩
