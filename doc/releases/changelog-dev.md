@@ -59,6 +59,7 @@
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
+    [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with 
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications 
