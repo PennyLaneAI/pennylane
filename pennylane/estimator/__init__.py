@@ -68,3 +68,19 @@ from .ops.op_math import (
     Prod,
     ChangeOpBasis,
 )
+from .ops.templates import (
+    OutOfPlaceSquare,
+    PhaseGradient,
+    OutMultiplier,
+    SemiAdder,
+    QFT,
+    AQFT,
+    BasisRotation,
+    Select,
+    QROM,
+    SelectPauliRot,
+    QubitUnitary,
+    ControlledSequence,
+    QPE,
+    IterativeQPE,
+)

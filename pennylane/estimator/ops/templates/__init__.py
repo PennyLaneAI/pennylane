@@ -11,51 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains resource operators for PennyLane Operators"""
+r"""This module contains resource templates."""
 
-from .identity import GlobalPhase, Identity
-
-from .qubit import (
-    Hadamard,
-    S,
-    SWAP,
-    T,
-    X,
-    Y,
-    Z,
-    PhaseShift,
-    RX,
-    RY,
-    RZ,
-    Rot,
-    PauliRot,
-    MultiRZ,
-    SingleExcitation,
-)
-
-from .op_math import (
-    CCZ,
-    CH,
-    CNOT,
-    ControlledPhaseShift,
-    CRot,
-    CRX,
-    CRY,
-    CRZ,
-    CSWAP,
-    CY,
-    CZ,
-    MultiControlledX,
-    TemporaryAND,
-    Toffoli,
-    Adjoint,
-    Controlled,
-    Pow,
-    Prod,
-    ChangeOpBasis,
-)
-
-from .templates import (
+from .subroutines import (
     OutOfPlaceSquare,
     PhaseGradient,
     OutMultiplier,
