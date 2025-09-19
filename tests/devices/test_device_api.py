@@ -604,9 +604,9 @@ class TestPreprocessTransforms:
             for transform_container in program:
                 if transform_container._transform is qml.transforms.diagonalize_measurements:
                     assert transform_container._kwargs["supported_base_obs"] == {
-                        "PauliZ",
-                        "PauliX",
-                        "PauliY",
+                        qml.Z,
+                        qml.X,
+                        qml.Y,
                     }
 
 
