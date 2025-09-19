@@ -664,7 +664,7 @@
   [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
 
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
-  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
+  submodule :mod:`.transforms.zx`. The same functions are available, but their signature
   may have changed.
   - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
   - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
