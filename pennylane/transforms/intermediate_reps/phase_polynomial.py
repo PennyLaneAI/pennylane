@@ -164,38 +164,41 @@ def phase_polynomial(
 
     """
 
-    wires = circ.wires
+    def postprocessing_fn(tapes):
+        circ = tapes[0]
 
-    if wire_order is None:
-        wire_order = wires
+        wires = circ.wires
+        w_order = wire_order
 
-    wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
+        if w_order is None:
+            w_order = wires
 
-    parity_matrix = np.eye(len(wire_map), dtype=int)
-    parity_table = []
-    angles = []
-    i = 0
-    for op in circ.operations:
+        wire_map = {wire: idx for idx, wire in enumerate(w_order)}
 
-        if op.name == "CNOT":
-            control, target = op.wires
-            parity_matrix[wire_map[target]] = (
-                parity_matrix[wire_map[target]] + parity_matrix[wire_map[control]]
-            ) % 2
-        elif op.name == "RZ":
-            angles.append(op.data[0])  # append theta_i
-            RZ_wire = wire_map[op.wires[0]]
+        parity_matrix = np.eye(len(wire_map), dtype=int)
+        parity_table = []
+        angles = []
+        i = 0
+        for op in circ.operations:
 
-            # append _current_ parity (hence the copy)
-            parity_table.append(parity_matrix[RZ_wire].copy())
-        else:
-            raise TypeError(
-                f"phase_polynomial can only handle CNOT and RZ operators, received {op}"
-            )
+            if op.name == "CNOT":
+                control, target = op.wires
+                parity_matrix[wire_map[target]] = (
+                    parity_matrix[wire_map[target]] + parity_matrix[wire_map[control]]
+                ) % 2
+            elif op.name == "RZ":
+                angles.append(op.data[0])  # append theta_i
+                RZ_wire = wire_map[op.wires[0]]
 
-        i += 1
+                # append _current_ parity (hence the copy)
+                parity_table.append(parity_matrix[RZ_wire].copy())
+            else:
+                raise TypeError(
+                    f"phase_polynomial can only handle CNOT and RZ operators, received {op}"
+                )
 
-    def null_postprocessing(x):
-        return x[0]
+            i += 1
 
-    return [(parity_matrix, np.array(parity_table).T, np.array(angles))], null_postprocessing
+        return parity_matrix, np.array(parity_table).T, np.array(angles)
+
+    return [circ], postprocessing_fn
