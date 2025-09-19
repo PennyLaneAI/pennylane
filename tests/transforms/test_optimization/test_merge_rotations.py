@@ -450,6 +450,39 @@ class TestMergeRotationsInterfaces:
 
         assert qml.math.allclose(res, [1.0])
 
+    @pytest.mark.jax
+    def test_merge_rotations_abstract_wires(self):
+        """Tests that rotations do not merge across operators with abstract wires."""
+
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = merge_rotations(tape)
+            return len(tape.operations)
+
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = merge_rotations(tape)
+            return len(tape.operations)
+
+        assert f(0) == 3
+        assert f2(0) == 2
+
 
 ### Tape
 with qml.queuing.AnnotatedQueue() as q:
