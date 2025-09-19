@@ -13,9 +13,11 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
+from numpy import ceil, log2
+
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, adjoint
+from pennylane.ops import CNOT, Toffoli, X, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
@@ -23,7 +25,7 @@ from .temporary_and import TemporaryAND
 
 
 def _left_operator(wires, ik_is_zero=False):
-    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the left block in figure 2, https://arxiv.org/abs/1709.06648"""
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -40,7 +42,7 @@ def _left_operator(wires, ik_is_zero=False):
 
 
 def _right_operator(wires, ik_is_zero=False):
-    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the right block in figure 2, https://arxiv.org/abs/1709.06648"""
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -153,6 +155,7 @@ class SemiAdder(Operation):
 
         self.hyperparameters["x_wires"] = x_wires
         self.hyperparameters["y_wires"] = y_wires
+
         self.hyperparameters["work_wires"] = work_wires
 
         if work_wires:
@@ -279,3 +282,193 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
 
 
 add_decomps(SemiAdder, _semiadder)
+
+
+def _L_alpha(alpha, wires):
+    r"""
+    Implements the operator presented in Definition 6: https://arxiv.org/abs/2501.16802
+    It corresponds to a sequence of ``len(alpha)`` multi-controlled operators.
+    The control wires of the first multi-controlled gate are the first :math:`\alpha_0` wires,
+    and its target is wire :math:`\alpha_0`, using zero-based indexing. For the :math:`i`-th operator, the control wires are
+    those with indices in the interval :math:`[\alpha_{i-1} + 1,\ \alpha_i - 1]`, and the target
+    wire is :math:`\alpha_i.
+
+    The previously described explanation helps to understand the operator’s behavior, but the implementation is
+    carried out differently. The implementation is done calling the function ``_L_alpha`` over a subset of wires
+    and :math:`\vec{\alpha}` following the description of Algorithm 2: https://arxiv.org/abs/2501.16802.
+    This implementation achieves a logarithmic circuit depth.
+
+    Args:
+        alpha (list): ordered list of integers storing the position of the target wires
+        wires (Sequence[int]): wires on which the operator acts
+    """
+
+    k = len(alpha) + 1
+
+    if k == 1:
+        return
+
+    if k == 2:
+        ctrl(X(wires[alpha[0]]), control=wires[: alpha[0]])
+        return
+
+    x_prime = [wires[alpha[0]]]
+    alpha_prime = []
+
+    ctrl(X(wires[alpha[k - 2]]), control=wires[alpha[k - 3] : alpha[k - 2]])
+
+    for i in range(1, int(ceil(k / 2)) - 1):
+        ctrl(X(wires[alpha[2 * i - 1]]), control=wires[alpha[2 * i - 2] : alpha[2 * i - 1]])
+        x_prime += [*wires[alpha[2 * i - 2] + 1 : alpha[2 * i - 1]]]
+        x_prime += [*wires[alpha[2 * i - 1] + 1 : alpha[2 * i] + 1]]
+
+        alpha_prime.append(alpha[2 * i] - alpha[0] - i)
+
+    if k % 2 == 0:
+        x_prime += [*wires[alpha[k - 4] + 1 : alpha[k - 3] + 1]]
+        alpha_prime.append(alpha[k - 3] - alpha[0] - k // 2 + 2)
+
+    _L_alpha(alpha_prime, x_prime)
+
+    x_prime = [wires[alpha[0]]]
+    alpha_prime = []
+
+    ctrl(X(wires[alpha[0]]), control=wires[: alpha[0]])
+
+    for i in range(1, int(ceil(k / 2)) - 1):
+        ctrl(X(wires[alpha[2 * i]]), control=wires[alpha[2 * i - 1] : alpha[2 * i]])
+
+        x_prime += [*wires[alpha[2 * i - 2] + 1 : alpha[2 * i - 1] - 1]]
+        x_prime += [*wires[alpha[2 * i - 1] + 1 : alpha[2 * i] + 1]]
+        alpha_prime.append(alpha[2 * i] - alpha[0] - i)
+
+
+def _cnot_ladder(wires):
+    """
+    CNOT ladder implementation with sublinear depth.
+    It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/abs/2501.16802
+    """
+
+    adjoint(_L_alpha, lazy=False)(list(range(1, len(wires))), wires=wires)
+
+
+def _toffoli_ladder(wires):
+    """
+    Toffoli ladder implementation with sublinear depth.
+    It is build using `L_alpha` as presented in Definition 6: https://arxiv.org/abs/2501.16802
+    """
+
+    return adjoint(_L_alpha, lazy=False)(list(range(2, len(wires), 2)), wires=wires)
+
+
+def _fanout_1(wires):
+    """
+    Implements the operator presented in Definition 2: https://arxiv.org/abs/2501.16802
+    """
+
+    adjoint(_cnot_ladder, lazy=False)(wires[1:])
+    _cnot_ladder(wires)
+
+
+def _fanout_2(control, wires_control, wires_target):
+    """
+    Implements the operator presented in Definition 3: https://arxiv.org/abs/2501.16802
+    """
+
+    if len(wires_control) == 1:
+        return Toffoli([control, wires_control[0], wires_target[0]])
+
+    if len(wires_control) % 2 == 1:
+        Toffoli([control, wires_control[0], wires_target[0]])
+
+        wires_control = wires_control[1:]
+        wires_target = wires_target[1:]
+
+    # we concatenate two fanouts so we can have dirty qubits available during the decomposition
+
+    wires_control_half1 = wires_control[: len(wires_control) // 2]
+    wires_control_half2 = wires_control[len(wires_control) // 2 :]
+
+    wires_target_half1 = wires_target[: len(wires_target) // 2]
+    wires_target_half2 = wires_target[len(wires_target) // 2 :]
+
+    if len(wires_control_half1) == 1:
+        Toffoli([control, wires_control_half1[0], wires_target_half1[0]])
+        Toffoli([control, wires_control_half2[0], wires_target_half2[0]])
+        return
+    # first op, using wires_op_half2 as dirty wires
+    _fanout_1([control, *wires_control_half2])
+
+    for c1, c2, target in zip(wires_control_half2, wires_control_half1, wires_target_half1):
+        Toffoli([c1, c2, target])
+
+    _fanout_1([control, *wires_control_half2])
+
+    for c1, c2, target in zip(wires_control_half2, wires_control_half1, wires_target_half1):
+        Toffoli([c1, c2, target])
+
+    # second op, using wires_op_half1 as dirty wires
+    _fanout_1([control, *wires_control_half1])
+
+    for c1, c2, target in zip(wires_control_half1, wires_control_half2, wires_target_half2):
+        Toffoli([c1, c2, target])
+
+    _fanout_1([control, *wires_control_half1])
+
+    for c1, c2, target in zip(wires_control_half1, wires_control_half2, wires_target_half2):
+        Toffoli([c1, c2, target])
+    return
+
+
+def _semiadder_log_depth_resources(num_y_wires):
+    # Resources estimated from the decomposition and qml.specs counts.
+    # TODO: calculate exact resources
+    return {
+        Toffoli: int(2.5 * num_y_wires),
+        CNOT: int(num_y_wires * log2(num_y_wires)),
+        X: 2 * num_y_wires,
+    }
+
+
+@register_resources(_semiadder_log_depth_resources)
+def _semiadder_log_depth(x_wires, y_wires, **_):
+
+    # Implementation described in Algorithm 3: https://arxiv.org/abs/2501.16802
+    # Figure 1 shows an example of a 5 qubits adder.
+    # We remove the last qubit to just keep the modular addition
+
+    # We reorder the qubits to follow the Pennylane convention
+    wires_x = x_wires[-len(y_wires) :][::-1]
+    wires_y = y_wires[::-1]
+
+    # TODO: case len(wires_x) < len(wires_y)
+    assert len(wires_x) >= len(
+        wires_y
+    ), "`len(wires_x)` must be greater or equal than `len(wires_y)`"
+
+    for i in range(1, len(wires_x)):
+        CNOT(wires=[wires_x[i], wires_y[i]])
+
+    adjoint(_cnot_ladder, lazy=False)([*wires_x][1:])
+
+    temp_wires = [elem for par in zip(wires_x[:-1], wires_y[:-1]) for elem in par]
+    temp_wires += [wires_x[-1]]
+
+    _toffoli_ladder(temp_wires)
+
+    for i in range(1, len(wires_x)):
+        CNOT(wires=[wires_x[i], wires_y[i]])
+
+    for i in range(1, len(wires_y[:-1])):
+        X(wires=wires_y[i])
+
+    adjoint(_toffoli_ladder, lazy=False)(temp_wires)
+
+    _ = [X(w) for w in wires_y[1:-1]]
+
+    _cnot_ladder([*wires_x][1:])
+
+    _ = [CNOT(wires=wires) for wires in zip(wires_x, wires_y)]
+
+
+add_decomps(SemiAdder, _semiadder_log_depth)
