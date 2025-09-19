@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.estimator.estimate import estimate
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -213,8 +214,8 @@ class TestEstimateResources:
         with pytest.raises(TypeError, match="Could not obtain resources for obj of type"):
             estimate(({1, 2, 3}))
 
-    def test_estimate_qnode_no_args(self):
-        """Test that a QNode with no arguments can be estimated."""
+    def test_estimate_qnode(self):
+        """Test that a QNode can be estimated."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -222,6 +223,7 @@ class TestEstimateResources:
         def circuit():
             qml.Hadamard(wires=0)
             X()
+            RX(0.3, 0)
             return qml.expval(qml.Z(0))
 
         resources = estimate(circuit)()
@@ -230,6 +232,10 @@ class TestEstimateResources:
         assert resources.algo_wires == 2
         assert resources.gate_counts["Hadamard"] == 1
         assert resources.gate_counts["X"] == 1
+        assert resources.gate_counts["RX"] == 1
+        assert resources.gate_types[RX.resource_rep(precision=0.3)] == 1
+
+
 
     def test_qfunc_with_num_wires(self):
         """Test that the number of wires is correctly inferred from a qfunc
