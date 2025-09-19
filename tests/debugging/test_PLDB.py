@@ -115,7 +115,7 @@ class TestPLDB:
 
     @pytest.mark.parametrize("device_name", dev_names)
     def test_reset_active_device(self, device_name):
-        """Test that we can rest the global active device list."""
+        """Test that we can reset the global active device list."""
         dev = qml.device(device_name, wires=2)
         PLDB.add_device(dev)
         assert PLDB.get_active_device() == dev
