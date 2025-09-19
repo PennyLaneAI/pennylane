@@ -15,8 +15,6 @@
 import logging
 
 # pylint: disable=protected-access
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
 
@@ -25,7 +23,7 @@ from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-from pennylane.math.interface_utils import get_canonical_interface_name
+from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -178,8 +176,9 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    interface = get_canonical_interface_name(interface)
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
+    state = create_initial_state(
+        sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -654,7 +653,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
 
-    interface = get_canonical_interface_name(interface)
+    interface = Interface(interface)
     state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
     new_ops = [
         qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)
@@ -858,8 +857,6 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
             comb_meas = measurement_with_no_shots(circ_meas)
         else:
             comb_meas = combine_measurements_core(circ_meas, results.pop(0))
-        if isinstance(circ_meas, SampleMP):
-            comb_meas = qml.math.squeeze(comb_meas)
         final_measurements.append(comb_meas)
     return final_measurements[0] if len(final_measurements) == 1 else tuple(final_measurements)
 
@@ -916,7 +913,7 @@ def _(original_measurement: SampleMP, measures):
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
     )
-    return qml.math.squeeze(qml.math.concatenate(new_sample))
+    return qml.math.concatenate(new_sample)
 
 
 @debug_logger

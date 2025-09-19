@@ -146,6 +146,13 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
     with qml.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qml.tape.QuantumScript.from_queue(q)
+
+    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    if total_work_wires:
+        [tape], _ = qml.transforms.resolve_dynamic_wires(
+            [tape], zeroed=range(len(tape.wires), len(tape.wires) + total_work_wires)
+        )
+
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
@@ -157,17 +164,19 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         assert all(op in gate_counts for op in actual_gate_counts)
     else:
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        assert non_zero_gate_counts == actual_gate_counts
-
-    # Add projector to the additional wires (work wires) on the tape
-    work_wires = tape.wires - op.wires
-    all_wires = op.wires + work_wires
-    if work_wires:
-        op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
-        tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+        assert (
+            non_zero_gate_counts == actual_gate_counts
+        ), f"\nGate counts expected from resource function:\n{non_zero_gate_counts}\nActual gate counts:\n{actual_gate_counts}"
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix:
+        # Add projector to the additional wires (work wires) on the tape
+        work_wires = tape.wires - op.wires
+        all_wires = op.wires + work_wires
+        if work_wires:
+            op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
+            tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+
         op_matrix = op.matrix(wire_order=all_wires)
         decomp_matrix = qml.matrix(tape, wire_order=all_wires)
         assert qml.math.allclose(
@@ -443,6 +452,7 @@ def assert_valid(
     skip_new_decomp=False,
     skip_pickle=False,
     skip_wire_mapping=False,
+    skip_capture=False,
     heuristic_resources=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
@@ -519,4 +529,5 @@ def assert_valid(
     _check_generator(op)
     if not skip_differentiation:
         _check_differentiation(op)
-    _check_capture(op)
+    if not skip_capture:
+        _check_capture(op)

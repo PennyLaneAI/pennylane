@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.math import get_canonical_interface_name
+from pennylane.math import Interface
 from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformProgram
@@ -179,7 +179,7 @@ class DefaultMixed(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``).
+            (``['auxiliary', 'q1', 'q2']``).
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
@@ -299,7 +299,7 @@ class DefaultMixed(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        updated_values["interface"] = get_canonical_interface_name(execution_config.interface)
+        updated_values["interface"] = Interface(execution_config.interface)
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy

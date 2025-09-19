@@ -77,12 +77,13 @@ def test_broadcasted_postselection_with_sample_error():
     tape = qml.tape.QuantumScript(
         [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
     )
-    dev = qml.device("default.qubit", shots=10)
+    dev = qml.device("default.qubit")
 
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         qml.defer_measurements(tape)
 
     @qml.defer_measurements
+    @qml.set_shots(10)
     @qml.qnode(dev)
     def circuit():
         qml.RX([0.1, 0.2], 0)
@@ -126,9 +127,10 @@ def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
     shots = 100
     postselect_value = 1
-    dev = qml.device("default.qubit", shots=shots)
+    dev = qml.device("default.qubit")
     spy = mocker.spy(qml.defer_measurements, "_transform")
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method="deferred")
     def f(x):
         qml.RX(x, 0)
@@ -750,7 +752,7 @@ class TestConditionalOperations:
         assert isinstance(sec_ctrl_op, Controlled)
         qml.assert_equal(sec_ctrl_op.base, qml.RZ(sec_par, 1))
 
-        assert tape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] == terminal_measurement
 
     def test_correct_ops_in_tape_inversion(self):
         """Test that the underlying tape contains the correct operations if a

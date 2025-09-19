@@ -47,7 +47,7 @@ from .tracker import Tracker
 
 def _local_tape_expand(tape, depth, stop_at):
     """Expand all objects in a tape to a specific depth excluding measurements.
-    see `pennylane.tape.tape.expand_tape` for examples.
+    see `pennylane.tape.expand_tape` for examples.
 
     Args:
         tape (QuantumTape): The tape to expand
@@ -59,7 +59,7 @@ def _local_tape_expand(tape, depth, stop_at):
     Returns:
         QuantumTape: The expanded version of ``tape``.
     """
-    # This function mimics `pennylane.tape.tape.expand_tape()`, but does not expand measurements and
+    # This function mimics `pennylane.tape.expand_tape()`, but does not expand measurements and
     # does not perform validation checks for non-commuting measurements on the same wires.
     if depth == 0:
         return tape
@@ -123,7 +123,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
     Args:
         wires (int or Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """

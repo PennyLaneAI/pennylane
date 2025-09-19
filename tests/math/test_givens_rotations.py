@@ -16,7 +16,7 @@ Unit tests for functions needed for performing givens decomposition of a unitary
 """
 
 import pytest
-from scipy.stats import unitary_group
+from scipy.stats import ortho_group, unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -32,6 +32,9 @@ from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, gi
         (1.5 + 2.3j, 2.1 - 3.7j),
         (1.0, 0.0),
         (0.0, 1.0),
+        (-1.0, 0.0),
+        (0.0, -1.0),
+        (0.0, 1j),
         (1.2, 2.3j),
         (0.0, 0.0),
     ],
@@ -42,14 +45,55 @@ def test_givens_matrix(a, b, left):
     grot_mat = _givens_matrix(a, b, left)
     assert np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])
 
-    rotated_vector = grot_mat @ np.array([a, b]).T
-    result_element = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
-    rvec = np.array([0.0, result_element]).T if left else np.array([result_element, 0.0]).T
+    rotated_vector = grot_mat @ np.array([a, b])
+    if np.abs(a) < 1e-8 or np.abs(b) < 1e-8:
+        phase = 1.0
+    else:
+        phase = b * np.conj(a) / np.abs(a) / np.abs(b)
+    hypot = np.hypot(np.abs(a), np.abs(b)) + 1e-15
+    result_element = (phase * a * np.abs(a) + b * np.abs(b)) / hypot
+    rvec = np.array([0.0, result_element]) if left else np.array([result_element, 0.0])
     assert np.allclose([a, b], 0.0) or np.allclose(rotated_vector, rvec)
 
     res1 = np.round(grot_mat @ grot_mat.conj().T, 5)
     res2 = np.round(grot_mat.conj().T @ grot_mat, 5)
     assert np.all(res1 == res2) and np.all(res1 == np.eye(2))
+
+
+@pytest.mark.parametrize("left", [True, False])
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [
+        (1.2, 2.3),
+        (1.0, 1.0),
+        (1.0, 0.0),
+        (0.0, 1.0),
+        (-1.0, 0.0),
+        (0.0, -1.0),
+        (-1.0, -1.0),
+        (0.1, 20.3),
+        (-0.1, 20.3),
+        (0.0, 0.0),
+    ],
+)
+def test_givens_matrix_real(a, b, left):
+    r"""Test that `_givens_matrix` builds the correct real-valued Givens rotation matrices."""
+
+    grot_mat = _givens_matrix(a, b, left, real_valued=True)
+    assert grot_mat.dtype == np.float64
+
+    rotated_vector = grot_mat @ np.array([a, b])
+    sign = np.sign(a * b)
+    if np.abs(a) < 1e-8 or np.abs(b) < 1e-8:
+        sign = 1.0
+    hypot = np.hypot(np.abs(a), np.abs(b)) + 1e-15
+    result_element = (sign * a * np.abs(a) + b * np.abs(b)) / hypot
+    if not left:
+        result_element *= sign
+    rvec = np.array([0.0, result_element]) if left else np.array([result_element, 0.0])
+    assert np.allclose([a, b], 0.0) or np.allclose(rotated_vector, rvec)
+    assert np.allclose(grot_mat @ grot_mat.T, np.eye(2))
+    assert np.allclose(grot_mat.T @ grot_mat, np.eye(2))
 
 
 @pytest.mark.parametrize("left", [True, False])
@@ -83,21 +127,102 @@ def test_givens_rotate(shape, indices, row, left):
 
 
 @pytest.mark.parametrize("shape", [2, 3, 7, 8, 15, 16])
-def test_givens_decomposition(shape):
-    r"""Test that `givens_decomposition` perform correct Givens decomposition."""
+def test_givens_decomposition(shape, seed):
+    r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
 
-    matrix = unitary_group.rvs(shape)
+    matrix = unitary_group.rvs(shape, random_state=seed)
 
     phase_mat, ordered_rotations = givens_decomposition(matrix)
+    assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
-    for grot_mat, (i, j) in ordered_rotations:
+    for grot_mat, (i, _) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=complex)
-        rotation_matrix[i, i], rotation_matrix[j, j] = grot_mat[0, 0], grot_mat[1, 1]
-        rotation_matrix[i, j], rotation_matrix[j, i] = grot_mat[0, 1], grot_mat[1, 0]
+        rotation_matrix[i : i + 2, i : i + 2] = grot_mat
         decomposed_matrix = decomposed_matrix @ rotation_matrix
 
     # check if U = D x Π T_{m, n}
-    assert np.allclose(matrix, decomposed_matrix)
+    assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("shape", [2, 3, 7])
+@pytest.mark.parametrize("jit", [False, True])
+def test_givens_decomposition_jax(shape, jit, seed):
+    r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
+    import jax
+    from jax import numpy as jnp
+
+    matrix = jnp.array(unitary_group.rvs(shape, random_state=seed))
+    func = jax.jit(givens_decomposition) if jit else givens_decomposition
+
+    phase_mat, ordered_rotations = func(matrix)
+    assert all(j == i + 1 for _, (i, j) in ordered_rotations)
+    decomposed_matrix = np.diag(phase_mat)
+    for grot_mat, (i, _) in ordered_rotations:
+        rotation_matrix = np.eye(shape, dtype=complex)
+        rotation_matrix[i : i + 2, i : i + 2] = grot_mat
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    # check if U = D x Π T_{m, n}
+    assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
+
+
+@pytest.mark.parametrize("shape", [2, 3, 4, 5, 6, 7, 8, 14, 15, 16])
+@pytest.mark.parametrize("dtype", [np.complex128, np.float64])
+def test_givens_decomposition_real_valued(shape, dtype, seed):
+    r"""Test that `givens_decomposition` performs a correct Givens decomposition of
+    real-valued matrices, both for real and complex data type."""
+
+    matrix = ortho_group.rvs(shape, random_state=seed).astype(dtype)
+    matrix[0] *= np.linalg.det(matrix)  # Make unit determinant
+
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
+    assert all(j == i + 1 for _, (i, j) in ordered_rotations)
+    decomposed_matrix = np.diag(phase_mat)
+    if dtype is np.float64:
+        assert np.allclose(phase_mat, 1.0)
+
+    for grot_mat, (i, _) in ordered_rotations:
+        rotation_matrix = np.eye(shape, dtype=dtype)
+        rotation_matrix[i : i + 2, i : i + 2] = grot_mat
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    # check data type
+    assert decomposed_matrix.dtype == dtype
+    # check if U = D x Π T_{m, n}
+    assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("shape", [2, 3, 4, 5, 6])
+@pytest.mark.parametrize("dtype", [np.complex128, np.float64])
+@pytest.mark.parametrize("jit", [False, True])
+def test_givens_decomposition_real_valued_jax(shape, dtype, jit, seed):
+    r"""Test that `givens_decomposition` performs a correct Givens decomposition of
+    real-valued matrices, both for real and complex data type, using JAX."""
+    import jax
+    from jax import numpy as jnp
+
+    matrix = ortho_group.rvs(shape, random_state=seed).astype(dtype)
+    matrix[0] *= np.linalg.det(matrix)  # Make unit determinant
+    matrix = jnp.array(matrix)
+    func = jax.jit(givens_decomposition) if jit else givens_decomposition
+
+    phase_mat, ordered_rotations = func(matrix)
+    assert all(j == i + 1 for _, (i, j) in ordered_rotations)
+    decomposed_matrix = np.diag(phase_mat)
+    if dtype is np.float64:
+        assert np.allclose(phase_mat, 1.0)
+
+    for grot_mat, (i, _) in ordered_rotations:
+        rotation_matrix = np.eye(shape, dtype=dtype)
+        rotation_matrix[i : i + 2, i : i + 2] = grot_mat
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    # check data type
+    assert decomposed_matrix.dtype == dtype
+    # check if U = D x Π T_{m, n}
+    assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
 
 
 @pytest.mark.parametrize(

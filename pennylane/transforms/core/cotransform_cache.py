@@ -36,7 +36,9 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
-def _tf_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
+def _tf_jac(
+    classical_function, argnums, *args, **kwargs
+) -> TensorLike:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
@@ -124,7 +126,7 @@ def _get_interface(qnode, args, kwargs) -> str:
     if qnode.interface == "auto":
         interface = math.get_interface(*args, *list(kwargs.values()))
         try:
-            interface = math.get_canonical_interface_name(interface).value
+            interface = math.Interface(interface).value
         except ValueError:
             interface = "numpy"
     else:
@@ -189,7 +191,7 @@ class CotransformCache:
         transform_index = self._get_idx_for_transform(transform)
         if not transform.classical_cotransform:
             return None
-        argnums = self._program[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
+        argnums = self._program[-1].kwargs.get("argnums", None)
 
         interface = _get_interface(self.qnode, self.args, self.kwargs)
 
@@ -233,7 +235,7 @@ class CotransformCache:
             )
 
         transform = self._program[transform_index]
-        argnums = self._program[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
+        argnums = self._program[-1].kwargs.get("argnums", None)
 
         if argnums is None and math.get_interface(self.args[0]) != "jax":
             raise QuantumFunctionError("No trainable parameters.")

@@ -54,7 +54,7 @@ def _batch_postprocessing(
     (3.0, 3.5, 8.0)
 
     """
-    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices))
+    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices, strict=True))
 
 
 def _apply_postprocessing_stack(
@@ -426,7 +426,6 @@ class TransformProgram:
             classical_jacobians = []
             for tape_idx, tape in enumerate(tapes):
                 if argnums is not None:
-                    # pylint: disable=unsubscriptable-object
                     tape.trainable_params = argnums[tape_idx]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)

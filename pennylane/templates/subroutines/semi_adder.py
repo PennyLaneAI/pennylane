@@ -87,8 +87,9 @@ class SemiAdder(Operation):
 
         wires = qml.registers({"x":3, "y":6, "work":5})
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=wires["x"])
@@ -99,9 +100,9 @@ class SemiAdder(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [0 0 0 1 1 1]
+        [[0 0 0 1 1 1]]
 
-    The result :math:`[0 0 0 1 1 1]`, is the binary representation of :math:`3 + 4 = 7`.
+    The result :math:`[[0 0 0 1 1 1]]`, is the binary representation of :math:`3 + 4 = 7`.
 
     Note that the result is computed modulo :math:`2^{\text{len(y_wires)}}` which makes the computed value dependent on the size of the ``y_wires`` register. This behavior is demonstrated in the following example.
 
@@ -112,8 +113,9 @@ class SemiAdder(Operation):
 
         wires = qml.registers({"x":3, "y":2, "work":1})
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=wires["x"])
@@ -124,7 +126,7 @@ class SemiAdder(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [0 0]
+        [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
     """
@@ -133,13 +135,7 @@ class SemiAdder(Operation):
 
     resource_keys = {"num_y_wires"}
 
-    def __init__(
-        self,
-        x_wires: WiresLike,
-        y_wires: WiresLike,
-        work_wires,
-        id=None,
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires, id=None):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -185,7 +181,7 @@ class SemiAdder(Operation):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 
-    def map_wires(self, wire_map: dict):
+    def map_wires(self, wire_map: dict) -> "SemiAdder":
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
             for key in ["x_wires", "y_wires", "work_wires"]
@@ -197,7 +193,7 @@ class SemiAdder(Operation):
             new_dict["work_wires"],
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
         return self.compute_decomposition(**self.hyperparameters)
 

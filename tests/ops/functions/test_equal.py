@@ -386,16 +386,14 @@ class TestEqual:
         wire = 0
 
         import jax
-        import tensorflow as tf
         import torch
 
         param_torch = torch.tensor(0.123)
-        param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -452,16 +450,14 @@ class TestEqual:
         wire = [0, 1]
 
         import jax
-        import tensorflow as tf
         import torch
 
         param_torch = torch.tensor(0.123)
-        param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -543,16 +539,14 @@ class TestEqual:
         wire = [0, 1, 2, 3]
 
         import jax
-        import tensorflow as tf
         import torch
 
         param_torch = torch.tensor(0.123)
-        param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -635,16 +629,14 @@ class TestEqual:
         wire = 0
 
         import jax
-        import tensorflow as tf
         import torch
 
         param_torch = torch.tensor([1, 2, 3])
-        param_tf = tf.Variable([1, 2, 3])
         param_jax = jax.numpy.array([1, 2, 3])
         param_qml = npp.array([1, 2, 3])
         param_np = np.array([1, 2, 3])
 
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -726,17 +718,15 @@ class TestEqual:
         wire = 0
 
         import jax
-        import tensorflow as tf
         import torch
 
         param_torch = torch.tensor([1, 2])
-        param_tf = tf.Variable([1, 2])
         param_jax = jax.numpy.array([1, 2])
         param_qml = npp.array([1, 2])
         param_np = np.array([1, 2])
 
         op1 = PARAMETRIZED_OPERATIONS_2P_1W[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -780,13 +770,12 @@ class TestEqual:
 
         wire = [1, 2, 3]
         param_torch = torch.tensor(1)
-        param_tf = tf.Variable(1)
         param_jax = jax.numpy.array(1)
         param_qml = npp.array(1)
         param_np = np.array(1)
 
         op1 = PARAMETRIZED_OPERATIONS_1P_3W[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -830,13 +819,12 @@ class TestEqual:
 
         wire = [1, 2]
         param_torch = torch.tensor([1, 2, 3])
-        param_tf = tf.Variable([1, 2, 3])
         param_jax = jax.numpy.array([1, 2, 3])
         param_qml = npp.array([1, 2, 3])
         param_np = np.array([1, 2, 3])
 
         op1 = PARAMETRIZED_OPERATIONS_3P_2W[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -880,13 +868,12 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor(1)
-        param_tf = tf.Variable(1)
         param_jax = jax.numpy.array(1)
         param_qml = npp.array(1)
         param_np = np.array(1)
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -930,13 +917,12 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor([[1, 0], [0, 1]]) * 1j
-        param_tf = tf.Variable([[1, 0], [0, 1]], dtype=tf.complex64) * 1j
         param_jax = jax.numpy.eye(2) * 1j
         param_qml = npp.eye(2) * 1j
         param_np = np.eye(2) * 1j
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[1]
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -980,13 +966,12 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor([1.0, 1.0j])
-        param_tf = tf.Variable([1.0 + 0j, 1.0j])
         param_jax = jax.numpy.array([1.0, 1.0j])
         param_qml = npp.array([1.0, 1.0j])
         param_np = np.array([1.0, 1.0j])
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[2]
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -1030,7 +1015,6 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor([[1, 0], [0, 1]]) * 1j
-        param_tf = tf.Variable([[1, 0], [0, 1]], dtype=tf.complex64) * 1j
         param_jax = jax.numpy.eye(2) * 1j
         param_qml = npp.eye(2) * 1j
         param_np = np.eye(2) * 1j
@@ -1038,7 +1022,7 @@ class TestEqual:
         # ControlledQubitUnitary
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
         wires = [wire + 1, wire]
-        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
+        param_list = [param_qml, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qml.equal(
@@ -1326,23 +1310,18 @@ class TestEqual:
         symmetry doesn't affect the behaviour):
 
         -JAX and Autograd
-        -JAX and TF
         -JAX and Torch
-        -TF and Autograd
-        -TF and Torch
         -Autograd and Torch
         """
         import jax
-        import tensorflow as tf
         import torch
 
         wire = 0
 
         pl_tensor = qml.numpy.array(0.3, requires_grad=True)
-        tf_tensor = tf.Variable(0.3)
         torch_tensor = torch.tensor(0.3, requires_grad=True)
 
-        non_jax_tensors = [pl_tensor, tf_tensor, torch_tensor]
+        non_jax_tensors = [pl_tensor, torch_tensor]
 
         # JAX and the others
         # ------------------
@@ -1352,46 +1331,12 @@ class TestEqual:
         def jax_assertion_func(x, other_tensor):
             operation1 = op1(jax.numpy.array(x), wires=1)
             operation2 = op1(other_tensor, wires=1)
-            if isinstance(other_tensor, tf.Variable):
-                with tf.GradientTape():
-                    assert qml.equal(
-                        operation1, operation2, check_interface=False, check_trainability=True
-                    )
-            else:
-                assert qml.equal(
-                    operation1, operation2, check_interface=False, check_trainability=True
-                )
+            assert qml.equal(operation1, operation2, check_interface=False, check_trainability=True)
             return x
 
         par = 0.3
         for tensor in non_jax_tensors:
             jax.grad(jax_assertion_func, argnums=0)(par, tensor)
-
-        # TF and Autograd
-        # ------------------
-        with tf.GradientTape():
-            assert (
-                qml.equal(
-                    op1(tf_tensor, wires=wire),
-                    op1(pl_tensor, wires=wire),
-                    check_trainability=True,
-                    check_interface=False,
-                )
-                is True
-            )
-
-        # TF and Torch
-        # ------------------
-        with tf.GradientTape():
-            assert (
-                qml.equal(
-                    op1(tf_tensor, wires=wire),
-                    op1(torch_tensor, wires=wire),
-                    check_trainability=True,
-                    check_interface=False,
-                )
-                is True
-            )
 
         # Autograd and Torch
         # ------------------
@@ -1717,13 +1662,11 @@ class TestMeasurementsEqual:
     def test_mid_measure(self):
         """Test that `MidMeasureMP`s are equal only if their wires
         an id are equal and their `reset` attribute match."""
-        mp = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id")
+        mp = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id")
 
-        mp1 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1, 0]), reset=True, id="test_id")
-        mp2 = qml.measurements.MidMeasureMP(
-            wires=qml.wires.Wires([0, 1]), reset=False, id="test_id"
-        )
-        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="foo")
+        mp1 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1]), reset=True, id="test_id")
+        mp2 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=False, id="test_id")
+        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="foo")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
@@ -1732,9 +1675,7 @@ class TestMeasurementsEqual:
         assert (
             qml.equal(
                 mp,
-                qml.measurements.MidMeasureMP(
-                    wires=qml.wires.Wires([0, 1]), reset=True, id="test_id"
-                ),
+                qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id"),
             )
             is True
         )
@@ -1744,7 +1685,7 @@ class TestMeasurementsEqual:
         mv1 = qml.measure(0)
         mv2 = qml.measure(0)
         # qml.equal of MidMeasureMP checks the id
-        mv2.measurements[0].id = mv1.measurements[0].id
+        mv2.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
 
         assert qml.equal(mv1, mv1) is True
         assert qml.equal(mv1, mv2) is True
@@ -1761,7 +1702,7 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(0)
         # qml.equal of MidMeasureMP checks the id
-        mv3.measurements[0].id = mv1.measurements[0].id
+        mv3.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
 
         assert qml.equal(mv1 * mv2, mv2 * mv1) is True
         assert qml.equal(mv1 + mv2, mv3 + mv2) is True
@@ -1776,7 +1717,7 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(1)
         mv4 = qml.measure(0)
-        mv4.measurements[0].id = mv1.measurements[0].id
+        mv4.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
 
         mp1 = mp_fn(op=[mv1, mv2])
         mp2 = mp_fn(op=[mv4, mv2])
@@ -1806,7 +1747,7 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(1)
         mv4 = qml.measure(0)
-        mv4.measurements[0].id = mv1.measurements[0].id
+        mv4.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
 
         mp1 = mp_fn(op=mv1 * mv2)
         mp2 = mp_fn(op=mv4 * mv2)
@@ -2148,7 +2089,7 @@ class TestSymbolicOpComparison:
         m2 = qml.measure(wire2)
         if wire1 == wire2:
             # qml.equal checks id for MidMeasureMP, but here we only care about them acting on the same wire
-            m2.measurements[0].id = m1.measurements[0].id
+            m2.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
         base = qml.PauliX(wire2)
         op1 = Conditional(m1, base)
         op2 = Conditional(m2, base)
