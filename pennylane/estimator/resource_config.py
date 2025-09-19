@@ -18,7 +18,7 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.templates import QubitUnitary, SelectPauliRot
+from pennylane.estimator.ops.templates import QubitUnitary, SelectPauliRot
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator

@@ -48,3 +48,20 @@ from .op_math import (
     Adjoint,
     Controlled,
 )
+
+from .templates import (
+    OutOfPlaceSquare,
+    PhaseGradient,
+    OutMultiplier,
+    SemiAdder,
+    QFT,
+    AQFT,
+    BasisRotation,
+    Select,
+    QROM,
+    SelectPauliRot,
+    QubitUnitary,
+    ControlledSequence,
+    QPE,
+    IterativeQPE,
+)
