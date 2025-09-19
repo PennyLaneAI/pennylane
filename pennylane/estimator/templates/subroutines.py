@@ -1622,6 +1622,7 @@ class QROM(ResourceOperator):
         self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
 
+    # pylint: disable=protected-access
     @classmethod
     def resource_decomp(
         cls,
