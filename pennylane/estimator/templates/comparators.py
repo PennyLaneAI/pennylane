@@ -39,7 +39,7 @@ class SingleQubitComparator(ResourceOperator):
     Resources:
         The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
         <https://arxiv.org/pdf/1711.10460>`_. Specifically,
-        the resources are given as :math:`1` ``TempAND`` gate, :math:`4` ``CNOT`` gates,
+        the resources are given as :math:`1` ``TemporaryAND`` gate, :math:`4` ``CNOT`` gates,
         and :math:`3` ``X`` gates.
         The circuit which applies the comparison operation on qubits :math:`(x,y)` is
         defined as:
@@ -98,7 +98,7 @@ class SingleQubitComparator(ResourceOperator):
         Resources:
             The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
             <https://arxiv.org/pdf/1711.10460>`_. Specifically,
-            the resources are given as :math:`1` ``TempAND`` gate, :math:`4` ``CNOT`` gates,
+            the resources are given as :math:`1` ``TemporaryAND`` gate, :math:`4` ``CNOT`` gates,
             and :math:`3` ``X`` gates.
 
             The circuit which applies the comparison operation on wires :math:`(x,y)` is
@@ -118,7 +118,7 @@ class SingleQubitComparator(ResourceOperator):
         """
         gate_lst = []
 
-        gate_lst.append(GateCount(resource_rep(qre.TempAND), 1))
+        gate_lst.append(GateCount(resource_rep(qre.TemporaryAND), 1))
         gate_lst.append(GateCount(resource_rep(qre.CNOT), 4))
         gate_lst.append(GateCount(resource_rep(qre.X), 3))
 
@@ -230,7 +230,7 @@ class TwoQubitComparator(ResourceOperator):
         return gate_list
 
     @classmethod
-    def tempand_based_decomp(cls, **kwargs):
+    def TemporaryAND_based_decomp(cls, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -239,7 +239,7 @@ class TwoQubitComparator(ResourceOperator):
             <https://arxiv.org/pdf/1711.10460>`_. Specifically,
             the resources are given as :math:`2` ``CSWAP`` gates,
             :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
-            is modified to use TempAND gates for building blocks of CSWAP gates.
+            is modified to use TemporaryAND gates for building blocks of CSWAP gates.
 
             .. code-block:: bash
 
@@ -252,7 +252,7 @@ class TwoQubitComparator(ResourceOperator):
         gate_list = []
 
         gate_list.append(Allocate(2))
-        gate_list.append(GateCount(resource_rep(qre.TempAND), 2))
+        gate_list.append(GateCount(resource_rep(qre.TemporaryAND), 2))
         gate_list.append(GateCount(resource_rep(qre.CNOT), 8))
         gate_list.append(GateCount(resource_rep(qre.X), 3))
 
@@ -604,7 +604,7 @@ class RegisterComparator(ResourceOperator):
         compare_register = min(first_register, second_register)
 
         one_qubit_compare = resource_rep(qre.SingleQubitComparator)
-        two_qubit_compare = qre.TwoQubitComparator.tempand_based_decomp(**kwargs)
+        two_qubit_compare = qre.TwoQubitComparator.TemporaryAND_based_decomp(**kwargs)
 
         if first_register == second_register:
 

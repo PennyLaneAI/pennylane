@@ -39,7 +39,7 @@ class TestSingleQubitComparator:
     def test_resources(self):
         """Test that the resources are correct."""
         expected = [
-            GateCount(resource_rep(qre.TempAND)),
+            GateCount(resource_rep(qre.TemporaryAND)),
             GateCount(resource_rep(qre.CNOT), 4),
             GateCount(resource_rep(qre.X), 3),
         ]
@@ -229,7 +229,7 @@ class TestRegisterComparator:
                 True,
                 [
                     Allocate(18),
-                    GateCount(resource_rep(qre.TempAND), 18),
+                    GateCount(resource_rep(qre.TemporaryAND), 18),
                     GateCount(resource_rep(qre.CNOT), 72),
                     GateCount(resource_rep(qre.X), 27),
                     GateCount(resource_rep(qre.SingleQubitComparator), 1),
@@ -237,7 +237,7 @@ class TestRegisterComparator:
                     GateCount(
                         resource_rep(
                             qre.Adjoint,
-                            {"base_cmpr_op": resource_rep(qre.TempAND)},
+                            {"base_cmpr_op": resource_rep(qre.TemporaryAND)},
                         ),
                         18,
                     ),
@@ -266,7 +266,7 @@ class TestRegisterComparator:
                 False,
                 [
                     Allocate(6),
-                    GateCount(resource_rep(qre.TempAND), 6),
+                    GateCount(resource_rep(qre.TemporaryAND), 6),
                     GateCount(resource_rep(qre.CNOT), 24),
                     GateCount(resource_rep(qre.X), 9),
                     GateCount(resource_rep(qre.SingleQubitComparator), 1),
@@ -274,7 +274,7 @@ class TestRegisterComparator:
                     GateCount(
                         resource_rep(
                             qre.Adjoint,
-                            {"base_cmpr_op": resource_rep(qre.TempAND)},
+                            {"base_cmpr_op": resource_rep(qre.TemporaryAND)},
                         ),
                         6,
                     ),
@@ -315,7 +315,7 @@ class TestRegisterComparator:
                 True,
                 [
                     Allocate(6),
-                    GateCount(resource_rep(qre.TempAND), 6),
+                    GateCount(resource_rep(qre.TemporaryAND), 6),
                     GateCount(resource_rep(qre.CNOT), 24),
                     GateCount(resource_rep(qre.X), 9),
                     GateCount(resource_rep(qre.SingleQubitComparator), 1),
@@ -323,7 +323,7 @@ class TestRegisterComparator:
                     GateCount(
                         resource_rep(
                             qre.Adjoint,
-                            {"base_cmpr_op": resource_rep(qre.TempAND)},
+                            {"base_cmpr_op": resource_rep(qre.TemporaryAND)},
                         ),
                         6,
                     ),
