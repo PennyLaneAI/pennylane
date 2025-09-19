@@ -22,6 +22,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
 
+from .templates import QubitUnitary, SelectPauliRot
+
 
 class DecompositionType(StrEnum):
     """Specifies the type of decomposition to override."""
@@ -40,7 +42,10 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
-        self.resource_op_precisions = {}
+        self.resource_op_precisions = {
+            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
+            QubitUnitary: {"precision": _DEFAULT_PRECISION},
+        }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
         self._ctrl_custom_decomps = {}

@@ -425,7 +425,7 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
-# pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
+# pylint: disable=too-many-branches,too-many-statements
 @transform
 def clifford_t_decomposition(
     tape: QuantumScript,

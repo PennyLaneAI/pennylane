@@ -143,7 +143,7 @@ class TestResourceOutMultiplier:
         b_register_size = 3
 
         toff = resource_rep(qre.Toffoli)
-        l_elbow = resource_rep(qre.TempAND)
+        l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         num_elbows = 12
@@ -194,11 +194,11 @@ class TestResourceSemiAdder:
                 [
                     qre.Allocate(2),
                     GateCount(resource_rep(qre.CNOT), 9),
-                    GateCount(resource_rep(qre.TempAND), 2),
+                    GateCount(resource_rep(qre.TemporaryAND), 2),
                     GateCount(
                         resource_rep(
                             qre.Adjoint,
-                            {"base_cmpr_op": resource_rep(qre.TempAND)},
+                            {"base_cmpr_op": resource_rep(qre.TemporaryAND)},
                         ),
                         2,
                     ),
@@ -222,9 +222,9 @@ class TestResourceSemiAdder:
         expected_res = [
             qre.Allocate(4),
             GateCount(resource_rep(qre.CNOT), 24),
-            GateCount(resource_rep(qre.TempAND), 8),
+            GateCount(resource_rep(qre.TemporaryAND), 8),
             GateCount(
-                resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TempAND)}),
+                resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
                 8,
             ),
             qre.Deallocate(4),
@@ -920,20 +920,20 @@ class TestResourceAQFT:
                         4,
                     ),
                     Allocate(1),
-                    GateCount(resource_rep(qre.TempAND), 1),
+                    GateCount(resource_rep(qre.TemporaryAND), 1),
                     GateCount(qre.SemiAdder.resource_rep(1)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         1,
                     ),
                     Deallocate(1),
                     Allocate(2),
-                    GateCount(resource_rep(qre.TempAND), 2 * 2),
+                    GateCount(resource_rep(qre.TemporaryAND), 2 * 2),
                     GateCount(qre.SemiAdder.resource_rep(2), 2),
                     GateCount(resource_rep(qre.Hadamard), 2),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         2 * 2,
                     ),
                     Deallocate(2),
@@ -954,29 +954,29 @@ class TestResourceAQFT:
                         4,
                     ),
                     Allocate(1),
-                    GateCount(resource_rep(qre.TempAND), 1),
+                    GateCount(resource_rep(qre.TemporaryAND), 1),
                     GateCount(qre.SemiAdder.resource_rep(1)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         1,
                     ),
                     Deallocate(1),
                     Allocate(2),
-                    GateCount(resource_rep(qre.TempAND), 2),
+                    GateCount(resource_rep(qre.TemporaryAND), 2),
                     GateCount(qre.SemiAdder.resource_rep(2)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         2,
                     ),
                     Deallocate(2),
                     Allocate(3),
-                    GateCount(resource_rep(qre.TempAND), 3),
+                    GateCount(resource_rep(qre.TemporaryAND), 3),
                     GateCount(qre.SemiAdder.resource_rep(3)),
                     GateCount(resource_rep(qre.Hadamard)),
                     GateCount(
-                        qre.Adjoint.resource_rep(resource_rep(qre.TempAND)),
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         3,
                     ),
                     Deallocate(3),
@@ -1073,10 +1073,10 @@ class TestResourceSelect:
             ),
             GateCount(qre.X.resource_rep(), 4),
             GateCount(qre.CNOT.resource_rep(), 2),
-            GateCount(qre.TempAND.resource_rep(), 2),
+            GateCount(qre.TemporaryAND.resource_rep(), 2),
             GateCount(
                 qre.Adjoint.resource_rep(
-                    qre.TempAND.resource_rep(),
+                    qre.TemporaryAND.resource_rep(),
                 ),
                 2,
             ),
@@ -1086,7 +1086,7 @@ class TestResourceSelect:
 
 
 class TestResourceQROM:
-    """Test the ResourceQROM class."""
+    """Test the resource QROM class."""
 
     def test_select_swap_depth_errors(self):
         """Test that the correct error is raised when invalid values of
@@ -1180,10 +1180,10 @@ class TestResourceQROM:
                     GateCount(qre.Hadamard.resource_rep(), 6),
                     GateCount(qre.X.resource_rep(), 14),
                     GateCount(qre.CNOT.resource_rep(), 36),
-                    GateCount(qre.TempAND.resource_rep(), 6),
+                    GateCount(qre.TemporaryAND.resource_rep(), 6),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TempAND.resource_rep(),
+                            qre.TemporaryAND.resource_rep(),
                         ),
                         6,
                     ),
@@ -1202,10 +1202,10 @@ class TestResourceQROM:
                     qre.Allocate(10),
                     GateCount(qre.X.resource_rep(), 97),
                     GateCount(qre.CNOT.resource_rep(), 98),
-                    GateCount(qre.TempAND.resource_rep(), 48),
+                    GateCount(qre.TemporaryAND.resource_rep(), 48),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TempAND.resource_rep(),
+                            qre.TemporaryAND.resource_rep(),
                         ),
                         48,
                     ),
@@ -1224,10 +1224,10 @@ class TestResourceQROM:
                     GateCount(qre.Hadamard.resource_rep(), 4),
                     GateCount(qre.X.resource_rep(), 42),
                     GateCount(qre.CNOT.resource_rep(), 30),
-                    GateCount(qre.TempAND.resource_rep(), 20),
+                    GateCount(qre.TemporaryAND.resource_rep(), 20),
                     GateCount(
                         qre.Adjoint.resource_rep(
-                            qre.TempAND.resource_rep(),
+                            qre.TemporaryAND.resource_rep(),
                         ),
                         20,
                     ),
