@@ -992,7 +992,7 @@ class ChangeOpBasis(ResourceOperator):
 
         >>> compute_u = qre.S()
         >>> base_v = qre.Z()
-        >>> cb_op = qre.ResourceChangeBasisOp(compute_u, base_v)
+        >>> cb_op = qre.ChangeBasisOp(compute_u, base_v)
         >>> print(qre.estimation(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
         --- Resources: ---
         Total qubits: 1
