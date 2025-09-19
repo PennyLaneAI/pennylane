@@ -30,11 +30,20 @@ from .subroutines import (
     IterativeQPE,
 )
 
-from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling
+from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling, PrepTHC
 
 from .comparators import (
     IntegerComparator,
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+)
+from .compact_hamiltonian import (
+    CompactHamiltonian
+)
+from .qubitize import (
+    QubitizeTHC
+)
+from .select import (
+    SelectTHC
 )

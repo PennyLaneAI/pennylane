@@ -91,6 +91,7 @@ from .templates.stateprep import (
     QROMStatePreparation,
     UniformStatePrep,
     AliasSampling,
+    PrepTHC,
 )
 
 from .templates.comparators import (
@@ -98,4 +99,16 @@ from .templates.comparators import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+)
+
+from .templates.qubitize import (
+    QubitizeTHC
+)
+
+from .templates.select import (
+    SelectTHC
+)
+
+from .templates.compact_hamiltonian import (
+    CompactHamiltonian
 )
