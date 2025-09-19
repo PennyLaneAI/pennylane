@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the `zx.push_hadamards` transform.
+Unit tests for the `transforms.zx.push_hadamards` transform.
 """
 import sys
 

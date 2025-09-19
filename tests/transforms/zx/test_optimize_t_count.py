@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the `zx.optimize_t_count` transform.
+Unit tests for the `transforms.zx.optimize_t_count` transform.
 """
 import sys
 

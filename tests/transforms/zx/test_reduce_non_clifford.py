@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the `zx.todd` transform.
+Unit tests for the `transforms.zx.reduce_non_clifford` transform.
 """
 import sys
 
@@ -26,7 +26,7 @@ pytest.importorskip("pyzx")
 
 
 def test_import_pyzx_error(monkeypatch):
-    """Test that a ModuleNotFoundError is raised by the todd transform
+    """Test that a ModuleNotFoundError is raised by the reduce_non_clifford transform
     when the pyzx external package is not installed."""
 
     with monkeypatch.context() as m:
@@ -35,11 +35,11 @@ def test_import_pyzx_error(monkeypatch):
         qs = QuantumScript(ops=[], measurements=[])
 
         with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-            qml.transforms.zx.todd(qs)
+            qml.transforms.zx.reduce_non_clifford(qs)
 
 
 @pytest.mark.external
-class TestTODD:
+class TestReduceNonClifford:
 
     @pytest.mark.parametrize(
         "gate",
@@ -56,6 +56,9 @@ class TestTODD:
             qml.CZ(wires=[0, 1]),
             qml.CH(wires=[0, 1]),
             qml.SWAP(wires=[0, 1]),
+            # 3-qubit hermitian gates
+            qml.Toffoli(wires=[0, 1, 2]),
+            qml.CCZ(wires=[0, 1, 2]),
         ),
     )
     def test_hermitian_involutory_gates_cancellation(self, gate):
@@ -63,7 +66,7 @@ class TestTODD:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == []
 
@@ -80,7 +83,7 @@ class TestTODD:
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -98,31 +101,83 @@ class TestTODD:
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
     @pytest.mark.parametrize(
-        "gate",
+        "params",
         (
-            # non-Clifford or T gates
-            qml.RX(0.5, wires=0),
-            qml.RY(0.5, wires=0),
-            qml.RZ(0.5, wires=0),
-            qml.U1(0.1, wires=0),
-            qml.U2(0.1, 0.2, wires=0),
-            qml.U3(0.1, 0.2, 0.3, wires=0),
-            qml.CRX(0.5, wires=[0, 1]),
-            qml.CRY(0.5, wires=[0, 1]),
-            qml.CRZ(0.5, wires=[0, 1]),
+            (1.7, 0.0),
+            (3.1, -0.5),
+            (0.1, 0.9, -2.8),
         ),
     )
-    def test_non_clifford_or_T_gates_error(self, gate):
-        """Test that an error is raised when the input circuit is not Clifford + T."""
-        qs = QuantumScript(ops=[gate])
+    def test_merge_RX_rotations(self, params):
+        """Test that RX rotation gates are correctly merged together."""
+        ops = [qml.RX(angle, wires=0) for angle in params]
 
-        with pytest.raises(TypeError, match=r"The input circuit must be a Clifford \+ T circuit."):
-            qml.transforms.zx.todd(qs)
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+
+        assert len(new_qs.operations) == 3
+
+        h, rz, ht = new_qs.operations
+        phi = np.mod(np.sum(params), 2 * np.pi)
+
+        assert qml.equal(h, qml.H(0))
+        assert qml.equal(rz, qml.RZ(phi, 0))
+        assert qml.equal(ht, qml.H(0))
+
+    @pytest.mark.parametrize(
+        "params",
+        (
+            (1.7, 0.0),
+            (3.1, -0.5),
+            (0.1, 0.9, -2.8),
+        ),
+    )
+    def test_merge_RY_rotations(self, params):
+        """Test that RY rotation gates are correctly merged together."""
+        ops = [qml.RY(angle, wires=0) for angle in params]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+
+        assert len(new_qs.operations) == 5
+
+        s, h, rz, ht, st = new_qs.operations
+        phi = np.mod(np.sum(params), 2 * np.pi)
+        # need to take into account a global phase mismatch introduced by pyzx RY decomposition
+        phi = 2 * np.pi - phi
+
+        assert qml.equal(s, qml.S(0))
+        assert qml.equal(h, qml.H(0))
+        assert qml.equal(rz, qml.RZ(phi, 0))
+        assert qml.equal(ht, qml.H(0))
+        assert qml.equal(st, qml.adjoint(qml.S(0)))
+
+    @pytest.mark.parametrize(
+        "params",
+        (
+            (1.7, 0.0),
+            (3.1, -0.5),
+            (0.1, 0.9, -2.8),
+        ),
+    )
+    def test_merge_RZ_rotations(self, params):
+        """Test that RZ rotation gates are correctly merged together."""
+        ops = [qml.RZ(angle, wires=0) for angle in params]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+
+        assert len(new_qs.operations) == 1
+
+        (rz,) = new_qs.operations
+        phi = np.mod(np.sum(params), 2 * np.pi)
+
+        assert qml.equal(rz, qml.RZ(phi, 0))
 
     @pytest.mark.parametrize(
         "angle, expected_ops",
@@ -130,11 +185,11 @@ class TestTODD:
             (0, []),
             (0.25 * np.pi, [qml.T(0)]),
             (0.5 * np.pi, [qml.S(0)]),
-            (0.75 * np.pi, [qml.T(0), qml.S(0)]),
+            (0.75 * np.pi, [qml.Z(0), qml.adjoint(qml.T(0))]),
             (np.pi, [qml.Z(0)]),
-            (1.25 * np.pi, [qml.T(0), qml.Z(0)]),
+            (1.25 * np.pi, [qml.Z(0), qml.T(0)]),
             (1.5 * np.pi, [qml.adjoint(qml.S(0))]),
-            (1.75 * np.pi, [qml.T(0), qml.adjoint(qml.S(0))]),
+            (1.75 * np.pi, [qml.adjoint(qml.T(0))]),
             (2 * np.pi, []),
         ),
     )
@@ -143,7 +198,7 @@ class TestTODD:
         ops = [qml.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -160,59 +215,80 @@ class TestTODD:
         """Test that the operations of the transformed tape match the expected operations
         and that the original measurements are not touched."""
         ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.T(wires=0),
+            qml.CNOT(wires=[3, 2]),
+            qml.T(wires=1),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=2),
+            qml.RZ(0.5, wires=1),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=1),
+            qml.CNOT(wires=[3, 2]),
             qml.T(wires=0),
             qml.CNOT(wires=[0, 1]),
-            qml.S(wires=0),
-            qml.T(wires=0),
-            qml.T(wires=1),
-            qml.CNOT(wires=[0, 2]),
-            qml.T(wires=1),
         ]
         original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        (transformed_tape,), _ = qml.transforms.zx.todd(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.reduce_non_clifford(original_tape)
 
         expected_ops = [
-            qml.adjoint(qml.S(wires=0)),
-            qml.S(wires=1),
-            qml.CZ(wires=[1, 0]),
-            qml.CNOT(wires=[0, 2]),
+            qml.S(wires=0),
+            qml.CNOT(wires=[2, 3]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(2.070796326790258, wires=[1]),
+            qml.CNOT(wires=[1, 3]),
+            qml.T(wires=3),
+            qml.CNOT(wires=[1, 3]),
+            qml.CNOT(wires=[2, 3]),
             qml.CNOT(wires=[0, 1]),
         ]
 
         assert transformed_tape.operations == expected_ops
         assert transformed_tape.measurements == measurements
 
-    def test_equivalent_state(self):
+    @pytest.mark.parametrize(
+        "params",
+        (
+            (0.0, 0.0),
+            (1.7, 0.0),
+            (0.0, -1.7),
+            (-3.2, 2.2),
+            (3.2, -2.2),
+        ),
+    )
+    def test_equivalent_state(self, params):
         """Test that the output state returned by the transformed QNode matches
         the output state returned by the original QNode up to a global phase."""
         num_wires = 3
         device = qml.device("default.qubit", wires=num_wires)
 
         @qml.qnode(device)
-        def original_circ():
+        def original_circ(x, y):
             for i in range(num_wires):
                 qml.Hadamard(wires=i)
             qml.T(wires=0)
             qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.RZ(np.pi / 2, wires=0)
+            qml.T(wires=0)
+            qml.RX(x, wires=1)
             qml.S(wires=2)
+            qml.RX(y, wires=1)
             qml.CNOT(wires=[1, 2])
-            qml.RZ(-np.pi, wires=2)
             return qml.state()
 
-        reduced_circ = qml.transforms.zx.todd(original_circ)
+        reduced_circ = qml.transforms.zx.reduce_non_clifford(original_circ)
 
-        state1 = original_circ()
-        state2 = reduced_circ()
+        state1 = original_circ(*params)
+        state2 = reduced_circ(*params)
 
         # test that the states are equivalent up to a global phase
         check = qml.math.fidelity_statevector(state1, state2)
         assert np.isclose(check, 1)
 
-        u1 = qml.matrix(original_circ, wire_order=range(num_wires))()
-        u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))()
+        u1 = qml.matrix(original_circ, wire_order=range(num_wires))(*params)
+        u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))(*params)
 
         # test that the unitaries are equivalent up to a global phase
         prod = u1 @ np.conj(u2.T)
