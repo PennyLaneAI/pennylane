@@ -15,16 +15,11 @@
 which collects and maps PennyLane operations and measurements from xDSL."""
 
 from functools import singledispatchmethod
-from typing import Any
 
 import xdsl
 from xdsl.dialects import builtin, func
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
 
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    AdjointOp,
-)
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
