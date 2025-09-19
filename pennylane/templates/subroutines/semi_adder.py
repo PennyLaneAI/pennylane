@@ -89,8 +89,9 @@ class SemiAdder(Operation):
 
         wires = qml.registers({"x":3, "y":6, "work":5})
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=wires["x"])
@@ -114,8 +115,9 @@ class SemiAdder(Operation):
 
         wires = qml.registers({"x":3, "y":2, "work":1})
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=wires["x"])
@@ -182,7 +184,7 @@ class SemiAdder(Operation):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 
-    def map_wires(self, wire_map: dict):
+    def map_wires(self, wire_map: dict) -> "SemiAdder":
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
             for key in ["x_wires", "y_wires", "work_wires"]
