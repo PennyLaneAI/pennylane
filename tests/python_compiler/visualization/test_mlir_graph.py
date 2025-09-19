@@ -27,6 +27,10 @@ pytest.importorskip("catalyst")
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
+from pennylane.compiler.python_compiler.transforms import (
+    iterative_cancel_inverses_pass,
+    merge_rotations_pass,
+)
 from pennylane.compiler.python_compiler.visualization import generate_mlir_graph
 
 
@@ -75,8 +79,8 @@ class TestMLIRGraph:
     def test_xdsl_transforms_no_args(self, tmp_path: Path, qjit: bool):
         "Test the MLIR graph generation with no arguments to the QNode with and without qjit"
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
-        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
+        @merge_rotations_pass
+        @iterative_cancel_inverses_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _():
             qml.RX(0.1, 0)
@@ -102,8 +106,8 @@ class TestMLIRGraph:
     def test_xdsl_transforms_args(self, tmp_path: Path, qjit: bool):
         "Test the MLIR graph generation with arguments to the QNode for xDSL transforms"
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
-        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
+        @merge_rotations_pass
+        @iterative_cancel_inverses_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _(x, y, w1, w2):
             qml.RX(x, w1)
@@ -153,7 +157,7 @@ class TestMLIRGraph:
         "Test the MLIR graph generation with arguments to the QNode for catalyst and xDSL transforms"
 
         @qml.transforms.merge_rotations
-        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
+        @iterative_cancel_inverses_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _(x, y, w1, w2):
             qml.RX(x, w1)
@@ -176,7 +180,7 @@ class TestMLIRGraph:
     def test_cond(self, tmp_path: Path):
         "Test the MLIR graph generation for a conditional"
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @merge_rotations_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _(pred, arg1, arg2):
             """Quantum circuit with conditional branches."""
@@ -214,7 +218,7 @@ class TestMLIRGraph:
         def false_fn(arg):
             qml.RY(3 * arg, 0)
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @merge_rotations_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _(x, y):
             """Quantum circuit with conditional branches."""
@@ -237,7 +241,7 @@ class TestMLIRGraph:
     def test_for_loop(self, tmp_path: Path):
         "Test the MLIR graph generation for a for loop"
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @merge_rotations_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _():
             @qml.for_loop(0, 100)
@@ -261,7 +265,7 @@ class TestMLIRGraph:
     def test_while_loop(self, tmp_path: Path):
         "Test the MLIR graph generation for a while loop"
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @merge_rotations_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _(x):
             def cond_fn(x):

@@ -22,7 +22,11 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import WiresLike
+from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.wires import Wires, WiresLike
+
+from ..identity import GlobalPhase
+from .non_parametric_ops import T
 
 # pylint: disable=arguments-differ, signature-differs
 
@@ -83,6 +87,8 @@ class PhaseShift(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -250,6 +256,8 @@ class RX(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -414,6 +422,8 @@ class RY(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -574,6 +584,8 @@ class RZ(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -733,6 +745,8 @@ class Rot(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 

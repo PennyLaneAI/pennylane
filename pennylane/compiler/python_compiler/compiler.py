@@ -27,8 +27,8 @@ from xdsl.printer import Printer
 
 from pennylane.typing import Callable
 
-from .jax_utils import QuantumParser
-from .transforms.api import ApplyTransformSequence
+from .parser import QuantumParser
+from .pass_api import ApplyTransformSequence
 
 
 # pylint: disable=too-few-public-methods
