@@ -60,7 +60,7 @@ class QMLCollector:
     def handle(self, xdsl_op: xdsl.ir.Operation) -> None:
         """Default handler for unsupported operations."""
         if len(xdsl_op.regions) > 0:
-            raise NotImplementedError("xDSL operation with regions are not yet supported.")
+            raise NotImplementedError("xDSL operations with regions are not yet supported.")
 
     ############################################################
     ### Measurements
