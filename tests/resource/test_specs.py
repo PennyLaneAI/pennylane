@@ -368,6 +368,17 @@ class TestSpecsTransform:
         # we should expect an empty errors dictionary.
         assert dev_specs["errors"] == {}
 
+    def test_error_with_non_qnode(self):
+        """Test that a helpful error message is raised if the input is not a QNode."""
+
+        def f():
+            return 0
+
+        with pytest.raises(
+            ValueError, match="qml.specs can only be applied to a QNode or qjit'd QNode"
+        ):
+            qml.specs(f)()
+
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestSpecsGraphModeExclusive:

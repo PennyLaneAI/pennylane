@@ -3,11 +3,34 @@
 
 <h3>New features since last release</h3>
 
+* The :func:`~.specs` function now supports programs compiled with :func:`~.qjit`.
+  This new feature is only supported using `level="device"`.
+  [(#8202)](https://github.com/PennyLaneAI/pennylane/pull/8202)
+
+  ```python
+  @qml.qjit
+  @qml.qnode(qml.device("lightning.qubit", wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.Z(0) @ qml.Z(1))
+
+  print(qml.specs(circuit, level="device")()["resources"])
+  ```
+  ```
+  Resources(num_wires=2,
+            num_gates=2,
+            gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}),
+            gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 1}),
+            depth=2,
+            shots=Shots(total_shots=None, shot_vector=()))
+  ```
+
 * The `qml.sample` function can now receive an optional `dtype` parameter
   which sets the type and precision of the samples returned by this measurement process.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
   [(#8271)](https://github.com/PennyLaneAI/pennylane/pull/8271)
-  
+
 * The Resource estimation toolkit was upgraded and has migrated from
   :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
 
