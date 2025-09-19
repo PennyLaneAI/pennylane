@@ -147,7 +147,15 @@ class CH(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        ctrl_h = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Hadamard),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_h)]
 
     @classmethod
     def pow_resource_decomp(
@@ -283,7 +291,15 @@ class CY(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        ctrl_y = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Y),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_y)]
 
     @classmethod
     def pow_resource_decomp(
@@ -410,7 +426,7 @@ class CZ(ResourceOperator):
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -420,10 +436,18 @@ class CZ(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        if num_ctrl_wires == 1 and num_zero_ctrl == 0:
-            return [GateCount(resource_rep(CCZ))]
+        if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
+            return [GateCount(resource_rep(qre.CCZ))]
 
-        raise ResourcesUndefinedError
+        ctrl_z = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Z),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_z)]
 
     @classmethod
     def pow_resource_decomp(
@@ -555,7 +579,7 @@ class CSWAP(ResourceOperator):
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -565,7 +589,15 @@ class CSWAP(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        ctrl_swap = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.SWAP),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(ctrl_swap)]
 
     @classmethod
     def pow_resource_decomp(
@@ -694,7 +726,7 @@ class CCZ(ResourceOperator):
         target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -704,7 +736,16 @@ class CCZ(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        ctrl_z = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Z),
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [GateCount(ctrl_z)]
 
     @classmethod
     def pow_resource_decomp(
@@ -825,7 +866,17 @@ class CNOT(ResourceOperator):
         if num_ctrl_wires == 1 and num_zero_ctrl == 0:
             return [GateCount(resource_rep(Toffoli))]
 
-        raise ResourcesUndefinedError
+        mcx = resource_rep(
+            MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [
+            GateCount(mcx),
+        ]
+
 
     @classmethod
     def pow_resource_decomp(
@@ -942,7 +993,7 @@ class TemporaryAND(ResourceOperator):
         target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -952,7 +1003,15 @@ class TemporaryAND(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(mcx)]
+
 
 
 class Toffoli(ResourceOperator):
@@ -1195,7 +1254,7 @@ class Toffoli(ResourceOperator):
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -1204,7 +1263,14 @@ class Toffoli(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires + 2,
+                "num_ctrl_values": num_zero_ctrl,
+            },
+        )
+        return [GateCount(mcx)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1572,7 +1638,7 @@ class CRX(ResourceOperator):
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -1581,7 +1647,15 @@ class CRX(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        ctrl_rx = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.RX, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_ctrl_values": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_rx)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1720,7 +1794,7 @@ class CRY(ResourceOperator):
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -1730,7 +1804,15 @@ class CRY(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        ctrl_ry = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.RY, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_ctrl_values": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_ry)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1872,7 +1954,7 @@ class CRZ(ResourceOperator):
         target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-
+        
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -1882,7 +1964,17 @@ class CRZ(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_rz = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.RZ, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_ctrl_values": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_rz)]
+
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -2052,7 +2144,16 @@ class CRot(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_rot = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Rot, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_ctrl_values": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_rot)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -2200,8 +2301,8 @@ class ControlledPhaseShift(ResourceOperator):
         num_zero_ctrl: int,
         target_resource_params: dict,
     ) -> list[GateCount]:
-        r"""Returns a list representing the resources for a controlled version of the operator.
-
+        r"""Returns a list representing the resources for a controlled version of the operator."""
+  
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
@@ -2211,7 +2312,16 @@ class ControlledPhaseShift(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_ps = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.PhaseShift, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_ctrl_values": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_ps)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
