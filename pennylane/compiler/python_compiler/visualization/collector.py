@@ -57,12 +57,10 @@ class QMLCollector:
         self.quantum_register: SSAValue | None = None
 
     @singledispatchmethod
-    def handle(self, xdsl_op: xdsl.ir.Operation) -> Operator | MeasurementProcess | None:
+    def handle(self, xdsl_op: xdsl.ir.Operation) -> None:
         """Default handler for unsupported operations."""
         if len(xdsl_op.regions) > 0:
             raise NotImplementedError("xDSL operation with regions are not yet supported.")
-
-        return None
 
     ############################################################
     ### Measurements
