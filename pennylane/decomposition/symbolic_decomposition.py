@@ -253,7 +253,11 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=inner_decomp._work_wire_spec)
+    @register_resources(
+        _resource_fn,
+        work_wires=inner_decomp._work_wire_spec,
+        heuristic=inner_decomp.heuristic_resources,
+    )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:

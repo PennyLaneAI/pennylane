@@ -40,7 +40,7 @@ def test_assert_valid():
     """Tests that BasisState operators are valid"""
 
     op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
-    qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def abstract_check(state):
         op = qml.BasisState(state, wires=[0, 1])

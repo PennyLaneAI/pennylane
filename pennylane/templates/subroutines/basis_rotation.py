@@ -395,7 +395,8 @@ def _basis_rotation_decomp_resources(dim, is_real):
     return {PhaseShift: ps_count, SingleExcitation: se_count}
 
 
-@register_resources(_basis_rotation_decomp_resources)
+# Heuristic because PhaseShift(s) might be skipped
+@register_resources(_basis_rotation_decomp_resources, heuristic=True)
 def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
     if math.is_real_obj_or_close(unitary_matrix):

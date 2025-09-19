@@ -51,7 +51,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 def test_standard_validity(rotation):
     """Run standard tests of operation validity."""
     op = qml.BasisRotation(wires=range(len(rotation)), unitary_matrix=rotation)
-    qml.ops.functions.assert_valid(op, heuristic_resources=True)
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -117,7 +117,7 @@ class TestDecomposition:
 
         # Tests the decomposition rule defined with the new system
         for rule in qml.list_decomps(qml.BasisRotation):
-            _test_decomposition_rule(op, rule, heuristic_resources=True)
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix", "givens"),
@@ -186,7 +186,7 @@ class TestDecomposition:
 
         # Tests the decomposition rule defined with the new system
         for rule in qml.list_decomps(qml.BasisRotation):
-            _test_decomposition_rule(op, rule, heuristic_resources=True)
+            _test_decomposition_rule(op, rule)
 
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
