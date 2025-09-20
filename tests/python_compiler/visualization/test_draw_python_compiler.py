@@ -21,11 +21,14 @@ pytestmark = pytest.mark.external
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
+# pylint: disable=wrong-import-position
+import jax
 
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
+from pennylane.compiler.python_compiler.transforms import iterative_cancel_inverses_pass
 from pennylane.compiler.python_compiler.visualization import draw
 
 # pylint: disable=implicit-str-concat, unnecessary-lambda
@@ -85,7 +88,7 @@ class Testdraw:
     def test_multiple_levels_xdsl(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with xDSL compilation passes."""
 
-        transforms_circuit = qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
+        transforms_circuit = iterative_cancel_inverses_pass(
             qml.compiler.python_compiler.transforms.merge_rotations_pass(transforms_circuit)
         )
 
@@ -155,7 +158,7 @@ class Testdraw:
     def test_multiple_levels_xdsl_catalyst(self, transforms_circuit, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly with xDSL and Catalyst compilation passes."""
 
-        transforms_circuit = qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
+        transforms_circuit = iterative_cancel_inverses_pass(
             qml.transforms.merge_rotations(transforms_circuit)
         )
         if qjit:
@@ -238,11 +241,11 @@ class Testdraw:
         """
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def _():
+        def circuit():
             op()
             return qml.state()
 
-        assert draw(_)() == expected
+        assert draw(circuit)() == expected
 
     def test_ctrl_before_custom_op(self):
         """
@@ -250,13 +253,13 @@ class Testdraw:
         """
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def _():
+        def circuit():
             qml.ctrl(qml.X(3), control=[0, 1, 2], control_values=[1, 0, 1])
             qml.RX(0.1, 2)
             return qml.state()
 
         assert (
-            draw(_)()
+            draw(circuit)()
             == "0: ─╭●─────┤  State\n1: ─├○─────┤  State\n2: ─├●──RX─┤  State\n3: ─╰X─────┤  State"
         )
 
@@ -316,22 +319,22 @@ class Testdraw:
         """
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def _():
+        def circuit():
             qml.RX(0.1, 0)
             qml.RY(0.2, 1)
             qml.RZ(0.3, 2)
             return measurement()
 
         if isinstance(measurement(), qml.measurements.SampleMP):
-            _ = qml.set_shots(10)(_)
+            circuit = qml.set_shots(10)(circuit)
 
-        assert draw(_)() == expected
+        assert draw(circuit)() == expected
 
     def test_global_phase(self):
         """Test the visualization of global phase shifts."""
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def _():
+        def circuit():
             qml.H(0)
             qml.H(1)
             qml.H(2)
@@ -339,9 +342,128 @@ class Testdraw:
             return qml.state()
 
         assert (
-            draw(_)()
+            draw(circuit)()
             == "0: ──H─╭GlobalPhase─┤  State\n1: ──H─├GlobalPhase─┤  State\n2: ──H─╰GlobalPhase─┤  State"
         )
+
+    @pytest.mark.parametrize(
+        "postselect, mid_measure_label",
+        [
+            (None, "┤↗├"),
+            (0, "┤↗₀├"),
+            (1, "┤↗₁├"),
+        ],
+    )
+    def test_draw_mid_circuit_measurement_postselect(self, postselect, mid_measure_label):
+        """Test that mid-circuit measurements are drawn correctly."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit():
+            qml.Hadamard(0)
+            qml.measure(0, postselect=postselect)
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = draw(circuit)()
+        expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "ops, expected",
+        [
+            (
+                [
+                    (qml.QubitUnitary, jax.numpy.array([[0, 1], [1, 0]]), [0]),
+                    (
+                        qml.QubitUnitary,
+                        jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]]),
+                        [0, 1],
+                    ),
+                    (qml.QubitUnitary, jax.numpy.zeros((8, 8)), [0, 1, 2]),
+                    (
+                        qml.QubitUnitary,
+                        jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]]),
+                        [0, 1],
+                    ),
+                    (qml.QubitUnitary, jax.numpy.array([[0, 1], [1, 0]]), [0]),
+                ],
+                "0: ──U(M0)─╭U(M1)─╭U(M2)─╭U(M1)──U(M0)─┤  State\n"
+                "1: ────────╰U(M1)─├U(M2)─╰U(M1)────────┤  State\n"
+                "2: ───────────────╰U(M2)───────────────┤  State",
+            ),
+            (
+                [
+                    (qml.StatePrep, jax.numpy.array([1, 0]), [0]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0]), [0, 1]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0, 1, 0, 0, 0]), [0, 1, 2]),
+                    (qml.StatePrep, jax.numpy.array([1, 0, 0, 0]), [0, 1]),
+                    (qml.StatePrep, jax.numpy.array([1, 0]), [0]),
+                ],
+                "0: ──|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩──|Ψ⟩─┤  State\n"
+                "1: ──────╰|Ψ⟩─├|Ψ⟩─╰|Ψ⟩──────┤  State\n"
+                "2: ───────────╰|Ψ⟩───────────┤  State",
+            ),
+            (
+                [
+                    (qml.MultiRZ, 0.1, [0]),
+                    (qml.MultiRZ, 0.1, [0, 1]),
+                    (qml.MultiRZ, 0.1, [0, 1, 2]),
+                    (qml.MultiRZ, 0.1, [0, 1]),
+                    (qml.MultiRZ, 0.1, [0]),
+                ],
+                "0: ──MultiRZ─╭MultiRZ─╭MultiRZ─╭MultiRZ──MultiRZ─┤  State\n"
+                "1: ──────────╰MultiRZ─├MultiRZ─╰MultiRZ──────────┤  State\n"
+                "2: ───────────────────╰MultiRZ───────────────────┤  State",
+            ),
+            (
+                [
+                    (qml.BasisState, jax.numpy.array([1]), [0]),
+                    (qml.BasisState, jax.numpy.array([1, 0]), [0, 1]),
+                    (qml.BasisState, jax.numpy.array([1, 0, 0]), [0, 1, 2]),
+                    (qml.BasisState, jax.numpy.array([1, 0]), [0, 1]),
+                    (qml.BasisState, jax.numpy.array([1]), [0]),
+                ],
+                "0: ──|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩──|Ψ⟩─┤  State\n"
+                "1: ──────╰|Ψ⟩─├|Ψ⟩─╰|Ψ⟩──────┤  State\n"
+                "2: ───────────╰|Ψ⟩───────────┤  State",
+            ),
+        ],
+    )
+    def test_visualization_cases(self, ops, expected):
+        """
+        Test the visualization of the quantum operations defined in the unified compiler dialect.
+        """
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circuit():
+            for op, param, wires in ops:
+                op(param, wires=wires)
+            return qml.state()
+
+        assert draw(circuit)() == expected
+
+    def test_reshape(self):
+        """Test that the visualization works when the parameters are reshaped."""
+
+        one_dim = jax.numpy.array([1, 0])
+        two_dim = jax.numpy.array([[0, 1], [1, 0]])
+        eight_dim = jax.numpy.zeros((8, 8))
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit():
+            qml.RX(one_dim[0], wires=0)
+            qml.RZ(two_dim[0, 0], wires=0)
+            qml.QubitUnitary(eight_dim[:2, :2], wires=0)
+            qml.QubitUnitary(eight_dim[0:4, 0:4], wires=[0, 1])
+            return qml.state()
+
+        expected = (
+            "0: ──RX(M0)──RZ(M0)──U(M1)─╭U(M2)─┤  State\n"
+            "1: ────────────────────────╰U(M2)─┤  State"
+        )
+        assert draw(circuit)() == expected
 
     def test_args_warning(self):
         """Test that a warning is raised when dynamic arguments are used."""
@@ -354,6 +476,59 @@ class Testdraw:
 
         with pytest.warns(UserWarning):
             draw(circ)(0.1)
+
+    def adjoint_op_not_implemented(self):
+        """Test that NotImplementedError is raised when AdjointOp is used."""
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit():
+            qml.adjoint(qml.QubitUnitary)(jax.numpy.array([[0, 1], [1, 0]]), wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(circuit)())
+
+    def test_cond_not_implemented(self):
+        """Test that NotImplementedError is raised when cond is used."""
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit():
+            m0 = qml.measure(0, reset=False, postselect=0)
+            qml.cond(m0, qml.RX, qml.RY)(1.23, 1)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(circuit)())
+
+    def test_for_loop_not_implemented(self):
+        """Test that NotImplementedError is raised when for loop is used."""
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit():
+            for _ in range(3):
+                qml.RX(0.1, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(circuit)())
+
+    def test_while_loop_not_implemented(self):
+        """Test that NotImplementedError is raised when while loop is used."""
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit():
+            i = 0
+            while i < 3:
+                qml.RX(0.1, 0)
+                i += 1
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(NotImplementedError, match="not yet supported"):
+            print(draw(circuit)())
 
 
 if __name__ == "__main__":
