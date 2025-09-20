@@ -55,7 +55,7 @@ def estimate(
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires may be allocated when they
             exceed the available amount. The default is ``False``.
-        config (`~.pennylane.estimator.resource_operator.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
+        config (`~.pennylane.estimator.resource_config.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
     Returns:
         :class:`~.pennylane.estimator.resource_operator.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
@@ -359,7 +359,7 @@ def _get_decomposition(
 
     Args:
         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The operator to find the decomposition for.
-        config (``~.pennylane.estimator.resource_operator.ResourceConfig`): The configuration object containing decomposition rules.
+        config (``~.pennylane.estimator.resource_config.ResourceConfig`): The configuration object containing decomposition rules.
 
     Returns:
         A tuple containing the decomposition function and its associated kwargs.
