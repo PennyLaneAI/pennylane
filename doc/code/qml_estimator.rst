@@ -16,11 +16,12 @@ Resource Estimation Functions:
 
     ~estimate.estimate
     ~resource_operator.resource_rep
-    
 
 
 Resource Estimation Base Classes:
 ---------------------------------
+
+.. currentmodule:: pennylane.estimator
 
 .. autosummary::
     :toctree: api
