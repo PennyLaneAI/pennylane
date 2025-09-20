@@ -63,6 +63,7 @@
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
+    [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -179,6 +180,10 @@
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
   [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
 
+* A new decomposition has been added to :class:`qml.Select`. It achieves cost reductions by adding
+  one `work_wire`. This decomposition is useful to perform efficient `qml.QROM` decompositions.
+  [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
@@ -256,6 +261,12 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
+  [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
+
+* Adds a warning about the experimental, unmaintained nature of native plxpr execution.
+  [(#8291)](https://github.com/PennyLaneAI/pennylane/pull/8291)
 
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
@@ -1052,6 +1063,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
+  [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
 * Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
