@@ -367,7 +367,7 @@ def add_noindex_to_estimator_stubs(app, docname, source):
 def add_links_to_estimator_table(app, doctree, fromdocname):
     """Replace literal names in automodsumm tables with links to stub HTML files."""
     if "qml_estimator" in fromdocname: # Ensures no other tables are modified.
-        for table in doctree.traverse(nodes.table)[2:]:
+        for table in doctree.traverse(nodes.table)[3:]:
             for literal in table.traverse(nodes.literal):
                 name = literal.astext()
                 url = f"code/api/pennylane.estimator.ops.{name}"

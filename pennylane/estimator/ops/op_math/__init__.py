@@ -11,40 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains tools for logical resource estimation."""
-from .wires_manager import Allocate, Deallocate, WireResourceManager
+r"""This module contains classes which integrate arithmetic operators with
+resource estimation."""
 
-from .resources_base import Resources
-
-from .resource_config import ResourceConfig
-
-from .resource_operator import (
-    ResourceOperator,
-    CompressedResourceOp,
-    GateCount,
-    resource_rep,
-)
-
-from .estimate import estimate
-
-from .ops.identity import Identity, GlobalPhase
-
-from .ops.qubit import (
-    X,
-    Y,
-    Z,
-    SWAP,
-    Hadamard,
-    S,
-    T,
-    PhaseShift,
-    RX,
-    RY,
-    RZ,
-    Rot,
-)
-
-from .ops.op_math import (
+from .controlled_ops import (
     CCZ,
     CH,
     CNOT,

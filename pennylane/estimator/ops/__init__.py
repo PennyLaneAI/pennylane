@@ -29,3 +29,20 @@ from .qubit import (
     RZ,
     Rot,
 )
+
+from .op_math import (
+    CCZ,
+    CH,
+    CNOT,
+    ControlledPhaseShift,
+    CRot,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    MultiControlledX,
+    TemporaryAND,
+    Toffoli,
+)
