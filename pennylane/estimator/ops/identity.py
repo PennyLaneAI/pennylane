@@ -13,8 +13,13 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
-from pennylane.exceptions import ResourcesUndefinedError
+from pennylane import estimator as qre
+from pennylane.estimator.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
+)
 from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
@@ -263,7 +268,33 @@ class GlobalPhase(ResourceOperator):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
+        Resources:
+            The resources are generated from the fact that a global phase controlled on a
+            single qubit is equivalent to a local phase shift on that control qubit.
+            This idea can be generalized to a multi-qubit global phase by introducing one
+            auxiliary qubit in a `zeroed` state which is reset at the end of the computation. In this
+            case, we sandwich the phase shift operation with two multi-controlled ``X`` gates.
+
+        Returns:
+            list[`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        if num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.PhaseShift))]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        ps = resource_rep(qre.PhaseShift)
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+
+        return [GateCount(ps), GateCount(mcx, 2)]

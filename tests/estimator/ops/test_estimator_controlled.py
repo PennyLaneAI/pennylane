@@ -14,7 +14,8 @@
 """Tests for controlled resource operators."""
 import pytest
 
-from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X, Z
+import pennylane.estimator as qre
+from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X
 from pennylane.estimator.ops.op_math.controlled_ops import (
     CCZ,
     CH,
@@ -106,8 +107,8 @@ class TestCY:
 
         expected_resources = [
             GateCount(CNOT.resource_rep(), 1),
-            GateCount(S.resource_rep(), 2),
-            GateCount(Z.resource_rep(), 1),
+            GateCount(S.resource_rep()),
+            GateCount(qre.Adjoint.resource_rep(S.resource_rep())),
         ]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
 
@@ -447,10 +448,10 @@ class TestToffoli:
             Allocate(2),
             GateCount(CNOT.resource_rep(), 9),
             GateCount(Hadamard.resource_rep(), 3),
-            GateCount(S.resource_rep(), 3),
-            GateCount(CZ.resource_rep(), 1),
-            GateCount(T.resource_rep(), 4),
-            GateCount(Z.resource_rep(), 2),
+            GateCount(S.resource_rep()),
+            GateCount(CZ.resource_rep()),
+            GateCount(T.resource_rep(), 2),
+            GateCount(qre.Adjoint.resource_rep(T.resource_rep()), 2),
             Deallocate(2),
         ]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
@@ -458,9 +459,8 @@ class TestToffoli:
         textbook_expected_resources = [
             GateCount(CNOT.resource_rep(), 6),
             GateCount(Hadamard.resource_rep(), 2),
-            GateCount(T.resource_rep(), 7),
-            GateCount(Z.resource_rep(), 3),
-            GateCount(S.resource_rep(), 3),
+            GateCount(T.resource_rep(), 4),
+            GateCount(qre.Adjoint.resource_rep(T.resource_rep()), 3),
         ]
         assert (
             self.op.textbook_resource_decomp(**self.op.resource_params)
@@ -470,10 +470,10 @@ class TestToffoli:
     def test_resource_elbows(self):
         """Test that the resource_rep produces the correct compressed representation."""
         expected_rep = [
-            GateCount(T.resource_rep(), 4),
+            GateCount(T.resource_rep(), 2),
+            GateCount(qre.Adjoint.resource_rep(T.resource_rep()), 2),
             GateCount(CNOT.resource_rep(), 3),
-            GateCount(S.resource_rep(), 3),
-            GateCount(Z.resource_rep(), 3),
+            GateCount(qre.Adjoint.resource_rep(S.resource_rep())),
         ]
         assert self.op.resource_decomp(elbow="left") == expected_rep
         assert self.op.textbook_resource_decomp(elbow="left") == expected_rep
@@ -589,10 +589,16 @@ class TestMultiControlledX:
         assert MultiControlledX.resource_decomp(0, 1) == []
         assert MultiControlledX.resource_decomp(0, 0) == [GateCount(X.resource_rep())]
 
-    def test_resource_decomp_raise(self):
+    def test_resource_decomp_max_wires(self):
         """Test that the controlled resources raise an error"""
-        with pytest.raises(ResourcesUndefinedError):
-            MultiControlledX.resource_decomp(5, 2)
+        assert MultiControlledX.resource_decomp(5, 2) == [
+            GateCount(X.resource_rep(), 4),
+            Allocate(3),
+            GateCount(TemporaryAND.resource_rep(), 3),
+            GateCount(qre.Adjoint.resource_rep(TemporaryAND.resource_rep()), 3),
+            GateCount(Toffoli.resource_rep(), 1),
+            Deallocate(3),
+        ]
 
     @pytest.mark.parametrize("op, params", zip(res_ops, res_params))
     def test_resource_rep(self, op, params):
