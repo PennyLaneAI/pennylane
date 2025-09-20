@@ -36,7 +36,7 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 
 def estimate(
-    obj: ResourceOperator | Callable | Resources,
+    workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -47,7 +47,7 @@ def estimate(
     with respect to a given gateset.
 
     Args:
-        workflow (Callable | ResourceOperator | Resources): The quantum circuit or operator
+        workflow (Callable | ResourceOperator | Resources | Qnode): The quantum circuit or operator
             for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to track
             counts for throughout the quantum workflow.
@@ -61,7 +61,7 @@ def estimate(
         Resources | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
 
     Raises:
-        TypeError: could not obtain resources for obj of type :code:`type(obj)`
+        TypeError: could not obtain resources for workflow of type :code:`type(workflow)`
 
     **Example**
 
@@ -105,12 +105,12 @@ def estimate(
      {'Hadamard': 5, 'CNOT': 10, 'T': 264}
 
     """
-    return _estimate_resources_dispatch(obj, gate_set, zeroed, any_state, tight_budget, config)
+    return _estimate_resources_dispatch(workflow, gate_set, zeroed, any_state, tight_budget, config)
 
 
 @singledispatch
 def _estimate_resources_dispatch(
-    obj: ResourceOperator | Callable | Resources | list,
+    workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -119,28 +119,28 @@ def _estimate_resources_dispatch(
 ) -> Resources | Callable[..., Resources]:
     """Internal singledispatch function for resource estimation."""
     raise TypeError(
-        f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Resources, Callable, ResourceOperator, or list"
+        f"Could not obtain resources for workflow of type {type(workflow)}. workflow must be one of Resources, Callable, ResourceOperator, or list"
     )
 
 
 @_estimate_resources_dispatch.register
 def _resources_from_qfunc(
-    obj: Callable,
+    workflow: Callable,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
     tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Callable[..., Resources]:
-    """Get resources from a quantum function which queues operators"""
+    """Estimate resources for a quantum function which queues operators"""
 
-    if isinstance(obj, QNode):
-        raise NotImplementedError("Support for QNodes has not yet been implemented.")
+    if isinstance(workflow, QNode):
+        workflow = workflow.func
 
-    @wraps(obj)
+    @wraps(workflow)
     def wrapper(*args, **kwargs):
         with AnnotatedQueue() as q:
-            obj(*args, **kwargs)
+            workflow(*args, **kwargs)
 
         wire_manager = WireResourceManager(zeroed, any_state, 0, tight_budget)
         num_algo_qubits = 0
@@ -176,7 +176,7 @@ def _resources_from_qfunc(
 
 @_estimate_resources_dispatch.register
 def _resources_from_resource(
-    obj: Resources,
+    workflow: Resources,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -186,9 +186,9 @@ def _resources_from_resource(
     """Further process resources from a Resources object (i.e. a Resources object that
     contains high-level operators can be analyzed with respect to a lower-level gate set)."""
 
-    wire_manager = WireResourceManager(zeroed, any_state, obj.algo_wires, tight_budget)
+    wire_manager = WireResourceManager(zeroed, any_state, workflow.algo_wires, tight_budget)
     gate_counts = defaultdict(int)
-    for cmpr_rep_op, count in obj.gate_types.items():
+    for cmpr_rep_op, count in workflow.gate_types.items():
         _update_counts_from_compressed_res_op(
             cmpr_rep_op,
             gate_counts,
@@ -208,7 +208,7 @@ def _resources_from_resource(
 
 @_estimate_resources_dispatch.register
 def _resources_from_resource_operator(
-    obj: ResourceOperator,
+    workflow: ResourceOperator,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -216,9 +216,9 @@ def _resources_from_resource_operator(
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a resource operator."""
-    resources = 1 * obj
+    resources = 1 * workflow
     return _resources_from_resource(
-        obj=resources,
+        workflow=resources,
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
@@ -229,7 +229,7 @@ def _resources_from_resource_operator(
 
 @_estimate_resources_dispatch.register
 def _resources_from_pl_ops(
-    obj: Operation,
+    workflow: Operation,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
     any_state: int = 0,
@@ -237,10 +237,10 @@ def _resources_from_pl_ops(
     config: ResourceConfig | None = None,
 ) -> Resources:
     """Extract resources from a pl operator."""
-    obj = _map_to_resource_op(obj)
-    resources = 1 * obj
+    workflow = _map_to_resource_op(workflow)
+    resources = 1 * workflow
     return _resources_from_resource(
-        obj=resources,
+        workflow=resources,
         gate_set=gate_set,
         zeroed=zeroed,
         any_state=any_state,
