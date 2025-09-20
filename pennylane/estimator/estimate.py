@@ -24,11 +24,7 @@ from pennylane.workflow.qnode import QNode
 
 from .resource_config import ResourceConfig
 from .resource_mapping import _map_to_resource_op
-from .resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-)
+from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
@@ -55,7 +51,7 @@ def estimate(
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires may be allocated when they
             exceed the available amount. The default is ``False``.
-        config (`~.pennylane.estimator.resource_config.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
+        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
     Returns:
         :class:`~.pennylane.estimator.resource_operator.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
@@ -266,7 +262,7 @@ def _update_counts_from_compressed_res_op(
             `zeroed`, `any_state`, and `algo_wires` wires.
         gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
-        config (dict | None): additional parameters to specify the resources from an operator. Defaults to ResourceConfig.
+        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`pennylane.estimator.resource_config.ResourceConfig`.
     """
     if gate_set is None:
         gate_set = DefaultGateSet
@@ -359,7 +355,7 @@ def _get_decomposition(
 
     Args:
         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The operator to find the decomposition for.
-        config (``~.pennylane.estimator.resource_config.ResourceConfig`): The configuration object containing decomposition rules.
+        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig`): The configuration object containing decomposition rules.
 
     Returns:
         A tuple containing the decomposition function and its associated kwargs.
