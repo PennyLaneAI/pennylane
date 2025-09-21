@@ -22,9 +22,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-
 from pennylane.wires import Wires, WiresLike
-
 
 # pylint: disable=arguments-differ, signature-differs
 
