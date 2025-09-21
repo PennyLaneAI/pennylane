@@ -546,12 +546,12 @@ class Pow(ResourceOperator):
             pow_z (float): the exponent (default value is 1)
 
         Resources:
-        The resources are determined as follows. If the power :math:`z = 0`, this corresponds to the identity
-        gate which requires no resources. If the base operation class :code:`base_class` implements the
-            :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
-            the resources of the operation raised to the power :math:`z` are given by extracting the base
-            operation's resources (via :class:`~.pennylane.estimator.resources_base.Resources`) and
-            raising each operation to the same power.
+            The resources are determined as follows. If the power :math:`z = 0`, this corresponds to
+            the identity gate which requires no resources. If the base operation class :code:`base_class`
+            implements the :code:`.pow_resource_decomp()` method, then the resources are obtained
+            from this. Otherwise, the resources of the operation raised to the power :math:`z` are
+            given by extracting the base operation's resources (via :class:`~.pennylane.estimator.resources_base.Resources`)
+            and raising each operation to the same power.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -1004,7 +1004,6 @@ class ChangeOpBasis(ResourceOperator):
          Total gates : 4
           'Z': 1,
           'H': 2
-
         """
         return [
             GateCount(cmpr_compute_op),
