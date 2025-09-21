@@ -974,21 +974,22 @@ class ChangeOpBasis(ResourceOperator):
 
         The change of basis operation can be constructed as follows with each operation defining the
         compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
+
         >>> from pennylane import estimator as qre
         >>> compute_u = qre.H()
         >>> base_v = qre.Z()
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
         >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
         --- Resources: ---
-         Total wires: 1
+        Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-                     zero state: 0
-                     any state: 0
-         Total gates : 3
-          'Adjoint(H)': 1,
-          'Z': 1,
-          'H': 1
+                zero state: 0
+                any state: 0
+        Total gates : 3
+            'Adjoint(H)': 1,
+            'Z': 1,
+            'H': 1
 
         We can also set the :code:`uncompute_op` directly.
 
@@ -996,15 +997,14 @@ class ChangeOpBasis(ResourceOperator):
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
         >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
         --- Resources: ---
-         Total wires: 1
+        Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-             zero state: 0
-             any state: 0
-         Total gates : 4
-          'Z': 1,
-          'H': 2
-
+                zero state: 0
+                any state: 0
+        Total gates : 4
+            'Z': 1,
+            'H': 2
         """
         return [
             GateCount(cmpr_compute_op),
