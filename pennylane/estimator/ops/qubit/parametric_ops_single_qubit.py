@@ -176,9 +176,6 @@ class PhaseShift(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -342,9 +339,6 @@ class RX(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -505,9 +499,6 @@ class RY(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -669,9 +660,6 @@ class RZ(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -816,9 +804,6 @@ class Rot(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
