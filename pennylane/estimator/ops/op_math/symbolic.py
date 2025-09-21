@@ -546,8 +546,8 @@ class Pow(ResourceOperator):
             pow_z (float): the exponent (default value is 1)
 
         Resources:
-        The resources are determined as follows. If the power :math:`z = 0`, this corresponds to the identity
-        gate which requires no resources. If the base operation class :code:`base_class` implements the
+            The resources are determined as follows. If the power :math:`z = 0`, this corresponds to the identity
+            gate which requires no resources. If the base operation class :code:`base_class` implements the
             :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
             the resources of the operation raised to the power :math:`z` are given by extracting the base
             operation's resources (via :class:`~.pennylane.estimator.resources_base.Resources`) and
@@ -974,35 +974,37 @@ class ChangeOpBasis(ResourceOperator):
 
         The change of basis operation can be constructed as follows with each operation defining the
         compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
+
         >>> from pennylane import estimator as qre
         >>> compute_u = qre.H()
         >>> base_v = qre.Z()
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
         >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
         --- Resources: ---
-         Total wires: 1
+        Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-                     zero state: 0
-                     any state: 0
-         Total gates : 3
-          'Adjoint(H)': 1,
-          'Z': 1,
-          'H': 1
+                zero state: 0
+                any state: 0
+        Total gates : 3
+            'Adjoint(H)': 1,
+            'Z': 1,
+            'H': 1
+
         We can also set the :code:`uncompute_op` directly.
+
         >>> uncompute_u = qre.H()
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
         >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
         --- Resources: ---
-         Total wires: 1
+        Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-             zero state: 0
-             any state: 0
-         Total gates : 4
-          'Z': 1,
-          'H': 2
-
+                zero state: 0
+                any state: 0
+        Total gates : 4
+            'Z': 1,
+            'H': 2
         """
         return [
             GateCount(cmpr_compute_op),
