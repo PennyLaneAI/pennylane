@@ -989,7 +989,9 @@ class ChangeOpBasis(ResourceOperator):
           'Adjoint(H)': 1,
           'Z': 1,
           'H': 1
+
         We can also set the :code:`uncompute_op` directly.
+
         >>> uncompute_u = qre.H()
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
         >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
