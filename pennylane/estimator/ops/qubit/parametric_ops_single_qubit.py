@@ -22,11 +22,9 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.exceptions import ResourcesUndefinedError
+
 from pennylane.wires import Wires, WiresLike
 
-from ..identity import GlobalPhase
-from .non_parametric_ops import T
 
 # pylint: disable=arguments-differ, signature-differs
 
