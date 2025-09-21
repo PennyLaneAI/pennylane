@@ -103,7 +103,7 @@ class ResourceConfig:
         configurable or uses bit-precisions. A negative precision will also raise an error.
 
         Args:
-            op_type (type[ResourceOperator]): the operator class for which
+            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision
             precision (float): The desired precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
@@ -215,7 +215,7 @@ class ResourceConfig:
         """Sets a custom function to override the default resource decomposition.
 
         Args:
-            op_type (type[ResourceOperator]): the operator class whose decomposition is being overriden.
+            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
                 ``"adj"``, ``"pow"``, ``"ctrl"``,

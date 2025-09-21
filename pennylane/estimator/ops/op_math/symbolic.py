@@ -898,14 +898,12 @@ class ChangeOpBasis(ResourceOperator):
                   to the base operation.
                 * cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the uncompute operation.
-                * num_wires (int): the number of wires this operator acts upon
 
         """
         return {
             "cmpr_compute_op": self.cmpr_compute_op,
             "cmpr_target_op": self.cmpr_target_op,
             "cmpr_uncompute_op": self.cmpr_uncompute_op,
-            "num_wires": self.num_wires,
         }
 
     @classmethod
