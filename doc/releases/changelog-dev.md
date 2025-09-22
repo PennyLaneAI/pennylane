@@ -796,6 +796,9 @@
 * Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
+* Perturbation error function now sums over expectation values instead of states.
+  [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
+
 <h3>Breaking changes 💔</h3>
 
 * Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
