@@ -59,4 +59,6 @@ from .ops.op_math import (
     MultiControlledX,
     TemporaryAND,
     Toffoli,
+    Adjoint,
+    Controlled,
 )
