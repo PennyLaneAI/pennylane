@@ -787,7 +787,8 @@ class ChangeOpBasis(ResourceOperator):
         target_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A resource operator
             representing the base operation.
         uncompute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
-            resource operator representing the inverse of the basis change operation.
+            resource operator representing the inverse of the basis change operation. If no
+            :code:`uncompute_op` is provided then the adjoint of the :code:`compute_op` is used by default.
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
