@@ -15,13 +15,13 @@ r"""Resource operators for PennyLane subroutine templates."""
 
 import pennylane.estimator as qre
 from pennylane.estimator.ops.op_math.symbolic import _apply_adj
-from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ,unused-argument

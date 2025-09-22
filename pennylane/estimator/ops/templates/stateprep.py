@@ -15,16 +15,15 @@ r"""Resource operators for state preparation templates."""
 import math
 from typing import Dict
 
-import pennylane.numpy as np
 import pennylane.estimator as qre
-from pennylane.estimator.wires_manager import Allocate, Deallocate
+import pennylane.numpy as np
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument

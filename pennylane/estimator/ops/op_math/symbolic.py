@@ -33,19 +33,14 @@ from pennylane.wires import Wires, WiresLike
 class Adjoint(ResourceOperator):
     r"""Resource class for the symbolic Adjoint operation.
 
-    A symbolic class used to represent the adjoint of some base operation.
-
     Args:
-        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator that we
-            want the adjoint of.
+        base_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator for which
+            to retrieve the adjoint.
 
     Resources:
-        This symbolic operation represents the adjoint of some base operation. The resources are
-        determined as follows. If the base operation implements the
+        This symbolic operation represents the adjoint of some base operation. If the base operation implements the
         :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
-        this.
-
-        Otherwise, the adjoint resources are given as the adjoint of each operation in the
+        this object. Otherwise, the adjoint resources are given as the adjoint of each operation in the
         base operation's resources.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.ops.op_math.Adjoint`.
@@ -146,9 +141,7 @@ class Adjoint(ResourceOperator):
             This symbolic operation represents the adjoint of some base operation. The resources are
             determined as follows. If the base operation implements the
             :code:`.adjoint_resource_decomp()` method, then the resources are obtained from
-            this.
-
-            Otherwise, the adjoint resources are given as the adjoint of each operation in the
+            this method. Otherwise, the adjoint resources are given as the adjoint of each operation in the
             base operation's resources.
 
         Returns:
@@ -202,9 +195,6 @@ class Adjoint(ResourceOperator):
 class Controlled(ResourceOperator):
     r"""Resource class for the symbolic Controlled operation.
 
-    A symbolic class used to represent the application of some base operation controlled on the
-    state of some control qubits.
-
     Args:
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base operator to be
             controlled.
@@ -215,9 +205,7 @@ class Controlled(ResourceOperator):
     Resources:
         The resources are determined as follows. If the base operator implements the
         :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
-        this.
-
-        Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
+        this object. Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
         which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
         to an additional cost of two ``X`` gates per :code:`num_zero_ctrl`.
         Secondly, the base operation resources are extracted and we add to the cost the controlled
@@ -347,15 +335,13 @@ class Controlled(ResourceOperator):
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_zero_ctrl (int): the number of control qubits, that are controlled when in the
+            num_zero_ctrl (int): the number of control qubits that are controlled when in the
                 :math:`|0\rangle` state
 
         Resources:
             The resources are determined as follows. If the base operator implements the
             :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
-            this.
-
-            Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
+            this method. Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
             which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
             to an additional cost of two ``X`` gates per :code:`num_zero_ctrl`.
             Secondly, the base operation resources are extracted and we add to the cost the controlled
@@ -413,7 +399,7 @@ class Controlled(ResourceOperator):
         Args:
             num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
-            num_zero_ctrl (int): The subset of those control qubits, which further control
+            num_zero_ctrl (int): The subset of those control qubits which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
             target_resource_params (dict): A dictionary containing the resource parameters of the
                 target operator.
@@ -459,13 +445,12 @@ class Pow(ResourceOperator):
     A symbolic class used to represent some base operation raised to a power.
 
     Args:
-        base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator that we
-            want to exponentiate.
-        pow_z (float): the exponent (default value is 1)
+        base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator to exponentiate.
+        pow_z (int): the exponent (default value is 1)
 
     Resources:
-        The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
-        gate and we have no resources. If the base operation class :code:`base_class` implements the
+        The resources are determined as follows. If the power :math:`z = 0`, this corresponds to the identity
+        gate which requires no resources. If the base operation class :code:`base_class` implements the
         :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
         the resources of the operation raised to the power :math:`z` are given by extracting the base
         operation's resources (via :class:`~.pennylane.estimator.resources_base.Resources`) and raising each operation to the same power.
@@ -561,8 +546,8 @@ class Pow(ResourceOperator):
             pow_z (float): the exponent (default value is 1)
 
         Resources:
-            The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
-            gate and we have no resources. If the base operation class :code:`base_class` implements the
+            The resources are determined as follows. If the power :math:`z = 0`, this corresponds to the identity
+            gate which requires no resources. If the base operation class :code:`base_class` implements the
             :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
             the resources of the operation raised to the power :math:`z` are given by extracting the base
             operation's resources (via :class:`~.pennylane.estimator.resources_base.Resources`) and
@@ -595,7 +580,7 @@ class Pow(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            pow_z (int): The exponent that the base operator is being raised to, default value is 1.
+            pow_z (int): The exponent that the base operator is being raised to. Default value is 1.
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
@@ -638,9 +623,8 @@ class Prod(ResourceOperator):
     **Example**
 
     The product of operations can be constructed from a list of operations or
-    a nested tuple where each operator is accompanied with the number of counts.
-    Note, each operation in the product must be a valid
-    :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
+    a nested tuple where each operator is accompanied by its count.
+    Each operation in the product must be a valid :class:`~.estimator.ResourceOperator`.
 
     We can construct a product operator as follows:
 
@@ -682,17 +666,22 @@ class Prod(ResourceOperator):
 
     def __init__(
         self,
-        res_ops: Iterable[ResourceOperator | tuple[int, ResourceOperator]],
+        res_ops: Iterable[ResourceOperator | tuple[ResourceOperator, int]],
         wires: WiresLike = None,
     ) -> None:
 
         ops = []
         counts = []
-        for op_or_tup in res_ops:
-            op, count = op_or_tup if isinstance(op_or_tup, tuple) else (op_or_tup, 1)
 
-            ops.append(op)
-            counts.append(count)
+        for item in res_ops:
+            if isinstance(item, (list, tuple)):
+                op, count = item
+                ops.append(op)
+                counts.append(count)
+            else:
+                op = item
+                ops.append(op)
+                counts.append(1)
 
         _dequeue(op_to_remove=ops)
         self.queue()
@@ -728,8 +717,8 @@ class Prod(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * num_wires (int): the number of wires this operator acts upon
-                * cmpr_factors_and_counts (Tuple[Tuple[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, int]]):
+                * num_wires (int): the number of wires the operator acts upon
+                * cmpr_factors_and_counts (Tuple[Tuple[:class:`~.estimator.CompressedResourceOp`, int]]):
                   A sequence of tuples containing the operations, in the compressed representation, and
                   a count for how many times they are repeated corresponding to the factors in the product.
 
@@ -792,7 +781,7 @@ class ChangeOpBasis(ResourceOperator):
     r"""Change of Basis resource operator.
 
     A symbolic class used to represent a change of basis operation with a compute-uncompute pattern.
-    This is a specialtype of operator which can be expressed as
+    This is a special type of operator which can be expressed as
     :math:`\hat{U}_{compute} \cdot \hat{V} \cdot \hat{U}_{uncompute}`. If no :code:`uncompute_op` is
     provided then the adjoint of the :code:`compute_op` is used by default.
 
@@ -817,10 +806,10 @@ class ChangeOpBasis(ResourceOperator):
     compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
 
     >>> from pennylane import estimator as qre
-    >>> compute_u = qre.S()
+    >>> compute_u = qre.H()
     >>> base_v = qre.Z()
     >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
-    >>> print(qre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
     --- Resources: ---
      Total wires: 1
         algorithmic wires: 1
@@ -828,15 +817,15 @@ class ChangeOpBasis(ResourceOperator):
                  zero state: 0
                  any state: 0
      Total gates : 3
-      'Adjoint(S)': 1,
+      'Adjoint(H)': 1,
       'Z': 1,
-      'S': 1
+      'H': 1
 
     We can also set the :code:`uncompute_op` directly.
 
-    >>> uncompute_u = qre.Prod([qre.Z(), qre.S()])
+    >>> uncompute_u = qre.H()
     >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
-    >>> print(qre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
     --- Resources: ---
      Total wires: 1
         algorithmic wires: 1
@@ -844,8 +833,8 @@ class ChangeOpBasis(ResourceOperator):
          zero state: 0
          any state: 0
      Total gates : 4
-      'Z': 2,
-      'S': 2
+      'Z': 1,
+      'H': 2
 
     """
 
@@ -909,14 +898,12 @@ class ChangeOpBasis(ResourceOperator):
                   to the base operation.
                 * cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the uncompute operation.
-                * num_wires (int): the number of wires this operator acts upon
 
         """
         return {
             "cmpr_compute_op": self.cmpr_compute_op,
             "cmpr_target_op": self.cmpr_target_op,
             "cmpr_uncompute_op": self.cmpr_uncompute_op,
-            "num_wires": self.num_wires,
         }
 
     @classmethod
@@ -965,8 +952,7 @@ class ChangeOpBasis(ResourceOperator):
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
-        num_wires: int,
-    ):  # pylint: disable=unused-argument
+    ):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -977,7 +963,6 @@ class ChangeOpBasis(ResourceOperator):
                 to the base operation.
             cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): An optional compressed resource operator, corresponding
                 to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
-            num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Resources:
             This symbolic class represents a product of the three provided operations. The resources are
@@ -987,34 +972,39 @@ class ChangeOpBasis(ResourceOperator):
 
         **Example**
 
-        Note, each operation in the product must be a valid `:class:`~.pennylane.estimator.resource_operator.ResourceOperator`
-        The change of basis operation can be constructed as follows:
+        The change of basis operation can be constructed as follows with each operation defining the
+        compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
 
-        >>> compute_u = qre.S()
+        >>> from pennylane import estimator as qre
+        >>> compute_u = qre.H()
         >>> base_v = qre.Z()
-        >>> cb_op = qre.ResourceChangeBasisOp(compute_u, base_v)
-        >>> print(qre.estimation(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
+        >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
         --- Resources: ---
-        Total qubits: 1
+        Total wires: 1
+            algorithmic wires: 1
+            allocated wires: 0
+                zero state: 0
+                any state: 0
         Total gates : 3
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-        Gate breakdown:
-        {'S': 1, 'Z': 1, 'Adjoint(S)': 1}
+            'Adjoint(H)': 1,
+            'Z': 1,
+            'H': 1
 
         We can also set the :code:`uncompute_op` directly.
 
-        >>> uncompute_u = qre.Prod([qre.Z(), qre.S()])
-        >>> cb_op = qre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
-        >>> print(qre.estimation(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> uncompute_u = qre.H()
+        >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
+        >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
         --- Resources: ---
-        Total qubits: 1
+        Total wires: 1
+            algorithmic wires: 1
+            allocated wires: 0
+                zero state: 0
+                any state: 0
         Total gates : 4
-        Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-        Gate breakdown:
-        {'S': 2, 'Z': 2}
-
+            'Z': 1,
+            'H': 2
         """
         return [
             GateCount(cmpr_compute_op),
