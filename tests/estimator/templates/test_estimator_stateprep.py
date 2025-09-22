@@ -20,7 +20,7 @@ import pennylane.estimator as qre
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.templates.stateprep import (
+from pennylane.estimator.ops.templates.stateprep import (
     AliasSampling,
     MPSPrep,
     QROMStatePreparation,
