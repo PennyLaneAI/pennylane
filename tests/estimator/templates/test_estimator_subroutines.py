@@ -1461,6 +1461,70 @@ class TestResourceQROM:
             == expected_res
         )
 
+    @pytest.mark.parametrize(
+        "num_ctrl_wires, num_zero_ctrl, num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res",
+        (
+            (
+                1,
+                0,
+                10,
+                3,
+                15,
+                None,
+                True,
+                [
+                    qre.Allocate(6),
+                    GateCount(qre.Hadamard.resource_rep(), 6),
+                    GateCount(qre.X.resource_rep(), 16),
+                    GateCount(qre.CNOT.resource_rep(), 38),
+                    GateCount(qre.TemporaryAND.resource_rep(), 8),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        8,
+                    ),
+                    qre.Deallocate(3),
+                    qre.Allocate(1),
+                    GateCount(qre.TemporaryAND.resource_rep(), 1),
+                    GateCount(qre.CSWAP.resource_rep(), 12),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(1),
+                    qre.Deallocate(3),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_res_decomp(
+        self,
+        num_ctrl_wires,
+        num_zero_ctrl,
+        num_data_points,
+        size_data_points,
+        num_bit_flips,
+        depth,
+        zeroed,
+        expected_res,
+    ):
+        """Test that the resources computed by single_controlled_res_decomp are correct."""
+        assert (
+            qre.QROM.controlled_resource_decomp(
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
+                num_bitstrings=num_data_points,
+                size_bitstring=size_data_points,
+                num_bit_flips=num_bit_flips,
+                zeroed=zeroed,
+                select_swap_depth=depth,
+            )
+            == expected_res
+        )
+
 
 class TestResourceQubitUnitary:
     """Test the ResourceQubitUnitary template"""
@@ -1590,6 +1654,11 @@ class TestResourceQubitUnitary:
 
 class TestResourceSelectPauliRot:
     """Test the ResourceSelectPauliRot template"""
+
+    def test_rotation_axis_errors(self):
+        """Test that the correct error is raised when invalid rotation axis argument is provided."""
+        with pytest.raises(ValueError, match="The `rotation_axis` argument must be one of"):
+            qre.SelectPauliRot(rotation_axis="A", num_ctrl_wires=1, precision=1e-3)
 
     @pytest.mark.parametrize("precision", (None, 1e-3, 1e-5))
     @pytest.mark.parametrize("rotation_axis", ("X", "Y", "Z"))
