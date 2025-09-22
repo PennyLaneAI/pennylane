@@ -673,15 +673,9 @@ class Prod(ResourceOperator):
         ops = []
         counts = []
 
-        for item in res_ops:
-            if isinstance(item, (list, tuple)):
-                op, count = item
-                ops.append(op)
-                counts.append(count)
-            else:
-                op = item
-                ops.append(op)
-                counts.append(1)
+        ops, counts = zip(*(
+            item if isinstance(item, (list, tuple)) else (item, 1) for item in res_ops
+        ))
 
         _dequeue(op_to_remove=ops)
         self.queue()
