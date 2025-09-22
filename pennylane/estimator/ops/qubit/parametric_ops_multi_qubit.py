@@ -30,7 +30,7 @@ class MultiRZ(ResourceOperator):
 
     Resources:
         The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
-        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+        quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper.
 
         Specifically, the resources are given by one ``RZ`` gate and a cascade of
         :math:`2 \times (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
