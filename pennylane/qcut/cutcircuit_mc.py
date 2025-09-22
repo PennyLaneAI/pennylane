@@ -617,7 +617,7 @@ def expand_fragment_tapes_mc(
     ...     print(c2.draw())
     ...     print("")
     ...
-
+    <BLANKLINE>
     config 0:
     0: ──H─╭●─┤  Sample[|1⟩⟨1|]
     1: ────╰X─┤  Sample[Z]
