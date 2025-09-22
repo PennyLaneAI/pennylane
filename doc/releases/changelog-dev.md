@@ -59,6 +59,7 @@
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
+    [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with 
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications 
@@ -175,6 +176,10 @@
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
   [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
 
+* A new decomposition has been added to :class:`qml.Select`. It achieves cost reductions by adding
+  one `work_wire`. This decomposition is useful to perform efficient `qml.QROM` decompositions.
+  [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
@@ -251,7 +256,20 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
+  with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
+  subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
+  discretization schemes.
+  [(#8213)](https://github.com/PennyLaneAI/pennylane/pull/8213)
+
+
 <h3>Improvements 🛠</h3>
+
+* :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
+  [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
+
+* Adds a warning about the experimental, unmaintained nature of native plxpr execution.
+  [(#8291)](https://github.com/PennyLaneAI/pennylane/pull/8291)
 
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
@@ -778,6 +796,9 @@
 * Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
+* Perturbation error function now sums over expectation values instead of states.
+  [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
+
 <h3>Breaking changes 💔</h3>
 
 * Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
@@ -1049,6 +1070,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
+  [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
+
 * Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
@@ -1222,6 +1246,7 @@
 * The `mbqc.graph_state_prep` operation is integrated into the `convert_to_mbqc_formalism` pass.
   [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
   [(#8301)](https://github.com/PennyLaneAI/pennylane/pull/8301)
+  [(#8314)](https://github.com/PennyLaneAI/pennylane/pull/8314)
 
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
