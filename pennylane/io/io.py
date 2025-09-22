@@ -660,9 +660,8 @@ def from_quil(quil: str):
 
     .. code-block:: python
 
-        >>> quil_str = 'H 0\\n'
-        ...            'CNOT 0 1'
-        >>> my_circuit = qml.from_quil(quil_str)
+        quil_str = 'H 0\\nCNOT 0 1'
+        my_circuit = qml.from_quil(quil_str)
 
     The ``my_circuit`` template can now be used within QNodes, as a
     two-wire quantum template.
