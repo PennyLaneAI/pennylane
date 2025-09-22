@@ -56,6 +56,8 @@
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
+  * The resource operators for controlled operators have been added to `qml.estimator.ops.op_math`.
+    [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
@@ -574,6 +576,7 @@
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module
   to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+  [(#8180)](https://github.com/PennyLaneAI/pennylane/pull/8180)
   [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
 
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
