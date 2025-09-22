@@ -95,14 +95,14 @@ from .ops.templates import (
     RegisterComparator,
 )
 
-from .templates.qubitize import (
+from .ops.templates.qubitize import (
     QubitizeTHC
 )
 
-from .templates.select import (
+from .ops.templates.select import (
     SelectTHC
 )
 
-from .templates.compact_hamiltonian import (
+from .ops.templates.compact_hamiltonian import (
     CompactHamiltonian
 )
