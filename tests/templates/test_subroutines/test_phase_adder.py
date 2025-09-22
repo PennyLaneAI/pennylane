@@ -23,6 +23,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.phase_adder import _add_k_fourier
 
 
+@pytest.mark.jax
 def test_standard_validity_Phase_Adder():
     """Check the operation using the assert_valid function."""
     k = 6

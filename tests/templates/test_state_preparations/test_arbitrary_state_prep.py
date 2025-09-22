@@ -81,6 +81,7 @@ def test_decomposition_new(weights, wires):
         _test_decomposition_rule(op, rule)
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 

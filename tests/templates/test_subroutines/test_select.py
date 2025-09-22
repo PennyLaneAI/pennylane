@@ -30,6 +30,7 @@ from pennylane.templates.subroutines.select import (
 )
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     "num_ops, num_controls",
     [(0, 1), (1, 1), (2, 1), (1, 2), (4, 2), (3, 4), (10, 4), (15, 4), (16, 4)],

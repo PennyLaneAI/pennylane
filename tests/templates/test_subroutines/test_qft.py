@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.capture.autograph import run_autograph
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qml.QFT(wires=(0, 1, 2))
