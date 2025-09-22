@@ -40,7 +40,7 @@ from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils.exceptions import PassFailedException
 
-from ...dialects.transform import ApplyRegisteredPassOp
+from ..dialects.transform import ApplyRegisteredPassOp
 
 
 # pylint: disable=too-few-public-methods

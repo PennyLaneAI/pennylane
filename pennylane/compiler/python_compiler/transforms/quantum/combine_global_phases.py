@@ -22,8 +22,8 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
-from ..dialects.quantum import GlobalPhaseOp
-from .api import compiler_transform
+from ...dialects.quantum import GlobalPhaseOp
+from ...pass_api import compiler_transform
 
 
 class CombineGlobalPhasesPattern(

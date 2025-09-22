@@ -11,9 +11,42 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""This module contains tools for logical resource estimation.
 
-r"""This module contains tools for logical resource estimation."""
+.. currentmodule:: pennylane.estimator
 
+Qubit Management Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Allocate
+    ~Deallocate
+    ~WireResourceManager
+
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
+    ~ResourceConfig
+    ~ResourceOperator
+    ~CompressedResourceOp
+    ~GateCount
+
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~estimate
+    ~resource_rep
+
+"""
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 from .resources_base import Resources
@@ -27,6 +60,8 @@ from .resource_operator import (
     resource_rep,
 )
 
+from .estimate import estimate
+
 from .ops.identity import Identity, GlobalPhase
 
 from .ops.qubit import (
@@ -37,4 +72,9 @@ from .ops.qubit import (
     Hadamard,
     S,
     T,
+    PhaseShift,
+    RX,
+    RY,
+    RZ,
+    Rot,
 )
