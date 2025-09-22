@@ -230,8 +230,33 @@ class TestResourceSemiAdder:
                     qre.Deallocate(4),
                 ],
             ),
-            # (2, 1, 5),
-            # (2)
+            (
+                2,
+                1,
+                5,
+                [
+                    qre.Allocate(1),
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX,
+                            {
+                                "num_ctrl_wires": 2,
+                                "num_zero_ctrl": 1,
+                            },
+                        ),
+                        2,
+                    ),
+                    qre.Allocate(4),
+                    GateCount(resource_rep(qre.CNOT), 24),
+                    GateCount(resource_rep(qre.TemporaryAND), 8),
+                    GateCount(
+                        resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
+                        8,
+                    ),
+                    qre.Deallocate(4),
+                    qre.Deallocate(1),
+                ],
+            ),
         ),
     )
     def test_resources_controlled(
