@@ -867,7 +867,7 @@ class ChangeOpBasis(ResourceOperator):
 
         else:  # Otherwise determine the wires from the compute, base & uncompute ops
             ops_wires = Wires.all_wires([op.wires for op in ops_to_remove if op.wires is not None])
-            fewest_unique_wires = max(
+            num_unique_wires_required = max(
                 op.num_wires
                 for op in [self.cmpr_target_op, self.cmpr_compute_op, self.cmpr_uncompute_op]
             )
