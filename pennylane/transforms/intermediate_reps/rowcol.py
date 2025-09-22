@@ -301,7 +301,7 @@ def rowcol(
 
     This transform maps a CNOT circuit to a new CNOT circuit under constrained connectivity.
     The algorithm was introduced by `Wu et al. <https://arxiv.org/abs/1910.14478>`__ and is
-    detailed in the `compilation hub <https://pennylane.ai/compilation/rowcol-algorithm>`__,
+    detailed on its `compilation page <https://pennylane.ai/compilation/rowcol-algorithm>`__,
     where additional examples can be found as well.
 
     Args:
