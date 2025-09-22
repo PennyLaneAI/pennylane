@@ -256,6 +256,13 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
+  with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
+  subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
+  discretization schemes.
+  [(#8213)](https://github.com/PennyLaneAI/pennylane/pull/8213)
+
+
 <h3>Improvements 🛠</h3>
 
 * :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
@@ -788,6 +795,9 @@
 
 * Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
+
+* Perturbation error function now sums over expectation values instead of states.
+  [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
 <h3>Breaking changes 💔</h3>
 
