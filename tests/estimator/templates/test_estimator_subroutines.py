@@ -18,6 +18,7 @@ import math
 
 import pytest
 
+import pennylane as qml
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
@@ -285,6 +286,11 @@ class TestResourceSemiAdder:
 class TestResourceControlledSequence:
     """Test the ResourceControlledSequence class."""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 10 wires, got 3"):
+            qre.ControlledSequence(base=qre.QFT(5), num_control_wires=5, wires=[0, 1, 2])
+
     @pytest.mark.parametrize(
         "base_op, num_ctrl_wires",
         (
@@ -483,6 +489,16 @@ class TestResourceControlledSequence:
 
 class TestResourceQPE:
     """Test the ResourceQPE class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
+            qre.QPE(base=qre.X(), num_estimation_wires=3, adj_qft_op=qre.QFT(3), wires=[0, 1, 2])
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        op = qre.QPE(base=qre.X(), num_estimation_wires=3, adj_qft_op=qre.QFT(3))
+        assert op.tracking_name() == "QPE(X, 3, adj_qft=QFT)"
 
     @pytest.mark.parametrize(
         "base_op, num_est_wires, adj_qft_op",
@@ -821,6 +837,10 @@ class TestResourceIterativeQPE:
 class TestResourceQFT:
     """Test the ResourceQFT class."""
 
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.QFT(1).tracking_name() == "QFT(1)"
+
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4))
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct."""
@@ -913,6 +933,16 @@ class TestResourceQFT:
 
 class TestResourceAQFT:
     """Test the ResourceAQFT class."""
+
+    @pytest.mark.parametrize("order", (-1, 0))
+    def test_aqft_order_errors(self, order):
+        """Test that the correct error is raised when invalid values of order are provided."""
+        with pytest.raises(ValueError, match="Order must be a positive integer greater than 0."):
+            qre.AQFT(order, 3)
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.AQFT(3, 2).tracking_name() == "AQFT(3, 2)"
 
     @pytest.mark.parametrize(
         "num_wires, order",
@@ -1043,6 +1073,10 @@ class TestResourceAQFT:
 class TestResourceBasisRotation:
     """Test the BasisRotation class."""
 
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        assert qre.BasisRotation(1).tracking_name() == "BasisRotation(1)"
+
     @pytest.mark.parametrize("dim_n", (1, 2, 3))
     def test_resource_params(self, dim_n):
         """Test that the resource params are correct."""
@@ -1067,6 +1101,16 @@ class TestResourceBasisRotation:
 
 class TestResourceSelect:
     """Test the Select class."""
+
+    def test_select_factor_errors(self):
+        """Test that the correct error is raised when invalid ops are provided."""
+        with pytest.raises(ValueError, match="All factors of the Select must be instances of"):
+            qre.Select(select_ops=[qml.X(0), qre.Y(), qre.Z()])
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected at least 4 wires"):
+            qre.Select(select_ops=[qre.RX(), qre.Z(), qre.CNOT()], wires=[0])
 
     def test_resource_params(self):
         """Test that the resource params are correct."""
@@ -1133,6 +1177,29 @@ class TestResourceSelect:
             qre.Deallocate(1),
         ]
         assert qre.Select.resource_decomp(cmpr_ops, num_wires=4) == expected
+
+    def test_textbook_resources(self):
+        """Test that the textbook resources are correct."""
+        ops = [qre.X()]
+        cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+
+        from collections import defaultdict
+
+        expected = defaultdict(int)
+        expected[qre.CompressedResourceOp(qre.X, 1)] = 0
+        expected[
+            qre.CompressedResourceOp(
+                qre.Controlled,
+                num_wires=1,
+                params={
+                    "base_cmpr_op": qre.CompressedResourceOp(qre.X, num_wires=1),
+                    "num_ctrl_wires": 0,
+                    "num_zero_ctrl": 0,
+                },
+            )
+        ] = 1
+
+        assert qre.Select.textbook_resources(cmpr_ops) == expected
 
 
 class TestResourceQROM:
@@ -1341,6 +1408,58 @@ class TestResourceQROM:
             size_bitstring,
         )
         assert opt_width == 1
+
+    @pytest.mark.parametrize(
+        "num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res",
+        (
+            (
+                10,
+                3,
+                15,
+                None,
+                True,
+                [
+                    qre.Allocate(6),
+                    GateCount(qre.Hadamard.resource_rep(), 6),
+                    GateCount(qre.X.resource_rep(), 16),
+                    GateCount(qre.CNOT.resource_rep(), 38),
+                    GateCount(qre.TemporaryAND.resource_rep(), 8),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        8,
+                    ),
+                    qre.Deallocate(3),
+                    qre.Allocate(1),
+                    GateCount(qre.TemporaryAND.resource_rep(), 1),
+                    GateCount(qre.CSWAP.resource_rep(), 12),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(1),
+                    qre.Deallocate(3),
+                ],
+            ),
+        ),
+    )
+    def test_single_controlled_res_decomp(
+        self, num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res
+    ):
+        """Test that the resources computed by single_controlled_res_decomp are correct."""
+        assert (
+            qre.QROM.single_controlled_res_decomp(
+                num_bitstrings=num_data_points,
+                size_bitstring=size_data_points,
+                num_bit_flips=num_bit_flips,
+                zeroed=zeroed,
+                select_swap_depth=depth,
+            )
+            == expected_res
+        )
 
 
 class TestResourceQubitUnitary:
