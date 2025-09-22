@@ -1269,6 +1269,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Fix docstrings to not have `>>>` and `...` inside of `.. code-block::` directives.
+  [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
+
 * Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
