@@ -258,6 +258,22 @@ class TestResourceSemiAdder:
                     qre.Deallocate(1),
                 ],
             ),
+            (
+                1,
+                1,
+                5,
+                [
+                    qre.Allocate(4),
+                    GateCount(resource_rep(qre.CNOT), 24),
+                    GateCount(resource_rep(qre.TemporaryAND), 8),
+                    GateCount(
+                        resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
+                        8,
+                    ),
+                    qre.Deallocate(4),
+                    GateCount(resource_rep(qre.X), 2),
+                ],
+            ),
         ),
     )
     def test_resources_controlled(
@@ -289,7 +305,9 @@ class TestResourceControlledSequence:
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 10 wires, got 3"):
-            qre.ControlledSequence(base=qre.QFT(5), num_control_wires=5, wires=[0, 1, 2])
+            qre.ControlledSequence(
+                base=qre.QFT(5, [0, 1, 2, 3, 4]), num_control_wires=5, wires=[0, 1, 2]
+            )
 
     @pytest.mark.parametrize(
         "base_op, num_ctrl_wires",
@@ -493,7 +511,7 @@ class TestResourceQPE:
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
-            qre.QPE(base=qre.X(), num_estimation_wires=3, adj_qft_op=qre.QFT(3), wires=[0, 1, 2])
+            qre.QPE(base=qre.X(0), num_estimation_wires=3, adj_qft_op=qre.QFT(3), wires=[0, 1, 2])
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
@@ -1112,6 +1130,12 @@ class TestResourceSelect:
         with pytest.raises(ValueError, match="Expected at least 4 wires"):
             qre.Select(select_ops=[qre.RX(), qre.Z(), qre.CNOT()], wires=[0])
 
+    def test_wire_init(self):
+        """Test that the number of wires is correctly computed from the provided wires."""
+        wires = [0, 1, 2, 3]
+        op = qre.Select(select_ops=[qre.RX(), qre.Z(), qre.CNOT()], wires=wires)
+        assert op.num_wires == len(wires)
+
     def test_resource_params(self):
         """Test that the resource params are correct."""
         ops = [qre.RX(), qre.Z(), qre.CNOT()]
@@ -1444,6 +1468,61 @@ class TestResourceQROM:
                     qre.Deallocate(3),
                 ],
             ),
+            (
+                10,
+                3,
+                15,
+                1,
+                True,
+                [
+                    qre.Allocate(4),
+                    GateCount(qre.Hadamard.resource_rep(), 6),
+                    GateCount(qre.X.resource_rep(), 36),
+                    GateCount(qre.CNOT.resource_rep(), 48),
+                    GateCount(qre.TemporaryAND.resource_rep(), 18),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        18,
+                    ),
+                    qre.Deallocate(4),
+                    qre.Allocate(1),
+                    GateCount(qre.TemporaryAND.resource_rep(), 0),
+                    GateCount(qre.CSWAP.resource_rep(), 0),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        0,
+                    ),
+                    qre.Deallocate(1),
+                    qre.Deallocate(0),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                16,
+                True,
+                [
+                    qre.Allocate(30),
+                    GateCount(qre.Hadamard.resource_rep(), 4),
+                    GateCount(qre.X.resource_rep(), 10),
+                    qre.Allocate(1),
+                    GateCount(qre.TemporaryAND.resource_rep(), 4),
+                    GateCount(qre.CSWAP.resource_rep(), 120),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        4,
+                    ),
+                    qre.Deallocate(1),
+                    qre.Deallocate(30),
+                ],
+            ),
         ),
     )
     def test_single_controlled_res_decomp(
@@ -1496,6 +1575,45 @@ class TestResourceQROM:
                     ),
                     qre.Deallocate(1),
                     qre.Deallocate(3),
+                ],
+            ),
+            (
+                2,
+                1,
+                10,
+                3,
+                15,
+                1,
+                True,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    qre.Allocate(1),
+                    GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+                    qre.Allocate(4),
+                    GateCount(qre.Hadamard.resource_rep(), 6),
+                    GateCount(qre.X.resource_rep(), 36),
+                    GateCount(qre.CNOT.resource_rep(), 48),
+                    GateCount(qre.TemporaryAND.resource_rep(), 18),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        18,
+                    ),
+                    qre.Deallocate(4),
+                    qre.Allocate(1),
+                    GateCount(qre.TemporaryAND.resource_rep(), 0),
+                    GateCount(qre.CSWAP.resource_rep(), 0),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        0,
+                    ),
+                    qre.Deallocate(1),
+                    qre.Deallocate(0),
+                    GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+                    qre.Deallocate(1),
                 ],
             ),
         ),
