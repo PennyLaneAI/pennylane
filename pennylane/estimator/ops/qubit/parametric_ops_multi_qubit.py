@@ -287,7 +287,7 @@ class PauliRot(ResourceOperator):
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
             The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
-            for quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper,
+            for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
             in combination with the following identity:
 
             .. math::
