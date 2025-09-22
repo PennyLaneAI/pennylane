@@ -695,7 +695,7 @@ class Prod(ResourceOperator):
 
         else:  # Otherwise determine the wires from the factors in the product
             ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
-            fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+            num_unique_wires_required = max(op.num_wires for op in cmpr_ops)
 
             if len(ops_wires) < fewest_unique_wires:  # If factors didn't provide enough wire labels
                 self.wires = None  # we assume they all act on the same set
