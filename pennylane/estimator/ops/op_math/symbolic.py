@@ -673,9 +673,9 @@ class Prod(ResourceOperator):
         ops = []
         counts = []
 
-        ops, counts = zip(*(
-            item if isinstance(item, (list, tuple)) else (item, 1) for item in res_ops
-        ))
+        ops, counts = zip(
+            *(item if isinstance(item, (list, tuple)) else (item, 1) for item in res_ops)
+        )
 
         _dequeue(op_to_remove=ops)
         self.queue()
@@ -697,9 +697,11 @@ class Prod(ResourceOperator):
             ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
             num_unique_wires_required = max(op.num_wires for op in cmpr_ops)
 
-            if len(ops_wires) < fewest_unique_wires:  # If factors didn't provide enough wire labels
+            if (
+                len(ops_wires) < num_unique_wires_required
+            ):  # If factors didn't provide enough wire labels
                 self.wires = None  # we assume they all act on the same set
-                self.num_wires = fewest_unique_wires
+                self.num_wires = num_unique_wires_required
 
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires
@@ -872,9 +874,11 @@ class ChangeOpBasis(ResourceOperator):
                 for op in [self.cmpr_target_op, self.cmpr_compute_op, self.cmpr_uncompute_op]
             )
 
-            if len(ops_wires) < fewest_unique_wires:  # If factors didn't provide enough wire labels
+            if (
+                len(ops_wires) < num_unique_wires_required
+            ):  # If factors didn't provide enough wire labels
                 self.wires = None
-                self.num_wires = fewest_unique_wires
+                self.num_wires = num_unique_wires_required
 
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires

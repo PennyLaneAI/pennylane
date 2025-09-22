@@ -19,7 +19,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ
 
@@ -70,6 +70,8 @@ class SingleExcitation(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
