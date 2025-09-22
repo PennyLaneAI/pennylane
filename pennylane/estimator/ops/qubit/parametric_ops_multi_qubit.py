@@ -24,16 +24,16 @@ class MultiRZ(ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        num_wires (int): the number of wires the operation acts upon
         precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
-        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+        quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper.
 
         Specifically, the resources are given by one ``RZ`` gate and a cascade of
-        :math:`2 * (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
+        :math:`2 \times (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
         the gate acts on.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.MultiRZ`.
@@ -80,10 +80,10 @@ class MultiRZ(ResourceOperator):
 
         Resources:
             The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
-            quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+            quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper.
 
             Specifically, the resources are given by one ``RZ`` gate and a cascade of
-            :math:`2 * (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
+            :math:`2 \times (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
             the gate acts on.
 
         Returns:
@@ -213,7 +213,7 @@ class PauliRot(ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Args:
-        pauli_string (str): a string describing the pauli operators that define the rotation
+        pauli_string (str): a string describing the Pauli operators that define the rotation
         precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wire the operation acts on
 
@@ -222,8 +222,8 @@ class PauliRot(ResourceOperator):
         the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
         The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
-        for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
-        in combination with the following identity:
+        for quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper,
+        in combination with the following identities:
 
         .. math::
 
@@ -233,7 +233,7 @@ class PauliRot(ResourceOperator):
             \end{align}
 
         Specifically, the resources are given by one :code:`RZ` gate and a cascade of
-        :math:`2 * (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+        :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
         the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
         a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word we
         conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
@@ -287,7 +287,7 @@ class PauliRot(ResourceOperator):
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
             The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
-            for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
+            for quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper,
             in combination with the following identity:
 
             .. math::
@@ -298,7 +298,7 @@ class PauliRot(ResourceOperator):
                 \end{align}
 
             Specifically, the resources are given by one :code:`RZ` gate and a cascade of
-            :math:`2 * (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+            :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
             the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
             a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word we
             conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
@@ -430,7 +430,7 @@ class PauliRot(ResourceOperator):
             .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RZ-gate and a cascade of
-            :math:`2 * (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+            :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
             the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
             a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word
             we conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
