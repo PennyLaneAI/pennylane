@@ -41,7 +41,7 @@ class SingleExcitation(ResourceOperator):
                     0 & 0 & 0 & 1
                 \end{bmatrix}.
 
-        The cost for implementing this transformation is given by:
+        This transformation can be expressed with the following decomposition:
 
         .. code-block:: bash
 
