@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""This module contains classes which integrate arithmetic operators with
+resource estimation."""
 
-"""
-Version number (major.minor.patch[-label])
-"""
-
-__version__ = "0.43.0-dev61"
+from .controlled_ops import (
+    CCZ,
+    CH,
+    CNOT,
+    ControlledPhaseShift,
+    CRot,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    MultiControlledX,
+    TemporaryAND,
+    Toffoli,
+)
+from .symbolic import Adjoint, Controlled

@@ -56,35 +56,40 @@
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
+  * The resource operators for controlled operators have been added to `qml.estimator.ops.op_math`.
+    [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
+  * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
+    [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
+    [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
 
-* Wires can now be dynamically allocated and deallocated in quantum functions with 
-  :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications 
-  that rely on smart and efficient handling of wires, such as decompositions of gates that require 
-  temporary auxiliary wires and logical patterns in subroutines that benefit from having dynamic 
+* Wires can now be dynamically allocated and deallocated in quantum functions with
+  :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
+  that rely on smart and efficient handling of wires, such as decompositions of gates that require
+  temporary auxiliary wires and logical patterns in subroutines that benefit from having dynamic
   wire management.
 
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
 
-  The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated 
+  The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated
   wires are handled:
 
-  * `num_wires`: the number of wires to dynamically allocate. 
-  * `state = "zero"/"any"`: the initial state that the dynamically allocated wires are requested to 
-    be in. Currently, supported values are `"zero"` (initialize in the all-zero state) or `"any"` 
+  * `num_wires`: the number of wires to dynamically allocate.
+  * `state = "zero"/"any"`: the initial state that the dynamically allocated wires are requested to
+    be in. Currently, supported values are `"zero"` (initialize in the all-zero state) or `"any"`
     (any arbitrary state).
-  * `restored = True/False`: a user-guarantee that the allocated wires will be restored to their 
-    original state (`True`) or not (`False`) when those wires are deallocated. 
+  * `restored = True/False`: a user-guarantee that the allocated wires will be restored to their
+    original state (`True`) or not (`False`) when those wires are deallocated.
 
-  The recommended way to safely allocate and deallocate wires is to use :func:`~.allocate` as a 
+  The recommended way to safely allocate and deallocate wires is to use :func:`~.allocate` as a
   context manager:
 
   ```python
   import pennylane as qml
 
-  @qml.qnode(qml.device("default.qubit")) 
+  @qml.qnode(qml.device("default.qubit"))
   def circuit():
       qml.H(0)
       qml.H(1)
@@ -92,7 +97,7 @@
       with qml.allocate(2, state="zero", restored=False) as new_wires:
           qml.H(new_wires[0])
           qml.H(new_wires[1])
-          
+
       return qml.expval(qml.Z(0))
   ```
 
@@ -106,7 +111,7 @@
 
   As illustrated, using :func:`~.allocate` as a context manager ensures that allocation and safe
   deallocation are controlled within a localized scope. Equivalenty, :func:`~.allocate` can be used
-  in-line along with :func:`~.deallocate` for manual handling: 
+  in-line along with :func:`~.deallocate` for manual handling:
 
   ```python
   new_wires = qml.allocate(2, state="zero", restored=False)
@@ -115,12 +120,12 @@
   qml.deallocate(new_wires)
   ```
 
-  For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic allocation 
+  For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic allocation
   calls in the most resource-efficient manner before sending the program to the device. Consider the
   following circuit, which contains two dynamic allocations within a `for` loop.
 
   ```python
-  @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal") 
+  @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal")
   def circuit():
       qml.H(0)
 
@@ -137,25 +142,25 @@
   ```pycon
   >>> print(qml.draw(circuit)())
               0: ──H─────────────────────╭●───────────────────────╭●─────────────┤  <Z>
-  <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤     
-  <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤     
-  <DynamicWire>: ─────────────║────────║──Allocate──┤↗│  │0⟩──────│───Deallocate─┤     
-  <DynamicWire>: ─────────────║────────║──Allocate───║──────────Z─╰X──Deallocate─┤     
-                              ╚════════╝             ╚══════════╝                      
+  <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤
+  <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤
+  <DynamicWire>: ─────────────║────────║──Allocate──┤↗│  │0⟩──────│───Deallocate─┤
+  <DynamicWire>: ─────────────║────────║──Allocate───║──────────Z─╰X──Deallocate─┤
+                              ╚════════╝             ╚══════════╝
   ```
 
-  The user-level circuit drawing shows four separate allocations and deallocations (two per loop 
-  iteration). However, the circuit that the device receives gets automatically compiled to only use 
-  **two** additional wires (wires labelled `1` and `2` in the diagram below). This is due to the 
-  fact that `new_qubit1` and `new_qubit2` can both be reused after they've been deallocated in 
+  The user-level circuit drawing shows four separate allocations and deallocations (two per loop
+  iteration). However, the circuit that the device receives gets automatically compiled to only use
+  **two** additional wires (wires labelled `1` and `2` in the diagram below). This is due to the
+  fact that `new_qubit1` and `new_qubit2` can both be reused after they've been deallocated in
   the first iteration of the `for` loop:
 
   ```
   >>> print(qml.draw(circuit, level="device")())
   0: ──H───────────╭●──────────────╭●─┤  <Z>
-  1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤     
-  2: ───║────────Z─╰X───║────────Z─╰X─┤     
-        ╚════════╝      ╚════════╝          
+  1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤
+  2: ───║────────Z─╰X───║────────Z─╰X─┤
+        ╚════════╝      ╚════════╝
   ```
 
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
@@ -169,11 +174,15 @@
   :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
   [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
 
-* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
   [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
+
+* A new decomposition has been added to :class:`qml.Select`. It achieves cost reductions by adding
+  one `work_wire`. This decomposition is useful to perform efficient `qml.QROM` decompositions.
+  [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
 
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
@@ -251,7 +260,17 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
+  with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
+  subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
+  discretization schemes.
+  [(#8213)](https://github.com/PennyLaneAI/pennylane/pull/8213)
+
+
 <h3>Improvements 🛠</h3>
+
+* :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
+  [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
 
 * Adds a warning about the experimental, unmaintained nature of native plxpr execution.
   [(#8291)](https://github.com/PennyLaneAI/pennylane/pull/8291)
@@ -559,6 +578,7 @@
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module
   to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+  [(#8180)](https://github.com/PennyLaneAI/pennylane/pull/8180)
   [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
 
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
@@ -780,6 +800,9 @@
 
 * Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
+
+* Perturbation error function now sums over expectation values instead of states.
+  [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
 <h3>Breaking changes 💔</h3>
 
@@ -1228,6 +1251,7 @@
 * The `mbqc.graph_state_prep` operation is integrated into the `convert_to_mbqc_formalism` pass.
   [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
   [(#8301)](https://github.com/PennyLaneAI/pennylane/pull/8301)
+  [(#8314)](https://github.com/PennyLaneAI/pennylane/pull/8314)
 
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
@@ -1401,6 +1425,10 @@
 
 * Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
+* Fixes a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, :func:`~.transforms.single_qubit_fusion`,
+  :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
+  [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
 <h3>Contributors ✍️</h3>
 
