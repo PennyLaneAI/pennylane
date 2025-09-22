@@ -621,21 +621,21 @@ def expand_fragment_tapes_mc(
     config 0:
     0: ──H─╭●─┤  Sample[|1⟩⟨1|]
     1: ────╰X─┤  Sample[Z]
-
+    <BLANKLINE>
     1: ──I─╭●─┤  Sample[|1⟩⟨1|]
     2: ────╰X─┤  Sample[|1⟩⟨1|]
-
+    <BLANKLINE>
     config 1:
     0: ──H─╭●─┤  Sample[|1⟩⟨1|]
     1: ────╰X─┤  Sample[Y]
-
+    <BLANKLINE>
     1: ──H──S─╭●─┤  Sample[|1⟩⟨1|]
     2: ───────╰X─┤  Sample[|1⟩⟨1|]
-
+    <BLANKLINE>
     config 2:
     0: ──H─╭●─┤  Sample[|1⟩⟨1|]
     1: ────╰X─┤  Sample[Y]
-
+    <BLANKLINE>
     1: ──X──H──S─╭●─┤  Sample[|1⟩⟨1|]
     2: ──────────╰X─┤  Sample[|1⟩⟨1|]
 
