@@ -83,7 +83,7 @@ class MultiRZ(ResourceOperator):
             quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
             Specifically, the resources are given by one ``RZ`` gate and a cascade of
-            :math:`2 * (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
+            :math:`2 \times (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
             the gate acts on.
 
         Returns:
