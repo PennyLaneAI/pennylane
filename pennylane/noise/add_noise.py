@@ -109,7 +109,7 @@ def add_noise(tape, noise_model, level=None):
     >>> print(qml.draw(circuit)(0.9, 0.4, 0.5, 0.6))
     0: ──RX(0.90)──PhaseDamping(0.40)──ThermalRelaxationError(0.45,2.00,0.20,0.60)─╭●──RY(0.50)
     1: ──RY(0.40)──────────────────────────────────────────────────────────────────╰X──RX(0.60)
-
+    <BLANKLINE>
     ────────────────────────────────────────────────────────────────────PhaseFlip(0.2)─┤ ╭<Z@Z>
     ───PhaseDamping(0.40)──ThermalRelaxationError(0.30,2.00,0.20,0.60)──PhaseFlip(0.2)─┤ ╰<Z@Z>
 
