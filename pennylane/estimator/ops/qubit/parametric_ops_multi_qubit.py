@@ -213,7 +213,7 @@ class PauliRot(ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Args:
-        pauli_string (str): a string describing the pauli operators that define the rotation
+        pauli_string (str): a string describing the Pauli operators that define the rotation
         precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wire the operation acts on
 
