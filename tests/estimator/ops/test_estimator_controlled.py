@@ -16,6 +16,7 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X
+
 from pennylane.estimator.ops.op_math.controlled_ops import (
     CCZ,
     CH,

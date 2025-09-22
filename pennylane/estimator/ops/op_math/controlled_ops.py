@@ -1380,6 +1380,7 @@ class MultiControlledX(ResourceOperator):
         gate_lst.extend(res)
         return gate_lst
 
+
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
@@ -1550,6 +1551,7 @@ class CRX(ResourceOperator):
         """
         h = resource_rep(qre.Hadamard)
         rz = resource_rep(qre.RZ, {"precision": precision})
+
         cnot = resource_rep(CNOT)
 
         return [GateCount(cnot, 2), GateCount(rz, 2), GateCount(h, 2)]
@@ -2180,6 +2182,7 @@ class ControlledPhaseShift(ResourceOperator):
         """
         cnot = resource_rep(CNOT)
         rz = resource_rep(qre.RZ, {"precision": precision})
+
         return [GateCount(cnot, 2), GateCount(rz, 3)]
 
     @classmethod
