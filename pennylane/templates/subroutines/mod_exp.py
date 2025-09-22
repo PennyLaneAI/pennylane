@@ -81,7 +81,7 @@ class ModExp(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [0 0 1]
+        [[0 0 1]]
 
     The result :math:`[0 0 1]`, is the binary representation of
     :math:`2^3 \; \text{modulo} \; 7 = 1`.

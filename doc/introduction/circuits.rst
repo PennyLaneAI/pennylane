@@ -19,10 +19,10 @@ are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 
 QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
-:doc:`PyTorch <interfaces/torch>`, :doc:`TensorFlow <interfaces/tf>`, and
+:doc:`PyTorch <interfaces/torch>`, and
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy and JAX arrays or Pytorch/TensorFlow tensors) and
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and
 :doc:`optimizers <interfaces>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
@@ -351,7 +351,7 @@ Importing circuits from other frameworks
 PennyLane supports creating customized PennyLane templates imported from other
 frameworks. By loading your existing quantum code as a PennyLane template, you
 add the ability to perform analytic differentiation, and interface with machine
-learning libraries such as PyTorch and TensorFlow. Currently, ``QuantumCircuit``
+learning libraries such as PyTorch or JAX. Currently, ``QuantumCircuit``
 objects from Qiskit, OpenQASM files, pyQuil ``programs``, and Quil files can
 be loaded by using the following functions:
 

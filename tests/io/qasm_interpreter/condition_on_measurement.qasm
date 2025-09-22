@@ -1,5 +1,5 @@
 qubit q0;
-qubit ancilla;
+qubit auxiliary;
 bit bits = "1";
 
 def random(qubit anc, qubit q) -> bit[2] {
@@ -11,10 +11,10 @@ def random(qubit anc, qubit q) -> bit[2] {
 
 // this works
 if (bits) {
-    bits = random(ancilla, q0);
+    bits = random(auxiliary, q0);
 }
 
 // example loop... not supported!
 while(bits) {
-    bits = random(ancilla, q0);
+    bits = random(auxiliary, q0);
 }

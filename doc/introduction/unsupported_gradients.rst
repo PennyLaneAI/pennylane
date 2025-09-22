@@ -287,7 +287,7 @@ error, but the results will be incorrect:
     def sample_backward():
         dev = qml.device('default.qubit', wires=1)
 
-        @partial(qml.set_shots, shots=20)
+        @partial(qml.set_shots, shots=5)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -297,26 +297,15 @@ error, but the results will be incorrect:
         print(qml.jacobian(circuit)(x))
 
 >>> sample_backward()
-[[0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]
- [0.5]]
+[[[0.5]]
+<BLANKLINE>
+ [[0.5]]
+<BLANKLINE>
+ [[0.5]]
+<BLANKLINE>
+ [[0.5]]
+<BLANKLINE>
+ [[0.5]]]
 
 The forward pass is supported and will work as expected:
 
@@ -335,4 +324,23 @@ The forward pass is supported and will work as expected:
         print(circuit(x))
 
 >>> sample_forward()
-[0 1 0 0 0 1 1 0 0 1 1 1 0 0 0 1 1 0 0 0]
+[[0]
+ [0]
+ [0]
+ [0]
+ [1]
+ [1]
+ [0]
+ [0]
+ [1]
+ [1]
+ [1]
+ [1]
+ [0]
+ [1]
+ [1]
+ [0]
+ [1]
+ [0]
+ [0]
+ [1]]

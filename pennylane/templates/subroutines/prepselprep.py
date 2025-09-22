@@ -20,12 +20,13 @@ import copy
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
+    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint, prod
+from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
+from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires
 
@@ -91,19 +92,14 @@ class PrepSelPrep(Operation):
 
     def __init__(self, lcu, control=None, id=None):
 
-        coeffs, ops = lcu.terms()
         control = Wires(control)
-        self.hyperparameters["lcu"] = LinearCombination(coeffs, ops)
-        self.hyperparameters["coeffs"] = coeffs
-        self.hyperparameters["ops"] = ops
+        self.hyperparameters["lcu"] = lcu
         self.hyperparameters["control"] = control
+        target_wires = lcu.wires
 
-        if any(
-            control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
-        ):
+        if any(control_wire in target_wires for control_wire in control):
             raise ValueError("Control wires should be different from operation wires.")
 
-        target_wires = Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
@@ -117,12 +113,11 @@ class PrepSelPrep(Operation):
         return cls(data[0], metadata[0])
 
     def __repr__(self):
-        return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={tuple(self.ops)}, control={self.control})"
+        return f"PrepSelPrep(lcu={self.lcu}, control={self.control})"
 
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
-        new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
-        new_lcu = LinearCombination(self.hyperparameters["coeffs"], new_ops)
+        new_lcu = self.lcu.map_wires(wire_map)
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
@@ -134,9 +129,8 @@ class PrepSelPrep(Operation):
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         coeffs = math.array(self.coeffs)
-        shape = math.shape(coeffs)
         for i, mat in enumerate(cache["matrices"]):
-            if shape == math.shape(mat) and math.allclose(coeffs, mat):
+            if math.shape(coeffs) == math.shape(mat) and math.allclose(coeffs, mat):
                 str_wo_id = f"{op_label}(M{i})"
                 break
         else:
@@ -150,15 +144,12 @@ class PrepSelPrep(Operation):
     def compute_decomposition(lcu, control):
         coeffs, ops = _get_new_terms(lcu)
 
-        decomp_ops = [
-            AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
-            Select(ops, control),
-            adjoint(
-                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+        return [
+            change_op_basis(
+                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
+                Select(ops, control, partial=True),
             ),
         ]
-
-        return decomp_ops
 
     def __copy__(self):
         """Copy this op"""
@@ -186,19 +177,19 @@ class PrepSelPrep(Operation):
         self.hyperparameters["lcu"].data = new_data
 
     @property
-    def coeffs(self):
-        """The coefficients of the LCU."""
-        return self.hyperparameters["coeffs"]
-
-    @property
-    def ops(self):
-        """The operations of the LCU."""
-        return self.hyperparameters["ops"]
-
-    @property
     def lcu(self):
         """The LCU to be block-encoded."""
         return self.hyperparameters["lcu"]
+
+    @property
+    def coeffs(self):
+        """The coefficients of the LCU to be block-encoded."""
+        return self.lcu.terms()[0]
+
+    @property
+    def ops(self):
+        """The operators of the LCU to be block-encoded."""
+        return self.lcu.terms()[1]
 
     @property
     def control(self):
@@ -215,26 +206,40 @@ class PrepSelPrep(Operation):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
 
+    def queue(self, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(self.lcu)
+        context.append(self)
+        return self
+
 
 def _prepselprep_resources(op_reps, num_control):
     prod_reps = tuple(
         resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     return {
-        resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control): 1,
-        resource_rep(StatePrep, num_wires=num_control): 1,
-        adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
+        change_op_basis_resource_rep(
+            resource_rep(StatePrep, num_wires=num_control),
+            resource_rep(
+                Select,
+                op_reps=prod_reps,
+                num_control_wires=num_control,
+                partial=True,
+                num_work_wires=0,
+            ),
+        ): 1,
     }
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 @register_resources(_prepselprep_resources)
-def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
+def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     coeffs, ops = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)
-    StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
-    Select(ops, control)
-    adjoint(StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
+    change_op_basis(
+        StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control),
+        Select(ops, control, partial=True),
+    )
 
 
 add_decomps(PrepSelPrep, _prepselprep_decomp)

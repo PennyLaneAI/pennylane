@@ -36,6 +36,7 @@ from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     SparseMatrixUndefinedError,
 )
 from pennylane.operation import Operation, Operator, classproperty
@@ -51,7 +52,7 @@ def ctrl(
     control: Any,
     control_values: Sequence[bool | int] | None = None,
     work_wires: Any | None = None,
-    work_wire_type: Literal["clean", "dirty"] = "dirty",
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> Operator: ...
 @overload
 def ctrl(
@@ -59,9 +60,9 @@ def ctrl(
     control: Any,
     control_values: Sequence[bool | int] | None = None,
     work_wires: Any | None = None,
-    work_wire_type: Literal["clean", "dirty"] = "dirty",
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> Callable: ...
-def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="dirty"):
+def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="borrowed"):
     r"""Create a method that applies a controlled version of the provided op.
     :func:`~.qjit` compatible.
 
@@ -80,9 +81,9 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        work_wire_type: The type of work wire(s), can be ``"clean"`` or ``"dirty"``. ``"clean"``
-            indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"dirty"``
-            work wires can be in any arbitrary state. Defaults to ``"dirty"``.
+        work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``. ``"zeroed"``
+            indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
+            work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
 
     Returns:
         function or :class:`~.operation.Operator`: If an Operator is provided, returns a Controlled version of the Operator.
@@ -173,7 +174,9 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     )
 
 
-def create_controlled_op(op, control, control_values=None, work_wires=None, work_wire_type="dirty"):
+def create_controlled_op(
+    op, control, control_values=None, work_wires=None, work_wire_type="borrowed"
+):
     """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = qml.wires.Wires(control)
@@ -349,7 +352,7 @@ def _get_pauli_x_based_ops():
 
 
 def _try_wrap_in_custom_ctrl_op(
-    op, control, control_values=None, work_wires=None, work_wire_type="dirty"
+    op, control, control_values=None, work_wires=None, work_wire_type="borrowed"
 ):
     """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
 
@@ -359,6 +362,15 @@ def _try_wrap_in_custom_ctrl_op(
     if custom_key in ops_with_custom_ctrl_ops and all(control_values):
         qml.QueuingManager.remove(op)
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
+
+    if isinstance(op, qml.Barrier):
+        if qml.QueuingManager.recording():
+            # for example
+            # op = Barrier(), qml.X(), qml.ctrl(op, 1)
+            # new barrier should exist after the X
+            qml.QueuingManager.remove(op)
+            qml.QueuingManager.append(op)  # requeue in proper place
+        return op
 
     if isinstance(op, qml.QubitUnitary):
         qml.QueuingManager.remove(op)
@@ -420,9 +432,9 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        work_wire_type: The type of work wire(s), can be ``"clean"`` or ``"dirty"``. ``"clean"``
-            indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"dirty"``
-            work wires can be in any arbitrary state. Defaults to ``"dirty"``.
+        work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``. ``"zeroed"``
+            indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
+            work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
@@ -551,7 +563,7 @@ class Controlled(SymbolicOp):
         control_wires,
         control_values=None,
         work_wires=None,
-        work_wire_type="dirty",
+        work_wire_type="borrowed",
         id=None,
     ):
         control_wires = Wires(control_wires)
@@ -570,7 +582,7 @@ class Controlled(SymbolicOp):
         control_wires: WiresLike,
         control_values=None,
         work_wires: WiresLike = None,
-        work_wire_type: Literal["clean", "dirty"] = "dirty",
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         id=None,
     ):
         control_wires = Wires(control_wires)
@@ -596,9 +608,17 @@ class Controlled(SymbolicOp):
                 "Work wires must be different the control_wires and base operation wires."
             )
 
-        if work_wire_type not in {"clean", "dirty"}:
+        if work_wire_type in ("clean", "dirty"):
+            work_wire_type = "zeroed" if work_wire_type == "clean" else "borrowed"
+            warnings.warn(
+                "Specifying work_wire_type as 'clean' or 'dirty' is deprecated, "
+                "use 'zeroed' or 'borrowed' instead.",
+                PennyLaneDeprecationWarning,
+            )
+
+        if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
-                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+                f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
             )
 
         self.hyperparameters["control_wires"] = control_wires
@@ -682,7 +702,7 @@ class Controlled(SymbolicOp):
 
     @property
     def work_wire_type(self):
-        """The type of work wires provided, can be ``"clean"`` or ``"dirty"``."""
+        """The type of work wires provided, can be ``"zeroed"`` or ``"borrowed"``."""
         return self.hyperparameters["work_wire_type"]
 
     @property
@@ -980,7 +1000,6 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
         result = op.base._controlled(op.control_wires[0])  # pylint: disable=protected-access
         # disallow decomposing to itself
-        # pylint: disable=unidiomatic-typecheck
         if type(result) != type(op):
             return [result]
         qml.QueuingManager.remove(result)
@@ -1009,7 +1028,9 @@ def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
     if not op.base.has_decomposition:
         return None
 
-    base_decomp = op.base.decomposition()
+    with qml.QueuingManager.stop_recording():
+        base_decomp = op.base.decomposition()
+
     return [
         ctrl(newop, op.control_wires, work_wires=op.work_wires, work_wire_type=op.work_wire_type)
         for newop in base_decomp
@@ -1040,7 +1061,7 @@ class ControlledOp(Controlled, Operation):
         control_wires,
         control_values=None,
         work_wires=None,
-        work_wire_type="dirty",
+        work_wire_type="borrowed",
         id=None,
     ):
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type, id)
@@ -1093,7 +1114,12 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
 
     @Controlled._primitive.def_impl  # pylint: disable=protected-access
     def _(
-        base, *control_wires, control_values=None, work_wires=None, work_wire_type="dirty", id=None
+        base,
+        *control_wires,
+        control_values=None,
+        work_wires=None,
+        work_wire_type="borrowed",
+        id=None,
     ):
         return type.__call__(
             Controlled,

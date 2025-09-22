@@ -176,11 +176,14 @@ def register_custom_staging_rule(
         Returned vars are cached in env for use in future shapes
         """
         if not hasattr(outvar.aval, "shape"):
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
+            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval, None)
             return out_tracer, jaxpr_trace.makevar(out_tracer)
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
-        new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
-        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+        if all(isinstance(s, int) for s in outvar.aval.shape):
+            new_aval = jax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
+        else:
+            new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval, None)
         new_var = jaxpr_trace.makevar(out_tracer)
 
         if not isinstance(outvar, jax.extend.core.Literal):

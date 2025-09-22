@@ -97,13 +97,12 @@ def device(name, *args, **kwargs):
 
     Args:
         name (str): the name of the device to load
-        wires (int): the number of wires (subsystems) to initialise
-            the device with. Note that this is optional for certain
-            devices, such as ``default.qubit``
+        wires (Wires): the wires (subsystems) to initialize the device with.
+            Note that this is optional for certain devices, such as ``default.qubit``
 
     Keyword Args:
         config (pennylane.Configuration): a PennyLane configuration object
-            that contains global and/or device specific configurations.
+            that contains global and/or device-specific configurations.
         custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
 
@@ -127,11 +126,11 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
+        dev = qml.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
 
         def circuit():
             qml.Hadamard(wires='q11')
-            qml.Hadamard(wires=['ancilla'])
+            qml.Hadamard(wires=['auxiliary'])
             qml.CNOT(wires=['q12', -1])
             ...
 
@@ -140,19 +139,16 @@ def device(name, *args, **kwargs):
 
     >>> dev = qml.device("default.qubit")
 
-    Most devices accept a ``shots`` argument which specifies how many circuit executions
-    are used to estimate stochastic return values. As an example, ``qml.sample()`` measurements
-    will return as many samples as specified in the shots argument. The shots argument can be
-    changed on a per-call basis using the built-in ``shots`` keyword argument. Note that the
-    ``shots`` argument can be a single integer or a list of shot values.
+    When executing quantum circuits on a device, we can specify the number of times the circuit must be executed
+    to estimate stochastic return values by using the :func:`~pennylane.set_shots` transform.
+    As an example, ``qml.sample()`` measurements will return as many samples as the number of shots specified.
+    Note that ``shots`` can be a single integer or a list of shot values.
 
     .. code-block:: python
 
-        from functools import partial
-
         dev = qml.device('default.qubit', wires=1)
 
-        @partial(qml.set_shots, shots=10)
+        @qml.set_shots(10)
         @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
@@ -160,19 +156,18 @@ def device(name, *args, **kwargs):
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
-    >>> circuit(0.8, shots=[3, 4, 4])   # default is overwritten for this call
-    (array([1, 1, 1]), array([ 1, -1,  1,  1]), array([1, 1, 1, 1]))
-    >>> circuit(0.8)  # back to default of 10 samples
-    array([ 1, -1,  1,  1, -1,  1,  1,  1,  1,  1])
+    >>> new_circuit = qml.set_shots(circuit, shots=[3, 4, 4])
+    >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
+    (array([1., 1., 1.]), array([ 1.,  1.,  1., -1.]), array([ 1.,  1., -1.,  1.]))
 
     When constructing a device, we may optionally pass a dictionary of custom
     decompositions to be applied to certain operations upon device execution.
     This is useful for enabling support of gates on devices where they would normally
     be unsupported.
 
-    For example, suppose we are running on an ion trap device which does not
+    For example, suppose we are running on an ion trap device that does not
     natively implement the CNOT gate, but we would still like to write our
-    circuits in terms of CNOTs. On a ion trap device, CNOT can be implemented
+    circuits in terms of CNOTs. On an ion trap device, CNOT can be implemented
     using the ``IsingXX`` gate. We first define a decomposition function
     (such functions have the signature ``decomposition(*params, wires)``):
 
@@ -187,7 +182,7 @@ def device(name, *args, **kwargs):
                 qml.RY(-np.pi/2, wires=wires[1])
             ]
 
-    Next, we create a device, and a QNode for testing. When constructing the
+    Next, we create a device and a QNode for testing. When constructing the
     QNode, we can set the expansion strategy to ``"device"`` to ensure the
     decomposition is applied and will be viewable when we draw the circuit.
     Note that custom decompositions should accept keyword arguments even when

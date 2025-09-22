@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import functools
+from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import cached_property
 
@@ -34,7 +35,7 @@ class Resources:
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    weighted_cost: float | None = field(default=None)
+    weighted_cost: float = field(default=None)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
@@ -284,12 +285,22 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):
         return pow_resource_rep(**params)
+    if issubclass(op_type, qml.ops.ChangeOpBasis):
+        return change_op_basis_resource_rep(**params)
     if op_type is qml.ops.ControlledOp:
         op_type = qml.ops.Controlled
     if op_type is qml.ops.Controlled:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
+    if op_type is qml.ops.op_math.Prod:
+        resources = defaultdict(int)
+        for rep, count in params["resources"].items():
+            addition = rep.params["resources"] if rep.op_type is qml.ops.op_math.Prod else {rep: 1}
+            for sub_rep, sub_count in addition.items():
+                resources[sub_rep] += count * sub_count
+
+        params["resources"] = resources
     return CompressedResourceOp(op_type, params)
 
 
@@ -299,7 +310,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     num_control_wires: int,
     num_zero_control_values: int = 0,
     num_work_wires: int = 0,
-    work_wire_type="dirty",
+    work_wire_type="borrowed",
 ):
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
@@ -396,6 +407,34 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
     )
 
 
+def change_op_basis_resource_rep(
+    compute_op: type[Operator] | CompressedResourceOp,
+    target_op: type[Operator] | CompressedResourceOp,
+    uncompute_op: type[Operator] | CompressedResourceOp | None = None,
+):
+    """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern
+    :class:`~.ChangeOpBasis` of operators.
+
+    Args:
+        compute_op: the compressed resource representation of the compute operator
+        target_op: the compressed resource representation of target operator
+        uncompute_op: the compressed resource representation of the uncompute operator
+
+    """
+    compute_op = auto_wrap(compute_op)
+    target_op = auto_wrap(target_op)
+    uncompute_op = uncompute_op or adjoint_resource_rep(compute_op.op_type, compute_op.params)
+    uncompute_op = auto_wrap(uncompute_op)
+    return CompressedResourceOp(
+        qml.ops.ChangeOpBasis,
+        {
+            "compute_op": compute_op,
+            "target_op": target_op,
+            "uncompute_op": uncompute_op,
+        },
+    )
+
+
 def pow_resource_rep(base_class, base_params, z):
     """Creates a ``CompressedResourceOp`` representation of the power of an operator.
 
@@ -435,16 +474,16 @@ def custom_ctrl_op_to_base():
 def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, work_wire_type):
     """Resolves the overall work wire type when the base op comes with work wires."""
 
-    # If any of the work wires is dirty, we treat all work wires as dirty. We can be
+    # If any of the work wires is borrowed, we treat all work wires as borrowed. We can be
     # more flexible in the future with dynamic qubit management, but for now we're
     # just going to live with this.
-    if base_work_wires and base_work_wire_type == "dirty":
-        return "dirty"
+    if base_work_wires and base_work_wire_type == "borrowed":
+        return "borrowed"
 
-    if work_wires and work_wire_type == "dirty":
-        return "dirty"
+    if work_wires and work_wire_type == "borrowed":
+        return "borrowed"
 
-    return "clean"
+    return "zeroed"
 
 
 def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -490,7 +529,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     num_control_wires,
     num_zero_control_values,
     num_work_wires,
-    work_wire_type="dirty",
+    work_wire_type="borrowed",
 ) -> CompressedResourceOp | None:
     """Helper function that handles custom logic for controlled X gates."""
 
@@ -521,3 +560,21 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
+
+
+def auto_wrap(op_type):
+    """Conveniently wrap an operator type in a resource representation."""
+    if isinstance(op_type, CompressedResourceOp):
+        return op_type
+    if not issubclass(op_type, Operator):
+        raise TypeError(
+            "The keys of the dictionary returned by the resource function must be a subclass of "
+            "Operator or a CompressedResourceOp constructed with qml.resource_rep"
+        )
+    try:
+        return resource_rep(op_type)
+    except TypeError as e:
+        raise TypeError(
+            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
+            f"representation must be explicitly constructed using qml.resource_rep"
+        ) from e

@@ -34,6 +34,7 @@ quantum-classical programs.
     ~expand_plxpr_transforms
     ~eval_jaxpr
     ~run_autograph
+    ~disable_autograph
     ~PlxprInterpreter
     ~FlatFn
     ~make_plxpr
@@ -164,7 +165,8 @@ from collections.abc import Callable
 from .switches import disable, enable, enabled, pause
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .flatfn import FlatFn
-from .make_plxpr import make_plxpr, run_autograph
+from .make_plxpr import make_plxpr
+from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
 
 # by defining this here, we avoid

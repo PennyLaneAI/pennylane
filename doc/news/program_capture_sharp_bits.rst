@@ -781,6 +781,24 @@ the condition is ``False``, a ``false_fn`` must be provided:
 >>> circuit()
 Array(0., dtype=float32)
 
+Or the ``true_fn`` itself can be an operator type itself:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    qml.capture.enable()
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit():
+        m0 = qml.measure(0)
+        qml.cond(m0, true_fn=qml.X)(0)
+
+        return qml.expval(qml.X(0))
+
+>>> circuit()
+Array(0., dtype=float32)
+
 while loops 
 -----------
 

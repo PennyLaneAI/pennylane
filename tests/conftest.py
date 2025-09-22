@@ -192,13 +192,6 @@ def enable_graph_decomposition():
 #######################################################################
 
 try:
-    import tensorflow as tf
-except (ImportError, ModuleNotFoundError) as e:
-    tf_available = False
-else:
-    tf_available = True
-
-try:
     import torch
     from torch.autograd import Variable
 
@@ -219,6 +212,20 @@ except ImportError as e:
 def pytest_generate_tests(metafunc):
     if jax_available:
         jax.config.update("jax_enable_x64", True)
+
+
+@pytest.fixture(
+    params=[
+        pytest.param("autograd", marks=pytest.mark.autograd),
+        pytest.param("jax", marks=pytest.mark.jax),
+        pytest.param("jax-jit", marks=pytest.mark.jax),
+        pytest.param("torch", marks=pytest.mark.torch),
+    ],
+    scope="function",
+)
+def interface(request):
+    """Automatically parametrize over all interfaces."""
+    yield request.param
 
 
 def pytest_collection_modifyitems(items, config):
@@ -248,7 +255,6 @@ def pytest_collection_modifyitems(items, config):
                     "autograd",
                     "data",
                     "torch",
-                    "tf",
                     "jax",
                     "qchem",
                     "qcut",
@@ -272,9 +278,8 @@ def pytest_collection_modifyitems(items, config):
 def pytest_runtest_setup(item):
     """Automatically skip tests if interfaces are not installed"""
     # Autograd is assumed to be installed
-    interfaces = {"tf", "torch", "jax"}
+    interfaces = {"torch", "jax"}
     available_interfaces = {
-        "tf": tf_available,
         "torch": torch_available,
         "jax": jax_available,
     }
@@ -291,9 +296,9 @@ def pytest_runtest_setup(item):
 
     for b in marks:
         if b == "all_interfaces":
-            required_interfaces = {"tf", "torch", "jax"}
-            for interface in required_interfaces:
-                if interface not in allowed_interfaces:
+            required_interfaces = {"torch", "jax"}
+            for _interface in required_interfaces:
+                if _interface not in allowed_interfaces:
                     pytest.skip(
                         f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                     )
@@ -302,3 +307,33 @@ def pytest_runtest_setup(item):
                 pytest.skip(
                     f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                 )
+
+
+@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
+def enable_and_disable_graph_decomp(request):
+    """
+    A fixture that parametrizes a test to run twice: once with graph
+    decomposition disabled and once with it enabled.
+
+    It automatically handles the setup (enabling/disabling) before the
+    test runs and the teardown (always disabling) after the test completes.
+    """
+    try:
+        use_graph_decomp = request.param
+
+        # --- Setup Phase ---
+        # This code runs before the test function is executed.
+        if use_graph_decomp:
+            qml.decomposition.enable_graph()
+        else:
+            # Explicitly disable to ensure a clean state
+            qml.decomposition.disable_graph()
+
+        # Yield control to the test function
+        yield use_graph_decomp
+
+    finally:
+        # --- Teardown Phase ---
+        # This code runs after the test function has finished,
+        # regardless of whether it passed or failed.
+        qml.decomposition.disable_graph()

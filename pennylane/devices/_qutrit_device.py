@@ -17,7 +17,7 @@ This module contains the :class:`QutritDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=bad-option-value,arguments-renamed
+# pylint: disable=arguments-renamed
 import itertools
 
 import numpy as np
@@ -61,7 +61,7 @@ class QutritDevice(QubitDevice):
     Args:
         wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int, list[int]): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.

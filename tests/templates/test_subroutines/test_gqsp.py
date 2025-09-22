@@ -21,6 +21,7 @@ from numpy.linalg import matrix_power
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 class TestGQSP:
@@ -131,6 +132,23 @@ class TestGQSP:
 
         for op1, op2 in zip(decomposition, expected):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.capture
+    def test_decomposition_new_capture(self):
+        """Tests the decomposition rule implemented with the new system."""
+        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        op = qml.GQSP(qml.Z(1), angles, control=0)
+
+        for rule in qml.list_decomps(qml.GQSP):
+            _test_decomposition_rule(op, rule)
+
+    def test_decomposition_new(self):
+        """Tests the decomposition rule implemented with the new system."""
+        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        op = qml.GQSP(qml.Z(1), angles, control=0)
+
+        for rule in qml.list_decomps(qml.GQSP):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
     def test_gqsp_jax(self):

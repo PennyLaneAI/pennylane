@@ -383,9 +383,9 @@ class TestToBloq:
         def circuit():
             qml.H(0)
 
-        assert qml.io.ToBloq(qml.Hadamard(0)).__repr__() == "ToBloq(Hadamard)"
-        assert qml.io.ToBloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.io.ToBloq(qml.H(0)).__str__() == "PLHadamard"
+        assert repr(qml.io.ToBloq(qml.Hadamard(0))) == "ToBloq(Hadamard)"
+        assert repr(qml.io.ToBloq(circuit)) == "ToBloq(QNode)"
+        assert str(qml.io.ToBloq(qml.H(0))) == "PLHadamard"
         with pytest.raises(TypeError, match="Input must be either an instance of"):
             qml.io.ToBloq("123")
 
@@ -438,10 +438,10 @@ class TestToBloq:
             qml.H(0)
 
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
-        assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.to_bloq(qfunc).__repr__() == "ToBloq(Qfunc)"
-        assert qml.to_bloq(qfunc).__str__() == "PLQfunc"
-        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "Hadamard()"
+        assert repr(qml.to_bloq(circuit)) == "ToBloq(QNode)"
+        assert repr(qml.to_bloq(qfunc)) == "ToBloq(Qfunc)"
+        assert str(qml.to_bloq(qfunc)) == "PLQfunc"
+        assert repr(qml.to_bloq(qml.Hadamard(0), map_ops=False)) == "Hadamard()"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
         assert qml.to_bloq(qfunc).call_graph()[1] == {Hadamard(): 1}
 
@@ -1157,7 +1157,7 @@ class TestToBloq:
 
         qreg = _QReg(qubits=q0, dtype=dtype_bit)
 
-        assert qreg.__repr__() == "_QReg(qubits=(cirq.LineQubit(0),), dtype=QBit())"
+        assert repr(qreg) == "_QReg(qubits=(cirq.LineQubit(0),), dtype=QBit())"
         assert isinstance(qreg.qubits, tuple)
         assert qreg.qubits == (q0,)
         assert qreg.dtype == dtype_bit

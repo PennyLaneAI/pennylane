@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane import capture, math
 from pennylane.capture.autograph import wraps
 from pennylane.exceptions import TransformError
+from pennylane.operation import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
@@ -107,7 +108,7 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
     @ExpandTransformsInterpreter.register_primitive(primitive)
     def _(
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
-    ):  # pylint: disable=too-many-arguments,missing-docstring
+    ):  # pylint: disable=too-many-arguments
         args = invals[args_slice]
         consts = invals[consts_slice]
         targs = invals[targs_slice]
@@ -537,7 +538,7 @@ def _apply_to_tape(self, obj: qml.tape.QuantumScript, *targs, **tkwargs):
 
 
 def _capture_apply(obj, transform, *targs, **tkwargs):
-    @functools.wraps(obj)
+    @wraps(obj)
     def qfunc_transformed(*args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
@@ -583,6 +584,12 @@ def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
 
     @functools.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
+        # removes the argument to the qfuncs from the active queuing context.
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        for l in leaves:
+            if isinstance(l, Operator):
+                qml.QueuingManager.remove(l)
+
         with AnnotatedQueue() as q:
             qfunc_output = obj(*args, **kwargs)
 
@@ -605,10 +612,10 @@ def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
         if self.is_informative:
             return processing_fn(transformed_tapes)
 
-        for op in transformed_tape.circuit:
+        for op in transformed_tape.operations:
             apply(op)
 
-        mps = transformed_tape.measurements
+        mps = [qml.apply(mp) for mp in transformed_tape.measurements]
 
         if not mps:
             return qfunc_output

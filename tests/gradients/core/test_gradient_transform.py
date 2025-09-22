@@ -36,7 +36,7 @@ def test_supported_gradient_kwargs():
     methods_to_skip = ("metric_tensor", "classical_fisher", "quantum_fisher")
 
     grad_transforms = []
-    for attr in qml.gradients.__dir__():
+    for attr in dir(qml.gradients):
         if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
@@ -226,8 +226,9 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_single_param(self, shots, slicing, prefactor, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weights):
             if slicing:
@@ -255,8 +256,9 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol, seed):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=[0])
@@ -290,8 +292,9 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters
         in both the tape and the QNode correctly"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weight0, weight1):
             qml.RX(weight0, wires=[0])

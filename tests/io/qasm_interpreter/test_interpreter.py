@@ -2,6 +2,8 @@
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
+# pylint: disable=consider-using-with,unspecified-encoding
+
 from re import escape
 from unittest.mock import MagicMock
 
@@ -711,6 +713,7 @@ class TestExpressions:
         )
 
         # comparison expressions
+        # pylint: disable=comparison-of-constants
         assert context.vars["a"].val == (0 == 1)
         assert context.vars["b"].val == (0 != 1)
         assert context.vars["c"].val == (0 > 1)

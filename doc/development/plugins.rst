@@ -25,7 +25,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
 
 .. code-block:: python
 
-    from pennylane.devices import Device, DefaultExecutionConfig
+    from pennylane.devices import Device, ExecutionConfig
     from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 
     class MyDevice(Device):
@@ -34,7 +34,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         ):
             # your implementation here.
 
@@ -48,7 +48,7 @@ For example:
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         )
             return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
 
@@ -87,7 +87,21 @@ circuits.
 >>> tape1 = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
 >>> dev = qml.device('default.qubit')
 >>> dev.execute((tape0, tape1))
-(array([0, 0, 0, 0, 0]), array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+(array([[0],
+        [0],
+        [0],
+        [0],
+        [0]]),
+ array([[0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0]]))
 
 The :class:`~.measurements.Shots` class describes the shots. Users can optionally specify a shot vector, or
 different numbers of shots to use when calculating the final expectation value.
@@ -457,9 +471,27 @@ the top user level, we aim to allow dynamic configuration of the device.
 >>> config = qml.devices.ExecutionConfig(device_options={"rng": 42})
 >>> tape = qml.tape.QuantumTape([qml.Hadamard(0)], [qml.sample(wires=0)], shots=10)
 >>> dev.execute(tape, config)
-array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
+array([[1],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [0]])
 >>> dev.execute(tape, config)
-array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
+array([[0],
+       [1],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0]])
 
 By pulling options from this dictionary instead of from device properties, we unlock two key
 pieces of functionality:
@@ -546,7 +578,7 @@ to handle a single circuit. See the documentation for each modifier for more det
     @single_tape_support
     class MyDevice(qml.devices.Device):
 
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()

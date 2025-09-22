@@ -54,16 +54,17 @@ decompose_phases = [True, False]
 qscript = [True, False]
 
 
-def test_import_pyzx(monkeypatch):
-    """Test if an ImportError is raised by to_zx function."""
+def test_import_pyzx_error(monkeypatch):
+    """Test that a ModuleNotFoundError is raised by the to_zx function
+    when the pyzx external package is not installed."""
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "pyzx", None)
 
-        with pytest.raises(ImportError, match="This feature requires PyZX."):
+        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
             qml.transforms.to_zx(qml.PauliX(wires=0))
 
-        with pytest.raises(ImportError, match="This feature requires PyZX."):
+        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
             qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
 
 

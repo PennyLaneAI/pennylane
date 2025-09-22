@@ -14,6 +14,7 @@
 """
 This module contains the qml.counts measurement.
 """
+import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -24,6 +25,7 @@ from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from .capture_measurements import _get_abstract_measurement
 from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement
 from .process_samples import process_raw_samples
@@ -302,13 +304,49 @@ class CountsMP(SampleMeasurement):
                 outcome_counts[outcome_binary] = 0
 
 
+# pylint: disable=protected-access, unused-argument
+if CountsMP._wires_primitive is not None:
+
+    CountsMP._wires_primitive.multiple_results = True
+
+    @CountsMP._wires_primitive.def_impl
+    def _(*args, **kwargs):
+        raise NotImplementedError("Counts has no execution implementation with program capture.")
+
+    def _keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        if shots is None:
+            raise ValueError("finite shots are required to use CountsMP")
+        n_wires = n_wires or num_device_wires
+        return (2**n_wires,), int
+
+    def _values_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        if shots is None:
+            raise ValueError("finite shots are required to use CountsMP")
+        n_wires = n_wires or num_device_wires
+        return (2**n_wires,), int
+
+    abstract_mp = _get_abstract_measurement()
+
+    @CountsMP._wires_primitive.def_abstract_eval
+    def _(*args, has_eigvals=False, all_outcomes=False):
+        if not all_outcomes:
+            warnings.warn(
+                "all_outcomes=False is unsupported with program capture and qjit. Using all_outcomes=True",
+                UserWarning,
+            )
+        n_wires = len(args) - 1 if has_eigvals else len(args)
+        keys = abstract_mp(_keys_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        values = abstract_mp(_values_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        return keys, values
+
+
 def counts(
     op=None,
     wires=None,
     all_outcomes=False,
 ) -> CountsMP:
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
+    determined from QNode,
     returning the number of counts for each sample. If no observable is provided then basis state
     samples are returned directly from the device.
 
@@ -420,11 +458,11 @@ def counts(
 
     if isinstance(op, Sequence):
         if not all(
-            math.is_abstract(o) or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            math.is_abstract(o) or (isinstance(o, MeasurementValue) and not o.has_processing)
             for o in op
         ):
             raise QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "Only sequences of unprocessed MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
             )

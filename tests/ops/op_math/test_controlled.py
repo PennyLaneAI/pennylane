@@ -37,11 +37,10 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
-from pennylane.tape import QuantumScript
-from pennylane.tape.tape import expand_tape
+from pennylane.tape import QuantumScript, expand_tape
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods
@@ -201,6 +200,13 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    @pytest.mark.parametrize("old_name, new_name", [("clean", "zeroed"), ("dirty", "borrowed")])
+    def test_old_work_wire_type_deprecated(self, old_name, new_name):
+        """Tests that specifying work_wire_type as 'clean' or 'dirty' is deprecated"""
+        with pytest.warns(PennyLaneDeprecationWarning, match="work_wire_type"):
+            op = Controlled(self.temp_op, "b", work_wires="c", work_wire_type=old_name)
+        assert op.work_wire_type == new_name
+
 
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
@@ -220,7 +226,7 @@ class TestControlledProperties:
             "num_control_wires": 2,
             "num_zero_control_values": 1,
             "num_work_wires": 1,
-            "work_wire_type": "dirty",
+            "work_wire_type": "borrowed",
         }
 
     def test_data(self):
@@ -414,7 +420,7 @@ class TestControlledMiscMethods:
         assert data[0] is target
         assert len(data) == 1
 
-        assert metadata == (control_wires, control_values, work_wires, "dirty")
+        assert metadata == (control_wires, control_values, work_wires, "borrowed")
 
         # make sure metadata is hashable
         assert hash(metadata)
@@ -1323,7 +1329,7 @@ class TestDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -1702,6 +1708,9 @@ custom_ctrl_ops = [
         [1, 2],
         qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 2, 0]),
     ),
+    (qml.Barrier(), [1], qml.Barrier()),
+    (qml.Barrier(wires=(0, 1)), [2], qml.Barrier(wires=(0, 1))),
+    (qml.Barrier(wires=(0, 1), only_visual=True), [2], qml.Barrier(wires=(0, 1), only_visual=True)),
 ]
 
 
@@ -1732,6 +1741,18 @@ class TestCtrl:
         with pytest.raises(ValueError, match=r"<class 'int'> is not an Operator or callable."):
             qml.ctrl(1, control=2)
 
+    def test_ctrl_barrier_queueing(self):
+        """Test that a ctrl Barrier is queued where the ctrl happens."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.Barrier()
+            qml.X(0)
+            qml.ctrl(op, [1])
+
+        assert len(q.queue) == 2
+        assert q.queue[0] == qml.X(0)
+        assert q.queue[1] == qml.Barrier()
+
     @pytest.mark.parametrize("op, ctrl_wires, expected_op", custom_ctrl_ops)
     def test_custom_controlled_ops(self, op, ctrl_wires, expected_op):
         """Tests custom controlled operations are handled correctly."""
@@ -1741,8 +1762,8 @@ class TestCtrl:
     def test_custom_controlled_ops_ctrl_on_zero(self, op, ctrl_wires, _):
         """Tests custom controlled ops with control on zero are handled correctly."""
 
-        if isinstance(op, qml.QubitUnitary):
-            pytest.skip("ControlledQubitUnitary can accept any control values.")
+        if isinstance(op, (qml.QubitUnitary, qml.Barrier)):
+            pytest.skip("ControlledQubitUnitary and Barrier can accept any control values.")
 
         ctrl_values = [False] * len(ctrl_wires)
 
@@ -1764,8 +1785,10 @@ class TestCtrl:
 
         ctrl_wires = ctrl_wires + ["a", "b", "c"]
 
-        if isinstance(op, qml.QubitUnitary):
-            pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
+        if isinstance(op, (qml.QubitUnitary, qml.Barrier)):
+            pytest.skip(
+                "ControlledQubitUnitary and Barrier can accept any number of control wires."
+            )
         elif isinstance(op, Controlled):
             expected = Controlled(
                 op.base,
@@ -1802,8 +1825,8 @@ class TestCtrl:
     def test_nested_custom_controls(self, op, ctrl_wires, ctrl_op):
         """Tests that nested controls of custom controlled ops are flattened correctly."""
 
-        if isinstance(ctrl_op, qml.ControlledQubitUnitary):
-            pytest.skip("ControlledQubitUnitary has its own logic")
+        if isinstance(ctrl_op, (qml.ControlledQubitUnitary, qml.Barrier)):
+            pytest.skip("ControlledQubitUnitary and Barrier have their own logic")
 
         expected_base = op.base if isinstance(op, Controlled) else op
         base_ctrl_wires = (
@@ -2034,38 +2057,6 @@ class TestTapeExpansionWithControlled:
         expected_mat = qml.matrix(expected, wire_order=[3, 7, 0])
         assert qml.math.allclose(actual_mat, expected_mat, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.ctrl(qml.ctrl(qml.S, 7), 3),  # nested control
-            qml.ctrl(qml.S, [3, 7]),  # multi-wire control
-        ],
-    )
-    def test_nested_ctrl_containing_phase_shift(self, op):
-        """Test that nested controlled ops are expanded correctly when phase shift is involved
-
-        The decomposition of S gate contains a PhaseShift. In the nested case, we do not want
-        to apply control to the expanded PhaseShift like how it is typically done for other
-        operations, because the decomposition of PhaseShift contains a GlobalPhase, the controlled
-        version of which we do not have handling for.
-
-        TODO: remove this special case once ControlledGlobalPhase is implemented.
-
-        """
-
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            op(wires=0)
-
-        tape = QuantumScript.from_queue(q_tape)
-        assert tape.expand(depth=1).circuit == [
-            Controlled(qml.PhaseShift(np.pi / 2, wires=[0]), control_wires=[3, 7])
-        ]
-
-        assert tape.expand(depth=2).circuit == [
-            Controlled(qml.RZ(np.pi / 2, wires=[0]), control_wires=[3, 7]),
-            Controlled(qml.GlobalPhase(-np.pi / 4, wires=[]), control_wires=[3, 7]),
-        ]
-
     def test_adjoint_of_ctrl(self):
         """Tests that adjoint(ctrl(fn)) and ctrl(adjoint(fn)) are equivalent"""
 
@@ -2292,7 +2283,7 @@ class TestCtrlTransformDifferentiation:
         assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 

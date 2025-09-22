@@ -21,6 +21,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.exceptions import WireError
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.transforms.decompose import DecomposeInterpreter
+from pennylane.wires import Wires
 
 
 def test_standard_validity():
@@ -33,6 +36,65 @@ def test_standard_validity():
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
+
+    @pytest.mark.parametrize(
+        "wires",
+        [
+            [0, 1],
+            [0, 1, 2, 3, 4],
+            ["a", "b", "c", "d", "e", "f"],
+        ],
+    )
+    def test_decomposition_new(self, wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.CosineWindow(wires=wires)
+
+        for rule in qml.list_decomps(qml.CosineWindow):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "wires",
+        [
+            [0, 1],
+            [0, 1, 2],
+            [0, 1, 2, 3],
+            [0, 1, 2, 3, 4],
+        ],
+    )
+    @pytest.mark.capture
+    def test_decomposition_new_capture(self, wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.CosineWindow(wires=wires)
+
+        for rule in qml.list_decomps(qml.CosineWindow):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.integration
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_integration_decompose_interpreter(self):
+        """Tests that a simple circuit is correctly decomposed into different gate sets."""
+        import jax
+        from jax import numpy as jnp
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        def f():
+            qml.CosineWindow(wires=[0, 1])
+
+        decomposed_f = DecomposeInterpreter(
+            gate_set={"Hadamard", "RZ", "PhaseShift", "ControlledPhaseShift", "SWAP"}
+        )(f)
+        jaxpr = jax.make_jaxpr(decomposed_f)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        assert collector.state["ops"] == [
+            qml.Hadamard(1),
+            qml.RZ(3.141592653589793, wires=[1]),
+            qml.adjoint(qml.QFT(wires=[0, 1])),
+            qml.PhaseShift(jnp.array(-2.89760778e19), wires=[0]),
+            qml.PhaseShift(jnp.array(1.44880389e19), wires=[1]),
+        ]
 
     def test_correct_gates_single_wire(self):
         """Test that the correct gates are applied."""
@@ -92,7 +154,7 @@ class TestRepresentation:
         wires = [0, 1, 2]
         template = qml.CosineWindow(wires=wires, id="a")
         assert template.id == "a"
-        assert template.wires == qml.wires.Wires(wires)
+        assert template.wires == Wires(wires)
 
     def test_label(self):
         """Test label method returns CosineWindow"""

@@ -635,7 +635,7 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
+def _diagonal_qu_resource(num_wires):
     if num_wires == 1:
         return {qml.RZ: 1, qml.GlobalPhase: 1}
     return {
@@ -884,7 +884,9 @@ def _process_blockencode(A, subspace):
     sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
     def _stack(lst, h=False, like=None):
-        if like == "tensorflow":
+        if (
+            like == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             axis = 1 if h else 0
             return qml.math.concat(lst, like=like, axis=axis)
         return qml.math.hstack(lst) if h else qml.math.vstack(lst)

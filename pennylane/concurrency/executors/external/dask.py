@@ -21,7 +21,7 @@ import os
 from collections.abc import Callable, Sequence
 from typing import Union
 
-from ..base import ExtExec
+from pennylane.concurrency.executors.base import ExtExec
 
 
 # pylint: disable=import-outside-toplevel

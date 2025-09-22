@@ -1024,7 +1024,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @jax.jit
         @qml.qnode(dev)
@@ -1047,7 +1047,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @jax.jit
         @qml.qnode(dev)
@@ -1069,7 +1069,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         within a QNode that uses TensorFlow autograph"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @tf.function
         @qml.qnode(dev)
