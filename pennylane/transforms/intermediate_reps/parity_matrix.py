@@ -36,7 +36,7 @@ def parity_matrix(
 
     Returns:
         TensorLike: :math:`n \times n` Parity matrix for :math:`n` qubits.
-            Note that in the case of inputting a callable function, a new callable with the same call signature is returned.
+            In the case of inputting a callable function, a new callable with the same call signature is returned (see :func:`~.transform`).
 
     **Example**
 
