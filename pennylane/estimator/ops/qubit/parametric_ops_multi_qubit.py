@@ -233,7 +233,7 @@ class PauliRot(ResourceOperator):
             \end{align}
 
         Specifically, the resources are given by one :code:`RZ` gate and a cascade of
-        :math:`2 * (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+        :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
         the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
         a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word we
         conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
