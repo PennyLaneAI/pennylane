@@ -64,6 +64,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
+    ~transforms.rz_phase_gradient
     ~transforms.zx.optimize_t_count
     ~transforms.zx.push_hadamards
     ~transforms.zx.reduce_non_clifford
@@ -360,6 +361,7 @@ from .intermediate_reps import (
     postorder_traverse,
     preorder_traverse,
 )
+from .rz_phase_gradient import rz_phase_gradient
 
 
 def __getattr__(name):
