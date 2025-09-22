@@ -212,24 +212,37 @@ class TestResourceSemiAdder:
         """Test that the resources are correct."""
         assert qre.SemiAdder.resource_decomp(register_size) == expected_res
 
-    def test_resources_controlled(self):
+    @pytest.mark.parametrize(
+        "num_ctrl_wires, num_zero_ctrl, max_register_size, expected_res",
+        (
+            (
+                1,
+                0,
+                5,
+                [
+                    qre.Allocate(4),
+                    GateCount(resource_rep(qre.CNOT), 24),
+                    GateCount(resource_rep(qre.TemporaryAND), 8),
+                    GateCount(
+                        resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
+                        8,
+                    ),
+                    qre.Deallocate(4),
+                ],
+            ),
+            # (2, 1, 5),
+            # (2)
+        ),
+    )
+    def test_resources_controlled(
+        self, num_ctrl_wires, num_zero_ctrl, max_register_size, expected_res
+    ):
         """Test that the special case controlled resources are correct."""
         op = qre.Controlled(
-            qre.SemiAdder(max_register_size=5),
-            num_ctrl_wires=1,
-            num_zero_ctrl=0,
+            qre.SemiAdder(max_register_size=max_register_size),
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
         )
-
-        expected_res = [
-            qre.Allocate(4),
-            GateCount(resource_rep(qre.CNOT), 24),
-            GateCount(resource_rep(qre.TemporaryAND), 8),
-            GateCount(
-                resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.TemporaryAND)}),
-                8,
-            ),
-            qre.Deallocate(4),
-        ]
         assert op.resource_decomp(**op.resource_params) == expected_res
 
     @pytest.mark.parametrize("max_register_size", (-1, 0, 2))
