@@ -442,7 +442,7 @@ class Controlled(ResourceOperator):
 class Pow(ResourceOperator):
     r"""Resource class for the symbolic Pow operation.
 
-    A symbolic class used to represent some base operation raised to a power.
+    This symbolic class can be used to represent some base operation raised to a power.
 
     Args:
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator to exponentiate.
