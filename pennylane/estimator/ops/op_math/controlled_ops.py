@@ -1380,7 +1380,6 @@ class MultiControlledX(ResourceOperator):
         gate_lst.extend(res)
         return gate_lst
 
-
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
