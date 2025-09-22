@@ -24,7 +24,7 @@ class MultiRZ(ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        num_wires (int): the number of wires the operation acts upon
         precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wires the operation acts on
 
