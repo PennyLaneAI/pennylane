@@ -88,8 +88,21 @@ from .ops.templates import (
     QROMStatePreparation,
     UniformStatePrep,
     AliasSampling,
+    PrepTHC,
     IntegerComparator,
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+)
+
+from .ops.templates.qubitize import (
+    QubitizeTHC
+)
+
+from .ops.templates.select import (
+    SelectTHC
+)
+
+from .ops.templates.compact_hamiltonian import (
+    CompactHamiltonian
 )
