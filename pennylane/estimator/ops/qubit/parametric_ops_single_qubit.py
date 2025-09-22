@@ -13,19 +13,16 @@
 # limitations under the License.
 r"""Resource operators for parametric single qubit operations."""
 
-import numpy as np
+import math
 
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
-
-from ..identity import GlobalPhase
-from .non_parametric_ops import T
 
 # pylint: disable=arguments-differ, signature-differs
 
@@ -49,8 +46,8 @@ def _rotation_resources(precision=1e-9):
         where each object represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
-    num_gates = round(1.149 * np.log2(1 / precision) + 9.2)
-    t = resource_rep(T)
+    num_gates = round(1.149 * math.log2(1 / precision) + 9.2)
+    t = resource_rep(qre.T)
     return [GateCount(t, num_gates)]
 
 
@@ -138,7 +135,7 @@ class PhaseShift(ResourceOperator):
             in the decomposition.
         """
         rz = resource_rep(RZ, {"precision": precision})
-        global_phase = resource_rep(GlobalPhase)
+        global_phase = resource_rep(qre.GlobalPhase)
         return [GateCount(rz), GateCount(global_phase)]
 
     @classmethod
@@ -177,11 +174,27 @@ class PhaseShift(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
+            gate_types = [
+                GateCount(resource_rep(qre.ControlledPhaseShift, {"precision": precision}))
+            ]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        c_ps = resource_rep(qre.ControlledPhaseShift, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [qre.Allocate(1), GateCount(c_ps), GateCount(mcx, 2), qre.Deallocate(1)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -324,11 +337,27 @@ class RX(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
+
+            gate_types = [GateCount(resource_rep(qre.CRX, {"precision": precision}))]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        h = resource_rep(qre.Hadamard)
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(h, 2), GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -468,11 +497,26 @@ class RY(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.CRY, {"precision": precision}))]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        ry = resource_rep(qre.RY, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+
+        return [GateCount(ry, 2), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -614,11 +658,26 @@ class RZ(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.CRZ, {"precision": precision}))]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+
+        return [GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -743,11 +802,27 @@ class Rot(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params.get("precision")
+        if num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(qre.CRot, {"precision": precision}))]
+
+            if num_zero_ctrl:
+                gate_types.append(GateCount(resource_rep(qre.X), 2))
+
+            return gate_types
+
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        ry = resource_rep(qre.RY, {"precision": precision})
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+
+        return [GateCount(mcx, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:

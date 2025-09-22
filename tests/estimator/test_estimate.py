@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.estimator.estimate import estimate
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -210,22 +211,28 @@ class TestEstimateResources:
 
     def test_estimate_with_unsupported_dispatch(self):
         """Test that a TypeError is raised when an unsupported type is passed to the estimate function."""
-        with pytest.raises(TypeError, match="Could not obtain resources for obj of type"):
+        with pytest.raises(TypeError, match="Could not obtain resources for workflow of type"):
             estimate(({1, 2, 3}))
 
-    def test_estimate_raises_error_for_qnode(self):
-        """Test that a NotImplementedError is raised for QNodes."""
-        dev = qml.device("default.qubit", wires=1)
+    def test_estimate_qnode(self):
+        """Test that a QNode can be estimated."""
+
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def my_circuit():
+        def circuit(precision):
             qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            X()
+            RX(precision=precision, wires=0)
+            return qml.expval(qml.Z(0))
 
-        with pytest.raises(
-            NotImplementedError, match="Support for QNodes has not yet been implemented."
-        ):
-            estimate(my_circuit)
+        resources = estimate(circuit, gate_set={"Hadamard", "X", "RX"})(1e-3)
+
+        assert resources.algo_wires == 2
+        assert resources.gate_counts["Hadamard"] == 1
+        assert resources.gate_counts["X"] == 1
+        assert resources.gate_counts["RX"] == 1
+        assert resources.gate_types[RX.resource_rep(precision=1e-3)] == 1
 
     def test_qfunc_with_num_wires(self):
         """Test that the number of wires is correctly inferred from a qfunc
@@ -319,7 +326,7 @@ class TestEstimateResources:
         assert actual_resources == expected_resources
 
     def test_estimate_resources_from_resources_obj(self):
-        """Test that we can accurately obtain resources from resources obj"""
+        """Test that we can accurately obtain resources from resources workflow"""
         gates = defaultdict(
             int,
             {
