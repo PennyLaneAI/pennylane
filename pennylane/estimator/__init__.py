@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 r"""This module contains tools for logical resource estimation."""
-
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 from .resources_base import Resources
@@ -26,6 +24,8 @@ from .resource_operator import (
     GateCount,
     resource_rep,
 )
+
+from .estimate import estimate
 
 from .ops.identity import Identity, GlobalPhase
 
@@ -69,7 +69,7 @@ from .ops.op_math import (
     ChangeOpBasis,
 )
 
-from .templates.subroutines import (
+from .ops.templates import (
     OutOfPlaceSquare,
     PhaseGradient,
     OutMultiplier,
@@ -84,17 +84,11 @@ from .templates.subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
-)
-
-from .templates.stateprep import (
     MPSPrep,
     QROMStatePreparation,
     UniformStatePrep,
     AliasSampling,
     PrepTHC,
-)
-
-from .templates.comparators import (
     IntegerComparator,
     SingleQubitComparator,
     TwoQubitComparator,

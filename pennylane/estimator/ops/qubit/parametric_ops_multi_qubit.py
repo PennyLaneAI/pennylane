@@ -25,7 +25,7 @@ class MultiRZ(ResourceOperator):
 
     Args:
         num_wires (int): the number of qubits the operation acts upon
-        precision (float | None): error threshold for Clifford+T decomposition of this operation
+        precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
@@ -42,17 +42,20 @@ class MultiRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> multi_rz = qml.estimator.MultiRZ(num_wires=3)
+    >>> from pennylane import estimator as qre
+    >>> multi_rz = qre.MultiRZ(num_wires=3)
     >>> gate_set = {"CNOT", "RZ"}
     >>>
     >>> print(qml.estimator.estimate(multi_rz, gate_set))
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 5
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-     {'CNOT': 4, 'RZ': 1}
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 5
+      'RZ': 1,
+      'CNOT': 4
 
     """
 
@@ -241,16 +244,21 @@ class PauliRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> pr = qre.PauliRot(pauli_string="XYZ")
-    >>> print(qre.estimate(pr, qre.StandardGateSet))
+    >>> print(qre.estimate(pr))
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 11
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-     {'Hadamard': 4, 'S': 1, 'Adjoint(S)': 1, 'RZ': 1, 'CNOT': 4}
-
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 55
+      'T': 44,
+      'CNOT': 4,
+      'Z': 1,
+      'S': 2,
+      'Hadamard': 4
     """
 
     resource_keys = {"pauli_string", "precision"}

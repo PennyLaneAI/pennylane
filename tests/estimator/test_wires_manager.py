@@ -28,8 +28,8 @@ class TestWireResourceManager:
 
     wire_manager_quantities = (
         WireResourceManager(zeroed=2),
-        WireResourceManager(zeroed=4, any_state=2, algo=20),
-        WireResourceManager(zeroed=2, any_state=2, algo=10, tight_budget=True),
+        WireResourceManager(zeroed=4, any_state=2, algo_wires=20),
+        WireResourceManager(zeroed=2, any_state=2, algo_wires=10, tight_budget=True),
     )
 
     wire_manager_parameters = (
@@ -61,7 +61,7 @@ class TestWireResourceManager:
         wire_manager2 = WireResourceManager(
             zeroed=zeroed,
             any_state=any_state,
-            algo=algo_wires,
+            algo_wires=algo_wires,
             tight_budget=tight_budget,
         )
         assert wire_manager == wire_manager2
@@ -84,7 +84,7 @@ class TestWireResourceManager:
         zeroed, any_state, _, tight_budget = attribute_tup
 
         expected_string = (
-            f"WireResourceManager(zeroed={zeroed}, any_state={any_state}, algo={algo_q}, "
+            f"WireResourceManager(zeroed={zeroed}, any_state={any_state}, algo_wires={algo_q}, "
             f"tight_budget={tight_budget})"
         )
 

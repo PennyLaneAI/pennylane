@@ -13,6 +13,14 @@
 # limitations under the License.
 """PennyLane-xDSL transformations API specifically for the MBQC transform."""
 
+from .convert_to_mbqc_formalism import ConvertToMBQCFormalismPass, convert_to_mbqc_formalism_pass
+from .decompose_graph_state import (
+    DecomposeGraphStatePass,
+    NullDecomposeGraphStatePass,
+    decompose_graph_state_pass,
+    null_decompose_graph_state_pass,
+)
+
 from .graph_state_utils import (
     get_num_aux_wires,
     get_graph_state_edges,
@@ -23,7 +31,14 @@ from .graph_state_utils import (
 
 
 __all__ = [
+    # Passes
+    "ConvertToMBQCFormalismPass",
+    "DecomposeGraphStatePass",
+    "NullDecomposeGraphStatePass",
+    "null_decompose_graph_state_pass",
+    # Utils
     "get_num_aux_wires",
+    "decompose_graph_state_pass",
     "get_graph_state_edges",
     "n_vertices_from_packed_adj_matrix",
     "edge_iter",

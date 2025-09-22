@@ -13,13 +13,14 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
-import pennylane.estimator as qre
+from pennylane import estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
+from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
 
@@ -48,8 +49,10 @@ class Identity(ResourceOperator):
 
     def __init__(self, wires=None):
         """Initializes the ``Identity`` operator."""
-        if wires is not None and not isinstance(wires, int):
-            self.num_wires = len(wires)
+        if wires:
+            self.num_wires = len(Wires(wires))
+        else:
+            self.num_wires = 1
         super().__init__(wires=wires)
 
     @property
@@ -173,8 +176,10 @@ class GlobalPhase(ResourceOperator):
 
     def __init__(self, wires=None):
         """Initializes the ``GlobalPhase`` operator."""
-        if wires is not None and not isinstance(wires, int):
-            self.num_wires = len(wires)
+        if wires:
+            self.num_wires = len(Wires(wires))
+        else:
+            self.num_wires = 1
         super().__init__(wires=wires)
 
     @property
@@ -267,7 +272,7 @@ class GlobalPhase(ResourceOperator):
             The resources are generated from the fact that a global phase controlled on a
             single qubit is equivalent to a local phase shift on that control qubit.
             This idea can be generalized to a multi-qubit global phase by introducing one
-            auxilliary qubit in `zeroed` state which gets reset at the end of the computation. In this
+            auxiliary qubit in a `zeroed` state which is reset at the end of the computation. In this
             case, we sandwich the phase shift operation with two multi-controlled ``X`` gates.
 
         Returns:
