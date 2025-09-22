@@ -607,7 +607,7 @@ class Pow(ResourceOperator):
 class Prod(ResourceOperator):
     r"""Resource class for the symbolic Prod operation.
 
-    A symbolic class used to represent a product of some base operations.
+    This symbolic class can be used to represent a product of some base operations.
 
     Args:
         res_ops (tuple[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): A tuple of
