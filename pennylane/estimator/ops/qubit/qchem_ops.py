@@ -55,7 +55,7 @@ class SingleExcitation(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> se = qre.SingleExcitation()
-    >>> print(qre.estimate(se, qre.StandardGateSet))
+    >>> print(qre.estimate(se))
     --- Resources: ---
     Total qubits: 2
     Total gates : 16
