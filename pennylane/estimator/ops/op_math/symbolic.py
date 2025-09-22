@@ -776,7 +776,7 @@ class Prod(ResourceOperator):
 class ChangeOpBasis(ResourceOperator):
     r"""Change of Basis resource operator.
 
-    A symbolic class used to represent a change of basis operation with a compute-uncompute pattern.
+    This symbolic class can be used to represent a change of basis operation with a compute-uncompute pattern.
     This is a special type of operator which can be expressed as
     :math:`\hat{U}_{compute} \cdot \hat{V} \cdot \hat{U}_{uncompute}`. If no :code:`uncompute_op` is
     provided then the adjoint of the :code:`compute_op` is used by default.
