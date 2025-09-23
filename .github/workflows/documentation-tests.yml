@@ -1,5 +1,4 @@
 name: Documentation Tests
-
 on:
   merge_group:
     types:
@@ -10,6 +9,10 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs: 
   determine_runner:
