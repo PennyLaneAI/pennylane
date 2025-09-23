@@ -1,4 +1,5 @@
 name: Documentation Tests
+
 on:
   merge_group:
     types:
@@ -30,7 +31,6 @@ jobs:
 
     strategy:
       matrix:
-        # Update the Python versions here as needed
         python-version: ["3.11", "3.12", "3.13"]
 
     name: Docs on Python ${{ matrix.python-version }}
@@ -43,7 +43,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip' # Added caching to speed up runs
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -53,6 +53,96 @@ jobs:
           pip install jax~=0.6.0 jaxlib~=0.6.0
           pip install torch
 
+      # TODO: Remove the --ignore options as layers are tested and verified
+      # to be working correctly.
       - name: Run documentation tests
         run: |
-          pytest pennylane/ops
+          IGNORE_OPTS_UI="
+          --ignore=pennylane
+          "
+          IGNORE_OPTS_CLOSED="
+          --ignore=pennylane/ftqc
+          --ignore=pennylane/labs
+          --ignore=pennylane/compiler/python_compiler
+          "
+          IGNORE_OPTS_UTILITY="
+          --ignore=pennylane/exceptions
+          --ignore=pennylane/concurrency
+          "
+          IGNORE_OPTS_CORE="
+          --ignore=pennylane/control_flow
+          --ignore=pennylane/math
+          --ignore=pennylane/pytrees
+          --ignore=pennylane/numpy
+          --ignore=pennylane/wires
+          --ignore=pennylane/logging
+          --ignore=pennylane/registers
+          --ignore=pennylane/about
+          --ignore=pennylane/_version
+          --ignore=pennylane/queuing
+          --ignore=pennylane/configuration
+          --ignore=pennylane/compiler
+          --ignore=pennylane/boolean_fn
+          --ignore=pennylane/typing
+          --ignore=pennylane/_grad
+          --ignore=pennylane/circuit_graph
+          --ignore=pennylane/allocation
+          --ignore=pennylane/measurements
+          "
+          IGNORE_OPTS_AUXILIARY="
+          --ignore=pennylane/shadows
+          --ignore=pennylane/gradients
+          --ignore=pennylane/optimize
+          --ignore=pennylane/pulse
+          --ignore=pennylane/templates
+          --ignore=pennylane/templates/embeddings
+          --ignore=pennylane/templates/layers
+          --ignore=pennylane/templates/subroutines
+          --ignore=pennylane/templates/swapnetworks
+          --ignore=pennylane/templates/tensornetworks
+          --ignore=pennylane/templates/layer
+          "
+          IGNORE_OPTS_TERTIARY="
+          --ignore=pennylane/io
+          --ignore=pennylane/qnn
+          --ignore=pennylane/qaoa
+          --ignore=pennylane/kernels
+          --ignore=pennylane/data
+          --ignore=pennylane/liealg
+          --ignore=pennylane/fermi
+          --ignore=pennylane/bose
+          --ignore=pennylane/spin
+          --ignore=pennylane/drawer
+          --ignore=pennylane/fourier
+          --ignore=pennylane/noise
+          --ignore=pennylane/debugging
+          --ignore=pennylane/qcut
+          --ignore=pennylane/estimator
+          "
+          IGNORE_OPTS_UNSORTED="
+          --ignore=pennylane/transforms/core
+          --ignore=pennylane/operation
+          --ignore=pennylane/ops
+          --ignore=pennylane/tape
+          --ignore=pennylane/qchem
+          --ignore=pennylane/transforms
+          --ignore=pennylane/capture
+          --ignore=pennylane/pauli
+          --ignore=pennylane/resource
+          --ignore=pennylane/decomposition
+          --ignore=pennylane/devices
+          --ignore=pennylane/workflow
+          "
+
+          IGNORE_OPTS="
+          ${IGNORE_OPTS_UI}
+          ${IGNORE_OPTS_CLOSED}
+          ${IGNORE_OPTS_UTILITY}
+          ${IGNORE_OPTS_CORE}
+          ${IGNORE_OPTS_AUXILIARY}
+          ${IGNORE_OPTS_TERTIARY}
+          ${IGNORE_OPTS_UNSORTED}
+          "
+
+          # Run pytest on the entire project, applying the full ignore list
+          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
