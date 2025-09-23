@@ -14,21 +14,10 @@ What is PennyLane?
 
 |
 
-PennyLane is a cross-platform Python library for programming quantum computers.
-Its differentiable programming paradigm enables the execution and training of quantum programs on various backends.
+PennyLane is a cross-platform Python library for programming quantum computers. Built by researchers, for research, it provides a hardware-agnostic toolkit and a complete ecosystem to help you accelerate breakthroughs in quantum algorithms, quantum chemistry, and quantum machine learning.
 
-PennyLane connects quantum computing with powerful machine learning frameworks
-like `NumPy <https://numpy.org/>`_'s `autograd <https://github.com/HIPS/autograd>`__,
-`JAX <https://github.com/google/jax>`__, and
-`PyTorch <https://pytorch.org/>`_,
-making them quantum-aware.
+It manages the execution of quantum computations, including the evaluation of circuits and the computation of their gradients. This information is forwarded to the classical framework, creating seamless quantum-classical pipelines for applications.
 
-Its central job is to manage the execution of quantum computations, including
-the evaluation of circuits and the computation of their gradients.
-This information is forwarded to the classical
-framework, creating seamless quantum-classical pipelines for applications.
-
-|
 
 .. figure:: ../_static/jigsaw.png
     :align: right
@@ -37,9 +26,9 @@ framework, creating seamless quantum-classical pipelines for applications.
     :target: javascript:void(0);
 
 PennyLane's design principle states that
-circuits can be run on various kinds of simulators or hardware devices without making any changes --
-the complex job of optimising communication with the devices, compiling circuits to suit the backend,
-and choosing the best gradient strategies is taken care of.
+circuits can be run on various kinds of simulators or hardware devices without making any changes---
+the complex job of optimising communication with the devices and compiling circuits to suit the backend 
+is taken care of.
 
 The library comes with default simulator devices, but is well-integrated with
 `external software and hardware <https://pennylane.ai/plugins>`__ to run quantum
