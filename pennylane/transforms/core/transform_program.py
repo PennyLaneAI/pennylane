@@ -505,25 +505,28 @@ class TransformProgram:
 
 
 @TransformDispatcher.generic_register
-def _apply_to_program(self, obj: TransformProgram, *targs, **tkwargs):
+def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
     program = copy(obj)
 
-    if self.expand_transform:
+    if transform.expand_transform:
         # pylint: disable=protected-access
         program.push_back(
             TransformContainer(
-                self.expand_transform, targs, tkwargs, use_argnum=self._use_argnum_in_expand
+                transform.expand_transform,
+                targs,
+                tkwargs,
+                use_argnum=transform._use_argnum_in_expand,
             )
         )
     program.push_back(
         TransformContainer(
-            self.transform,
+            transform.transform,
             args=targs,
             kwargs=tkwargs,
-            classical_cotransform=self.classical_cotransform,
-            plxpr_transform=self.plxpr_transform,
-            is_informative=self.is_informative,
-            final_transform=self.final_transform,
+            classical_cotransform=transform.classical_cotransform,
+            plxpr_transform=transform.plxpr_transform,
+            is_informative=transform.is_informative,
+            final_transform=transform.final_transform,
         )
     )
     return program

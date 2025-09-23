@@ -121,10 +121,25 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
-def specific_apply_transform(obj, transform, *targs, **tkwargs):
+def specific_apply_transform(transform, obj, *targs, **tkwargs):
     """The default behavior for TransformDispatcher._apply_transform. By default, it dispatches to the
     generic registration."""
     return transform.generic_apply_transform(obj, *targs, **tkwargs)
+
+
+@functools.singledispatch
+def generic_apply_transform(obj, transform, *targs, **tkwargs):
+    """Apply an generic transform to a specific type of object. A singledispatch function
+    used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
+    to allow is to be used by singledispatch.
+    """
+    raise TransformError(
+        "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
+        "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
+        "instead, or call the transform directly using qnode = transform_fn(qnode, "
+        "**transform_kwargs). Visit the deprecations page for more details: "
+        "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
+    )
 
 
 # pragma: no cover
@@ -191,7 +206,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
 
-        self._apply_transform = functools.singledispatch(specific_apply_transform)
+        self._apply_transform = functools.singledispatch(
+            functools.partial(specific_apply_transform, self)
+        )
 
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
         self._primitive = _create_transform_primitive(self._transform.__name__)
@@ -210,7 +227,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 return (tape, ), lambda x: x[0]
 
             @printer.register
-            def _(obj: qml.operation.Operator, transform, *targs, **tkwargs):
+            def _(obj: qml.operation.Operator, *targs, **tkwargs):
                 print("I have an operator:", obj)
                 return obj
 
@@ -218,17 +235,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         I have an operator: X(0)
         X(0)
 
-        .. warning::
-
-            Note that this function, while similar, requires a different signature than ``generic_register``.
-            ``generic_register`` requires ``(self, obj: TypeHint)``, but this registration requires
-            ``(obj: TypeHint, transform)``.
 
         """
         return self._apply_transform.register
 
-    # pylint: disable=no-self-use
-    @functools.singledispatchmethod
     def generic_apply_transform(self, obj, *targs, **tkwargs):
         """generic_apply_transform(obj, *targs, **tkwargs)
         Generic application of a transform that forms the default for all transforms.
@@ -238,26 +248,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             *targs: The arguments for the transform
             **tkwargs: The keyword arguments for the transform.
 
-        Note that this is a ``functools.singledispatchmethod``, and new behaviors can be added via
-        ``TransformDispatcher.generic_register``.
-
-        For example, a transform could register custom ``QNode`` behavior that adds the device
-        to the keyword arguments, and uses ``generic_apply_transform`` as the default.
-
-        .. code-block:: python
-
-            @my_transform.register
-            def custom_qnode_behavior(qnode: QNode, transform, *targs, **tkwargs):
-                return transform.generic_apply_transform(qnode, *targs, device=qnode.device, **tkwargs)
-
         """
-        raise TransformError(
-            "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-            "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
-            "instead, or call the transform directly using qnode = transform_fn(qnode, "
-            "**transform_kwargs). Visit the deprecations page for more details: "
-            "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
-        )
+        return generic_apply_transform(obj, self, *targs, **tkwargs)
 
     @classmethod
     def generic_register(cls, arg=None):
@@ -278,41 +270,32 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             from pennylane.transforms.core import TransformDispatcher
 
             @TransformDispatcher.generic_register
-            def apply_to_subroutine(self, obj: Subroutine, *targs, **tkwargs):
+            def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
                 tape = qml.tape.QuantumScript(obj.ops)
-                batch, _ = self(tape, *targs, **tkwargs)
+                batch, _ = transform(tape, *targs, **tkwargs)
                 return Subroutine(batch[0].operations)
 
         >>> qml.transforms.cancel_inverses(Subroutine([qml.Y(0), qml.X(0), qml.X(0)]))
         <Subroutine: [Y(0)]>
 
-        .. warning::
+        The type can also be explicitly provided like:
 
-            This function maps to the ``register`` method of a ``functools.singledispatchmethod`` object.
-            In order to keep this working correctly, ``self`` *must* be the name of the first argument, and it
-            *must not* have a type hint.
+        .. code-block:: python
 
-            .. code-block:: python
+            @TransformDispatcher.generic_register(Subroutine)
+            def apply_to_subroutine(obj: Subroutine, transform *targs, **tkwargs):
+                tape = qml.tape.QuantumScript(obj.ops)
+                batch, _ = transform(tape, *targs, **tkwargs)
+                return Subroutine(batch[0].operations)
 
-                def apply_to_subroutine(self: TransformDispatcher, obj: Subroutine, *targs, **tkwargs)
-
-                def apply_to_subroutine(transform, obj: Subroutine, *targs, **tkwargs)
-
-            will not work. The type can also be explicitly provided like:
-
-            .. code-block:: python
-
-                @TransformDispatcher.generic_register(Subroutine)
-                def apply_to_subroutine(self, obj: Subroutine, *targs, **tkwargs):
-
-            to more explicitly force registration for a given type.
+        to more explicitly force registration for a given type.
 
         """
 
-        return cls.generic_apply_transform.register(arg)  # pylint: disable=no-member
+        return generic_apply_transform.register(arg)  # pylint: disable=no-member
 
     def __call__(self, obj, *targs, **tkwargs):
-        return self._apply_transform(obj, self, *targs, **tkwargs)
+        return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):
         return f"<transform: {self._transform.__name__}>"
@@ -511,14 +494,14 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
 
 @TransformDispatcher.generic_register
-def _apply_to_tape(self, obj: qml.tape.QuantumScript, *targs, **tkwargs):
-    if self.expand_transform:
-        expanded_tapes, expand_processing = self.expand_transform(obj, *targs, **tkwargs)
+def _apply_to_tape(obj: qml.tape.QuantumScript, transform, *targs, **tkwargs):
+    if transform.expand_transform:
+        expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
         processing_and_slices = []
         start = 0
         for tape in expanded_tapes:
-            intermediate_tapes, post_processing_fn = self.transform(tape, *targs, **tkwargs)
+            intermediate_tapes, post_processing_fn = transform.transform(tape, *targs, **tkwargs)
             transformed_tapes.extend(intermediate_tapes)
             end = start + len(intermediate_tapes)
             processing_and_slices.append(tuple([post_processing_fn, slice(start, end)]))
@@ -529,9 +512,9 @@ def _apply_to_tape(self, obj: qml.tape.QuantumScript, *targs, **tkwargs):
             return expand_processing(processed_results)
 
     else:
-        transformed_tapes, processing_fn = self.transform(obj, *targs, **tkwargs)
+        transformed_tapes, processing_fn = transform.transform(obj, *targs, **tkwargs)
 
-    if self.is_informative:
+    if transform.is_informative:
         return processing_fn(transformed_tapes)
 
     return transformed_tapes, processing_fn
@@ -570,17 +553,17 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
 
 
 @TransformDispatcher.generic_register
-def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
+def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
     """Apply a transform to a Callable object."""
     if obj.__class__.__name__ == "QJIT":
         raise TransformError(
             "Functions that are wrapped / decorated with qjit cannot subsequently be"
-            f" transformed with a PennyLane transform (attempted {self})."
-            f" For the desired affect, ensure that qjit is applied after {self}."
+            f" transformed with a PennyLane transform (attempted {transform})."
+            f" For the desired affect, ensure that qjit is applied after {transform}."
         )
 
     if capture.enabled():
-        return _capture_apply(obj, self, *targs, **tkwargs)
+        return _capture_apply(obj, transform, *targs, **tkwargs)
 
     @functools.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
@@ -596,10 +579,10 @@ def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
         tape = qml.tape.QuantumScript.from_queue(q)
 
         with QueuingManager.stop_recording():
-            if self.is_informative:
-                transformed_tapes, processing_fn = self.transform(tape, *targs, **tkwargs)
+            if transform.is_informative:
+                transformed_tapes, processing_fn = transform.transform(tape, *targs, **tkwargs)
             else:
-                transformed_tapes, processing_fn = self(tape, *targs, **tkwargs)
+                transformed_tapes, processing_fn = transform(tape, *targs, **tkwargs)
 
         if len(transformed_tapes) != 1:
             raise TransformError(
@@ -609,7 +592,7 @@ def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
 
         transformed_tape = transformed_tapes[0]
 
-        if self.is_informative:
+        if transform.is_informative:
             return processing_fn(transformed_tapes)
 
         for op in transformed_tape.operations:
@@ -633,7 +616,7 @@ def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
 
 
 @TransformDispatcher.generic_register
-def _apply_to_sequence(self, obj: Sequence, *targs, **tkwargs):
+def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
     if not all(isinstance(t, QuantumScript) for t in obj):
         raise TransformError(
             f"Transforms can only apply to sequences of QuantumScript, not {type(obj[0])}"
@@ -646,7 +629,7 @@ def _apply_to_sequence(self, obj: Sequence, *targs, **tkwargs):
         # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
-        new_tapes, fn = self(t, *targs, **tkwargs)
+        new_tapes, fn = transform(t, *targs, **tkwargs)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))

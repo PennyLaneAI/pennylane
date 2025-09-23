@@ -1135,16 +1135,16 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
 
 
 @TransformDispatcher.generic_register
-def apply_to_device(self, obj: Device, *targs, **tkwargs):
+def apply_to_device(obj: Device, transform, *targs, **tkwargs):
     """Apply the transform on a device"""
-    if self.expand_transform:
+    if transform.expand_transform:
         raise TransformError("Device transform does not support expand transforms.")
-    if self.is_informative:
+    if transform.is_informative:
         raise TransformError("Device transform does not support informative transforms.")
-    if self.final_transform:
+    if transform.final_transform:
         raise TransformError("Device transform does not support final transforms.")
 
     if type(obj).preprocess != qml.devices.Device.preprocess:
-        return _preprocess_device(obj, self, targs, tkwargs)
+        return _preprocess_device(obj, transform, targs, tkwargs)
 
-    return _preprocess_transforms_device(obj, self, targs, tkwargs)
+    return _preprocess_transforms_device(obj, transform, targs, tkwargs)
