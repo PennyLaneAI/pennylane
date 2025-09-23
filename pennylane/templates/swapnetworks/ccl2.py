@@ -52,7 +52,7 @@ class TwoLocalSwapNetwork(Operation):
     ... def swap_network_circuit():
     ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
     ...    return qml.state()
-    >>> qml.draw(swap_network_circuit, level='device')()
+    >>> print(qml.draw(swap_network_circuit, level='device')())
     0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤  State
     1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
     2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤  State
