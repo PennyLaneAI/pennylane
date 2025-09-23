@@ -45,7 +45,6 @@ from xdsl.dialects.builtin import (
     i64,
 )
 from xdsl.ir import (
-    Attribute,
     Block,
     Dialect,
     EnumAttribute,
@@ -82,7 +81,6 @@ from xdsl.irdl import (
     var_result_def,
 )
 from xdsl.traits import (
-    CallableOpInterface,
     HasParent,
     IsolatedFromAbove,
     IsTerminator,
@@ -1030,27 +1028,7 @@ class YieldOp(IRDLOperation):
     traits = traits_def(HasParent(AdjointOp), IsTerminator(), Pure())
 
 
-# TODO: Can we remove the func/call interface traits?
-class FuncOpCallableInterface(CallableOpInterface):
-    """Func op interface"""
-
-    @classmethod
-    def get_callable_region(cls, op: Operation) -> Region:
-        assert isinstance(op, ExecutionOp)
-        # TODO: Fix this
-        return Region()
-
-    @classmethod
-    def get_argument_types(cls, op: Operation) -> tuple[Attribute, ...]:
-        assert isinstance(op, ExecutionOp)
-        return op.function_type.inputs.data
-
-    @classmethod
-    def get_result_types(cls, op: Operation) -> tuple[Attribute, ...]:
-        assert isinstance(op, ExecutionOp)
-        return op.function_type.outputs.data
-
-
+# TODO: Can we remove the call interface trait?
 class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
     """Call op interface"""
 
@@ -1124,7 +1102,6 @@ class ExecutionOp(IRDLOperation):
         IsolatedFromAbove(),
         SingleBlockImplicitTerminator(ExecutionYieldOp),
         SymbolOpInterface(),
-        FuncOpCallableInterface(),
     )
 
 
