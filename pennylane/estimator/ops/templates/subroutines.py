@@ -81,7 +81,7 @@ class OutOfPlaceSquare(ResourceOperator):
         return {"register_size": self.register_size}
 
     @classmethod
-    def resource_rep(cls, register_size):
+    def resource_rep(cls, register_size: int):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -89,7 +89,7 @@ class OutOfPlaceSquare(ResourceOperator):
             register_size (int): the size of the input register
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = 3 * register_size
         return CompressedResourceOp(cls, num_wires, {"register_size": register_size})
@@ -127,13 +127,13 @@ class PhaseGradient(ResourceOperator):
     :math:`\frac{1}{\sqrt{2^b}} \cdot \sum_{k=0}^{2^b - 1} e^{-i2\pi \frac{k}{2^b}}\ket{k}`.
 
     Args:
-        num_wires (int): the number of qubits to prepare in the phase gradient state
+        num_wires (int): the number of wires to prepare in the phase gradient state
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        The phase gradient state is defined as an equal superposition of phaseshifts where each shift
+        The phase gradient state is defined as an equal superposition of phase shifts where each shift
         is progressively more precise. This is achieved by applying Hadamard gates to each qubit and
-        then applying RZ-rotations to each qubit with progressively smaller rotation angle. The first
+        then applying Z-rotations to each qubit with progressively smaller rotation angle. The first
         three rotations can be compiled to a Z-gate, S-gate and a T-gate.
 
     **Example**
@@ -178,12 +178,12 @@ class PhaseGradient(ResourceOperator):
             num_wires (int): the number of qubits to prepare in the phase gradient state
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
-    def resource_decomp(cls, num_wires):
+    def resource_decomp(cls, num_wires: int):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -193,7 +193,7 @@ class PhaseGradient(ResourceOperator):
         Resources:
             The resources are obtained by construction. The phase gradient state is defined as an
             equal superposition of phaseshifts where each shift is progressively more precise. This
-            is achieved by applying Hadamard gates to each qubit and then applying RZ-rotations to each
+            is achieved by applying Hadamard gates to each qubit and then applying Z-rotations to each
             qubit with progressively smaller rotation angle. The first three rotations can be compiled to
             a Z-gate, S-gate and a T-gate.
 
@@ -222,15 +222,15 @@ class OutMultiplier(ResourceOperator):
     r"""Resource class for the OutMultiplier gate.
 
     Args:
-        a_num_qubits (int): the size of the first input register
-        b_num_qubits (int): the size of the second input register
+        a_num_wires (int): the size of the first input register
+        b_num_wires (int): the size of the second input register
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix G, lemma 10 in `PRX Quantum, 2, 040332 (2021)
         <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_.
 
-    .. seealso:: :class:`~.pennylane.OutMultiplier`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.OutMultiplier`.
 
     **Example**
 
@@ -268,16 +268,16 @@ class OutMultiplier(ResourceOperator):
         return {"a_num_qubits": self.a_num_qubits, "b_num_qubits": self.b_num_qubits}
 
     @classmethod
-    def resource_rep(cls, a_num_qubits, b_num_qubits) -> CompressedResourceOp:
+    def resource_rep(cls, a_num_wires, b_num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            a_num_qubits (int): the size of the first input register
-            b_num_qubits (int): the size of the second input register
+            a_num_wires (int): the size of the first input register
+            b_num_wires (int): the size of the second input register
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = a_num_qubits + b_num_qubits + 2 * max((a_num_qubits, b_num_qubits))
         return CompressedResourceOp(
@@ -333,7 +333,7 @@ class SemiAdder(ResourceOperator):
         The resources are obtained from figures 1 and 2 in `Gidney (2018)
         <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
 
-    .. seealso:: :class:`~.pennylane.SemiAdder`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.SemiAdder`.
 
     **Example**
 
@@ -378,7 +378,7 @@ class SemiAdder(ResourceOperator):
             max_register_size (int): the size of the larger of the two registers being added together
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = 2 * max_register_size
         return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
@@ -481,18 +481,18 @@ class SemiAdder(ResourceOperator):
         elif num_zero_ctrl > 0:
             gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
-        return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
+        return gate_lst
 
 
 class ControlledSequence(ResourceOperator):
     r"""Resource class for the ControlledSequence gate.
 
     This operator represents a sequence of controlled gates, one for each control wire, with the
-    base operator (:code:`base`) raised to decreasing powers of 2.
+    base operator raised to decreasing powers of 2.
 
     Args:
-        base (~.pennylane.estimator.resource_operator.ResourceOperator): The operator that we
-            will be applying controlled powers of.
+        base (~.pennylane.estimator.resource_operator.ResourceOperator): The operator to repeatedly
+            apply in a controlled fashion.
         num_control_wires (int): the number of controlled wires to run the sequence over
         wires (Sequence[int], None): the wires the operation acts on
 
@@ -575,7 +575,7 @@ class ControlledSequence(ResourceOperator):
             num_ctrl_wires (int): the number of controlled wires to run the sequence over
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {"base_cmpr_op": base_cmpr_op, "num_ctrl_wires": num_ctrl_wires}
         num_wires = num_ctrl_wires + base_cmpr_op.num_wires
@@ -645,7 +645,7 @@ class QPE(ResourceOperator):
         in (Section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
         Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-    .. seealso:: :class:`~.pennylane.QuantumPhaseEstimation`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.QuantumPhaseEstimation`.
 
     **Example**
 
@@ -670,7 +670,7 @@ class QPE(ResourceOperator):
         the textbook QPE algorithm. This allows users to optimize the implementation of QPE by using
         more efficient implementations of the QFT.
 
-        For example, consider the cost using the default QFT implmentation below:
+        For example, consider the cost using the default :class:`~.pennylane.estimator.ops.templates.QFT` implementation below:
 
         >>> import pennylane.estimator as qre
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=None)
@@ -683,7 +683,7 @@ class QPE(ResourceOperator):
          Gate breakdown:
           {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
 
-        Now we use the :class:`~.pennylane.estimator.templates.subroutines.AQFT`
+        Now we use the :class:`~.pennylane.estimator.ops.templates.AQFT`:
 
         >>> aqft = qre.AQFT(order=3, num_wires=5)
         >>> adj_aqft = qre.Adjoint(aqft)
@@ -767,7 +767,7 @@ class QPE(ResourceOperator):
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "base_cmpr_op": base_cmpr_op,
@@ -823,7 +823,7 @@ class IterativeQPE(ResourceOperator):
 
     Args:
         base (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the phase estimation operator
-        num_iter (int): the number of mid-circuit measurements made to read out the phase
+        num_iter (int): the number of mid-circuit measurements performed to read out the phase
 
     Resources:
         The resources are obtained following the construction from `arXiv:0610214v3 <https://arxiv.org/abs/quant-ph/0610214v3>`_.
@@ -884,7 +884,7 @@ class IterativeQPE(ResourceOperator):
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = base_cmpr_op.num_wires
         return CompressedResourceOp(
@@ -939,7 +939,7 @@ class QFT(ResourceOperator):
         in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
         <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-    .. seealso:: :class:`~.pennylane.QFT`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.QFT`.
 
     **Example**
 
@@ -983,7 +983,7 @@ class QFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, num_wires, params)
@@ -1030,7 +1030,7 @@ class QFT(ResourceOperator):
 
             This decomposition assumes an appropriately sized phase gradient state is available.
             Users should ensure the cost of constructing such a state has been accounted for.
-            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.ops.templates.PhaseGradient`.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -1078,10 +1078,10 @@ class AQFT(ResourceOperator):
 
         This operation assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+        See also :class:`~.pennylane.estimator.ops.templates.PhaseGradient`.
 
     Args:
-        order (int): the maximum number of controlled phaseshifts to which the operation is truncated
+        order (int): the maximum number of controlled phase shifts per qubit to which the operation is truncated
         num_wires (int): the number of qubits the operation acts upon
         wires (Sequence[int], None): the wires the operation acts on
 
@@ -1091,7 +1091,7 @@ class AQFT(ResourceOperator):
         gates and the classical measure-and-reset (Fig. 2) are accounted for as :code:`TemporaryAND`
         operations.
 
-    .. seealso:: :class:`~.pennylane.AQFT`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.AQFT`.
 
     **Example**
 
@@ -1142,7 +1142,7 @@ class AQFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {"order": order, "num_wires": num_wires}
         return CompressedResourceOp(cls, num_wires, params)
@@ -1159,7 +1159,7 @@ class AQFT(ResourceOperator):
         Resources:
             The resources are obtained from (Fig. 4) `arXiv:1803.04933 <https://arxiv.org/abs/1803.04933>`_
             excluding the allocation and instantiation of the phase gradient state. The phased Toffoli
-            gates and the classical measure-and-reset (Fig. 2) are accounted for as `TemporaryAND`
+            gates and the classical measure-and-reset (Fig. 2) are accounted for as :code:`TemporaryAND`
             operations.
 
         Returns:
@@ -1232,18 +1232,18 @@ class BasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the
-            number of columns of the matrix.
+        dim_N (int): The dimensions of the input matrix specifying the basis transformation.
+            This is equivalent to the number of rows or columns of the matrix.
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
         <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_. Specifically,
-        the resources are given as :math:`dim_N \times (dim_N - 1) / 2` instances of the
-        ``SingleExcitation`` gate, and :math:`dim_N \times (1 + (dim_N - 1) / 2)`
+        the resources are given as :math:`N \times (N - 1) / 2` instances of the
+        ``SingleExcitation`` gate, and :math:`N \times (1 + (N - 1) / 2)`
         instances of the ``PhaseShift`` gate.
 
-    .. seealso:: :class:`~.pennylane.BasisRotation`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.BasisRotation`.
 
     **Example**
 
@@ -1279,8 +1279,8 @@ class BasisRotation(ResourceOperator):
         Resources:
             The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
             <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_. Specifically,
-            the resources are given as :math:`dim_N * (dim_N - 1) / 2` instances of the
-            ``SingleExcitation`` gate, and :math:`dim_N * (1 + (dim_N - 1) / 2)` instances
+            the resources are given as :math:`N * (N - 1) / 2` instances of the
+            ``SingleExcitation`` gate, and :math:`N * (1 + (N - 1) / 2)` instances
             of the ``PhaseShift`` gate.
 
         Returns:
@@ -1317,7 +1317,7 @@ class BasisRotation(ResourceOperator):
                 as the number of columns of the matrix.
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {"dim_N": dim_N}
         num_wires = dim_N
@@ -1341,11 +1341,7 @@ class Select(ResourceOperator):
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
         'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
-        Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
-        where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
-        to select.
-
-    .. seealso:: :class:`~.pennylane.Select`
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.Select`.
 
     **Example**
 
@@ -1510,7 +1506,7 @@ class Select(ResourceOperator):
                 required and the number of wires targeted by the :code:`select_ops`.
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_ctrl_wires = math.ceil(math.log2(len(cmpr_ops)))
         fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
@@ -1529,7 +1525,7 @@ class QROM(ResourceOperator):
         num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
         zeroed (bool, optional): Determine if allocated qubits should be reset after the computation
-            (at the cost of higher gate counts). Defaults to :code`True`.
+            (at the cost of higher gate counts). Defaults to :code:`True`.
         select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
@@ -1928,7 +1924,7 @@ class QROM(ResourceOperator):
                 determines the optimal depth.
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         if num_bit_flips is None:
             num_bit_flips = num_bitstrings * size_bitstring // 2
@@ -1978,7 +1974,7 @@ class QubitUnitary(ResourceOperator):
 
         * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
 
-    .. seealso:: :class:`~.pennylane.QubitUnitary`
+    .. seealso:: The associated PennyLane operation :class:`~.pennylane.QubitUnitary`.
 
     **Example**
 
@@ -2026,7 +2022,7 @@ class QubitUnitary(ResourceOperator):
                 qubit rotations used to synthesize the n-qubit unitary.
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {"num_wires": num_wires, "precision": precision}
         return CompressedResourceOp(cls, num_wires, params)
@@ -2116,7 +2112,7 @@ class SelectPauliRot(ResourceOperator):
         gate and :math:`2^{n}` instances of the single qubit rotation gate (:code:`RX`,
         :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
 
-    .. seealso:: :class:`~.pennylane.SelectPauliRot`
+    .. seealso:: The associated PennyLane operation :class:`~.pennylane.SelectPauliRot`.
 
     **Example**
 
@@ -2163,9 +2159,9 @@ class SelectPauliRot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * rotation_axis (str): the rotation axis used in the multiplexer
-            * num_ctrl_wires (int): the number of control wires of the multiplexer
-            * precision (float): the precision used in the single qubit rotations
+                * rotation_axis (str): the rotation axis used in the multiplexer
+                * num_ctrl_wires (int): the number of control wires of the multiplexer
+                * precision (float): the precision used in the single qubit rotations
         """
         return {
             "num_ctrl_wires": self.num_ctrl_wires,
