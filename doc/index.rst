@@ -27,7 +27,9 @@ PennyLane Documentation
 
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-          PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Built by researchers, for research.
+          PennyLane is a cross-platform Python library for quantum computing, 
+          quantum machine learning, and quantum chemistry. 
+          Built by researchers, for research.
         </p>
         <div class="row mt-3">
 
@@ -73,7 +75,8 @@ Features
 ..
 
 - *Follow the gradient*.
-  Implement **automatic differentiation** of quantum circuits thanks to multiple **optimization and machine learning** tools.
+  Implement **automatic differentiation** of quantum circuits thanks to multiple 
+  **optimization and machine learning** tools.
 
 ..
 
@@ -95,8 +98,8 @@ Getting started
 ---------------
 
 For an introduction to quantum computing with PennyLane, we have several guides and resources such as our
- `Codebook <https://pennylane.ai/codebook/>`_,
-a `frequently asked questions <https://pennylane.ai/faq>`_ section,
+`Codebook <https://pennylane.ai/codebook/>`_,
+`frequently asked questions <https://pennylane.ai/faq>`_,
 a `glossary of key concepts <https://pennylane.ai/qml/glossary>`_, and a curated selection
 of `videos <https://pennylane.ai/qml/videos>`_.
 
