@@ -342,6 +342,10 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
 
         expectations[order] = (1j * timestep) ** order * expectation
         logs[order] = log
+        expectation = sum(
+            _compute_expectation(commutator, fragments, state) for commutator in commutators
+        )
+        expectations[order] = (1j * timestep) ** order * expectation
 
     return expectations, logs
 
