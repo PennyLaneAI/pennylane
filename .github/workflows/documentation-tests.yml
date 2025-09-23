@@ -28,20 +28,20 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install sybil pytest
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install sybil pytest
 
-    - name: Run documentation tests
-      run: |
-        pytest pennylane/ops
+      - name: Run documentation tests
+        run: |
+          pytest pennylane/ops
