@@ -1,6 +1,8 @@
 import typing
 from typing import List
 
+import pytest
+
 
 class Node:
     """Abstract base class for all nodes in the commutator tree."""
@@ -95,20 +97,115 @@ class CommutatorNode(Node):
             )
 
 
-A = LeafNode("A")
-B = LeafNode("B")
-C = LeafNode("C")
-D = LeafNode("D")
-E = LeafNode("E")
-X = LeafNode("X")
-Y = LeafNode("Y")
-big_comm = CommutatorNode(
-    CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
-)
+def is_symbol(char):
+    non_symbol = ["[", "]", " ", ","]
+    return char not in non_symbol
 
-replacements = [CommutatorNode(X, Y), E, B]
-print(big_comm)
-print(replacements)
 
-big_comm.replace_node(A, replacements)
-print(big_comm)
+def is_mergeable(node1: Node, node2: Node, k: int):
+    """
+    Check if two nodes are mergeable at index k.
+
+    The index of a symbol in a (possibly nested) commutator is the index of the symbol in the
+    commutator's nested representation.
+    For example in [[A, B], [C, [D, E]]], C is the component at k=2.
+
+    Two commutators are mergable at index k if they have the same nesting structure, and their
+    symbols only differ at index k.
+    """
+
+    if not isinstance(node1, Node) or not isinstance(node2, Node):
+        raise TypeError("Only Node instances can be checked for mergeability.")
+
+    string1 = str(node1)  # .replace("[", "").replace("]", "").replace(",", "").replace(" ", "")
+    string2 = str(node2)  # .replace("[", "").replace("]", "").replace(",", "").replace(" ", "")
+
+    if len(string1) != len(string2):
+        return False
+
+    symbol_count = 0
+    for i, (char1, char2) in enumerate(zip(string1, string2)):
+        if not is_symbol(char1) and char1 != char2:
+            return False
+        else:
+            if is_symbol(char1):
+                if not is_symbol(char2):
+                    return False
+                symbol_count += 1
+            if symbol_count - 1 != k:
+                if char1 != char2:
+                    return False
+    return True
+
+
+def test_mergeability():
+    A = LeafNode("A")
+    B = LeafNode("B")
+    C = LeafNode("C")
+    D = LeafNode("D")
+    comm1 = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, B), D)
+    )
+
+    comm2 = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), D)
+    )
+
+    comm3 = CommutatorNode(
+        CommutatorNode(CommutatorNode(A, B), C), CommutatorNode(CommutatorNode(A, D), D)
+    )
+
+    assert is_mergeable(comm1, comm2, 0) == False
+    assert is_mergeable(comm1, comm2, 4) == True
+    assert is_mergeable(comm1, comm3, 0) == False
+
+
+def test_replacement():
+    A = LeafNode("A")
+    B = LeafNode("B")
+    C = LeafNode("C")
+    D = LeafNode("D")
+    E = LeafNode("E")
+    X = LeafNode("X")
+    Y = LeafNode("Y")
+    big_comm = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
+    )
+
+    replacements = [CommutatorNode(X, Y), E]
+    big_comm.replace_node(A, replacements)
+    assert str(big_comm) == "[[[X, Y], [B, C]], [[E, D], E]]"
+
+
+def test_replacement_too_many():
+    A = LeafNode("A")
+    B = LeafNode("B")
+    C = LeafNode("C")
+    D = LeafNode("D")
+    E = LeafNode("E")
+    X = LeafNode("X")
+    Y = LeafNode("Y")
+    big_comm = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
+    )
+
+    replacements = [CommutatorNode(X, Y), E, X]
+    with pytest.raises(RuntimeError, match="Got more replacement nodes"):
+        big_comm.replace_node(A, replacements)
+
+
+def test_replacement_too_few():
+    A = LeafNode("A")
+    B = LeafNode("B")
+    C = LeafNode("C")
+    D = LeafNode("D")
+    E = LeafNode("E")
+    X = LeafNode("X")
+    Y = LeafNode("Y")
+    big_comm = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
+    )
+
+    replacements = [CommutatorNode(X, Y)]
+    with pytest.raises(RuntimeError, match="Got fewer replacement nodes"):
+        big_comm.replace_node(A, replacements)
