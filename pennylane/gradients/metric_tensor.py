@@ -371,9 +371,9 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
 
         >>> print(mt)
         [[ 0.          0.          0.          0.        ]
-            [ 0.          0.25       -0.02495835 -0.02495835]
-            [ 0.         -0.02495835  0.01226071  0.01226071]
-            [ 0.         -0.02495835  0.01226071  0.01226071]]
+         [ 0.          0.25       -0.02495835 -0.02495835]
+         [ 0.         -0.02495835  0.01226071  0.01226071]
+         [ 0.         -0.02495835  0.01226071  0.01226071]]
 
         Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
         underlying tape, it is the 1st tape parameter.
