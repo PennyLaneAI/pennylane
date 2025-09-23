@@ -99,12 +99,6 @@ jobs:
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
           --ignore=pennylane/templates
-          --ignore=pennylane/templates/embeddings
-          --ignore=pennylane/templates/layers
-          --ignore=pennylane/templates/subroutines
-          --ignore=pennylane/templates/swapnetworks
-          --ignore=pennylane/templates/tensornetworks
-          --ignore=pennylane/templates/layer
           "
           IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/resource
