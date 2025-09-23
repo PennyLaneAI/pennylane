@@ -911,5 +911,5 @@ def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     new_qnode = copy.copy(obj)
     new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
     if qml.capture.enabled():
-        return apply_to_callable(transform, new_qnode, *targs, **tkwargs)
+        return apply_to_callable(new_qnode, transform, *targs, **tkwargs)
     return new_qnode
