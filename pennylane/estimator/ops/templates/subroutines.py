@@ -34,9 +34,11 @@ from pennylane.wires import Wires, WiresLike
 class OutOfPlaceSquare(ResourceOperator):
     r"""Resource class for the OutofPlaceSquare gate.
 
-    This operation takes two quantum registers. The input register is of size :code:`register_size`
-    and the output register of size :code:`2 * register_size`. The number encoded in the input is
-    squared and returned in the output register.
+    This operation takes an input register of size :code:`register_size`. The number encoded in the
+    input is squared and returned in the output register. The size of the output register is
+    computed internally to be :code:`2 * register_size`. The total wires may optionally be defined
+    with a size equal to :code:`3 * register_size`.
+
 
     Args:
         register_size (int): the size of the input register
@@ -45,7 +47,8 @@ class OutOfPlaceSquare(ResourceOperator):
     Resources:
         The resources are obtained from appendix G, lemma 7 in `PRX Quantum, 2, 040332 (2021)
         <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_. Specifically,
-        the resources are given as :math:`(n - 1)^2` Toffoli gates, and :math:`n` CNOT gates.
+        the resources are given as :math:`(n - 1)^2` Toffoli gates, and :math:`n` CNOT gates, where
+        :math:`n` is the size of the input register.
 
     **Example**
 
@@ -124,7 +127,9 @@ class PhaseGradient(ResourceOperator):
     r"""Resource class for the PhaseGradient gate.
 
     This operation prepares the phase gradient state
-    :math:`\frac{1}{\sqrt{2^b}} \cdot \sum_{k=0}^{2^b - 1} e^{-i2\pi \frac{k}{2^b}}\ket{k}`.
+    :math:`\frac{1}{\sqrt{2^b}} \cdot \sum_{k=0}^{2^b - 1} e^{-i2\pi \frac{k}{2^b}}\ket{k}`, where
+    :math:`b` is the number of qubits. The equation is taken from page 4 of
+    `C. Gidney, Quantum 2, 74, (2018) <https://quantum-journal.org/papers/q-2018-06-18-74/>`_.
 
     Args:
         num_wires (int): the number of wires to prepare in the phase gradient state
@@ -704,8 +709,8 @@ class QPE(ResourceOperator):
         self,
         base: ResourceOperator,
         num_estimation_wires: int,
-        adj_qft_op: ResourceOperator = None,
-        wires: WiresLike = None,
+        adj_qft_op: ResourceOperator | None = None,
+        wires: WiresLike | None = None,
     ):
         remove_ops = [base, adj_qft_op] if adj_qft_op is not None else [base]
         _dequeue(remove_ops)
@@ -1232,7 +1237,7 @@ class BasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        dim_N (int): The dimensions of the input matrix specifying the basis transformation.
+        dim (int): The dimensions of the input matrix specifying the basis transformation.
             This is equivalent to the number of rows or columns of the matrix.
         wires (Sequence[int], None): the wires the operation acts on
 
@@ -1241,7 +1246,7 @@ class BasisRotation(ResourceOperator):
         <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_. Specifically,
         the resources are given as :math:`N \times (N - 1) / 2` instances of the
         ``SingleExcitation`` gate, and :math:`N \times (1 + (N - 1) / 2)`
-        instances of the ``PhaseShift`` gate.
+        instances of the ``PhaseShift`` gate, where :math:`N` is the dimensions of the input matrix.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.BasisRotation`.
 
@@ -1250,7 +1255,7 @@ class BasisRotation(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-    >>> basis_rot = qre.BasisRotation(dim_N = 5)
+    >>> basis_rot = qre.BasisRotation(dim = 5)
     >>> print(qre.estimate(basis_rot))
     --- Resources: ---
     Total qubits: 5
@@ -1261,19 +1266,19 @@ class BasisRotation(ResourceOperator):
      {'T': 1.580E+3, 'S': 60, 'Z': 40, 'Hadamard': 40, 'CNOT': 20}
     """
 
-    resource_keys = {"dim_N"}
+    resource_keys = {"dim"}
 
-    def __init__(self, dim_N: int, wires: WiresLike = None):
-        self.num_wires = dim_N
+    def __init__(self, dim: int, wires: WiresLike = None):
+        self.num_wires = dim
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls, dim_N) -> list[GateCount]:
+    def resource_decomp(cls, dim) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Args:
-            dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
+            dim (int): The dimensions of the input :code:`unitary_matrix`. This is computed
                 as the number of columns of the matrix.
 
         Resources:
@@ -1281,7 +1286,7 @@ class BasisRotation(ResourceOperator):
             <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_. Specifically,
             the resources are given as :math:`N * (N - 1) / 2` instances of the
             ``SingleExcitation`` gate, and :math:`N * (1 + (N - 1) / 2)` instances
-            of the ``PhaseShift`` gate.
+            of the ``PhaseShift`` gate, where :math:`N` is the dimensions of the input matrix.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -1291,8 +1296,8 @@ class BasisRotation(ResourceOperator):
         phase_shift = resource_rep(qre.PhaseShift)
         single_excitation = resource_rep(qre.SingleExcitation)
 
-        se_count = dim_N * (dim_N - 1) // 2
-        ps_count = dim_N + se_count
+        se_count = dim * (dim - 1) // 2
+        ps_count = dim + se_count
 
         return [GateCount(phase_shift, ps_count), GateCount(single_excitation, se_count)]
 
@@ -1302,25 +1307,25 @@ class BasisRotation(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
+                * dim (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
 
         """
-        return {"dim_N": self.num_wires}
+        return {"dim": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, dim_N) -> CompressedResourceOp:
+    def resource_rep(cls, dim) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
+            dim (int): The dimensions of the input :code:`unitary_matrix`. This is computed
                 as the number of columns of the matrix.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        params = {"dim_N": dim_N}
-        num_wires = dim_N
+        params = {"dim": dim}
+        num_wires = dim
         return CompressedResourceOp(cls, num_wires, params)
 
     def tracking_name(self) -> str:
@@ -1332,8 +1337,8 @@ class Select(ResourceOperator):
     r"""Resource class for the Select gate.
 
     Args:
-        select_ops (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the set of operations to select over
-        wires (Sequence[int], None): The wires the operation acts on. If :code:`select_ops`
+        ops (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the set of operations to select over
+        wires (Sequence[int], None): The wires the operation acts on. If :code:`ops`
             provide wire labels, then this is just the set of control wire labels. Otherwise, it
             also includes the target wire labels of the selected operators.
 
@@ -1349,7 +1354,7 @@ class Select(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> ops = [qre.X(), qre.Y(), qre.Z()]
-    >>> select_op = qre.Select(select_ops=ops)
+    >>> select_op = qre.Select(ops=ops)
     >>> print(qre.estimate(select_op))
     --- Resources: ---
     Total qubits: 4
@@ -1362,21 +1367,21 @@ class Select(ResourceOperator):
 
     resource_keys = {"num_wires", "cmpr_ops"}
 
-    def __init__(self, select_ops: list, wires: WiresLike = None) -> None:
-        _dequeue(op_to_remove=select_ops)
+    def __init__(self, ops: list, wires: WiresLike = None) -> None:
+        _dequeue(op_to_remove=ops)
         self.queue()
-        num_select_ops = len(select_ops)
+        num_select_ops = len(ops)
         num_ctrl_wires = math.ceil(math.log2(num_select_ops))
 
         try:
-            cmpr_ops = tuple(op.resource_rep_from_op() for op in select_ops)
+            cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
             self.cmpr_ops = cmpr_ops
         except AttributeError as error:
             raise ValueError(
                 "All factors of the Select must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        ops_wires = Wires.all_wires([op.wires for op in select_ops if op.wires is not None])
+        ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
         fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
         minimum_num_wires = max(fewest_unique_wires, len(ops_wires)) + num_ctrl_wires
 
@@ -1400,7 +1405,7 @@ class Select(ResourceOperator):
                 representation, to be applied according to the selected qubits.
             num_wires (int): The number of wires the operation acts on. This is a sum of the
                 control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
-                targeted by the :code:`select_ops`.
+                targeted by the :code:`ops`.
 
         Resources:
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
@@ -1447,7 +1452,7 @@ class Select(ResourceOperator):
                 representation, to be applied according to the selected qubits.
             num_wires (int): The number of wires the operation acts on. This is a sum of the
                 control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
-                targeted by the :code:`select_ops`.
+                targeted by the :code:`ops`.
 
         Resources:
             The resources correspond directly to the definition of the operation. Specifically,
@@ -1488,7 +1493,7 @@ class Select(ResourceOperator):
                 * cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
                 * num_wires (int): The number of wires the operation acts on. This is a sum of the
                   control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
-                  targeted by the :code:`select_ops`.
+                  targeted by the :code:`ops`.
 
         """
         return {"cmpr_ops": self.cmpr_ops, "num_wires": self.num_wires}
@@ -1503,7 +1508,7 @@ class Select(ResourceOperator):
                 representation, to be applied according to the selected qubits.
             num_wires (int): An optional parameter representing the number of wires the operation
                 acts on. This is a sum of the control wires (:math:`\lceil(log_{2}(N))\rceil`)
-                required and the number of wires targeted by the :code:`select_ops`.
+                required and the number of wires targeted by the :code:`ops`.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -1956,7 +1961,7 @@ class SelectPauliRot(ResourceOperator):
     r"""Resource class for the SelectPauliRot gate.
 
     Args:
-        rotation_axis (str): the rotation axis used in the multiplexer
+        rot_axis (str): the rotation axis used in the multiplexer
         num_ctrl_wires (int): the number of control wires of the multiplexer
         precision (float | None): the precision used in the single qubit rotations
         wires (Sequence[int], None): the wires the operation acts on
@@ -1966,7 +1971,7 @@ class SelectPauliRot(ResourceOperator):
         (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_. Specifically, the resources
         for an :math:`n` qubit unitary are given as :math:`2^{n}` instances of the :code:`CNOT`
         gate and :math:`2^{n}` instances of the single qubit rotation gate (:code:`RX`,
-        :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
+        :code:`RY` or :code:`RZ`) depending on the :code:`rot_axis`.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.SelectPauliRot`.
 
@@ -1976,7 +1981,7 @@ class SelectPauliRot(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> mltplxr = qre.SelectPauliRot(
-    ...     rotation_axis = "Y",
+    ...     rot_axis = "Y",
     ...     num_ctrl_wires = 4,
     ...     precision = 1e-3,
     ... )
@@ -1990,20 +1995,20 @@ class SelectPauliRot(ResourceOperator):
       {'RY': 16, 'CNOT': 16}
     """
 
-    resource_keys = {"num_ctrl_wires", "rotation_axis", "precision"}
+    resource_keys = {"num_ctrl_wires", "rot_axis", "precision"}
 
     def __init__(
         self,
-        rotation_axis: str,
+        rot_axis: str,
         num_ctrl_wires: int,
         precision: float | None = None,
         wires: WiresLike = None,
     ) -> None:
-        if rotation_axis not in ("X", "Y", "Z"):
-            raise ValueError("The `rotation_axis` argument must be one of ('X', 'Y', 'Z')")
+        if rot_axis not in ("X", "Y", "Z"):
+            raise ValueError("The `rot_axis` argument must be one of ('X', 'Y', 'Z')")
 
         self.num_ctrl_wires = num_ctrl_wires
-        self.rotation_axis = rotation_axis
+        self.rot_axis = rot_axis
         self.precision = precision
 
         self.num_wires = num_ctrl_wires + 1
@@ -2015,23 +2020,23 @@ class SelectPauliRot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * rotation_axis (str): the rotation axis used in the multiplexer
+                * rot_axis (str): the rotation axis used in the multiplexer
                 * num_ctrl_wires (int): the number of control wires of the multiplexer
                 * precision (float): the precision used in the single qubit rotations
         """
         return {
             "num_ctrl_wires": self.num_ctrl_wires,
-            "rotation_axis": self.rotation_axis,
+            "rot_axis": self.rot_axis,
             "precision": self.precision,
         }
 
     @classmethod
-    def resource_rep(cls, num_ctrl_wires, rotation_axis, precision=None):
+    def resource_rep(cls, num_ctrl_wires, rot_axis, precision=None):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            rotation_axis (str): the rotation axis used in the multiplexer
+            rot_axis (str): the rotation axis used in the multiplexer
             num_ctrl_wires (int): the number of control wires of the multiplexer
             precision (float | None): the precision used in the single qubit rotations
 
@@ -2044,18 +2049,18 @@ class SelectPauliRot(ResourceOperator):
             num_wires,
             {
                 "num_ctrl_wires": num_ctrl_wires,
-                "rotation_axis": rotation_axis,
+                "rot_axis": rot_axis,
                 "precision": precision,
             },
         )
 
     @classmethod
-    def resource_decomp(cls, num_ctrl_wires, rotation_axis, precision):
+    def resource_decomp(cls, num_ctrl_wires, rot_axis, precision):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            rotation_axis (str): the rotation axis used in the multiplexer
+            rot_axis (str): the rotation axis used in the multiplexer
             num_ctrl_wires (int): the number of control wires of the multiplexer
             precision (float): the precision used in the single qubit rotations
 
@@ -2064,7 +2069,7 @@ class SelectPauliRot(ResourceOperator):
             (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_. Specifically, the resources
             for an :math:`n` qubit unitary are given as :math:`2^{n}` instances of the :code:`CNOT`
             gate and :math:`2^{n}` instances of the single qubit rotation gate (:code:`RX`,
-            :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
+            :code:`RY` or :code:`RZ`) depending on the :code:`rot_axis`.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -2077,7 +2082,7 @@ class SelectPauliRot(ResourceOperator):
             "Z": qre.RZ,
         }
 
-        gate = resource_rep(rotation_gate_map[rotation_axis], {"precision": precision})
+        gate = resource_rep(rotation_gate_map[rot_axis], {"precision": precision})
         cnot = resource_rep(qre.CNOT)
 
         gate_lst = [
@@ -2088,12 +2093,12 @@ class SelectPauliRot(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def phase_grad_resource_decomp(cls, num_ctrl_wires, rotation_axis, precision):
+    def phase_grad_resource_decomp(cls, num_ctrl_wires, rot_axis, precision):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            rotation_axis (str): the rotation axis used in the multiplexer
+            rot_axis (str): the rotation axis used in the multiplexer
             num_ctrl_wires (int): the number of control wires of the multiplexer
             precision (float): the precision used in the single qubit rotations
 
@@ -2150,9 +2155,9 @@ class SelectPauliRot(ResourceOperator):
         s = resource_rep(qre.S)
         s_dagg = resource_rep(qre.Adjoint, {"base_cmpr_op": s})
 
-        if rotation_axis == "X":
+        if rot_axis == "X":
             gate_lst.append(GateCount(h, 2))
-        if rotation_axis == "Y":
+        if rot_axis == "Y":
             gate_lst.append(GateCount(h, 2))
             gate_lst.append(GateCount(s))
             gate_lst.append(GateCount(s_dagg))

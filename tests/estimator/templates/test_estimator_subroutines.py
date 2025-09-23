@@ -1095,26 +1095,26 @@ class TestResourceBasisRotation:
         """Test that the name of the operator is tracked correctly."""
         assert qre.BasisRotation(1).tracking_name() == "BasisRotation(1)"
 
-    @pytest.mark.parametrize("dim_n", (1, 2, 3))
-    def test_resource_params(self, dim_n):
+    @pytest.mark.parametrize("dim", (1, 2, 3))
+    def test_resource_params(self, dim):
         """Test that the resource params are correct."""
-        op = qre.BasisRotation(dim_n)
-        assert op.resource_params == {"dim_N": dim_n}
+        op = qre.BasisRotation(dim)
+        assert op.resource_params == {"dim": dim}
 
-    @pytest.mark.parametrize("dim_n", (1, 2, 3))
-    def test_resource_rep(self, dim_n):
+    @pytest.mark.parametrize("dim", (1, 2, 3))
+    def test_resource_rep(self, dim):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.BasisRotation, dim_n, {"dim_N": dim_n})
-        assert qre.BasisRotation.resource_rep(dim_N=dim_n) == expected
+        expected = qre.CompressedResourceOp(qre.BasisRotation, dim, {"dim": dim})
+        assert qre.BasisRotation.resource_rep(dim=dim) == expected
 
-    @pytest.mark.parametrize("dim_n", (1, 2, 3))
-    def test_resources(self, dim_n):
+    @pytest.mark.parametrize("dim", (1, 2, 3))
+    def test_resources(self, dim):
         """Test that the resources are correct."""
         expected = [
-            GateCount(resource_rep(qre.PhaseShift), dim_n + (dim_n * (dim_n - 1) // 2)),
-            GateCount(resource_rep(qre.SingleExcitation), dim_n * (dim_n - 1) // 2),
+            GateCount(resource_rep(qre.PhaseShift), dim + (dim * (dim - 1) // 2)),
+            GateCount(resource_rep(qre.SingleExcitation), dim * (dim - 1) // 2),
         ]
-        assert qre.BasisRotation.resource_decomp(dim_n) == expected
+        assert qre.BasisRotation.resource_decomp(dim) == expected
 
 
 class TestResourceSelect:
@@ -1123,17 +1123,17 @@ class TestResourceSelect:
     def test_select_factor_errors(self):
         """Test that the correct error is raised when invalid ops are provided."""
         with pytest.raises(ValueError, match="All factors of the Select must be instances of"):
-            qre.Select(select_ops=[qml.X(0), qre.Y(), qre.Z()])
+            qre.Select(ops=[qml.X(0), qre.Y(), qre.Z()])
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected at least 4 wires"):
-            qre.Select(select_ops=[qre.RX(), qre.Z(), qre.CNOT()], wires=[0])
+            qre.Select(ops=[qre.RX(), qre.Z(), qre.CNOT()], wires=[0])
 
     def test_wire_init(self):
         """Test that the number of wires is correctly computed from the provided wires."""
         wires = [0, 1, 2, 3]
-        op = qre.Select(select_ops=[qre.RX(), qre.Z(), qre.CNOT()], wires=wires)
+        op = qre.Select(ops=[qre.RX(), qre.Z(), qre.CNOT()], wires=wires)
         assert op.num_wires == len(wires)
 
     def test_resource_params(self):
@@ -1647,45 +1647,45 @@ class TestResourceQROM:
 class TestResourceSelectPauliRot:
     """Test the ResourceSelectPauliRot template"""
 
-    def test_rotation_axis_errors(self):
+    def test_rot_axis_errors(self):
         """Test that the correct error is raised when invalid rotation axis argument is provided."""
-        with pytest.raises(ValueError, match="The `rotation_axis` argument must be one of"):
-            qre.SelectPauliRot(rotation_axis="A", num_ctrl_wires=1, precision=1e-3)
+        with pytest.raises(ValueError, match="The `rot_axis` argument must be one of"):
+            qre.SelectPauliRot(rot_axis="A", num_ctrl_wires=1, precision=1e-3)
 
     @pytest.mark.parametrize("precision", (None, 1e-3, 1e-5))
-    @pytest.mark.parametrize("rotation_axis", ("X", "Y", "Z"))
+    @pytest.mark.parametrize("rot_axis", ("X", "Y", "Z"))
     @pytest.mark.parametrize("num_ctrl_wires", (1, 2, 3, 4, 5))
-    def test_resource_params(self, num_ctrl_wires, rotation_axis, precision):
+    def test_resource_params(self, num_ctrl_wires, rot_axis, precision):
         """Test that the resource params are correct."""
         op = (
-            qre.SelectPauliRot(rotation_axis, num_ctrl_wires, precision)
+            qre.SelectPauliRot(rot_axis, num_ctrl_wires, precision)
             if precision
-            else qre.SelectPauliRot(rotation_axis, num_ctrl_wires)
+            else qre.SelectPauliRot(rot_axis, num_ctrl_wires)
         )
         assert op.resource_params == {
-            "rotation_axis": rotation_axis,
+            "rot_axis": rot_axis,
             "num_ctrl_wires": num_ctrl_wires,
             "precision": precision,
         }
 
     @pytest.mark.parametrize("precision", (None, 1e-3, 1e-5))
-    @pytest.mark.parametrize("rotation_axis", ("X", "Y", "Z"))
+    @pytest.mark.parametrize("rot_axis", ("X", "Y", "Z"))
     @pytest.mark.parametrize("num_ctrl_wires", (1, 2, 3, 4, 5))
-    def test_resource_rep(self, num_ctrl_wires, rotation_axis, precision):
+    def test_resource_rep(self, num_ctrl_wires, rot_axis, precision):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
             qre.SelectPauliRot,
             num_ctrl_wires + 1,
             {
-                "rotation_axis": rotation_axis,
+                "rot_axis": rot_axis,
                 "num_ctrl_wires": num_ctrl_wires,
                 "precision": precision,
             },
         )
-        assert qre.SelectPauliRot.resource_rep(num_ctrl_wires, rotation_axis, precision) == expected
+        assert qre.SelectPauliRot.resource_rep(num_ctrl_wires, rot_axis, precision) == expected
 
     @pytest.mark.parametrize(
-        "num_ctrl_wires, rotation_axis, precision, expected_res",
+        "num_ctrl_wires, rot_axis, precision, expected_res",
         (
             (
                 1,
@@ -1716,14 +1716,14 @@ class TestResourceSelectPauliRot:
             ),
         ),
     )
-    def test_default_resources(self, num_ctrl_wires, rotation_axis, precision, expected_res):
+    def test_default_resources(self, num_ctrl_wires, rot_axis, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[qre.SelectPauliRot]
             assert (
                 qre.SelectPauliRot.resource_decomp(
-                    num_ctrl_wires=num_ctrl_wires, rotation_axis=rotation_axis, **kwargs
+                    num_ctrl_wires=num_ctrl_wires, rot_axis=rot_axis, **kwargs
                 )
                 == expected_res
             )
@@ -1731,14 +1731,14 @@ class TestResourceSelectPauliRot:
             assert (
                 qre.SelectPauliRot.resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
-                    rotation_axis=rotation_axis,
+                    rot_axis=rot_axis,
                     precision=precision,
                 )
                 == expected_res
             )
 
     @pytest.mark.parametrize(
-        "num_ctrl_wires, rotation_axis, precision, expected_res",
+        "num_ctrl_wires, rot_axis, precision, expected_res",
         (
             (
                 1,
@@ -1830,14 +1830,14 @@ class TestResourceSelectPauliRot:
             ),
         ),
     )
-    def test_phase_gradient_resources(self, num_ctrl_wires, rotation_axis, precision, expected_res):
+    def test_phase_gradient_resources(self, num_ctrl_wires, rot_axis, precision, expected_res):
         """Test that the resources are correct."""
         if precision is None:
             config = ResourceConfig()
             kwargs = config.resource_op_precisions[qre.SelectPauliRot]
             assert (
                 qre.SelectPauliRot.phase_grad_resource_decomp(
-                    num_ctrl_wires=num_ctrl_wires, rotation_axis=rotation_axis, **kwargs
+                    num_ctrl_wires=num_ctrl_wires, rot_axis=rot_axis, **kwargs
                 )
                 == expected_res
             )
@@ -1845,7 +1845,7 @@ class TestResourceSelectPauliRot:
             assert (
                 qre.SelectPauliRot.phase_grad_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,
-                    rotation_axis=rotation_axis,
+                    rot_axis=rot_axis,
                     precision=precision,
                 )
                 == expected_res
