@@ -74,19 +74,19 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/pytrees
           --ignore=pennylane/numpy
-          --ignore=pennylane/wires
+          --ignore=pennylane/wires.py
           --ignore=pennylane/logging
-          --ignore=pennylane/registers
-          --ignore=pennylane/about
-          --ignore=pennylane/_version
-          --ignore=pennylane/queuing
+          --ignore=pennylane/registers.py
+          --ignore=pennylane/about.py
+          --ignore=pennylane/_version.py
+          --ignore=pennylane/queuing.py
           --ignore=pennylane/configuration
           --ignore=pennylane/compiler
-          --ignore=pennylane/boolean_fn
-          --ignore=pennylane/typing
-          --ignore=pennylane/_grad
-          --ignore=pennylane/circuit_graph
-          --ignore=pennylane/allocation
+          --ignore=pennylane/boolean_fn.py
+          --ignore=pennylane/typing.py
+          --ignore=pennylane/_grad.py
+          --ignore=pennylane/circuit_graph.py
+          --ignore=pennylane/allocation.py
           --ignore=pennylane/measurements
           "
           IGNORE_OPTS_AUXILIARY="
@@ -121,7 +121,7 @@ jobs:
           "
           IGNORE_OPTS_UNSORTED="
           --ignore=pennylane/transforms/core
-          --ignore=pennylane/operation
+          --ignore=pennylane/operation.py
           --ignore=pennylane/ops
           --ignore=pennylane/tape
           --ignore=pennylane/qchem
