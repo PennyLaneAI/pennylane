@@ -17,7 +17,13 @@ try:
 except ImportError:
     torch = None
 
-namespace = {"qml": qml, "np": base_numpy, "jax": jax, "torch": torch, "jnp": jax.numpy}
+namespace = {
+    "qml": qml,
+    "np": base_numpy,
+    "jax": jax,
+    "torch": torch,
+    "jnp": getattr(jax, "numpy", None),
+}
 
 pytest_collect_file = Sybil(
     setup=lambda ns: ns.update(namespace),
