@@ -45,10 +45,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install --upgrade --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst
           pip install --upgrade --extra-index-url https://test.pypi.org/simple/ pennylane-lightning 
+          pip install --upgrade --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst
           pip install -e .
-          pip install sybil pytest jax~=0.6.0 jaxlib~=0.6.0 torch
+          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
