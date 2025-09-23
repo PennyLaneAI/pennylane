@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""This module contains tools for dedicated logical resource estimation."""
+r"""This module contains tools dedicated for logical resource estimation."""
 
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
@@ -26,6 +26,8 @@ from .resource_operator import (
     GateCount,
     resource_rep,
 )
+
+from .estimate import estimate
 
 from .ops.identity import Identity, GlobalPhase
 
@@ -68,7 +70,8 @@ from .ops.op_math import (
     Prod,
     ChangeOpBasis,
 )
-from .templates.subroutines import (
+
+from .ops.templates import (
     OutOfPlaceSquare,
     PhaseGradient,
     OutMultiplier,
@@ -83,31 +86,25 @@ from .templates.subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
-)
-
-from .templates.stateprep import (
     MPSPrep,
     QROMStatePreparation,
     UniformStatePrep,
     AliasSampling,
     PrepTHC,
-)
-
-from .templates.comparators import (
     IntegerComparator,
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
 )
 
-from .templates.qubitize import (
+from .ops.templates.qubitize import (
     QubitizeTHC
 )
 
-from .templates.select import (
+from .ops.templates.select import (
     SelectTHC
 )
 
-from .templates.compact_hamiltonian import (
+from .ops.templates.compact_hamiltonian import (
     CompactHamiltonian
 )

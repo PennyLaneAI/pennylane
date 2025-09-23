@@ -180,6 +180,12 @@ class TestPauliRotation:
         )
         assert op2.resource_decomp(**op2.resource_params) == expected_resources
 
+    @pytest.mark.parametrize("resource_op_class", params_classes)
+    def test_wire_error(self, resource_op_class):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
+            resource_op_class(wires=[0, 1])
+
 
 class TestRot:
     """Test ResourceRot"""
@@ -278,6 +284,11 @@ class TestRot:
         """Test that the pow resources are as expected"""
         op = Rot()
         assert op.pow_resource_decomp(z, op.resource_params) == expected_res
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
+            Rot(wires=[0, 1])
 
 
 class TestPhaseShift:
@@ -379,3 +390,8 @@ class TestPhaseShift:
         """Test that the pow resources are as expected"""
         op = PhaseShift()
         assert op.pow_resource_decomp(z, op.resource_params) == expected_res
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
+            PhaseShift(wires=[0, 1])

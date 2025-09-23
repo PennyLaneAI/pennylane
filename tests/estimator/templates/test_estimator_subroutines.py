@@ -19,9 +19,10 @@ import math
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -230,6 +231,17 @@ class TestResourceSemiAdder:
             qre.Deallocate(4),
         ]
         assert op.resource_decomp(**op.resource_params) == expected_res
+
+    @pytest.mark.parametrize("max_register_size", (-1, 0, 2))
+    def test_resources_controlled_error(self, max_register_size):
+        """Test that the controlled_resource_decomp raises correct errors."""
+
+        with pytest.raises(ResourcesUndefinedError):
+            qre.SemiAdder.controlled_resource_decomp(
+                num_ctrl_wires=1,
+                num_zero_ctrl=0,
+                target_resource_params={"max_register_size": max_register_size},
+            )
 
 
 class TestResourceControlledSequence:
@@ -1111,37 +1123,37 @@ class TestResourceQROM:
             qre.QROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, clean",
+        "num_data_points, size_data_points, num_bit_flips, depth, zeroed",
         (
             (10, 3, 15, None, True),
             (100, 5, 50, 2, False),
             (12, 2, 5, 1, True),
         ),
     )
-    def test_resource_params(self, num_data_points, size_data_points, num_bit_flips, depth, clean):
+    def test_resource_params(self, num_data_points, size_data_points, num_bit_flips, depth, zeroed):
         """Test that the resource params are correct."""
         if depth is None:
             op = qre.QROM(num_data_points, size_data_points)
         else:
-            op = qre.QROM(num_data_points, size_data_points, num_bit_flips, clean, depth)
+            op = qre.QROM(num_data_points, size_data_points, num_bit_flips, zeroed, depth)
 
         assert op.resource_params == {
             "num_bitstrings": num_data_points,
             "size_bitstring": size_data_points,
             "num_bit_flips": num_bit_flips,
             "select_swap_depth": depth,
-            "clean": clean,
+            "zeroed": zeroed,
         }
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, clean",
+        "num_data_points, size_data_points, num_bit_flips, depth, zeroed",
         (
             (10, 3, 15, None, True),
             (100, 5, 50, 2, False),
             (12, 2, 5, 1, True),
         ),
     )
-    def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, clean):
+    def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, zeroed):
         """Test that the compressed representation is correct."""
         expected_num_wires = size_data_points + math.ceil(math.log2(num_data_points))
         expected = qre.CompressedResourceOp(
@@ -1152,7 +1164,7 @@ class TestResourceQROM:
                 "size_bitstring": size_data_points,
                 "num_bit_flips": num_bit_flips,
                 "select_swap_depth": depth,
-                "clean": clean,
+                "zeroed": zeroed,
             },
         )
         assert (
@@ -1160,14 +1172,14 @@ class TestResourceQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                clean=clean,
+                zeroed=zeroed,
                 select_swap_depth=depth,
             )
             == expected
         )
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, clean, expected_res",
+        "num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res",
         (
             (
                 10,
@@ -1265,7 +1277,7 @@ class TestResourceQROM:
         ),
     )
     def test_resources(
-        self, num_data_points, size_data_points, num_bit_flips, depth, clean, expected_res
+        self, num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res
     ):
         """Test that the resources are correct."""
         assert (
@@ -1273,7 +1285,7 @@ class TestResourceQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                clean=clean,
+                zeroed=zeroed,
                 select_swap_depth=depth,
             )
             == expected_res

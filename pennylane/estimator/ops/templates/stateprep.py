@@ -15,16 +15,15 @@ r"""Resource operators for state preparation templates."""
 import math
 from typing import Dict
 
-import pennylane.numpy as np
 import pennylane.estimator as qre
-from pennylane.estimator.wires_manager import Allocate, Deallocate
+import pennylane.numpy as np
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
@@ -66,7 +65,7 @@ class UniformStatePrep(ResourceOperator):
      Total qubits: 5
      Total gates : 124
      Qubit breakdown:
-      clean qubits: 1, dirty qubits: 0, algorithmic qubits: 4
+      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 4
      Gate breakdown:
       {'Hadamard': 16, 'X': 12, 'CNOT': 4, 'Toffoli': 4, 'T': 88}
     """
@@ -179,7 +178,7 @@ class AliasSampling(ResourceOperator):
      Total qubits: 81
      Total gates : 6.157E+3
      Qubit breakdown:
-      clean qubits: 6, dirty qubits: 68, algorithmic qubits: 7
+      zeroed qubits: 6, any_state qubits: 68, algorithmic qubits: 7
      Gate breakdown:
       {'Hadamard': 730, 'X': 479, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
     """
@@ -300,7 +299,7 @@ class MPSPrep(ResourceOperator):
      Total qubits: 13
      Total gates : 1.654E+3
      Qubit breakdown:
-      clean qubits: 3, dirty qubits: 0, algorithmic qubits: 10
+      zeroed qubits: 3, any_state qubits: 0, algorithmic qubits: 10
      Gate breakdown:
       {'RZ': 728, 'CNOT': 774, 'RY': 152}
     """
@@ -448,7 +447,7 @@ class QROMStatePreparation(ResourceOperator):
      Total qubits: 28
      Total gates : 2.744E+3
      Qubit breakdown:
-      clean qubits: 23, dirty qubits: 0, algorithmic qubits: 5
+      zeroed qubits: 23, any_state qubits: 0, algorithmic qubits: 5
      Gate breakdown:
       {'X': 230, 'Toffoli': 236, 'CNOT': 1.522E+3, 'Hadamard': 732, 'S': 12, 'Adjoint(S)': 12}
 
@@ -469,7 +468,7 @@ class QROMStatePreparation(ResourceOperator):
          Total qubits: 21
          Total gates : 2.680E+3
          Qubit breakdown:
-          clean qubits: 17, dirty qubits: 0, algorithmic qubits: 4
+          zeroed qubits: 17, any_state qubits: 0, algorithmic qubits: 4
          Gate breakdown:
           {'QROM': 5, 'Adjoint(QROM)': 5, 'CNOT': 580, 'T': 1.832E+3, 'Hadamard': 258}
 
@@ -490,11 +489,11 @@ class QROMStatePreparation(ResourceOperator):
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
         ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
 
         Alternatively, we can configure each value independently by specifying a list. Note the size
         of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
@@ -510,11 +509,11 @@ class QROMStatePreparation(ResourceOperator):
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
         ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 1, 'clean': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': None, 'clean': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': None, 'clean': False}
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 1, 'zeroed': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': None, 'zeroed': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': None, 'zeroed': False}
     """
 
     resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
@@ -664,7 +663,7 @@ class QROMStatePreparation(ResourceOperator):
                         num_bitstrings=num_bitstrings,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=num_bit_flips,
-                        clean=False,
+                        zeroed=False,
                         select_swap_depth=selswap_depths[j],
                     )
                 )
@@ -679,7 +678,7 @@ class QROMStatePreparation(ResourceOperator):
                                 "num_bitstrings": num_bitstrings,
                                 "num_bit_flips": num_bit_flips,
                                 "size_bitstring": num_precision_wires,
-                                "clean": False,
+                                "zeroed": False,
                                 "select_swap_depth": selswap_depths[j],
                             },
                         ),
@@ -717,7 +716,7 @@ class QROMStatePreparation(ResourceOperator):
                         num_bitstrings=2**num_state_qubits,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=((2**num_state_qubits) * num_precision_wires // 2),
-                        clean=False,
+                        zeroed=False,
                         select_swap_depth=selswap_depths[-1],
                     )
                 )
@@ -732,7 +731,7 @@ class QROMStatePreparation(ResourceOperator):
                                 "num_bitstrings": 2**num_state_qubits,
                                 "size_bitstring": num_precision_wires,
                                 "num_bit_flips": ((2**num_state_qubits) * num_precision_wires // 2),
-                                "clean": False,
+                                "zeroed": False,
                                 "select_swap_depth": selswap_depths[-1],
                             },
                         ),

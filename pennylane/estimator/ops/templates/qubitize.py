@@ -18,6 +18,7 @@ import numpy as np
 
 from pennylane import estimator as qre
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from .compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
