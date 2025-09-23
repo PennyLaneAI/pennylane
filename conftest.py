@@ -21,6 +21,7 @@ except ImportError:
 namespace = {
     "qml": qml,
     "np": base_numpy,
+    "pnp": qml.numpy,
     "jax": jax,
     "torch": torch,
     "jnp": getattr(jax, "numpy", None),
