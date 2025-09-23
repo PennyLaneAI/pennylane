@@ -1,0 +1,44 @@
+name: Documentation Tests
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs: 
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+      force_large_runner: ${{ github.event_name == 'merge_group' }}
+
+  documentation-tests:
+    if: github.event.pull_request.draft == false
+    needs: [determine_runner]
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+
+  steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install sybil pytest
+
+      - name: Run documentation tests
+        run: |
+          pytest pennylane/ops
