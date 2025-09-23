@@ -1,3 +1,4 @@
+import copy
 import typing
 from typing import Hashable, List
 
@@ -19,7 +20,7 @@ class LeafNode(Node):
     """
 
     def __init__(self, value: Hashable):
-        self.value = value
+        self.value = copy.deepcopy(value)
         self.order = 1
 
     def __eq__(self, other):
@@ -33,6 +34,14 @@ class LeafNode(Node):
     def __repr__(self):
         return str(self.value)
 
+    def __getitem__(self, i):
+        assert i == 0
+        return self.value
+
+    def __setitem__(self, i, v):
+        assert i == 0
+        self.value = copy.deepcopy(v)
+
 
 class CommutatorNode(Node):
     """
@@ -44,8 +53,8 @@ class CommutatorNode(Node):
     def __init__(self, left: Node, right: Node):
         if not isinstance(left, Node) or not isinstance(right, Node):
             raise TypeError("Both left and right children must be Node instances.")
-        self.left = left
-        self.right = right
+        self.left = copy.deepcopy(left)
+        self.right = copy.deepcopy(right)
         self.order = self.left.order + self.right.order
 
     def __str__(self):
@@ -58,6 +67,22 @@ class CommutatorNode(Node):
         if not isinstance(other, CommutatorNode):
             return False
         return self.left == other.left and self.right == other.right
+
+    def __getitem__(self, i):
+        if i >= self.order or i < 0:
+            raise RuntimeError("Index out of range.")
+        if i < self.left.order:
+            return self.left[i]
+        else:
+            return self.right[i - self.left.order]
+
+    def __setitem__(self, i, v):
+        if i >= self.order or i < 0:
+            raise RuntimeError("Index out of range.")
+        if i < self.left.order:
+            self.left[i] = v
+        else:
+            self.right[i - self.left.order] = v
 
     def _replace_node_impl(self, target_node: Node, new_nodes: List[Node]):
         """
@@ -74,13 +99,13 @@ class CommutatorNode(Node):
                 "Got fewer replacement nodes than the number of targte nodes in the commutator tree."
             )
 
-        if self.left is target_node:
+        if self.left == target_node:
             new_node = new_nodes.pop(0)
             if not isinstance(new_node, Node):
                 raise TypeError("The replacement node must be a Node instance.")
             self.left = new_node
 
-        if self.right is target_node:
+        if self.right == target_node:
             new_node = new_nodes.pop(0)
             if not isinstance(new_node, Node):
                 raise TypeError("The replacement node must be a Node instance.")
@@ -123,8 +148,6 @@ def is_mergeable(node1: Node, node2: Node, k: int):
     if not isinstance(node1, Node) or not isinstance(node2, Node):
         raise TypeError("Only Node instances can be checked for mergeability.")
 
-    print(node1, node2, k)
-
     if type(node1) is not type(node2):
         # different tree structure, not mergeable
         return False
@@ -145,6 +168,47 @@ def is_mergeable(node1: Node, node2: Node, k: int):
         if node1.left != node2.left:
             return False
         return is_mergeable(node1.right, node2.right, k - node1.left.order)
+
+
+def merge(node1: Node, node2: Node, k: int):
+    """
+    Merge two nodes at index k.
+    """
+
+    if not is_mergeable(node1, node2, k):
+        raise RuntimeError(f"The two commutators are not mergeable at index {k}.")
+
+    sum_comm = copy.deepcopy(node1)
+    if not all(isinstance(v, set) for v in [node1[k], node2[k]]):
+        raise RuntimeError("Merging commutators can only take sets at the merged position.")
+    sum_comm[k] = node1[k] | node2[k]
+    return sum_comm
+
+
+#
+# tests
+#
+
+
+def test_merge():
+    A = LeafNode({"A"})
+    B = LeafNode({"B"})
+    C = LeafNode({"C"})
+    D = LeafNode({"D"})
+    comm1 = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, B), D)
+    )
+
+    comm2 = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), D)
+    )
+    sum_comm = merge(comm1, comm2, 4)
+
+    merged_node = LeafNode({"B", "D"})
+    expected = CommutatorNode(
+        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, merged_node), D)
+    )
+    assert sum_comm == expected
 
 
 @pytest.mark.parametrize("value", ["A", 12, [1, 2, 3], {"X", "Y", 1.2}])
