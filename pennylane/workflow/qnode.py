@@ -453,7 +453,6 @@ class QNode:
 
             x = np.array([0.4, 2.1, -1.3])
             y = 2.71
-            np.random.seed(42)
             U = np.stack([unitary_group.rvs(16) for _ in range(3)])
 
         This circuit takes three arguments, and the first two are used twice each. ``x`` and
