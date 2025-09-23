@@ -367,7 +367,9 @@ class QNode:
         The resulting array contains the QNode evaluations at the single values:
 
         >>> [circuit(x_val) for x_val in x]
-        [tensor(0.8660254, requires_grad=True), tensor(-0.70710678, requires_grad=True), tensor(-0.8660254, requires_grad=True)]
+        [tensor(0.8660254, requires_grad=True),
+         tensor(-0.70710678, requires_grad=True),
+         tensor(-0.8660254, requires_grad=True)]
 
         In addition to the results being stacked into one ``tensor`` already, the broadcasted
         execution actually is performed in one simulation of the quantum circuit, instead of
@@ -451,6 +453,7 @@ class QNode:
                 qml.RY(y, wires=3)
                 return qml.expval(qml.Z(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3))
 
+
             x = np.array([0.4, 2.1, -1.3])
             y = 2.71
             U = np.stack([unitary_group.rvs(16) for _ in range(3)])
@@ -461,12 +464,14 @@ class QNode:
         all three values in ``x`` and ``U``. We obtain three output values:
 
         >>> circuit(x, y, U)
-        tensor([-0.34051275,  0.12442315, -0.08802527], requires_grad=True)
+        tensor([-0.06939911,  0.26051235, -0.20361048], requires_grad=True)
 
         This is equivalent to iterating over all broadcasted arguments using ``zip``:
 
         >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)]
-        [tensor(-0.34051275, requires_grad=True), tensor(0.12442315, requires_grad=True), tensor(-0.08802527, requires_grad=True)]
+        [tensor(-0.06939911, requires_grad=True),
+         tensor(0.26051235, requires_grad=True),
+         tensor(-0.20361048, requires_grad=True)]
 
         In the same way it is possible to broadcast multiple arguments of a single operator,
         for example:
