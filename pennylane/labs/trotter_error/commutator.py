@@ -1,3 +1,7 @@
+import typing
+from typing import List
+
+
 class Node:
     """Abstract base class for all nodes in the commutator tree."""
 
@@ -15,8 +19,10 @@ class LeafNode(Node):
     def __init__(self, value: any):
         self.value = value
 
-    def __str__(self) -> str:
-        """Returns the string representation of the leaf's value."""
+    def __str__(self):
+        return str(self.value)
+
+    def __repr__(self):
         return str(self.value)
 
 
@@ -33,11 +39,13 @@ class CommutatorNode(Node):
         self.left = left
         self.right = right
 
-    def __str__(self) -> str:
-        """Returns the standard mathematical string representation of the commutator."""
+    def __str__(self):
         return f"[{self.left}, {self.right}]"
 
-    def replace_node(self, target_node: Node, new_node: Node) -> bool:
+    def __repr__(self):
+        return f"[{self.left}, {self.right}]"
+
+    def _replace_node_impl(self, target_node: Node, new_nodes: List[Node]):
         """
         Recursively finds a target child node and replaces it.
         This method traverses the tree starting from the current node's children.
@@ -45,52 +53,62 @@ class CommutatorNode(Node):
         Args:
             target_node: The specific node object to be replaced.
             new_node: The new node object to insert in its place.
-
-        Returns:
-            True if the replacement was successful, False otherwise.
         """
-        if not isinstance(new_node, Node):
-            raise TypeError("The replacement node must be a Node instance.")
+
+        if not new_nodes:
+            raise RuntimeError(
+                "Got fewer replacement nodes than the number of targte nodes in the commutator tree."
+            )
 
         if self.left is target_node:
+            new_node = new_nodes.pop(0)
+            if not isinstance(new_node, Node):
+                raise TypeError("The replacement node must be a Node instance.")
             self.left = new_node
-            return True
 
         if self.right is target_node:
+            new_node = new_nodes.pop(0)
+            if not isinstance(new_node, Node):
+                raise TypeError("The replacement node must be a Node instance.")
             self.right = new_node
-            return True
 
         # If not a direct child, recurse into children that are CommutatorNodes
-        if isinstance(self.left, CommutatorNode) and self.left.replace_node(target_node, new_node):
-            return True
+        if isinstance(self.left, CommutatorNode):
+            self.left._replace_node_impl(target_node, new_nodes)
 
-        if isinstance(self.right, CommutatorNode) and self.right.replace_node(
-            target_node, new_node
-        ):
-            return True
+        if isinstance(self.right, CommutatorNode):
+            self.right._replace_node_impl(target_node, new_nodes)
 
-        # Target node was not found in this branch of the tree
-        return False
+    def replace_node(self, target_node: Node, new_nodes: List[Node]):
+        """
+        Replace target_node in the tree with the new_nodes.
+        Each next occurence of target_node will be replaced with the next node in new_nodes.
+
+        Args:
+            target_node: The specific node object to be replaced.
+            new_node: The new node object to insert in its place.
+        """
+        self._replace_node_impl(target_node, new_nodes)
+        if len(new_nodes) > 0:
+            raise RuntimeError(
+                "Got more replacement nodes than the number of targte nodes in the commutator tree."
+            )
 
 
 A = LeafNode("A")
 B = LeafNode("B")
 C = LeafNode("C")
 D = LeafNode("D")
-comm_AB = CommutatorNode(A, B)
-expr = CommutatorNode(comm_AB, C)
-print(f"Original Expression: {expr}")
-new_comm = CommutatorNode(C, D)
-expr.replace_node(target_node=A, new_node=new_comm)
-print(f"New Expression: {expr}")
-
-
-comm_AB = CommutatorNode(A, B)
-expr = CommutatorNode(comm_AB, C)
-print(f"\nOriginal Expression: {expr}")
+E = LeafNode("E")
 X = LeafNode("X")
 Y = LeafNode("Y")
-comm_XY = CommutatorNode(X, Y)
-# comm_XY = D
-expr.replace_node(target_node=comm_AB, new_node=comm_XY)
-print(f"New Expression: {expr}")
+big_comm = CommutatorNode(
+    CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
+)
+
+replacements = [CommutatorNode(X, Y), E, B]
+print(big_comm)
+print(replacements)
+
+big_comm.replace_node(A, replacements)
+print(big_comm)
