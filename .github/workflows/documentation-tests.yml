@@ -89,13 +89,12 @@ jobs:
           --ignore=pennylane/tape
           --ignore=pennylane/transforms
           --ignore=pennylane/capture
-          --ignore=pennylane/pauli
-          --ignore=pennylane/resource
           --ignore=pennylane/decomposition
           --ignore=pennylane/devices
           --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
+          --ignore=pennylane/pauli
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
@@ -109,6 +108,7 @@ jobs:
           --ignore=pennylane/templates/layer
           "
           IGNORE_OPTS_TERTIARY="
+          --ignore=pennylane/resource
           --ignore=pennylane/io
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
