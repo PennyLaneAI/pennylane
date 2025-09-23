@@ -140,7 +140,7 @@ and measurements in the final circuit. This step eliminates any object that has 
 ...     qml.expval(qml.Z(0) @ qml.X(1))
 >>> ops, measurements = qml.queuing.process_queue(q)
 >>> ops
-[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), X(0)**1.5]
+[StatePrep(array([1., 0.]), wires=[0]), X(0)**1.5]
 >>> measurements
 [expval(Z(0) @ X(1))]
 
@@ -444,7 +444,7 @@ def apply(op, context=QueuingManager):
             return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)(0.6))
-    0: ──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+    0: ──RY(0.60)──RX(0.40)─┤  <Z>
 
     It can also be used to apply functions repeatedly:
 
@@ -458,7 +458,7 @@ def apply(op, context=QueuingManager):
             return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)(0.6))
-    0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+    0: ──RX(0.40)──RY(0.60)──RX(0.40)─┤  <Z>
 
     .. warning::
 
@@ -494,8 +494,8 @@ def apply(op, context=QueuingManager):
                 return qml.apply(meas)
 
         >>> print(qml.draw(circuit)(0.6))
-         0: ──RY(0.6)──╭●──╭┤ ⟨Z ⊗ Y⟩
-         1: ───────────╰X──╰┤ ⟨Z ⊗ Y⟩
+        0: ──RY(0.60)─╭●─┤ ╭<Z@Y>
+        1: ───────────╰X─┤ ╰<Z@Y>
 
         By default, ``apply`` will queue operators to the currently
         active queuing context.

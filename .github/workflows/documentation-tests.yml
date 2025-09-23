@@ -67,8 +67,6 @@ jobs:
           --ignore=pennylane/pytrees
           --ignore=pennylane/numpy
           --ignore=pennylane/logging
-          --ignore=pennylane/registers.py
-          --ignore=pennylane/queuing.py
           --ignore=pennylane/configuration
           --ignore=pennylane/compiler
           --ignore=pennylane/measurements

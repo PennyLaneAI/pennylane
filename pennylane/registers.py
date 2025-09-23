@@ -56,7 +56,7 @@ def registers(register_dict):
 
     A simple example showcasing how to implement the `SWAP <https://en.wikipedia.org/wiki/Swap_test>`_ test:
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("default.qubit")
         reg = qml.registers({"aux": 1, "phi": 5, "psi": 5})
