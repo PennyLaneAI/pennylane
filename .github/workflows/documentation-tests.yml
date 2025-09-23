@@ -31,7 +31,7 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
-    name: Docs on Python 3.11 
+    name: Documentation Tests on Python 3.11 
 
     steps:
       - name: Checkout repository
