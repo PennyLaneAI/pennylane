@@ -74,7 +74,7 @@ def registers(register_dict):
             return qml.expval(qml.Z(wires=reg["aux"]))
 
     >>> circuit()
-    tensor(1., requires_grad=True)
+    0.999...
     """
 
     def _registers(register_dict, _start_wire_index=0):
