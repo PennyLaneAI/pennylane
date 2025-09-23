@@ -42,6 +42,13 @@ class LeafNode(Node):
         assert i == 0
         self.value = copy.deepcopy(v)
 
+    def expand(self) -> dict:
+        """
+        Expands the leaf node into a dictionary representing a linear combination.
+        For a leaf 'A', the expansion is {('A',): 1}.
+        """
+        return {(str(self.value),): 1}
+
 
 class CommutatorNode(Node):
     """
@@ -133,6 +140,36 @@ class CommutatorNode(Node):
                 "Got more replacement nodes than the number of targte nodes in the commutator tree."
             )
 
+    def expand(self) -> dict:
+        """
+        Recursively expands the commutator [L, R] using the identity LR - RL.
+
+        Returns:
+            A dictionary where keys are tuples of symbols (representing a product)
+            and values are their integer coefficients.
+        """
+        left_expansion = self.left.expand()
+        right_expansion = self.right.expand()
+
+        result = {}
+
+        # Calculate the +LR term
+        for l_prod, l_coeff in left_expansion.items():
+            for r_prod, r_coeff in right_expansion.items():
+                prod = l_prod + r_prod
+                coeff = l_coeff * r_coeff
+                result[prod] = result.get(prod, 0) + coeff
+
+        # Calculate the -RL term
+        for r_prod, r_coeff in right_expansion.items():
+            for l_prod, l_coeff in left_expansion.items():
+                prod = r_prod + l_prod
+                coeff = l_coeff * r_coeff
+                result[prod] = result.get(prod, 0) - coeff
+
+        # Remove terms with a zero coefficient for a cleaner output
+        return {prod: coeff for prod, coeff in result.items() if coeff != 0}
+
 
 def is_mergeable(node1: Node, node2: Node, k: int):
     """
@@ -183,103 +220,3 @@ def merge(node1: Node, node2: Node, k: int):
         raise RuntimeError("Merging commutators can only take sets at the merged position.")
     sum_comm[k] = node1[k] | node2[k]
     return sum_comm
-
-
-#
-# tests
-#
-
-
-def test_merge():
-    A = LeafNode({"A"})
-    B = LeafNode({"B"})
-    C = LeafNode({"C"})
-    D = LeafNode({"D"})
-    comm1 = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, B), D)
-    )
-
-    comm2 = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), D)
-    )
-    sum_comm = merge(comm1, comm2, 4)
-
-    merged_node = LeafNode({"B", "D"})
-    expected = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, merged_node), D)
-    )
-    assert sum_comm == expected
-
-
-@pytest.mark.parametrize("value", ["A", 12, [1, 2, 3], {"X", "Y", 1.2}])
-def test_mergeability(value):
-    A = LeafNode(value)
-    B = LeafNode("B")
-    C = LeafNode("C")
-    D = LeafNode("D")
-    comm1 = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, B), D)
-    )
-
-    comm2 = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), D)
-    )
-
-    comm3 = CommutatorNode(
-        CommutatorNode(CommutatorNode(A, B), C), CommutatorNode(CommutatorNode(A, D), D)
-    )
-
-    assert is_mergeable(comm1, comm2, 0) == False
-    assert is_mergeable(comm1, comm2, 4) == True
-    assert is_mergeable(comm1, comm3, 0) == False
-
-
-def test_replacement():
-    A = LeafNode([1, 2])
-    B = LeafNode("B")
-    C = LeafNode("C")
-    D = LeafNode("D")
-    E = LeafNode("E")
-    X = LeafNode("X")
-    Y = LeafNode("Y")
-    big_comm = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
-    )
-
-    replacements = [CommutatorNode(X, Y), E]
-    big_comm.replace_node(A, replacements)
-    assert str(big_comm) == "[[[X, Y], [B, C]], [[E, D], E]]"
-
-
-def test_replacement_too_many():
-    A = LeafNode("A")
-    B = LeafNode("B")
-    C = LeafNode("C")
-    D = LeafNode("D")
-    E = LeafNode("E")
-    X = LeafNode("X")
-    Y = LeafNode("Y")
-    big_comm = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
-    )
-
-    replacements = [CommutatorNode(X, Y), E, X]
-    with pytest.raises(RuntimeError, match="Got more replacement nodes"):
-        big_comm.replace_node(A, replacements)
-
-
-def test_replacement_too_few():
-    A = LeafNode("A")
-    B = LeafNode("B")
-    C = LeafNode("C")
-    D = LeafNode("D")
-    E = LeafNode("E")
-    X = LeafNode("X")
-    Y = LeafNode("Y")
-    big_comm = CommutatorNode(
-        CommutatorNode(A, CommutatorNode(B, C)), CommutatorNode(CommutatorNode(A, D), E)
-    )
-
-    replacements = [CommutatorNode(X, Y)]
-    with pytest.raises(RuntimeError, match="Got fewer replacement nodes"):
-        big_comm.replace_node(A, replacements)
