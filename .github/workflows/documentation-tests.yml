@@ -71,7 +71,6 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/pytrees
           --ignore=pennylane/numpy
-          --ignore=pennylane/wires.py
           --ignore=pennylane/logging
           --ignore=pennylane/registers.py
           --ignore=pennylane/about.py
