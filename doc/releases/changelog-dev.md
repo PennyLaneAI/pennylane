@@ -67,6 +67,10 @@
   * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
     `qml.estimator.ops`.
     [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
+  * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
+    ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
+    ``IterativeQPE`` were added to `qml.estimator.ops`.
+    [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
