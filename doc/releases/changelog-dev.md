@@ -1080,6 +1080,7 @@
 
 * Add CI workflow to test documentation using `sybil`. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
+  [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
 
 * `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
