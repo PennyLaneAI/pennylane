@@ -22,8 +22,7 @@ QNodes can interface with any of the supported numerical and machine learning li
 :doc:`PyTorch <interfaces/torch>`, and
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and
-:doc:`optimizers <interfaces>`.
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors).
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :doc:`interfaces <interfaces>`.
