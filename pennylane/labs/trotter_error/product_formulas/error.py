@@ -311,7 +311,9 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
             continue
 
         order = len(commutators[0])
-        expectation = sum(_compute_expectation(commutator, fragments, state) for commutator in commutators)
+        expectation = sum(
+            _compute_expectation(commutator, fragments, state) for commutator in commutators
+        )
         expectations[order] = (1j * timestep) ** order * expectation
 
     return expectations
