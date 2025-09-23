@@ -18,8 +18,7 @@ import copy
 
 import pytest
 
-from pennylane.estimator import Allocate, Deallocate
-from pennylane.estimator.wires_manager import WireResourceManager
+from pennylane.estimator.wires_manager import Allocate, Deallocate, WireResourceManager
 from pennylane.queuing import AnnotatedQueue
 
 
