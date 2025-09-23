@@ -6,9 +6,9 @@
 Templates
 =========
 
-PennyLane provides a growing library of pre-coded templates of common variational circuit architectures
-that can be used to easily build, evaluate, and train more complex models. In the
-literature, such architectures are commonly known as an *ansatz*. Templates can be used to
+PennyLane provides a growing library of pre-coded templates of common use in quantum algorithms, 
+quantum chemistry, and variational circuit architectures. 
+In the literature, such architectures are commonly known as an *ansatz*. Templates can be used to
 :ref:`embed data <intro_ref_temp_emb>` into quantum states, to define trainable :ref:`layers <intro_ref_temp_lay>`
 of quantum gates, to :ref:`prepare quantum states <intro_ref_temp_stateprep>` as the first operation in a circuit,
 or simply as general :ref:`subroutines <intro_ref_temp_subroutines>` that a circuit is built from.
