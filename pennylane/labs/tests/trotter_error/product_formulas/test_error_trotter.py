@@ -18,7 +18,6 @@ import pytest
 
 from pennylane.labs.trotter_error import (
     HOState,
-    ImportanceConfig,
     ProductFormula,
     perturbation_error,
     vibrational_fragments,
