@@ -197,7 +197,7 @@ def _validate_diff_method(
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
-    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>` 
+    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
     and the computational device it is executed on.
 
     The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
