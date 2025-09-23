@@ -42,6 +42,8 @@ jobs:
           pip install --upgrade pip
           pip install -e .
           pip install sybil pytest
+          pip install jax~=0.6.0 jaxlib~=0.6.0
+          pip install torch
 
       - name: Run documentation tests
         run: |
