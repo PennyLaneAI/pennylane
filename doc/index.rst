@@ -27,9 +27,9 @@ PennyLane Documentation
 
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-          PennyLane is a cross-platform Python library for quantum computing,
-          quantum machine learning, and quantum chemistry.
-          Train a quantum computer the same way as a neural network.
+          PennyLane is a cross-platform Python library for quantum computing, 
+          quantum machine learning, and quantum chemistry. 
+          Built by researchers, for research.
         </p>
         <div class="row mt-3">
 
@@ -62,25 +62,28 @@ Features
     :target: javascript:void(0);
 
 
+- *Program quantum computers*.
+  Use an extensive range of available state preparations, gates and measurements.
+  Access power-user functionality, from mid-circuit measurements to error mitigation.
+
+..
+
+- *Master quantum algorithms*.
+  Unlock quantum algorithms for research applications like quantum chemistry. 
+  Use built-in tools to analyze performance, monitor resource use, and visualize circuit layouts.
+
+..
+
 - *Follow the gradient*.
-  Built-in **automatic differentiation** of quantum circuits.
+  Implement **automatic differentiation** of quantum circuits thanks to multiple 
+  **optimization and machine learning** tools.
 
 ..
 
-- *Best of both worlds*.
-  Support for **hybrid quantum and classical** models; connect quantum
-  hardware with PyTorch, JAX and NumPy.
-
-..
-
-- *Just in time compilation*. Compile your **entire hybrid workflow**, with support for
+- *Just in time compilation*. 
+  Compile your **entire hybrid workflow**, with support for
   adaptive circuits, real-time measurement feedback, unbounded loops, and more. See
   `Catalyst <https://github.com/pennylaneai/catalyst>`__ for more details.
-
-..
-
-- *Batteries included*.
-  Provides **optimization and machine learning** tools.
 
 ..
 
@@ -94,26 +97,24 @@ Features
 Getting started
 ---------------
 
-For an introduction to quantum machine learning, we have several guides and resources available
-on our `QML website <https://pennylane.ai/qml/>`_, including
-`What is QML? <https://pennylane.ai/qml/whatisqml>`_,
+For an introduction to quantum computing with PennyLane, we have several guides and resources such as our
+`Codebook <https://pennylane.ai/codebook/>`_,
 `frequently asked questions <https://pennylane.ai/faq>`_,
 a `glossary of key concepts <https://pennylane.ai/qml/glossary>`_, and a curated selection
-of `QML videos <https://pennylane.ai/qml/videos>`_.
+of `videos <https://pennylane.ai/qml/videos>`_.
 
-Then, take a deeper dive into quantum machine learning by
-exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
-with our collection of
-`QML demonstrations <https://pennylane.ai/qml/demonstrations>`_.
+Then, take a deeper dive into quantum computing by
+exploring cutting-edge algorithms and many more research topics using PennyLane with our collection of
+`demonstrations <https://pennylane.ai/qml/demonstrations>`_.
 
 You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
-more details on the :doc:`quantum operations <introduction/operations>`, and to explore
-the available :doc:`optimization tools <introduction/interfaces>` provided by PennyLane.
+more details on :doc:`quantum operations <introduction/operations>`, and to explore
+the available tools for applications such as :doc:`quantum chemistry <introduction/chemistry>`.
 We also have a detailed guide on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
 Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins>`_
-available for running your hybrid optimizations—these include
+available for running your quantum programs—these include
 IBM Q, provided by the `PennyLane-Qiskit <https://docs.pennylane.ai/projects/qiskit/en/stable/>`__
 plugin, as well as the Rigetti Aspen QPU provided by `PennyLane-Rigetti
 <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__.
@@ -142,7 +143,7 @@ We encourage contributions — simply fork the PennyLane repository, and then ma
 your contribution. All contributors to PennyLane will be listed as authors on the releases.
 
 To chat directly with the team designing and building PennyLane, as well as members of
-our community — ranging from quantum machine learning researchers, to students, to those
+our community — ranging from researchers, to students, to those
 just interested in being a part of a rapidly growing industry — you can join our
 `discussion forum <https://discuss.pennylane.ai>`_.
 
