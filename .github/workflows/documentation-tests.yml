@@ -14,7 +14,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-jobs: 
+jobs:
   determine_runner:
     if: github.event.pull_request.draft == false
     name: Determine runner type to use
@@ -28,14 +28,22 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
+    strategy:
+      matrix:
+        # Update the Python versions here as needed
+        python-version: ["3.11", "3.12", "3.13"]
+
+    name: Docs on Python ${{ matrix.python-version }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip' # Added caching to speed up runs
 
       - name: Install dependencies
         run: |
