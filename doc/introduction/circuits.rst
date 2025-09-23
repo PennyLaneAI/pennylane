@@ -22,8 +22,7 @@ QNodes can interface with any of the supported numerical and machine learning li
 :doc:`PyTorch <interfaces/torch>`, and
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and
-:doc:`optimizers <interfaces>`.
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors).
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :doc:`interfaces <interfaces>`.
@@ -77,7 +76,7 @@ constraints:
 Defining a device
 -----------------
 
-To run---and later optimize---a quantum circuit, one needs to first specify a *computational device*.
+To run a quantum circuit, one needs to first specify a *computational device*.
 
 The device is an instance of the :class:`~.pennylane.devices.Device`
 class, and can represent either a simulator or hardware device. They can be
@@ -200,8 +199,8 @@ Re-configuring QNode settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There is often a need to modify an existing QNode setup to test a new configuration. This includes,
-but is not limited to, executing on a different quantum device, using a new differentiation method or 
-machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
+but is not limited to, executing on a different quantum device, using a new differentiation method, etc. 
+The :meth:`~.pennylane.QNode.update` method provides a convenient
 way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
 QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.). Only arguments
 used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the transform program cannot be updated 
