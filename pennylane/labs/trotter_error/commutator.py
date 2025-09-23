@@ -21,6 +21,11 @@ class LeafNode(Node):
     def __init__(self, value: any):
         self.value = value
 
+    def __eq__(self, other):
+        if not isinstance(other, LeafNode):
+            return False
+        return self.value == other.value
+
     def __str__(self):
         return str(self.value)
 
@@ -46,6 +51,11 @@ class CommutatorNode(Node):
 
     def __repr__(self):
         return f"[{self.left}, {self.right}]"
+
+    def __eq__(self, other):
+        if not isinstance(other, CommutatorNode):
+            return False
+        return self.left == other.left and self.right == other.right
 
     def _replace_node_impl(self, target_node: Node, new_nodes: List[Node]):
         """
@@ -117,8 +127,8 @@ def is_mergeable(node1: Node, node2: Node, k: int):
     if not isinstance(node1, Node) or not isinstance(node2, Node):
         raise TypeError("Only Node instances can be checked for mergeability.")
 
-    string1 = str(node1)  # .replace("[", "").replace("]", "").replace(",", "").replace(" ", "")
-    string2 = str(node2)  # .replace("[", "").replace("]", "").replace(",", "").replace(" ", "")
+    string1 = str(node1)
+    string2 = str(node2)
 
     if len(string1) != len(string2):
         return False
