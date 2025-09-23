@@ -30,18 +30,22 @@ from xdsl.dialects.builtin import (
     I32,
     I64,
     ComplexType,
+    FlatSymbolRefAttrConstr,
     Float64Type,
     FloatAttr,
+    FunctionType,
     IntegerAttr,
     IntegerType,
     MemRefType,
     StringAttr,
+    SymbolNameConstraint,
     TensorType,
     UnitAttr,
     i1,
     i64,
 )
 from xdsl.ir import (
+    Attribute,
     Block,
     Dialect,
     EnumAttribute,
@@ -52,8 +56,10 @@ from xdsl.ir import (
     SSAValue,
     StrEnum,
     TypeAttribute,
+    VerifyException,
 )
 from xdsl.irdl import (
+    AnyAttr,
     AtLeast,
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
@@ -76,11 +82,16 @@ from xdsl.irdl import (
     var_result_def,
 )
 from xdsl.traits import (
+    CallableOpInterface,
     HasParent,
+    IsolatedFromAbove,
     IsTerminator,
     NoMemoryEffect,
     Pure,
     SingleBlockImplicitTerminator,
+    SymbolOpInterface,
+    SymbolTable,
+    SymbolUserOpInterface,
 )
 
 from ..xdsl_extras import MemRefConstraint, TensorConstraint
@@ -1017,6 +1028,119 @@ class YieldOp(IRDLOperation):
     retvals = var_operand_def(QuregType)
 
     traits = traits_def(HasParent(AdjointOp), IsTerminator(), Pure())
+
+
+# TODO: Can we remove the func/call interface traits?
+class FuncOpCallableInterface(CallableOpInterface):
+    """Func op interface"""
+
+    @classmethod
+    def get_callable_region(cls, op: Operation) -> Region:
+        assert isinstance(op, ExecutionOp)
+        # TODO: Fix this
+        return Region()
+
+    @classmethod
+    def get_argument_types(cls, op: Operation) -> tuple[Attribute, ...]:
+        assert isinstance(op, ExecutionOp)
+        return op.function_type.inputs.data
+
+    @classmethod
+    def get_result_types(cls, op: Operation) -> tuple[Attribute, ...]:
+        assert isinstance(op, ExecutionOp)
+        return op.function_type.outputs.data
+
+
+class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
+    """Call op interface"""
+
+    def verify(self, op: Operation) -> None:
+        assert isinstance(op, CallExecutionOp)
+
+        found_callee = SymbolTable.lookup_symbol(op, op.callee)
+        if not found_callee:
+            raise VerifyException(f"'{op.callee}' could not be found in symbol table")
+
+        if not isinstance(found_callee, ExecutionOp):
+            raise VerifyException(f"'{op.callee}' does not reference a valid function")
+
+        if len(found_callee.function_type.inputs) != len(op.arguments):
+            raise VerifyException("incorrect number of operands for callee")
+
+        if len(found_callee.function_type.outputs) != len(op.result_types):
+            raise VerifyException("incorrect number of results for callee")
+
+        for idx, (found_operand, operand) in enumerate(
+            zip(found_callee.function_type.inputs, (arg.type for arg in op.arguments))
+        ):
+            if found_operand != operand:
+                raise VerifyException(
+                    f"operand type mismatch: expected operand type {found_operand}, "
+                    f"but provided {operand} for operand number {idx}"
+                )
+
+        for idx, (found_res, res) in enumerate(
+            zip(found_callee.function_type.outputs, op.result_types)
+        ):
+            if found_res != res:
+                raise VerifyException(
+                    f"result type mismatch: expected result type {found_res}, but "
+                    f"provided {res} for result number {idx}"
+                )
+
+
+@irdl_op_definition
+class ExecutionYieldOp(IRDLOperation):
+    """Return-like operation for returning execution value."""
+
+    name = "quantum.exec_yield"
+    arguments = var_operand_def()
+
+    traits = lazy_traits_def(lambda: (HasParent(ExecutionOp), IsTerminator()))
+
+    assembly_format = "attr-dict ($arguments^ `:` type($arguments))?"
+
+
+@irdl_op_definition
+class ExecutionOp(IRDLOperation):
+    """Declare a device execution."""
+
+    name = "quantum.execution"
+
+    sym_name = prop_def(SymbolNameConstraint())
+    # Interface to define input and outputs types
+    function_type = prop_def(FunctionType)
+
+    # Device init, qreg alloc (return qreg)
+    init_region = region_def("single_block")
+    # Quantum gates, mid-circuit measurements (qreg in, qreg out)
+    state_evolution_region = region_def("single_block")
+    # Diagonalizing gates, observables, measurements (qreg in, measurements out)
+    measurement_region = region_def("single_block")
+    # Dealloc qreg, release device (qreg in)
+    teardown_region = region_def("single_block")
+
+    traits = traits_def(
+        IsolatedFromAbove(),
+        SingleBlockImplicitTerminator(ExecutionYieldOp),
+        SymbolOpInterface(),
+        FuncOpCallableInterface(),
+    )
+
+
+@irdl_op_definition
+class CallExecutionOp(IRDLOperation):
+    """Call a device execution."""
+
+    name = "quantum.call_execution"
+
+    arguments = var_operand_def(AnyAttr())
+    callee = prop_def(FlatSymbolRefAttrConstr)
+    res = var_result_def(AnyAttr())
+
+    traits = traits_def(
+        CallOpSymbolUserOpInterface(),
+    )
 
 
 Quantum = Dialect(
