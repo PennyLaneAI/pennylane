@@ -248,12 +248,12 @@ class OutMultiplier(ResourceOperator):
      {'Toffoli': 14, 'Hadamard': 42, 'CNOT': 14}
     """
 
-    resource_keys = {"a_num_qubits", "b_num_qubits"}
+    resource_keys = {"a_num_wires", "b_num_wires"}
 
-    def __init__(self, a_num_qubits: int, b_num_qubits: int, wires: WiresLike = None) -> None:
-        self.num_wires = a_num_qubits + b_num_qubits + 2 * max((a_num_qubits, b_num_qubits))
-        self.a_num_qubits = a_num_qubits
-        self.b_num_qubits = b_num_qubits
+    def __init__(self, a_num_wires: int, b_num_wires: int, wires: WiresLike = None) -> None:
+        self.num_wires = a_num_wires + b_num_wires + 2 * max((a_num_wires, b_num_wires))
+        self.a_num_wires = a_num_wires
+        self.b_num_wires = b_num_wires
         super().__init__(wires=wires)
 
     @property
@@ -262,10 +262,10 @@ class OutMultiplier(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * a_num_qubits (int): the size of the first input register
-                * b_num_qubits (int): the size of the second input register
+                * a_num_wires (int): the size of the first input register
+                * b_num_wires (int): the size of the second input register
         """
-        return {"a_num_qubits": self.a_num_qubits, "b_num_qubits": self.b_num_qubits}
+        return {"a_num_wires": self.a_num_wires, "b_num_wires": self.b_num_wires}
 
     @classmethod
     def resource_rep(cls, a_num_wires, b_num_wires) -> CompressedResourceOp:
@@ -279,19 +279,19 @@ class OutMultiplier(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        num_wires = a_num_qubits + b_num_qubits + 2 * max((a_num_qubits, b_num_qubits))
+        num_wires = a_num_wires + b_num_wires + 2 * max((a_num_wires, b_num_wires))
         return CompressedResourceOp(
-            cls, num_wires, {"a_num_qubits": a_num_qubits, "b_num_qubits": b_num_qubits}
+            cls, num_wires, {"a_num_wires": a_num_wires, "b_num_wires": b_num_wires}
         )
 
     @classmethod
-    def resource_decomp(cls, a_num_qubits, b_num_qubits) -> list[GateCount]:
+    def resource_decomp(cls, a_num_wires, b_num_wires) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Args:
-            a_num_qubits (int): the size of the first input register
-            b_num_qubits (int): the size of the second input register
+            a_num_wires (int): the size of the first input register
+            b_num_wires (int): the size of the second input register
 
         Resources:
             The resources are obtained from appendix G, lemma 10 in `PRX Quantum, 2, 040332 (2021)
@@ -302,13 +302,13 @@ class OutMultiplier(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        l = max(a_num_qubits, b_num_qubits)
+        l = max(a_num_wires, b_num_wires)
 
         toff = resource_rep(qre.Toffoli)
         l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
-        toff_count = 2 * a_num_qubits * b_num_qubits - l
+        toff_count = 2 * a_num_wires * b_num_wires - l
         elbow_count = toff_count // 2
         toff_count = toff_count - (elbow_count * 2)
 

@@ -123,8 +123,8 @@ class TestResourceOutMultiplier:
         """Test that the resource params are correct."""
         op = qre.OutMultiplier(a_register_size, b_register_size)
         assert op.resource_params == {
-            "a_num_qubits": a_register_size,
-            "b_num_qubits": b_register_size,
+            "a_num_wires": a_register_size,
+            "b_num_wires": b_register_size,
         }
 
     @pytest.mark.parametrize("a_register_size", (1, 2, 3))
@@ -135,7 +135,7 @@ class TestResourceOutMultiplier:
         expected = qre.CompressedResourceOp(
             qre.OutMultiplier,
             expected_num_wires,
-            {"a_num_qubits": a_register_size, "b_num_qubits": b_register_size},
+            {"a_num_wires": a_register_size, "b_num_wires": b_register_size},
         )
         assert qre.OutMultiplier.resource_rep(a_register_size, b_register_size) == expected
 
