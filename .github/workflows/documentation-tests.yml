@@ -85,6 +85,16 @@ jobs:
           --ignore=pennylane/circuit_graph.py
           --ignore=pennylane/allocation.py
           --ignore=pennylane/measurements
+          --ignore=pennylane/operation.py
+          --ignore=pennylane/ops
+          --ignore=pennylane/tape
+          --ignore=pennylane/transforms
+          --ignore=pennylane/capture
+          --ignore=pennylane/pauli
+          --ignore=pennylane/resource
+          --ignore=pennylane/decomposition
+          --ignore=pennylane/devices
+          --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
           --ignore=pennylane/shadows
@@ -115,22 +125,9 @@ jobs:
           --ignore=pennylane/debugging
           --ignore=pennylane/qcut
           --ignore=pennylane/estimator
-          "
-          IGNORE_OPTS_UNSORTED="
-          --ignore=pennylane/transforms/core
-          --ignore=pennylane/operation.py
-          --ignore=pennylane/ops
-          --ignore=pennylane/tape
           --ignore=pennylane/qchem
-          --ignore=pennylane/transforms
-          --ignore=pennylane/capture
-          --ignore=pennylane/pauli
-          --ignore=pennylane/resource
-          --ignore=pennylane/decomposition
-          --ignore=pennylane/devices
-          --ignore=pennylane/workflow
           "
-
+          
           IGNORE_OPTS="
           ${IGNORE_OPTS_CLOSED}
           ${IGNORE_OPTS_UTILITY}
