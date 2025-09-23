@@ -75,7 +75,7 @@ class QubitCarry(Operation):
 
         input_bitstring = (0, 1, 1, 0)
 
-        @qml.qnode(qml.device("default.qubit", wires=4))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(basis_state):
             qml.BasisState(basis_state, wires=[0, 1, 2, 3])
             qml.QubitCarry(wires=[0, 1, 2, 3])
@@ -245,7 +245,7 @@ class QubitSum(Operation):
 
         input_bitstring = (0, 1, 0)
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(basis_state):
             qml.BasisState(basis_state, wires = [0, 1, 2])
             qml.QubitSum(wires=[0, 1, 2])

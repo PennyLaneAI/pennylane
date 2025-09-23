@@ -356,7 +356,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=3)
+            dev = qml.device("default.qubit")
             @qml.qnode(dev, interface="autograd")
             def circuit(weights):
                 qml.RX(weights[1], wires=0)
