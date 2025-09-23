@@ -17,7 +17,7 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import GateCount
+from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
@@ -402,33 +402,102 @@ class TestChangeOpBasis:
         cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
         assert cb_op.wires is None
 
-    def test_resource_decomp(self):
+    @pytest.mark.parametrize(
+        "compute_op, target_op, uncompute_op, expected_res",
+        (
+            (
+                qre.S(wires=0),
+                qre.Prod([(qre.Z(), 3)], wires=[0, 1, 2]),
+                qre.Pow(qre.T(wires=0), 6),
+                [
+                    GateCount(qre.resource_rep(qre.S)),
+                    GateCount(
+                        qre.resource_rep(
+                            qre.Prod,
+                            {
+                                "cmpr_factors_and_counts": ((qre.Z.resource_rep(), 3),),
+                                "num_wires": 3,
+                            },
+                        ),
+                    ),
+                    GateCount(
+                        qre.resource_rep(
+                            qre.Pow,
+                            {
+                                "base_cmpr_op": (qre.T.resource_rep()),
+                                "pow_z": 6,
+                            },
+                        ),
+                    ),
+                ],
+            ),
+            (
+                qre.S(wires=0),
+                qre.Prod([(qre.Z(), 3)], wires=[0, 1, 2]),
+                None,
+                [
+                    GateCount(qre.resource_rep(qre.S)),
+                    GateCount(
+                        qre.resource_rep(
+                            qre.Prod,
+                            {
+                                "cmpr_factors_and_counts": ((qre.Z.resource_rep(), 3),),
+                                "num_wires": 3,
+                            },
+                        ),
+                    ),
+                    GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {
+                                "base_cmpr_op": (qre.S.resource_rep()),
+                            },
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resource_decomp(self, compute_op, target_op, uncompute_op, expected_res):
         """Test that we can obtain the resources as expected"""
-        compute_op = qre.S(wires=0)
-        base_op = qre.Prod([(qre.Z(), 3)], wires=[0, 1, 2])
-        uncompute_op = qre.Pow(qre.T(wires=0), 6)
-
-        cb_op = qre.ChangeOpBasis(compute_op, base_op, uncompute_op)
-        expected_res = [
-            GateCount(qre.resource_rep(qre.S)),
-            GateCount(
-                qre.resource_rep(
-                    qre.Prod,
-                    {
-                        "cmpr_factors_and_counts": ((qre.Z.resource_rep(), 3),),
-                        "num_wires": 3,
-                    },
-                ),
-            ),
-            GateCount(
-                qre.resource_rep(
-                    qre.Pow,
-                    {
-                        "base_cmpr_op": (qre.T.resource_rep()),
-                        "pow_z": 6,
-                    },
-                ),
-            ),
-        ]
+        cb_op = qre.ChangeOpBasis(compute_op, target_op, uncompute_op)
 
         assert cb_op.resource_decomp(**cb_op.resource_params) == expected_res
+
+    @pytest.mark.parametrize(
+        "compute_op, target_op, uncompute_op, num_wires",
+        (
+            (
+                qre.S(wires=0),
+                qre.Prod([(qre.Z(), 3)], wires=[0, 1, 2]),
+                qre.Pow(qre.T(wires=0), 6),
+                None,
+            ),
+            (qre.S(wires=0), qre.Prod([(qre.Z(), 3)], wires=[0, 1, 2]), None, 3),
+        ),
+    )
+    def test_resource_rep(self, compute_op, target_op, uncompute_op, num_wires):
+        op = qre.ChangeOpBasis(compute_op, target_op, uncompute_op)
+        cmpr_compute_op = compute_op.resource_rep_from_op()
+        cmpr_target_op = target_op.resource_rep_from_op()
+
+        if uncompute_op:
+            cmpr_uncompute_op = uncompute_op.resource_rep_from_op()
+        else:
+            cmpr_uncompute_op = resource_rep(qre.Adjoint, {"base_cmpr_op": cmpr_compute_op})
+
+        expected = qre.CompressedResourceOp(
+            qre.ChangeOpBasis,
+            3,
+            {
+                "cmpr_compute_op": cmpr_compute_op,
+                "cmpr_target_op": cmpr_target_op,
+                "cmpr_uncompute_op": cmpr_uncompute_op,
+                "num_wires": 3,
+            },
+        )
+
+        assert (
+            op.resource_rep(cmpr_compute_op, cmpr_target_op, cmpr_uncompute_op, num_wires)
+            == expected
+        )
