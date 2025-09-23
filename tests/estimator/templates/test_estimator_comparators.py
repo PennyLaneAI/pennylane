@@ -111,6 +111,20 @@ class TestIntegerComparator:
             (10, 3, False, [GateCount(resource_rep(qre.X))]),
             (0, 3, True, [GateCount(resource_rep(qre.X))]),
             (
+                3,
+                2,
+                True,
+                [
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX,
+                            {"num_ctrl_wires": 2, "num_zero_ctrl": 0},
+                        ),
+                        1,
+                    ),
+                ],
+            ),
+            (
                 10,
                 4,
                 True,
