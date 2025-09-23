@@ -24,7 +24,6 @@ from .subroutines import (
     Select,
     QROM,
     SelectPauliRot,
-    QubitUnitary,
     ControlledSequence,
     QPE,
     IterativeQPE,

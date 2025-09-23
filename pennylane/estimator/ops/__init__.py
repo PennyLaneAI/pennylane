@@ -31,6 +31,7 @@ from .qubit import (
     PauliRot,
     MultiRZ,
     SingleExcitation,
+    QubitUnitary,
 )
 
 from .op_math import (
@@ -66,7 +67,6 @@ from .templates import (
     Select,
     QROM,
     SelectPauliRot,
-    QubitUnitary,
     ControlledSequence,
     QPE,
     IterativeQPE,
