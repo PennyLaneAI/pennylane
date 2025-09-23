@@ -57,9 +57,6 @@ jobs:
       # to be working correctly.
       - name: Run documentation tests
         run: |
-          IGNORE_OPTS_UI="
-          --ignore=pennylane
-          "
           IGNORE_OPTS_CLOSED="
           --ignore=pennylane/ftqc
           --ignore=pennylane/labs
@@ -135,7 +132,6 @@ jobs:
           "
 
           IGNORE_OPTS="
-          ${IGNORE_OPTS_UI}
           ${IGNORE_OPTS_CLOSED}
           ${IGNORE_OPTS_UTILITY}
           ${IGNORE_OPTS_CORE}
