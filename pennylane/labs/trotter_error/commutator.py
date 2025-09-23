@@ -1,5 +1,5 @@
 import typing
-from typing import List
+from typing import Hashable, List
 
 import pytest
 
@@ -14,12 +14,13 @@ class LeafNode(Node):
     """
     Represents a leaf node in the commutator tree, holding a base value.
 
-    Think of this as the 'A', 'B', or 'C' in an expression like [[A, B], C].
-    In other words, this is a symbol.
+    The value can be any hashable object.
+    The concrete value is of no concern to the commutator tree structure class.
     """
 
-    def __init__(self, value: any):
+    def __init__(self, value: Hashable):
         self.value = value
+        self.order = 1
 
     def __eq__(self, other):
         if not isinstance(other, LeafNode):
@@ -45,6 +46,7 @@ class CommutatorNode(Node):
             raise TypeError("Both left and right children must be Node instances.")
         self.left = left
         self.right = right
+        self.order = self.left.order + self.right.order
 
     def __str__(self):
         return f"[{self.left}, {self.right}]"
@@ -107,11 +109,6 @@ class CommutatorNode(Node):
             )
 
 
-def is_symbol(char):
-    non_symbol = ["[", "]", " ", ","]
-    return char not in non_symbol
-
-
 def is_mergeable(node1: Node, node2: Node, k: int):
     """
     Check if two nodes are mergeable at index k.
@@ -123,33 +120,36 @@ def is_mergeable(node1: Node, node2: Node, k: int):
     Two commutators are mergable at index k if they have the same nesting structure, and their
     symbols only differ at index k.
     """
-
     if not isinstance(node1, Node) or not isinstance(node2, Node):
         raise TypeError("Only Node instances can be checked for mergeability.")
 
-    string1 = str(node1)
-    string2 = str(node2)
+    print(node1, node2, k)
 
-    if len(string1) != len(string2):
+    if type(node1) is not type(node2):
+        # different tree structure, not mergeable
         return False
 
-    symbol_count = 0
-    for i, (char1, char2) in enumerate(zip(string1, string2)):
-        if not is_symbol(char1) and char1 != char2:
+    if isinstance(node1, LeafNode):
+        return k == 0
+
+    if node1.left.order != node2.left.order or node1.right.order != node2.right.order:
+        return False
+
+    if k < node1.left.order:
+        # k on the left
+        if node1.right != node2.right:
             return False
-        else:
-            if is_symbol(char1):
-                if not is_symbol(char2):
-                    return False
-                symbol_count += 1
-            if symbol_count - 1 != k:
-                if char1 != char2:
-                    return False
-    return True
+        return is_mergeable(node1.left, node2.left, k)
+    else:
+        # k on the right
+        if node1.left != node2.left:
+            return False
+        return is_mergeable(node1.right, node2.right, k - node1.left.order)
 
 
-def test_mergeability():
-    A = LeafNode("A")
+@pytest.mark.parametrize("value", ["A", 12, [1, 2, 3], {"X", "Y", 1.2}])
+def test_mergeability(value):
+    A = LeafNode(value)
     B = LeafNode("B")
     C = LeafNode("C")
     D = LeafNode("D")
@@ -171,7 +171,7 @@ def test_mergeability():
 
 
 def test_replacement():
-    A = LeafNode("A")
+    A = LeafNode([1, 2])
     B = LeafNode("B")
     C = LeafNode("C")
     D = LeafNode("D")
