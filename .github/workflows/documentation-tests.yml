@@ -136,5 +136,4 @@ jobs:
           ${IGNORE_OPTS_TERTIARY}
           "
 
-          # Run pytest on the entire project, applying the full ignore list
           pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
