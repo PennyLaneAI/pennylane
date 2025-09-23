@@ -25,6 +25,7 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
@@ -41,7 +42,7 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
-    controlled_decomp_with_work_wire,
+    ctrl_single_work_wire,
     decompose_to_base,
     flip_control_adjoint,
     flip_pow_adjoint,
@@ -454,7 +455,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         rules.append(to_controlled_qubit_unitary)
 
         # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
-        rules.append(controlled_decomp_with_work_wire)
+        rules.append(ctrl_single_work_wire)
 
         return rules
 
@@ -488,14 +489,46 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in visitor.unsolved_op_indices]
             op_names = {op_node.op.name for op_node in unsolved_ops}
-            raise DecompositionError(
-                f"Decomposition not found for {op_names} to the gate set {set(self._gate_set_weights)}"
+            warnings.warn(
+                f"The graph-based decomposition system is unable to find a decomposition for "
+                f"{op_names} to the target gate set {set(self._gate_set_weights)}. The default "
+                "decomposition (op.decomposition()) for these operators will be used instead.",
+                UserWarning,
             )
         return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
 
 
 class DecompGraphSolution:
-    """A solution to a decomposition graph."""
+    """A solution to a decomposition graph.
+
+    An instance of this class is returned from :meth:`DecompositionGraph.solve`
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.decomposition import DecompositionGraph
+
+        op = qml.CRX(0.5, wires=[0, 1])
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        )
+        solution = graph.solve()
+
+    >>> with qml.queuing.AnnotatedQueue() as q:
+    ...     solution.decomposition(op)(0.5, wires=[0, 1])
+    >>> q.queue
+    [RZ(1.5707963267948966, wires=[1]),
+     RY(0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(-0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RZ(-1.5707963267948966, wires=[1])]
+    >>> solution.resource_estimate(op)
+    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
+
+    """
 
     def __init__(
         self,
@@ -504,7 +537,7 @@ class DecompGraphSolution:
         op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
     ) -> None:
         self._visitor = visitor
-        self._graph = visitor._graph  # pylint: disable=protected-access
+        self._graph = visitor._graph
         self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
 

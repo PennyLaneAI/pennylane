@@ -33,10 +33,10 @@ from xdsl.dialects.transform import AnyOpType
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.test_value import create_ssa_value
 
+from pennylane.compiler.python_compiler.conversion import xdsl_from_docstring
 from pennylane.compiler.python_compiler.dialects import transform
 from pennylane.compiler.python_compiler.dialects.transform import ApplyRegisteredPassOp
-from pennylane.compiler.python_compiler.jax_utils import xdsl_from_docstring
-from pennylane.compiler.python_compiler.transforms.api import (
+from pennylane.compiler.python_compiler.pass_api import (
     ApplyTransformSequence,
     compiler_transform,
 )
@@ -115,7 +115,7 @@ def test_integration_for_transform_interpreter(capsys):
     @compiler_transform
     @dataclass(frozen=True)
     class _HelloWorld(passes.ModulePass):
-        name = "hello-world"
+        name = "test-hello-world"
 
         custom_print: str | None = None
 
@@ -131,7 +131,7 @@ def test_integration_for_transform_interpreter(capsys):
         builtin.module {
           builtin.module {
             transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
-              %0 = "transform.apply_registered_pass"(%arg0) <{options = {"custom_print" = "Hello from custom option!"}, pass_name = "hello-world"}> : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              %0 = "transform.apply_registered_pass"(%arg0) <{options = {"custom_print" = "Hello from custom option!"}, pass_name = "test-hello-world"}> : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
               transform.yield
             }
           }

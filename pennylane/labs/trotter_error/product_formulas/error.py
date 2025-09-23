@@ -186,7 +186,7 @@ def perturbation_error(
     commutator_lists = [
         _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order)[1:]
     ]
-    
+
     # Apply top-k filtering if needed, otherwise use commutators as-is
     if topk is not None:
         sorted_commutators_by_order = _apply_topk_filtering(commutator_lists, fragments, topk)
@@ -209,7 +209,7 @@ def perturbation_error(
             for order, commutators_dict in sorted_commutators_by_order.items():
                 if len(commutators_dict) == 0:
                     continue
-                
+
                 # Reset expectation accumulator for each order
                 current_expectation = 0.0
                 partial_sums = []
@@ -219,7 +219,9 @@ def perturbation_error(
 
                 # Process commutators in order of importance (already sorted in the dict)
                 for commutator in commutators_dict.keys():
-                    commutator_expectation = _evaluate_expected_value(commutator, fragments, state, timestep, order)
+                    commutator_expectation = _evaluate_expected_value(
+                        commutator, fragments, state, timestep, order
+                    )
                     current_expectation += commutator_expectation
                     partial_sums.append(current_expectation)
 
@@ -258,11 +260,11 @@ def perturbation_error(
         executor = concurrency.backends.get_executor(backend)
         expectations = []
         convergence_info = {}
-        
+
         # Flatten all commutators but keep track of their orders AND preserve importance order
         all_commutator_tasks = []  # Will store (commutator, order, timestep, importance_position)
         commutator_order_map = {}  # Maps (commutator, order) -> position in importance order
-        
+
         for order, commutators_dict in sorted_commutators_by_order.items():
             for position, commutator in enumerate(commutators_dict.keys()):
                 all_commutator_tasks.append((commutator, fragments, timestep, order))
@@ -272,13 +274,18 @@ def perturbation_error(
             with executor(max_workers=num_workers) as ex:
                 expected_values = ex.starmap(
                     _evaluate_expected_value,
-                    [(commutator, fragments, state, timestep, order) for commutator, fragments, timestep, order in all_commutator_tasks],
+                    [
+                        (commutator, fragments, state, timestep, order)
+                        for commutator, fragments, timestep, order in all_commutator_tasks
+                    ],
                 )
 
             # Group expected values by order and preserve importance order
             order_expectations = defaultdict(list)
-            
-            for expected_value, (commutator, _, timestep, order) in zip(expected_values, all_commutator_tasks):
+
+            for expected_value, (commutator, _, timestep, order) in zip(
+                expected_values, all_commutator_tasks
+            ):
                 importance_position = commutator_order_map[(commutator, order)]
                 order_expectations[order].append((expected_value, importance_position))
 
@@ -291,7 +298,7 @@ def perturbation_error(
             for order, expectations_list in order_expectations.items():
                 total_expectation = sum(exp_val for exp_val, _ in expectations_list)
                 state_expectations[order] = total_expectation
-            
+
             expectations.append(state_expectations)
 
             # For convergence info, we need to compute partial sums sequentially
@@ -327,22 +334,22 @@ def perturbation_error(
     if parallel_mode == "nested_commutator":
         expectations = []
         convergence_info = {}
-        
+
         for state_idx, state in enumerate(states):
             state_convergence = {}
             state_expectations = {}
-            
+
             for order, commutators_dict in sorted_commutators_by_order.items():
                 if len(commutators_dict) == 0:
                     continue
-                    
+
                 # Reset expectation accumulator for each order
                 current_expectation = 0.0
                 partial_sums = []
                 mean_history = []
                 median_history = []
                 std_history = []
-                
+
                 # Process commutators in order of importance
                 for commutator in commutators_dict.keys():
                     # Use parallel evaluation for each commutator
@@ -351,73 +358,79 @@ def perturbation_error(
                     )
                     current_expectation += commutator_expectation
                     partial_sums.append(current_expectation)
-                    
+
                     # Compute convergence statistics incrementally
                     mean_history, median_history, std_history = _update_convergence_histories(
                         partial_sums, mean_history, median_history, std_history
                     )
-                
+
                 state_expectations[order] = current_expectation
                 state_convergence[order] = {
                     "mean_history": mean_history,
                     "median_history": median_history,
                     "std_history": std_history,
                 }
-            
+
             expectations.append(state_expectations)
             convergence_info[state_idx] = state_convergence
-        
+
         return expectations, convergence_info
 
     if parallel_mode == "mvp":
         executor = concurrency.backends.get_executor(backend)
         expectations = []
         convergence_info = {}
-        
+
         for state_idx, state in enumerate(states):
             state_convergence = {}
             state_expectations = {}
-            
+
             for order, commutators_dict in sorted_commutators_by_order.items():
                 if len(commutators_dict) == 0:
                     continue
-                
+
                 # Expand all commutators for this order into individual terms
                 all_term_tasks, metadata_map = _expand_all_terms_mvp_per_order(
                     commutators_dict, fragments, timestep, order
                 )
-                
+
                 # Update all tasks with the current state
-                state_tasks = [(term, coeff, state, fragments) for term, coeff, fragments in all_term_tasks]
-                
+                state_tasks = [
+                    (term, coeff, state, fragments) for term, coeff, fragments in all_term_tasks
+                ]
+
                 # Parallel evaluation of ALL terms from ALL commutators in this order
                 with executor(max_workers=num_workers) as ex:
                     all_results = ex.starmap(_apply_single_term, state_tasks)
-                
+
                 # Regroup results by commutator
-                commutator_expectations = _regroup_by_commutator_mvp_per_order(all_results, metadata_map)
-                
+                commutator_expectations = _regroup_by_commutator_mvp_per_order(
+                    all_results, metadata_map
+                )
+
                 # Compute convergence statistics using regrouped expectations
                 order_expectation, order_convergence = _compute_convergence_mvp_per_order(
                     commutator_expectations, len(commutators_dict)
                 )
-                
+
                 state_expectations[order] = order_expectation
                 state_convergence[order] = order_convergence
-            
+
             expectations.append(state_expectations)
             convergence_info[state_idx] = state_convergence
-        
+
         return expectations, convergence_info
 
-    raise ValueError("Invalid parallel mode. Choose 'state', 'commutator', 'nested_commutator', or 'mvp'.")
+    raise ValueError(
+        "Invalid parallel mode. Choose 'state', 'commutator', 'nested_commutator', or 'mvp'."
+    )
 
 
 def _get_expval_state(
-    sorted_commutators_by_order: dict[int, dict[tuple[Hashable], float]], 
-    fragments: dict[Hashable, Fragment], 
-    state: AbstractState, 
-    timestep: float
+    sorted_commutators_by_order: dict[int, dict[tuple[Hashable], float]],
+    fragments: dict[Hashable, Fragment],
+    state: AbstractState,
+    timestep: float,
 ) -> tuple[dict, dict]:
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``,
     along with convergence information."""
@@ -428,7 +441,7 @@ def _get_expval_state(
     for order, commutators_dict in sorted_commutators_by_order.items():
         if len(commutators_dict) == 0:
             continue
-        
+
         # Reset expectation accumulator for each order
         current_expectation = 0.0
         partial_sums = []
@@ -438,7 +451,9 @@ def _get_expval_state(
 
         # Process commutators in order of importance (already sorted in the dict)
         for commutator in commutators_dict.keys():
-            commutator_expectation = _evaluate_expected_value(commutator, fragments, state, timestep, order)
+            commutator_expectation = _evaluate_expected_value(
+                commutator, fragments, state, timestep, order
+            )
             current_expectation += commutator_expectation
             partial_sums.append(current_expectation)
 
@@ -458,8 +473,8 @@ def _get_expval_state(
 
 
 def _evaluate_expected_value_parallel(
-    commutator: tuple[Hashable], 
-    fragments: dict[Hashable, Fragment], 
+    commutator: tuple[Hashable],
+    fragments: dict[Hashable, Fragment],
     state: AbstractState,
     timestep: float,
     order: int,
@@ -467,9 +482,9 @@ def _evaluate_expected_value_parallel(
     num_workers: int,
 ) -> complex:
     """Parallel version of _evaluate_expected_value.
-    
+
     Parallelizes the application of individual terms within a commutator.
-    
+
     Args:
         commutator: The commutator tuple
         fragments: Dictionary mapping fragment keys to Fragment objects
@@ -478,32 +493,32 @@ def _evaluate_expected_value_parallel(
         order: Order of the commutator (used for phase factor)
         backend: Parallel execution backend
         num_workers: Number of parallel workers
-        
+
     Returns:
         complex: The expectation value (1j * timestep)^order * <state | commutator | state>
     """
     op_terms = _op_list(commutator)
-    
+
     executor = concurrency.backends.get_executor(backend)
     with executor(max_workers=num_workers) as ex:
         expected_values = ex.starmap(
             _apply_single_term,
             [(term, coeff, state, fragments) for term, coeff in op_terms.items()],
         )
-    
+
     total_expectation = sum(expected_values)
     return (1j * timestep) ** order * total_expectation
 
 
 def _evaluate_expected_value(
-    commutator: tuple[Hashable], 
-    fragments: dict[Hashable, Fragment], 
+    commutator: tuple[Hashable],
+    fragments: dict[Hashable, Fragment],
     state: AbstractState,
     timestep: float,
-    order: int
+    order: int,
 ) -> complex:
     """Compute the expectation value of a commutator applied to a state.
-    
+
     Returns: (1j * timestep)^order * <state | commutator | state>
     """
     expected_value = 0.0
@@ -526,36 +541,31 @@ def _evaluate_expected_value(
 
 
 def _apply_single_term(
-    term: tuple[Hashable], 
-    coeff: complex, 
-    state: AbstractState, 
-    fragments: dict[Hashable, Fragment]
+    term: tuple[Hashable], coeff: complex, state: AbstractState, fragments: dict[Hashable, Fragment]
 ) -> complex:
     """Apply a single operator term to a state and compute the expectation value.
-    
+
     This function applies a sequence of fragment operations to a state and computes
     the expectation value with the original state. It's essentially the inner loop
     of _evaluate_expected_value, extracted for parallelization.
-    
+
     Args:
         term: Sequence of fragment keys to apply (in reverse order)
         coeff: Coefficient for this term
         state: Initial quantum state
         fragments: Dictionary mapping fragment keys to Fragment objects
-        
+
     Returns:
         complex: coeff * <state | (applied fragments) | state>
     """
     tmp_state = copy.copy(state)
     for frag in reversed(term):
         if isinstance(frag, frozenset):
-            frag = sum(
-                (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
-            )
+            frag = sum((frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity())
         else:
             frag = fragments[frag]
         tmp_state = frag.apply(tmp_state)
-    
+
     return coeff * state.dot(tmp_state)
 
 
@@ -585,61 +595,58 @@ def _calculate_commutator_importance(
 ) -> float:
     """Calculate the importance of a commutator using the formula:
     2^(length of commutator - 1) * product of norms of fragments
-    
+
     Args:
         commutator: The commutator tuple
         fragments: Dictionary of fragments
-        
+
     Returns:
         float: The importance value
     """
-    if not commutator: 
+    if not commutator:
         return 0.0
-    
+
     # The primary importance factor is based on commutator length
     power_factor = 2 ** (len(commutator) - 1)
-    
+
     # For simplicity, use a constant norm approximation of 1.0 per fragment
     # This preserves the ordering based on commutator structure while avoiding
     # complex norm calculations that may require additional parameters
     norm_product = 1.0
-    
+
     return power_factor * norm_product
 
 
 def _apply_topk_filtering(
-    commutator_lists: list[list[tuple[Hashable]]], 
-    fragments: dict[Hashable, Fragment], 
-    topk: int
+    commutator_lists: list[list[tuple[Hashable]]], fragments: dict[Hashable, Fragment], topk: int
 ) -> dict[int, dict[tuple[Hashable], float]]:
     """Apply top-k filtering to commutators that are already ordered by BCH order.
-    
+
     Args:
         commutator_lists: List of lists from bch_expansion()[1:], already ordered by BCH order
         fragments: Dictionary of fragments
         topk: Number of top commutators to keep per order
-        
+
     Returns:
         dict: Dictionary with structure: order -> {commutator: importance, ...}
     """
     result = {}
-    
+
     for list_idx, commutators in enumerate(commutator_lists):
         if len(commutators) == 0:
             continue
-            
+
         order = list_idx + 2  # Since we use [1:], first list is order 2
-        
+
         # Compute importance for each commutator
         importance_dict = {
-            comm: _calculate_commutator_importance(comm, fragments)
-            for comm in commutators
+            comm: _calculate_commutator_importance(comm, fragments) for comm in commutators
         }
-        
+
         # Sort by importance and apply top-k
         sorted_items = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
         result[order] = dict(sorted_items[:topk])
-    
+
     return result
 
 
@@ -658,16 +665,16 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
 
 def _expand_all_terms_mvp_per_order(commutators_dict, fragments, timestep, order):
     """Expand all commutators for a specific order into individual terms for matrix-vector product parallelization.
-    
+
     This function treats all commutator terms as a large matrix-vector product operation,
     where each term application is parallelized as an independent matrix-vector multiplication.
-    
+
     Args:
         commutators_dict: Dictionary of commutators for a specific order (already sorted by importance)
         fragments: Dictionary of fragments
         timestep: Time step for simulation
         order: Order of the commutators
-        
+
     Returns:
         tuple: (all_term_tasks, metadata_map)
             - all_term_tasks: List of (term, coeff, fragments) for parallel execution
@@ -676,51 +683,51 @@ def _expand_all_terms_mvp_per_order(commutators_dict, fragments, timestep, order
     all_term_tasks = []
     metadata_map = {}
     timestep_factor = (1j * timestep) ** order
-    
+
     for importance_idx, commutator in enumerate(commutators_dict.keys()):
         op_terms = _op_list(commutator)  # Reuse existing function
-        
+
         for term, coeff in op_terms.items():
             task_id = len(all_term_tasks)
             all_term_tasks.append((term, coeff, fragments))
-            
+
             metadata_map[task_id] = {
-                'importance_idx': importance_idx,
-                'timestep_factor': timestep_factor,
-                'commutator': commutator  # Keep for debugging if needed
+                "importance_idx": importance_idx,
+                "timestep_factor": timestep_factor,
+                "commutator": commutator,  # Keep for debugging if needed
             }
-    
+
     return all_term_tasks, metadata_map
 
 
 def _regroup_by_commutator_mvp_per_order(all_results, metadata_map):
     """Regroup parallel matrix-vector product results by commutator for a single order.
-    
+
     Args:
         all_results: List of results from parallel term evaluations (matrix-vector products)
         metadata_map: Dictionary mapping task_id to commutator metadata
-        
+
     Returns:
         dict: Dictionary mapping importance_idx to commutator expectation value
     """
     commutator_sums = defaultdict(float)
-    
+
     for task_id, result in enumerate(all_results):
         metadata = metadata_map[task_id]
-        importance_idx = metadata['importance_idx']
+        importance_idx = metadata["importance_idx"]
         # Apply timestep factor and accumulate
-        commutator_sums[importance_idx] += result * metadata['timestep_factor']
-    
+        commutator_sums[importance_idx] += result * metadata["timestep_factor"]
+
     return dict(commutator_sums)
 
 
 def _compute_convergence_mvp_per_order(commutator_expectations, num_commutators):
     """Compute convergence statistics from regrouped commutator expectations for matrix-vector product mode.
-    
+
     Args:
         commutator_expectations: Dictionary mapping importance_idx to expectation values
         num_commutators: Number of commutators in this order
-        
+
     Returns:
         tuple: (order_expectation, order_convergence)
     """
@@ -729,48 +736,48 @@ def _compute_convergence_mvp_per_order(commutator_expectations, num_commutators)
     for importance_idx in range(num_commutators):
         if importance_idx in commutator_expectations:
             order_expectations.append(commutator_expectations[importance_idx])
-    
+
     if not order_expectations:
         return 0.0, {
             "mean_history": [],
             "median_history": [],
             "std_history": [],
         }
-    
+
     # Compute convergence statistics - reuse existing logic
     current_expectation = 0.0
     partial_sums = []
     mean_history = []
     median_history = []
     std_history = []
-    
+
     for expectation_value in order_expectations:
         current_expectation += expectation_value
         partial_sums.append(current_expectation)
-        
+
         # Reuse existing convergence function
         mean_history, median_history, std_history = _update_convergence_histories(
             partial_sums, mean_history, median_history, std_history
         )
-    
+
     order_convergence = {
         "mean_history": mean_history,
         "median_history": median_history,
         "std_history": std_history,
     }
-    
+
     return current_expectation, order_convergence
 
 
 def _update_convergence_histories(partial_sums, mean_history, median_history, std_history):
     """Update convergence histories with the latest partial sum.
-    
+
     Returns updated histories as new lists (functional approach).
     """
     subset = np.array(partial_sums)
-    
+
     new_mean_history = mean_history + [np.mean(subset)]
     new_median_history = median_history + [np.median(subset)]
     new_std_history = std_history + [np.std(subset) if len(partial_sums) > 1 else 0.0]
-    
+
     return new_mean_history, new_median_history, new_std_history

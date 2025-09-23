@@ -46,7 +46,7 @@ def test_add_transform_deprecation():
 
     with pytest.warns(
         PennyLaneDeprecationWarning,
-        match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43",
+        match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44",
     ):
         circuit.add_transform(
             qml.transforms.core.TransformContainer(qml.gradients.param_shift.expand_transform)
@@ -225,6 +225,42 @@ class TestUpdate:
 class TestInitialization:
     """Testing the initialization of the qnode."""
 
+    def test_shots_initialization(self):
+        """Test the initialization with shots."""
+
+        # Default behavior: no shots from either device or qnode
+        # shots should be None
+        @qml.qnode(qml.device("default.qubit"))
+        def f():
+            return qml.state()
+
+        assert not f.shots
+
+        # Shots should be set correctly set from the qnode init
+        @qml.qnode(qml.device("default.qubit"), shots=10)
+        def f2():
+            return qml.state()
+
+        assert f2.shots == qml.measurements.Shots(10)
+
+        # Shots from device should be set correctly
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+
+            @qml.qnode(qml.device("default.qubit", shots=5))
+            def f3():
+                return qml.state()
+
+        assert f3.shots == qml.measurements.Shots(5)
+
+        # Shots from device and also from qnode, then qnode should take precedence
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+
+            @qml.qnode(qml.device("default.qubit", shots=500), shots=None)
+            def f4():
+                return qml.state()
+
+        assert f4.shots == qml.measurements.Shots(None)
+
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
 
@@ -262,10 +298,10 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
-            QNode(dummyfunc, dev, interface="something")
+            QNode(dummyfunc, dev, interface=test_interface)
 
     def test_changing_invalid_interface(self):
         """Test that an exception is raised for an invalid interface
@@ -279,7 +315,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
-        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
@@ -411,14 +447,14 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='auto', diff_method='best'>"
+            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='auto', diff_method='best', shots='Shots(total=None)'>"
         )
 
         qn = QNode(func, dev, interface="autograd")
 
         assert (
             repr(qn)
-            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='autograd', diff_method='best'>"
+            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='autograd', diff_method='best', shots='Shots(total=None)'>"
         )
 
     @pytest.mark.autograd
@@ -1012,7 +1048,7 @@ class TestIntegration:
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit", "auto"])
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax
@@ -1168,6 +1204,18 @@ class TestIntegration:
 class TestShots:
     """Unit tests for specifying shots per call."""
 
+    def test_shots_setter_error(self):
+        """Tests that an error is raised when setting shots on a QNode."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(AttributeError, match="Shots cannot be set on a qnode instance"):
+            circuit.shots = 5
+
     # pylint: disable=unexpected-keyword-arg
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
@@ -1244,28 +1292,12 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(circuit(0.8, shots=1)) == 10
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        assert len(circuit(0.8, shots=1)) == 10
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(circuit(0.8, shots=0)) == 10
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        assert len(circuit(0.8, shots=0)) == 10
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
@@ -1292,22 +1324,18 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 1)
         assert tape.operations[0].wires.labels == (1,)
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2)
 
         with pytest.warns(
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
 
-            @qnode(dev)
+            @qnode(dev, shots=10)
             def ansatz1(a, shots):
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
-        ):
-            assert len(ansatz1(0.8, shots=0)) == 10
+        assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
@@ -1682,7 +1710,10 @@ class TestNewDeviceIntegration:
             return qml.expval(qml.PauliZ(0))
 
         qn = QNode(f, self.dev)
-        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best'>"
+        assert (
+            repr(qn)
+            == "<QNode: device='CustomDevice', interface='auto', diff_method='best', shots='Shots(total=None)'>"
+        )
 
     def test_device_with_custom_diff_method_name(self):
         """Test a device that has its own custom diff method."""
@@ -2091,6 +2122,10 @@ class TestSetShots:
         dev_analytic = qml.device("default.qubit", wires=1)
         qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
         assert qnode_analytic._shots.total_shots is None
+
+        # Test that qnode creation with shots parameter initializes _shots correctly
+        qn_with_shots = qml.QNode(dummyfunc, dev_with_shots)
+        assert qn_with_shots._shots == qml.measurements.Shots(42)
 
     def test_shots_override_warning(self):
         """Test that a warning is raised when both set_shots transform and shots parameter are used."""

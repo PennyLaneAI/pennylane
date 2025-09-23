@@ -9,7 +9,7 @@ In addition to being created internally by QNodes, quantum tapes can also be cre
 nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually.
 
 Finally, quantum tapes are fully compatible with autodifferentiating via Autograd, JAX, 
-TensorFlow, and PyTorch.
+and PyTorch.
 
 .. warning::
 

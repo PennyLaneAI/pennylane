@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @lru_cache
-def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
+def _get_plxpr_map_wires():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -223,7 +223,7 @@ def map_wires(
             if replace:
                 QueuingManager.remove(input)
             if queue:
-                qml.apply(new_op)
+                new_op = qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
     return _map_wires_transform(input, wire_map=wire_map, queue=queue)

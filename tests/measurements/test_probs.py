@@ -467,7 +467,7 @@ class TestProbs:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
         ):
             _ = qml.probs(op=[m0, qml.PauliZ(0)])
 
@@ -480,9 +480,21 @@ class TestProbs:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
         ):
             _ = qml.probs(op=[m0 + m1, m2])
+
+    def test_processed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.probs(op=[2 * m0, m1])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
@@ -690,6 +702,22 @@ class TestProbs:
             expected = np.einsum("ijkl->l", expected).flatten()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_warning_hermitian(self):
+        """Test that a warning is raised when using a Hermitian observable."""
+
+        H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+
+        @qml.qnode(device=qml.device("default.qubit", wires=1))
+        def circuit():
+            qml.H(0)
+            return qml.probs(op=qml.Hermitian(H, wires=0))
+
+        with pytest.warns(
+            UserWarning,
+            match="Using qml.probs with a Hermitian observable might return different results than expected",
+        ):
+            circuit()
 
     @pytest.mark.parametrize("operation", [qml.PauliX, qml.PauliY, qml.Hadamard])
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])

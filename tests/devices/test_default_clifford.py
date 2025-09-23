@@ -14,7 +14,6 @@
 """
 This module contains the tests for the clifford simulator based on stim
 """
-import os
 
 import numpy as np
 import pytest
@@ -248,7 +247,7 @@ def test_meas_var(shots, ops, seed):
 def test_meas_samples(circuit, shots):
     """Test if samples are returned with shots given in the clifford device."""
 
-    @qml.qnode(qml.device("default.clifford", shots=shots))
+    @qml.qnode(qml.device("default.clifford"), shots=shots)
     def circuit_fn():
         qml.BasisState(np.array([1, 1]), wires=range(2))
         circuit()
@@ -479,11 +478,10 @@ def test_snapshot_supported(measurement, tag):
         assert qml.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
 
 
-def test_max_worker_clifford():
+def test_max_worker_clifford(monkeypatch):
     """Test that the execution of multiple tapes is possible with multiprocessing on this device."""
 
-    os.environ["OMP_NUM_THREADS"] = "4"
-
+    monkeypatch.setenv("OMP_NUM_THREADS", "4")
     dev_c = qml.device("default.clifford", max_workers=2)
     dev_q = qml.device("default.qubit", max_workers=2)
 
@@ -639,7 +637,7 @@ def test_meas_error():
     ):
         circuit_exp()
 
-    @qml.qnode(qml.device("default.clifford", wires=3, shots=10))
+    @qml.qnode(qml.device("default.clifford", wires=3), shots=10)
     def circuit_herm():
         qml.Hadamard(wires=[0])
         qml.CNOT(wires=[0, 1])

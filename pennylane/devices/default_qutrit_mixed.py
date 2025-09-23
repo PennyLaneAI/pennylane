@@ -71,11 +71,6 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     return op.name in expected_set
 
 
-def stopping_condition_shots(op: qml.operation.Operator) -> bool:
-    """Specify whether an Operator object is supported by the device with shots."""
-    return stopping_condition(op)
-
-
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     """Specifies whether a measurement is accepted when sampling."""
     return isinstance(m, qml.measurements.SampleMeasurement)
@@ -146,7 +141,7 @@ class DefaultQutritMixed(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+            (``['auxiliary', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
@@ -364,7 +359,6 @@ class DefaultQutritMixed(Device):
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
-            stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
         transform_program.add_transform(

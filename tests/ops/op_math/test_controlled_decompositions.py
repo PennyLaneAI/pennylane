@@ -42,9 +42,9 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _ctrl_decomp_bisect_md,
     _ctrl_decomp_bisect_od,
     _decompose_mcx_with_no_worker,
-    _decompose_mcx_with_two_workers,
-    decompose_mcx_with_many_workers,
-    decompose_mcx_with_one_worker,
+    _mcx_two_workers,
+    decompose_mcx_many_workers_explicit,
+    decompose_mcx_one_worker_explicit,
 )
 from pennylane.wires import Wires
 
@@ -821,10 +821,10 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qml.Projector([0] * len(work_wires), wires=work_wires)
             # pylint: disable=missing-kwoa
-            decompose_mcx_with_many_workers(wires=mcx.wires, **mcx.hyperparameters)
+            decompose_mcx_many_workers_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
-        resource = decompose_mcx_with_many_workers.compute_resources(**mcx.resource_params)
+        resource = decompose_mcx_many_workers_explicit.compute_resources(**mcx.resource_params)
         expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
         actual_gate_counts = defaultdict(int)
         for _op in q.queue:
@@ -896,10 +896,10 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qml.Projector([0], wires=work_wire)
             # pylint: disable=missing-kwoa
-            decompose_mcx_with_one_worker(wires=mcx.wires, **mcx.hyperparameters)
+            decompose_mcx_one_worker_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
-        resource = decompose_mcx_with_one_worker.compute_resources(**mcx.resource_params)
+        resource = decompose_mcx_one_worker_explicit.compute_resources(**mcx.resource_params)
         expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
         actual_gate_counts = defaultdict(int)
         for _op in q.queue:
@@ -940,10 +940,10 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qml.Projector([0, 0], wires=work_wires)
-            _decompose_mcx_with_two_workers(mcx.wires, work_wires, work_wire_type)
+            _mcx_two_workers(mcx.wires, work_wires, work_wire_type)
 
         # Verify that the resource estimate is correct.
-        resource = _decompose_mcx_with_two_workers.compute_resources(**mcx.resource_params)
+        resource = _mcx_two_workers.compute_resources(**mcx.resource_params)
         expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
         actual_gate_counts = defaultdict(int)
         for _op in q.queue:

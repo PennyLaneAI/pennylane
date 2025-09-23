@@ -96,14 +96,11 @@ class TestCaptureWhileLoop:
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_capture(self, autograph):
+    def test_while_loop_capture(self):
         """Test that a while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit():
 
             @qml.while_loop(lambda i: i < 3)
@@ -124,14 +121,11 @@ class TestCaptureCircuitsWhileLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize("arg, expected", [(1.2, -0.16852022), (1.6, 0.598211352)])
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_circuit_args(self, arg, expected, autograph):
+    def test_circuit_args(self, arg, expected):
         """Test that a while loop with arguments is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(arg):
 
             qml.Hadamard(wires=0)
@@ -182,14 +176,11 @@ class TestCaptureCircuitsWhileLoop:
     @pytest.mark.parametrize(
         "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
     )
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_nested(self, upper_bound, arg, expected, autograph):
+    def test_while_loop_nested(self, upper_bound, arg, expected):
         """Test that a nested while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
             # while loop with dynamic bounds
@@ -266,15 +257,11 @@ class TestCaptureCircuitsWhileLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_while_loop_grad(self, autograph):
+    def test_while_loop_grad(self):
         """Test simple while-loop primitive with gradient."""
         from pennylane.capture.primitives import grad_prim
 
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
-
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):
 
             @qml.while_loop(lambda i: i < 3)
