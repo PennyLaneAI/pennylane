@@ -127,14 +127,13 @@ jobs:
           --ignore=pennylane/estimator
           --ignore=pennylane/qchem
           "
-          
+
           IGNORE_OPTS="
           ${IGNORE_OPTS_CLOSED}
           ${IGNORE_OPTS_UTILITY}
           ${IGNORE_OPTS_CORE}
           ${IGNORE_OPTS_AUXILIARY}
           ${IGNORE_OPTS_TERTIARY}
-          ${IGNORE_OPTS_UNSORTED}
           "
 
           # Run pytest on the entire project, applying the full ignore list
