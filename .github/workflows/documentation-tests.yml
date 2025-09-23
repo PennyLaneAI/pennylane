@@ -44,9 +44,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install --upgrade --extra-index-url https://test.pypi.org/simple/ pennylane-lightning 
-          pip install --upgrade --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre pennylane-catalyst
           pip install -e .
           pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch
 
