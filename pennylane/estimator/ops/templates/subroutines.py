@@ -34,12 +34,6 @@ from pennylane.wires import Wires, WiresLike
 class OutOfPlaceSquare(ResourceOperator):
     r"""Resource class for the OutofPlaceSquare gate.
 
-    This operation takes an input register of size :code:`register_size`. The number encoded in the
-    input is squared and returned in the output register. The size of the output register is
-    computed internally to be :code:`2 * register_size`. The total wires may optionally be defined
-    with a size equal to :code:`3 * register_size`.
-
-
     Args:
         register_size (int): the size of the input register
         wires (Sequence[int], None): the wires the operation acts on

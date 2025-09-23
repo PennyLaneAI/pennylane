@@ -70,7 +70,7 @@ class TestResourceQubitUnitary:
                         resource_rep(
                             qre.SelectPauliRot,
                             {
-                                "rotation_axis": "Z",
+                                "rot_axis": "Z",
                                 "num_ctrl_wires": 2,
                                 "precision": 1e-5,
                             },
@@ -81,7 +81,7 @@ class TestResourceQubitUnitary:
                         resource_rep(
                             qre.SelectPauliRot,
                             {
-                                "rotation_axis": "Y",
+                                "rot_axis": "Y",
                                 "num_ctrl_wires": 2,
                                 "precision": 1e-5,
                             },
@@ -92,7 +92,7 @@ class TestResourceQubitUnitary:
                         resource_rep(
                             qre.SelectPauliRot,
                             {
-                                "rotation_axis": "Z",
+                                "rot_axis": "Z",
                                 "num_ctrl_wires": 3,
                                 "precision": 1e-5,
                             },
@@ -103,7 +103,7 @@ class TestResourceQubitUnitary:
                         resource_rep(
                             qre.SelectPauliRot,
                             {
-                                "rotation_axis": "Y",
+                                "rot_axis": "Y",
                                 "num_ctrl_wires": 3,
                                 "precision": 1e-5,
                             },
@@ -114,7 +114,7 @@ class TestResourceQubitUnitary:
                         resource_rep(
                             qre.SelectPauliRot,
                             {
-                                "rotation_axis": "Z",
+                                "rot_axis": "Z",
                                 "num_ctrl_wires": 4,
                                 "precision": 1e-5,
                             },
@@ -125,7 +125,7 @@ class TestResourceQubitUnitary:
                         resource_rep(
                             qre.SelectPauliRot,
                             {
-                                "rotation_axis": "Y",
+                                "rot_axis": "Y",
                                 "num_ctrl_wires": 4,
                                 "precision": 1e-5,
                             },
