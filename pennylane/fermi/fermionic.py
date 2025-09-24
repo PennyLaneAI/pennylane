@@ -297,10 +297,10 @@ class FermiWord(dict):
 
         >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> w.to_mat()
-        array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-              [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+        array([[0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])
         """
         largest_orb_id = max(key[1] for key in self.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
@@ -349,7 +349,7 @@ class FermiWord(dict):
         **Example**
 
         >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
-        >>> w.shift_operator(0, 1)
+        >>> print(w.shift_operator(0, 1))
         -1 * a(1) a⁺(0)
         """
 
@@ -524,7 +524,7 @@ class FermiSentence(dict):
     def __rsub__(self, other):
         """Subtract a FermiSentence to a constant, i.e.
 
-        >>> 2 - FermiSentence({...})
+        >>> 2 - FermiSentence({...}) # doctest: +SKIP
         """
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
@@ -627,10 +627,10 @@ class FermiSentence(dict):
 
         >>> fs = FermiSentence({FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2, FermiWord({(0, 0): "+", (1, 0): "-"}): 3.1})
         >>> fs.to_mat()
-        array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-              [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
-              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
+        array([[0. +0.j, 0. +0.j, 0. +0.j, 0. +0.j],
+               [0. +0.j, 0. +0.j, 0. +0.j, 0. +0.j],
+               [0. +0.j, 1.2+0.j, 3.1+0.j, 0. +0.j],
+               [0. +0.j, 0. +0.j, 0. +0.j, 3.1+0.j]])
         """
         largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
@@ -663,13 +663,13 @@ def from_string(fermi_string):
 
     **Example**
 
-    >>> from_string('0+ 1- 0+ 1-')
+    >>> print(from_string('0+ 1- 0+ 1-'))
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> from_string('0+ 1 0+ 1')
+    >>> print(from_string('0+ 1 0+ 1'))
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> from_string('0^ 1 0^ 1')
+    >>> print(from_string('0^ 1 0^ 1'))
     a⁺(0) a(1) a⁺(0) a(1)
 
     >>> op1 = FermiC(0) * FermiA(1) * FermiC(2) * FermiA(3)
