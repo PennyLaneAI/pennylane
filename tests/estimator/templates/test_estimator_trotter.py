@@ -20,6 +20,7 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
+from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
 
@@ -98,6 +99,15 @@ class TestResourceTrotterProduct:
                 num_steps=10,
                 order=3,
             )
+
+    def test_user_defined_wires(self):
+        """Test that user-defined wires take precedence over operator wires."""
+        ops = [qre.X(wires=0), qre.Y(wires=1)]
+        user_wires = ["a", "b", "c"]
+        trotter = qre.TrotterProduct(ops, num_steps=1, order=1, wires=user_wires)
+
+        assert trotter.wires == Wires(user_wires)
+        assert trotter.num_wires == len(user_wires)
 
 
 class TestTrotterCDF:
