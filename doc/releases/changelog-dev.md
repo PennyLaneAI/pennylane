@@ -1329,6 +1329,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Return `dtype` of `qml.samples` when using `mcm_method="tree-traversal"` is now `int` - consistent with other MCMs.
+  [(#8274)](https://github.com/PennyLaneAI/pennylane/pull/8274)
+
 * :class:`~.SpecialUnitary` now correctly obeys the interfaces of input parameters when large numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
 

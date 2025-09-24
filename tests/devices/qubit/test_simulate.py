@@ -1661,6 +1661,21 @@ class TestMidMeasurements:
         res = simulate_tree_mcm(tape)
         assert qml.math.allclose(res, 0)
 
+    def test_tree_traversal_sample_dtype(self):
+        """Test that tree-traversal returns samples of the correct dtype (int)."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, mcm_method="tree-traversal", shots=10)
+        def circuit(phi):
+            qml.RX(phi, wires=0)
+            m_0 = qml.measure(wires=0)
+            return qml.sample([m_0])
+
+        res = circuit(1.23)
+        assert res.dtype == int
+        assert res.shape == (10, 1)
+
     def test_measurement_on_non_op_wire(self):
         """Test that we can measure wires not present in the circuit."""
 
