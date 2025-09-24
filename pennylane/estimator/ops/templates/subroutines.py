@@ -490,7 +490,7 @@ class ControlledSequence(ResourceOperator):
     base operator raised to decreasing powers of 2.
 
     Args:
-        base (~.pennylane.estimator.resource_operator.ResourceOperator): The operator to repeatedly
+        base (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator to repeatedly
             apply in a controlled fashion.
         num_control_wires (int): the number of controlled wires to run the sequence over
         wires (Sequence[int], None): the wires the operation acts on
@@ -2062,7 +2062,7 @@ class SelectPauliRot(ResourceOperator):
             precision (float | None): the precision used in the single qubit rotations
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = num_ctrl_wires + 1
         return CompressedResourceOp(
