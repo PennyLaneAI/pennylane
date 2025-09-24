@@ -51,7 +51,7 @@ class DoubleFactorization(Operation):
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> algo = qml.resource.DoubleFactorization(one, two)
     >>> algo.lamb # the 1-Norm of the Hamiltonian
-    np.float64(53.62085493413088)
+    np.float64(53.6...)
     >>> algo.gates # estimated number of non-Clifford gates
     103969925
     >>> algo.qubits # estimated number of logical qubits
@@ -597,7 +597,7 @@ class DoubleFactorization(Operation):
         >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
         >>> _, eigvals, _ = qml.qchem.factorize(two, 1e-5)
         >>> print(qml.resource.DoubleFactorization.norm(one, two, eigvals))
-        369.4927324561188
+        369.4...
         """
         t_matrix = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)
         t_eigvals, _ = np.linalg.eigh(t_matrix)

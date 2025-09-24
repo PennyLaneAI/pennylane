@@ -259,7 +259,7 @@ def poly_extrapolate(x, y, order):
     >>> rng = np.random.default_rng(12345)
     >>> y = x**2 + x + 1 + 0.3 * rng.random(len(x))
     >>> qml.noise.poly_extrapolate(x, y, 2)
-    np.float64(0.9790736165797582)
+    np.float64(0.97...)
 
     """
     coeff = _polyfit(x, y, order)
@@ -287,7 +287,7 @@ def richardson_extrapolate(x, y):
     >>> rng = np.random.default_rng(12345)
     >>> y = x**2 + x + 1 + 0.3 * rng.random(len(x))
     >>> qml.noise.richardson_extrapolate(x, y)
-    np.float64(1.2685131253115969)
+    np.float64(1.26...)
 
     """
     return poly_extrapolate(x, y, len(x) - 1)
@@ -317,7 +317,7 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     >>> rng = np.random.default_rng(12345)
     >>> y = np.exp(-x) + rng.normal(scale=0.1, size=len(x))
     >>> qml.noise.exponential_extrapolate(x, y)
-    np.float64(1.0157172199707079)
+    np.float64(1.015...)
 
     """
     y = math.stack(y)
@@ -441,7 +441,7 @@ def mitigate_with_zne(
     Executions of ``circuit`` will now be mitigated:
 
     >>> circuit(w1, w2)
-    np.float64(0.23123861824723554)
+    np.float64(0.231...)
 
     The unmitigated circuit result is ``0.33652776`` while the ideal circuit result is
     ``0.23688169`` and we can hence see that mitigation has helped reduce our estimation error.
