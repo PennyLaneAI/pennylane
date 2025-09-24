@@ -62,7 +62,6 @@ jobs:
           IGNORE_OPTS_CORE="
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
-          --ignore=pennylane/pytrees
           --ignore=pennylane/numpy
           --ignore=pennylane/logging
           --ignore=pennylane/configuration
