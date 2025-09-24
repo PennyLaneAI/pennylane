@@ -113,7 +113,6 @@ def horizontal_cartan_subalgebra(
 
     A quick example computing a Cartan subalgebra of :math:`\mathfrak{su}(4)` using the Cartan involution :func:`~even_odd_involution`.
 
-    >>> import pennylane as qml
     >>> g = list(qml.pauli.pauli_group(2)) # u(4)
     >>> g = g[1:] # remove identity -> su(4)
     >>> g = [op.pauli_rep for op in g] # optional; turn to PauliSentence for convenience
@@ -183,7 +182,6 @@ def horizontal_cartan_subalgebra(
         Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in ``k`` first, and then
         all remaining operators from ``m``.
 
-        >>> import numpy as np
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
         >>> adj = qml.structure_constants(g, matrix=True) # compute adjoint representation of g
 
@@ -489,7 +487,6 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
 
     We choose a basis of a Lie algebra, compute its adjoint representation.
 
-    >>> import numpy as np
     >>> from pennylane.liealg import change_basis_ad_rep
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> adj = qml.structure_constants(basis)
