@@ -113,10 +113,10 @@ class AQFT(Operation):
             The resulting circuit is:
 
             >>> print(qml.draw(circ, level='device')())
-            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤ ╭Probs
-            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤ ├Probs
-            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
-            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
+            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤  Probs
+            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤  Probs
+            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤  Probs
+            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤  Probs
 
         * ``order`` :math:`\geq n-1`
             Using the QFT class is recommended in this case. The AQFT operation here is
@@ -174,7 +174,7 @@ class AQFT(Operation):
         **Example:**
 
         >>> qml.AQFT.compute_decomposition((0, 1, 2), order=1)
-        [H(0), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), H(1), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), H(2), SWAP(wires=[0, 2])]
+        [H(0), ControlledPhaseShift(1.57..., wires=Wires([1, 0])), H(1), ControlledPhaseShift(1.57..., wires=Wires([2, 1])), H(2), SWAP(wires=[0, 2])]
 
         """
         n_wires = len(wires)
