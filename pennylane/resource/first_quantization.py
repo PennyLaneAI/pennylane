@@ -49,11 +49,12 @@ class FirstQuantization(Operation):
     ...                     [ 0.00000000, 10.46219511,  0.00000000],
     ...                     [ 0.00000000,  0.00000000, 10.46219511]])
     >>> algo = qml.resource.FirstQuantization(n, eta, vectors=vectors)
-    >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
-    >>>       algo.gates, # estimated number of non-Clifford gates
-    >>>       algo.qubits # estimated number of logical qubits
-    >>>       )
-    649912.4804278888 1.1e+13 4416
+    >>> algo.lamb # the 1-Norm of the Hamiltonian
+    np.float64(649912.4804278888)
+    >>> f"{algo.gates:.1e}" # estimated number of non-Clifford gates
+    '1.1e+13'
+    >>> algo.qubits # estimated number of logical qubits
+    4416
 
     .. details::
         :title: Theory
@@ -200,8 +201,8 @@ class FirstQuantization(Operation):
 
         >>> n = 3
         >>> br = 8
-        >>> success_prob(n, br)
-        0.9999928850303523
+        >>> qml.resource.FirstQuantization.success_prob(n, br)
+        np.float64(0.9999928850303523)
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
@@ -245,8 +246,8 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.001
-        >>> norm(n, eta, omega, error)
-        281053.75612801575
+        >>> qml.resource.FirstQuantization.norm(n, eta, omega, error)
+        np.float64(281053.7561251118)
 
         .. details::
             :title: Theory
@@ -403,7 +404,7 @@ class FirstQuantization(Operation):
         **Example**
 
         >>> lz = 100
-        >>> _cost_qrom(lz)
+        >>> qml.resource.FirstQuantization._cost_qrom(lz)
         21
         """
         if lz <= 0 or not isinstance(lz, (int, np.integer)):
@@ -442,7 +443,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> unitary_cost(n, eta, omega, error)
+        >>> qml.resource.FirstQuantization.unitary_cost(n, eta, omega, error)
         17033
         """
         if n <= 0:
@@ -530,7 +531,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.01
-        >>> estimation_cost(n, eta, omega, error)
+        >>> qml.resource.FirstQuantization.estimation_cost(n, eta, omega, error)
         102133985
         """
         if error <= 0.0:
@@ -578,7 +579,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> gate_cost(n, eta, omega, error)
+        >>> qml.resource.FirstQuantization.gate_cost(n, eta, omega, error)
         3676557345574
         """
         if n <= 0:
@@ -637,7 +638,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qubit_cost(n, eta, omega, error)
+        >>> qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
         4377
         """
         if n <= 0:

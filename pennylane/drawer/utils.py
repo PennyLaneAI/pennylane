@@ -177,14 +177,16 @@ def cwire_connections(layers, bit_map):
         they contain the measured quantum wires and the largest quantum wire of conditionally
         applied operations (no entries for terminal statistics of mid-circuit measurements).
 
+    >>> from pennylane.drawer.utils import cwire_connections
+    >>> from pennylane.drawer.drawable_layers import drawable_layers
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
     ...     m1 = qml.measure(1)
     ...     qml.cond(m0 & m1, qml.Y)(0)
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
-    >>> layers = drawable_layers(tape)
     >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
+    >>> layers = drawable_layers(tape, bit_map=bit_map)
     >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
     >>> new_bit_map == bit_map # No reusage happening
     True

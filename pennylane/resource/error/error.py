@@ -136,7 +136,7 @@ class SpectralNormError(AlgorithmicError):
         >>> Op1 = qml.RY(0.40, 0)
         >>> Op2 = qml.RY(0.41, 0)
         >>> SpectralNormError.get_error(Op1, Op2)
-        0.004999994791668309
+        np.float64(0.004999994791668287)
         """
         wire_order = exact_op.wires
         m1 = qml.matrix(exact_op, wire_order=wire_order)

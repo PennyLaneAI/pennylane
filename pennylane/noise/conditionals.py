@@ -666,7 +666,7 @@ def partial_wires(operation, *args, **kwargs):
     >>> func(2)
     RX(1.2, wires=[2])
     >>> func(qml.RY(1.0, ["wires"]))
-    RX(1.2, wires=["wires"])
+    RX(1.2, wires=['wires'])
 
     Additionally, an :class:`Operation <pennylane.operation.Operation>` class can
     also be provided, while providing required positional arguments via ``args``:
@@ -682,7 +682,7 @@ def partial_wires(operation, *args, **kwargs):
     RX(1.2, wires=[2])
     >>> rfunc = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)
     >>> rfunc(qml.RY(1.0, ["light"]))
-    RX(2.3, wires=["light"])
+    RX(2.3, wires=['light'])
 
     Finally, one may also use this with an instance of
     :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`

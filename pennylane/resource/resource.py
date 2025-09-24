@@ -84,8 +84,8 @@ class Resources:
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r1 + r2)
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=None)
         gate_types:
@@ -93,8 +93,8 @@ class Resources:
         gate_sizes:
         {1: 2, 2: 2}
         >>> print(r1 * 2)
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=None)
         gate_types:
@@ -125,7 +125,7 @@ class Resources:
 
             First we build two :class:`~.resource.Resources` objects.
 
-            .. code-block:: python3
+            .. code-block:: python
 
                 from pennylane.measurements import Shots
                 from pennylane.resource import Resources
@@ -151,8 +151,8 @@ class Resources:
             Now we print their sum.
 
             >>> print(r1 + r2)
-            wires: 3
-            gates: 4
+            num_wires: 3
+            num_gates: 4
             depth: 3
             shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
             gate_types:
@@ -177,7 +177,7 @@ class Resources:
 
             First we build a :class:`~.resource.Resources` object.
 
-            .. code-block:: python3
+            .. code-block:: python
 
                 from pennylane.measurements import Shots
                 from pennylane.resource import Resources
@@ -194,8 +194,8 @@ class Resources:
             Now we print the product.
 
             >>> print(resources * 2)
-            wires: 2
-            gates: 4
+            num_wires: 2
+            num_gates: 4
             depth: 4
             shots: Shots(total=20)
             gate_types:
@@ -290,7 +290,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         First we build two :class:`~.resource.Resources` objects.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -316,8 +316,8 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
         Now we print their sum.
 
         >>> print(qml.resource.add_in_series(r1, r2))
-        wires: 3
-        gates: 4
+        num_wires: 3
+        num_gates: 4
         depth: 3
         shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
         gate_types:
@@ -357,7 +357,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         First we build two :class:`~.resource.Resources` objects.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -383,8 +383,8 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
         Now we print their sum.
 
         >>> print(qml.resource.add_in_parallel(r1, r2))
-        wires: 5
-        gates: 4
+        num_wires: 5
+        num_gates: 4
         depth: 2
         shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
         gate_types:
@@ -425,7 +425,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         First we build a :class:`~.resource.Resources` object.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -442,8 +442,8 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
         Now we print the product.
 
         >>> print(qml.resource.mul_in_series(resources, 2))
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=20)
         gate_types:
@@ -483,7 +483,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         First we build a :class:`~.resource.Resources` object.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -500,8 +500,8 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
         Now we print the product.
 
         >>> print(qml.resource.mul_in_parallel(resources, 2))
-        wires: 4
-        gates: 4
+        num_wires: 4
+        num_gates: 4
         depth: 2
         shots: Shots(total=20)
         gate_types:
@@ -538,7 +538,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         First we build the :class:`~.resource.Resources`.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -568,12 +568,12 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         >>> res = qml.resource.substitute(initial_resources, gate_info, replacement)
         >>> print(res)
-        wires: 2
-        gates: 15
+        num_wires: 2
+        num_gates: 15
         depth: 9
         shots: Shots(total=10)
         gate_types:
-        {'CNOT': 1, 'H': 6, 'S': 8}
+        {'CNOT': 1, 'Hadamard': 6, 'S': 8}
         gate_sizes:
         {1: 14, 2: 1}
     """
