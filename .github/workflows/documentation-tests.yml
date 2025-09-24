@@ -84,6 +84,7 @@ jobs:
           IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/resource
           --ignore=pennylane/io
+          --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
           --ignore=pennylane/kernels
