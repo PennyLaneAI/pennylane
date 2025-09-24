@@ -729,6 +729,9 @@
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Update docstring in `perturbation_error` to reflect renamed positional arg
+  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+
 * Renamed several labs test file names to prevent conflict with names in PennyLane tests.
   [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
 
@@ -1077,9 +1080,6 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
-
-* Update docstring in `perturbation_error` to reflect renamed positional arg
-  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
 
 * `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
