@@ -16,8 +16,6 @@
 
 from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-few-public-methods
-
 
 class WireResourceManager:
     r"""Manages and tracks the auxiliary and algorithmic wires used in a quantum circuit.
@@ -53,11 +51,11 @@ class WireResourceManager:
     """
 
     def __init__(
-        self, zeroed: int, any_state: int = 0, algo: int = 0, tight_budget: bool = False
+        self, zeroed: int, any_state: int = 0, algo_wires: int = 0, tight_budget: bool = False
     ) -> None:
 
         self.tight_budget = tight_budget
-        self._algo_wires = algo
+        self._algo_wires = algo_wires
         self.zeroed = zeroed
         self.any_state = any_state
 
@@ -69,7 +67,7 @@ class WireResourceManager:
 
     def __repr__(self) -> str:
         return (
-            f"WireResourceManager(zeroed={self.zeroed}, any_state={self.any_state}, algo={self.algo_wires}, "
+            f"WireResourceManager(zeroed={self.zeroed}, any_state={self.any_state}, algo_wires={self.algo_wires}, "
             f"tight_budget={self.tight_budget})"
         )
 

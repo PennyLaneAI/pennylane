@@ -537,7 +537,7 @@ class DecompGraphSolution:
         op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
     ) -> None:
         self._visitor = visitor
-        self._graph = visitor._graph  # pylint: disable=protected-access
+        self._graph = visitor._graph
         self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
 

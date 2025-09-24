@@ -25,15 +25,15 @@ from xdsl.ir import SSAValue
 from xdsl.ir.core import OpResult
 from xdsl.rewriter import InsertPoint
 
-from ..dialects.mbqc import (
+from ...dialects.mbqc import (
     GraphStatePrepOp,
     MeasureInBasisOp,
     MeasurementPlaneAttr,
     MeasurementPlaneEnum,
 )
-from ..dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
-from ..mbqc import generate_adj_matrix, get_num_aux_wires
-from .api import compiler_transform
+from ...dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
+from ...pass_api import compiler_transform
+from .graph_state_utils import generate_adj_matrix, get_num_aux_wires
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
     name = "convert-to-mbqc-formalism"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
         pattern_rewriter.PatternRewriteWalker(
@@ -60,7 +60,7 @@ convert_to_mbqc_formalism_pass = compiler_transform(ConvertToMBQCFormalismPass)
 
 class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
-):  # pylint: disable=too-few-public-methods, no-self-use, unpacking-non-sequence
+):  # pylint: disable=too-few-public-methods,no-self-use
     """RewritePattern for converting to the MBQC formalism."""
 
     def _prep_graph_state(
@@ -112,7 +112,7 @@ class ConvertToMBQCFormalismPattern(
         qubit: QubitType,
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
-    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    ):
         """Insert an arbitrary basis measure related operations to the IR.
         Args:
             angle (float) : The angle of measurement basis.
@@ -523,20 +523,20 @@ class ConvertToMBQCFormalismPattern(
     def _deallocate_aux_qubits(
         self,
         graph_qubits_dict: dict,
-        res_target_qb: list[int],
+        res_aux_qb: list[int],
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Deallocate the auxiliary qubits in the graph qubit dict.
+        """Deallocate non-result qubits in the graph qubit dict.
         Args:
             graph_qubits_dict (dict) : A dict stores all qubits in a graph state.
-            res_target_qb (list[int]) : A list of keys of result auxiliary and target (in the global register) qubits.
+            res_aux_qb (list[int]) : A list of keys of result auxiliary qubits.
             insert_before (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
         """
         # Deallocate non result aux_qubits
         for node in graph_qubits_dict:
-            if node not in res_target_qb:
+            if node not in res_aux_qb:
                 dealloc_qubit_op = DeallocQubitOp(graph_qubits_dict[node])
                 rewriter.insert_op(dealloc_qubit_op, InsertPoint.before(insert_before))
 
@@ -544,7 +544,7 @@ class ConvertToMBQCFormalismPattern(
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, root: func.FuncOp | IfOp | WhileOp | ForOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ, cell-var-from-loop
+    ):
         """Match and rewrite for converting to the MBQC formalism."""
 
         for region in root.regions:
@@ -642,10 +642,14 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate non-result aux_qubits and the target/control qubits in the qreg
-                    self._deallocate_aux_qubits(graph_qubits_dict, [9, 15], op, rewriter)
+                    self._deallocate_aux_qubits(graph_qubits_dict, [7, 15], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[7])
                     rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[15])
                     # Remove op operation
                     rewriter.erase_op(op)
+                elif isinstance(op, CustomOp):
+                    raise NotImplementedError(
+                        f"{op.gate_name.data} cannot be converted to the MBQC formalism."
+                    )

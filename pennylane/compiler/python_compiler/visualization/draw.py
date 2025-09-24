@@ -13,19 +13,25 @@
 # limitations under the License.
 """This file contains the implementation of the `draw` function for the Unified Compiler."""
 
+from __future__ import annotations
+
 import warnings
 from functools import wraps
+from typing import TYPE_CHECKING
 
 from catalyst import qjit
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-from xdsl.dialects.builtin import ModuleOp
 
-from pennylane import QNode
 from pennylane.tape import QuantumScript
-from pennylane.typing import Callable
 
 from ..compiler import Compiler
 from .collector import QMLCollector
+
+if TYPE_CHECKING:
+    from xdsl.dialects.builtin import ModuleOp
+
+    from pennylane.typing import Callable
+    from pennylane.workflow.qnode import QNode
 
 # TODO: This caching mechanism should be improved,
 # because now it relies on a mutable global state
@@ -73,7 +79,10 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
         ops, meas = collector.collect()
         tape = QuantumScript(ops, meas)
         pass_name = pass_instance.name if hasattr(pass_instance, "name") else pass_instance
-        cache[pass_level] = (tape.draw(), pass_name if pass_level else "No transforms")
+        cache[pass_level] = (
+            tape.draw(show_matrices=False),
+            pass_name if pass_level else "No transforms",
+        )
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):

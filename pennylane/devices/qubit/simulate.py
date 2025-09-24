@@ -15,8 +15,6 @@
 import logging
 
 # pylint: disable=protected-access
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
 
@@ -330,7 +328,9 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if has_mcm:
         if execution_kwargs.get("mcm_method", None) == "tree-traversal":
-            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
+            return simulate_tree_mcm(
+                circuit, prng_key=prng_key, debugger=debugger, **execution_kwargs
+            )
 
         results = []
         aux_circ = circuit.copy(shots=[1])
@@ -597,6 +597,7 @@ def simulate_tree_mcm(
     # Finalize terminal measurements post-processing #
     ##################################################
 
+    _finalize_debugger(debugger)
     measurement_dicts = get_measurement_dicts(terminal_measurements, stack, depth)
     if finite_shots:
         terminal_measurements = circuit.measurements
@@ -604,6 +605,15 @@ def simulate_tree_mcm(
     mcm_samples = prune_mcm_samples(mcm_samples)
     results = combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
     return variance_post_processing((results,))
+
+
+def _finalize_debugger(debugger):
+    """Ensures all snapshot results are wrapped in a list for consistency."""
+    if not debugger or not debugger.active:
+        return
+    for tag, results in debugger.snapshots.items():
+        if not isinstance(results, list):
+            debugger.snapshots[tag] = [results]
 
 
 def split_circuit_at_mcms(circuit):

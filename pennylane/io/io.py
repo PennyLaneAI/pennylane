@@ -23,7 +23,7 @@ has_openqasm = True
 try:
     import openqasm3
 
-    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+    from pennylane.io.qasm_interpreter import QasmInterpreter
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_openqasm = False  # pragma: no cover
 
@@ -660,18 +660,19 @@ def from_quil(quil: str):
 
     .. code-block:: python
 
-        >>> quil_str = 'H 0\\n'
-        ...            'CNOT 0 1'
-        >>> my_circuit = qml.from_quil(quil_str)
+        quil_str = 'H 0\\nCNOT 0 1'
+        my_circuit = qml.from_quil(quil_str)
 
     The ``my_circuit`` template can now be used within QNodes, as a
     two-wire quantum template.
 
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=1)
+            my_circuit(wires=(1, 0))
+            return qml.expval(qml.Z(0))
 
     Args:
         quil (str): a Quil string containing a valid quantum circuit

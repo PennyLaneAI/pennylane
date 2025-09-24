@@ -14,14 +14,12 @@
 r"""
 Contains the hardware-efficient ParticleConservingU1 template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
-
-from ..embeddings import BasisEmbedding
+from pennylane.templates.embeddings import BasisEmbedding
 
 
 def decompose_ua(phi, wires=None):

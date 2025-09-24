@@ -22,8 +22,8 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.ir import Operation
 from xdsl.rewriter import InsertPoint
 
-from ..dialects.quantum import CustomOp
-from .api import compiler_transform
+from ...dialects.quantum import CustomOp
+from ...pass_api import compiler_transform
 
 # Can handle all composible rotations except Rot... for now
 composable_rotations = [
@@ -61,9 +61,7 @@ class MergeRotationsPattern(
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
-    def match_and_rewrite(
-        self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ
+    def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         consecutive composable rotations."""
         for op in funcOp.body.walk():
@@ -114,7 +112,7 @@ class MergeRotationsPass(passes.ModulePass):
 
     name = "xdsl-merge-rotations"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the merge rotations pass."""
         pattern_rewriter.PatternRewriteWalker(

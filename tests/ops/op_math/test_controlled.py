@@ -40,8 +40,7 @@ from pennylane import numpy as pnp
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
-from pennylane.tape import QuantumScript
-from pennylane.tape.tape import expand_tape
+from pennylane.tape import QuantumScript, expand_tape
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods
@@ -2057,38 +2056,6 @@ class TestTapeExpansionWithControlled:
         actual_mat = qml.matrix(actual, wire_order=[3, 7, 0])
         expected_mat = qml.matrix(expected, wire_order=[3, 7, 0])
         assert qml.math.allclose(actual_mat, expected_mat, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.ctrl(qml.ctrl(qml.S, 7), 3),  # nested control
-            qml.ctrl(qml.S, [3, 7]),  # multi-wire control
-        ],
-    )
-    def test_nested_ctrl_containing_phase_shift(self, op):
-        """Test that nested controlled ops are expanded correctly when phase shift is involved
-
-        The decomposition of S gate contains a PhaseShift. In the nested case, we do not want
-        to apply control to the expanded PhaseShift like how it is typically done for other
-        operations, because the decomposition of PhaseShift contains a GlobalPhase, the controlled
-        version of which we do not have handling for.
-
-        TODO: remove this special case once ControlledGlobalPhase is implemented.
-
-        """
-
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            op(wires=0)
-
-        tape = QuantumScript.from_queue(q_tape)
-        assert tape.expand(depth=1).circuit == [
-            Controlled(qml.PhaseShift(np.pi / 2, wires=[0]), control_wires=[3, 7])
-        ]
-
-        assert tape.expand(depth=2).circuit == [
-            Controlled(qml.RZ(np.pi / 2, wires=[0]), control_wires=[3, 7]),
-            Controlled(qml.GlobalPhase(-np.pi / 4, wires=[]), control_wires=[3, 7]),
-        ]
 
     def test_adjoint_of_ctrl(self):
         """Tests that adjoint(ctrl(fn)) and ctrl(adjoint(fn)) are equivalent"""

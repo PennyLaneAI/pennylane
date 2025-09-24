@@ -24,7 +24,13 @@ the upstream operation list.
 import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
-from .attributes import GatherDimensionNumbers, ResultAccuracyModeAttr, ScatterDimensionNumbers
+from .attributes import (
+    CustomCallApiVersionAttr,
+    GatherDimensionNumbers,
+    OutputOperandAlias,
+    ResultAccuracyModeAttr,
+    ScatterDimensionNumbers,
+)
 from .control_flow import (
     IfOp,
     OptimizationBarrierOp,
@@ -38,6 +44,9 @@ from .data_movement import (
     ReshapeOp,
     ScatterOp,
     SliceOp,
+)
+from .dynamism import (
+    DynamicBroadcastInDimOp,
 )
 from .elementwise_binary import (
     ComplexOp,
@@ -77,6 +86,12 @@ from .elementwise_unary import (
     SqrtOp,
     TanhOp,
     TanOp,
+)
+from .extensibility import (
+    CustomCallOp,
+)
+from .reduction import (
+    ReduceOp,
 )
 from .types import UniformQuantizedPerAxisType, UniformQuantizedType
 
@@ -125,12 +140,20 @@ OPERATIONS = [
     IfOp,
     WhileOp,
     OptimizationBarrierOp,
+    # Dynamism operations
+    DynamicBroadcastInDimOp,
+    # Reduction operations
+    ReduceOp,
+    # Extensibility operations
+    CustomCallOp,
 ]
 
 # Attributes to add to the dialect
 ATTRIBUTES = [
-    ResultAccuracyModeAttr,
+    CustomCallApiVersionAttr,
     GatherDimensionNumbers,
+    ResultAccuracyModeAttr,
+    OutputOperandAlias,
     ScatterDimensionNumbers,
     UniformQuantizedPerAxisType,
     UniformQuantizedType,

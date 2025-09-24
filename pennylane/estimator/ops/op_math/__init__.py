@@ -11,21 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""PennyLane-xDSL transformations API specifically for the MBQC transform."""
+r"""This module contains classes which integrate arithmetic operators with
+resource estimation."""
 
-from .graph_state_utils import (
-    get_num_aux_wires,
-    get_graph_state_edges,
-    n_vertices_from_packed_adj_matrix,
-    edge_iter,
-    generate_adj_matrix,
+from .controlled_ops import (
+    CCZ,
+    CH,
+    CNOT,
+    ControlledPhaseShift,
+    CRot,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    MultiControlledX,
+    TemporaryAND,
+    Toffoli,
 )
 
-
-__all__ = [
-    "get_num_aux_wires",
-    "get_graph_state_edges",
-    "n_vertices_from_packed_adj_matrix",
-    "edge_iter",
-    "generate_adj_matrix",
-]
+from .symbolic import Adjoint, Controlled, Pow, Prod, ChangeOpBasis

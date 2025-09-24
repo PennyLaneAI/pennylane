@@ -571,7 +571,6 @@ def _left_givens(indices, unitary, j, real_valued):
     return _left_givens_core(indices, unitary, j, real_valued)
 
 
-# pylint: disable=too-many-branches
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
