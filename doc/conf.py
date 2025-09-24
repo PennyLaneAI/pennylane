@@ -37,6 +37,7 @@ needs_sphinx = "8.1"
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
     "sphinx.ext.autosummary",
     "sphinx.ext.todo",
     "sphinx.ext.coverage",
@@ -51,7 +52,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxext.opengraph",
     "m2r2",
-    "sphinx_automodapi.smart_resolver"
+    "sphinx_automodapi.smart_resolver",
 ]
 
 # Open Graph metadata
