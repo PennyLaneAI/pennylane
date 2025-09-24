@@ -63,7 +63,6 @@ jobs:
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/numpy
-          --ignore=pennylane/logging
           --ignore=pennylane/configuration
           --ignore=pennylane/compiler
           --ignore=pennylane/measurements
