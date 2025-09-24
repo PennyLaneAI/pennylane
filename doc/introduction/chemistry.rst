@@ -7,10 +7,8 @@ Quantum Chemistry
 =================
 
 PennyLane provides the :mod:`~.qchem` module to perform quantum chemistry simulations. It
-contains a differentiable Hartree-Fock solver and the functionality to construct a
-fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
-such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
-also provides tools for building other observables such as molecular dipole moment, spin
+provides the functionality to perform Hartree-Fock calculations and construct observables 
+such as molecular Hamiltoniansas well as molecular dipole moment, spin
 and particle number observables. The theoretical foundation of the quantum chemistry functionality
 in PennyLane is explained in our `white paper <https://arxiv.org/abs/2111.09967>`_.
 
