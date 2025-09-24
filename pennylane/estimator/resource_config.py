@@ -19,7 +19,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pennylane.estimator.ops.qubit import QubitUnitary
-from pennylane.estimator.ops.templates import SelectPauliRot
+from pennylane.estimator.templates import SelectPauliRot
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
