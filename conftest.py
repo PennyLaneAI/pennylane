@@ -1,6 +1,5 @@
 # pylint: disable = missing-module-docstring
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
-import pytest
 
 from sybil import Sybil
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
@@ -28,17 +27,12 @@ namespace = {
 }
 
 
-@pytest.fixture(autouse=True)
-def reset_global_state_fixture():
+# pylint: disable=unused-argument, redefined-outer-name
+def reset_pennylane_state(namespace):
     """
-    This autouse fixture automatically runs for every test. It resets
-    any global state that might have been changed.
+    A teardown function for Sybil to reset PennyLane's global state
+    after testing a document.
     """
-    # The 'yield' keyword passes control to the test.
-    # Code before 'yield' is the setup phase.
-    yield
-    # Code after 'yield' is the teardown/cleanup phase.
-    # This runs after every test, even if it fails.
     qml.capture.disable()
     qml.decomposition.disable_graph()
 
@@ -50,5 +44,5 @@ pytest_collect_file = Sybil(
         PythonCodeBlockParser(),
     ],
     patterns=["*.rst", "*.py"],
-    fixtures=["reset_global_state_fixture"],
+    teardown=reset_pennylane_state,
 ).pytest()
