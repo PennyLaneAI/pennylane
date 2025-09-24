@@ -36,6 +36,7 @@ def reset_pennylane_state(namespace):
     """
     qml.capture.disable()
     qml.decomposition.disable_graph()
+    jax.config.update("jax_dynamic_shapes", False)
 
 
 pytest_collect_file = Sybil(
