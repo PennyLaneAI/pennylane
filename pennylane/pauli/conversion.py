@@ -121,7 +121,7 @@ def _generalized_pauli_decompose(
         ...    qml.RX(qml.math.real(coeffs[2]), 0)
         ...    return qml.expval(qml.Z(0))
         >>> qml.grad(circuit)(A)
-        array([[0.+0.j        , 0.+0.23971277j]])
+        array([[0.+0.j        , 0.+0.2397...j]])
 
     """
     # Ensuring original matrix is not manipulated and we support builtin types.
