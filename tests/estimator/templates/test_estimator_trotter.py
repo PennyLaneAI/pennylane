@@ -199,6 +199,36 @@ class TestTrotterCDF:
         ):
             qre.TrotterCDF(compact_ham, num_steps=100, order=2)
 
+    def test_controlled_resource_decomp(self):
+        """Test the controlled_resource_decomp method for TrotterCDF."""
+        num_orbitals = 4
+        num_fragments = 4
+        num_steps = 1
+        order = 2
+        num_ctrl_wires = 1
+        num_zero_ctrl = 0
+
+        compact_ham = qre.CompactHamiltonian.cdf(
+            num_orbitals=num_orbitals, num_fragments=num_fragments
+        )
+        decomp = qre.TrotterCDF.controlled_resource_decomp(
+            compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
+        )
+
+        op = qre.Prod(*[qre.op_from_rep(item.op) ** item.count for item in decomp])
+
+        def circ():
+            op
+
+        res = qre.estimate(circ)()
+
+        expected_gate_counts = defaultdict(
+            int, {"T": 28240, "S": 672.0, "Z": 448.0, "Hadamard": 448.0, "CNOT": 620.0}
+        )
+
+        assert res.algo_wires == 2 * num_orbitals + num_ctrl_wires
+        assert res.gate_counts == expected_gate_counts
+
 
 class TestTrotterTHC:
     """Tests for Resource TrotterTHC class"""
@@ -375,6 +405,33 @@ class TestTrotterVibrational:
         assert res.any_state == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
+
+    def test_controlled_resource_decomp(self):
+        """Test the controlled_resource_decomp method for TrotterTHC."""
+        num_orbitals = 4
+        tensor_rank = 4
+        num_steps = 1
+        order = 2
+        num_ctrl_wires = 1
+        num_zero_ctrl = 0
+
+        compact_ham = qre.CompactHamiltonian.thc(num_orbitals=num_orbitals, tensor_rank=tensor_rank)
+        decomp = qre.TrotterTHC.controlled_resource_decomp(
+            compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
+        )
+
+        op = qre.Prod(*[qre.op_from_rep(item.op) ** item.count for item in decomp])
+
+        def circ():
+            op
+
+        res = qre.estimate(circ)()
+
+        expected_gate_counts = defaultdict(
+            int, {"T": 10592, "S": 288.0, "Z": 192.0, "Hadamard": 192.0, "CNOT": 128.0}
+        )
+        assert res.algo_wires == tensor_rank * 2 + num_ctrl_wires
+        assert res.gate_counts == expected_gate_counts
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
