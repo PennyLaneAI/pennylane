@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.out_poly import (
+from pennylane.templates.subroutines.arithmetic.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
 )
