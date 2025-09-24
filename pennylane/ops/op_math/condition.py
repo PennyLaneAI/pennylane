@@ -35,26 +35,27 @@ def _add_abstract_shapes(f):
     at any moment. Use duplicate code till reliable abstractions are found.
 
     >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> jax.config.update("jax_enable_x64", True)
     >>> @qml.capture.FlatFn
     ... def f(x):
     ...     return x + 1
     >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))
-    { lambda ; a:i32[] b:f32[a]. let
-        c:f32[a] = broadcast_in_dim[
+    { lambda ; a:i64[] b:f64[a]. let
+        c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
           shape=(None,)
           sharding=None
-        ] 1.0:f32[] a
-        d:f32[a] = add b c
+        ] 1.0:f64[] a
+        d:f64[a] = add b c
       in (d,) }
     >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))
-    { lambda ; a:i32[] b:f32[a]. let
-        c:f32[a] = broadcast_in_dim[
+    { lambda ; a:i64[] b:f64[a]. let
+        c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
           shape=(None,)
           sharding=None
-        ] 1.0:f32[] a
-        d:f32[a] = add b c
+        ] 1.0:f64[] a
+        d:f64[a] = add b c
       in (a, d) }
 
     Now both the dimension of the array and the array are getting returned, rather than
