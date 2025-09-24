@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains subroutines for hamiltonian time evolution.
+This module contains subroutines for Hamiltonian time evolution.
 """
 from .approx_time_evolution import ApproxTimeEvolution
 from .commuting_evolution import CommutingEvolution
