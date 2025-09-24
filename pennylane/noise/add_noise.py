@@ -150,7 +150,7 @@ def add_noise(tape, noise_model, level=None):
         transforming a ``QNode``, this transform can be added at a designated level within the transform program, as determined using the
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level=None).transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level="device").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, metric_tensor)
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition

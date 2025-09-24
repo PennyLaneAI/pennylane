@@ -144,7 +144,7 @@ def insert(
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @partial(qml.transforms.insert, op=op, op_args=[0.2, 0.3], position="end")
+            @partial(qml.noise.insert, op=op, op_args=[0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
@@ -177,7 +177,7 @@ def insert(
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
-        >>> from pennylane.transforms import insert
+        >>> from pennylane.noise import insert
         >>> [noisy_tape], _ = insert(tape, qml.AmplitudeDamping, 0.05, position="end")
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
