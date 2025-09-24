@@ -185,11 +185,11 @@ class Snapshot(Operation):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev)
         def circuit():
             qml.Snapshot(measurement=qml.expval(qml.Z(0)))
             qml.Hadamard(wires=0)
@@ -200,15 +200,7 @@ class Snapshot(Operation):
             return qml.expval(qml.X(0))
 
     >>> qml.snapshots(circuit)()
-    {0: 1.0,
-    'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
-    2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
-    'samples': array([[1, 1],
-            [1, 1],
-            [1, 1],
-            [1, 1],
-            [1, 1]]),
-    'execution_results': 0.0}
+    {0: np.float64(1.0), 'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]), 2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]), 'samples': ..., 'execution_results': np.float64(0.0)}
 
     .. seealso:: :func:`~.snapshots`
     """
