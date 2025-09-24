@@ -112,7 +112,7 @@ class TorchLayer(Module):
         shape ``(batch_dim, *measurement_shape)``, where ``measurement_shape`` is the output shape
         of the measurement:
 
-        .. code-block::
+        .. code-block:: python
 
             from functools import partial
             def print_output_shape(measurements):

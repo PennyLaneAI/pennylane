@@ -38,7 +38,7 @@ class SquaredErrorLoss:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
             Note that the ansatz **must** have the following signature:
 
-            .. code-block:: python
+            .. code-block:: python3
 
                 ansatz(params, **kwargs)
 
@@ -78,7 +78,7 @@ class SquaredErrorLoss:
 
     Now we can create the observables:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         obs = [
             qml.Z(0),
@@ -88,7 +88,7 @@ class SquaredErrorLoss:
 
     Next, we can define the loss function:
 
-    >>> loss = qml.qnn.cost.SquaredErrorLoss(ansatz, obs, dev, interface="torch")
+    >>> loss = SquaredErrorLoss(ansatz, obs, dev, interface="torch")
     >>> phis = np.ones(num_qubits)
     >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
     array([0.21132197, 0.25      , 0.03683581])
