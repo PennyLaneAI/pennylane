@@ -137,24 +137,6 @@ def evolve(*args, **kwargs):
     >>> matrix = qml.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
     >>> print(matrix.shape)
     (16, 16)
-    >>> matrix
-    Array([[ 0.04929322+0.j        ,  0.        -0.03257567j,
-             0.        +0.10525776j,  0.0695596 +0.j        ,
-             0.        -0.01481652j, -0.00979091+0.j        ,
-             0.03163766+0.j        ,  0.        -0.02090796j,
-             0.        +0.33524168j,  0.22154418+0.j        ,
-            -0.7158644 +0.j        ,  0.        +0.47307563j,
-             0.1007646 +0.j        ,  0.        -0.06659043j,
-             0.        +0.21516761j,  0.14219368+0.j        ],
-            ...
-           [ 0.14219368+0.j        ,  0.        +0.21516761j,
-             0.        -0.06659043j,  0.1007646 +0.j        ,
-             0.        +0.47307563j, -0.7158644 +0.j        ,
-             0.22154418+0.j        ,  0.        +0.33524168j,
-             0.        -0.02090796j,  0.03163766+0.j        ,
-            -0.00979091+0.j        ,  0.        -0.01481652j,
-             0.0695596 +0.j        ,  0.        +0.10525776j,
-             0.        -0.03257567j,  0.04929322+0.j        ]],      dtype=complex...)
 
     Additional options regarding how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
     along with the parameters, as keyword arguments. These options are:
