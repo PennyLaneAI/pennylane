@@ -91,7 +91,7 @@ class SquaredErrorLoss:
     >>> loss = SquaredErrorLoss(ansatz, obs, dev, interface="torch")
     >>> phis = np.ones(num_qubits)
     >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
-    array([0.21132197, 0.25      , 0.03683581])
+    array([0.21..., 0.25      , 0.036...])
 
     The loss function can be minimized using any gradient descent-based
     :doc:`optimizer </introduction/interfaces>`.
