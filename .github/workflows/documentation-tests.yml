@@ -88,7 +88,6 @@ jobs:
           --ignore=pennylane/qaoa
           --ignore=pennylane/data
           --ignore=pennylane/fermi
-          --ignore=pennylane/bose
           --ignore=pennylane/spin
           --ignore=pennylane/drawer
           --ignore=pennylane/fourier
