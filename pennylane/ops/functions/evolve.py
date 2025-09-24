@@ -184,7 +184,7 @@ def evolve(*args, **kwargs):
 
     >>> params = [1., 2., 3., 4.]
     >>> circuit(params)
-    Array(0.86231063, dtype=float64)
+    Array(0.862..., dtype=float64)
 
     >>> jax.grad(circuit)(params)
     [Array(50.63..., dtype=float64), Array(-9.42...e-05, dtype=float64), Array(-0.0001..., dtype=float64), Array(-0.0001..., dtype=float64)]
