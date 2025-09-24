@@ -55,6 +55,17 @@ def get_qnode_output_eqns(jaxpr):
     return qnode_output_eqns
 
 
+def test_warning_about_execution_pipeline_unmaintained():
+    """Test that a warning is raised saying the native execution is unmaintained."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def c():
+        return qml.probs()
+
+    with pytest.warns(UserWarning, match="Executing PennyLane programs with capture enabled"):
+        c()
+
+
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
@@ -101,14 +112,14 @@ def test_simple_qnode():
     assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots_len"] == 0
     expected_config = qml.devices.ExecutionConfig(
-        gradient_method="backprop",
-        use_device_gradient=True,
+        gradient_method="best",
+        use_device_gradient=None,
         gradient_keyword_arguments={},
         use_device_jacobian_product=False,
         interface="jax",
         grad_on_execution=False,
-        device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
-        mcm_config=qml.devices.MCMConfig(mcm_method="deferred", postselect_mode=None),
+        device_options={},
+        mcm_config=qml.devices.MCMConfig(mcm_method=None, postselect_mode=None),
     )
     assert eqn0.params["execution_config"] == expected_config
 
@@ -231,7 +242,7 @@ def test_capture_qnode_kwargs():
     assert jaxpr.eqns[0].primitive == qnode_prim
     expected_config = qml.devices.ExecutionConfig(
         gradient_method="parameter-shift",
-        use_device_gradient=False,
+        use_device_gradient=None,
         grad_on_execution=False,
         derivative_order=2,
         use_device_jacobian_product=False,
@@ -239,7 +250,7 @@ def test_capture_qnode_kwargs():
             mcm_method="single-branch-statistics", postselect_mode=None
         ),
         interface=qml.math.Interface.JAX,
-        device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
+        device_options={},
     )
     assert jaxpr.eqns[0].params["execution_config"] == expected_config
 

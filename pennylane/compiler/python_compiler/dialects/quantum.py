@@ -23,21 +23,22 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pylint: disable=too-few-public-methods
 
-# pragma: no cover
-
 from collections.abc import Sequence
 from typing import TypeAlias
 
 from xdsl.dialects.builtin import (
     I32,
     I64,
-    AnyAttr,
+    ComplexType,
     Float64Type,
     FloatAttr,
     IntegerAttr,
     IntegerType,
+    MemRefType,
     StringAttr,
+    TensorType,
     UnitAttr,
+    i1,
     i64,
 )
 from xdsl.ir import (
@@ -53,11 +54,16 @@ from xdsl.ir import (
     TypeAttribute,
 )
 from xdsl.irdl import (
+    AtLeast,
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
+    IntSetConstraint,
     IRDLOperation,
+    ParsePropInAttrDict,
+    SameVariadicResultSize,
     irdl_attr_definition,
     irdl_op_definition,
+    lazy_traits_def,
     operand_def,
     opt_operand_def,
     opt_prop_def,
@@ -65,10 +71,19 @@ from xdsl.irdl import (
     prop_def,
     region_def,
     result_def,
+    traits_def,
     var_operand_def,
     var_result_def,
 )
-from xdsl.utils.exceptions import VerifyException
+from xdsl.traits import (
+    HasParent,
+    IsTerminator,
+    NoMemoryEffect,
+    Pure,
+    SingleBlockImplicitTerminator,
+)
+
+from ..xdsl_extras import MemRefConstraint, TensorConstraint
 
 ################################################################
 ######################## ATTRIBUTES ############################
@@ -146,6 +161,8 @@ class AdjointOp(IRDLOperation):
 
     region = region_def("single_block")
 
+    traits = lazy_traits_def(lambda: (SingleBlockImplicitTerminator(YieldOp),))
+
     def __init__(
         self,
         qreg: QuregSSAValue | Operation,
@@ -166,9 +183,11 @@ class AllocOp(IRDLOperation):
 
     nqubits = opt_operand_def(i64)
 
-    nqubits_attr = opt_prop_def(IntegerAttr[I64])
+    nqubits_attr = opt_prop_def(IntegerAttr.constr(type=I64, value=AtLeast(0)))
 
     qreg = result_def(QuregType)
+
+    traits = traits_def(NoMemoryEffect())
 
     def __init__(self, nqubits):
         if isinstance(nqubits, int):
@@ -183,13 +202,21 @@ class AllocOp(IRDLOperation):
 
         super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
 
-    def verify_(self):
-        """Verify operation when rewriting."""
-        if self.nqubits_attr is None:
-            return
 
-        if self.nqubits_attr.value.data < 0:  # pylint: disable=no-member
-            raise VerifyException("Cannot allocate less than zero qubits.")
+@irdl_op_definition
+class AllocQubitOp(IRDLOperation):
+    """Allocate a single qubit."""
+
+    name = "quantum.alloc_qb"
+
+    assembly_format = """attr-dict `:` type(results)"""
+
+    qubit = result_def(QubitType)
+
+    def __init__(self):
+        super().__init__(
+            result_types=(QubitType(),),
+        )
 
 
 @irdl_op_definition
@@ -225,20 +252,20 @@ class CountsOp(IRDLOperation):
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
-        AttrSizedResultSegments(as_property=True),
+        SameVariadicResultSize(),
     ]
 
     obs = operand_def(ObservableType)
 
     dynamic_shape = opt_operand_def(IntegerType(64))
 
-    in_eigvals = opt_operand_def(AnyAttr())
+    in_eigvals = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=1))
 
-    in_counts = opt_operand_def(AnyAttr())
+    in_counts = opt_operand_def(MemRefConstraint(element_type=i64, rank=1))
 
-    eigvals = opt_result_def(AnyAttr())
+    eigvals = opt_result_def(TensorConstraint(element_type=Float64Type(), rank=1))
 
-    counts = opt_result_def(AnyAttr())
+    counts = opt_result_def(TensorConstraint(element_type=i64, rank=1))
 
 
 @irdl_op_definition
@@ -277,13 +304,15 @@ class CustomOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(QubitType)
 
+    traits = traits_def(NoMemoryEffect())
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
-        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation],
         gate_name: str | StringAttr,
         params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] | None = None,
+        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation],
         in_ctrl_qubits: (
             QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
         ) = None,
@@ -342,6 +371,22 @@ class DeallocOp(IRDLOperation):
 
 
 @irdl_op_definition
+class DeallocQubitOp(IRDLOperation):
+    """Deallocate a single qubit."""
+
+    name = "quantum.dealloc_qb"
+
+    assembly_format = """$qubit attr-dict `:` type(operands)"""
+
+    qubit = operand_def(QubitType)
+
+    def __init__(self, qubit: QubitSSAValue | Operation):
+        super().__init__(
+            operands=(qubit,),
+        )
+
+
+@irdl_op_definition
 class DeviceInitOp(IRDLOperation):
     """Initialize a quantum device."""
 
@@ -351,7 +396,11 @@ class DeviceInitOp(IRDLOperation):
         (`shots` `(` $shots^ `)`)? `[` $lib `,` $device_name `,` $kwargs `]` attr-dict
     """
 
+    irdl_options = [ParsePropInAttrDict()]
+
     shots = opt_operand_def(IntegerType(64))
+
+    auto_qubit_management = opt_prop_def(UnitAttr)
 
     lib = prop_def(StringAttr)
 
@@ -367,38 +416,6 @@ class DeviceReleaseOp(IRDLOperation):
     name = "quantum.device_release"
 
     assembly_format = "attr-dict"
-
-
-@irdl_op_definition
-class AllocQubitOp(IRDLOperation):
-    """Allocate a single qubit."""
-
-    name = "quantum.alloc_qb"
-
-    assembly_format = """attr-dict `:` type(results)"""
-
-    qubit = result_def(QubitType)
-
-    def __init__(self):
-        super().__init__(
-            result_types=(QubitType(),),
-        )
-
-
-@irdl_op_definition
-class DeallocQubitOp(IRDLOperation):
-    """Deallocate a single qubit."""
-
-    name = "quantum.dealloc_qb"
-
-    assembly_format = """$qubit attr-dict `:` type(operands)"""
-
-    qubit = operand_def(QubitType)
-
-    def __init__(self, qubit: QubitSSAValue | Operation):
-        super().__init__(
-            operands=(qubit,),
-        )
 
 
 @irdl_op_definition
@@ -431,9 +448,11 @@ class ExtractOp(IRDLOperation):
 
     idx = opt_operand_def(IntegerType(64))
 
-    idx_attr = opt_prop_def(IntegerAttr[I64])
+    idx_attr = opt_prop_def(IntegerAttr.constr(type=i64, value=AtLeast(0)))
 
     qubit = result_def(QubitType)
+
+    traits = traits_def(NoMemoryEffect())
 
     def __init__(
         self,
@@ -480,12 +499,11 @@ class GlobalPhaseOp(IRDLOperation):
            `:` type(results)
        """
 
-    irdl_options = [
-        AttrSizedOperandSegments(as_property=True),
-        AttrSizedResultSegments(as_property=True),
-    ]
+    irdl_options = [AttrSizedOperandSegments(as_property=True), ParsePropInAttrDict()]
 
     params = operand_def(Float64Type())
+
+    adjoint = opt_prop_def(UnitAttr)
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
@@ -493,7 +511,6 @@ class GlobalPhaseOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(QubitType)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
@@ -537,7 +554,10 @@ class HamiltonianOp(IRDLOperation):
         `(` $coeffs `:` type($coeffs) `)` $terms attr-dict `:` type(results)
     """
 
-    coeffs = operand_def(AnyAttr())
+    coeffs = operand_def(
+        TensorConstraint(element_type=Float64Type(), rank=1)
+        | (MemRefConstraint(element_type=Float64Type(), rank=1))
+    )
 
     terms = var_operand_def(ObservableType)
 
@@ -554,7 +574,10 @@ class HermitianOp(IRDLOperation):
         `(` $matrix `:` type($matrix) `)` $qubits attr-dict `:` type(results)
     """
 
-    matrix = operand_def(AnyAttr())
+    matrix = operand_def(
+        TensorConstraint(element_type=ComplexType(Float64Type()), rank=2)
+        | MemRefConstraint(element_type=ComplexType(Float64Type()), rank=2)
+    )
 
     qubits = var_operand_def(QubitType)
 
@@ -584,11 +607,13 @@ class InsertOp(IRDLOperation):
 
     idx = opt_operand_def(IntegerType(64))
 
-    idx_attr = opt_prop_def(IntegerAttr[I64])
+    idx_attr = opt_prop_def(IntegerAttr.constr(type=i64, value=AtLeast(0)))
 
     qubit = operand_def(QubitType)
 
     out_qreg = result_def(QuregType)
+
+    traits = traits_def(NoMemoryEffect())
 
     def __init__(
         self,
@@ -621,7 +646,9 @@ class MeasureOp(IRDLOperation):
 
     in_qubit = operand_def(QubitType)
 
-    postselect = opt_prop_def(IntegerAttr[I32])
+    postselect = opt_prop_def(
+        IntegerAttr.constr(type=I32, value=IntSetConstraint(frozenset((0, 1))))
+    )
 
     mres = result_def(IntegerType(1))
 
@@ -641,14 +668,6 @@ class MeasureOp(IRDLOperation):
         super().__init__(
             operands=(in_qubit,), properties=properties, result_types=(IntegerType(1), QubitType())
         )
-
-    def verify_(self):
-        """Verify operation when rewriting."""
-        if self.postselect is None:
-            return
-
-        if self.postselect.value.data not in [0, 1]:  # pylint: disable=no-member
-            raise VerifyException("'postselect' must be 0 or 1.")
 
 
 @irdl_op_definition
@@ -684,6 +703,46 @@ class MultiRZOp(IRDLOperation):
     out_qubits = var_result_def(QubitType)
 
     out_ctrl_qubits = var_result_def(QubitType)
+
+    traits = traits_def(NoMemoryEffect())
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        theta: SSAValue[Float64Type],
+        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation],
+        in_ctrl_qubits: (
+            QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
+        ) = None,
+        in_ctrl_values: (
+            SSAValue[IntegerType]
+            | Operation
+            | Sequence[SSAValue[IntegerType]]
+            | Sequence[Operation]
+            | None
+        ) = None,
+        adjoint: UnitAttr | bool = False,
+    ):
+        in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
+        in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
+
+        if not isinstance(in_qubits, Sequence):
+            in_qubits = (in_qubits,)
+        if not isinstance(in_ctrl_qubits, Sequence):
+            in_ctrl_qubits = (in_ctrl_qubits,)
+        if not isinstance(in_ctrl_values, Sequence):
+            in_ctrl_values = (in_ctrl_values,)
+
+        out_qubits = tuple(QubitType() for _ in in_qubits)
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
+        properties = {"adjoint": UnitAttr()} if adjoint else {}
+
+        super().__init__(
+            operands=(theta, in_qubits, in_ctrl_qubits, in_ctrl_values),
+            result_types=(out_qubits, out_ctrl_qubits),
+            properties=properties,
+        )
 
 
 @irdl_op_definition
@@ -739,9 +798,9 @@ class ProbsOp(IRDLOperation):
 
     dynamic_shape = opt_operand_def(IntegerType(64))
 
-    state_in = opt_operand_def(AnyAttr())
+    state_in = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=1))
 
-    probabilities = opt_result_def(AnyAttr())
+    probabilities = opt_result_def(TensorConstraint(element_type=Float64Type(), rank=1))
 
 
 @irdl_op_definition
@@ -764,7 +823,10 @@ class QubitUnitaryOp(IRDLOperation):
         AttrSizedResultSegments(as_property=True),
     ]
 
-    matrix = operand_def(AnyAttr())
+    matrix = operand_def(
+        (TensorConstraint(element_type=ComplexType(Float64Type()), rank=2))
+        | (MemRefConstraint(element_type=ComplexType(Float64Type()), rank=2))
+    )
 
     in_qubits = var_operand_def(QubitType)
 
@@ -777,6 +839,51 @@ class QubitUnitaryOp(IRDLOperation):
     out_qubits = var_result_def(QubitType)
 
     out_ctrl_qubits = var_result_def(QubitType)
+
+    traits = traits_def(NoMemoryEffect())
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        matrix: SSAValue[TensorType | MemRefType],
+        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation],
+        in_ctrl_qubits: (
+            QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
+        ) = None,
+        in_ctrl_values: (
+            SSAValue[IntegerType]
+            | Operation
+            | Sequence[SSAValue[IntegerType]]
+            | Sequence[Operation]
+            | None
+        ) = None,
+        adjoint: UnitAttr | bool = False,
+    ):
+        in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
+        in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
+
+        if not isinstance(in_qubits, Sequence):
+            in_qubits = (in_qubits,)
+        if not isinstance(in_ctrl_qubits, Sequence):
+            in_ctrl_qubits = (in_ctrl_qubits,)
+        if not isinstance(in_ctrl_values, Sequence):
+            in_ctrl_values = (in_ctrl_values,)
+
+        if isinstance(gate_name, str):
+            gate_name = StringAttr(data=gate_name)
+
+        out_qubits = tuple(QubitType() for _ in in_qubits)
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
+        properties = {"gate_name": gate_name}
+        if adjoint:
+            properties["adjoint"] = UnitAttr()
+
+        super().__init__(
+            operands=(matrix, in_qubits, in_ctrl_qubits, in_ctrl_values),
+            result_types=(out_qubits, out_ctrl_qubits),
+            properties=properties,
+        )
 
 
 @irdl_op_definition
@@ -797,9 +904,9 @@ class SampleOp(IRDLOperation):
 
     dynamic_shape = var_operand_def(IntegerType(64))
 
-    in_data = opt_operand_def(AnyAttr())
+    in_data = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=(1, 2)))
 
-    samples = opt_result_def(AnyAttr())
+    samples = opt_result_def(TensorConstraint(element_type=Float64Type(), rank=(1, 2)))
 
 
 @irdl_op_definition
@@ -812,7 +919,9 @@ class SetBasisStateOp(IRDLOperation):
         `(` $basis_state`)` $in_qubits attr-dict `:` functional-type(operands, results)
     """
 
-    basis_state = operand_def(AnyAttr())
+    basis_state = operand_def(
+        (TensorConstraint(element_type=i1, rank=1)) | (MemRefConstraint(element_type=i1, rank=1))
+    )
 
     in_qubits = var_operand_def(QubitType)
 
@@ -829,7 +938,10 @@ class SetStateOp(IRDLOperation):
         `(` $in_state `)` $in_qubits attr-dict `:` functional-type(operands, results)
     """
 
-    in_state = operand_def(AnyAttr())
+    in_state = operand_def(
+        (TensorConstraint(element_type=ComplexType(Float64Type()), rank=1))
+        | (MemRefConstraint(element_type=ComplexType(Float64Type()), rank=1))
+    )
 
     in_qubits = var_operand_def(QubitType)
 
@@ -854,9 +966,9 @@ class StateOp(IRDLOperation):
 
     dynamic_shape = opt_operand_def(IntegerType(64))
 
-    state_in = opt_operand_def(AnyAttr())
+    state_in = opt_operand_def(MemRefConstraint(element_type=ComplexType(Float64Type()), rank=1))
 
-    state = opt_result_def(AnyAttr())
+    state = opt_result_def(TensorConstraint(element_type=ComplexType(Float64Type()), rank=1))
 
 
 @irdl_op_definition
@@ -888,6 +1000,9 @@ class VarianceOp(IRDLOperation):
 
     variance = result_def(Float64Type())
 
+    def __init__(self, obs: ObservableSSAValue | Operation):
+        super().__init__(operands=(obs,), result_types=(Float64Type(),))
+
 
 @irdl_op_definition
 class YieldOp(IRDLOperation):
@@ -900,6 +1015,8 @@ class YieldOp(IRDLOperation):
     """
 
     retvals = var_operand_def(QuregType)
+
+    traits = traits_def(HasParent(AdjointOp), IsTerminator(), Pure())
 
 
 Quantum = Dialect(

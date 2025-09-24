@@ -735,8 +735,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.data = copy.copy(self.data)
+        # pylint: disable=attribute-defined-outside-init
+        if hasattr(self, "_hyperparameters"):
+            copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
-            if attr != "data":
+            if attr not in {"data", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
@@ -1186,7 +1189,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if ndims != self.ndim_params:
             ndims_matches = [
                 (ndim == exp_ndim, ndim == exp_ndim + 1)
-                for ndim, exp_ndim in zip(ndims, self.ndim_params)
+                for ndim, exp_ndim in zip(ndims, self.ndim_params, strict=True)
             ]
             if not all(correct or batched for correct, batched in ndims_matches):
                 raise ValueError(
@@ -1195,7 +1198,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 )
 
             first_dims = [
-                qml.math.shape(p)[0] for (_, batched), p in zip(ndims_matches, params) if batched
+                qml.math.shape(p)[0]
+                for (_, batched), p in zip(ndims_matches, params, strict=True)
+                if batched
             ]
             if not qml.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
@@ -1444,10 +1449,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         {"num_wires": 2}
 
         """
-        # For most operators, this should just be an empty dictionary, but a default
-        # implementation is intentionally not provided so that each operator class is
-        # forced to explicitly define its resource params.
-        raise NotImplementedError(f"{self.__class__.__name__}.resource_params undefined!")
+        return {}
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty

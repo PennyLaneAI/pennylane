@@ -367,7 +367,7 @@ def _to_zx_transform(
         # Map the wires to consecutive wires
 
         consecutive_wires = Wires(range(len(res[0].wires)))
-        consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires))
+        consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires, strict=True))
         mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
         mapped_tape = fn(mapped_tapes)
 
@@ -383,7 +383,7 @@ def _to_zx_transform(
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
-        mapped_tape = qml.tape.tape.expand_tape(
+        mapped_tape = qml.tape.expand_tape(
             mapped_tape, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
         )
 

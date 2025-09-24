@@ -54,7 +54,7 @@ def _batch_postprocessing(
     (3.0, 3.5, 8.0)
 
     """
-    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices))
+    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices, strict=True))
 
 
 def _apply_postprocessing_stack(
@@ -76,7 +76,7 @@ def _apply_postprocessing_stack(
     >>> def postprocessing1(results):
     ...     return (results[0] + results[1], results[2] + results[3])
     >>> def postprocessing2(results):
-    .... return (results[0] + 1, results[1] + 2)
+    ...     return (results[0] + 1, results[1] + 2)
     >>> _apply_postprocessing_stack(results, [postprocessing1])
     (3.0, 7.0)
     >>> _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
@@ -426,7 +426,6 @@ class TransformProgram:
             classical_jacobians = []
             for tape_idx, tape in enumerate(tapes):
                 if argnums is not None:
-                    # pylint: disable=unsubscriptable-object
                     tape.trainable_params = argnums[tape_idx]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)

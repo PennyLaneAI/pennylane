@@ -109,7 +109,7 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
 
     input_shapes = [
         (arg.shape[batch_dim],)
-        for arg, batch_dim in zip(non_const_args, non_const_batch_dims)
+        for arg, batch_dim in zip(non_const_args, non_const_batch_dims, strict=True)
         if batch_dim is not None
     ]
 
@@ -162,6 +162,13 @@ qnode_prim.prim_type = "higher_order"
 @debug_logger
 @qnode_prim.def_impl
 def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
+
+    warn(
+        "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
+        UserWarning,
+    )
+
+    execution_config = device.setup_execution_config(execution_config)
 
     if shots_len == 0:
         shots = None
@@ -288,7 +295,7 @@ def _qnode_batching_rule(
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
-    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims, strict=True)):
 
         if _is_scalar_tensor(arg):
             continue
@@ -354,7 +361,7 @@ diff_method_map = {"finite-diff": _finite_diff}
 
 @debug_logger
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
-
+    execution_config = device.setup_execution_config(execution_config)
     if execution_config.use_device_gradient:
         return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
 
@@ -567,7 +574,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         config = construct_execution_config(
             qnode, resolve=False
         )()  # no need for args and kwargs as not resolving
-        config = qnode.device.setup_execution_config(config)
 
         if abstracted_axes:
             # We unflatten the ``abstracted_axes`` here to be have the same pytree structure

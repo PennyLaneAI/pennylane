@@ -16,7 +16,7 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 """
 from collections.abc import Hashable, Sequence
 
-from pennylane.allocation import Allocate, Deallocate
+from pennylane.allocation import Allocate, AllocateState, Deallocate
 from pennylane.exceptions import AllocationError
 from pennylane.measurements import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -28,44 +28,62 @@ from .core import transform
 class _WireManager:
     """Handles converting dynamic wires into concrete values."""
 
-    def __init__(self, zeroed=(), any_state=(), min_int=None):
-        self._zeroed = list(zeroed)
-        self._any_state = list(any_state)
+    def __init__(self, zeroed=(), any_state=(), min_int=None, allow_resets: bool = True):
+        self._registers = {AllocateState.ZERO: list(zeroed), AllocateState.ANY: list(any_state)}
         self._loaned = {}  # wire to final register type
         self.min_int = min_int
+        self.allow_resets = allow_resets
 
-    def get_wire(self, require_zeros, restored):
-        """Retrieve a concrete wire label from available registers."""
-        if not self._zeroed and not self._any_state:
-            if self.min_int is None:
-                raise AllocationError("no wires left to allocate.")
-            self._zeroed.append(self.min_int)
-            self.min_int += 1
-        if require_zeros:
-            if self._zeroed:
-                w = self._zeroed.pop()
-                self._loaned[w] = "zeroed" if restored else "any_state"
-                return w, []
+    def _retrieval_method(self, state: AllocateState):
+        _retrieval_map = {AllocateState.ZERO: self._get_zeroed, AllocateState.ANY: self._get_any}
+        return _retrieval_map[state]
+
+    @property
+    def _zeroed(self):
+        return self._registers[AllocateState.ZERO]
+
+    @property
+    def _any_state(self):
+        return self._registers[AllocateState.ANY]
+
+    def _get_zeroed(self, restored: bool):
+        if self._zeroed:
+            w = self._zeroed.pop()
+            self._loaned[w] = AllocateState.ZERO if restored else AllocateState.ANY
+            return w, []
+        if self.allow_resets:
             w = self._any_state.pop()
-            self._loaned[w] = "zeroed" if restored else "any_state"
+            self._loaned[w] = AllocateState.ZERO if restored else AllocateState.ANY
             m = measure(w, reset=True)
             return w, m.measurements
+        self._add_new_wire()
+        return self._get_zeroed(restored=restored)
 
+    def _add_new_wire(self):
+        if self.min_int is None:
+            raise AllocationError("no wires left to allocate.")
+        self._zeroed.append(self.min_int)
+        self.min_int += 1
+
+    def _get_any(self, restored: bool):
         if self._any_state:
             w = self._any_state.pop()
-            self._loaned[w] = "any_state"
+            self._loaned[w] = AllocateState.ANY
             return w, []
         w = self._zeroed.pop()
-        self._loaned[w] = "zeroed" if restored else "any_state"
+        self._loaned[w] = AllocateState.ZERO if restored else AllocateState.ANY
         return w, []
+
+    def get_wire(self, state: AllocateState, restored):
+        """Retrieve a concrete wire label from available registers."""
+        if not self._zeroed and not self._any_state:
+            self._add_new_wire()
+        return self._retrieval_method(state)(restored)
 
     def return_wire(self, wire):
         """Return a wire label back to be re-used."""
         reg_type = self._loaned.pop(wire)
-        if reg_type == "zeroed":
-            self._zeroed.append(wire)
-        else:
-            self._any_state.append(wire)
+        self._registers[reg_type].append(wire)
 
 
 def null_postprocessing(results: ResultBatch) -> Result:
@@ -79,6 +97,7 @@ def resolve_dynamic_wires(
     zeroed: Sequence[Hashable] = (),
     any_state: Sequence[Hashable] = (),
     min_int: int | None = None,
+    allow_resets: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
 
@@ -88,6 +107,8 @@ def resolve_dynamic_wires(
         any_state (Sequence[Hashable]): a register of wires with any state
         min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
+        allow_resets (boo): Whether or not mid circuit measurements with ``reset=True`` can be added
+            to turn any state wires into zeroed wires.
 
     Returns:
         tuple[QuantumScript], Callable[[ResultBatch], Result]: A batch of tapes and a postprocessing function
@@ -100,14 +121,14 @@ def resolve_dynamic_wires(
 
         This approach also means we pop wires from the *end* of the stack first.
 
-    For a dynamic wire requested to be in the zero state (``require_zeros=True``), we try three things before erroring:
+    For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before erroring:
 
       #. If wires exist in the ``zeroed`` register, we take one from that register
-      #. If no ``zeroed`` wires exist, we pull one from ``any_state`` and apply a reset operation
+      #. If no ``zeroed`` wires exist and we are allowed to use resets, we pull one from ``any_state`` and apply a reset operation
       #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
          we increment ``min_int`` and add a new wire.
 
-    For a dynamic wire with ``require_zeros=False``, we try:
+    For a dynamic wire with ``state="any"``, we try:
 
       #. If wires exist in the ``any_state``, we take one from that register
       #. If no wires exist in ``any_state``, we pull one from ``zeroed``
@@ -126,10 +147,10 @@ def resolve_dynamic_wires(
 
     .. code-block:: python
 
-        def circuit(require_zeros=True):
-            with qml.allocation.allocate(1, require_zeros=require_zeros) as wires:
+        def circuit(state="zero"):
+            with qml.allocation.allocate(1, state=state) as wires:
                 qml.X(wires)
-            with qml.allocation.allocate(1, require_zeros=require_zeros) as wires:
+            with qml.allocation.allocate(1, state=state) as wires:
                 qml.Y(wires)
 
     >>> print(qml.draw(circuit)())
@@ -151,6 +172,12 @@ def resolve_dynamic_wires(
     >>> print(qml.draw(assigned_one_zeroed)())
     a: ──X──┤↗│  │0⟩──Y─┤
 
+    This reset behavior can be turned off with ``allow_resets=False``.
+
+    >>> no_resets = resolve_dynamic_wires(circuit, zeroed=("a",), allow_resets=False)
+    >>> print(qml.draw(no_resets)())
+    AllocationError: no wires left to allocate.
+
     If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
@@ -158,10 +185,11 @@ def resolve_dynamic_wires(
     >>> print(qml.draw(assigned_any_state)())
     b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─|
 
-    Note that the last provided wire with label ``"b"`` is used first.
-    If the wire allocations had ``require_zeros=False``, no reset operations would occur:
 
-    >>> print(qml.draw(assigned_any_state)(require_zeros=False))
+    Note that the last provided wire with label ``"b"`` is used first.
+    If the wire allocations had ``state="any"``, no reset operations would occur:
+
+    >>> print(qml.draw(assigned_any_state)(state="any"))
     b: ──X──Y─┤
 
     Instead of registers of available wires, a ``min_int`` can be specified instead.  The ``min_int`` indicates
@@ -199,7 +227,9 @@ def resolve_dynamic_wires(
     1: ──────────────╰X─┤
 
     """
-    manager = _WireManager(zeroed=zeroed, any_state=any_state, min_int=min_int)
+    manager = _WireManager(
+        zeroed=zeroed, any_state=any_state, min_int=min_int, allow_resets=allow_resets
+    )
 
     wire_map = {}
     deallocated = set()

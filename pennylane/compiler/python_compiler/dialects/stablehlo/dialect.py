@@ -24,7 +24,30 @@ the upstream operation list.
 import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
-from .attributes import ResultAccuracyModeAttr
+from .attributes import (
+    CustomCallApiVersionAttr,
+    GatherDimensionNumbers,
+    OutputOperandAlias,
+    ResultAccuracyModeAttr,
+    ScatterDimensionNumbers,
+)
+from .control_flow import (
+    IfOp,
+    OptimizationBarrierOp,
+    WhileOp,
+)
+from .data_movement import (
+    BroadcastInDimOp,
+    ConcatenateOp,
+    DynamicSliceOp,
+    GatherOp,
+    ReshapeOp,
+    ScatterOp,
+    SliceOp,
+)
+from .dynamism import (
+    DynamicBroadcastInDimOp,
+)
 from .elementwise_binary import (
     ComplexOp,
     DivideOp,
@@ -64,6 +87,12 @@ from .elementwise_unary import (
     TanhOp,
     TanOp,
 )
+from .extensibility import (
+    CustomCallOp,
+)
+from .reduction import (
+    ReduceOp,
+)
 from .types import UniformQuantizedPerAxisType, UniformQuantizedType
 
 # Operations to add to the dialect
@@ -99,11 +128,33 @@ OPERATIONS = [
     SqrtOp,
     TanOp,
     TanhOp,
+    # Data movement operations
+    BroadcastInDimOp,
+    ConcatenateOp,
+    DynamicSliceOp,
+    GatherOp,
+    ReshapeOp,
+    ScatterOp,
+    SliceOp,
+    # Control flow operations
+    IfOp,
+    WhileOp,
+    OptimizationBarrierOp,
+    # Dynamism operations
+    DynamicBroadcastInDimOp,
+    # Reduction operations
+    ReduceOp,
+    # Extensibility operations
+    CustomCallOp,
 ]
 
 # Attributes to add to the dialect
 ATTRIBUTES = [
+    CustomCallApiVersionAttr,
+    GatherDimensionNumbers,
     ResultAccuracyModeAttr,
+    OutputOperandAlias,
+    ScatterDimensionNumbers,
     UniformQuantizedPerAxisType,
     UniformQuantizedType,
 ]
