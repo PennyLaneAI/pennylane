@@ -73,6 +73,7 @@ jobs:
           --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
+          --ignore=pennylane/concurrency/__init__.py
           --ignore=pennylane/pauli
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
