@@ -20,7 +20,8 @@ from typing import TYPE_CHECKING
 
 from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
-from pennylane.estimator.ops.templates import QubitUnitary, SelectPauliRot
+from pennylane.estimator.ops.qubit import QubitUnitary
+from pennylane.estimator.ops.templates import SelectPauliRot
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
