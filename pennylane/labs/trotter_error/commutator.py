@@ -91,55 +91,6 @@ class CommutatorNode(Node):
         else:
             self.right[i - self.left.order] = v
 
-    def _replace_node_impl(self, target_node: Node, new_nodes: List[Node]):
-        """
-        Recursively finds a target child node and replaces it.
-        This method traverses the tree starting from the current node's children.
-
-        Args:
-            target_node: The specific node object to be replaced.
-            new_node: The new node object to insert in its place.
-        """
-
-        if not new_nodes:
-            raise RuntimeError(
-                "Got fewer replacement nodes than the number of targte nodes in the commutator tree."
-            )
-
-        if self.left == target_node:
-            new_node = new_nodes.pop(0)
-            if not isinstance(new_node, Node):
-                raise TypeError("The replacement node must be a Node instance.")
-            self.left = new_node
-
-        if self.right == target_node:
-            new_node = new_nodes.pop(0)
-            if not isinstance(new_node, Node):
-                raise TypeError("The replacement node must be a Node instance.")
-            self.right = new_node
-
-        # If not a direct child, recurse into children that are CommutatorNodes
-        if isinstance(self.left, CommutatorNode):
-            self.left._replace_node_impl(target_node, new_nodes)
-
-        if isinstance(self.right, CommutatorNode):
-            self.right._replace_node_impl(target_node, new_nodes)
-
-    def replace_node(self, target_node: Node, new_nodes: List[Node]):
-        """
-        Replace target_node in the tree with the new_nodes.
-        Each next occurence of target_node will be replaced with the next node in new_nodes.
-
-        Args:
-            target_node: The specific node object to be replaced.
-            new_node: The new node object to insert in its place.
-        """
-        self._replace_node_impl(target_node, new_nodes)
-        if len(new_nodes) > 0:
-            raise RuntimeError(
-                "Got more replacement nodes than the number of targte nodes in the commutator tree."
-            )
-
     def expand(self) -> dict:
         """
         Recursively expands the commutator [L, R] using the identity LR - RL.
@@ -169,6 +120,59 @@ class CommutatorNode(Node):
 
         # Remove terms with a zero coefficient for a cleaner output
         return {prod: coeff for prod, coeff in result.items() if coeff != 0}
+
+
+def _replace_node_impl(source_node: Node, target_node: Node, new_nodes: List[Node]):
+    """
+    Recursively finds a target child node and replaces it.
+    This method traverses the tree starting from the current node's children.
+    """
+
+    if not new_nodes:
+        raise RuntimeError(
+            "Got fewer replacement nodes than the number of targte nodes in the commutator tree."
+        )
+
+    if source_node.left == target_node:
+        new_node = new_nodes.pop(0)
+        if not isinstance(new_node, Node):
+            raise TypeError("The replacement node must be a Node instance.")
+        source_node.left = new_node
+
+    if source_node.right == target_node:
+        new_node = new_nodes.pop(0)
+        if not isinstance(new_node, Node):
+            raise TypeError("The replacement node must be a Node instance.")
+        source_node.right = new_node
+
+    # If not a direct child, recurse into children that are CommutatorNodes
+    if isinstance(source_node.left, CommutatorNode):
+        _replace_node_impl(source_node.left, target_node, new_nodes)
+
+    if isinstance(source_node.right, CommutatorNode):
+        _replace_node_impl(source_node.right, target_node, new_nodes)
+
+
+def replace_node(source_node: Node, target_node: Node, new_nodes: List[Node]):
+    """
+    Replace target_node in the tree with the new_nodes.
+    Each next occurence of target_node will be replaced with the next node in new_nodes.
+
+    Args:
+        source_node: The original source node. The method leaves the original source node unchanged.
+        target_node: The specific node object to be replaced.
+        new_node: The new node object to insert in its place.
+
+    Returns:
+        A Node object with replacements.
+    """
+    result = copy.deepcopy(source_node)
+    _replace_node_impl(result, target_node, new_nodes)
+    if len(new_nodes) > 0:
+        raise RuntimeError(
+            "Got more replacement nodes than the number of targte nodes in the commutator tree."
+        )
+    return result
 
 
 def is_mergeable(node1: Node, node2: Node, k: int):

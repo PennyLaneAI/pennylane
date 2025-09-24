@@ -2,7 +2,7 @@ from .commutator import *
 
 
 def test_replacement():
-    A = LeafNode([1, 2])
+    A = LeafNode({1, 2})
     B = LeafNode("B")
     C = LeafNode("C")
     D = LeafNode("D")
@@ -14,8 +14,9 @@ def test_replacement():
     )
 
     replacements = [CommutatorNode(X, Y), E]
-    big_comm.replace_node(A, replacements)
-    assert str(big_comm) == "[[[X, Y], [B, C]], [[E, D], E]]"
+    replaced_comm = replace_node(big_comm, A, replacements)
+    assert str(replaced_comm) == "[[[X, Y], [B, C]], [[E, D], E]]"
+    assert str(big_comm) == "[[{1, 2}, [B, C]], [[{1, 2}, D], E]]"
 
 
 def test_replacement_too_many():
@@ -32,7 +33,7 @@ def test_replacement_too_many():
 
     replacements = [CommutatorNode(X, Y), E, X]
     with pytest.raises(RuntimeError, match="Got more replacement nodes"):
-        big_comm.replace_node(A, replacements)
+        _ = replace_node(big_comm, A, replacements)
 
 
 def test_replacement_too_few():
@@ -49,7 +50,7 @@ def test_replacement_too_few():
 
     replacements = [CommutatorNode(X, Y)]
     with pytest.raises(RuntimeError, match="Got fewer replacement nodes"):
-        big_comm.replace_node(A, replacements)
+        _ = replace_node(big_comm, A, replacements)
 
 
 @pytest.mark.parametrize("value", ["A", 12, [1, 2, 3], {"X", "Y", 1.2}])
