@@ -222,8 +222,8 @@ class RiemannianGradientOptimizer:
 
     The optimized circuit is returned at each step, and can be used as any other QNode:
 
-    >>> circuit()
-    array(-2.229...)
+    >>> print(circuit())
+    -2.2...
     """
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

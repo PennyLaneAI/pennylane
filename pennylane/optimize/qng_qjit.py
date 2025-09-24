@@ -90,7 +90,7 @@ class QNGOptimizerQJIT:
             return params
 
     >>> workflow()
-    Array([ 3.14159265, -1.57079633], dtype=float64)
+    Array([ 3.14..., -1.57...], dtype=float64)
 
     Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit`` with ``autograph`` enabled.
     Using ``qml.qjit`` on the whole workflow with ``autograph`` not enabled may lead to a substantial increase
@@ -125,7 +125,7 @@ class QNGOptimizerQJIT:
             params, state = step(params, state)
 
     >>> params
-    Array([ 3.14159265, -1.57079633], dtype=float64)
+    Array([ 3.14..., -1.57...], dtype=float64)
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):

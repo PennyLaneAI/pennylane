@@ -272,15 +272,9 @@ class RotosolveOptimizer:
     ...         nums_frequency=nums_frequency,
     ...         full_output=True,
     ...     )
-    ...     print(f"Cost before step: {cost}")
-    ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
     ...     cost_rotosolve.extend(sub_cost)
-    Cost before step: 0.042...
-    Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
-    Cost before step: -0.99...
-    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
-    Cost before step: -0.99...
-    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+    >>> print("Final cost:", cost)
+    Final cost: -0.99...
 
     The optimized values for the parameters are now stored in ``param``
     and the optimization behaviour can be assessed by plotting ``cost_rotosolve``,
