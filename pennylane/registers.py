@@ -73,7 +73,7 @@ def registers(register_dict):
 
             return qml.expval(qml.Z(wires=reg["aux"]))
 
-    >>> circuit()
+    >>> print(circuit())
     0.999...
     """
 
