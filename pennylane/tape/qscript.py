@@ -325,7 +325,7 @@ class QuantumScript:
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)+qml.Y(0))])
         >>> tape.diagonalizing_gates
         [QubitUnitary(array([[-0.70710678+0.j ,  0.5       -0.5j],
-                             [-0.70710678-0.j , -0.5       +0.5j]]), wires=[0])]
+                         [-0.70710678-0.j , -0.5       +0.5j]]), wires=[0])]
         """
         rotation_gates = []
 
