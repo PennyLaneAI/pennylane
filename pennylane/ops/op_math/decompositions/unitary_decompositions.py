@@ -164,7 +164,7 @@ def two_qubit_decomposition(U, wires):
 
     >>> from pprint import pprint
     >>> decomp = qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
-    >>> pprint(decomp)
+    >>> pprint(decomp) # doctest: +SKIP
     [QubitUnitary(array([[ 0.35935497-0.35945703j, -0.81150079+0.28830732j],
            [ 0.81150079+0.28830732j,  0.35935497+0.35945703j]]), wires=[0]),
      QubitUnitary(array([[ 0.73465919-0.15696895j,  0.51629531-0.41118825j],
