@@ -60,6 +60,7 @@ jobs:
           --ignore=pennylane/compiler/python_compiler
           "
           IGNORE_OPTS_CORE="
+          --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/measurements
