@@ -62,10 +62,7 @@ def cost_layer(gamma, hamiltonian):
 
         We first define a cost Hamiltonian:
 
-        .. code-block:: python3
-
-            from pennylane import qaoa
-            import pennylane as qml
+        .. code-block:: python
 
             cost_h = qml.Hamiltonian([1, 1], [qml.Z(0), qml.Z(0) @ qml.Z(1)])
 
@@ -81,7 +78,7 @@ def cost_layer(gamma, hamiltonian):
                 for i in range(2):
                     qml.Hadamard(wires=i)
 
-                qaoa.cost_layer(gamma, cost_h)
+                cost_layer(gamma, cost_h)
 
                 return [qml.expval(qml.Z(i)) for i in range(2)]
 
@@ -120,10 +117,7 @@ def mixer_layer(alpha, hamiltonian):
 
         We first define a mixer Hamiltonian:
 
-        .. code-block:: python3
-
-            from pennylane import qaoa
-            import pennylane as qml
+        .. code-block:: python
 
             mixer_h = qml.Hamiltonian([1, 1], [qml.X(0), qml.X(0) @ qml.X(1)])
 
@@ -139,7 +133,7 @@ def mixer_layer(alpha, hamiltonian):
                 for i in range(2):
                     qml.Hadamard(wires=i)
 
-                qaoa.mixer_layer(alpha, mixer_h)
+                mixer_layer(alpha, mixer_h)
 
                 return [qml.expval(qml.Z(i)) for i in range(2)]
 

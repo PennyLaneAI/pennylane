@@ -85,7 +85,6 @@ jobs:
           --ignore=pennylane/resource
           --ignore=pennylane/io
           --ignore=pennylane/logging
-          --ignore=pennylane/qaoa
           --ignore=pennylane/data
           --ignore=pennylane/spin
           --ignore=pennylane/drawer
