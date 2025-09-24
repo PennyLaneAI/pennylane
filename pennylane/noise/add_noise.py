@@ -72,7 +72,7 @@ def add_noise(tape, noise_model, level=None):
 
     The following QNode can be transformed to add noise to the circuit:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from functools import partial
 
@@ -92,7 +92,7 @@ def add_noise(tape, noise_model, level=None):
             {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, t1=2.0, t2=0.2
         )
 
-        @partial(qml.transforms.add_noise, noise_model=noise_model)
+        @partial(qml.noise.add_noise, noise_model=noise_model)
         @qml.qnode(dev)
         def circuit(w, x, y, z):
             qml.RX(w, wires=0)
@@ -105,13 +105,13 @@ def add_noise(tape, noise_model, level=None):
     Executions of this circuit will differ from the noise-free value:
 
     >>> circuit(0.9, 0.4, 0.5, 0.6)
-    array(0.544053)
+    np.float64(0.5440530007721438)
     >>> print(qml.draw(circuit)(0.9, 0.4, 0.5, 0.6))
-    0: ──RX(0.90)──PhaseDamping(0.40)──ThermalRelaxationError(0.45,2.00,0.20,0.60)─╭●──RY(0.50)
-    1: ──RY(0.40)──────────────────────────────────────────────────────────────────╰X──RX(0.60)
+    0: ──RX(0.90)──PhaseDamping(0.40)──ThermalRelaxationError(0.45,2.00,0.20,0.60)─╭●──RY(0.50) ···
+    1: ──RY(0.40)──────────────────────────────────────────────────────────────────╰X──RX(0.60) ···
     <BLANKLINE>
-    ────────────────────────────────────────────────────────────────────PhaseFlip(0.2)─┤ ╭<Z@Z>
-    ───PhaseDamping(0.40)──ThermalRelaxationError(0.30,2.00,0.20,0.60)──PhaseFlip(0.2)─┤ ╰<Z@Z>
+    0: ··· ──PhaseFlip(0.20)──────────────────────────────────────────────────────────────────┤ ╭<Z@Z>
+    1: ··· ──PhaseDamping(0.40)──ThermalRelaxationError(0.30,2.00,0.20,0.60)──PhaseFlip(0.20)─┤ ╰<Z@Z>
 
     .. details::
         :title: Tranform Levels
@@ -121,7 +121,7 @@ def add_noise(tape, noise_model, level=None):
         added at the end of the "user" transforms by default, i.e., after all the transforms
         that have been manually applied to the QNode up to that point.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.mixed", wires=2)
 
@@ -138,40 +138,40 @@ def add_noise(tape, noise_model, level=None):
                 qml.RX(z, wires=1)
                 return qml.expval(qml.Z(0) @ qml.Z(1))
 
-            noisy_circuit = qml.transforms.add_noise(circuit, noise_model)
+            noisy_circuit = qml.noise.add_noise(circuit, noise_model)
 
         >>> qml.workflow.get_transform_program(circuit)
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, metric_tensor)
+        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, metric_tensor)
 
         >>> qml.workflow.get_transform_program(noisy_circuit)
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, batch_transform, expand_fn, metric_tensor)
+        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, metric_tensor)
 
         However, one can request to insert the ``add_noise`` transform at any specific point in the transform program. By specifying the ``level`` keyword argument while
         transforming a ``QNode``, this transform can be added at a designated level within the transform program, as determined using the
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level=None).transform_program
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
+        >>> qml.noise.add_noise(circuit, noise_model, level=None).transform_program
+        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, metric_tensor)
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
         to an empty transform program, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
         end of device-specific transforms, and `"gradient"` will allow addition at the end of transforms that expand trainable operations. For example:
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level="top").transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level="top").transform_program
         TransformProgram(add_noise)
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level="user").transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level="user").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, metric_tensor)
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level="device").transform_program
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
+        >>> qml.noise.add_noise(circuit, noise_model, level="device").transform_program
+        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, metric_tensor)
 
         Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the transform program. For example, one can do:
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level=2).transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level=2).transform_program
         TransformProgram(cancel_inverses, merge_rotations, add_noise)
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level=slice(1,3)).transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).transform_program
         TransformProgram(merge_rotations, undo_swaps, add_noise)
 
     """

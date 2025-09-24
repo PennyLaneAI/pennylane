@@ -99,7 +99,7 @@ def insert(
 
     The following QNode can be transformed to add noise to the circuit:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from functools import partial
 
@@ -118,7 +118,7 @@ def insert(
     Executions of this circuit will differ from the noise-free value:
 
     >>> f(0.9, 0.4, 0.5, 0.6)
-    tensor(0.754847, requires_grad=True)
+    np.float64(0.7548469968854761)
     >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
     0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
     1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
@@ -131,7 +131,7 @@ def insert(
         Instead of specifying ``op`` as a single :class:`~.Operation`, we can instead define a
         quantum function. For example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def op(x, y, wires):
                 qml.RX(x, wires=wires)
@@ -139,7 +139,7 @@ def insert(
 
         This operation can be inserted into the following circuit:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
 
@@ -163,7 +163,7 @@ def insert(
 
         Consider the following tape:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             ops = [
                 qml.RX(0.9, wires=0),
@@ -187,7 +187,7 @@ def insert(
 
         Consider the following QNode:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.mixed", wires=2)
 
@@ -204,14 +204,14 @@ def insert(
         Execution of the circuit on ``dev`` will be noise-free:
 
         >>> qnode(0.9, 0.4, 0.5, 0.6)
-        tensor(0.86243536, requires_grad=True)
+        np.float64(0.8624353588253786)
 
         However, noise can be easily added to the device:
 
         >>> dev_noisy = qml.noise.insert(dev, qml.AmplitudeDamping, 0.2)
         >>> qnode_noisy = qml.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
-        tensor(0.72945434, requires_grad=True)
+        np.float64(0.7294543367428854)
     """
 
     # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
