@@ -31,7 +31,7 @@ class LinearCombination(Sum):
     r"""Operator representing a linear combination of operators.
 
     The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
-    :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
+    :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` can be trainable parameters.
 
     .. note::
 
