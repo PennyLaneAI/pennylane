@@ -22,9 +22,9 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops.op_math import change_op_basis
+from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ..qft import QFT
 from .phase_adder import PhaseAdder
 
 

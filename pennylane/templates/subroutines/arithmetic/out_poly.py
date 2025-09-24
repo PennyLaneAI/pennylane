@@ -26,9 +26,9 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import adjoint, ctrl
+from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ..qft import QFT
 from .phase_adder import PhaseAdder
 
 

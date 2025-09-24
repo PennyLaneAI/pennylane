@@ -24,10 +24,10 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import Prod, change_op_basis
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ..controlled_sequence import ControlledSequence
-from ..qft import QFT
 from .phase_adder import PhaseAdder
 
 
