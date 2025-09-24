@@ -287,7 +287,7 @@ def _partitions_positive(m: int, n: int) -> Generator[tuple[int], None, None]:
             yield (i,) + partition
 
 
-def merge_commutators_tree(
+def bilinear_expansion(
     commutator_node: Node,
     terms: Dict[LeafNode, List[Dict[Node, complex]]],
     max_order: int,
@@ -304,22 +304,13 @@ def merge_commutators_tree(
     target_leaves = find_leaves(commutator_node)
     num_leaves = len(target_leaves)
 
-    if num_leaves == 0:
-        if commutator_node.order <= max_order:
-            merged_bch[commutator_node.order - 1][commutator_node] += bch_coeff
-        return merged_bch
-
     for final_order in range(1, max_order + 1):
         for partition in _partitions_positive(num_leaves, final_order):
-
-            if sum(partition) > max_order:
-                continue
-
             try:
                 kept_terms_for_product = [
                     terms[leaf][partition[j] - 1].items() for j, leaf in enumerate(target_leaves)
                 ]
-            except (IndexError, KeyError):
+            except IndexError:
                 # This partition is not possible with the given expansions, so we skip it.
                 continue
 

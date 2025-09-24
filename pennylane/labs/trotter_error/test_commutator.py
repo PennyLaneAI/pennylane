@@ -128,7 +128,7 @@ def test_expand_commutator():
     assert comm_ABC.expand() == expected_ABC
 
 
-def test_merge_commutators_tree():
+def test_bilinear_expansion():
     """Tests the substitution of BCH expansions into a commutator tree."""
     X = LeafNode("X")
     Y = LeafNode("Y")
@@ -155,7 +155,7 @@ def test_merge_commutators_tree():
         ],
     }
 
-    result = merge_commutators_tree(
+    result = bilinear_expansion(
         commutator_node=commutator_to_evaluate,
         terms=terms_expansions,
         max_order=max_order,
@@ -177,7 +177,7 @@ def test_merge_commutators_tree():
         assert result_dict == expected_dict
 
 
-def test_merge_commutators_tree_complex():
+def test_bilinear_expansion_complex():
     """Tests the substitution with more complex, multi-term BCH expansions."""
     X = LeafNode("X")
     Y = LeafNode("Y")
@@ -209,7 +209,7 @@ def test_merge_commutators_tree_complex():
         ],
     }
 
-    result = merge_commutators_tree(
+    result = bilinear_expansion(
         commutator_node=commutator_to_evaluate,
         terms=terms_expansions,
         max_order=max_order,
@@ -245,7 +245,7 @@ def test_merge_commutators_tree_complex():
             assert result_dict[key] == expected_dict[key]
 
 
-def test_merge_commutators_tree_nested_structure():
+def test_bilinear_expansion_nested_structure():
     """Tests substitution into a more complex, nested commutator structure."""
     X = LeafNode("X")
     Y = LeafNode("Y")
@@ -269,7 +269,7 @@ def test_merge_commutators_tree_nested_structure():
         Z: [defaultdict(complex, {C: 1.0}), defaultdict(complex, {CommutatorNode(D, E): 0.5})],
     }
 
-    result = merge_commutators_tree(
+    result = bilinear_expansion(
         commutator_node=commutator_to_evaluate,
         terms=terms_expansions,
         max_order=max_order,
