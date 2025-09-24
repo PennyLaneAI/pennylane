@@ -113,7 +113,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
     >>> qml.resource.estimate_error(coeffs, shots=100000)
-    0.00327597
+    np.float64(0.0032759684708248507)
 
     .. details::
         :title: Theory
