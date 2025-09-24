@@ -22,11 +22,19 @@ from dataclasses import replace
 from numbers import Number
 from typing import overload
 
-import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
+from pennylane.ops import H, X, Y, Z
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
+from pennylane.transforms import (
+    broadcast_expand,
+    defer_measurements,
+    diagonalize_measurements,
+    dynamic_one_shot,
+    split_non_commuting,
+    split_to_single_terms,
+)
 from pennylane.transforms.core import TransformDispatcher, TransformError, TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
@@ -509,12 +517,12 @@ class Device(abc.ABC):
         # should assume that the mcm method is already validated and resolved.
         if execution_config.mcm_config.mcm_method == "deferred":
             program.add_transform(
-                qml.transforms.defer_measurements,
+                defer_measurements,
                 allow_postselect=self.capabilities.supports_operation("Projector"),
             )
         elif execution_config.mcm_config.mcm_method == "one-shot":
             program.add_transform(
-                qml.transforms.dynamic_one_shot,
+                dynamic_one_shot,
                 postselect_mode=execution_config.mcm_config.postselect_mode,
             )
 
@@ -522,7 +530,7 @@ class Device(abc.ABC):
         capabilities_shots = self.capabilities.filter(finite_shots=True)
 
         needs_diagonalization = False
-        base_obs = {"PauliZ": qml.Z, "PauliX": qml.X, "PauliY": qml.Y, "Hadamard": qml.H}
+        base_obs = {"PauliZ": Z, "PauliX": X, "PauliY": Y, "Hadamard": H}
         if (
             not all(obs in self.capabilities.observables for obs in base_obs)
             # This check is to confirm that `split_non_commuting` has been applied, since
@@ -547,16 +555,16 @@ class Device(abc.ABC):
             )
 
         if not self.capabilities.overlapping_observables:
-            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="wires")
+            program.add_transform(split_non_commuting, grouping_strategy="wires")
         elif not self.capabilities.non_commuting_observables:
-            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="qwc")
+            program.add_transform(split_non_commuting, grouping_strategy="qwc")
         elif not self.capabilities.supports_observable("Sum"):
-            program.add_transform(qml.transforms.split_to_single_terms)
+            program.add_transform(split_to_single_terms)
 
         if needs_diagonalization:
             obs_names = base_obs.keys() & self.capabilities.observables.keys()
             obs = {base_obs[obs] for obs in obs_names}
-            program.add_transform(qml.transforms.diagonalize_measurements, supported_base_obs=obs)
+            program.add_transform(diagonalize_measurements, supported_base_obs=obs)
             program.add_transform(
                 decompose,
                 stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
@@ -564,7 +572,7 @@ class Device(abc.ABC):
                 name=self.name,
             )
 
-        program.add_transform(qml.transforms.broadcast_expand)
+        program.add_transform(broadcast_expand)
 
         # Handle validations
         program.add_transform(validate_device_wires, self.wires, name=self.name)
@@ -1144,7 +1152,7 @@ def apply_to_device(obj: Device, transform, *targs, **tkwargs):
     if transform.final_transform:
         raise TransformError("Device transform does not support final transforms.")
 
-    if type(obj).preprocess != qml.devices.Device.preprocess:
+    if type(obj).preprocess != Device.preprocess:
         return _preprocess_device(obj, transform, targs, tkwargs)
 
     return _preprocess_transforms_device(obj, transform, targs, tkwargs)

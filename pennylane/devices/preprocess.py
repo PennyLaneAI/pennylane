@@ -21,7 +21,6 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 
-import pennylane as qml
 from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import (
     AllocationError,
@@ -30,12 +29,23 @@ from pennylane.exceptions import (
     QuantumFunctionError,
     WireError,
 )
-from pennylane.math import requires_grad
-from pennylane.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+from pennylane.math import is_abstract, requires_grad
+from pennylane.measurements import (
+    MeasurementProcess,
+    SampleMeasurement,
+    StateMeasurement,
+    counts,
+    sample,
+)
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import resolve_dynamic_wires
+from pennylane.transforms import (
+    defer_measurements,
+    diagonalize_measurements,
+    dynamic_one_shot,
+    resolve_dynamic_wires,
+)
 from pennylane.transforms.core import transform
 from pennylane.transforms.decompose import (
     _construct_and_solve_decomp_graph,
@@ -125,7 +135,7 @@ def validate_device_wires(
         WireError: if the tape has a wire not present in the provided wires, or if abstract wires are present.
     """
 
-    if any(qml.math.is_abstract(w) for w in tape.wires):
+    if any(is_abstract(w) for w in tape.wires):
         raise WireError(
             f"Cannot run circuit(s) on {name} as abstract wires are present in the tape: {tape.wires}. "
             f"Abstract wires are not yet supported."
@@ -134,7 +144,7 @@ def validate_device_wires(
     if not wires:
         return (tape,), null_postprocessing
 
-    if any(qml.math.is_abstract(w) for w in wires):
+    if any(is_abstract(w) for w in wires):
         raise WireError(
             f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
             f"Abstract wires are not yet supported."
@@ -149,7 +159,7 @@ def validate_device_wires(
     modified = False
     new_ops = None
     for i, op in enumerate(tape.operations):
-        if isinstance(op, qml.Snapshot):
+        if isinstance(op, Snapshot):
             mp = op.hyperparameters["measurement"]
             if not mp.wires:
                 if not new_ops:
@@ -157,7 +167,7 @@ def validate_device_wires(
                 modified = True
                 new_mp = copy(mp)
                 new_mp._wires = wires  # pylint:disable=protected-access
-                new_ops[i] = qml.Snapshot(
+                new_ops[i] = Snapshot(
                     measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
                 )
     if not new_ops:
@@ -196,12 +206,10 @@ def mid_circuit_measurements(
         mcm_method = "one-shot" if tape.shots else "deferred"
 
     if mcm_method == "one-shot":
-        return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
+        return dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
     if mcm_method in ("tree-traversal", "device"):
         return (tape,), null_postprocessing
-    return qml.defer_measurements(
-        tape, allow_postselect=isinstance(device, qml.devices.DefaultQubit)
-    )
+    return defer_measurements(tape, allow_postselect=False)
 
 
 @transform
@@ -548,7 +556,7 @@ def validate_measurements(
 
 def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, name):
     for op in tape.operations:
-        if isinstance(op, qml.Snapshot):
+        if isinstance(op, Snapshot):
             shots = (
                 tape.shots
                 if op.hyperparameters["shots"] == "workflow"
@@ -637,7 +645,7 @@ def measurements_from_samples(tape):
             )
 
     diagonalized_tape, measured_wires = _get_diagonalized_tape_and_wires(tape)
-    new_tape = diagonalized_tape.copy(measurements=[qml.sample(wires=measured_wires)])
+    new_tape = diagonalized_tape.copy(measurements=[sample(wires=measured_wires)])
 
     def postprocessing_fn(results):
         """A processing function to get measurement values from samples."""
@@ -727,22 +735,22 @@ def measurements_from_counts(tape):
             )
 
     diagonalized_tape, measured_wires = _get_diagonalized_tape_and_wires(tape)
-    new_tape = diagonalized_tape.copy(measurements=[qml.counts(wires=measured_wires)])
+    new_tape = diagonalized_tape.copy(measurements=[counts(wires=measured_wires)])
 
     def postprocessing_fn(results):
         """A processing function to get measurement values from counts."""
-        counts = results[0]
+        counts_res = results[0]
 
         if tape.shots.has_partitioned_shots:
             results_processed = []
-            for c in counts:
+            for c in counts_res:
                 res = [m.process_counts(c, measured_wires) for m in tape.measurements]
                 if len(tape.measurements) == 1:
                     res = res[0]
                 results_processed.append(res)
         else:
             results_processed = [
-                m.process_counts(counts, measured_wires) for m in tape.measurements
+                m.process_counts(counts_res, measured_wires) for m in tape.measurements
             ]
             if len(tape.measurements) == 1:
                 results_processed = results_processed[0]
@@ -756,7 +764,7 @@ def _get_diagonalized_tape_and_wires(tape):
     """Apply the diagonalize_measurements transform to the tape and extract a list of
     all the wires present in the measurements"""
 
-    (diagonalized_tape,), _ = qml.transforms.diagonalize_measurements(tape)
+    (diagonalized_tape,), _ = diagonalize_measurements(tape)
 
     measured_wires = set()
     for m in diagonalized_tape.measurements:

@@ -134,3 +134,7 @@ class Configuration:
             except KeyError:
                 return {}
         return dct
+
+
+# Look for an existing configuration file
+default_config = Configuration("config.toml")

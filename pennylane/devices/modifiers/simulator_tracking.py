@@ -14,9 +14,11 @@
 """Defines the ``simulator_tracking`` device modifier."""
 from functools import wraps
 
-from pennylane.devices import Device, ExecutionConfig
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 from pennylane.tape import QuantumScript
+
+from ..device_api import Device
+from ..execution_config import ExecutionConfig
 
 
 def _track_execute(untracked_execute):

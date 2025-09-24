@@ -20,8 +20,14 @@ from sys import version_info
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
-import pennylane as qml
+from pennylane._version import __version__
+from pennylane.configuration import default_config
 from pennylane.exceptions import DeviceError
+from pennylane.transforms.tape_expand import _create_decomp_preprocessing, create_decomp_expand_fn
+
+from ._legacy_device import Device as LegacyDevice
+from .device_api import Device
+from .legacy_facade import LegacyDeviceFacade
 
 
 def _get_device_entrypoints():
@@ -223,7 +229,7 @@ def device(name, *args, **kwargs):
         options = {}
 
         # load global configuration settings if available
-        config = kwargs.get("config", qml.default_config)
+        config = kwargs.get("config", default_config)
 
         if config:
             # combine configuration options with keyword arguments.
@@ -253,11 +259,11 @@ def device(name, *args, **kwargs):
 
         if hasattr(plugin_device_class, "pennylane_requires"):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
-            current_version = Version(qml.version())
+            current_version = Version(__version__)
             if current_version not in required_versions:
                 raise DeviceError(
                     f"The {name} plugin requires PennyLane versions {required_versions}, "
-                    f"however PennyLane version {qml.version()} is installed."
+                    f"however PennyLane version {__version__} is installed."
                 )
 
         # Construct the device
@@ -266,26 +272,24 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
-            if isinstance(dev, qml.devices.LegacyDevice):
-                custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
-                    custom_decomps, dev
-                )
+            if isinstance(dev, LegacyDevice):
+                custom_decomp_expand_fn = create_decomp_expand_fn(custom_decomps, dev)
                 dev.custom_expand(custom_decomp_expand_fn)
 
             else:
                 override_method = (
                     "preprocess_transforms"
-                    if type(dev).preprocess == qml.devices.Device.preprocess
+                    if type(dev).preprocess == Device.preprocess
                     else "preprocess"
                 )
 
-                new_method = qml.transforms.tape_expand._create_decomp_preprocessing(
+                new_method = _create_decomp_preprocessing(
                     custom_decomps, dev, override_method=override_method
                 )
                 setattr(dev, override_method, new_method)
 
-        if isinstance(dev, qml.devices.LegacyDevice):
-            dev = qml.devices.LegacyDeviceFacade(dev)
+        if isinstance(dev, LegacyDevice):
+            dev = LegacyDeviceFacade(dev)
 
         return dev
 
