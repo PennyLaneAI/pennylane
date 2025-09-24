@@ -56,7 +56,7 @@ Resource Operators:
 Resource Templates:
 -------------------
 
-.. automodsumm:: pennylane.estimator.ops.templates
+.. automodsumm:: pennylane.estimator.templates
     :toctree: api
     :classes-only:
     :noindex:
