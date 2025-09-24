@@ -324,7 +324,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         Now that the cost function has been defined it can be called for specific parameters:
 
         >>> cost_lhst(V, U)
-        np.float64(0.5...)
+        np.float64(0.5)
     """
 
     @staticmethod

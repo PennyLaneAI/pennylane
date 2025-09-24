@@ -61,7 +61,7 @@ class Adder(Operation):
 
     This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`.
 
-    .. code-block:: python
+    .. code-block::
 
         x = 8
         k = 5
@@ -71,14 +71,17 @@ class Adder(Operation):
         work_wires=[4,5]
 
         dev = qml.device("default.qubit")
-        @qml.qnode(dev, shots=1)
+        @partial(qml.set_shots, shots=1)
+        @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-    >>> print(circuit())
-    [[1 1 0 1]]
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [[1 1 0 1]]
 
     The result, :math:`[[1 1 0 1]]`, is the binary representation of
     :math:`8 + 5  \; \text{modulo} \; 15 = 13`.

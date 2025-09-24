@@ -108,8 +108,9 @@ class QutritBasisStatePreparation(Operation):
         **Example**
 
         >>> qml.QutritBasisStatePreparation.compute_decomposition(basis_state=[1, 2], wires=["a", "b"])
-        [TShift(wires=['a']), TShift(wires=['b']), TShift(wires=['b'])]
-
+        [Tshift(wires=['a']),
+        Tshift(wires=['b']),
+        TShift(wires=['b'])]
         """
 
         op_list = []

@@ -190,7 +190,8 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @qml.qnode(qml.device("default.qubit"), shots=1)
+            @partial(qml.set_shots, shots=1)
+            @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 # load values of x and y
                 qml.BasisEmbedding(3, wires=wires["x"])
@@ -204,8 +205,12 @@ class OutPoly(Operation):
 
                 return qml.sample(wires=wires["output"])
 
-        >>> print(circuit())
-        [[1 0 1 1]]
+            print(circuit())
+
+        .. code-block:: pycon
+
+            >>> print(circuit())
+            [[1 0 1 1]]
 
         The result, :math:`[[1 0 1 1]]`, is the binary representation of :math:`3^2 + 2 = 11`.
         Note that the default value of `mod` in this example is :math:`2^{\text{len(output_wires)}} = 2^4 = 16`.
@@ -231,7 +236,8 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @qml.qnode(qml.device("default.qubit"), shots=1)
+            @partial(qml.set_shots, shots=1)
+            @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 # loading values for x and y
                 qml.BasisEmbedding(3, wires=x_wires)
@@ -249,8 +255,10 @@ class OutPoly(Operation):
 
                 return qml.sample(wires=output_wires)
 
-        >>> print(circuit())
-        [[1 0 1]]
+        .. code-block:: pycon
+
+            >>> print(circuit())
+            [[1 0 1]]
 
         The result, :math:`[[1 0 1]]`, is the binary representation
         of :math:`1 + f(3, 2) = 1 + 3^2 + 2  \; \text{mod} \; 7 = 5`.
@@ -432,16 +440,7 @@ class OutPoly(Operation):
 
         list_ops.append(QFT(wires=output_adder_mod))
 
-        wires_vars = [len(w) for w in registers_wires[:-1]]
-        coeffs_list = kwargs.get(
-            "coeffs_list",
-            tuple(
-                (key, value)
-                for key, value in _get_polynomial(polynomial_function, mod, *wires_vars).items()
-            ),
-        )
-
-        coeffs_dic = dict(coeffs_list)
+        coeffs_dic = dict(kwargs["coeffs_list"])
 
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 

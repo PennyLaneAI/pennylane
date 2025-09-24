@@ -129,7 +129,7 @@ def func_to_unitary(func, M):
            [ 0.        ,  0.        ,  0.        , ...,  0.        ,
              0.75968791,  0.65028784],
            [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-             0.65028784, -0.75968791]], shape=(32, 32))
+             0.65028784, -0.75968791]])
     """
     unitary = np.zeros((2 * M, 2 * M))
 
@@ -313,7 +313,7 @@ class QuantumMonteCarlo(Operation):
 
         The ``QuantumMonteCarlo`` template can then be used:
 
-        .. code-block:: python
+        .. code-block::
 
             n = 10
             N = 2 ** n
@@ -338,7 +338,7 @@ class QuantumMonteCarlo(Operation):
         The estimated value can be retrieved using the formula :math:`\mu = (1-\cos(\pi \theta))/2`
 
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
-        np.float64(0.4327...)
+        0.4327096457464369
     """
 
     grad_method = None

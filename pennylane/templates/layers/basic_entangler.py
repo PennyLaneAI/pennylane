@@ -75,7 +75,7 @@ class BasicEntanglerLayers(Operation):
                 return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
-        [np.float64(1.0), np.float64(1.0), np.float64(-1.0)]
+        [1., 1., -1.]
 
         **Parameter shape**
 
@@ -104,7 +104,7 @@ class BasicEntanglerLayers(Operation):
                 return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
-        [np.float64(-1.0), np.float64(1.0)]
+        [-1, 1]
 
 
         **Changing the rotation gate**

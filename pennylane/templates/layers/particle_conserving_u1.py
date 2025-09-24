@@ -301,27 +301,20 @@ class ParticleConservingU1(Operation):
         **Example**
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
-        >>> ops = qml.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
-        >>> from pprint import pprint
-        >>> pprint(ops)
-        [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
-        CZ(wires=['a', 'b']),
-        CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=Wires(['a', 'b'])),
-        PhaseShift(tensor(-0.3000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(tensor(0.3000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(tensor(-0.3000), wires=['a']),
-        CZ(wires=['b', 'a']),
-        CRot(0, tensor(2.), 0, wires=Wires(['b', 'a'])),
-        CZ(wires=['a', 'b']),
-        CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=Wires(['a', 'b'])),
-        PhaseShift(tensor(0.3000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(tensor(-0.3000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(tensor(0.3000), wires=['a'])]
-
+        >>> qml.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        [BasisEmbedding(wires=['a', 'b']),
+         CZ(wires=['a', 'b']),
+         CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
+         PhaseShift(tensor(-0.3000), wires=['b']), CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(0.3000), wires=['b']), CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(-0.3000), wires=['a']), CZ(wires=['b', 'a']),
+         CRot(0, tensor(2.), 0, wires=['b', 'a']), CZ(wires=['a', 'b']),
+         CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=['a', 'b']),
+         PhaseShift(tensor(0.3000), wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(-0.3000), wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(0.3000), wires=['a'])]
         """
 
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]

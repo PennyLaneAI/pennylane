@@ -419,14 +419,11 @@ class MottonenStatePreparation(Operation):
         **Example**
 
         >>> state_vector = torch.tensor([0.5, 0.5, 0.5, 0.5])
-        >>> ops = qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
-        >>> from pprint import pprint
-        >>> pprint(ops)
-        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
-        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
+        >>> qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
+        [RY(array(1.57079633), wires=['a']),
+        RY(array(1.57079633), wires=['b']),
         CNOT(wires=['a', 'b']),
         CNOT(wires=['a', 'b'])]
-
         """
         if len(qml.math.shape(state_vector)) > 1:
             raise ValueError(

@@ -77,18 +77,17 @@ class StronglyEntanglingLayers(Operation):
                 return qml.expval(qml.Z(0))
 
             shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-            rng = np.random.default_rng(12345)
-            weights = rng.random(size=shape)
+            weights = np.random.random(size=shape)
 
         The shape of the ``weights`` argument decides the number of layers.
 
         The resulting circuit is:
 
         >>> print(qml.draw(circuit, level="device")(weights))
-        0: ──Rot(0.23,0.32,0.80)─╭●───────╭X──Rot(0.67,0.10,0.44)─╭●────╭X────┤  <Z>
-        1: ──Rot(0.68,0.39,0.33)─╰X─╭●────│───Rot(0.89,0.70,0.33)─│──╭●─│──╭X─┤
-        2: ──Rot(0.60,0.19,0.67)────╰X─╭●─│───Rot(0.73,0.22,0.08)─╰X─│──╰●─│──┤
-        3: ──Rot(0.94,0.25,0.95)───────╰X─╰●──Rot(0.16,0.34,0.47)────╰X────╰●─┤
+        0: ──Rot(0.68,0.98,0.48)─╭●───────╭X──Rot(0.94,0.22,0.70)─╭●────╭X────┤  <Z>
+        1: ──Rot(0.91,0.19,0.15)─╰X─╭●────│───Rot(0.50,0.20,0.63)─│──╭●─│──╭X─┤
+        2: ──Rot(0.91,0.68,0.96)────╰X─╭●─│───Rot(0.14,0.05,0.16)─╰X─│──╰●─│──┤
+        3: ──Rot(0.46,0.56,0.80)───────╰X─╰●──Rot(0.87,0.04,0.22)────╰X────╰●─┤
 
         The default two-qubit gate used is :class:`~pennylane.ops.CNOT`. This can be changed by using the ``imprimitive`` argument.
 
@@ -116,16 +115,15 @@ class StronglyEntanglingLayers(Operation):
                 return qml.expval(qml.Z(0))
 
             shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-            rng = np.random.default_rng(12345)
-            weights = rng.random(size=shape)
+            weights = np.random.random(size=shape)
 
         The resulting circuit is:
 
         >>> print(qml.draw(circuit, level="device")(weights))
-        0: ──Rot(0.23,0.32,0.80)─╭●────╭Z──Rot(0.67,0.10,0.44)──────────────────────╭●─╭Z───────┤  <Z>
-        1: ──Rot(0.68,0.39,0.33)─│──╭●─│──╭Z────────────────────Rot(0.89,0.70,0.33)─│──╰●─╭Z────┤
-        2: ──Rot(0.60,0.19,0.67)─╰Z─│──╰●─│─────────────────────Rot(0.73,0.22,0.08)─│─────╰●─╭Z─┤
-        3: ──Rot(0.94,0.25,0.95)────╰Z────╰●────────────────────Rot(0.16,0.34,0.47)─╰Z───────╰●─┤
+        0: ──Rot(0.99,0.17,0.12)─╭●────╭Z──Rot(0.02,0.94,0.57)──────────────────────╭●─╭Z───────┤  <Z>
+        1: ──Rot(0.55,0.42,0.61)─│──╭●─│──╭Z────────────────────Rot(0.15,0.26,0.82)─│──╰●─╭Z────┤
+        2: ──Rot(0.79,0.93,0.27)─╰Z─│──╰●─│─────────────────────Rot(0.73,0.01,0.44)─│─────╰●─╭Z─┤
+        3: ──Rot(0.30,0.74,0.93)────╰Z────╰●────────────────────Rot(0.57,0.50,0.80)─╰Z───────╰●─┤
 
     .. details::
         :title: Usage Details
@@ -147,7 +145,7 @@ class StronglyEntanglingLayers(Operation):
 
     resource_keys = {"imprimitive", "n_wires", "n_layers"}
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=CNOT, id=None):
+    def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
         shape = math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
@@ -194,7 +192,7 @@ class StronglyEntanglingLayers(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, ranges, imprimitive=CNOT
+        weights, wires, ranges, imprimitive
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -215,16 +213,12 @@ class StronglyEntanglingLayers(Operation):
 
         **Example**
 
-        >>> weights = torch.tensor([[[-0.2, 0.1, -0.4], [1.2, -2., -0.4]]])
-        >>> ranges = (1,)
-        >>> ops = qml.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=ranges, imprimitive=qml.CNOT)
-        >>> from pprint import pprint
-        >>> pprint(ops)
+        >>> weights = torch.tensor([[-0.2, 0.1, -0.4], [1.2, -2., -0.4]])
+        >>> qml.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=[2], imprimitive=qml.CNOT)
         [Rot(tensor(-0.2000), tensor(0.1000), tensor(-0.4000), wires=['a']),
         Rot(tensor(1.2000), tensor(-2.), tensor(-0.4000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CNOT(wires=['b', 'a'])]
-
+        CNOT(wires=['a', 'a']),
+        CNOT(wires=['b', 'b'])]
         """
         n_layers = math.shape(weights)[-3]
         wires = Wires(wires)

@@ -106,7 +106,7 @@ class CommutingEvolution(Operation):
                 return qml.expval(qml.Z(0))
 
         >>> circuit(1)
-        np.float64(0.653...)
+        0.6536436208636115
     """
 
     grad_method = None

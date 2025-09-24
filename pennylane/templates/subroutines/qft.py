@@ -55,7 +55,7 @@ class QFT(Operation):
 
     The quantum Fourier transform is applied by specifying the corresponding wires:
 
-    .. code-block:: python
+    .. code-block::
 
         wires = 3
 
@@ -67,9 +67,11 @@ class QFT(Operation):
             qml.QFT(wires=range(wires))
             return qml.state()
 
-    >>> circuit_qft(np.array([1.0, 0.0, 0.0]))
-    array([ 0.35355339+0.j, -0.35355339+0.j,  0.35355339+0.j, -0.35355339+0.j,
-            0.35355339+0.j, -0.35355339+0.j,  0.35355339+0.j, -0.35355339+0.j])
+    .. code-block:: pycon
+
+        >>> circuit_qft(np.array([1.0, 0.0, 0.0]))
+        [ 0.35355339+0.j -0.35355339+0.j  0.35355339+0.j -0.35355339+0.j
+          0.35355339+0.j -0.35355339+0.j  0.35355339+0.j -0.35355339+0.j]
 
     .. details::
         :title: Semiclassical Quantum Fourier transform
@@ -87,7 +89,8 @@ class QFT(Operation):
 
             dev = qml.device("default.qubit")
 
-            @qml.qnode(dev, shots=1)
+            @partial(qml.set_shots, shots=1)
+            @qml.qnode(dev)
             def qft_add(m, k, n_wires):
                 qml.BasisEmbedding(m, wires=range(n_wires))
                 qml.adjoint(qml.QFT)(wires=range(n_wires))
@@ -96,8 +99,10 @@ class QFT(Operation):
                 qml.QFT(wires=range(n_wires))
                 return qml.sample()
 
-        >>> qft_add(7, 3, n_wires=4)
-        array([[1, 0, 1, 0]])
+        .. code-block:: pycon
+
+            >>> qft_add(7, 3, n_wires=4)
+            [[1 0 1 0]]
 
         The last building block of this circuit is a QFT, so we may replace it by its
         semiclassical counterpart:
@@ -123,8 +128,10 @@ class QFT(Operation):
                 # Revert wire order because of PL's QFT convention
                 return qml.sample(wires=list(range(n_wires-1, -1, -1)))
 
-        >>> qml.set_shots(scFT_add, 1)(7, 3, n_wires=4) # doctest: +SKIP
-        array([[1, 1, 1, 0]])
+        .. code-block:: pycon
+
+            >>> qml.set_shots(scFT_add, 1)(7, 3, n_wires=4)
+            array([[1, 1, 1, 0]])
     """
 
     grad_method = None

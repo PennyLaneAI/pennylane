@@ -59,7 +59,7 @@ class ModExp(Operation):
 
     This example performs the exponentiation of :math:`base=2` to the power :math:`x=3` modulo :math:`mod=7`.
 
-    .. code-block:: python
+    .. code-block::
 
         x, b = 3, 1
         base = 2
@@ -70,16 +70,18 @@ class ModExp(Operation):
         work_wires = [5, 6, 7, 8, 9]
 
         dev = qml.device("default.qubit")
-
-        @qml.qnode(dev, shots=1)
+        @partial(qml.set_shots, shots=1)
+        @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires = x_wires)
             qml.BasisEmbedding(b, wires = output_wires)
             qml.ModExp(x_wires, output_wires, base, mod, work_wires)
             return qml.sample(wires = output_wires)
 
-    >>> print(circuit())
-    [[0 0 1]]
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [[0 0 1]]
 
     The result :math:`[0 0 1]`, is the binary representation of
     :math:`2^3 \; \text{modulo} \; 7 = 1`.
