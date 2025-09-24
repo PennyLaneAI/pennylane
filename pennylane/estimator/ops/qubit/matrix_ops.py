@@ -13,13 +13,13 @@
 # limitations under the License.
 r"""Resource operators for QubitUnitary operation."""
 import pennylane.estimator as qre
-from pennylane.estimator.ops.templates import SelectPauliRot
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
+from pennylane.estimator.templates import SelectPauliRot
 from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ

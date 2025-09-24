@@ -669,7 +669,7 @@ class QPE(ResourceOperator):
         the textbook QPE algorithm. This allows users to optimize the implementation of QPE by using
         more efficient implementations of the QFT.
 
-        For example, consider the cost using the default :class:`~.pennylane.estimator.ops.templates.QFT` implementation below:
+        For example, consider the cost using the default :class:`~.pennylane.estimator.templates.QFT` implementation below:
 
         >>> import pennylane.estimator as qre
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=None)
@@ -682,7 +682,7 @@ class QPE(ResourceOperator):
          Gate breakdown:
           {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
 
-        Now we use the :class:`~.pennylane.estimator.ops.templates.AQFT`:
+        Now we use the :class:`~.pennylane.estimator.templates.AQFT`:
 
         >>> aqft = qre.AQFT(order=3, num_wires=5)
         >>> adj_aqft = qre.Adjoint(aqft)
@@ -1056,7 +1056,7 @@ class QFT(ResourceOperator):
 
             This decomposition assumes an appropriately sized phase gradient state is available.
             Users should ensure the cost of constructing such a state has been accounted for.
-            See also :class:`~.pennylane.estimator.ops.templates.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -1104,7 +1104,7 @@ class AQFT(ResourceOperator):
 
         This operation assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.estimator.ops.templates.PhaseGradient`.
+        See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
     Args:
         order (int): the maximum number of controlled phase shifts per qubit to which the operation is truncated

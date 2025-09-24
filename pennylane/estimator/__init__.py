@@ -69,7 +69,7 @@ from .ops.op_math import (
     Prod,
     ChangeOpBasis,
 )
-from .ops.templates import (
+from .templates import (
     OutOfPlaceSquare,
     PhaseGradient,
     OutMultiplier,
