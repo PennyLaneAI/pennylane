@@ -33,7 +33,6 @@ from .qmc import QuantumMonteCarlo
 from .grover import GroverOperator
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
-from .basis_rotation import BasisRotation
 from .fable import FABLE
 from .select import Select
 from .prepselprep import PrepSelPrep
@@ -53,6 +52,7 @@ from .qchem import (
     UCCSD,
     AllSinglesDoubles,
     kUpCCGSD,
+    BasisRotation,
 )
 from .arithmetic import (
     PhaseAdder,

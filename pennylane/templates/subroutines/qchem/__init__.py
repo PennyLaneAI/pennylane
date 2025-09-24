@@ -20,3 +20,4 @@ from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
 from .kupccgsd import kUpCCGSD
 from .uccsd import UCCSD
+from .basis_rotation import BasisRotation
