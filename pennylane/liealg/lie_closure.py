@@ -94,12 +94,7 @@ def lie_closure(
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
     >>> dla
-    [X(1) @ X(0),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
@@ -118,14 +113,9 @@ def lie_closure(
         ... ]
         >>> dla = qml.lie_closure(ops, pauli=True)
         >>> dla
-        [1.0 * X(0) @ X(1),
-         1.0 * Z(0),
-         1.0 * Z(1),
-         -1.0 * Y(0) @ X(1),
-         -1.0 * X(0) @ Y(1),
-         -1.0 * Y(0) @ Y(1)]
+        [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         >>> type(dla[0])
-        pennylane.pauli.pauli_arithmetic.PauliSentence
+        <class 'pennylane.pauli.pauli_arithmetic.PauliSentence'>
 
         In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
         the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
