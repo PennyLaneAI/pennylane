@@ -154,7 +154,7 @@ def evolve(*args, **kwargs):
              0.        -0.02090796j,  0.03163766+0.j        ,
             -0.00979091+0.j        ,  0.        -0.01481652j,
              0.0695596 +0.j        ,  0.        +0.10525776j,
-             0.        -0.03257567j,  0.04929322+0.j        ]],      dtype=complex64)
+             0.        -0.03257567j,  0.04929322+0.j        ]],      dtype=complex...)
 
     Additional options regarding how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
     along with the parameters, as keyword arguments. These options are:
@@ -187,7 +187,7 @@ def evolve(*args, **kwargs):
     Array(0.86231063, dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    [Array(50.63563582, dtype=float64), Array(-9.42415805e-05, dtype=float64), Array(-0.0001049, dtype=float64), Array(-0.00010601, dtype=float64)]
+    [Array(50.63..., dtype=float64), Array(-9.42...e-05, dtype=float64), Array(-0.0001..., dtype=float64), Array(-0.0001..., dtype=float64)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
