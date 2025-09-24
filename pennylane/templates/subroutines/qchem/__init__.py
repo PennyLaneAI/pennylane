@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains subroutines for subroutines for quantum chemistry.
+This module contains subroutines for quantum chemistry.
 """
 
 from .all_singles_doubles import AllSinglesDoubles
