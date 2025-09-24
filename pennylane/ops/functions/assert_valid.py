@@ -485,7 +485,10 @@ def assert_valid(
         op = MyOp(qml.numpy.array(0.5), wires=0)
 
     >>> assert_valid(op)
-    AssertionError: op.data must be a tuple
+    Traceback (most recent call last):
+        ...
+    AssertionError: MyOp._unflatten must be able to reproduce the original operation from () and (Wires([0]), ()). You may need to override either the _unflatten or _flatten method.
+    For local testing, try type(op)._unflatten(*op._flatten())
 
     .. code-block:: python
 
@@ -498,7 +501,9 @@ def assert_valid(
         op = MyOp(wires = 0)
 
     >>> assert_valid(op)
-    ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
+    Traceback (most recent call last):
+        ...
+    AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
 

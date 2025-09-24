@@ -64,7 +64,6 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/measurements
-          --ignore=pennylane/ops/functions
           --ignore=pennylane/ops/qubit
           --ignore=pennylane/ops/qutrit
           --ignore=pennylane/transforms
