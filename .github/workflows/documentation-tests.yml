@@ -77,7 +77,6 @@ jobs:
           --ignore=pennylane/pauli
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
-          --ignore=pennylane/optimize
           --ignore=pennylane/pulse
           --ignore=pennylane/templates
           "
