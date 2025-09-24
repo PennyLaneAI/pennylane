@@ -33,7 +33,6 @@ def reset_pennylane_state(namespace):
     A teardown function for Sybil to reset PennyLane's global state
     after testing a document.
     """
-    # The 'namespace' argument is required by Sybil, but we don't need to use it.
     qml.capture.disable()
     qml.decomposition.disable_graph()
 
