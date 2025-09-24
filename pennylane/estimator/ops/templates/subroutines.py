@@ -505,7 +505,7 @@ class ControlledSequence(ResourceOperator):
             2: ──│────│────╭●─────┤
             t: ──╰U⁴──╰U²──╰U¹────┤
 
-    .. seealso:: :class:`~.pennylane.ControlledSequence`
+    .. seealso:: The associated PennyLane operation :class:`~.pennylane.ControlledSequence`
 
     **Example**
 
@@ -1566,7 +1566,7 @@ class QROM(ResourceOperator):
         :code:`zeroed = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
         (Figure 4) for :code:`zeroed = True`.
 
-    .. seealso:: :class:`~.pennylane.QROM`
+    .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
     **Example**
 
