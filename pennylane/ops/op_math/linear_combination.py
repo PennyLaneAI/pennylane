@@ -71,12 +71,11 @@ class LinearCombination(Sum):
 
     The coefficients can be a trainable tensor, for example:
 
-    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
+    >>> coeffs = qml.numpy.array([0.2, -0.543], requires_grad=True)
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.ops.LinearCombination(coeffs, obs)
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
-
 
     A ``LinearCombination`` can store information on which commuting observables should be measured together in
     a circuit:
@@ -205,7 +204,7 @@ class LinearCombination(Sum):
         **Example**
 
         >>> coeffs = [1., 2., 3.]
-        >>> ops = [X(0), X(0) @ X(1), X(1) @ X(2)]
+        >>> ops = [qml.X(0), qml.X(0) @ qml.X(1), qml.X(1) @ qml.X(2)]
         >>> op = qml.ops.LinearCombination(coeffs, ops)
         >>> op.terms()
         ([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(1) @ X(2)])
@@ -249,7 +248,7 @@ class LinearCombination(Sum):
         True
         >>> op.compute_grouping(grouping_type="qwc")
         >>> op.grouping_indices
-        ((2,), (0, 1))
+        ((0, 1), (2,))
         """
         if not self.pauli_rep:
             raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")
@@ -517,15 +516,15 @@ class Hamiltonian:
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     The coefficients can be a trainable tensor, for example:
 
-    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
+    >>> coeffs = qml.numpy.array([0.2, -0.543], requires_grad=True)
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     A ``qml.Hamiltonian`` stores information on which commuting observables should be measured
     together in a circuit:
@@ -628,9 +627,9 @@ class Hamiltonian:
         >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
         >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
         >>> grouped_coeffs
-        [tensor([1., 2.], requires_grad=True), tensor([3.], requires_grad=True)]
+        [array([1., 2.]), array([3.])]
         >>> grouped_obs
-        [[qml.X(0), qml.X(1)], [qml.Z(0)]]
+        [[X(0), X(1)], [Z(0)]]
 
         Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
         use this information to reduce the number of circuits evaluated.
