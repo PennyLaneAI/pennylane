@@ -49,7 +49,7 @@ class AQFT(Operation):
     The approximate quantum Fourier transform is applied by specifying the corresponding wires and
     the order of approximation:
 
-    .. code-block::
+    .. code-block:: python
 
         wires = 3
         dev = qml.device('default.qubit', wires=wires)
@@ -62,10 +62,9 @@ class AQFT(Operation):
             return qml.state()
 
 
-    .. code-block:: pycon
-
-        >>> circuit_aqft()
-        [ 0.5 +0.j   -0.25-0.25j  0.  +0.j   -0.25+0.25j  0.5 +0.j   -0.25-0.25j   0.  +0.j   -0.25+0.25j]
+    >>> circuit_aqft()
+    array([ 0.5 +0.j  , -0.25-0.25j,  0.  +0.j  , -0.25+0.25j,  0.5 +0.j  ,
+        -0.25-0.25j,  0.  +0.j  , -0.25+0.25j])
 
 
     .. details::
@@ -83,16 +82,16 @@ class AQFT(Operation):
         * ``order`` :math:`= 0`
             This will warn the user that only a Hadamard transform is being applied.
 
-            .. code-block::
+            .. code-block:: python
 
-                @qml.qnode(dev)
+                @qml.qnode(qml.device('default.qubit'))
                 def circ():
                     qml.AQFT(order=0, wires=range(6))
                     return qml.probs()
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, level='device')())
+            >>> print(qml.draw(circ, level='device')()) # doctest: +SKIP
             UserWarning: order=0, applying Hadamard transform warnings.warn("order=0, applying Hadamard transform")
             0: ──H─╭SWAP─────────────┤ ╭Probs
             1: ──H─│─────╭SWAP───────┤ ├Probs
@@ -104,9 +103,9 @@ class AQFT(Operation):
         * :math:`0 <` ``order`` :math:`< n-1`
             This is the intended AQFT use case.
 
-            .. code-block::
+            .. code-block:: python
 
-                @qml.qnode(dev)
+                @qml.qnode(qml.device('default.qubit'))
                 def circ():
                     qml.AQFT(order=2, wires=range(4))
                     return qml.probs()
