@@ -14,9 +14,8 @@
 import os
 import re
 import sys
-from datetime import datetime
-
 from docutils import nodes
+from datetime import datetime
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxext.opengraph",
     "m2r2",
-    "sphinx_automodapi.smart_resolver",
+    "sphinx_automodapi.smart_resolver"
 ]
 
 # Open Graph metadata
@@ -335,7 +334,6 @@ autodoc_typehints = "none"
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
-
 # pylint: disable=unused-argument
 def add_noindex_to_estimator_stubs(app, docname, source):
     """Dynamically add :noindex: to estimator stubs during the build process."""
@@ -368,22 +366,20 @@ def add_noindex_to_estimator_stubs(app, docname, source):
 
 def add_links_to_estimator_table(app, doctree, fromdocname):
     """Replace literal names in automodsumm tables with links to stub HTML files."""
-    if "qml_estimator" in fromdocname:  # Ensures no other tables are modified.
+    if "qml_estimator" in fromdocname: # Ensures no other tables are modified.
         for table in doctree.traverse(nodes.table)[3:]:
             for literal in table.traverse(nodes.literal):
                 name = literal.astext()
-
                 url = f"code/api/pennylane.estimator.ops.{name}"
                 refuri = app.builder.get_relative_uri(fromdocname, url)
-                refnode = nodes.reference("", refuri=refuri)
-                refnode += nodes.literal(text=name)  # This helps preserve the code style.
+
+                refnode = nodes.reference('', refuri=refuri)
+                refnode += nodes.literal(text=name) # This helps preserve the code style.
                 literal.parent.replace(literal, refnode)
-                logger.info(
-                    f"[add_noindex_links] Linked pennylane.estimator.ops.{name} to {refuri}"
-                )
+                logger.info(f"[add_noindex_links] Linked pennylane.estimator.ops.{name} to {refuri}")
 
 
 def setup(app):
     """Sphinx entry point for this extension."""
-    app.connect("source-read", add_noindex_to_estimator_stubs)
+    app.connect('source-read', add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)
