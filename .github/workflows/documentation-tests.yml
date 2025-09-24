@@ -86,7 +86,6 @@ jobs:
           --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
-          --ignore=pennylane/kernels
           --ignore=pennylane/data
           --ignore=pennylane/fermi
           --ignore=pennylane/bose
