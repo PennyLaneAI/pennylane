@@ -64,7 +64,6 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/measurements
-          --ignore=pennylane/operation.py
           --ignore=pennylane/ops
           --ignore=pennylane/tape
           --ignore=pennylane/transforms

@@ -1012,18 +1012,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
-        "RX"
+        'RX'
         >>> op.label(base_label="my_label")
-        "my_label"
+        'my_label'
         >>> op = qml.RX(1.23456, wires=0, id="test_data")
         >>> op.label()
-        "RX("test_data")"
+        'RX("test_data")'
         >>> op.label(decimals=2)
-        "RX\n(1.23,"test_data")"
+        'RX\n(1.23,"test_data")'
         >>> op.label(base_label="my_label")
-        "my_label("test_data")"
+        'my_label("test_data")'
         >>> op.label(decimals=2, base_label="my_label")
-        "my_label\n(1.23,"test_data")"
+        'my_label\n(1.23,"test_data")'
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -1434,19 +1434,19 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         The ``MultiRZ`` has non-empty ``resource_keys``:
 
         >>> qml.MultiRZ.resource_keys
-        {"num_wires"}
+        {'num_wires'}
 
         The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
 
         >>> op = qml.MultiRZ(0.5, wires=[0, 1])
         >>> op.resource_params
-        {"num_wires": 2}
+        {'num_wires': 2}
 
         Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
 
         >>> op2 = qml.MultiRZ(0.7, wires=[1, 2])
         >>> op2.resource_params
-        {"num_wires": 2}
+        {'num_wires': 2}
 
         """
         return {}
@@ -1531,7 +1531,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         we get the generator
 
-        >>> U.generator()
+        >>> U.generator() # doctest: +SKIP
         0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
@@ -1752,8 +1752,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
-        ((U2(3.4, 4.5, wires=['a']),),
-        (Wires(['b', 'c']), (True, True), Wires([])))
+        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
 
         """
         hashable_hyperparameters = tuple(
@@ -1777,7 +1776,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
         ((1.2, 2.3, 3.4), (Wires([0]), ()))
-        >>> qml.Rot._unflatten(*op._flatten())
+        >>> op = qml.Rot._unflatten(*op._flatten())
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
         ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
@@ -1913,7 +1912,7 @@ class Operation(Operator):
 
         >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
         >>> op.parameter_frequencies
-        [(0.5, 1), (0.5, 1), (0.5, 1)]
+        [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
         For operators that define a generator, the parameter frequencies are directly
         related to the eigenvalues of the generator:
@@ -1924,7 +1923,7 @@ class Operation(Operator):
         >>> gen = qml.generator(op, format="observable")
         >>> gen_eigvals = qml.eigvals(gen)
         >>> qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
-        (1.0,)
+        (np.float64(1.0),)
 
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
@@ -2008,8 +2007,10 @@ class Channel(Operation, abc.ABC):
         **Example**
 
         >>> qml.AmplitudeDamping.compute_kraus_matrices(0.1)
-        [array([[1., 0.], [0., 0.9486833]]),
-         array([[0., 0.31622777], [0., 0.]])]
+        [array([[1.       , 0.       ],
+                [0.       , 0.9486833]]),
+         array([[0.        , 0.31622777],
+                [0.        , 0.        ]])]
         """
         raise NotImplementedError
 
@@ -2024,8 +2025,10 @@ class Channel(Operation, abc.ABC):
 
         >>> U = qml.AmplitudeDamping(0.1, wires=1)
         >>> U.kraus_matrices()
-        [array([[1., 0.], [0., 0.9486833]]),
-         array([[0., 0.31622777], [0., 0.]])]
+        [array([[1.       , 0.       ],
+                [0.       , 0.9486833]]),
+         array([[0.        , 0.31622777],
+                [0.        , 0.        ]])]
         """
         return self.compute_kraus_matrices(*self.parameters, **self.hyperparameters)
 
