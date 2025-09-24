@@ -51,4 +51,13 @@ Resource Operators:
     :no-inherited-members:
     :classes-only:
     :noindex:
+    :skip: OutOfPlaceSquare, PhaseGradient, OutMultiplier, SemiAdder, QFT, AQFT, BasisRotation, Select, QROM, SelectPauliRot, ControlledSequence, QPE, IterativeQPE
 
+Resource Templates:
+-------------------
+
+.. automodsumm:: pennylane.estimator.ops.templates
+    :toctree: api
+    :no-inherited-members:
+    :classes-only:
+    :noindex:

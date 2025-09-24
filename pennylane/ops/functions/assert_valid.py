@@ -484,10 +484,8 @@ def assert_valid(
 
         op = MyOp(qml.numpy.array(0.5), wires=0)
 
-    .. code-block::
-
-        >>> assert_valid(op)
-        AssertionError: op.data must be a tuple
+    >>> assert_valid(op)
+    AssertionError: op.data must be a tuple
 
     .. code-block:: python
 
@@ -498,11 +496,9 @@ def assert_valid(
                 super().__init__(wires=wires)
 
         op = MyOp(wires = 0)
-        assert_valid(op)
 
-    .. code-block::
-
-        ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
+    >>> assert_valid(op)
+    ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
 
     """
 

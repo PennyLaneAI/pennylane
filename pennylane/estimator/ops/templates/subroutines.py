@@ -34,12 +34,6 @@ from pennylane.wires import Wires, WiresLike
 class OutOfPlaceSquare(ResourceOperator):
     r"""Resource class for the OutofPlaceSquare gate.
 
-    This operation takes an input register of size :code:`register_size`. The number encoded in the
-    input is squared and returned in the output register. The size of the output register is
-    computed internally to be :code:`2 * register_size`. The total wires may optionally be defined
-    with a size equal to :code:`3 * register_size`.
-
-
     Args:
         register_size (int): the size of the input register
         wires (Sequence[int], None): the wires the operation acts on
@@ -496,7 +490,7 @@ class ControlledSequence(ResourceOperator):
     base operator raised to decreasing powers of 2.
 
     Args:
-        base (~.pennylane.estimator.resource_operator.ResourceOperator): The operator to repeatedly
+        base (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator to repeatedly
             apply in a controlled fashion.
         num_control_wires (int): the number of controlled wires to run the sequence over
         wires (Sequence[int], None): the wires the operation acts on
@@ -511,7 +505,7 @@ class ControlledSequence(ResourceOperator):
             2: ──│────│────╭●─────┤
             t: ──╰U⁴──╰U²──╰U¹────┤
 
-    .. seealso:: :class:`~.pennylane.ControlledSequence`
+    .. seealso:: The associated PennyLane operation :class:`~.pennylane.ControlledSequence`
 
     **Example**
 
@@ -935,32 +929,59 @@ class IterativeQPE(ResourceOperator):
 class QFT(ResourceOperator):
     r"""Resource class for QFT.
 
-    Args:
-        num_wires (int): the number of qubits the operation acts upon
-        wires (Sequence[int], None): the wires the operation acts on
+     Args:
+         num_wires (int): the number of qubits the operation acts upon
+         wires (Sequence[int], None): the wires the operation acts on
 
-    Resources:
-        The resources are obtained from the standard decomposition of QFT as presented
-        in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
-        <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+     Resources:
+         The resources are obtained from the standard decomposition of QFT as presented
+         in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
+         <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.QFT`.
+     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.QFT`.
 
-    **Example**
+     **Example**
 
-    The resources for this operation are computed using:
+     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
-    >>> qft = qre.QFT(3)
-    >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
-    >>> print(qre.estimate(qft, gate_set))
-    --- Resources: ---
-     Total qubits: 3
-     Total gates : 7
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 3
-     Gate breakdown:
-      {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+     >>> import pennylane.estimator as qre
+     >>> qft = qre.QFT(3)
+     >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
+     >>> print(qre.estimate(qft, gate_set))
+     --- Resources: ---
+      Total qubits: 3
+      Total gates : 7
+      Qubit breakdown:
+       zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 3
+      Gate breakdown:
+       {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+
+    .. details::
+         :title: Usage Details
+
+         This operation provides an alternative decomposition method when an appropriately sized
+         phase gradient state is available. This decomposition can be used as a custom decomposition
+         using the operation's ``phase_grad_resource_decomp`` method and the
+         :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` class. See the
+         following example for more details.
+
+         >>> import pennylane.estimator as qre
+         >>> config = qre.ResourceConfig()
+         >>> config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
+         >>> print(qre.estimate(qre.QFT(3), config=config))
+         --- Resources: ---
+          Total wires: 5
+             algorithmic wires: 3
+             allocated wires: 2
+              zero state: 2
+              any state: 0
+          Total gates : 859
+           'Toffoli': 13,
+           'T': 801,
+           'CNOT': 24,
+           'Z': 3,
+           'S': 3,
+           'Hadamard': 15
     """
 
     resource_keys = {"num_wires"}
@@ -1545,7 +1566,7 @@ class QROM(ResourceOperator):
         :code:`zeroed = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
         (Figure 4) for :code:`zeroed = True`.
 
-    .. seealso:: :class:`~.pennylane.QROM`
+    .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
     **Example**
 
@@ -2041,7 +2062,7 @@ class SelectPauliRot(ResourceOperator):
             precision (float | None): the precision used in the single qubit rotations
 
         Returns:
-            ~.pennylane.estimator.resource_operator.CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = num_ctrl_wires + 1
         return CompressedResourceOp(

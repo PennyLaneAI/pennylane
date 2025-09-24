@@ -20,7 +20,9 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
+
+# pylint: disable=arguments-differ
 
 
 class QubitUnitary(ResourceOperator):
@@ -148,7 +150,7 @@ class QubitUnitary(ResourceOperator):
                 SelectPauliRot,
                 {
                     "num_ctrl_wires": index,
-                    "rotation_axis": "Z",
+                    "rot_axis": "Z",
                     "precision": precision,
                 },
             )
@@ -156,7 +158,7 @@ class QubitUnitary(ResourceOperator):
                 SelectPauliRot,
                 {
                     "num_ctrl_wires": index,
-                    "rotation_axis": "Y",
+                    "rot_axis": "Y",
                     "precision": precision,
                 },
             )
