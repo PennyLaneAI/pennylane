@@ -147,6 +147,7 @@ class Sum(CompositeOp):
         (3, 4, 4)
 
         But it doesn't support batching of operators:
+
         >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
         Traceback (most recent call last):
             ...
