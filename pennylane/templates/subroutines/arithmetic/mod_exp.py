@@ -20,7 +20,7 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
-from .controlled_sequence import ControlledSequence
+from ..controlled_sequence import ControlledSequence
 from .multiplier import Multiplier
 
 

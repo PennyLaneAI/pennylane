@@ -24,8 +24,8 @@ from pennylane.operation import Operation
 from pennylane.ops.op_math import change_op_basis
 from pennylane.wires import Wires, WiresLike
 
+from ..qft import QFT
 from .phase_adder import PhaseAdder
-from .qft import QFT
 
 
 class Adder(Operation):

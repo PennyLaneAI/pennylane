@@ -26,9 +26,9 @@ from pennylane.operation import Operation
 from pennylane.ops import Prod, change_op_basis
 from pennylane.wires import Wires, WiresLike
 
-from .controlled_sequence import ControlledSequence
+from ..controlled_sequence import ControlledSequence
+from ..qft import QFT
 from .phase_adder import PhaseAdder
-from .qft import QFT
 
 
 class OutAdder(Operation):

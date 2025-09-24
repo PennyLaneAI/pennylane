@@ -1078,6 +1078,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
+
 * `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
