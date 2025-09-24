@@ -89,7 +89,6 @@ jobs:
           --ignore=pennylane/qaoa
           --ignore=pennylane/kernels
           --ignore=pennylane/data
-          --ignore=pennylane/liealg
           --ignore=pennylane/fermi
           --ignore=pennylane/bose
           --ignore=pennylane/spin
