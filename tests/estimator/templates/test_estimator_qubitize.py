@@ -54,6 +54,8 @@ class TestQubitizeTHC:
             "compact_ham": compact_ham,
             "prep_op": prep_op,
             "select_op": select_op,
+            "coeff_precision": None,
+            "rotation_precision": None
         }
 
     @pytest.mark.parametrize(
@@ -93,6 +95,8 @@ class TestQubitizeTHC:
                 "compact_ham": compact_ham,
                 "prep_op": prep_op,
                 "select_op": select_op,
+                "coeff_precision": None,
+                "rotation_precision": None
             },
         )
         assert (
@@ -138,12 +142,12 @@ class TestQubitizeTHC:
             )
         )
 
-        assert wo_cost.qubit_manager.algo_wires == expected_res["algo_wires"]
+        assert wo_cost.algo_wires == expected_res["algo_qubits"]
         assert (
-            wo_cost.wire_manager.zero_state + wo_cost.wire_manager.any_state
+            wo_cost.zeroed + wo_cost.any_state
             == expected_res["ancilla_qubits"]
         )
-        assert wo_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+        assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
         """Test that an error is raised for incompatible Hamiltonians."""

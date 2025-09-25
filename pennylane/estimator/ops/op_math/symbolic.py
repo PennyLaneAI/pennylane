@@ -151,14 +151,15 @@ class Adjoint(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+        for key, value in kwargs.items():
+            if key in base_params and base_params[key] is None:
+                base_params[key] = value
 
         try:
             return base_class.adjoint_resource_decomp(base_params)
         except ResourcesUndefinedError:
             gate_lst = []
-            decomp = base_class.resource_decomp(**base_params, **kwargs)
+            decomp = base_class.resource_decomp(**base_params)
 
             for gate in decomp[::-1]:  # reverse the order
                 gate_lst.append(_apply_adj(gate))

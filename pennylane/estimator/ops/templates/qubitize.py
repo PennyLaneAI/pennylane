@@ -25,7 +25,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, Wires
 
 # pylint: disable=too-many-arguments, arguments-differ
 
@@ -48,7 +48,11 @@ class QubitizeTHC(ResourceOperator):
         select_op (Union[~pennylane.estimator.ResourceOperator, None]): An optional
             resource operator, corresponding to the select routine. If :code:`None`, the
             default :class:`~.pennylane.estimator.SelectTHC` will be used.
-        wires (list[int] or optional): the wires on which the operator acts
+        coeff_precision (int | None): The number of bits used to represent the precision for loading
+            the coefficients of Hamiltonian.
+        rotation_precision (int | None): The number of bits used to represent the precision for loading
+            the rotation angles for :code:`select_op`.
+        wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
         The resources are calculated based on `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
@@ -68,6 +72,22 @@ class QubitizeTHC(ResourceOperator):
       clean qubits: 313, dirty qubits: 0, algorithmic qubits: 68
      Gate breakdown:
       {'Toffoli': 3.504E+3, 'CNOT': 4.138E+4, 'X': 2.071E+3, 'Hadamard': 9.213E+3, 'S': 80, 'Z': 41}
+
+    .. details::
+        :title: Usage Details
+
+        **Precision Precedence**
+
+        The :code:`coeff_precision` and :code:`rotation_precision` arguments are used to determine
+        the number of bits for loading the coefficients, and the rotation angles respectively.
+        The final value is determined by the following precedence:
+
+        * If provided, the precisions from :code:`prep_op` and :code:`select_op` take precedence.
+        * If :code:`prep_op`, and :code:`select_op` are not provided or have the precision value set to `None`,
+          the values for :code:`coeff_precision`, and :code:`rotation_precision` arguments are used.
+        * If both of the above are not specified, the default value from
+          :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+
     """
 
     resource_keys = {"compact_ham", "prep_op", "select_op"}
@@ -77,6 +97,8 @@ class QubitizeTHC(ResourceOperator):
         compact_ham: CompactHamiltonian,
         prep_op: ResourceOperator | None = None,
         select_op: ResourceOperator | None = None,
+        coeff_precision: int | None = None,
+        rotation_precision: int | None = None,
         wires: WiresLike | None = None,
     ):
         if compact_ham.method_name != "thc":
@@ -88,6 +110,8 @@ class QubitizeTHC(ResourceOperator):
         self.compact_ham = compact_ham
         self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
         self.select_op = select_op.resource_rep_from_op() if select_op else None
+        self.coeff_precision = coeff_precision
+        self.rotation_precision = rotation_precision
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
@@ -120,10 +144,12 @@ class QubitizeTHC(ResourceOperator):
             "compact_ham": self.compact_ham,
             "prep_op": self.prep_op,
             "select_op": self.select_op,
+            "coeff_precision": self.coeff_precision,
+            "rotation_precision": self.rotation_precision
         }
 
     @classmethod
-    def resource_rep(cls, compact_ham: CompactHamiltonian, prep_op: CompressedResourceOp | None = None, select_op: CompressedResourceOp | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, compact_ham: CompactHamiltonian, prep_op: CompressedResourceOp | None = None, select_op: CompressedResourceOp | None = None, coeff_precision: int | None = None, rotation_precision: int | None= None) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -154,7 +180,7 @@ class QubitizeTHC(ResourceOperator):
         # Based on section III D, Eq. 43 in arXiv:2011.03494
         # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
-        params = {"compact_ham": compact_ham, "prep_op": prep_op, "select_op": select_op}
+        params = {"compact_ham": compact_ham, "prep_op": prep_op, "select_op": select_op, "coeff_precision": coeff_precision, "rotation_precision": rotation_precision}
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
@@ -163,6 +189,8 @@ class QubitizeTHC(ResourceOperator):
         compact_ham: CompactHamiltonian,
         prep_op: CompressedResourceOp | None = None,
         select_op: CompressedResourceOp | None = None,
+        coeff_precision: int | None = None,
+        rotation_precision: int | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -200,6 +228,7 @@ class QubitizeTHC(ResourceOperator):
                 qre.SelectTHC,
                 {
                     "compact_ham": compact_ham,
+                    "rotation_precision": rotation_precision
                 },
             )
         gate_list.append(GateCount(select_op))
@@ -210,13 +239,14 @@ class QubitizeTHC(ResourceOperator):
                 qre.PrepTHC,
                 {
                     "compact_ham": compact_ham,
+                    "coeff_precision": coeff_precision
                 },
             )
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
-        coeff_precision = prep_op.params["coeff_precision"] or kwargs["coeff_precision"]
+        coeff_precision = prep_op.params["coeff_precision"] or coeff_precision
 
         toffoli = resource_rep(qre.Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
@@ -250,6 +280,9 @@ class QubitizeTHC(ResourceOperator):
 
         """
         gate_list = []
+        compact_ham = target_resource_params["compact_ham"]
+        coeff_precision = target_resource_params["prep_op"].resource_params["coeff_precision"] or target_resource_params["coeff_precision"]
+        rotation_precision = target_resource_params["select_op"].resource_params["rotation_precision"] or target_resource_params["rotation_precision"]
 
         tensor_rank = compact_ham.params["tensor_rank"]
         m_register = int(np.ceil(np.log2(tensor_rank)))
@@ -271,6 +304,7 @@ class QubitizeTHC(ResourceOperator):
                 qre.SelectTHC,
                 {
                     "compact_ham": compact_ham,
+                    "rotation_precision": rotation_precision
                 },
             )
         gate_list.append(
@@ -288,13 +322,14 @@ class QubitizeTHC(ResourceOperator):
                 qre.PrepTHC,
                 {
                     "compact_ham": compact_ham,
+                    "coeff_precision": coeff_precision
                 },
             )
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494s
-        coeff_precision = prep_op.params["coeff_precision"] or kwargs["coeff_precision"]
+        coeff_precision = prep_op.params["coeff_precision"] or coeff_precision
         toffoli = resource_rep(qre.Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
 

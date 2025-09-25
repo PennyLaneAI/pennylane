@@ -1003,7 +1003,7 @@ class PrepTHC(ResourceOperator):
             qre.GateCount(
                 resource_rep(
                     qre.Controlled,
-                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
                 ),
                 1,
             )
@@ -1027,7 +1027,7 @@ class PrepTHC(ResourceOperator):
 
         # Checking that inequality is satisfied
         mcx = resource_rep(
-            qre.MultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
+            qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0}
         )
         gate_list.append(qre.GateCount(mcx, 1))
         gate_list.append(qre.GateCount(toffoli, 2))
@@ -1047,7 +1047,7 @@ class PrepTHC(ResourceOperator):
             {
                 "num_bitstrings": num_coeff,
                 "size_bitstring": 2 * m_register + 2 + coeff_precision,
-                "clean": False,
+                "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
         )
@@ -1080,7 +1080,7 @@ class PrepTHC(ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(
-        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
+        cls, target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1101,6 +1101,10 @@ class PrepTHC(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        print("target_resource_params: ", target_resource_params)
+        compact_ham = target_resource_params["compact_ham"]
+        coeff_precision = target_resource_params["coeff_precision"]
+        select_swap_depth = target_resource_params.get("select_swap_depth", None)
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
@@ -1124,7 +1128,7 @@ class PrepTHC(ResourceOperator):
             qre.GateCount(
                 resource_rep(
                     qre.Controlled,
-                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
                 ),
                 1,
             )
@@ -1148,7 +1152,7 @@ class PrepTHC(ResourceOperator):
 
         # Checking that inequality is satisfied
         mcx = resource_rep(
-            qre.MultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
+            qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0}
         )
         gate_list.append(qre.GateCount(mcx, 1))
         gate_list.append(qre.GateCount(toffoli, 2))
@@ -1171,7 +1175,7 @@ class PrepTHC(ResourceOperator):
                     {
                         "num_bitstrings": num_coeff,
                         "size_bitstring": 2 * m_register + 2 + coeff_precision,
-                        "clean": False,
+                        "restored": False,
                         "select_swap_depth": select_swap_depth,
                     },
                 )

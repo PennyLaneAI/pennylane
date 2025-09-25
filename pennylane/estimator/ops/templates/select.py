@@ -45,7 +45,7 @@ class SelectTHC(ResourceOperator):
         rotation_precision (int, optional): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
             :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-        select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+        select_swap_depth (int, optional): A parameter of :class:`~.pennylane.esimator.ops.templates.QROM`
             used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (list[int] or optional): the wires on which the operator acts
 
@@ -107,7 +107,7 @@ class SelectTHC(ResourceOperator):
                 * rotation_precision (int, optional): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                   :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-                * select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                * select_swap_depth (int, optional): A parameter of :class:`~.pennylane.estimator.ops.templates.QROM`
                   used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
@@ -129,7 +129,7 @@ class SelectTHC(ResourceOperator):
             rotation_precision (int, optional): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.estimator.ops.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Returns:
@@ -211,7 +211,7 @@ class SelectTHC(ResourceOperator):
             {
                 "num_bitstrings": tensor_rank + num_orb,
                 "size_bitstring": rotation_precision,
-                "clean": False,
+                "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
         )
@@ -226,7 +226,7 @@ class SelectTHC(ResourceOperator):
                     {"max_register_size": rotation_precision - 1},
                 ),
                 "num_ctrl_wires": 1,
-                "num_ctrl_values": 0,
+                "num_zero_ctrl": 0,
             },
         )
         gate_list.append(GateCount(semiadder, num_orb - 1))
@@ -246,7 +246,7 @@ class SelectTHC(ResourceOperator):
             {
                 "num_bitstrings": tensor_rank,
                 "size_bitstring": rotation_precision,
-                "clean": False,
+                "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
         )
@@ -290,7 +290,7 @@ class SelectTHC(ResourceOperator):
     def controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires,
-        ctrl_num_ctrl_values,
+        ctrl_num_zero_ctrl,
         compact_ham,
         rotation_precision=None,
         select_swap_depth=None,
@@ -306,7 +306,7 @@ class SelectTHC(ResourceOperator):
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            ctrl_num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
             rotation_precision (int, optional): The number of bits used to represent the precision for loading
@@ -334,7 +334,7 @@ class SelectTHC(ResourceOperator):
                 qre.MultiControlledX,
                 {
                     "num_ctrl_wires": ctrl_num_ctrl_wires,
-                    "num_ctrl_values": ctrl_num_ctrl_values,
+                    "num_zero_ctrl": ctrl_num_zero_ctrl,
                 },
             )
             gate_list.append(Allocate(1))
@@ -351,7 +351,7 @@ class SelectTHC(ResourceOperator):
             {
                 "num_bitstrings": tensor_rank + num_orb,
                 "size_bitstring": rotation_precision,
-                "clean": False,
+                "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
         )
@@ -366,7 +366,7 @@ class SelectTHC(ResourceOperator):
                     {"max_register_size": rotation_precision},
                 ),
                 "num_ctrl_wires": 1,
-                "num_ctrl_values": 0,
+                "num_zero_ctrl": 0,
             },
         )
         gate_list.append(GateCount(semiadder, num_orb - 1))
@@ -386,7 +386,7 @@ class SelectTHC(ResourceOperator):
             {
                 "num_bitstrings": tensor_rank,
                 "size_bitstring": rotation_precision,
-                "clean": False,
+                "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
         )
@@ -422,7 +422,7 @@ class SelectTHC(ResourceOperator):
             {
                 "base_cmpr_op": qre.Z.resource_rep(),
                 "num_ctrl_wires": 2,
-                "num_ctrl_values": 1,
+                "num_zero_ctrl": 1,
             },
         )
         gate_list.append(qre.GateCount(ccz, 1))
@@ -434,7 +434,7 @@ class SelectTHC(ResourceOperator):
 
         if ctrl_num_ctrl_wires > 1:
             gate_list.append(Deallocate(1))
-        elif ctrl_num_ctrl_values > 0:
-            gate_list.append(GateCount(resource_rep(qre.X), 2 * ctrl_num_ctrl_values))
+        elif ctrl_num_zero_ctrl > 0:
+            gate_list.append(GateCount(resource_rep(qre.X), 2 * ctrl_num_zero_ctrl))
 
         return gate_list
