@@ -116,7 +116,7 @@ class JacobianProductCalculator(abc.ABC):
         >>> qml.math.allclose(results, expected_results)
         True
         >>> jvps
-        (array(-0.14975012), array(-0.39733866))
+        (array(-0.149...), array(-0.3973...))
         >>> expected_jvps = 1.5 * -np.sin(0.1), 2.0 * -np.sin(0.2)
         >>> qml.math.allclose(jvps, expected_jvps)
         True
@@ -153,7 +153,7 @@ class JacobianProductCalculator(abc.ABC):
         >>> dys = (dy0, dy1)
         >>> vjps = jpc.compute_vjp(batch, dys)
         >>> vjps
-        (array([-0.04991671]), array([2.54286107]))
+        (array([-0.049...]), array([2.542...]))
         >>> expected_vjp0 = 0.5 * -np.sin(0.1)
         >>> qml.math.allclose(vjps[0], expected_vjp0)
         True
@@ -183,7 +183,7 @@ class JacobianProductCalculator(abc.ABC):
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
-        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+        (array(-0.0998...), (array(-0.198...), array(0.980...)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
         jacobians with non-scalar parameters.
@@ -405,7 +405,7 @@ class DeviceDerivatives(JacobianProductCalculator):
     >>> results
     (np.float64(0.540...,)
     >>> jpc._jacs_cache
-    LRUCache({(<QuantumScript: wires=[0], params=1>,): (array(-0.84147098),)}, maxsize=10, currsize=1)
+    LRUCache({(<QuantumScript: wires=[0], params=1>,): (array(-0.841...),)}, maxsize=10, currsize=1)
 
     Then when the vjp, jvp, or jacobian is requested, that cached value is used instead of requesting from
     the device again.
@@ -413,7 +413,7 @@ class DeviceDerivatives(JacobianProductCalculator):
     >>> with device.tracker:
     ...     vjp = jpc.compute_vjp(batch , (0.5, ) )
     >>> vjp
-    (array([-0.42073549]),)
+    (array([-0.4207...]),)
 
     """
 
@@ -518,7 +518,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         >>> qml.math.allclose(results, expected_results)
         True
         >>> jvps
-        (array(-0.14975012), array(-0.39733866))
+        (array(-0.149...), array(-0.397...))
         >>> expected_jvps = 1.5 * -np.sin(0.1), 2.0 * -np.sin(0.2)
         >>> qml.math.allclose(jvps, expected_jvps)
         True
@@ -560,7 +560,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         >>> dys = (dy0, dy1)
         >>> vjps = jpc.compute_vjp(batch, dys)
         >>> vjps
-        (array([-0.04991671]), array([2.54286107]))
+        (array([-0.0499...]), array([2.54...]))
         >>> expected_vjp0 = 0.5 * -np.sin(0.1)
         >>> qml.math.allclose(vjps[0], expected_vjp0)
         True
@@ -604,7 +604,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
-        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+        (array(-0.0998...), (array(-0.198...), array(0.980...)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
         jacobians with non-scalar parameters.
