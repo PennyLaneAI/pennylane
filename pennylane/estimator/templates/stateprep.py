@@ -98,7 +98,7 @@ class UniformStatePrep(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         k = (num_states & -num_states).bit_length() - 1
         L = num_states // (2**k)
@@ -209,7 +209,7 @@ class AliasSampling(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = int(math.ceil(math.log2(num_coeffs)))
         return CompressedResourceOp(
@@ -347,7 +347,7 @@ class MPSPrep(ResourceOperator):
             precision (Union[None, float], optional): the precision used when loading the MPS matrices
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "num_mps_matrices": num_mps_matrices,
@@ -583,7 +583,7 @@ class QROMStatePreparation(ResourceOperator):
                 used to trade-off extra qubits for reduced circuit depth
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
         if isinstance(selswap_depths, (list, tuple, np.ndarray)):

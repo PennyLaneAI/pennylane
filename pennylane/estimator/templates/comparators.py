@@ -86,7 +86,7 @@ class SingleQubitComparator(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, cls.num_wires, {})
 
@@ -187,7 +187,7 @@ class TwoQubitComparator(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, cls.num_wires, {})
 
@@ -355,7 +355,7 @@ class IntegerComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`n \lt L`.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = register_size + 1
         return CompressedResourceOp(
@@ -567,7 +567,7 @@ class RegisterComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`a \lt b`.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = first_register + second_register + 1
         return CompressedResourceOp(
