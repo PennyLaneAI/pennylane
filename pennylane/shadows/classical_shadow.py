@@ -62,11 +62,11 @@ class ClassicalShadow:
 
     We obtain the ``bits`` and ``recipes`` via :func:`~.pennylane.classical_shadow` measurement:
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=range(2))
-        @partial(qml.set_shots, shots=1000)
+
+        @qml.set_shots(1_000)
         @qml.qnode(dev)
         def qnode(x):
             qml.Hadamard(0)
@@ -80,14 +80,14 @@ class ClassicalShadow:
     After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
     For example, we can compute the expectation value of a Pauli string
 
-    >>> shadow.expval(qml.X(0) @ qml.X(1), k=1)
-    array(0.972)
+    >>> print(shadow.expval(qml.X(0) @ qml.X(1), k=1)) # doctest: +SKIP
+    0.9954
 
     or of a Hamiltonian:
 
     >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
-    >>> shadow.expval(H, k=1)
-    array(1.917)
+    >>> print(shadow.expval(H, k=1)) # doctest: +SKIP
+    2.007
 
     The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm (see `2002.08953 <https://arxiv.org/abs/2002.08953>`_). The case ``k=1`` corresponds to simply taking the mean
     value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means. For the case of measuring only in the Pauli basis,
@@ -193,16 +193,18 @@ class ClassicalShadow:
 
         We can approximately reconstruct a Bell state:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from functools import partial
+
             dev = qml.device("default.qubit", wires=range(2))
-            @partial(qml.set_shots, shots=1000)
+
+            @qml.set_shots(1_000)
             @qml.qnode(dev)
             def qnode():
                 qml.Hadamard(0)
                 qml.CNOT((0,1))
-                return classical_shadow(wires=range(2))
+                return qml.classical_shadow(wires=range(2))
 
             bits, recipes = qnode()
             shadow = ClassicalShadow(bits, recipes)
@@ -298,11 +300,11 @@ class ClassicalShadow:
 
         **Example**
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            from functools import partial
             dev = qml.device("default.qubit", wires=range(2))
-            @partial(qml.set_shots, shots=1000)
+
+            @qml.set_shots(1_000)
             @qml.qnode(dev)
             def qnode(x):
                 qml.Hadamard(0)
@@ -315,14 +317,14 @@ class ClassicalShadow:
 
         Compute Pauli string observables
 
-        >>> shadow.expval(qml.X(0) @ qml.X(1), k=1)
-        array(1.116)
+        >>> print(shadow.expval(qml.X(0) @ qml.X(1), k=1)) # doctest: +SKIP
+        0.918
 
         or of a Hamiltonian using `the same` measurement results
 
         >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
-        >>> shadow.expval(H, k=1)
-        array(1.9980000000000002)
+        >>> print(shadow.expval(H, k=1)) # doctest: +SKIP
+        1.755
         """
         if not isinstance(H, (list, tuple)):
             H = [H]
@@ -386,13 +388,12 @@ class ClassicalShadow:
         For the maximally entangled state of ``n`` qubits, the reduced state has two constant eigenvalues :math:`\frac{1}{2}`. For constant distributions, all Renyi entropies are
         equivalent:
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            from functools import partial
             wires = 4
             dev = qml.device("default.qubit", wires=range(wires))
 
-            @partial(qml.set_shots, shots=1000)
+            @qml.set_shots(1_000)
             @qml.qnode(dev)
             def max_entangled_circuit():
                 qml.Hadamard(wires=0)
@@ -405,13 +406,17 @@ class ClassicalShadow:
 
             entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
 
-        >>> np.isclose(entropies, entropies[0], atol=1e-2)
-        [ True,  True,  True]
+        >>> print(np.isclose(entropies, entropies[0], atol=1e-2))
+        [ True  True  True]
 
         For non-uniform reduced states that is not the case anymore and the entropy differs for each order ``alpha``:
 
-        .. code-block:: python3
+        .. code-block:: python
 
+            wires = 4
+            dev = qml.device("default.qubit", wires=range(wires))
+
+            @qml.set_shots(1_000)
             @qml.qnode(dev)
             def qnode(x):
                 for i in range(wires):
@@ -426,8 +431,7 @@ class ClassicalShadow:
             bitstrings, recipes = qnode(x)
             shadow = qml.ClassicalShadow(bitstrings, recipes)
 
-        >>> [shadow.entropy(wires=wires, alpha=alpha) for alpha in [1., 2., 3.]]
-        [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
+        >>> [shadow.entropy(wires=wires, alpha=alpha) for alpha in [1., 2., 3.]] # doctest: +SKIP
 
         """
 

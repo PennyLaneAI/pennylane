@@ -145,11 +145,13 @@ def shadow_state(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
+
+        from functools import partial
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=10000)
+        @qml.set_shots(10_000)
         @partial(qml.shadows.shadow_state, wires=[0, 1], diffable=True)
         @qml.qnode(dev)
         def circuit(x):
@@ -159,12 +161,12 @@ def shadow_state(
             return qml.classical_shadow(wires=[0, 1])
 
     >>> x = np.array(1.2)
-    >>> circuit(x)
+    >>> circuit(x) # doctest: +SKIP
     array([[ 0.33835   +0.j     , -0.01215   +0.2241j , -0.00465   +0.237j  ,  0.35504997-0.01755j],
        [-0.01215   -0.2241j ,  0.1528    +0.j     ,  0.16919999-0.0036j , -0.00285   -0.22065j],
        [-0.00465   -0.237j  ,  0.16919999+0.0036j ,  0.17529999+0.j     ,  0.0099    -0.2358j ],
        [ 0.35504997+0.01755j, -0.00285   +0.22065j,  0.0099    +0.2358j ,  0.33355   +0.j     ]], dtype=complex64)
-    >>> qml.jacobian(lambda x: np.real(circuit(x)))(x)
+    >>> qml.jacobian(lambda x: np.real(circuit(x)))(x) # doctest: +SKIP
     array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
            [-0.005325,  0.235275,  0.2358  , -0.004275],
            [ 0.004275,  0.2358  ,  0.244875, -0.002175],
