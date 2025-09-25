@@ -110,9 +110,7 @@ long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is no
 
 .. code-block:: python
 
-    import pennylane as qml
-
-    dev = qml.device("default.qubit", wires=3)
+    dev = qml.device("default.qubit", seed=42, wires=3)
 
     @qml.qnode(dev)
     def circ(x, y):
@@ -124,7 +122,7 @@ long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is no
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
 >>> circ(1.0, 2.0, shots=5)
-(0.6, array([1, 1, 1, 0, 1]))
+(np.float64(0.2), array([0, 0, 1, 0, 1]))
 
 PennyLane also supports postselecting on mid-circuit measurement outcomes. To learn more, refer to the documentation
 of :func:`~.pennylane.measure`.
@@ -194,8 +192,7 @@ When :math:`\theta = 1.23`, the probability of obtaining the state
 :math:`\begin{bmatrix} 1 \\ 0 \end{bmatrix}` is :math:`\sin^2(\theta/2) = 0.333`. Using 10000 shots
 we should obtain the excited state 3333 times approximately.
 
->>> circuit(1.23)
-array(3303.)
+>>> assert np.allclose(circuit(1.23), 3333, atol=200)
 
 Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.
@@ -209,8 +206,7 @@ The gradient of the measurement process is
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
 >>> x = qml.numpy.array(1.23, requires_grad=True)
->>> qml.grad(circuit)(x)
-4715.000000000001
+>>> assert np.allclose(qml.grad(circuit)(x), 4712.444, atol=100)
 
 .. note::
 

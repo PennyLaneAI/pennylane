@@ -146,7 +146,7 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -158,11 +158,11 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
     Executing this QNode:
 
     >>> circuit_mutual(np.pi/2)
-    1.3862943611198906
+    np.float64(1.38...)
 
     It is also possible to get the gradient of the previous QNode:
 
-    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> param = pnp.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_mutual)(param)
     tensor(1.24645048, requires_grad=True)
 
