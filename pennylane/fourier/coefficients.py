@@ -123,12 +123,6 @@ def coefficients(
 
     >>> coeffs = coefficients(partial_circuit, num_inputs, degree)
     >>> print(coeffs) # doctest: +SKIP
-    [[-1.23358114e-17+0.00000000e+00j -4.93432455e-17-3.08395285e-18j
-      -4.93432455e-17+3.08395285e-18j]
-     [-1.40219669e-03-2.20118490e-02j -3.43071461e-01-4.08458392e-02j
-      -1.49310501e-01+3.74473726e-02j]
-     [-1.40219669e-03+2.20118490e-02j -1.49310501e-01-3.74473726e-02j
-      -3.43071461e-01+4.08458392e-02j]]
 
     If the specified degree is lower than the highest frequency of the function,
     aliasing may occur, and the resultant coefficients will be incorrect as they
@@ -145,7 +139,7 @@ def coefficients(
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device('default.qubit', wires=2))
         def circuit(inpt):
             qml.RX(inpt[0], wires=0)
             qml.RY(inpt[0], wires=1)
