@@ -17,21 +17,6 @@ This submodule defines a capture compatible call to QNodes.
 Workflow Development Status
 ---------------------------
 
-The non-exhaustive list of unsupported features are:
-
-**Breaking ``vmap``/parameter broadcasting into a non-broadcasted state**. The current workflow assumes
-that the device execution can natively handle broadcasted parameters. ``vmap`` and parameter broadcasting
-will not work with devices other than default qubit.
-
->>> @qml.qnode(qml.device('lightning.qubit', wires=1))
-... def circuit(x):
-...     qml.RX(x, 0)
-...     return qml.expval(qml.Z(0))
->>> jax.vmap(circuit)(jax.numpy.array([1.0, 2.0, 3.0]))
-TypeError: RX(): incompatible function arguments. The following argument types are supported:
-    1. (self: pennylane_lightning.lightning_qubit_ops.StateVectorC128, arg0: list[int], arg1: bool, arg2: list[float]) -> None
-    2. (self: pennylane_lightning.lightning_qubit_ops.StateVectorC128, arg0: list[int], arg1: list[bool], arg2: list[int], arg3: bool, arg4: list[float]) -> None
-
 **Grouping commuting measurements and/or splitting up non-commuting measurements.** Currently, each
 measurement is fully independent and generated from different raw samples than every other measurement.
 To generate multiple measurement from the same samples, we need a way of denoting which measurements
@@ -40,12 +25,20 @@ We will also need to figure out how to implement splitting up a circuit with non
 multiple circuits.
 
 >>> @partial(qml.set_shots, shots=5)
-... @qml.qnode(qml.device('default.qubit', wires=1))
+... @qml.qnode(qml.device('default.qubit', seed=42, wires=1))
 ... def circuit():
 ...     qml.H(0)
 ...     return qml.sample(wires=0), qml.sample(wires=0)
 >>> circuit()
-(Array([1, 0, 1, 0, 0], dtype=int64), Array([0, 0, 1, 0, 0], dtype=int64))
+(array([[1],
+        [0],
+        [1],
+        [1],
+        [0]]), array([[1],
+        [0],
+        [1],
+        [1],
+        [0]]))
 
 **Figuring out what types of data can be sent to the device.** Is the device always
 responsible for converting jax arrays to numpy arrays? Is the device responsible for having a
@@ -507,49 +500,43 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     .. code-block:: python
 
         qml.capture.enable()
+        jax.config.update("jax_enable_x64", True)
 
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        @qml.set_shots(50_000)
+        @qml.qnode(qml.device('lightning.qubit', seed=42, wires=1))
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0)), qml.probs()
 
         def f(x):
-            expval_z, probs = circuit(np.pi * x, shots=50000)
+            expval_z, probs = circuit(np.pi * x)
             return 2 * expval_z + probs
 
         jaxpr = jax.make_jaxpr(f)(0.1)
-        print("jaxpr:")
-        print(jaxpr)
-
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
-        print()
-        print("result:")
-        print(res)
 
+    >>> print(jaxpr)
+    { lambda ; a:f64[]. let
+        b:f64[] = mul 3.141592653589793:f64[] a
+        c:f64[] d:f64[2] = qnode[
+          device=<lightning.qubit device (wires=1) at ...>
+          execution_config=ExecutionConfig(grad_on_execution=False, use_device_gradient=None, use_device_jacobian_product=False, gradient_method='best', gradient_keyword_arguments={}, device_options={}, interface=<Interface.JAX: 'jax'>, derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True, executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
+          n_consts=0
+          qfunc_jaxpr={ lambda ; e:f64[]. let
+              _:AbstractOperator() = RX[n_wires=1] e 0:i64[]
+              f:AbstractOperator() = PauliZ[n_wires=1] 0:i64[]
+              g:AbstractMeasurement(n_wires=None) = expval_obs f
+              h:AbstractMeasurement(n_wires=0) = probs_wires
+            in (g, h) }
+          qnode=<QNode: device='<lightning.qubit device (wires=1) at ...>', interface='jax', diff_method='best', shots='Shots(total=50000)'>
+          shots_len=1
+        ] 50000:i64[] b
+        i:f64[] = mul 2.0:f64[] c
+        j:f64[2] = add i d
+      in (j,) }
 
-    .. code-block:: none
-
-        jaxpr:
-        { lambda ; a:f32[]. let
-            b:f32[] = mul 3.141592653589793 a
-            c:f32[] d:f32[2] = qnode[
-              device=<lightning.qubit device (wires=1) at 0x10557a070>
-              qfunc_jaxpr={ lambda ; e:f32[]. let
-                  _:AbstractOperator() = RX[n_wires=1] e 0
-                  f:AbstractOperator() = PauliZ[n_wires=1] 0
-                  g:AbstractMeasurement(n_wires=None) = expval_obs f
-                  h:AbstractMeasurement(n_wires=0) = probs_wires
-                in (g, h) }
-              qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
-              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
-              shots=Shots(total=50000)
-            ] b
-            i:f32[] = mul 2.0 c
-            j:f32[2] = add i d
-          in (j,) }
-
-        result:
-        [Array([-0.96939224, -0.38207346], dtype=float32)]
+    >>> print(res)
+    [Array([-0.95662, -0.36514], dtype=float64)]
 
 
     """
