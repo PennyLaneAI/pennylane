@@ -71,7 +71,6 @@ jobs:
           --ignore=pennylane/capture
           --ignore=pennylane/decomposition
           --ignore=pennylane/devices
-          --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
           --ignore=pennylane/gradients
