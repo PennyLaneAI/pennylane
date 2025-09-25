@@ -64,6 +64,8 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
+    ~transforms.rz_phase_gradient
+    ~transforms.rowcol
 
 Compilation transforms using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -88,6 +90,10 @@ for example when writing custom ZX compilation passes.
 
     ~transforms.to_zx
     ~transforms.from_zx
+    ~transforms.postorder_traverse
+    ~transforms.preorder_traverse
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomial
 
 Other compilation utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -365,6 +371,14 @@ from .zx import (
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
+from .intermediate_reps import (
+    parity_matrix,
+    phase_polynomial,
+    rowcol,
+    postorder_traverse,
+    preorder_traverse,
+)
+from .rz_phase_gradient import rz_phase_gradient
 
 
 def __getattr__(name):
