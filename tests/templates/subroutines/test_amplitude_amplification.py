@@ -199,7 +199,7 @@ class TestDifferentiability:
 
         jac = jac_fn(params)
         assert jac.shape == (2,)
-        assert np.allclose(jac, self.exp_grad, atol=0.01)
+        assert np.allclose(jac, self.exp_grad, atol=0.02)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])

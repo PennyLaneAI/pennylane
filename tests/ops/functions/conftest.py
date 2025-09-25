@@ -27,7 +27,7 @@ from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
-from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
