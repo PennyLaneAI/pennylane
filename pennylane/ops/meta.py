@@ -199,8 +199,13 @@ class Snapshot(Operation):
             m = qml.Snapshot("samples", qml.sample(), shots=5)
             return qml.expval(qml.X(0))
 
-    >>> qml.snapshots(circuit)()
-    {0: np.float64(1.0), 'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]), 2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]), 'samples': ..., 'execution_results': np.float64(0.0)}
+    >>> from pprint import pprint
+    >>> pprint(qml.snapshots(circuit)())
+    {0: np.float64(1.0),
+     2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
+     'execution_results': np.float64(0.0),
+     'samples': ...,
+     'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j])}
 
     .. seealso:: :func:`~.snapshots`
     """
