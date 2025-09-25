@@ -108,6 +108,9 @@ class JacobianProductCalculator(abc.ABC):
         >>> tangents0 = (1.5, )
         >>> tangents1 = (2.0, )
         >>> tangents = (tangents0, tangents1)
+        >>> device = qml.device('default.qubit')
+        >>> config = qml.devices.ExecutionConfig()
+        >>> jpc = DeviceDerivatives(device, config)
         >>> results, jvps = jpc.execute_and_compute_jvp(batch, tangents)
         >>> expected_results = (np.cos(0.1), np.cos(0.2))
         >>> qml.math.allclose(results, expected_results)
@@ -205,9 +208,9 @@ class JacobianProductCalculator(abc.ABC):
         >>> batch = (tape0, tape1)
         >>> results, jacs = jpc.execute_and_compute_jacobian(batch)
         >>> results
-        (0.9950041652780258, (0.9800665778412417, 0.19866933079506116))
+        (np.float64(0.995...), (np.float64(0.980...), np.float64(0.198...)))
         >>> jacs
-        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+        (array(-0.099...), (array(-0.198...), array(0.980...)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
         jacobians with non-scalar parameters.
@@ -373,13 +376,14 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     >>> device = qml.device('default.qubit')
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-    >>> jpc = DeviceDerivatives(device, config, {})
+    >>> jpc = DeviceDerivatives(device, config)
 
     This same class can also be used with the old device interface.
 
     >>> device = qml.device('lightning.qubit', wires=5)
     >>> gradient_kwargs = {"method": "adjoint_jacobian"}
-    >>> jpc_lightning = DeviceDerivatives(device, gradient_kwargs=gradient_kwargs)
+    >>> config = qml.devices.ExecutionConfig(gradient_keyword_arguments=gradient_kwargs)
+    >>> jpc_lightning = DeviceDerivatives(device, config)
 
     **Technical comments on caching and calculating the gradients on execution:**
 
@@ -395,15 +399,13 @@ class DeviceDerivatives(JacobianProductCalculator):
     When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
 
     >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.Z(0))])
-    >>> batch = (tape, )
+    >>> batch = (tape,)
     >>> with device.tracker:
-    ...     results = jpc.execute_and_cache_jacobian(batch )
+    ...     results = jpc.execute_and_cache_jacobian(batch)
     >>> results
-    (0.5403023058681398,)
-    >>> device.tracker.totals
-    {'execute_and_derivative_batches': 1, 'executions': 1, 'derivatives': 1}
+    (np.float64(0.540...,)
     >>> jpc._jacs_cache
-    LRUCache({5660934048: (array(-0.84147098),)}, maxsize=10, currsize=1)
+    LRUCache({(<QuantumScript: wires=[0], params=1>,): (array(-0.84147098),)}, maxsize=10, currsize=1)
 
     Then when the vjp, jvp, or jacobian is requested, that cached value is used instead of requesting from
     the device again.
@@ -412,8 +414,6 @@ class DeviceDerivatives(JacobianProductCalculator):
     ...     vjp = jpc.compute_vjp(batch , (0.5, ) )
     >>> vjp
     (array([-0.42073549]),)
-    >>> device.tracker.totals
-    {}
 
     """
 
