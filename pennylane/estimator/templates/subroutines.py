@@ -929,59 +929,59 @@ class IterativeQPE(ResourceOperator):
 class QFT(ResourceOperator):
     r"""Resource class for QFT.
 
-     Args:
-         num_wires (int): the number of qubits the operation acts upon
-         wires (Sequence[int], None): the wires the operation acts on
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+        wires (Sequence[int], None): the wires the operation acts on
 
-     Resources:
-         The resources are obtained from the standard decomposition of QFT as presented
-         in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
-         <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+    Resources:
+        The resources are obtained from the standard decomposition of QFT as presented
+        in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
+        <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.QFT`.
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.QFT`.
 
-     **Example**
+    **Example**
 
-     The resources for this operation are computed using:
+    The resources for this operation are computed using:
 
-     >>> import pennylane.estimator as qre
-     >>> qft = qre.QFT(3)
-     >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
-     >>> print(qre.estimate(qft, gate_set))
-     --- Resources: ---
-      Total qubits: 3
-      Total gates : 7
-      Qubit breakdown:
-       zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 3
-      Gate breakdown:
-       {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+    >>> import pennylane.estimator as qre
+    >>> qft = qre.QFT(3)
+    >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
+    >>> print(qre.estimate(qft, gate_set))
+    --- Resources: ---
+     Total qubits: 3
+     Total gates : 7
+     Qubit breakdown:
+      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 3
+     Gate breakdown:
+      {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
 
     .. details::
-         :title: Usage Details
+        :title: Usage Details
 
-         This operation provides an alternative decomposition method when an appropriately sized
-         phase gradient state is available. This decomposition can be used as a custom decomposition
-         using the operation's ``phase_grad_resource_decomp`` method and the
-         :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` class. See the
-         following example for more details.
+        This operation provides an alternative decomposition method when an appropriately sized
+        phase gradient state is available. This decomposition can be used as a custom decomposition
+        using the operation's ``phase_grad_resource_decomp`` method and the
+        :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` class. See the
+        following example for more details.
 
-         >>> import pennylane.estimator as qre
-         >>> config = qre.ResourceConfig()
-         >>> config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
-         >>> print(qre.estimate(qre.QFT(3), config=config))
-         --- Resources: ---
-          Total wires: 5
-             algorithmic wires: 3
-             allocated wires: 2
-              zero state: 2
-              any state: 0
-          Total gates : 859
-           'Toffoli': 13,
-           'T': 801,
-           'CNOT': 24,
-           'Z': 3,
-           'S': 3,
-           'Hadamard': 15
+        >>> import pennylane.estimator as qre
+        >>> config = qre.ResourceConfig()
+        >>> config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
+        >>> print(qre.estimate(qre.QFT(3), config=config))
+        --- Resources: ---
+         Total wires: 5
+            algorithmic wires: 3
+            allocated wires: 2
+             zero state: 2
+             any state: 0
+         Total gates : 859
+          'Toffoli': 13,
+          'T': 801,
+          'CNOT': 24,
+          'Z': 3,
+          'S': 3,
+          'Hadamard': 15
     """
 
     resource_keys = {"num_wires"}
