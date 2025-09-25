@@ -85,7 +85,6 @@ jobs:
           --ignore=pennylane/spin
           --ignore=pennylane/drawer
           --ignore=pennylane/noise
-          --ignore=pennylane/debugging
           --ignore=pennylane/qcut
           --ignore=pennylane/estimator
           --ignore=pennylane/qchem
