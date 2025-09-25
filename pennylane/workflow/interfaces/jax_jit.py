@@ -149,7 +149,7 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices
     ShapeDtypeStruct(shape=(2,), dtype=float64))
     >>> tapes, fn = qml.gradients.param_shift(tape)
     >>> fn(dev.execute(tapes))
-    (array(0.), array([-0.42073549,  0.42073549]))
+    (array(0.), array([-0.42...,  0.42...]))
     """
     shape_and_dtype = _result_shape_dtype_struct(tape, device)
     if len(tape.trainable_params) == 1:
