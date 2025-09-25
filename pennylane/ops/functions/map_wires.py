@@ -52,9 +52,9 @@ def _get_plxpr_map_wires():
 
         .. code-block:: python
 
-            import jax
             from pennylane.ops.functions.map_wires import MapWiresInterpreter
 
+            jax.config.update("jax_enable_x64", True)
             qml.capture.enable()
 
             @MapWiresInterpreter(wire_map={0: 1})
@@ -68,8 +68,8 @@ def _get_plxpr_map_wires():
 
         >>> jaxpr
         { lambda ; . let
-          _:AbstractOperator() = Hadamard[n_wires=1] 1:i...[]
-          a:AbstractOperator() = PauliZ[n_wires=1] 1:i...[]
+          _:AbstractOperator() = Hadamard[n_wires=1] 1:i64[]
+          a:AbstractOperator() = PauliZ[n_wires=1] 1:i64[]
           b:AbstractMeasurement(n_wires=None) = expval_obs a
           in (b,) }
 
