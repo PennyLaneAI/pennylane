@@ -962,7 +962,7 @@ class QFT(ResourceOperator):
         This operation provides an alternative decomposition method when an appropriately sized
         phase gradient state is available. This decomposition can be used as a custom decomposition
         using the operation's ``phase_grad_resource_decomp`` method and the
-        :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` class. See the
+        :class:`~.pennylane.estimator.resource_config.ResourceConfig` class. See the
         following example for more details.
 
         >>> import pennylane.estimator as qre
