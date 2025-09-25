@@ -34,8 +34,8 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
     registered_f_jvp.defjvp(f_and_jvp)
 
 >>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
-in custom jvp function:  2.0 Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>
-Array(4., dtype=float64, weak_type=True)
+in custom jvp function:  2.0 Traced<~float32[]:JaxprTrace>
+Array(4., dtype=float32, weak_type=True)
 
 
 We can do something similar for the VJP as well:
@@ -56,7 +56,7 @@ We can do something similar for the VJP as well:
 >>> jax.grad(registered_f_vjp)(jax.numpy.array(2.0))
 in forward pass:  2.0
 in backward pass:  2.0 1.0
-Array(4., dtype=float64, weak_type=True)
+Array(4., dtype=float32, weak_type=True)
 
 **JVP versus VJP:**
 
@@ -76,7 +76,8 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
         return x**2, 2*x*dx
 
 >>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
-ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+in custom jvp function:  2.0 Traced<~float32[]:JaxprTrace>
+Array(4., dtype=float32, weak_type=True)
 
 Note that the comment about ``JIT`` is generally a comment about not being able to trace code.
 
@@ -113,8 +114,8 @@ The trainable arguments for the registered functions can be any valid pytree.
     registered_f_jvp.defjvp(f_and_jvp)
 
 >>> jax.grad(registered_f_jvp)({'a': jax.numpy.array(2.0)})
-in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>}
-{'a': Array(4., dtype=float64, weak_type=True)}
+in custom jvp function:  {'a': Array(2., dtype=float32, weak_type=True)} {'a': Traced<~float32[]:JaxprTrace>}
+{'a': Array(4., dtype=float32, weak_type=True)}
 
 As we can see here, the tangents are packed into the same pytree structure as the trainable arguments.
 

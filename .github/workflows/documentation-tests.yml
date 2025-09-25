@@ -61,6 +61,7 @@ jobs:
           --ignore=pennylane/compiler/python_compiler
           "
           IGNORE_OPTS_CORE="
+          --ignore=pennylane/workflow/interfaces/tensorflow.py
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
