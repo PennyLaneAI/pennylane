@@ -22,6 +22,7 @@ import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.dialects.builtin import (
     AnyFloat,
     DenseArrayBase,
+    DenseIntOrFPElementsAttr,
     IntegerAttr,
     TensorType,
     i32,
@@ -33,6 +34,7 @@ from xdsl.irdl import (
     irdl_op_definition,
     operand_def,
     opt_attr_def,
+    prop_def,
     result_def,
     traits_def,
     var_operand_def,
@@ -43,7 +45,7 @@ from xdsl.irdl.constraints import AtLeast
 from xdsl.traits import NoMemoryEffect, RecursiveMemoryEffect, SingleBlockImplicitTerminator
 
 from ...xdsl_extras import Elementwise, SameOperandsAndResultShape
-from .types import HLO_FpOrQuantizedIntTensor, HLO_PredTensor, HLO_Tensor
+from .types import HLO_AnyTensor, HLO_FpOrQuantizedIntTensor, HLO_PredTensor, HLO_Tensor
 
 # Type aliases
 FloatTensorType = TensorType[AnyFloat]
@@ -211,3 +213,25 @@ class SelectOp(IRDLOperation):
     traits = traits_def(
         NoMemoryEffect(),
     )
+
+
+@irdl_op_definition
+class ConstantOp(IRDLOperation):
+    """
+        Produces an ``output`` tensor from a constant ``value``.
+
+    See:
+    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#constant
+
+    Example:
+    ```mlir
+    %output = stablehlo.constant dense<[[0.0, 1.0], [2.0, 3.0]]> : tensor<2x2xf32>
+    """
+
+    name = "stablehlo.constant"
+
+    value = prop_def(DenseIntOrFPElementsAttr)
+    output = result_def(HLO_AnyTensor)
+
+    def __init__(self, value: DenseIntOrFPElementsAttr):
+        super().__init__(properties={"value": value}, result_types=(value.type,))
