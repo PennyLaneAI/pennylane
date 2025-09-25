@@ -187,7 +187,7 @@ class Snapshot(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=42)
 
         @qml.qnode(dev)
         def circuit():
@@ -204,7 +204,11 @@ class Snapshot(Operation):
     {0: np.float64(1.0),
      2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
      'execution_results': np.float64(0.0),
-     'samples': ...,
+     'samples': array([[1, 1],
+                       [0, 0],
+                       [1, 1],
+                       [1, 1],
+                       [0, 0]]),
      'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j])}
 
     .. seealso:: :func:`~.snapshots`
