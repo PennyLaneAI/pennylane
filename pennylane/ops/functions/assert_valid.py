@@ -166,17 +166,17 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert (
             non_zero_gate_counts == actual_gate_counts
-        ), f"{non_zero_gate_counts} != {actual_gate_counts}"
-
-    # Add projector to the additional wires (work wires) on the tape
-    work_wires = tape.wires - op.wires
-    all_wires = op.wires + work_wires
-    if work_wires:
-        op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
-        tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+        ), f"\nGate counts expected from resource function:\n{non_zero_gate_counts}\nActual gate counts:\n{actual_gate_counts}"
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix:
+        # Add projector to the additional wires (work wires) on the tape
+        work_wires = tape.wires - op.wires
+        all_wires = op.wires + work_wires
+        if work_wires:
+            op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
+            tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+
         op_matrix = op.matrix(wire_order=all_wires)
         decomp_matrix = qml.matrix(tape, wire_order=all_wires)
         assert qml.math.allclose(
@@ -484,10 +484,8 @@ def assert_valid(
 
         op = MyOp(qml.numpy.array(0.5), wires=0)
 
-    .. code-block::
-
-        >>> assert_valid(op)
-        AssertionError: op.data must be a tuple
+    >>> assert_valid(op)
+    AssertionError: op.data must be a tuple
 
     .. code-block:: python
 
@@ -498,11 +496,9 @@ def assert_valid(
                 super().__init__(wires=wires)
 
         op = MyOp(wires = 0)
-        assert_valid(op)
 
-    .. code-block::
-
-        ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
+    >>> assert_valid(op)
+    ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
 
     """
 

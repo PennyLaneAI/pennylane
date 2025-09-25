@@ -46,7 +46,7 @@ def test_add_transform_deprecation():
 
     with pytest.warns(
         PennyLaneDeprecationWarning,
-        match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43",
+        match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44",
     ):
         circuit.add_transform(
             qml.transforms.core.TransformContainer(qml.gradients.param_shift.expand_transform)
@@ -1048,7 +1048,7 @@ class TestIntegration:
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit", "auto"])
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax

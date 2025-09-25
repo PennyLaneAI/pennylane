@@ -27,10 +27,10 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
+# pylint: disable=arguments-differ,too-many-arguments,super-init-not-called
 
 
-class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors,
+class ResourceTrotterProduct(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian operator.
 
@@ -92,7 +92,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
     >>> num_steps, order = (1, 2)
     >>> first_order_expansion = [plre.ResourceRX(), plre.ResourceRY()] # H = X + Y
     >>> gate_set = {"RX", "RY"}
-    >>> res = plre.estimate_resources(plre.ResourceTrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
+    >>> res = plre.estimate(plre.ResourceTrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
     >>> print(res)
     --- Resources: ---
      Total qubits: 1
@@ -233,7 +233,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         return gate_list
 
 
-class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
+class ResourceTrotterCDF(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of compressed double factorized Hamiltonian.
 
@@ -297,7 +297,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
     >>> import pennylane.labs.resource_estimation as plre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = plre.CompactHamiltonian.cdf(num_orbitals = 4, num_fragments = 4)
-    >>> res = plre.estimate_resources(plre.ResourceTrotterCDF(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterCDF(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 8
@@ -511,7 +511,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         return gate_list
 
 
-class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
+class ResourceTrotterTHC(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of tensor hypercontracted Hamiltonian.
 
@@ -574,7 +574,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
     >>> import pennylane.labs.resource_estimation as plre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
-    >>> res = plre.estimate_resources(plre.ResourceTrotterTHC(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterTHC(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 8
@@ -849,7 +849,7 @@ class ResourceTrotterVibrational(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
-    >>> res = plre.estimate_resources(plre.ResourceTrotterVibrational(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterVibrational(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 83.0
@@ -1210,7 +1210,7 @@ class ResourceTrotterVibronic(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
-    >>> res = plre.estimate_resources(plre.ResourceTrotterVibronic(compact_ham, num_steps, order))
+    >>> res = plre.estimate(plre.ResourceTrotterVibronic(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
      Total qubits: 85.0

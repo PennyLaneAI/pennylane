@@ -29,6 +29,7 @@ from xdsl.dialects.builtin import (
     ComplexType,
     Float32Type,
     Float64Type,
+    IndexType,
     IntAttr,
     IntAttrConstraint,
     IntegerType,
@@ -46,8 +47,6 @@ from xdsl.irdl.constraints import IntSetConstraint
 from pennylane.compiler.python_compiler.xdsl_extras.constraints import (
     NestedTupleOfConstraint,
 )
-
-# pylint: disable=fixme
 
 
 def _create_param_constrained_type(
@@ -81,11 +80,17 @@ HLO_SignedInt = _create_param_constrained_type(IntegerType, _HLO_INT_WIDTHS, Sig
 HLO_UnsignedInt = _create_param_constrained_type(IntegerType, _HLO_INT_WIDTHS, Signedness.UNSIGNED)
 HLO_SignlessInt = _create_param_constrained_type(IntegerType, _HLO_INT_WIDTHS, None)
 
-HLO_Int: TypeAlias = HLO_UnsignedInt | HLO_SignedInt
+HLO_Int: TypeAlias = HLO_UnsignedInt | HLO_SignlessInt
 HLO_IntTensor: TypeAlias = TensorType[HLO_Int]
 
 _HLO_INT_OR_PRED_WIDTHS = [1, 2, 4, 8, 16, 32, 64]
 HLO_IntOrPred = _create_param_constrained_type(IntegerType, _HLO_INT_OR_PRED_WIDTHS, None)
+
+
+HLO_AnyIntegerOrIndex: TypeAlias = IntegerType | IndexType
+HLO_AnyIntegerOrIndexTensor: TypeAlias = TensorType.constr(HLO_AnyIntegerOrIndex)
+
+HLO_DimensionValue: TypeAlias = HLO_Int | IndexType
 
 # Constraint variants for use in unions with ParamAttrConstraint
 HLO_Float: TypeAlias = AnyFloatConstr
@@ -179,7 +184,7 @@ HLO_TensorOrPerAxisQuantizedTensorOrToken: TypeAlias = HLO_AnyTensor | TokenType
 # HLO_AnyTuple : NestedTupleOf<[HLO_AnyTensor, HLO_Token]>
 HLO_AnyTuple = NestedTupleOfConstraint([HLO_AnyTensor, TokenType])
 
-HLO_CustomCallValueType: TypeAlias = HLO_Tensor | TokenType | HLO_AnyTuple
+HLO_CustomCallValue: TypeAlias = HLO_Tensor | TokenType | HLO_AnyTuple
 
 # =============================================================================
 # HLO combined type definitions
@@ -206,6 +211,9 @@ __all__ = [
     "HLO_PredTensor",
     "HLO_Int",
     "HLO_IntTensor",
+    "HLO_AnyIntegerOrIndex",
+    "HLO_AnyIntegerOrIndexTensor",
+    "HLO_DimensionValue",
     "HLO_Float",
     "HLO_Float32Or64",
     "HLO_FloatTensor",
@@ -230,7 +238,7 @@ __all__ = [
     "HLO_AnyTensor",
     "HLO_TensorOrToken",
     "HLO_TensorOrPerAxisQuantizedTensorOrToken",
-    "HLO_CustomCallValueType",
+    "HLO_CustomCallValue",
     # Combined types
     "HLO_PredOrIntTensor",
     "HLO_FpOrComplexTensor",

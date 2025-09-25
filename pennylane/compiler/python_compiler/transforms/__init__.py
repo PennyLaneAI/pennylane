@@ -13,30 +13,33 @@
 # limitations under the License.
 """PennyLane-xDSL transformations API."""
 
-from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inverses_pass
-from .decompose_graph_state import (
-    DecomposeGraphStatePass,
+from .mbqc import (
+    convert_to_mbqc_formalism_pass,
+    ConvertToMBQCFormalismPass,
     decompose_graph_state_pass,
-    NullDecomposeGraphStatePass,
+    DecomposeGraphStatePass,
     null_decompose_graph_state_pass,
+    NullDecomposeGraphStatePass,
 )
-from .measurements_from_samples import MeasurementsFromSamplesPass, measurements_from_samples_pass
-from .merge_rotations import MergeRotationsPass, merge_rotations_pass
-from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
-from .convert_to_mbqc_formalism import convert_to_mbqc_formalism_pass, ConvertToMBQCFormalismPass
-from .diagonalize_measurements import (
-    DiagonalizeFinalMeasurementsPass,
+
+from .quantum import (
+    combine_global_phases_pass,
+    CombineGlobalPhasesPass,
     diagonalize_final_measurements_pass,
+    DiagonalizeFinalMeasurementsPass,
+    iterative_cancel_inverses_pass,
+    IterativeCancelInversesPass,
+    measurements_from_samples_pass,
+    MeasurementsFromSamplesPass,
+    merge_rotations_pass,
+    MergeRotationsPass,
 )
 
 
 __all__ = [
+    # Quantum
     "combine_global_phases_pass",
     "CombineGlobalPhasesPass",
-    "convert_to_mbqc_formalism_pass",
-    "ConvertToMBQCFormalismPass",
-    "decompose_graph_state_pass",
-    "DecomposeGraphStatePass",
     "diagonalize_final_measurements_pass",
     "DiagonalizeFinalMeasurementsPass",
     "iterative_cancel_inverses_pass",
@@ -45,6 +48,11 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
+    # MBQC
+    "convert_to_mbqc_formalism_pass",
+    "ConvertToMBQCFormalismPass",
+    "decompose_graph_state_pass",
+    "DecomposeGraphStatePass",
     "null_decompose_graph_state_pass",
     "NullDecomposeGraphStatePass",
 ]
