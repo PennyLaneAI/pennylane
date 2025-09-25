@@ -383,7 +383,7 @@ class SemiAdder(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
 
     @classmethod
-    def resource_decomp(cls, max_register_size):
+    def resource_decomp(cls, max_register_size: int):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
