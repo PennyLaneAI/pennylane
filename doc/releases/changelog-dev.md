@@ -64,6 +64,9 @@
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
+  * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
+    `qml.estimator.ops`.
+    [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -1075,6 +1078,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
+  [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
+
 * `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
@@ -1268,6 +1274,9 @@
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
 <h3>Documentation 📝</h3>
+
+* Remove `>>>` and `...` from `.. code-block::` directives in docstrings.
+  [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
 * Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
