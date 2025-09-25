@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import allclose, isclose
-from pennylane.templates.subroutines.qdrift import _sample_decomposition
+from pennylane.templates.subroutines.time_evolution.qdrift import _sample_decomposition
 
 test_hamiltonians = (
     (

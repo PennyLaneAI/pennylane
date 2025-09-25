@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.phase_adder import _add_k_fourier
+from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
 
 
 def test_standard_validity_Phase_Adder():
