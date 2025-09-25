@@ -90,14 +90,14 @@ and still should correspond to a leading dimension.
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
 array([[1.        , 0.        ],
-       [0.85355339, 0.14644661],
+       [0.8536..., 0.1464...],
        [0.5       , 0.5       ]])
 >>> result.shape
 (3, 2)
 >>> tape = qml.tape.QuantumScript((op,), [qml.expval(qml.Z(0))])
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
-array([1.00000000e+00, 7.07106781e-01, 2.22044605e-16])
+array([1.00...e+00, 7.071...e-01, 2.2204...e-16])
 >>> result.shape
 (3,)
 
