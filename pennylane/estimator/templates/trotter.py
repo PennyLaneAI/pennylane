@@ -21,7 +21,7 @@ from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-from pennylane.estimator.ops.templates.subroutines import (
+from pennylane.estimator.templates.subroutines import (
     BasisRotation,
     OutMultiplier,
     OutOfPlaceSquare,
