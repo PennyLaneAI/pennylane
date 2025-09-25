@@ -726,29 +726,27 @@ def spin_hamiltonian(lattice):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> lattice = qml.spin.Lattice(
-        ...     n_cells=[2, 2],
-        ...     vectors=[[1, 0], [0, 1]],
-        ...     positions=[[0, 0], [1, 5]],
-        ...     boundary_condition=False,
-        ...     custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
-        ...     custom_nodes=[[0, ("X", 0.5)], [1, ("Y", 0.3)]],
-        ... )
-        >>> qml.spin.spin_hamiltonian(lattice=lattice)
-        (
-            0.5 * (X(0) @ X(1))
-          + 0.5 * (X(2) @ X(3))
-          + 0.5 * (X(4) @ X(5))
-          + 0.5 * (X(6) @ X(7))
-          + 0.6 * (Y(1) @ Y(2))
-          + 0.6 * (Y(5) @ Y(6))
-          + 0.7 * (Z(1) @ Z(4))
-          + 0.7 * (Z(3) @ Z(6))
-          + 0.5 * X(0)
-          + 0.3 * Y(1)
-        )
+    >>> lattice = qml.spin.Lattice(
+    ...     n_cells=[2, 2],
+    ...     vectors=[[1, 0], [0, 1]],
+    ...     positions=[[0, 0], [1, 5]],
+    ...     boundary_condition=False,
+    ...     custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
+    ...     custom_nodes=[[0, ("X", 0.5)], [1, ("Y", 0.3)]],
+    ... )
+    >>> qml.spin.spin_hamiltonian(lattice=lattice)
+    (
+        0.5 * (X(0) @ X(1))
+        + 0.5 * (X(2) @ X(3))
+        + 0.5 * (X(4) @ X(5))
+        + 0.5 * (X(6) @ X(7))
+        + 0.6 * (Y(1) @ Y(2))
+        + 0.6 * (Y(5) @ Y(6))
+        + 0.7 * (Z(1) @ Z(4))
+        + 0.7 * (Z(3) @ Z(6))
+        + 0.5 * X(0)
+        + 0.3 * Y(1)
+    )
 
     """
     if not isinstance(lattice.edges[0][2], tuple):

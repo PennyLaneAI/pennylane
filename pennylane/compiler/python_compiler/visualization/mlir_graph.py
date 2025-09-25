@@ -14,20 +14,23 @@
 """
 This file contains the implementation of the MLIR graph generation for the Unified Compiler framework.
 """
+from __future__ import annotations
 
 import io
 import subprocess
 from functools import wraps
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from catalyst.compiler import CompileError, _get_catalyst_cli_cmd
 from xdsl.printer import Printer
 
-from pennylane import QNode
-from pennylane.typing import Callable
-
 from ..compiler import Compiler
 from .draw import _get_mlir_module
+
+if TYPE_CHECKING:
+    from pennylane import QNode
+    from pennylane.typing import Callable
 
 try:
     from graphviz import Source as GraphSource

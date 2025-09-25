@@ -64,10 +64,12 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
+    ~transforms.rz_phase_gradient
     ~transforms.zx.optimize_t_count
     ~transforms.zx.push_hadamards
     ~transforms.zx.reduce_non_clifford
     ~transforms.zx.todd
+    ~transforms.rowcol
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -79,6 +81,10 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.pattern_matching
     ~transforms.to_zx
     ~transforms.from_zx
+    ~transforms.postorder_traverse
+    ~transforms.preorder_traverse
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomial
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -348,6 +354,14 @@ from .zx import (
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
+from .intermediate_reps import (
+    parity_matrix,
+    phase_polynomial,
+    rowcol,
+    postorder_traverse,
+    preorder_traverse,
+)
+from .rz_phase_gradient import rz_phase_gradient
 
 
 def __getattr__(name):

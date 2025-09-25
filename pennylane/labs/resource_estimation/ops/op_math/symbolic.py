@@ -26,7 +26,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
+# pylint: disable=arguments-differ,too-many-arguments,too-many-positional-arguments,super-init-not-called
 
 
 class ResourceAdjoint(ResourceOperator):
@@ -67,7 +67,7 @@ class ResourceAdjoint(ResourceOperator):
     ...     "Adjoint(ControlledPhaseShift)",
     ... }
     >>>
-    >>> print(plre.estimate_resources(qft, gate_set))
+    >>> print(plre.estimate(qft, gate_set))
     --- Resources: ---
     Total qubits: 3
     Total gates : 7
@@ -76,7 +76,7 @@ class ResourceAdjoint(ResourceOperator):
     Gate breakdown:
      {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
     >>>
-    >>> print(plre.estimate_resources(adj_qft, gate_set))
+    >>> print(plre.estimate(adj_qft, gate_set))
     --- Resources: ---
     Total qubits: 3
     Total gates : 7
@@ -169,7 +169,7 @@ class ResourceAdjoint(ResourceOperator):
         ...     "Adjoint(ControlledPhaseShift)",
         ... }
         >>>
-        >>> print(plre.estimate_resources(qft, gate_set))
+        >>> print(plre.estimate(qft, gate_set))
         --- Resources: ---
         Total qubits: 3
         Total gates : 7
@@ -178,7 +178,7 @@ class ResourceAdjoint(ResourceOperator):
         Gate breakdown:
         {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
         >>>
-        >>> print(plre.estimate_resources(adj_qft, gate_set))
+        >>> print(plre.estimate(adj_qft, gate_set))
         --- Resources: ---
         Total qubits: 3
         Total gates : 7
@@ -264,7 +264,7 @@ class ResourceControlled(ResourceOperator):
 
     We can observe the expected gates when we estimate the resources.
 
-    >>> print(plre.estimate_resources(cx))
+    >>> print(plre.estimate(cx))
     --- Resources: ---
     Total qubits: 2
     Total gates : 1
@@ -273,7 +273,7 @@ class ResourceControlled(ResourceOperator):
     Gate breakdown:
     {'CNOT': 1}
     >>>
-    >>> print(plre.estimate_resources(ccx))
+    >>> print(plre.estimate(ccx))
     --- Resources: ---
     Total qubits: 3
     Total gates : 5
@@ -403,7 +403,7 @@ class ResourceControlled(ResourceOperator):
 
         We can observe the expected gates when we estimate the resources.
 
-        >>> print(plre.estimate_resources(cx))
+        >>> print(plre.estimate(cx))
         --- Resources: ---
         Total qubits: 2
         Total gates : 1
@@ -412,7 +412,7 @@ class ResourceControlled(ResourceOperator):
         Gate breakdown:
         {'CNOT': 1}
         >>>
-        >>> print(plre.estimate_resources(ccx))
+        >>> print(plre.estimate(ccx))
         --- Resources: ---
         Total qubits: 3
         Total gates : 5
@@ -540,7 +540,7 @@ class ResourcePow(ResourceOperator):
 
     We obtain the expected resources.
 
-    >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+    >>> print(plre.estimate(z_2, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -549,7 +549,7 @@ class ResourcePow(ResourceOperator):
     Gate breakdown:
     {'Identity': 1}
     >>>
-    >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+    >>> print(plre.estimate(z_5, gate_set={"Identity", "Z"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -637,7 +637,7 @@ class ResourcePow(ResourceOperator):
 
         We obtain the expected resources.
 
-        >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+        >>> print(plre.estimate(z_2, gate_set={"Identity", "Z"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 1
@@ -646,7 +646,7 @@ class ResourcePow(ResourceOperator):
         Gate breakdown:
         {'Identity': 1}
         >>>
-        >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+        >>> print(plre.estimate(z_5, gate_set={"Identity", "Z"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 1
@@ -728,7 +728,7 @@ class ResourceProd(ResourceOperator):
     >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
     >>> prod_xyz = plre.ResourceProd(factors)
     >>>
-    >>> print(plre.estimate_resources(prod_xyz))
+    >>> print(plre.estimate(prod_xyz))
     --- Resources: ---
     Total qubits: 1
     Total gates : 3
@@ -742,7 +742,7 @@ class ResourceProd(ResourceOperator):
     >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
     >>> prod_x2z3 = plre.ResourceProd(factors)
     >>>
-    >>> print(plre.estimate_resources(prod_x2z3))
+    >>> print(plre.estimate(prod_x2z3))
     --- Resources: ---
     Total qubits: 1
     Total gates : 5
@@ -867,7 +867,7 @@ class ResourceProd(ResourceOperator):
         >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
         >>> prod_xyz = plre.ResourceProd(factors)
         >>>
-        >>> print(plre.estimate_resources(prod_xyz))
+        >>> print(plre.estimate(prod_xyz))
         --- Resources: ---
         Total qubits: 1
         Total gates : 3
@@ -881,7 +881,7 @@ class ResourceProd(ResourceOperator):
         >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
         >>> prod_x2z3 = plre.ResourceProd(factors)
         >>>
-        >>> print(plre.estimate_resources(prod_x2z3))
+        >>> print(plre.estimate(prod_x2z3))
         --- Resources: ---
         Total qubits: 1
         Total gates : 5
@@ -925,7 +925,7 @@ class ResourceChangeBasisOp(ResourceOperator):
     >>> compute_u = plre.ResourceS()
     >>> base_v = plre.ResourceZ()
     >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
-    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 3
@@ -938,7 +938,7 @@ class ResourceChangeBasisOp(ResourceOperator):
 
     >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
     >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
-    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
     --- Resources: ---
     Total qubits: 1
     Total gates : 4
@@ -1089,7 +1089,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         >>> compute_u = plre.ResourceS()
         >>> base_v = plre.ResourceZ()
         >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
-        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 3
@@ -1102,7 +1102,7 @@ class ResourceChangeBasisOp(ResourceOperator):
 
         >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
         >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
-        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        >>> print(plre.estimate(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
         --- Resources: ---
         Total qubits: 1
         Total gates : 4

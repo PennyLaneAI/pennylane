@@ -22,7 +22,8 @@ from functools import partial
 from itertools import starmap
 from typing import Any
 
-from ..base import ExecBackendConfig
+from pennylane.concurrency.executors.base import ExecBackendConfig
+
 from .api import PyNativeExec
 
 

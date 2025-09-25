@@ -15,33 +15,33 @@
 which collects and maps PennyLane operations and measurements from xDSL."""
 
 from functools import singledispatchmethod
-from typing import Any, Union
 
+import xdsl
 from xdsl.dialects import builtin, func
 from xdsl.ir import SSAValue
 
-from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    CustomOp,
-    ExpvalOp,
-)
-from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    GlobalPhaseOp,
-    ProbsOp,
-    SampleOp,
-    StateOp,
-    VarianceOp,
-)
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 
-from .xdsl_conversion import (
-    dispatch_wires_extract,
-    xdsl_to_qml_meas,
-    xdsl_to_qml_obs_op,
-    xdsl_to_qml_op,
+from ..dialects.quantum import AllocOp as AllocOpPL
+from ..dialects.quantum import (
+    CustomOp,
+    ExpvalOp,
 )
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import (
+    GlobalPhaseOp,
+    MeasureOp,
+    MultiRZOp,
+    ProbsOp,
+    QubitUnitaryOp,
+    SampleOp,
+    SetBasisStateOp,
+    SetStateOp,
+    StateOp,
+    VarianceOp,
+)
+from .xdsl_conversion import dispatch_wires_extract, xdsl_to_qml_measurement, xdsl_to_qml_op
 
 
 class QMLCollector:
@@ -56,11 +56,11 @@ class QMLCollector:
         self.wire_to_ssa_qubits: dict[int, SSAValue] = {}
         self.quantum_register: SSAValue | None = None
 
-    # pylint: disable=unused-argument
     @singledispatchmethod
-    def handle(self, _: Any) -> Union[Operator, MeasurementProcess, None]:
-        """Default handler for unsupported operations. If the operation is not recognized, return None."""
-        return None
+    def handle(self, xdsl_op: xdsl.ir.Operation) -> None:
+        """Default handler for unsupported operations."""
+        if len(xdsl_op.regions) > 0:
+            raise NotImplementedError("xDSL operations with regions are not yet supported.")
 
     ############################################################
     ### Measurements
@@ -68,19 +68,28 @@ class QMLCollector:
 
     @handle.register
     def _(self, xdsl_meas: StateOp) -> MeasurementProcess:
-        return xdsl_to_qml_meas(xdsl_meas)
+        return xdsl_to_qml_measurement(xdsl_meas)
 
     @handle.register
     def _(self, xdsl_meas_op: ExpvalOp | VarianceOp | ProbsOp | SampleOp) -> MeasurementProcess:
         obs_op = xdsl_meas_op.obs.owner
-        return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_obs_op(obs_op))
+        return xdsl_to_qml_measurement(xdsl_meas_op, xdsl_to_qml_measurement(obs_op))
+
+    @handle.register
+    def _(self, xdsl_measure: MeasureOp) -> MeasurementProcess:
+        return xdsl_to_qml_measurement(xdsl_measure)
 
     ############################################################
     ### Operators
     ############################################################
 
     @handle.register
-    def _(self, xdsl_op: CustomOp | GlobalPhaseOp) -> Operator:
+    def _(
+        self,
+        xdsl_op: (
+            CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp | SetBasisStateOp
+        ),
+    ) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
         if not self.wire_to_ssa_qubits:
@@ -120,20 +129,20 @@ class QMLCollector:
         collected_ops: list[Operator] = []
         collected_meas: list[MeasurementProcess] = []
 
-        for func_op in self.module.walk():
+        for func_op in self.module.body.ops:
 
             if not isinstance(func_op, func.FuncOp):
                 continue
 
-            for op in func_op.body.walk():
+            for op in func_op.body.ops:
 
                 self._process_qubit_mapping(op)
                 result = self.handle(op)
 
-                if isinstance(result, MeasurementProcess):
-                    collected_meas.append(result)
-
                 if isinstance(result, Operator):
                     collected_ops.append(result)
+
+                elif isinstance(result, MeasurementProcess):
+                    collected_meas.append(result)
 
         return collected_ops, collected_meas

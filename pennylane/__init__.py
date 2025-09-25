@@ -105,20 +105,7 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots
 from pennylane import workflow
-from pennylane.io import (
-    from_pyquil,
-    from_qasm,
-    to_openqasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
-    from_qasm3,
-    to_bloq,
-)
+
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -179,6 +166,21 @@ from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
 
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+    to_bloq,
+)
+
 # pylint:disable=wrong-import-order
 from pennylane import logging  # pylint:disable=wrong-import-order
 
@@ -195,6 +197,8 @@ from pennylane import spin
 from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
 from pennylane import qnn
+
+from pennylane import estimator
 
 from importlib.metadata import version as _metadata_version
 from importlib.util import find_spec as _find_spec

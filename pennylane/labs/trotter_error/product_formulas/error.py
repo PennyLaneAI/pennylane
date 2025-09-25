@@ -211,16 +211,16 @@ def perturbation_error(
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
         for state in states:
-            new_state = _AdditiveIdentity()
+            expectation = 0
             for commutators in commutator_lists:
                 if len(commutators) == 0:
                     continue
 
                 order = len(commutators[0])
                 for commutator in commutators:
-                    new_state += _apply_commutator(commutator, fragments, state)
+                    expectation += _compute_expectation(commutator, fragments, state)
 
-                expectations.append({order: (1j * timestep) ** order * state.dot(new_state)})
+                expectations.append({order: (1j * timestep) ** order * expectation})
 
         return expectations
 
@@ -236,29 +236,27 @@ def perturbation_error(
 
     if parallel_mode == "commutator":
         executor = concurrency.backends.get_executor(backend)
-        expectations = []
+        errors = []
         commutators = [x for xs in commutator_lists for x in xs]
         for state in states:
             with executor(max_workers=num_workers) as ex:
                 applied_commutators = ex.starmap(
-                    _apply_commutator_track_order,
+                    _compute_expectation_track_order,
                     [(commutator, fragments, state) for commutator in commutators],
                 )
 
-            new_states = defaultdict(
-                lambda: _AdditiveIdentity()  # pylint: disable=unnecessary-lambda
-            )
-            for applied_state, order in applied_commutators:
-                new_states[order] += applied_state
+            expectations = defaultdict(int)
+            for expectation, order in applied_commutators:
+                expectations[order] += expectation
 
-            expectations.append(
+            errors.append(
                 {
-                    order: (1j * timestep) ** order * state.dot(new_state)
-                    for order, new_state in new_states.items()
+                    order: (1j * timestep) ** order * expectation
+                    for order, expectation in expectations.items()
                 }
             )
 
-        return expectations
+        return errors
 
     raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
@@ -267,24 +265,23 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     expectations = {}
-    new_state = _AdditiveIdentity()
     for commutators in commutator_lists:
         if len(commutators) == 0:
             continue
 
         order = len(commutators[0])
-        for commutator in commutators:
-            new_state += _apply_commutator(commutator, fragments, state)
-
-        expectations[order] = (1j * timestep) ** order * state.dot(new_state)
+        expectation = sum(
+            _compute_expectation(commutator, fragments, state) for commutator in commutators
+        )
+        expectations[order] = (1j * timestep) ** order * expectation
 
     return expectations
 
 
-def _apply_commutator(
+def _compute_expectation(
     commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
-) -> AbstractState:
-    """Returns the state obtained from applying ``commutator`` to ``state``."""
+) -> complex:
+    """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
     new_state = _AdditiveIdentity()
 
@@ -302,13 +299,13 @@ def _apply_commutator(
 
         new_state += coeff * tmp_state
 
-    return new_state
+    return state.dot(new_state)
 
 
-def _apply_commutator_track_order(
+def _compute_expectation_track_order(
     commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
-) -> tuple[AbstractState, int]:
-    """Returns the state obtained from applying ``commutator`` to ``state``."""
+) -> tuple[complex, int]:
+    """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
     new_state = _AdditiveIdentity()
 
@@ -326,7 +323,7 @@ def _apply_commutator_track_order(
 
         new_state += coeff * tmp_state
 
-    return new_state, len(commutator)
+    return state.dot(new_state), len(commutator)
 
 
 def _op_list(commutator) -> dict[tuple[Hashable], complex]:
