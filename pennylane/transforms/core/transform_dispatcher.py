@@ -21,9 +21,11 @@ import warnings
 from collections.abc import Sequence
 from copy import copy
 
+from malt import control_status_ctx
+
 import pennylane as qml
 from pennylane import capture, math
-from pennylane.capture.autograph import wraps
+from pennylane.capture.autograph import run_autograph, wraps
 from pennylane.exceptions import TransformError
 from pennylane.operation import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
@@ -396,7 +398,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         def qfunc_transformed(*args, **kwargs):
             import jax  # pylint: disable=import-outside-toplevel
 
-            flat_qfunc = capture.flatfn.FlatFn(qfunc)
+            ag_qfunc = (
+                run_autograph(qfunc) if control_status_ctx().status.name == "ENABLED" else qfunc
+            )
+            flat_qfunc = qml.capture.flatfn.FlatFn(ag_qfunc)
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
             flat_args = jax.tree_util.tree_leaves(args)
 
