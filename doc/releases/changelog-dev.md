@@ -745,6 +745,7 @@
 
 * Added concurrency support for `effective_hamiltonian` in labs.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
+  [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
 
 * Fixed a queueing issue in `ResourceOperator` tests.
   [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
