@@ -18,6 +18,7 @@ import warnings
 from functools import partial
 
 from pennylane.devices import LegacyDeviceFacade
+from pennylane.operation import Operator
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
@@ -257,8 +258,8 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     """
 
-    new_tapes = []
-    accumulated_ops = []
+    new_tapes: list[QuantumScript] = []
+    accumulated_ops: list[Operator] = []
     snapshot_tags = []
 
     for op in tape.operations:
