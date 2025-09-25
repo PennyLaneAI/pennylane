@@ -338,8 +338,6 @@ class CompositeOp(Operator):
         >>> op = qml.S(0) + qml.X(0) + qml.Rot(1,2,3, wires=[1])
         >>> op.label()
         '𝓗'
-        >>> op.label(decimals=2, base_label=[["my_s", "my_x"], "inc_rot"])
-        "[['my_s', 'my_x'], 'inc_rot']\n(1.00,\n2.00,\n3.00)"
 
         """
 
