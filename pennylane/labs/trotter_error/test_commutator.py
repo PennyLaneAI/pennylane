@@ -293,3 +293,93 @@ def test_bilinear_expansion_nested_structure():
         assert result_dict.keys() == expected_dict.keys()
         for key in expected_dict:
             assert result_dict[key] == expected_dict[key]
+
+
+def test_is_tree_isomorphic():
+    """Tests the tree isomorphism check."""
+    A = LeafNode("A")
+    B = LeafNode("B")
+    C = LeafNode("C")
+    D = LeafNode("D")
+    E = LeafNode("E")
+    F = LeafNode("F")
+
+    # Structure 1: [x, y]
+    comm_ab = CommutatorNode(A, B)
+    comm_cd = CommutatorNode(C, D)
+
+    # Structure 2: [[x, y], z] (left-nested)
+    comm_abc_left = CommutatorNode(CommutatorNode(A, B), C)
+    comm_def_left = CommutatorNode(CommutatorNode(D, E), F)
+
+    # Structure 3: [x, [y, z]] (right-nested)
+    comm_abc_right = CommutatorNode(A, CommutatorNode(B, C))
+
+    assert is_tree_isomorphic(A, B) is True
+
+    assert is_tree_isomorphic(comm_ab, comm_cd) is True
+    assert is_tree_isomorphic(comm_abc_left, comm_def_left) is True
+
+    assert is_tree_isomorphic(comm_ab, comm_abc_left) is False
+    assert is_tree_isomorphic(comm_abc_left, comm_abc_right) is False
+
+    assert is_tree_isomorphic(A, comm_ab) is False
+    assert is_tree_isomorphic(comm_abc_left, B) is False
+
+    assert is_tree_isomorphic(comm_ab, comm_ab) is True
+
+
+def test_commutators_partitioner():
+    """Tests the CommutatorsPartitioner class for correctly grouping nodes."""
+    A = LeafNode("A")
+    B = LeafNode("B")
+    C = LeafNode("C")
+    D = LeafNode("D")
+    E = LeafNode("E")
+    F = LeafNode("F")
+
+    # Class 1: Leaf nodes
+    node_leaf_A = A
+    node_leaf_B = B
+
+    # Class 2: Simple commutators [x, y]
+    comm_simple_1 = CommutatorNode(A, B)
+    comm_simple_2 = CommutatorNode(C, D)
+
+    # Class 3: Left-nested commutators [[x, y], z]
+    comm_left_1 = CommutatorNode(CommutatorNode(A, B), C)
+    comm_left_2 = CommutatorNode(CommutatorNode(D, E), F)
+
+    # Class 4: Right-nested commutator [x, [y, z]]
+    comm_right_1 = CommutatorNode(A, CommutatorNode(B, C))
+
+    nodes_to_add = [
+        node_leaf_A,
+        comm_simple_1,
+        comm_left_1,
+        comm_right_1,
+        node_leaf_B,  # Should join class 1
+        comm_simple_2,  # Should join class 2
+        comm_left_2,  # Should join class 3
+    ]
+
+    partitioner = CommutatorsPartitioner()
+    for node in nodes_to_add:
+        partitioner.add_to_partition(node)
+
+    assert len(partitioner.partitions) == 4
+
+    expected_class_1 = {node_leaf_A, node_leaf_B}
+    expected_class_2 = {comm_simple_1, comm_simple_2}
+    expected_class_3 = {comm_left_1, comm_left_2}
+    expected_class_4 = {comm_right_1}
+
+    actual_partition_sets = {frozenset(s) for s in partitioner.partitions}
+    expected_partition_sets = {
+        frozenset(expected_class_1),
+        frozenset(expected_class_2),
+        frozenset(expected_class_3),
+        frozenset(expected_class_4),
+    }
+
+    assert actual_partition_sets == expected_partition_sets

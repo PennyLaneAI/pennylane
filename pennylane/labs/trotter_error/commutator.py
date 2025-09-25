@@ -3,7 +3,7 @@ import math
 import typing
 from collections import defaultdict
 from itertools import product
-from typing import Dict, Generator, Hashable, List
+from typing import Dict, Generator, Hashable, List, Set
 
 
 class Node:
@@ -332,3 +332,64 @@ def bilinear_expansion(
                     merged_bch[new_node.order - 1][new_node] += term_coeff
 
     return merged_bch
+
+
+def is_tree_isomorphic(node1: Node, node2: Node) -> bool:
+    """
+    Recursively checks if two nodes have the same bracketing structure (tree isomorphism).
+    """
+    if type(node1) is not type(node2):
+        return False
+
+    if isinstance(node1, LeafNode):
+        return True
+
+    if isinstance(node1, CommutatorNode) and isinstance(node2, CommutatorNode):
+        return is_tree_isomorphic(node1.left, node2.left) and is_tree_isomorphic(
+            node1.right, node2.right
+        )
+
+    return False
+
+
+class CommutatorsPartitioner:
+    """
+    Maintains a partition of commutators based on their bracketing structure.
+
+    This class groups commutators into sets, where each set represents an
+    isomorphism class. All commutators within a single set have the same
+    tree structure.
+    """
+
+    def __init__(self):
+        self.partitions: List[Set[Node]] = []
+
+    def __str__(self):
+        if not self.partitions:
+            return "CommutatorsPartitioner(empty)"
+
+        partition_strs = []
+        for i, iso_class in enumerate(self.partitions):
+            class_str = f"  Class {i}: " + ", ".join(str(node) for node in iso_class)
+            partition_strs.append(class_str)
+        return "CommutatorsPartitioner:\n" + "\n".join(partition_strs)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def add_to_partition(self, commutator: Node):
+        """
+        Adds a commutator to the appropriate isomorphism class.
+
+        It finds the set of commutators with the same bracketing structure and adds
+        the new commutator to it. If no such set exists, a new one is created.
+        """
+        for iso_class in self.partitions:
+            if iso_class:
+                representative = next(iter(iso_class))
+                if is_tree_isomorphic(commutator, representative):
+                    iso_class.add(commutator)
+                    return
+
+        # No matching class was found, create a new isomorphism class containing this commutator.
+        self.partitions.append({commutator})
