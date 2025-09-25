@@ -536,7 +536,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
       in (j,) }
 
     >>> print(res)
-    [Array([-0.95662, -0.36514], dtype=float64)]
+    [Array([-0.956..., -0.365...], dtype=float64)]
 
 
     """
