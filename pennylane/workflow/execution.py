@@ -151,25 +151,25 @@ def execute(
 
     Let's execute this cost function while tracking the gradient:
 
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> x = np.array([0.5], requires_grad=True)
-    >>> cost_fn(params, x)
-    1.93050682
+    >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> x = pnp.array([0.5], requires_grad=True)
+    >>> print(cost_fn(params, x))
+    1.93...
 
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
 
-    >>> qml.grad(cost_fn)(params, x)
+    >>> print(qml.grad(cost_fn)(params, x))
     (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
 
     Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
     of the gradient (that is, the Hessian):
 
     >>> x.requires_grad = False
-    >>> qml.jacobian(qml.grad(cost_fn))(params, x)
-    array([[-0.97517033,  0.01983384,  0.        ],
-           [ 0.01983384, -0.97517033,  0.        ],
-           [ 0.        ,  0.        , -0.95533649]])
+    >>> print(qml.jacobian(qml.grad(cost_fn))(params, x))
+    [[-0.97517033  0.01983384  0.        ]
+     [ 0.01983384 -0.97517033  0.        ]
+     [ 0.          0.         -0.95533649]]
     """
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)

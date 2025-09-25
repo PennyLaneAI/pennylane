@@ -52,8 +52,8 @@ def expand_fn_transform(expand_fn: Callable) -> qml.transforms.core.TransformDis
         circuit-like object in PennyLane.
 
     >>> device = qml.device('default.mixed', wires=2)
-    >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
-    >>> my_transform
+    >>> my_transform = expand_fn_transform(device.expand_fn) # doctest: +SKIP
+    >>> my_transform # doctest: +SKIP
     <transform: expand_fn>
     """
 
@@ -233,16 +233,14 @@ def get_transform_program(
             @qml.metric_tensor # final transform
             @qml.transforms.merge_rotations # transform 2
             @qml.transforms.cancel_inverses # transform 1
-            @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit():
                 return qml.expval(qml.Z(0))
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
         >>> qml.workflow.get_transform_program(circuit)
-        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor,
-        _expand_transform_param_shift, validate_device_wires, defer_measurements,
-        decompose, validate_measurements, validate_observables, metric_tensor)
+        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, metric_tensor)
 
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
@@ -275,11 +273,9 @@ def get_transform_program(
         For example, you can skip the first transform or reverse the order:
 
         >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
-        TransformProgram(merge_rotations, _expand_transform_param_shift)
+        TransformProgram(merge_rotations, _expand_metric_tensor)
         >>> qml.workflow.get_transform_program(circuit, level=slice(None, None, -1))
-        TransformProgram(metric_tensor, validate_observables, validate_measurements,
-        decompose, defer_measurements, validate_device_wires, _expand_transform_param_shift,
-        _expand_metric_tensor, merge_rotations, cancel_inverses)
+        TransformProgram(metric_tensor, _conditional_broadcast_expand, validate_measurements, validate_device_wires, device_resolve_dynamic_wires, decompose, defer_measurements, _expand_transform_param_shift, _expand_metric_tensor, merge_rotations, cancel_inverses)
 
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
@@ -290,7 +286,7 @@ def get_transform_program(
         >>> grad_prog[len(user_prog) - 1 : -1]
         TransformProgram(_expand_transform_param_shift)
         >>> dev_prog[len(grad_prog) - 1 : -1]
-        TransformProgram(validate_device_wires, mid_circuit_measurements, decompose, validate_measurements, validate_observables)
+        TransformProgram(defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
 
     """
     _validate_level(level)
@@ -429,11 +425,7 @@ def construct_batch(
 
         >>> batch, fn = construct_batch(circuit, level=slice(1,None))(1.23)
         >>> batch[0].circuit
-        [RY(tensor(1., requires_grad=True), wires=[1]),
-         RX(tensor(2., requires_grad=True), wires=[0]),
-         X(0),
-         X(0),
-         expval(X(0) + Y(0))]
+        [RY(1.0, wires=[1]), RX(2.0, wires=[0]), X(0), X(0), expval(X(0) + Y(0))]
 
     """
     _validate_level(level)
