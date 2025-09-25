@@ -90,7 +90,7 @@ and still should correspond to a leading dimension.
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
 array([[1.        , 0.        ],
-       [0.8536..., 0.1464...],
+       [0.853..., 0.1464...],
        [0.5       , 0.5       ]])
 >>> result.shape
 (3, 2)
