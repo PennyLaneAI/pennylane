@@ -164,7 +164,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     use it as one of the wires requested in the second allocation, resulting in a total of three wires
     being required from the device, including two dynamically allocated wires:
 
-    >>> print(qml.draw(c, level="device")())
+    >>> print(qml.draw(circuit, level="device")())
     0: ──H─╭●─╭●───────┤  <Z>
     1: ────╰X─╰X─╭SWAP─┤
     2: ──────────╰SWAP─┤

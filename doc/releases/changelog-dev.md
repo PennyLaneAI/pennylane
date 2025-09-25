@@ -1087,6 +1087,7 @@
 
 * Add CI workflow to test documentation using `sybil`. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
+  [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)

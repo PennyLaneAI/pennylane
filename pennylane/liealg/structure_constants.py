@@ -102,7 +102,7 @@ def structure_constants(
     Let us confirm those with an example. Take :math:`[iG_1, iG_3] = [iZ_0, -iY_0 X_1] = -i 2 X_0 X_1 = -i 2 G_0`, so
     we should have :math:`f^0_{1, 3} = -2`, which is indeed the case.
 
-    >>> adjoint_rep[0, 1, 3]
+    >>> print(adjoint_rep[0, 1, 3])
     -2.0
 
     We can also look at the overall adjoint action of the first element :math:`G_0 = X_{0} \otimes X_{1}` of the DLA on other elements.
