@@ -81,7 +81,6 @@ jobs:
           IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/resource
           --ignore=pennylane/io
-          --ignore=pennylane/logging
           --ignore=pennylane/data
           --ignore=pennylane/spin
           --ignore=pennylane/drawer
