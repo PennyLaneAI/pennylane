@@ -1336,6 +1336,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `default.qubit` now properly validates the `mcm_method`.
+
 * :class:`~.SpecialUnitary` now correctly obeys the interfaces of input parameters when large numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
 

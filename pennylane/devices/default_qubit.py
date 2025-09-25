@@ -752,6 +752,13 @@ class DefaultQubit(Device):
             final_mcm_method = "one-shot" if getattr(tape, "shots", None) else "deferred"
         elif mcm_config.mcm_method == "device":
             final_mcm_method = "tree-traversal"
+
+        supported_methods = {"one-shot", "deferred", "tree-traversal"}
+        if final_mcm_method not in supported_methods:
+            raise DeviceError(
+                f"mcm_method {final_mcm_method} not supported on default.qubit. "
+                f"Supported methods are {supported_methods}"
+            )
         return replace(mcm_config, mcm_method=final_mcm_method)
 
     def _capture_setup_mcm_config(self, mcm_config):
