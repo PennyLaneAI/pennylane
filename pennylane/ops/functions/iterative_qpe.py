@@ -41,10 +41,9 @@ def iterative_qpe(base, aux_wire, iters):
 
     .. code-block:: python
 
-        from functools import partial
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=42)
 
-        @partial(qml.set_shots, shots=5)
+        @qml.set_shots(5)
         @qml.qnode(dev)
         def circuit():
 
@@ -58,12 +57,12 @@ def iterative_qpe(base, aux_wire, iters):
 
     >>> result = circuit()
     >>> assert result.shape == (5, 3)
-    >>> print(result) # doctest: +SKIP
+    >>> print(result)
     [[0 0 1]
-    [0 0 1]
-    [0 0 1]
-    [1 1 1]
-    [0 0 1]]
+     [0 0 1]
+     [0 0 1]
+     [0 0 1]
+     [0 0 1]]
 
     The output is an array of size ``(number of shots, number of iterations)``.
 
