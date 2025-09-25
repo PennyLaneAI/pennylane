@@ -1550,7 +1550,7 @@ class QROM(ResourceOperator):
         size_bitstring (int): the length of each bitstring
         num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-        zeroed (bool, optional): Determine if allocated qubits should be reset after the computation
+        restored (bool, optional): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code:`True`.
         select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
             if data will be loaded in parallel by adding more rows following Figure 1.C of
@@ -1563,8 +1563,8 @@ class QROM(ResourceOperator):
     Resources:
         The resources for QROM are taken from the following two papers:
         `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-        :code:`zeroed = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-        (Figure 4) for :code:`zeroed = True`.
+        :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
+        (Figure 4) for :code:`restored = True`.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
@@ -1582,7 +1582,7 @@ class QROM(ResourceOperator):
     Total qubits: 11
     Total gates : 178
     Qubit breakdown:
-     zeroed qubits: 3, any_state qubits: 0, algorithmic qubits: 8
+     restored qubits: 3, any_state qubits: 0, algorithmic qubits: 8
     Gate breakdown:
      {'Hadamard': 56, 'X': 34, 'CNOT': 72, 'Toffoli': 16}
 
@@ -1593,7 +1593,7 @@ class QROM(ResourceOperator):
         "size_bitstring",
         "num_bit_flips",
         "select_swap_depth",
-        "zeroed",
+        "restored",
     }
 
     @staticmethod
@@ -1617,11 +1617,11 @@ class QROM(ResourceOperator):
         num_bitstrings: int,
         size_bitstring: int,
         num_bit_flips: int = None,
-        zeroed: bool = True,
+        restored: bool = True,
         select_swap_depth=None,
         wires: WiresLike = None,
     ) -> None:
-        self.zeroed = zeroed
+        self.restored = restored
         self.num_bitstrings = num_bitstrings
         self.size_bitstring = size_bitstring
         self.num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring // 2)
@@ -1652,7 +1652,7 @@ class QROM(ResourceOperator):
         size_bitstring,
         num_bit_flips,
         select_swap_depth=None,
-        zeroed=True,
+        restored=True,
     ) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the operator's resources.
 
@@ -1666,14 +1666,14 @@ class QROM(ResourceOperator):
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
                 determines the optimal depth.
-            zeroed (bool, optional): Determine if allocated qubits should be reset after the computation
+            restored (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
 
         Resources:
             The resources for QROM are taken from the following two papers:
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-            :code:`zeroed = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-            (Figure 4) for :code:`zeroed = True`.
+            :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
+            (Figure 4) for :code:`restored = True`.
 
             Note: we use the unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional
@@ -1704,42 +1704,45 @@ class QROM(ResourceOperator):
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
         hadamard = resource_rep(qre.Hadamard)
 
-        swap_zeroed_prefactor = 1
-        select_zeroed_prefactor = 1
+        swap_restored_prefactor = 1
+        select_restored_prefactor = 1
 
-        if zeroed:
+        if restored:
             gate_cost.append(GateCount(hadamard, 2 * size_bitstring))
-            swap_zeroed_prefactor = 4
-            select_zeroed_prefactor = 2
+            swap_restored_prefactor = 4
+            select_restored_prefactor = 2
 
         # SELECT cost:
         if L_opt > 1:
             gate_cost.append(
-                GateCount(x, select_zeroed_prefactor * (2 * (L_opt - 2) + 1))
+                GateCount(x, select_restored_prefactor * (2 * (L_opt - 2) + 1))
             )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
             gate_cost.append(
                 GateCount(
                     cnot,
-                    select_zeroed_prefactor * (L_opt - 2) + select_zeroed_prefactor * num_bit_flips,
+                    select_restored_prefactor * (L_opt - 2)
+                    + select_restored_prefactor * num_bit_flips,
                 )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
             )
-            gate_cost.append(GateCount(l_elbow, select_zeroed_prefactor * (L_opt - 2)))
-            gate_cost.append(GateCount(r_elbow, select_zeroed_prefactor * (L_opt - 2)))
+            gate_cost.append(GateCount(l_elbow, select_restored_prefactor * (L_opt - 2)))
+            gate_cost.append(GateCount(r_elbow, select_restored_prefactor * (L_opt - 2)))
 
             gate_cost.append(Deallocate(l - 1))  # release UI trick work wires
 
         else:
             gate_cost.append(
                 GateCount(
-                    x, select_zeroed_prefactor * num_bit_flips
+                    x, select_restored_prefactor * num_bit_flips
                 )  # each unitary in the select is just an X gate to load the data
             )
 
         # SWAP cost:
         ctrl_swap = resource_rep(qre.CSWAP)
-        gate_cost.append(GateCount(ctrl_swap, swap_zeroed_prefactor * (W_opt - 1) * size_bitstring))
+        gate_cost.append(
+            GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
+        )
 
-        if zeroed:
+        if restored:
             gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
 
         return gate_cost
@@ -1751,7 +1754,7 @@ class QROM(ResourceOperator):
         size_bitstring,
         num_bit_flips,
         select_swap_depth,
-        zeroed,
+        restored,
     ):
         r"""The resource decomposition for QROM controlled on a single wire."""
         if select_swap_depth:
@@ -1777,34 +1780,35 @@ class QROM(ResourceOperator):
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
         hadamard = resource_rep(qre.Hadamard)
 
-        swap_zeroed_prefactor = 1
-        select_zeroed_prefactor = 1
+        swap_restored_prefactor = 1
+        select_restored_prefactor = 1
 
-        if zeroed:
+        if restored:
             gate_cost.append(GateCount(hadamard, 2 * size_bitstring))
-            swap_zeroed_prefactor = 4
-            select_zeroed_prefactor = 2
+            swap_restored_prefactor = 4
+            select_restored_prefactor = 2
 
         # SELECT cost:
         if L_opt > 1:
             gate_cost.append(
-                GateCount(x, select_zeroed_prefactor * (2 * (L_opt - 1)))
+                GateCount(x, select_restored_prefactor * (2 * (L_opt - 1)))
             )  # conjugate 0 controlled toffolis
             gate_cost.append(
                 GateCount(
                     cnot,
-                    select_zeroed_prefactor * (L_opt - 1) + select_zeroed_prefactor * num_bit_flips,
+                    select_restored_prefactor * (L_opt - 1)
+                    + select_restored_prefactor * num_bit_flips,
                 )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
             )
-            gate_cost.append(GateCount(l_elbow, select_zeroed_prefactor * (L_opt - 1)))
-            gate_cost.append(GateCount(r_elbow, select_zeroed_prefactor * (L_opt - 1)))
+            gate_cost.append(GateCount(l_elbow, select_restored_prefactor * (L_opt - 1)))
+            gate_cost.append(GateCount(r_elbow, select_restored_prefactor * (L_opt - 1)))
 
             gate_cost.append(Deallocate(l))  # release UI trick work wires
         else:
             gate_cost.append(
                 GateCount(
                     x,
-                    select_zeroed_prefactor * num_bit_flips,
+                    select_restored_prefactor * num_bit_flips,
                 )  #  each unitary in the select is just an X
             )
 
@@ -1814,11 +1818,13 @@ class QROM(ResourceOperator):
         gate_cost.append(Allocate(1))  # need one temporary qubit for l/r-elbow to control SWAP
 
         gate_cost.append(GateCount(l_elbow, w))
-        gate_cost.append(GateCount(ctrl_swap, swap_zeroed_prefactor * (W_opt - 1) * size_bitstring))
+        gate_cost.append(
+            GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
+        )
         gate_cost.append(GateCount(r_elbow, w))
 
         gate_cost.append(Deallocate(1))  # temp wires
-        if zeroed:
+        if restored:
             gate_cost.append(
                 Deallocate((W_opt - 1) * size_bitstring)
             )  # release Swap registers + temp wires
@@ -1833,7 +1839,7 @@ class QROM(ResourceOperator):
         size_bitstring: int,
         num_bit_flips: int = None,
         select_swap_depth: int = None,
-        zeroed=True,
+        restored=True,
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1844,7 +1850,7 @@ class QROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            zeroed (bool, optional): Determine if allocated qubits should be reset after the computation
+            restored (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
             select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
@@ -1855,8 +1861,8 @@ class QROM(ResourceOperator):
         Resources:
             The resources for QROM are taken from the following two papers:
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-            :code:`zeroed = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-            (Figure 4) for :code:`zeroed = True`.
+            :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
+            (Figure 4) for :code:`restored = True`.
 
             Note: we use the single-controlled unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional work qubits,
@@ -1881,7 +1887,7 @@ class QROM(ResourceOperator):
             size_bitstring,
             num_bit_flips,
             select_swap_depth,
-            zeroed,
+            restored,
         )
 
         if num_ctrl_wires == 1:
@@ -1906,7 +1912,7 @@ class QROM(ResourceOperator):
                 * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset.
                   Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the
                   dataset.
-                * zeroed (bool, optional): Determine if allocated qubits should be reset after the
+                * restored (bool, optional): Determine if allocated qubits should be reset after the
                   computation (at the cost of higher gate counts). Defaults to :code`True`.
                 * select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that
                   determines if data will be loaded in parallel by adding more rows following
@@ -1921,7 +1927,7 @@ class QROM(ResourceOperator):
             "size_bitstring": self.size_bitstring,
             "num_bit_flips": self.num_bit_flips,
             "select_swap_depth": self.select_swap_depth,
-            "zeroed": self.zeroed,
+            "restored": self.restored,
         }
 
     @classmethod
@@ -1930,7 +1936,7 @@ class QROM(ResourceOperator):
         num_bitstrings,
         size_bitstring,
         num_bit_flips=None,
-        zeroed=True,
+        restored=True,
         select_swap_depth=None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -1941,7 +1947,7 @@ class QROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            zeroed (bool, optional): Determine if allocated qubits should be reset after the computation
+            restored (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
             select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
@@ -1972,7 +1978,7 @@ class QROM(ResourceOperator):
             "num_bit_flips": num_bit_flips,
             "size_bitstring": size_bitstring,
             "select_swap_depth": select_swap_depth,
-            "zeroed": zeroed,
+            "restored": restored,
         }
         num_wires = size_bitstring + math.ceil(math.log2(num_bitstrings))
         return CompressedResourceOp(cls, num_wires, params)
@@ -2148,7 +2154,7 @@ class SelectPauliRot(ResourceOperator):
                 "num_bitstrings": 2**num_ctrl_wires,
                 "num_bit_flips": 2**num_ctrl_wires * num_prec_wires // 2,
                 "size_bitstring": num_prec_wires,
-                "zeroed": False,
+                "restored": False,
             },
         )
 

@@ -1252,37 +1252,39 @@ class TestResourceQROM:
             qre.QROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, zeroed",
+        "num_data_points, size_data_points, num_bit_flips, depth, restored",
         (
             (10, 3, 15, None, True),
             (100, 5, 50, 2, False),
             (12, 2, 5, 1, True),
         ),
     )
-    def test_resource_params(self, num_data_points, size_data_points, num_bit_flips, depth, zeroed):
+    def test_resource_params(
+        self, num_data_points, size_data_points, num_bit_flips, depth, restored
+    ):
         """Test that the resource params are correct."""
         if depth is None:
             op = qre.QROM(num_data_points, size_data_points)
         else:
-            op = qre.QROM(num_data_points, size_data_points, num_bit_flips, zeroed, depth)
+            op = qre.QROM(num_data_points, size_data_points, num_bit_flips, restored, depth)
 
         assert op.resource_params == {
             "num_bitstrings": num_data_points,
             "size_bitstring": size_data_points,
             "num_bit_flips": num_bit_flips,
             "select_swap_depth": depth,
-            "zeroed": zeroed,
+            "restored": restored,
         }
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, zeroed",
+        "num_data_points, size_data_points, num_bit_flips, depth, restored",
         (
             (10, 3, 15, None, True),
             (100, 5, 50, 2, False),
             (12, 2, 5, 1, True),
         ),
     )
-    def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, zeroed):
+    def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, restored):
         """Test that the compressed representation is correct."""
         expected_num_wires = size_data_points + math.ceil(math.log2(num_data_points))
         expected = qre.CompressedResourceOp(
@@ -1293,7 +1295,7 @@ class TestResourceQROM:
                 "size_bitstring": size_data_points,
                 "num_bit_flips": num_bit_flips,
                 "select_swap_depth": depth,
-                "zeroed": zeroed,
+                "restored": restored,
             },
         )
         assert (
@@ -1301,14 +1303,14 @@ class TestResourceQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                zeroed=zeroed,
+                restored=restored,
                 select_swap_depth=depth,
             )
             == expected
         )
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res",
+        "num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
         (
             (
                 10,
@@ -1406,7 +1408,7 @@ class TestResourceQROM:
         ),
     )
     def test_resources(
-        self, num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res
+        self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources are correct."""
         assert (
@@ -1414,7 +1416,7 @@ class TestResourceQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                zeroed=zeroed,
+                restored=restored,
                 select_swap_depth=depth,
             )
             == expected_res
@@ -1434,7 +1436,7 @@ class TestResourceQROM:
         assert opt_width == 1
 
     @pytest.mark.parametrize(
-        "num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res",
+        "num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
         (
             (
                 10,
@@ -1526,7 +1528,7 @@ class TestResourceQROM:
         ),
     )
     def test_single_controlled_res_decomp(
-        self, num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res
+        self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
         assert (
@@ -1534,14 +1536,14 @@ class TestResourceQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                zeroed=zeroed,
+                restored=restored,
                 select_swap_depth=depth,
             )
             == expected_res
         )
 
     @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, num_data_points, size_data_points, num_bit_flips, depth, zeroed, expected_res",
+        "num_ctrl_wires, num_zero_ctrl, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
         (
             (
                 1,
@@ -1626,7 +1628,7 @@ class TestResourceQROM:
         size_data_points,
         num_bit_flips,
         depth,
-        zeroed,
+        restored,
         expected_res,
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
@@ -1637,7 +1639,7 @@ class TestResourceQROM:
                 num_bitstrings=num_data_points,
                 size_bitstring=size_data_points,
                 num_bit_flips=num_bit_flips,
-                zeroed=zeroed,
+                restored=restored,
                 select_swap_depth=depth,
             )
             == expected_res
