@@ -57,10 +57,7 @@ def s_prod(scalar, operator, lazy=True, id=None):
         >>> qml.matrix(op).shape
         (3, 2, 2)
 
-        It also supports batching of operators:
-
-        >>> qml.s_prod(scalar=4, operator=[qml.RX(1, wires=0), qml.RX(2, wires=0)])
-        4 * [RX(1, wires=[0]), RX(2, wires=[0])]
+        But it doesn't support batching of operators.
 
     .. seealso:: :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.SymbolicOp`
 
