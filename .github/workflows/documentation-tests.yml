@@ -57,6 +57,7 @@ jobs:
         run: |
           IGNORE_OPTS_CLOSED="
           --ignore=pennylane/ftqc
+          --ignore=pennylane/logging
           --ignore=pennylane/labs
           --ignore=pennylane/compiler/python_compiler
           "
@@ -79,7 +80,6 @@ jobs:
           "
           IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/resource
-          --ignore=pennylane/debugging
           --ignore=pennylane/io
           --ignore=pennylane/data
           --ignore=pennylane/spin
