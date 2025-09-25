@@ -155,6 +155,8 @@ class Pow(ScalarSymbolicOp):
         True
         >>> isinstance(Pow(op, z), type(Pow(op, z)))
         True
+        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is PowOperation
+        True
 
         """
 
