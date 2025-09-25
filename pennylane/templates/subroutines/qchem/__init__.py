@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Version number (major.minor.patch[-label])
+This module contains subroutines for quantum chemistry.
 """
 
-__version__ = "0.43.0-dev63"
+from .all_singles_doubles import AllSinglesDoubles
+from .fermionic_double_excitation import FermionicDoubleExcitation
+from .fermionic_single_excitation import FermionicSingleExcitation
+from .kupccgsd import kUpCCGSD
+from .uccsd import UCCSD
+from .basis_rotation import BasisRotation

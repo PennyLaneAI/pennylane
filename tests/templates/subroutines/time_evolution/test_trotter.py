@@ -27,7 +27,7 @@ from pennylane.math import allclose, get_interface
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.resource import Resources
 from pennylane.resource.error import SpectralNormError
-from pennylane.templates.subroutines.trotter import (
+from pennylane.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
     _recursive_expression,
     _recursive_qfunc,
