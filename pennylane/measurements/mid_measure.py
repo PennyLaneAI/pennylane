@@ -217,7 +217,7 @@ def measure(
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -232,14 +232,14 @@ def measure(
 
     Executing this QNode:
 
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> pars = pnp.array([0.643, 0.246], requires_grad=True)
     >>> func(*pars)
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
     to the :math:`|0 \rangle` state by setting ``reset=True``.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -252,7 +252,7 @@ def measure(
     Executing this QNode:
 
     >>> func()
-    tensor([1., 0.], requires_grad=True)
+    array([1., 0.])
 
     Mid-circuit measurements can be manipulated using the following arithmetic operators:
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
@@ -273,10 +273,11 @@ def measure(
         Computational basis measurements are performed using the 0, 1 convention rather than the ±1 convention.
         So, for example, ``expval(qml.measure(0))`` and ``expval(qml.Z(0))`` will give different answers.
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=42)
 
+        @qml.set_shots(10)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -286,8 +287,13 @@ def measure(
                 qml.sample(m0), qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0),
             )
 
-    >>> circuit(1.0, 2.0, shots=1000)
-    (array([0, 1, 1, ..., 1, 1, 1])), 0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702})
+    >>> from pprint import pprint
+    >>> pprint(circuit(1.0, 2.0))
+    (array([0, 1, 0, 1, 1, 0, 0, 0, 1, 1]),
+     np.float64(0.5),
+     np.float64(0.25),
+     array([0.5, 0.5]),
+     {0.0: np.int64(5), 1.0: np.int64(5)})
 
     Args:
         wires (Wires): The wire to measure.
@@ -310,9 +316,9 @@ def measure(
         argument. For example, specifying ``postselect=1`` on wire 0 would be equivalent to projecting
         the state vector onto the :math:`|1\rangle` state on wire 0:
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qml.device("default.qubit", seed=42)
 
             @qml.qnode(dev)
             def func(x):
@@ -326,9 +332,11 @@ def measure(
 
         >>> qml.set_shots(func, 10)(np.pi / 2)
         array([[1],
-        [1],
-        [1],
-        [1]])
+               [1],
+               [1],
+               [1],
+               [1],
+               [1]])
 
         Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
         thrown away.
@@ -336,7 +344,7 @@ def measure(
         If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``
         or ``Inf`` values:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
 
@@ -348,11 +356,11 @@ def measure(
                 return qml.probs(wires=1)
 
         >>> func(0.0)
-        tensor([nan, nan], requires_grad=True)
+        array([nan, nan])
 
         In the case of ``qml.sample``, an empty array will be returned:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
 
@@ -364,7 +372,7 @@ def measure(
                 return qml.sample(wires=[0, 1])
 
         >>> func(0.0, shots=[10, 10])
-        (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
+        (nan, nan)
 
         .. note::
 
