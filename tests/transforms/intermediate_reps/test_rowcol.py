@@ -18,13 +18,14 @@ import numpy as np
 import pytest
 
 from pennylane import CNOT
-from pennylane.labs.intermediate_reps import (
+from pennylane.tape import QuantumScript
+from pennylane.transforms import (
     parity_matrix,
     postorder_traverse,
     preorder_traverse,
     rowcol,
 )
-from pennylane.tape import QuantumScript
+from pennylane.transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
 
 path_graph_4 = nx.path_graph(4)
 binary_graph_3 = nx.balanced_tree(2, 3)
@@ -160,8 +161,15 @@ def assert_respects_connectivity(cnots, connectivity):
     assert unique_undirected_cnots.issubset(edges)
 
 
+@pytest.mark.external
 class TestRowCol:
     """Tests for rowcol."""
+
+    def test_connectivity_default(self):
+        """Test the connectivity default is used correctly"""
+        m1 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=None)
+        m2 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=nx.complete_graph(2))
+        assert np.allclose(m1, m2)
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
     @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
@@ -169,7 +177,7 @@ class TestRowCol:
         """Test with the identity Parity matrix/circuit."""
         P = np.eye(n, dtype=int)
         connectivity = connectivity_fn(n)
-        cnots = rowcol(P, connectivity)
+        cnots = _rowcol_parity_matrix(P, connectivity)
         assert not cnots
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
@@ -185,7 +193,7 @@ class TestRowCol:
 
         connectivity = connectivity_fn(n)
         input_connectivity = connectivity.copy()
-        cnots = rowcol(P, connectivity)
+        cnots = _rowcol_parity_matrix(P, connectivity)
         exp = sum(([(i, i + 1), (i + 2, i + 1)] for i in range(0, n - 2, 2)), start=[])
         if n % 2 == 0:
             exp.append((n - 2, n - 1))
@@ -206,7 +214,7 @@ class TestRowCol:
 
         connectivity = nx.path_graph(n)
         input_connectivity = connectivity.copy()
-        cnots = rowcol(P, connectivity)
+        cnots = _rowcol_parity_matrix(P, connectivity)
         assert len(cnots) == 4 * (n - 2)  # Minimal CNOT count for longe-range CNOT
         # Check that P and connectivity were not altered
         assert np.allclose(input_P, P)
@@ -230,10 +238,33 @@ class TestRowCol:
 
         connectivity = connectivity_fn(n)
         input_connectivity = connectivity.copy()
-        cnots = rowcol(P, connectivity)
+        cnots = _rowcol_parity_matrix(P, connectivity)
         # Check that P and connectivity were not altered
         assert np.allclose(input_P, P)
         assert set(input_connectivity.nodes()) == set(connectivity.nodes())
         assert set(input_connectivity.edges()) == set(connectivity.edges())
         assert_reproduces_parity_matrix(cnots, input_P)
         assert_respects_connectivity(cnots, connectivity)
+
+    @pytest.mark.parametrize("n", list(range(2, 14)))
+    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
+    def test_integration(self, n, connectivity_fn):
+        """Test transform function on random CNOT circuits"""
+
+        ops = []
+        for _ in range(n**3):
+            i, j = np.random.choice(n, size=2, replace=False)
+            ops.append(CNOT((int(i), int(j))))
+
+        in_tape = QuantumScript(ops)
+        input_P = parity_matrix(in_tape, wire_order=range(n))
+
+        connectivity = connectivity_fn(n)
+        input_connectivity = connectivity.copy()
+        res, processing_fn = rowcol(in_tape, connectivity)
+        out_tape = processing_fn(res)
+        output_P = parity_matrix(out_tape, wire_order=range(n))
+
+        assert np.allclose(input_P, output_P)
+        assert set(input_connectivity.nodes()) == set(connectivity.nodes())
+        assert set(input_connectivity.edges()) == set(connectivity.edges())

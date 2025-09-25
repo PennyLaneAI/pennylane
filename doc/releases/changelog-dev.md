@@ -263,6 +263,13 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* New intermediate representations (IRs) :func:`~transforms.parity_matrix` and 
+  :func:`~transforms.phase_polynomial` are available in PennyLane. These IRs are 
+  used in compilation passes to optimize CNOT and phase polynomial circuits, respectively. 
+  Also added :func:`~transforms.rowcol`, which uses the parity matrix as its IR for CNOT
+  routing under constraint connectivity.
+  [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
+
 * A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
   with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
   subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
