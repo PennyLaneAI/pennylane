@@ -69,7 +69,7 @@
     [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
   * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
     ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
-    ``IterativeQPE`` were added to `qml.estimator.ops`.
+    ``IterativeQPE`` were added to `qml.estimator.templates`.
     [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
