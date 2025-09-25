@@ -121,9 +121,9 @@ class UniformStatePrep(ResourceOperator):
             The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
 
         gate_lst = []
@@ -230,9 +230,9 @@ class AliasSampling(ResourceOperator):
             The circuit uses coherent alias sampling to prepare a state with the given coefficients.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
 
         gate_lst = []
@@ -379,9 +379,9 @@ class MPSPrep(ResourceOperator):
             the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         num_work_wires = min(
             math.ceil(math.log2(max_bond_dim)), math.ceil(num_mps_matrices / 2)  # truncate bond dim
@@ -640,9 +640,9 @@ class QROMStatePreparation(ResourceOperator):
             `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_).
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         gate_counts = []
 
@@ -782,9 +782,9 @@ class QROMStatePreparation(ResourceOperator):
             Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         return cls._decomp_selection_helper(
             use_phase_grad_trick=False,
@@ -822,9 +822,9 @@ class QROMStatePreparation(ResourceOperator):
             (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to phase gradient.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         return cls._decomp_selection_helper(
             use_phase_grad_trick=True,
