@@ -70,10 +70,10 @@ Wires([])
 >>> tape = qml.tape.QuantumScript([qml.S(0)], (qml.probs(),))
 >>> qml.device('default.qubit').execute(tape)
 array([1., 0.])
->>> qml.device('default.mixed', wires=(0,1,2)).execute(tape)
+>>> qml.device('default.qubit', wires=(0,1,2)).execute(tape)
 array([1., 0.])
 >>> new_tape = qml.tape.QuantumScript([qml.S(0), qml.S(1)], (qml.probs(),))
->>> qml.device('default.mixed', wires=(0,1,2)).execute(new_tape)
+>>> qml.device('default.qubit', wires=(0,1,2)).execute(new_tape)
 array([1., 0., 0., 0.])
 
 Broadcasting
@@ -90,7 +90,7 @@ and still should correspond to a leading dimension.
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result
 array([[1.        , 0.        ],
-       [0.8536..., 0.1464...],
+       [0.853..., 0.146...],
        [0.5       , 0.5       ]])
 >>> result.shape
 (3, 2)
