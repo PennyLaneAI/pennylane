@@ -19,9 +19,9 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from conftest import decompositions, to_resources
 
 import pennylane as qml
+from conftest import decompositions, to_resources
 from pennylane.decomposition import (
     DecompositionGraph,
     adjoint_resource_rep,
