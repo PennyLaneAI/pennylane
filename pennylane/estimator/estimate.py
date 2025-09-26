@@ -27,6 +27,7 @@ from .resource_mapping import _map_to_resource_op
 from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 
 # pylint: disable=too-many-arguments
 
@@ -361,9 +362,23 @@ def _get_decomposition(
         A tuple containing the decomposition function and its associated kwargs.
     """
     op_type = comp_res_op.op_type
-    # TODO: Restore logic to handle symbolic operators when symboli operators are merged.
 
-    kwargs = config.resource_op_precisions.get(op_type, {})
-    decomp_func = config.custom_decomps.get(op_type, op_type.resource_decomp)
+    _SYMBOLIC_DECOMP_MAP = {
+        Adjoint: "_adj_custom_decomps",
+        Controlled: "_ctrl_custom_decomps",
+        Pow: "_pow_custom_decomps",
+    }
+
+    if op_type in _SYMBOLIC_DECOMP_MAP:
+        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
+        custom_decomp_dict = getattr(config, decomp_attr_name)
+
+        base_op_type = comp_res_op.params["base_cmpr_op"].op_type
+        kwargs = config.resource_op_precisions.get(base_op_type, {})
+        decomp_func = custom_decomp_dict.get(base_op_type, op_type.resource_decomp)
+
+    else:
+        kwargs = config.resource_op_precisions.get(op_type, {})
+        decomp_func = config._custom_decomps.get(op_type, op_type.resource_decomp)
 
     return decomp_func, kwargs
