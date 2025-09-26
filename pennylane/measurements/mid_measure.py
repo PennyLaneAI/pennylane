@@ -364,6 +364,7 @@ def measure(
 
             dev = qml.device("default.qubit")
 
+            @qml.set_shots(shots=[10, 10])
             @qml.qnode(dev)
             def func(x):
                 qml.RX(x, wires=0)
@@ -371,7 +372,7 @@ def measure(
                 qml.cond(m0, qml.X)(wires=1)
                 return qml.sample(wires=[0, 1])
 
-        >>> func(0.0, shots=[10, 10])
+        >>> func(0.0)
         (nan, nan)
 
         .. note::
