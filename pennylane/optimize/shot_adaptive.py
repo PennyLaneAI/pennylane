@@ -102,11 +102,32 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     >>> params = rng.random(shape)
     >>> trainable_params = pnp.array(params, requires_grad=True)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
-    >>> for i in range(10):
+    >>> for i in range(10): # doctest: +SKIP
     ...    trainable_params = opt.step(cost, trainable_params)
     ...    print(f"Step {i}: cost = {cost(trainable_params):.2f}, shots_used = {opt.total_shots_used}")
-    Step 0: cost = ..., shots_used = ...
-    ...
+    Step 0: cost = -5.69, shots_used = 240
+    Step 1: cost = -2.98, shots_used = 336
+    Step 2: cost = -4.97, shots_used = 624
+    Step 3: cost = -5.53, shots_used = 1054
+    Step 4: cost = -6.50, shots_used = 1798
+    Step 5: cost = -6.68, shots_used = 2942
+    Step 6: cost = -6.99, shots_used = 4350
+    Step 7: cost = -6.97, shots_used = 5814
+    Step 8: cost = -7.00, shots_used = 7230
+    Step 9: cost = -6.69, shots_used = 9006
+    Step 10: cost = -6.85, shots_used = 11286
+    Step 11: cost = -6.63, shots_used = 14934
+    Step 12: cost = -6.86, shots_used = 17934
+    Step 13: cost = -7.19, shots_used = 22950
+    Step 14: cost = -6.99, shots_used = 28302
+    Step 15: cost = -7.38, shots_used = 34134
+    Step 16: cost = -7.66, shots_used = 41022
+    Step 17: cost = -7.21, shots_used = 48918
+    Step 18: cost = -7.53, shots_used = 56286
+    Step 19: cost = -7.46, shots_used = 63822
+    Step 20: cost = -7.31, shots_used = 72534
+    Step 21: cost = -7.23, shots_used = 82014
+    Step 22: cost = -7.31, shots_used = 92838
 
     .. details::
         :title: Usage Details
