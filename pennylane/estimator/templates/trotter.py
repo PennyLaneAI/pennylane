@@ -156,7 +156,7 @@ class TrotterProduct(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
         Returns:
             dict: A dictionary containing the resource parameters:
-                * first_order_expansion (list[CompressedResourceOp]): A list of operators,
+                * first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
                   in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the Suzuki-Trotter approximation, must be 1 or even
@@ -178,14 +178,14 @@ class TrotterProduct(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            first_order_expansion (list[~pennylane.estimator.resource_operator.CompressedResourceOp]): A list of operators,
+            first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
                 in the compressed representation, constituting
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the Suzuki-Trotter approximation, must be 1 or even
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "first_order_expansion": first_order_expansion,
@@ -200,14 +200,14 @@ class TrotterProduct(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            first_order_expansion (list[~pennylane.estimator.resource_operator.CompressedResourceOp]): A list of operators,
+            first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
                 in the compressed representation, constituting
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the Suzuki-Trotter approximation, must be 1 or even
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -351,7 +351,7 @@ class TrotterCDF(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "compact_ham": compact_ham,
@@ -373,7 +373,7 @@ class TrotterCDF(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -431,7 +431,7 @@ class TrotterCDF(ResourceOperator):
             num_zero_ctrl (int): the number of control values for the controlled operations
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
@@ -623,7 +623,7 @@ class TrotterTHC(ResourceOperator):
             order (int): order of the approximation, must be 1 or even
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "compact_ham": compact_ham,
@@ -645,7 +645,7 @@ class TrotterTHC(ResourceOperator):
             order (int): order of the approximation, must be 1 or even
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -706,7 +706,7 @@ class TrotterTHC(ResourceOperator):
             num_zero_ctrl (int): the number of control values for the controlled operations
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
@@ -926,7 +926,7 @@ class TrotterVibrational(ResourceOperator):
                 `1e-3`
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "compact_ham": compact_ham,
@@ -1080,7 +1080,7 @@ class TrotterVibrational(ResourceOperator):
                 `1e-3`
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1278,7 +1278,7 @@ class TrotterVibronic(ResourceOperator):
             coeff_precision (float): precision for the loading of coefficients, default value is
                 `1e-3`
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "compact_ham": compact_ham,
@@ -1467,7 +1467,7 @@ class TrotterVibronic(ResourceOperator):
                 `1e-3`
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
