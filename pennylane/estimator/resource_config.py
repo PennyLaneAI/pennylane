@@ -18,8 +18,13 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.ops.qubit import QubitUnitary
-from pennylane.estimator.templates import SelectPauliRot
+from pennylane.estimator.ops import QubitUnitary
+from pennylane.estimator.templates import (
+    AliasSampling,
+    MPSPrep,
+    QROMStatePreparation,
+    SelectPauliRot,
+)
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -45,6 +50,9 @@ class ResourceConfig:
         self.resource_op_precisions = {
             SelectPauliRot: {"precision": _DEFAULT_PRECISION},
             QubitUnitary: {"precision": _DEFAULT_PRECISION},
+            AliasSampling: {"precision": _DEFAULT_PRECISION},
+            MPSPrep: {"precision": _DEFAULT_PRECISION},
+            QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}

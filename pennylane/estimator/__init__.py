@@ -69,6 +69,7 @@ from .ops.op_math import (
     Prod,
     ChangeOpBasis,
 )
+
 from .templates import (
     OutOfPlaceSquare,
     PhaseGradient,
@@ -83,4 +84,12 @@ from .templates import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
 )

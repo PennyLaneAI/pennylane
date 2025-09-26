@@ -28,3 +28,12 @@ from .subroutines import (
     QPE,
     IterativeQPE,
 )
+
+from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling
+
+from .comparators import (
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
+)
