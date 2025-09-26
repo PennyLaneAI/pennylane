@@ -495,7 +495,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=32,
                             num_bit_flips=16,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -505,7 +505,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=32,
                                 num_bit_flips=16,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -515,7 +515,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=32,
                             num_bit_flips=32,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -525,7 +525,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=32,
                                 num_bit_flips=32,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -535,7 +535,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=32,
                             num_bit_flips=64,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -545,7 +545,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=32,
                                 num_bit_flips=64,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -555,7 +555,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=32,
                             num_bit_flips=128,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -565,7 +565,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=32,
                                 num_bit_flips=128,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -575,7 +575,7 @@ class TestQROMStatePrep:
                             num_bitstrings=16,
                             size_bitstring=32,
                             num_bit_flips=256,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -585,7 +585,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=16,
                                 size_bitstring=32,
                                 num_bit_flips=256,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -609,7 +609,7 @@ class TestQROMStatePrep:
                             num_bitstrings=32,
                             size_bitstring=32,
                             num_bit_flips=512,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -619,7 +619,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=32,
                                 size_bitstring=32,
                                 num_bit_flips=512,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -646,7 +646,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=19,
                             num_bit_flips=9,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -656,7 +656,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=19,
                                 num_bit_flips=9,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -666,7 +666,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=19,
                             num_bit_flips=19,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -676,7 +676,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=19,
                                 num_bit_flips=19,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -686,7 +686,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=19,
                             num_bit_flips=38,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -696,7 +696,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=19,
                                 num_bit_flips=38,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -706,7 +706,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=19,
                             num_bit_flips=76,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -716,7 +716,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=19,
                                 num_bit_flips=76,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -740,7 +740,7 @@ class TestQROMStatePrep:
                             num_bitstrings=16,
                             size_bitstring=19,
                             num_bit_flips=152,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -750,7 +750,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=16,
                                 size_bitstring=19,
                                 num_bit_flips=152,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -777,7 +777,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -787,7 +787,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -797,7 +797,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -807,7 +807,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -817,7 +817,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -827,7 +827,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -851,7 +851,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -861,7 +861,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -888,7 +888,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -898,7 +898,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -908,7 +908,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -918,7 +918,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -928,7 +928,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -938,7 +938,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -972,7 +972,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=None,
                         )
                     ),
@@ -982,7 +982,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=None,
                             )
                         )
@@ -992,7 +992,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1002,7 +1002,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1012,7 +1012,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=None,
                         )
                     ),
@@ -1022,7 +1022,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=None,
                             )
                         )
@@ -1046,7 +1046,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=4,
                         )
                     ),
@@ -1056,7 +1056,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=4,
                             )
                         )
@@ -1112,7 +1112,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=32,
                             num_bit_flips=16,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1122,7 +1122,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=32,
                                 num_bit_flips=16,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1132,7 +1132,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=32,
                             num_bit_flips=32,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1142,7 +1142,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=32,
                                 num_bit_flips=32,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1152,7 +1152,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=32,
                             num_bit_flips=64,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1162,7 +1162,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=32,
                                 num_bit_flips=64,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1172,7 +1172,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=32,
                             num_bit_flips=128,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1182,7 +1182,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=32,
                                 num_bit_flips=128,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1192,7 +1192,7 @@ class TestQROMStatePrep:
                             num_bitstrings=16,
                             size_bitstring=32,
                             num_bit_flips=256,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1202,7 +1202,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=16,
                                 size_bitstring=32,
                                 num_bit_flips=256,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1216,7 +1216,7 @@ class TestQROMStatePrep:
                             num_bitstrings=32,
                             size_bitstring=32,
                             num_bit_flips=512,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1226,7 +1226,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=32,
                                 size_bitstring=32,
                                 num_bit_flips=512,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1250,7 +1250,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=19,
                             num_bit_flips=9,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1260,7 +1260,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=19,
                                 num_bit_flips=9,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1270,7 +1270,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=19,
                             num_bit_flips=19,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1280,7 +1280,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=19,
                                 num_bit_flips=19,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1290,7 +1290,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=19,
                             num_bit_flips=38,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1300,7 +1300,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=19,
                                 num_bit_flips=38,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1310,7 +1310,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=19,
                             num_bit_flips=76,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1320,7 +1320,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=19,
                                 num_bit_flips=76,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1334,7 +1334,7 @@ class TestQROMStatePrep:
                             num_bitstrings=16,
                             size_bitstring=19,
                             num_bit_flips=152,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1344,7 +1344,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=16,
                                 size_bitstring=19,
                                 num_bit_flips=152,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1368,7 +1368,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -1378,7 +1378,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -1388,7 +1388,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -1398,7 +1398,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -1408,7 +1408,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -1418,7 +1418,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -1432,7 +1432,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -1442,7 +1442,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -1466,7 +1466,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1476,7 +1476,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1486,7 +1486,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -1496,7 +1496,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -1506,7 +1506,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=2,
                         )
                     ),
@@ -1516,7 +1516,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=2,
                             )
                         )
@@ -1540,7 +1540,7 @@ class TestQROMStatePrep:
                             num_bitstrings=1,
                             size_bitstring=15,
                             num_bit_flips=7,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=None,
                         )
                     ),
@@ -1550,7 +1550,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=1,
                                 size_bitstring=15,
                                 num_bit_flips=7,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=None,
                             )
                         )
@@ -1560,7 +1560,7 @@ class TestQROMStatePrep:
                             num_bitstrings=2,
                             size_bitstring=15,
                             num_bit_flips=15,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=1,
                         )
                     ),
@@ -1570,7 +1570,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=2,
                                 size_bitstring=15,
                                 num_bit_flips=15,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=1,
                             )
                         )
@@ -1580,7 +1580,7 @@ class TestQROMStatePrep:
                             num_bitstrings=4,
                             size_bitstring=15,
                             num_bit_flips=30,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=None,
                         )
                     ),
@@ -1590,7 +1590,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=4,
                                 size_bitstring=15,
                                 num_bit_flips=30,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=None,
                             )
                         )
@@ -1604,7 +1604,7 @@ class TestQROMStatePrep:
                             num_bitstrings=8,
                             size_bitstring=15,
                             num_bit_flips=60,
-                            zeroed=False,
+                            restored=False,
                             select_swap_depth=4,
                         )
                     ),
@@ -1614,7 +1614,7 @@ class TestQROMStatePrep:
                                 num_bitstrings=8,
                                 size_bitstring=15,
                                 num_bit_flips=60,
-                                zeroed=False,
+                                restored=False,
                                 select_swap_depth=4,
                             )
                         )
