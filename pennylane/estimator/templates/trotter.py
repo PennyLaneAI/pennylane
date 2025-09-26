@@ -21,7 +21,7 @@ from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-from pennylane.estimator.ops.templates.subroutines import (
+from pennylane.estimator.templates.subroutines import (
     BasisRotation,
     OutMultiplier,
     OutOfPlaceSquare,
@@ -353,7 +353,7 @@ class TrotterCDF(ResourceOperator):
             },
         )
 
-        basis_rot = resource_rep(BasisRotation, {"dim_N": num_orb})
+        basis_rot = resource_rep(BasisRotation, {"dim": num_orb})
 
         if order == 1:
             gate_list.append(GateCount(basis_rot, 2 * num_frags * num_steps))
@@ -406,7 +406,7 @@ class TrotterCDF(ResourceOperator):
                         {
                             "base_cmpr_op": RZ.resource_rep(),
                             "num_ctrl_wires": num_ctrl_wires,
-                            "num_ctrl_values": num_zero_ctrl,
+                            "num_zero_ctrl": num_zero_ctrl,
                         },
                     ),
                     (2 * num_orb),
@@ -423,7 +423,7 @@ class TrotterCDF(ResourceOperator):
                         {
                             "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
                             "num_ctrl_wires": num_ctrl_wires,
-                            "num_ctrl_values": num_zero_ctrl,
+                            "num_zero_ctrl": num_zero_ctrl,
                         },
                     ),
                     (2 * num_orb - 1) * num_orb,
@@ -431,7 +431,7 @@ class TrotterCDF(ResourceOperator):
             },
         )
 
-        basis_rot = resource_rep(BasisRotation, {"dim_N": num_orb})
+        basis_rot = resource_rep(BasisRotation, {"dim": num_orb})
 
         if order == 1:
             gate_list.append(GateCount(basis_rot, 2 * num_frags * num_steps))
@@ -596,8 +596,8 @@ class TrotterTHC(ResourceOperator):
             },
         )
 
-        basis_rot_onebody = resource_rep(BasisRotation, {"dim_N": num_orb})
-        basis_rot_twobody = resource_rep(BasisRotation, {"dim_N": tensor_rank})
+        basis_rot_onebody = resource_rep(BasisRotation, {"dim": num_orb})
+        basis_rot_twobody = resource_rep(BasisRotation, {"dim": tensor_rank})
 
         if order == 1:
             gate_list.append(GateCount(basis_rot_onebody, 2 * num_steps))
@@ -649,7 +649,7 @@ class TrotterTHC(ResourceOperator):
                         {
                             "base_cmpr_op": RZ.resource_rep(),
                             "num_ctrl_wires": num_ctrl_wires,
-                            "num_ctrl_values": num_zero_ctrl,
+                            "num_zero_ctrl": num_zero_ctrl,
                         },
                     ),
                     (2 * num_orb),
@@ -666,7 +666,7 @@ class TrotterTHC(ResourceOperator):
                         {
                             "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
                             "num_ctrl_wires": num_ctrl_wires,
-                            "num_ctrl_values": num_zero_ctrl,
+                            "num_zero_ctrl": num_zero_ctrl,
                         },
                     ),
                     (2 * tensor_rank - 1) * tensor_rank,
@@ -674,8 +674,8 @@ class TrotterTHC(ResourceOperator):
             },
         )
 
-        basis_rot_onebody = resource_rep(BasisRotation, {"dim_N": num_orb})
-        basis_rot_twobody = resource_rep(BasisRotation, {"dim_N": tensor_rank})
+        basis_rot_onebody = resource_rep(BasisRotation, {"dim": num_orb})
+        basis_rot_twobody = resource_rep(BasisRotation, {"dim": tensor_rank})
 
         if order == 1:
             gate_list.append(GateCount(basis_rot_onebody, 2 * num_steps))
