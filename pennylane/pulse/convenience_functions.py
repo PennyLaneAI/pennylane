@@ -106,7 +106,9 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
     Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
     ``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
 
-    .. code-block:: python3
+    .. code-block:: python
+
+        import matplotlib.pyplot as plt
 
         def f(p, t):
             return jnp.polyval(p, t)
@@ -163,7 +165,6 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
     In this case, ``rect`` will return the given scalar only when the time is inside the provided
     time windows
 
-    >>> params = [None]  # the parameter value won't be used!
     >>> H(params, t=8)
     0.0 * X(0)
 
@@ -218,7 +219,7 @@ def pwc(timespan):
 
     The convenience function ``pwc`` essentially implements
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def pwc(timespan):
             def wrapped(p, t):
@@ -233,7 +234,7 @@ def pwc(timespan):
     an element of the ``params`` array. The variable ``t`` is used to select the value of the parameter array
     corresponding to the specified time, based on the assigned binning.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         params = jnp.array([1, 2, 3, 4, 5])
         time = jnp.linspace(0, 10, 1000)
@@ -254,10 +255,10 @@ def pwc(timespan):
         but it returns ``0`` for the final time itself:
 
         >>> qml.pulse.pwc(timespan)(params, 6.999999)
-        Array(5., dtype=float32)
+        Array(5., dtype=float64)
 
         >>> qml.pulse.pwc(timespan)(params, 7.)
-        Array(0., dtype=float32)
+        Array(0., dtype=float64)
 
     **Example**
 
@@ -326,7 +327,7 @@ def pwc_from_function(timespan, num_bins):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def smooth_function(params, t):
             return params[0] * t + params[1]
@@ -337,13 +338,13 @@ def pwc_from_function(timespan, num_bins):
         binned_function = qml.pulse.pwc_from_function(timespan, num_bins)(smooth_function)
 
     >>> binned_function([2, 4], 3), smooth_function([2, 4], 3)  # t = 3
-    (Array(10.666667, dtype=float32), 10)
+    (Array(10.6..., dtype=float64), 10)
 
     >>> binned_function([2, 4], 3.2), smooth_function([2, 4], 3.2)  # t = 3.2
-    (Array(10.666667, dtype=float32), 10.4)
+    (Array(10.6..., dtype=float64), 10.4)
 
     >>> binned_function([2, 4], 4.5), smooth_function([2, 4], 4.5)  # t = 4.5
-    (Array(12.888889, dtype=float32), 13.0)
+    (Array(12.8..., dtype=float64), 13.0)
 
     The same effect can be achieved by decorating the smooth function:
 
@@ -356,7 +357,7 @@ def pwc_from_function(timespan, num_bins):
             return params[0] * t + params[1]
 
     >>> fn([2, 4], 3)
-    Array(10.666667, dtype=float32)
+    Array(10.6..., dtype=float64)
 
     """
     if not has_jax:

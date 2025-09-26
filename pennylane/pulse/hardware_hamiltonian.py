@@ -71,9 +71,7 @@ def drive(amplitude, phase, wires):
     phase, as well as a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
     inter-qubit interactions.
 
-    .. code-block:: python3
-
-        import jax.numpy as jnp
+    .. code-block:: python
 
         wires = [0, 1, 2, 3]
         H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
@@ -90,7 +88,7 @@ def drive(amplitude, phase, wires):
     + X(3) @ X(0)
     )
     >>> H_d
-    HardwareHamiltonian:: terms=2
+    HardwareHamiltonian: terms=2
 
     The terms of the drive Hamiltonian ``H_d`` correspond to the two terms
     :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
@@ -100,7 +98,7 @@ def drive(amplitude, phase, wires):
 
     The full Hamiltonian can be evaluated:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         import jax
 
@@ -122,7 +120,7 @@ def drive(amplitude, phase, wires):
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
@@ -182,7 +180,7 @@ def drive(amplitude, phase, wires):
         The interaction between different atoms is given by the :func:`rydberg_interaction`, for which we pass the atomic coordinates (in µm),
         here arranged in a square of length :math:`4 \mu m`.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
             wires = [1, 2, 3, 4]
@@ -191,7 +189,7 @@ def drive(amplitude, phase, wires):
 
         We can now simulate driving those atoms with an oscillating amplitude :math:`\Omega` that is trainable, for a duration of :math:`10 \mu s`.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
             phase = jnp.pi / 2
@@ -210,7 +208,7 @@ def drive(amplitude, phase, wires):
 
         and can be executed and differentiated via the following code.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=wires)
             @qml.qnode(dev, interface="jax")
