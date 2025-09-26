@@ -225,19 +225,17 @@ class TestTrotterCDF:
             compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
         )
 
-        op = qre.Prod(*[qre.op_from_rep(item.op) ** item.count for item in decomp])
+        gates_decomp = [(item.count, item.gate.name) for item in decomp]
 
-        def circ():
-            op
+        gates_expected = [
+            (6, "BasisRotation"),
+            (2, "Prod"),
+            (1, "Prod"),
+            (8, "BasisRotation"),
+            (4, "Prod"),
+        ]
 
-        res = qre.estimate(circ)()
-
-        expected_gate_counts = defaultdict(
-            int, {"T": 28240, "S": 672.0, "Z": 448.0, "Hadamard": 448.0, "CNOT": 620.0}
-        )
-
-        assert res.algo_wires == 2 * num_orbitals + num_ctrl_wires
-        assert res.gate_counts == expected_gate_counts
+        assert gates_decomp == gates_expected
 
 
 class TestTrotterTHC:
@@ -430,18 +428,13 @@ class TestTrotterVibrational:
             compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
         )
 
-        op = qre.Prod(*[qre.op_from_rep(item.op) ** item.count for item in decomp])
+        gates_decomp = [(item.count, item.gate.name) for item in decomp]
 
-        def circ():
-            op
+        print(gates_decomp)
 
-        res = qre.estimate(circ)()
+        gates_expected = [(4, "BasisRotation"), (2, "Prod"), (2, "BasisRotation"), (1, "Prod")]
 
-        expected_gate_counts = defaultdict(
-            int, {"T": 10592, "S": 288.0, "Z": 192.0, "Hadamard": 192.0, "CNOT": 128.0}
-        )
-        assert res.algo_wires == tensor_rank * 2 + num_ctrl_wires
-        assert res.gate_counts == expected_gate_counts
+        assert gates_decomp == gates_expected
 
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""

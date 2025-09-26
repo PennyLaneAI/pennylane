@@ -400,34 +400,38 @@ class TrotterCDF(ResourceOperator):
         op_onebody = resource_rep(
             Prod,
             {
-                "cmpr_factors_and_counts": tuple(
-                    resource_rep(
-                        Controlled,
-                        {
-                            "base_cmpr_op": RZ.resource_rep(),
-                            "num_ctrl_wires": num_ctrl_wires,
-                            "num_zero_ctrl": num_zero_ctrl,
-                        },
-                    ),
-                    (2 * num_orb),
-                )
+                "cmpr_factors_and_counts": [
+                    (
+                        resource_rep(
+                            Controlled,
+                            {
+                                "base_cmpr_op": RZ.resource_rep(),
+                                "num_ctrl_wires": num_ctrl_wires,
+                                "num_zero_ctrl": num_zero_ctrl,
+                            },
+                        ),
+                        (2 * num_orb),
+                    )
+                ]
             },
         )
 
         op_twobody = resource_rep(
             Prod,
             {
-                "cmpr_factors_and_counts": tuple(
-                    resource_rep(
-                        Controlled,
-                        {
-                            "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
-                            "num_ctrl_wires": num_ctrl_wires,
-                            "num_zero_ctrl": num_zero_ctrl,
-                        },
-                    ),
-                    (2 * num_orb - 1) * num_orb,
-                )
+                "cmpr_factors_and_counts": [
+                    (
+                        resource_rep(
+                            Controlled,
+                            {
+                                "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
+                                "num_ctrl_wires": num_ctrl_wires,
+                                "num_zero_ctrl": num_zero_ctrl,
+                            },
+                        ),
+                        (2 * num_orb - 1) * num_orb,
+                    )
+                ]
             },
         )
 
@@ -643,34 +647,38 @@ class TrotterTHC(ResourceOperator):
         op_onebody = resource_rep(
             Prod,
             {
-                "cmpr_factors_and_counts": tuple(
-                    resource_rep(
-                        Controlled,
-                        {
-                            "base_cmpr_op": RZ.resource_rep(),
-                            "num_ctrl_wires": num_ctrl_wires,
-                            "num_zero_ctrl": num_zero_ctrl,
-                        },
-                    ),
-                    (2 * num_orb),
-                )
+                "cmpr_factors_and_counts": [
+                    (
+                        resource_rep(
+                            Controlled,
+                            {
+                                "base_cmpr_op": RZ.resource_rep(),
+                                "num_ctrl_wires": num_ctrl_wires,
+                                "num_zero_ctrl": num_zero_ctrl,
+                            },
+                        ),
+                        (2 * num_orb),
+                    )
+                ]
             },
         )
 
         op_twobody = resource_rep(
             Prod,
             {
-                "cmpr_factors_and_counts": tuple(
-                    resource_rep(
-                        Controlled,
-                        {
-                            "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
-                            "num_ctrl_wires": num_ctrl_wires,
-                            "num_zero_ctrl": num_zero_ctrl,
-                        },
-                    ),
-                    (2 * tensor_rank - 1) * tensor_rank,
-                )
+                "cmpr_factors_and_counts": [
+                    (
+                        resource_rep(
+                            Controlled,
+                            {
+                                "base_cmpr_op": MultiRZ.resource_rep(num_wires=2),
+                                "num_ctrl_wires": num_ctrl_wires,
+                                "num_zero_ctrl": num_zero_ctrl,
+                            },
+                        ),
+                        (2 * tensor_rank - 1) * tensor_rank,
+                    )
+                ]
             },
         )
 
