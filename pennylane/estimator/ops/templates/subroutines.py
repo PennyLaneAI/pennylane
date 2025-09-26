@@ -546,7 +546,7 @@ class ControlledSequence(ResourceOperator):
             if base_wires := base.wires:
                 self.wires = Wires.all_wires([self.wires, base_wires])
             if len(self.wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
+                raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
         else:
             self.wires = None
 
@@ -724,7 +724,7 @@ class QPE(ResourceOperator):
             if base_wires := base.wires:
                 self.wires = Wires.all_wires([self.wires, base_wires])
             if len(self.wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
+                raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
         else:
             self.wires = None
 
@@ -1388,7 +1388,7 @@ class Select(ResourceOperator):
             self.wires = Wires.all_wires([Wires(wires), ops_wires])
             if len(self.wires) < minimum_num_wires:
                 raise ValueError(
-                    f"Expected atleast {minimum_num_wires} wires ({num_ctrl_wires} control + {fewest_unique_wires} target). Got {self.wires}."
+                    f"Expected at least {minimum_num_wires} wires ({num_ctrl_wires} control + {fewest_unique_wires} target), got {len(Wires(wires))}."
                 )
             self.num_wires = len(self.wires)
         else:

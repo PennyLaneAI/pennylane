@@ -1550,6 +1550,7 @@ class CRX(ResourceOperator):
         """
         h = resource_rep(qre.Hadamard)
         rz = resource_rep(qre.RZ, {"precision": precision})
+
         cnot = resource_rep(CNOT)
 
         return [GateCount(cnot, 2), GateCount(rz, 2), GateCount(h, 2)]
@@ -2180,6 +2181,7 @@ class ControlledPhaseShift(ResourceOperator):
         """
         cnot = resource_rep(CNOT)
         rz = resource_rep(qre.RZ, {"precision": precision})
+
         return [GateCount(cnot, 2), GateCount(rz, 3)]
 
     @classmethod

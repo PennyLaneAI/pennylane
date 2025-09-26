@@ -65,7 +65,7 @@
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
   * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
-    `qml.estimator.ops.op_math`.
+    `qml.estimator.ops`.
     [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
@@ -262,6 +262,13 @@
 
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
+
+* A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
+  with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
+  subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
+  discretization schemes.
+  [(#8213)](https://github.com/PennyLaneAI/pennylane/pull/8213)
+
 
 <h3>Improvements 🛠</h3>
 
@@ -574,6 +581,7 @@
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module
   to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
+  [(#8180)](https://github.com/PennyLaneAI/pennylane/pull/8180)
   [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
 
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
@@ -795,6 +803,9 @@
 
 * Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
+
+* Perturbation error function now sums over expectation values instead of states.
+  [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
 <h3>Breaking changes 💔</h3>
 
@@ -1243,6 +1254,7 @@
 * The `mbqc.graph_state_prep` operation is integrated into the `convert_to_mbqc_formalism` pass.
   [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
   [(#8301)](https://github.com/PennyLaneAI/pennylane/pull/8301)
+  [(#8314)](https://github.com/PennyLaneAI/pennylane/pull/8314)
 
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
@@ -1413,6 +1425,10 @@
 
 * Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
+* Fixes a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, :func:`~.transforms.single_qubit_fusion`,
+  :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
+  [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
 <h3>Contributors ✍️</h3>
 

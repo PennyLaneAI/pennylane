@@ -17,14 +17,14 @@ Tests for the state preparation subroutines resource operators.
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.estimator import GateCount, resource_rep
-from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.ops.templates.stateprep import (
     AliasSampling,
     MPSPrep,
     QROMStatePreparation,
 )
+from pennylane.estimator.resource_config import ResourceConfig
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 
 # pylint: disable=no-self-use,too-many-arguments
 
