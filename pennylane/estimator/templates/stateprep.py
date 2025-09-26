@@ -279,7 +279,7 @@ class MPSPrep(ResourceOperator):
     Args:
         num_mps_matrices (int): the number of matrices in the MPS representation
         max_bond_dim (int): the bond dimension of the MPS representation
-        precision (Union[None, float], optional): the precision used when loading the MPS matricies
+        precision (float | None): the precision used when loading the MPS matricies
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -327,7 +327,7 @@ class MPSPrep(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_mps_matrices (int): the number of matrices in the MPS representation
                 * max_bond_dim (int): the bond dimension of the MPS representation
-                * precision (Union[None, float], optional): the precision used when loading the
+                * precision (float | None): the precision used when loading the
                   MPS matrices
         """
         return {
@@ -344,7 +344,7 @@ class MPSPrep(ResourceOperator):
         Args:
             num_mps_matrices (int): the number of matrices in the MPS representation
             max_bond_dim (int): the bond dimension of the MPS representation
-            precision (Union[None, float], optional): the precision used when loading the MPS matrices
+            precision (float | None): the precision used when loading the MPS matrices
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -370,7 +370,7 @@ class MPSPrep(ResourceOperator):
         Args:
             num_mps_matrices (int): the number of matrices in the MPS representation
             max_bond_dim (int): the bond dimension of the MPS representation
-            precision (Union[None, float], optional): the precision used when loading
+            precision (float | None): the precision used when loading
                 the MPS matrices
 
         Resources:
@@ -423,7 +423,7 @@ class QROMStatePreparation(ResourceOperator):
             of the rotation angles
         positive_and_real (bool): flag that the coefficients of the statevector are all real
             and positive
-        select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+        select_swap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth
         wires (Sequence[int], None): The wires to prepare the target state on. This excludes any
             additional qubits allocated during the decomposition (via select-swap).
@@ -555,7 +555,7 @@ class QROMStatePreparation(ResourceOperator):
                   of the rotation angles
                 * positive_and_real (bool): flag that the coefficients of the statevector are all real
                   and positive
-                * selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                * selswap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
                   used to trade-off extra qubits for reduced circuit depth
         """
 
@@ -579,7 +579,7 @@ class QROMStatePreparation(ResourceOperator):
                 of the rotation angles
             positive_and_real (bool): flag that the coefficients of the statevector are all real
                 and positive
-            selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+            selswap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth
 
         Returns:
@@ -626,7 +626,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive
             precision (float): the precision threshold for loading in the binary representation
                 of the rotation angles
-            select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+            select_swap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth
 
         Resources:
@@ -772,7 +772,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive.
             precision (float): The precision threshold for loading in the binary representation
                 of the rotation angles.
-            select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
+            select_swap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
@@ -811,7 +811,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive.
             precision (float): The precision threshold for loading in the binary representation
                 of the rotation angles.
-            select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
+            select_swap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
