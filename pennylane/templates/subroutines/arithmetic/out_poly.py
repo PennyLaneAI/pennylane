@@ -26,10 +26,10 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import adjoint, ctrl
+from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
-from .qft import QFT
 
 
 def _get_polynomial(f, mod, *variable_sizes):

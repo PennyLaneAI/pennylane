@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.out_multiplier import OutMultiplier
+from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 
 
 def test_standard_validity_OutMultiplier():

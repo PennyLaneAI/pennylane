@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,28 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
-
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    dla
-    resource_estimation
-    trotter_error
-
 """
-
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import trotter_error
-
-__all__ = []
+This module contains subroutines for Hamiltonian time evolution.
+"""
+from .approx_time_evolution import ApproxTimeEvolution
+from .commuting_evolution import CommutingEvolution
+from .qdrift import QDrift
+from .trotter import TrotterProduct, TrotterizedQfunc, trotterize
