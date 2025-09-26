@@ -209,14 +209,50 @@ class TestTrotterCDF:
         ):
             qre.TrotterCDF(compact_ham, num_steps=100, order=2)
 
-    def test_controlled_resource_decomp(self):
+    @pytest.mark.parametrize(
+        "num_orbitals, num_fragments, num_steps, order, num_ctrl_wires, num_zero_ctrl, gates_expected",
+        (
+            (
+                4,
+                4,
+                1,
+                1,
+                1,
+                0,
+                [
+                    (8, "BasisRotation"),
+                    (1, "Prod"),
+                    (3, "Prod"),
+                ],
+            ),
+            (
+                4,
+                4,
+                1,
+                2,
+                1,
+                0,
+                [
+                    (6, "BasisRotation"),
+                    (2, "Prod"),
+                    (1, "Prod"),
+                    (8, "BasisRotation"),
+                    (4, "Prod"),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_resource_decomp(
+        self,
+        num_orbitals,
+        num_fragments,
+        num_steps,
+        order,
+        num_ctrl_wires,
+        num_zero_ctrl,
+        gates_expected,
+    ):
         """Test the controlled_resource_decomp method for TrotterCDF."""
-        num_orbitals = 4
-        num_fragments = 4
-        num_steps = 1
-        order = 2
-        num_ctrl_wires = 1
-        num_zero_ctrl = 0
 
         compact_ham = qre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
@@ -226,14 +262,6 @@ class TestTrotterCDF:
         )
 
         gates_decomp = [(item.count, item.gate.name) for item in decomp]
-
-        gates_expected = [
-            (6, "BasisRotation"),
-            (2, "Prod"),
-            (1, "Prod"),
-            (8, "BasisRotation"),
-            (4, "Prod"),
-        ]
 
         assert gates_decomp == gates_expected
 
@@ -414,14 +442,50 @@ class TestTrotterVibrational:
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
-    def test_controlled_resource_decomp(self):
+    @pytest.mark.parametrize(
+        "num_orbitals, tensor_rank, num_steps, order, num_ctrl_wires, num_zero_ctrl, gates_expected",
+        (
+            (
+                4,
+                4,
+                1,
+                1,
+                1,
+                0,
+                [
+                    (2, "BasisRotation"),
+                    (2, "BasisRotation"),
+                    (1, "Prod"),
+                    (1, "Prod"),
+                ],
+            ),
+            (
+                4,
+                4,
+                1,
+                2,
+                1,
+                0,
+                [
+                    (4, "BasisRotation"),
+                    (2, "Prod"),
+                    (2, "BasisRotation"),
+                    (1, "Prod"),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_resource_decomp(
+        self,
+        num_orbitals,
+        tensor_rank,
+        num_steps,
+        order,
+        num_ctrl_wires,
+        num_zero_ctrl,
+        gates_expected,
+    ):
         """Test the controlled_resource_decomp method for TrotterTHC."""
-        num_orbitals = 4
-        tensor_rank = 4
-        num_steps = 1
-        order = 2
-        num_ctrl_wires = 1
-        num_zero_ctrl = 0
 
         compact_ham = qre.CompactHamiltonian.thc(num_orbitals=num_orbitals, tensor_rank=tensor_rank)
         decomp = qre.TrotterTHC.controlled_resource_decomp(
@@ -429,10 +493,6 @@ class TestTrotterVibrational:
         )
 
         gates_decomp = [(item.count, item.gate.name) for item in decomp]
-
-        print(gates_decomp)
-
-        gates_expected = [(4, "BasisRotation"), (2, "Prod"), (2, "BasisRotation"), (1, "Prod")]
 
         assert gates_decomp == gates_expected
 
