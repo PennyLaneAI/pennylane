@@ -94,11 +94,13 @@ class TrotterProduct(ResourceOperator):
                 C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
 
-    .. seealso:: :class:`~.TrotterProduct`
+    .. seealso:: The corresponding PennyLane operation :class:`~.TrotterProduct`
 
     The resources can be computed as:
 
     **Example**
+
+    The resources for this operation are computed using
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
@@ -154,6 +156,7 @@ class TrotterProduct(ResourceOperator):
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
         Returns:
             dict: A dictionary containing the resource parameters:
                 * first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
@@ -261,7 +264,7 @@ class TrotterCDF(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a compressed double factorized
+        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even.
@@ -292,6 +295,9 @@ class TrotterCDF(ResourceOperator):
     .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
+
+    The resources for this operation are computed using
+
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = qre.CompactHamiltonian.cdf(num_orbitals = 4, num_fragments = 4)
@@ -328,7 +334,7 @@ class TrotterCDF(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a compressed double factorized
+                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
@@ -345,7 +351,7 @@ class TrotterCDF(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a compressed double factorized
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -367,7 +373,7 @@ class TrotterCDF(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a compressed double factorized
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -423,7 +429,7 @@ class TrotterCDF(ResourceOperator):
         """Returns the controlled resource decomposition.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a compressed double factorized
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -531,7 +537,7 @@ class TrotterTHC(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a tensor hypercontracted
+        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even
@@ -563,7 +569,8 @@ class TrotterTHC(ResourceOperator):
 
     **Example**
 
-    The resources can be computed as:
+    The resources for this operation are computed using
+
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
@@ -600,7 +607,7 @@ class TrotterTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a tensor hypercontracted
+                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
@@ -617,7 +624,7 @@ class TrotterTHC(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -639,7 +646,7 @@ class TrotterTHC(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -698,7 +705,7 @@ class TrotterTHC(ResourceOperator):
         """Returns the controlled resource decomposition.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -806,14 +813,14 @@ class TrotterVibrational(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real space vibrational
+        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even
         phase_grad_precision (float): precision for the phase gradient calculation, default value is
-            `1e-6`
+            ``1e-6``
         coeff_precision (float): precision for the loading of coefficients, default value is
-            `1e-3`
+            ``1e-3``
         wires (list[int] | None): the wires on which the operator acts
 
     Resources:
@@ -841,7 +848,7 @@ class TrotterVibrational(ResourceOperator):
 
     **Example**
 
-    The resources can be computed as:
+    The resources for this operation are computed using
 
     >>> import pennylane.estimator as qre
     >>> compact_ham = qre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
@@ -891,14 +898,14 @@ class TrotterVibrational(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real space vibrational
+                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
                   Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
                 * phase_grad_precision (float): precision for the phase gradient calculation, default value
-                  is `1e-6`
+                  is ``1e-6``
                 * coeff_precision (float): precision for the loading of coefficients, default value is
-                  `1e-3`
+                  ``1e-3``
         """
         return {
             "compact_ham": self.compact_ham,
@@ -916,14 +923,14 @@ class TrotterVibrational(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real space vibrational
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
                 Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
             phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                `1e-6`
+                ``1e-6``
             coeff_precision (float): precision for the loading of coefficients, default value is
-                `1e-3`
+                ``1e-3``
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -1070,14 +1077,14 @@ class TrotterVibrational(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real space vibrational
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
                 Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
             phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                `1e-6`
+                ``1e-6``
             coeff_precision (float): precision for the loading of coefficients, default value is
-                `1e-3`
+                ``1e-3``
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -1157,14 +1164,14 @@ class TrotterVibronic(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real-space vibronic
+        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real-space vibronic
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation (must be 1 or even)
         phase_grad_precision (float): precision for the phase gradient calculation, default value is
-            `1e-6`
+            ``1e-6``
         coeff_precision (float): precision for the loading of coefficients, default value is
-            `1e-3`
+            ``1e-3``
         wires (list[int] | None): the wires on which the operator acts.
 
     Resources:
@@ -1189,9 +1196,9 @@ class TrotterVibronic(ResourceOperator):
         The resources for a single step expansion of real-space vibronic Hamiltonian are calculated
         based on `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
 
-
     **Example**
-    The resources can be computed as:
+
+    The resources for this operation are computed using
 
     >>> import pennylane.estimator as qre
     >>> compact_ham = qre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
@@ -1244,14 +1251,14 @@ class TrotterVibronic(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real-space vibronic
+                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real-space vibronic
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
                 * phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                  `1e-6`
+                  ``1e-6``
                 * coeff_precision (float): precision for the loading of coefficients, default value is
-                  `1e-3`
+                  ``1e-3``
         """
         return {
             "compact_ham": self.compact_ham,
@@ -1269,14 +1276,14 @@ class TrotterVibronic(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real space vibronic
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
             phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                `1e-6`
+                ``1e-6``
             coeff_precision (float): precision for the loading of coefficients, default value is
-                `1e-3`
+                ``1e-3``
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
@@ -1457,14 +1464,14 @@ class TrotterVibronic(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.estimator.templates.CompactHamiltonian): a real space vibronic
+            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
             phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                `1e-6`
+                ``1e-6``
             coeff_precision (float): precision for the loading of coefficients, default value is
-                `1e-3`
+                ``1e-3``
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object

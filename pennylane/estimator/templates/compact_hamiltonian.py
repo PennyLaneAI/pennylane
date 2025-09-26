@@ -24,7 +24,7 @@ class CompactHamiltonian:
     Args:
         method_name (str): The name of the method used to construct the Hamiltonian.
             The available methods are cdf, thc, vibrational, and vibronic.
-        **params (Any): Keyword arguments specific to the chosen construction method,
+        **params (Any): Keyword arguments specific to the chosen construction method:
 
             - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
             - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
