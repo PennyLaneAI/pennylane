@@ -71,7 +71,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     For VQE/VQE-like problems, the objective function for the optimizer can be realized
     as a :class:`~.QNode` object measuring the expectation of a :class:`~.ops.LinearCombination`.
 
-    >>> from pennylane import numpy as np
     >>> from functools import partial
     >>> coeffs = [2, 4, -1, 5, 2]
     >>> obs = [
@@ -82,13 +81,16 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ...   qml.Z(0) @ qml.Z(1)
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @partial(qml.set_shots, shots=100)
 
-    ... @qml.qnode(dev)
-    ... def cost(weights):
-    ...     qml.StronglyEntanglingLayers(weights, wires=range(2))
-    ...     return qml.expval(H)
+    With our Hamiltonian defined, we can now construct a QNode,
+
+    .. code-block:: python
+
+        @qml.set_shots(100)
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def cost(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` method. The attributes ``opt.shots_used`` and
@@ -96,11 +98,13 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     iteration, and across the life of the optimizer, respectively.
 
     >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-    >>> params = np.random.random(shape)
+    >>> rng = pnp.random.default_rng(seed=42)
+    >>> params = rng.random(shape)
+    >>> trainable_params = pnp.array(params, requires_grad=True)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
-    >>> for i in range(60):
-    ...    params = opt.step(cost, params)
-    ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")
+    >>> for i in range(10): # doctest: +SKIP
+    ...    trainable_params = opt.step(cost, trainable_params)
+    ...    print(f"Step {i}: cost = {cost(trainable_params):.2f}, shots_used = {opt.total_shots_used}")
     Step 0: cost = -5.69, shots_used = 240
     Step 1: cost = -2.98, shots_used = 336
     Step 2: cost = -4.97, shots_used = 624

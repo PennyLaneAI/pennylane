@@ -82,7 +82,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     >>> opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
-    tensor([0.50437193, 0.18562052], requires_grad=True)
+    tensor([0.50..., 0.18...], requires_grad=True)
 
     An alternative function to calculate the metric tensor of the QNode can be provided to ``step``
     via the ``metric_tensor_fn`` keyword argument, see :class:`~.pennylane.QNGOptimizer` for

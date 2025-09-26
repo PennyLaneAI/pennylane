@@ -49,6 +49,7 @@ jobs:
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre pennylane-catalyst
           pip install -e .
           pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch
+          pip install scikit-learn 
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
@@ -73,9 +74,7 @@ jobs:
           --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
-          --ignore=pennylane/shadows
           --ignore=pennylane/gradients
-          --ignore=pennylane/optimize
           --ignore=pennylane/pulse
           --ignore=pennylane/templates
           "
@@ -83,8 +82,6 @@ jobs:
           --ignore=pennylane/resource
           --ignore=pennylane/io
           --ignore=pennylane/logging
-          --ignore=pennylane/qnn
-          --ignore=pennylane/qaoa
           --ignore=pennylane/data
           --ignore=pennylane/spin
           --ignore=pennylane/drawer

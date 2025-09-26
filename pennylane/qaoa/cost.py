@@ -60,7 +60,7 @@ def bit_driver(wires: Iterable | Wires, b: int):
     **Example**
 
     >>> wires = range(3)
-    >>> hamiltonian = qaoa.bit_driver(wires, 1)
+    >>> hamiltonian = bit_driver(wires, 1)
     >>> print(hamiltonian)
     1 * Z(0) + 1 * Z(1) + 1 * Z(2)
     """
@@ -101,15 +101,17 @@ def edge_driver(graph: nx.Graph | rx.PyGraph, reward: list):
 
     >>> import networkx as nx
     >>> graph = nx.Graph([(0, 1), (1, 2)])
-    >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
+    >>> hamiltonian = edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
     0.25 * (Z(0) @ Z(1)) + 0.25 * Z(0) + 0.25 * Z(1) + 0.25 * (Z(1) @ Z(2)) + 0.25 * Z(1) + 0.25 * Z(2)
 
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
+    NodeIndices[0, 1, 2]
     >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
-    >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
+    EdgeIndices[0, 1]
+    >>> hamiltonian = edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
     0.25 * (Z(0) @ Z(1)) + 0.25 * Z(0) + 0.25 * Z(1) + 0.25 * (Z(1) @ Z(2)) + 0.25 * Z(1) + 0.25 * Z(2)
 
@@ -279,7 +281,9 @@ def maxcut(graph: nx.Graph | rx.PyGraph):
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
+    NodeIndices[0, 1, 2]
     >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
+    EdgeIndices[0, 1]
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
     0.5 * (Z(0) @ Z(1)) + 0.5 * (Z(1) @ Z(2)) + -0.5 * (I(0) @ I(1)) + -0.5 * (I(1) @ I(2))
