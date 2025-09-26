@@ -62,7 +62,7 @@ class ParametrizedHamiltonian:
     as well as a list of corresponding observables. Each coefficient function must take two arguments, the first one
     being the trainable parameters and the second one being time, though it need not use them both.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         f1 = lambda p, t: p[0] * jnp.sin(p[1] * t)
         f2 = lambda p, t: p * t
@@ -74,7 +74,7 @@ class ParametrizedHamiltonian:
     ``ParametrizedHamiltonian`` with the specified parameters. Note that parameters must be passed in the order
     the functions were passed in creating the ``ParametrizedHamiltonian``:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         p1 = jnp.array([1., 1.])
         p2 = 1.
@@ -107,7 +107,7 @@ class ParametrizedHamiltonian:
         An alternative method for creating a ``ParametrizedHamiltonian`` is to multiply operators and callable
         coefficients:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def f1(p, t):
                 return jnp.sin(p[0] * t**2) + p[1]
@@ -196,7 +196,7 @@ class ParametrizedHamiltonian:
         ``ParametrizedHamiltonian`` takes a list of parameters that is a concatenation of the initial
         two Hamiltonian parameters:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             coeffs = [lambda p, t: jnp.sin(p*t) for _ in range(2)]
             ops = [qml.X(0), qml.Y(1)]

@@ -107,7 +107,7 @@ def transmon_interaction(
 
     We can set up the transmon interaction Hamiltonian with uniform coefficients by passing ``float`` values.
 
-    .. code-block::
+    .. code-block:: python
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
         H = qml.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
@@ -121,7 +121,7 @@ def transmon_interaction(
     We can also provide individual values for each of the qubit energies and coupling strengths,
     here of order :math:`0.1 \times 2\pi\text{GHz}` and :math:`1 \times 2\pi\text{GHz}`, respectively.
 
-    .. code-block::
+    .. code-block:: python
 
         qubit_freqs = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
         couplings= [1., 2., 3., 4.]
@@ -314,7 +314,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     sine ensures that the amplitude will be strictly positive (a requirement for some hardware). For simplicity, we
     set the drive frequency to zero :math:`\nu=0`.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def amp(A, t):
             return A * jnp.exp(-t**2)
@@ -335,7 +335,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     :math:`2 \pi A \exp(0) \sin(\pi/2 + 0)\sigma^y = 2 \pi \sigma^y`.
 
     >>> H(params, t)
-    6.283185307179586 * Y(0)
+    6.283... * Y(0)
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
@@ -350,7 +350,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     phase to zero :math:`\phi=0`, and we make the parameters :math:`A` and :math:`\nu` trainable
     for every qubit. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         import jax
 

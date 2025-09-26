@@ -151,22 +151,22 @@ class CountsMP(SampleMeasurement):
 
         **Example**
 
-            >>> samples
-            tensor([[0, 0],
-                    [0, 0],
-                    [1, 0]], requires_grad=True)
+            >>> samples = [[0, 0],
+            ...            [0, 0],
+            ...            [1, 0]]
+            >>> samples = math.array(samples)
 
             By default, this will return:
-            >>> self._samples_to_counts(samples)
+            >>> self._samples_to_counts(samples) # doctest: +SKIP
             {'00': 2, '10': 1}
 
             However, if ``all_outcomes=True``, this will return:
-            >>> self._samples_to_counts(samples)
+            >>> self._samples_to_counts(samples) # doctest: +SKIP
             {'00': 2, '01': 0, '10': 1, '11': 0}
 
             The variable all_outcomes can be set when running measurements.counts, i.e.:
 
-             .. code-block:: python3
+             .. code-block:: python
 
                 from functools import partial
                 dev = qml.device("default.qubit", wires=2)
@@ -379,10 +379,10 @@ def counts(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from functools import partial
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
         @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
@@ -394,18 +394,19 @@ def counts(
 
     Executing this QNode:
 
-    >>> circuit(0.5)
-    {-1: 2, 1: 2}
+    >>> assert sum(circuit(0.5).values()) == 4  # number of shots
+    >>> print(circuit(0.5))
+    {np.float64(-1.0): np.int64(3), np.float64(1.0): np.int64(1)}
 
     If no observable is provided, then the raw basis state samples obtained
     from device are returned (e.g., for a qubit device, samples from the
     computational device are returned). In this case, ``wires`` can be specified
     so that sample results only include measurement results of the qubits of interest.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from functools import partial
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
         @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
@@ -413,19 +414,20 @@ def counts(
             qml.RX(x, wires=0)
             qml.Hadamard(wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.counts()
+            return qml.counts(all_outcomes=True)
 
     Executing this QNode:
 
+    >>> assert sum(circuit(0.5).values()) == 4  # number of shots
     >>> circuit(0.5)
-    {'00': 3, '01': 1}
+    {'00': np.int64(1), '01': np.int64(2), '10': np.int64(0), '11': np.int64(1)}
 
     By default, outcomes that were not observed will not be included in the dictionary.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from functools import partial
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
         @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
@@ -436,12 +438,13 @@ def counts(
     Executing this QNode shows only the observed outcomes:
 
     >>> circuit()
-    {'10': 4}
+    {np.str_('10'): np.int64(4)}
 
     Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
 
-    .. code-block:: python3
+    .. code-block:: python
 
+        @qml.set_shots(shots=4)
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
@@ -450,7 +453,7 @@ def counts(
     Executing this QNode shows counts for all states:
 
     >>> circuit()
-    {'00': 0, '01': 0, '10': 4, '11': 0}
+    {'00': np.int64(0), '01': np.int64(0), '10': np.int64(4), '11': np.int64(0)}
 
     """
     if isinstance(op, MeasurementValue):

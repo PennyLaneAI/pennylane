@@ -123,8 +123,8 @@ class ParametrizedEvolution(Operation):
     a time interval:
 
     >>> qml.matrix(ev([1.2], t=[0, 4]))
-    Array([[ 0.72454906+0.j, -0.6892243 +0.j],
-           [ 0.6892243 +0.j,  0.72454906+0.j]], dtype=complex64)
+    Array([[ 0.72...+0.j, -0.68...+0.j],
+           [ 0.68...+0.j,  0.72...+0.j]], dtype=complex...)
 
     The parameters can be updated by calling the :class:`~.ParametrizedEvolution` again with different inputs.
 
@@ -179,7 +179,7 @@ class ParametrizedEvolution(Operation):
         The parameters used when calling the ``ParametrizedEvolution`` are expected to have the same order
         as the functions used to define the :class:`~.ParametrizedHamiltonian`. For example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def f1(p, t):
                 return jnp.sin(p[0] * t**2) + p[1]
@@ -192,8 +192,8 @@ class ParametrizedEvolution(Operation):
 
         >>> params = [[4.6, 2.3], 1.2]
         >>> qml.matrix(ev(params, t=0.5))
-        Array([[-0.18354285-0.26303384j, -0.7271658 -0.606923j  ],
-               [ 0.7271658 -0.606923j  , -0.18354285+0.26303384j]],      dtype=complex64)
+        Array([[-0.183...-0.263...j, -0.727...-0.606...j],
+            [ 0.727...-0.606...j, -0.183...+0.263...j]],      dtype=complex128)
 
         Internally the solver is using ``f1([4.6, 2.3], t)`` and ``f2(1.2, t)`` at each timestep when
         finding the matrix.
@@ -560,13 +560,13 @@ class ParametrizedEvolution(Operation):
         >>> cache = {'matrices': []}
 
         >>> op.label()
-        "Parametrized\nEvolution"
+        'Parametrized\nEvolution'
         >>> op.label(decimals=2, cache=cache)
-        "Parametrized\nEvolution\n(p=[0.20,M0], t=[0. 2.])"
+        'Parametrized\nEvolution\n(p=[0.20,M0], t=[0. 2.])'
         >>> op.label(base_label="my_label")
-        "my_label"
+        'my_label'
         >>> op.label(decimals=2, base_label="my_label", cache=cache)
-        "my_label\n(p=[0.20,M0], t=[0. 2.])"
+        'my_label\n(p=[0.20,M0], t=[0. 2.])'
 
         Array-like parameters are stored in ``cache['matrices']``.
         """

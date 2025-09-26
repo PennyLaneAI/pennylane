@@ -98,11 +98,11 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev)
         def circuit():
             qml.Snapshot(measurement=qml.expval(qml.Z(0)))
             qml.Hadamard(wires=0)
@@ -111,47 +111,49 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
             qml.Snapshot("sample", measurement=qml.sample(), shots=5)
             return qml.expval(qml.X(0))
 
-    >>> qml.snapshots(circuit)()
-    {0: 1.0,
-    1: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
-    'sample': array([[0, 0],
-            [1, 1],
-            [1, 1],
-            [0, 0],
-            [1, 1]]),
-    'execution_results': 0.0}
+    >>> from pprint import pprint
+    >>> pprint(qml.snapshots(circuit)())
+    {0: np.float64(1.0),
+     1: array([0.707...+0.j, 0.        +0.j, 0.        +0.j, 0.707...+0.j]),
+     'execution_results': np.float64(0.0),
+     'sample': array([[1, 1],
+           [0, 0],
+           [1, 1],
+           [1, 1],
+           [0, 0]])}
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        from functools import partial
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42, wires=2)
 
-        @partial(qml.set_shots, shots=200)
         @qml.snapshots
-        @qml.qnode(dev, interface=None)
+        @qml.set_shots(shots=200)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.Snapshot()
             qml.CNOT(wires=[0, 1])
             return qml.counts()
 
-    >>> circuit()
+    >>> from pprint import pprint
+    >>> pprint(circuit())
     {0: array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
-    'execution_results': {'00': 101, '11': 99}}
+     'execution_results': {np.str_('00'): np.int64(104),
+                           np.str_('11'): np.int64(96)}}
 
     Here one can see how a device that does not natively support snapshots executes two different circuits. Additionally, a warning
     is raised along with the results:
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qml.device("lightning.qubit", seed=42, wires=2)
 
-        @partial(qml.set_shots, shots=200)
         @qml.snapshots
+        @qml.set_shots(shots=200)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0),
-            qml.Snapshot(qml.counts())
+            qml.Snapshot(measurement=qml.counts())
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -159,18 +161,10 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
             out = circuit()
 
     >>> circuit.device.tracker.totals
-    UserWarning: Snapshots are not supported for the given device. Therefore, a tape will be created for each snapshot, resulting in a total of n_snapshots + 1 executions.
-      warnings.warn(
-    {'batches': 1,
-     'simulations': 2,
-     'executions': 2,
-     'shots': 200,
-     'results': -0.16}
+    {'batches': 1, 'simulations': 2, 'executions': 2, 'shots': 400, 'results': np.float64(0.09)}
 
     >>> out
-    {0: {'00': tensor(52, requires_grad=True),
-      '10': tensor(48, requires_grad=True)},
-     'execution_results': tensor(-0.1, requires_grad=True)}
+    {0: {np.str_('00'): np.int64(92), np.str_('10'): np.int64(108)}, 'execution_results': np.float64(0.09)}
 
     **Integration with Mid-Circuit Measurements:**
 
@@ -179,7 +173,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit'))
+        @qml.qnode(qml.device('default.qubit', seed=42))
         def c(y):
             qml.H(0)
             qml.Snapshot(measurement=qml.probs(0))
@@ -196,39 +190,40 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     postselection will not be applied on snapshots with ``"one-shot"``.
 
     >>> one_shot = qml.set_shots(c, 3).update(mcm_method="one-shot")
-    >>> qml.snapshots(one_shot)(1.0)
-    {0: [array([0., 1.]), array([0., 1.]), array([1., 0.])],
-    1: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
-    2: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
-    'execution_results': array([1., 0.])}
+    >>> from pprint import pprint
+    >>> pprint(qml.snapshots(one_shot)(1.0))
+    {0: [array([0., 1.]), array([0., 1.]), array([0., 1.])],
+     1: [array([0., 1.]), array([1., 0.]), array([1., 0.])],
+     2: [array([0., 1.]), array([1., 0.]), array([1., 0.])],
+     'execution_results': array([0.66666667, 0.33333333])}
 
     Note that for a single shot ``"one-shot"`` execution, the results will not be in a list.
 
     >>> one_shot = qml.set_shots(c, 1).update(mcm_method="one-shot")
-    >>> qml.snapshots(one_shot)(1.0)
+    >>> pprint(qml.snapshots(one_shot)(1.0))
     {0: array([0., 1.]),
-    1: array([0., 1.]),
-    2: array([0., 1.]),
-    'execution_results': array([0., 1.])}
+     1: array([1., 0.]),
+     2: array([1., 0.]),
+     'execution_results': array([1., 0.])}
 
     With ``"tree-traversal"``, we have different numbers of probabilities based on the number of mcm's earlier
     in the circuit. Before any mcm's, we have one state. After the first mcm, we have two states.  And after
     two mcm's, we have four states.
 
-    >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(1.0)
+    >>> pprint(qml.snapshots(c.update(mcm_method="tree-traversal"))(1.0))
     {0: [array([0.5, 0.5])],
-    1: [array([1., 0.]), array([0.06120872, 0.93879128])],
-    2: [array([1., 0.]), array([0., 1.]), array([1., 0.]), array([0., 1.])],
-    'execution_results': array([0.51653561, 0.48346439])}
+     1: [array([1., 0.]), array([0.06120872, 0.93879128])],
+     2: [array([1., 0.]), array([0., 1.]), array([1., 0.]), array([0., 1.])],
+     'execution_results': array([..., ...])}
 
     Note that without the ``RY`` rotation, the third snapshot only has **three** probabilities, not **four**.
     This is due to the fact that one of the four branches can never occur.
 
-    >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(0)
-    {0: array([0.5, 0.5]),
-    1: [array([1., 0.]), array([0.06120872, 0.93879128])],
-    2: [array([1., 0.]), array([1., 0.]), array([0., 1.])],
-    'execution_results': array([0.53060436, 0.46939564])}
+    >>> pprint(qml.snapshots(c.update(mcm_method="tree-traversal"))(0))
+    {0: [array([0.5, 0.5])],
+     1: [array([1., 0.]), array([0.06120872, 0.93879128])],
+     2: [array([1., 0.]), array([1., 0.]), array([0., 1.])],
+     'execution_results': array([..., ...])}
 
 
     **Application to tapes**
@@ -236,7 +231,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     Here you can see the default behaviour of the transform for unsupported devices and you can see how the amount of wires included
     in each resulting tape is minimal:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         ops = [
             qml.Snapshot(),

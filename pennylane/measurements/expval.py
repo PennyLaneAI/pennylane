@@ -127,7 +127,7 @@ def expval(
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -141,7 +141,7 @@ def expval(
     Executing this QNode:
 
     >>> circuit(0.5)
-    -0.4794255386042029
+    np.float64(-0.479...)
 
     Args:
         op (Union[Operator, MeasurementValue]): a quantum observable object. To

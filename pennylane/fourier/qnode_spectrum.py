@@ -67,8 +67,8 @@ def _process_ids(encoding_args, argnum, qnode):
 
     As an example, consider the qnode
 
-    >>> @qml.qnode(dev)
-    >>> def circuit(a, b, c, x=2):
+    >>> @qml.qnode(qml.device("default.qubit", wires=1))
+    ... def circuit(a, b, c, x=2):
     ...     return qml.expval(qml.X(0))
 
     which takes arguments:
@@ -252,15 +252,16 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
     This circuit looks as follows:
 
-    >>> from pennylane import numpy as pnp
     >>> x = pnp.array([1., 2., 3.])
     >>> y = pnp.array([0.1, 0.3, 0.5])
     >>> z = pnp.array(-1.8)
-    >>> w = pnp.random.random((2, n_qubits, 3))
+    >>> rng = pnp.random.default_rng(seed=42)
+    >>> w = rng.random((2, n_qubits, 3))
+    >>> w = pnp.array(w)
     >>> print(qml.draw(circuit)(x, y, z, w))
-    0: ──RX(0.50)──Rot(0.09,0.46,0.54)──RY(0.23)──Rot(0.59,0.22,0.05)──RX(-1.80)─┤  <Z>
-    1: ──RX(1.00)──Rot(0.98,0.61,0.07)──RY(0.69)──Rot(0.62,0.00,0.28)──RX(-1.80)─┤
-    2: ──RX(1.50)──Rot(0.65,0.07,0.36)──RY(1.15)──Rot(0.74,0.27,0.24)──RX(-1.80)─┤
+    0: ──RX(0.50)──Rot(0.77,0.44,0.86)──RY(0.23)──Rot(0.45,0.37,0.93)──RX(-1.80)─┤  <Z>
+    1: ──RX(1.00)──Rot(0.70,0.09,0.98)──RY(0.69)──Rot(0.64,0.82,0.44)──RX(-1.80)─┤
+    2: ──RX(1.50)──Rot(0.76,0.79,0.13)──RY(1.15)──Rot(0.23,0.55,0.06)──RX(-1.80)─┤
 
     Applying the ``qnode_spectrum`` function to the circuit for
     the non-trainable parameters, we obtain:
@@ -268,9 +269,9 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     >>> res = qml.fourier.qnode_spectrum(circuit, argnum=[0, 1, 2])(x, y, z, w)
     >>> for inp, freqs in res.items():
     ...     print(f"{inp}: {freqs}")
-    "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
-    "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
-    "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
+    x: {(0,): [np.float64(-0.5), 0.0, np.float64(0.5)], (1,): [np.float64(-0.5), 0.0, np.float64(0.5)], (2,): [np.float64(-0.5), 0.0, np.float64(0.5)]}
+    y: {(0,): [np.float64(-2.3), 0.0, np.float64(2.3)], (1,): [np.float64(-2.3), 0.0, np.float64(2.3)], (2,): [np.float64(-2.3), 0.0, np.float64(2.3)]}
+    z: {(): [np.float64(-3.0), np.float64(-2.0), np.float64(-1.0), 0.0, np.float64(1.0), np.float64(2.0), np.float64(3.0)]}
 
     .. note::
         While the Fourier spectrum usually does not depend
@@ -288,7 +289,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> res = qml.fourier.qnode_spectrum(circuit, argnum=[0])(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
-        "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
+        x: {(0,): [np.float64(-0.5), 0.0, np.float64(0.5)], (1,): [np.float64(-0.5), 0.0, np.float64(0.5)], (2,): [np.float64(-0.5), 0.0, np.float64(0.5)]}
 
         Selecting arguments by name instead of index is possible via the
         ``encoding_args`` argument:
@@ -296,7 +297,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> res = qml.fourier.qnode_spectrum(circuit, encoding_args={"y"})(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
-        "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+        y: {(0,): [np.float64(-2.3), 0.0, np.float64(2.3)], (1,): [np.float64(-2.3), 0.0, np.float64(2.3)], (2,): [np.float64(-2.3), 0.0, np.float64(2.3)]}
 
         Note that for array-valued arguments the spectrum for each element of the array
         is computed. A more fine-grained control is available by passing index tuples
@@ -306,7 +307,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> res = qml.fourier.qnode_spectrum(circuit, encoding_args=encoding_args)(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
-        "y": {(0,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+        y: {(0,): [np.float64(-2.3), 0.0, np.float64(2.3)], (2,): [np.float64(-2.3), 0.0, np.float64(2.3)]}
 
         .. warning::
             The ``qnode_spectrum`` function checks whether the classical preprocessing between
@@ -324,21 +325,19 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
         .. code-block:: python
 
-            import tensorflow as tf
-
             dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, interface='tf')
+            @qml.qnode(dev, interface='torch')
             def circuit(x):
                 qml.RX(0.4*x[0], wires=0)
                 qml.PhaseShift(x[1]*np.pi, wires=0)
                 return qml.expval(qml.Z(0))
 
-            x = tf.Variable([1., 2.])
+            x = torch.tensor([1.0, 3.0], requires_grad=True)
             res = qml.fourier.qnode_spectrum(circuit)(x)
 
         >>> print(res)
-        {"x": {(0,): [-0.4, 0.0, 0.4], (1,): [-3.14159, 0.0, 3.14159]}}
+        {'x': {(0,): [np.float64(-0.40...), 0.0, np.float64(0.40...)], (1,): [np.float64(-3.14...), 0.0, np.float64(3.14...)]}}
 
         Finally, compare ``qnode_spectrum`` with :func:`~.circuit_spectrum`, using
         the following circuit.
@@ -358,14 +357,14 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         First, note that we assigned ``id`` labels to the gates for which we will use
         ``circuit_spectrum``. This allows us to choose these gates in the computation:
 
-        >>> x, y, z = pnp.array(0.1, 0.2, 0.3)
+        >>> x, y, z = pnp.array([0.1, 0.2, 0.3])
         >>> circuit_spec_fn = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x","y0","y1"])
         >>> circuit_spec = circuit_spec_fn(x, y, z)
         >>> for _id, spec in circuit_spec.items():
         ...     print(f"{_id}: {spec}")
-        x: [-1.0, 0, 1.0]
-        y0: [-1.0, 0, 1.0]
-        y1: [-1.0, 0, 1.0]
+        x: [np.float64(-1.0), 0, np.float64(1.0)]
+        y0: [np.float64(-1.0), 0, np.float64(1.0)]
+        y1: [np.float64(-1.0), 0, np.float64(1.0)]
 
         As we can see, the preprocessing in the QNode is not included in the simple spectrum.
         In contrast, the output of ``qnode_spectrum`` is:
@@ -373,8 +372,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> adv_spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"y", "z"})(x, y, z)
         >>> for _id, spec in adv_spec.items():
         ...     print(f"{_id}: {spec}")
-        y: {(): [-2.3, 0.0, 2.3]}
-        z: {(): [-1.0, 0.0, 1.0]}
+        y: {(): [np.float64(-2.3), 0.0, np.float64(2.3)]}
+        z: {(): [np.float64(-1.0), 0.0, np.float64(1.0)]}
 
         Note that the values of the output are dictionaries instead of the spectrum lists, that
         they include the prefactors introduced by classical preprocessing, and
