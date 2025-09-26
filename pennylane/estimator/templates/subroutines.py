@@ -635,7 +635,7 @@ class QPE(ResourceOperator):
     Args:
         base (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the phase estimation operator
         num_estimation_wires (int): the number of wires used for measuring out the phase
-        adj_qft_op (Union[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`, None]): An optional
+        adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
         wires (Sequence[int], None): the wires the operation acts on
 
@@ -736,7 +736,7 @@ class QPE(ResourceOperator):
                 * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the phase estimation operator.
                 * num_estimation_wires (int): the number of wires used for measuring out the phase
-                * adj_qft_cmpr_op (Union[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, None]): An optional compressed
+                * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                   default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
         """
@@ -761,7 +761,7 @@ class QPE(ResourceOperator):
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_estimation_wires (int): the number of wires used for measuring out the phase
-            adj_qft_cmpr_op (Union[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, None]): An optional compressed
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
@@ -785,7 +785,7 @@ class QPE(ResourceOperator):
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_estimation_wires (int): the number of wires used for measuring out the phase
-            adj_qft_cmpr_op (Union[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, None]): An optional compressed
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
@@ -1552,7 +1552,7 @@ class QROM(ResourceOperator):
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
         restored (bool, optional): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code:`True`.
-        select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+        select_swap_depth (int | None): A parameter :math:`\lambda` that determines
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
             :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
@@ -1661,7 +1661,7 @@ class QROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+            select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
@@ -1852,7 +1852,7 @@ class QROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             restored (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+            select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
@@ -1914,7 +1914,7 @@ class QROM(ResourceOperator):
                   dataset.
                 * restored (bool, optional): Determine if allocated qubits should be reset after the
                   computation (at the cost of higher gate counts). Defaults to :code`True`.
-                * select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that
+                * select_swap_depth (int | None): A parameter :math:`\lambda` that
                   determines if data will be loaded in parallel by adding more rows following
                   Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be
                   :code:`None`, :code:`1` or a positive integer power of two. Defaults to :code:`None`,
@@ -1949,7 +1949,7 @@ class QROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             restored (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+            select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
