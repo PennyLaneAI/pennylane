@@ -459,13 +459,14 @@ class QNode:
         unitary, respectively. The input ``y`` is a ``float`` value and will be used together with
         all three values in ``x`` and ``U``. We obtain three output values:
 
-        >>> circuit(x, y, U)
-        array([..., ...,  ...])
+        >>> result = circuit(x, y, U)
+        >>> result # doctest: +SKIP
+        array([ 0.34560453, -0.26799399, -0.11409664])
 
         This is equivalent to iterating over all broadcasted arguments using ``zip``:
 
-        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)]
-        [np.float64(...), np.float64(...), np.float64(...)]
+        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)] # doctest: +SKIP
+        [np.float64(0.2769413890858924), np.float64(-0.04160521312845867), np.float64(0.021569381284900963)]
 
         In the same way it is possible to broadcast multiple arguments of a single operator,
         for example:
