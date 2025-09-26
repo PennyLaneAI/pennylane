@@ -191,7 +191,7 @@ class PhaseGradient(ResourceOperator):
 
         Resources:
             The resources are obtained by construction. The phase gradient state is defined as an
-            equal superposition of phaseshifts where each shift is progressively more precise. This
+            equal superposition of phase shifts where each shift is progressively more precise. This
             is achieved by applying Hadamard gates to each qubit and then applying Z-rotations to each
             qubit with progressively smaller rotation angle. The first three rotations can be compiled to
             a Z-gate, S-gate and a T-gate.
@@ -1153,7 +1153,7 @@ class AQFT(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * order (int): the maximum number of controlled phaseshifts to which the operation is truncated
+                * order (int): the maximum number of controlled phase shifts to which the operation is truncated
                 * num_wires (int): the number of qubits the operation acts upon
         """
         return {"order": self.order, "num_wires": self.num_wires}
@@ -1164,7 +1164,7 @@ class AQFT(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            order (int): the maximum number of controlled phaseshifts to truncate
+            order (int): the maximum number of controlled phase shifts to truncate
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
@@ -1179,7 +1179,7 @@ class AQFT(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            order (int): the maximum number of controlled phaseshifts to which the operation is truncated
+            order (int): the maximum number of controlled phase shifts to which the operation is truncated
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
