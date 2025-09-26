@@ -857,6 +857,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.workflow.construct_batch.expand_fn_transform` is deleted as it was local and no longer getting used.
+  [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
+
 * Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
   If you would like to get the canonical interface you can simply use the `Enum` like,
 
