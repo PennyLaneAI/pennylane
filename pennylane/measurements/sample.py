@@ -218,13 +218,12 @@ def sample(
 
         We previously squeezed out singleton dimensions like:
 
-        >>> qml.set_shots(circuit, 1)(wires=1)
-        array([[0]])
-        >>> qml.set_shots(circuit, 2)(0)
-        array([[0],
-               [0]])
-        >>> qml.set_shots(circuit, 1)((0,1))
-        array([[0, 0]])
+        >>> qml.set_shots(circuit, 1)(wires=1) # doctest: +SKIP
+        array(0)
+        >>> qml.set_shots(circuit, 2)(0) # doctest: +SKIP
+        array([0, 0])
+        >>> qml.set_shots(circuit, 1)((0,1)) # doctest: +SKIP
+        array([0, 0])
 
         With v0.42 and newer, the above circuit will **always** return an array of shape ``(shots, num_wires)``.
 
