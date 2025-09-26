@@ -282,8 +282,8 @@ class RY(Operation):
         **Example**
 
         >>> qml.RY.compute_matrix(torch.tensor(0.5))
-        tensor([[ 0.9689, -0.2474],
-                [ 0.2474,  0.9689]])
+        tensor([[ 0.9689+0.j, -0.2474-0.j],
+                [ 0.2474+0.j,  0.9689+0.j]])
         """
 
         c = qml.math.cos(theta / 2)
@@ -664,8 +664,8 @@ class PhaseShift(Operation):
         **Example**
 
         >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
-        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
-                [0.0000+0.0000j, 0.9689+0.2474j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j]])
         """
         if (
             qml.math.get_interface(phi) == "tensorflow"
@@ -1294,9 +1294,7 @@ class U2(Operation):
         **Example:**
 
         >>> qml.U2.compute_decomposition(1.23, 2.34, wires=0)
-        [Rot(2.34, 1.5707963267948966, -2.34, wires=[0]),
-        PhaseShift(2.34, wires=[0]),
-        PhaseShift(1.23, wires=[0])]
+        [Rot(2.34, np.float64(1.5707963267948966), -2.34, wires=[0]), PhaseShift(2.34, wires=[0]), PhaseShift(1.23, wires=[0])]
 
         """
         pi_half = qml.math.ones_like(delta) * (np.pi / 2)

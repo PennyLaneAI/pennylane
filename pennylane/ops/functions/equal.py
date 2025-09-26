@@ -88,11 +88,6 @@ def equal(
     >>> qml.equal(prod1, prod2), qml.equal(prod1, prod3)
     (True, False)
 
-    >>> prod = qml.X(0) @ qml.Y(1)
-    >>> ham = qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)])
-    >>> qml.equal(prod, ham)
-    True
-
     >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.Z(0) @ qml.Y(1), qml.Y(1) @ qml.Z(0) @ qml.Identity("a")])
     >>> H2 = qml.Hamiltonian([1], [qml.Z(0) @ qml.Y(1)])
     >>> H3 = qml.Hamiltonian([2], [qml.Z(0) @ qml.Y(1)])
@@ -107,9 +102,9 @@ def equal(
     True
     >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
     >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.Z(0))])
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-7)
     False
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-5)
     True
 
     .. details::
@@ -125,8 +120,8 @@ def equal(
         >>> qml.equal(op1, op2, check_interface=False, check_trainability=False)
         True
 
-        >>> op3 = qml.RX(np.array(1.2, requires_grad=True), wires=0)
-        >>> op4 = qml.RX(np.array(1.2, requires_grad=False), wires=0)
+        >>> op3 = qml.RX(pnp.array(1.2, requires_grad=True), wires=0)
+        >>> op4 = qml.RX(pnp.array(1.2, requires_grad=False), wires=0)
         >>> qml.equal(op3, op4)
         False
 
@@ -187,12 +182,15 @@ def assert_equal(
     >>> op1 = qml.RX(np.array(0.12), wires=0)
     >>> op2 = qml.RX(np.array(1.23), wires=0)
     >>> qml.assert_equal(op1, op2)
-    AssertionError: op1 and op2 have different data.
-    Got (array(0.12),) and (array(1.23),)
+    Traceback (most recent call last):
+        ...
+    AssertionError: op1 and op2 have different data. Got (array(0.12),) and (array(1.23),)
 
     >>> h1 = qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)])
     >>> h2 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)])
     >>> qml.assert_equal(h1, h2)
+    Traceback (most recent call last):
+        ...
     AssertionError: op1 and op2 have different operands because op1 and op2 have different scalars. Got 2 and 1
 
     """

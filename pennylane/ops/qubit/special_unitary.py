@@ -270,7 +270,7 @@ class SpecialUnitary(Operation):
     For two qubits, this could look like this:
 
     >>> wires = [0, 1]
-    # Activating the Pauli words ["IY", "IZ", "XX", "XY", "YY", "YZ", "ZY", "ZZ"]
+    >>> # Activating the Pauli words ["IY", "IZ", "XX", "XY", "YY", "YZ", "ZY", "ZZ"]
     >>> theta = 0.3 * np.array([0, 1, 2, 0, -1, 1, 0, 0, 0, 1, 1, 1, 0, 0, -1])
     >>> len(theta) == 4 ** len(wires) - 1 # theta contains one parameter per Pauli word
     True

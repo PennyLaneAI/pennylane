@@ -69,19 +69,13 @@ def evolve(*args, **kwargs):
         Instead of computing the Suzuki-Trotter product approximation as:
 
         >>> qml.evolve(H_flat, num_steps=2).decomposition()
-        [RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1]),
-        RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1])]
+        [RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1]), RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1])]
 
         The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
         >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
         >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
-        [RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1]),
-        RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1])]
+        [RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1]), RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1])]
 
     **Examples**
 
@@ -89,7 +83,7 @@ def evolve(*args, **kwargs):
 
     >>> op = qml.evolve(qml.X(0), coeff=2)
     >>> op
-    Exp(-2j PauliX)
+    Evolution(-2j PauliX)
 
     .. raw:: html
 
@@ -122,7 +116,7 @@ def evolve(*args, **kwargs):
     When evolving a :class:`.ParametrizedHamiltonian`, a :class:`.ParametrizedEvolution`
     instance is returned:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         coeffs = [lambda p, t: p * t for _ in range(4)]
         ops = [qml.X(i) for i in range(4)]
@@ -140,16 +134,9 @@ def evolve(*args, **kwargs):
     is evaluated at set parameters. This is done by calling the :class:`.ParametrizedEvolution`, which has the call
     signature ``(p, t)``:
 
-    >>>  qml.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
-    Array([[ 0.04930558+0.j        ,  0.        -0.03259093j,
-         0.        +0.1052632j ,  0.06957878+0.j        ,
-         0.        -0.01482305j, -0.00979751+0.j        ,
-         0.03164552+0.j        ,  0.        -0.0209179j ,
-         0.        +0.33526757j,  0.22161038+0.j        ,
-         ...
-         ...
-         ...
-         0.        -0.03259093j,  0.04930566+0.j        ]],      dtype=complex64)
+    >>> matrix = qml.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
+    >>> print(matrix.shape)
+    (16, 16)
 
     Additional options regarding how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
     along with the parameters, as keyword arguments. These options are:
@@ -179,13 +166,10 @@ def evolve(*args, **kwargs):
 
     >>> params = [1., 2., 3., 4.]
     >>> circuit(params)
-    Array(0.86231063, dtype=float64)
+    Array(0.862..., dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    [Array(50.391273, dtype=float64),
-    Array(-9.42415807e-05, dtype=float64),
-    Array(-0.0001049, dtype=float64),
-    Array(-0.00010601, dtype=float64)]
+    [Array(50.63..., dtype=float64), Array(-9.42...e-05, dtype=float64), Array(-0.0001..., dtype=float64), Array(-0.0001..., dtype=float64)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means

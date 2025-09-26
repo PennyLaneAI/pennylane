@@ -78,8 +78,10 @@ class AmplitudeDamping(Channel):
         **Example**
 
         >>> qml.AmplitudeDamping.compute_kraus_matrices(0.5)
-        [array([[1., 0.], [0., 0.70710678]]),
-         array([[0., 0.70710678], [0., 0.]])]
+        [array([[1.        , 0.        ],
+                [0.        , 0.70710678]]),
+         array([[0.        , 0.70710678],
+                [0.        , 0.        ]])]
         """
         if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
@@ -323,10 +325,14 @@ class DepolarizingChannel(Channel):
         **Example**
 
         >>> qml.DepolarizingChannel.compute_kraus_matrices(0.5)
-        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
-         array([[0.        , 0.40824829], [0.40824829, 0.        ]]),
-         array([[0.+0.j        , 0.-0.40824829j], [0.+0.40824829j, 0.+0.j        ]]),
-         array([[ 0.40824829,  0.        ], [ 0.        , -0.40824829]])]
+        [array([[0.70710678+0.j, 0.        +0.j],
+                [0.        +0.j, 0.70710678+0.j]]),
+         array([[0.        +0.j, 0.40824829+0.j],
+                [0.40824829+0.j, 0.        +0.j]]),
+         array([[0.+0.j        , 0.-0.40824829j],
+                [0.+0.40824829j, 0.+0.j        ]]),
+         array([[ 0.40824829+0.j,  0.        +0.j],
+                [ 0.        +0.j, -0.40824829+0.j]])]
         """
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
@@ -624,7 +630,7 @@ class PauliError(Channel):
 
         **Example**
 
-        >>> qml.PauliError.compute_kraus_matrices("X", 0.5)
+        >>> qml.PauliError.compute_kraus_matrices(0.5, "X")
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
@@ -788,7 +794,7 @@ class QubitChannel(Channel):
         **Example**
 
         >>> K_list = qml.PhaseFlip(0.5, wires=0).kraus_matrices()
-        >>> res = qml.QubitChannel.compute_kraus_matrices(K_list)
+        >>> res = qml.QubitChannel.compute_kraus_matrices(K_list)[0]
         >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
         True
         """
@@ -909,10 +915,18 @@ class ThermalRelaxationError(Channel):
         **Example**
 
         >>> qml.ThermalRelaxationError.compute_kraus_matrices(0.1, 1.2, 1.3, 0.1)
-        [array([[0.        , 0.        ], [0.08941789, 0.        ]]),
-         array([[0.        , 0.26825366], [0.        , 0.        ]]),
-         array([[-0.12718544,  0.        ], [ 0.        ,  0.13165421]]),
-         array([[0.98784022, 0.        ], [0.        , 0.95430977]])]
+        [array([[0.        , 0.        ],
+                [0.08941789, 0.        ]]),
+         array([[0.        , 0.26825366],
+                [0.        , 0.        ]]),
+         array([[-0.12718544,  0.        ],
+                [ 0.        ,  0.13165421]]),
+         array([[0.98784022, 0.        ],
+                [0.        , 0.95430977]]),
+         array([[0., 0.],
+                [0., 0.]]),
+         array([[0., 0.],
+                [0., 0.]])]
         """
         if not np.is_abstract(pe) and not 0.0 <= pe <= 1.0:
             raise ValueError("pe must be between 0 and 1.")
