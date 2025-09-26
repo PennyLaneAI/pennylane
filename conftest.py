@@ -5,6 +5,7 @@ from sybil import Sybil
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
 
 import numpy as base_numpy
+import scipy as base_scipy
 import pennylane as qml
 
 try:
@@ -21,6 +22,7 @@ except ImportError:
 namespace = {
     "qml": qml,
     "np": base_numpy,
+    "sp": base_scipy,
     "pnp": qml.numpy,
     "jax": jax,
     "torch": torch,
