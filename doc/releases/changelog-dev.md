@@ -37,6 +37,7 @@
   * Added functionality to map PennyLane operations
     to their associated resource operators for resource estimation.
     [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
+
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
@@ -208,6 +209,45 @@
     a combination of phase gadgetization strategies and Clifford gate simplification rules.
     (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
     [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
+
+  As an example, consider the following circuit:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.T(0)
+      qml.CNOT([0, 1])
+      qml.S(0)
+      qml.T(0)
+      qml.T(1)
+      qml.CNOT([0, 2])
+      qml.T(1)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──T─╭●──S──T─╭●────┤  State
+  1: ────╰X──T────│───T─┤  State
+  2: ─────────────╰X────┤  State
+  ```
+
+  We can apply the holistic :func:`~.transforms.zx.optimize_t_count` compilation pass to
+  reduce the number of ``T`` gates. In this case, all ``T`` gates can be removed!
+
+  ```pycon
+  >>> print(qml.draw(qml.transforms.zx.optimize_t_count(circuit))())
+  0: ──Z─╭●────╭●─┤  State
+  1: ────╰X──S─│──┤  State
+  2: ──────────╰X─┤  State
+  ```
+
+  The documentation was updated to include its own section on ZX calculus-based passes.
+  [(#8201)](https://github.com/PennyLaneAI/pennylane/pull/8201)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
@@ -747,7 +787,7 @@
   [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
 
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
-  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
+  submodule :mod:`.transforms.zx`. The same functions are available, but their signature
   may have changed.
   - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
   - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
