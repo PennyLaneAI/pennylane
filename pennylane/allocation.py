@@ -29,7 +29,7 @@ try:
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QmlPrimitive
 except ImportError:
-    jax = None
+    jax = None  # type: ignore
     has_jax = False
 
 
@@ -170,6 +170,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     2: ──────────╰SWAP─┤
     """
     if capture_enabled():
+        assert deallocate_prim
         if not isinstance(wires, Sequence):
             wires = (wires,)
         return deallocate_prim.bind(*wires)
@@ -357,6 +358,7 @@ def allocate(
     """
     state = AllocateState(state)
     if capture_enabled():
+        assert allocate_prim
         wires = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
     else:
         wires = [DynamicWire() for _ in range(num_wires)]

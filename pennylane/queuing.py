@@ -164,7 +164,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
-from typing import Optional, Union
+from typing import Literal, Optional, Protocol
 
 from pennylane.exceptions import QueuingError
 
@@ -214,7 +214,7 @@ class QueuingManager:
 
     """
 
-    _active_contexts = []
+    _active_contexts: list["AnnotatedQueue"] = []
     """The stack of contexts that are currently active."""
 
     @classmethod
@@ -549,13 +549,26 @@ def apply(op, context=QueuingManager):
     return op
 
 
-ops_or_meas = Union["pennylane.operation.Operator", "pennylane.measurements.MeasurementProcess"]
+# pylint: disable=too-few-public-methods
+class OpsQueue(Protocol):
+    """An object with a ``_queue_category`` of ``"_ops"``."""
+
+    @property
+    def _queue_category(self) -> Literal["_ops"]: ...
+
+
+# pylint: disable=too-few-public-methods
+class MeasQueue(Protocol):
+    """An object with a ``_queue_category`` of ``"_measurements"``."""
+
+    @property
+    def _queue_category(self) -> Literal["_measurements"]: ...
 
 
 # pylint: disable=protected-access
 def process_queue(
     queue: AnnotatedQueue,
-) -> tuple[list[ops_or_meas], list["pennylane.measurements.MeasurementProcess"]]:
+) -> tuple[list[OpsQueue], list[MeasQueue]]:
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
@@ -570,7 +583,7 @@ def process_queue(
         QueuingError: If the queue contains objects that cannot be processed into a QuantumScript
 
     """
-    lists = {"_ops": [], "_measurements": []}
+    lists = {"_ops": [], "_measurements": []}  # type:ignore
     list_order = {"_ops": 1, "_measurements": 2}
     current_list = "_ops"
 

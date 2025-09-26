@@ -20,7 +20,7 @@ import copy
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
@@ -45,6 +45,9 @@ from .capture_measurements import (
 )
 from .measurement_value import MeasurementValue
 
+if TYPE_CHECKING:
+    import jax
+
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     """Represents a measurement process occurring at the end of a
@@ -62,7 +65,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             where the instance has to be identified
     """
 
-    _shortname = None
+    _shortname: str = ""
 
     _obs_primitive: Optional["jax.extend.core.Primitive"] = None
     _wires_primitive: Optional["jax.extend.core.Primitive"] = None
@@ -156,19 +159,22 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
 
+    mv: None | MeasurementValue | list[MeasurementValue]
+    obs: None | Operator
+
     def __init__(
         self,
-        obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
+        obs: None | Operator | MeasurementValue | Sequence[MeasurementValue] = None,
         wires: Wires | None = None,
         eigvals: TensorLike | None = None,
         id: str | None = None,
     ):
-        if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
+        if isinstance(obs, (MeasurementValue, Sequence)):
             # Cast sequence of measurement values to list
-            self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
+            self.mv = obs if isinstance(obs, MeasurementValue) else list(obs)
             self.obs = None
         elif is_abstract(obs):  # Catalyst program with qml.sample(m, wires=i)
-            self.mv = obs
+            self.mv = obs  # type: ignore
             self.obs = None
         else:
             self.obs = obs
@@ -435,7 +441,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         return self
 
     @property
-    def _queue_category(self):
+    def _queue_category(self) -> Literal["_measurements"]:
         """Denotes that `MeasurementProcess` objects should be processed into the `_measurements` list
         in `QuantumTape` objects.
 
@@ -480,7 +486,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         if self.mv is not None:
             new_measurement.mv = (
                 self.mv.map_wires(wire_map=wire_map)
-                if getattr(self.mv, "name", None) == "MeasurementValue"
+                if isinstance(self.mv, MeasurementValue)
                 else [m.map_wires(wire_map=wire_map) for m in self.mv]
             )
         elif self.obs is not None:

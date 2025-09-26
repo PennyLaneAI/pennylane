@@ -106,3 +106,25 @@ exclude_dirs = ["tests", "pennylane/labs/tests"]
 skips = [
     "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
 ]
+
+[tool.mypy]
+ignore_errors = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pennylane.allocation",
+    "pennylane.boolean_fn",
+    "circuit_graph",
+    "pennylane.debugging.*",
+    "pennylane.drawer.*",
+    "pennylane.exceptions",
+    "pennylane.fourier.*",
+    "pennylane.kernels.*",
+    "pennylane.measurements.measurements",
+    "pennylane.pytrees.*",
+    "pennylane.queuing",
+    "pennylane.wires",
+    "pennylane.registers",
+]
+ignore_errors = false
