@@ -656,7 +656,7 @@ def _equal_measurements(
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:
-        return equal(
+        dispatch_result = _equal(
             op1.obs,
             op2.obs,
             check_interface=check_interface,
@@ -664,33 +664,45 @@ def _equal_measurements(
             rtol=rtol,
             atol=atol,
         )
+        if isinstance(dispatch_result, str):
+            return f"op1 and op2 have different observables because {dispatch_result}"
+        return dispatch_result
 
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
-            return qml.equal(op1.mv, op2.mv)
+            mv_equal = qml.equal(op1.mv, op2.mv)
+            if not mv_equal:
+                return "op1 and op2 are not equal because they have different measurement values"
+            return True
 
         if qml.math.is_abstract(op1.mv) or qml.math.is_abstract(op2.mv):
-            return op1.mv is op2.mv
+            if op1.mv is op2.mv:
+                return True
+            return "Abstract MeasurementValue objects are not the same instance"
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
-            if len(op1.mv) == len(op2.mv):
-                return all(mv1.measurements == mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv))
-
-        return False
+            if len(op1.mv) != len(op2.mv):
+                return f"MeasurementValue lists differ in length: {len(op1.mv)} vs {len(op2.mv)}"
+            if any(mv1.measurements != mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv)):
+                return "One or more MeasurementValue objects differ in their .measurements"
+            return True
+        return "MeasurementValue attributes are not iterable or not compatible"
 
     if op1.wires != op2.wires:
-        return False
+        return f"Measurement wires differ: {op1.wires} vs {op2.wires}"
+
 
     if op1.obs is None and op2.obs is None:
         # only compare eigvals if both observables are None.
         # Can be expensive to compute for large observables
         if op1.eigvals() is not None and op2.eigvals() is not None:
-            return qml.math.allclose(op1.eigvals(), op2.eigvals(), rtol=rtol, atol=atol)
-
-        return op1.eigvals() is None and op2.eigvals() is None
-
-    return False
-
+            if qml.math.allclose(op1.eigvals(), op2.eigvals(), rtol=rtol, atol=atol):
+                return True
+            return f"Eigenvalues are not close: op1.eigvals={op1.eigvals()}, op2.eigvals={op2.eigvals()}, with rtol={rtol}, atol={atol}"
+        if op1.eigvals() is None and op2.eigvals() is None:
+            return True
+        return "One measurement has eigvals defined and the other does not"
+    return "Measurements have different structures: mismatched obs or mv attributes"
 
 @_equal_dispatch.register
 def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
