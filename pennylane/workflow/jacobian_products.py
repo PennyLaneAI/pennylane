@@ -412,6 +412,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     >>> with device.tracker:
     ...     vjp = jpc.compute_vjp(batch , (0.5, ) )
+    >>> device.tracker.totals
+    {}
     >>> vjp
     (array([-0.4207...]),)
 
