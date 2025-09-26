@@ -83,4 +83,10 @@ from .templates import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    TrotterCDF,
+    TrotterProduct,
+    TrotterTHC,
+    TrotterVibrational,
+    TrotterVibronic,
+    CompactHamiltonian,
 )

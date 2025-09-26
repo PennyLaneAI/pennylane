@@ -28,3 +28,7 @@ from .subroutines import (
     QPE,
     IterativeQPE,
 )
+
+from .trotter import TrotterCDF, TrotterProduct, TrotterTHC, TrotterVibrational, TrotterVibronic
+
+from .compact_hamiltonian import CompactHamiltonian

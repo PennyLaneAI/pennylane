@@ -61,6 +61,10 @@
     [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
   * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
+  * The ``CompactHamiltonian`` class was added to `qml.estimator.templates` as a compact representation for the Hamiltonian of a quantum system.
+    [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
+  * The resource templates related to Trotter were added to `qml.estimator.templates`.
+    [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
@@ -72,6 +76,7 @@
     ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
     ``IterativeQPE`` were added to `qml.estimator.templates`.
     [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
+
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
