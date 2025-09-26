@@ -294,7 +294,7 @@ def bilinear_expansion(
     bch_coeff: complex,
 ) -> List[Dict[Node, complex]]:
     r"""
-    Substitutes BCH expansions into a commutator tree structure.
+    Performs bilinear expansion of a commutator template.
 
     This version assumes all leaf nodes in the template are placeholders
     that have a corresponding expansion in the `terms` dictionary.
