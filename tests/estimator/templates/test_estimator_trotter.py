@@ -420,6 +420,30 @@ class TestTrotterVibrational:
                 ),
             },
         ),
+        (
+            4,
+            2,
+            5,
+            10,
+            1,
+            {
+                "zeroed": 127,
+                "any_state": 0,
+                "algo_wires": 8,
+                "gate_types": defaultdict(
+                    int,
+                    {
+                        "Z": 4,
+                        "S": 4,
+                        "T": 3076,
+                        "X": 13116,
+                        "Toffoli": 242680,
+                        "CNOT": 387840,
+                        "Hadamard": 725510,
+                    },
+                ),
+            },
+        ),
     ]
 
     @pytest.mark.parametrize(
@@ -437,6 +461,7 @@ class TestTrotterVibrational:
             qre.TrotterVibrational(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
+
         assert res.zeroed == expected_res["zeroed"]
         assert res.any_state == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
@@ -633,10 +658,7 @@ class TestResourceTrotterVibronic:
             qre.TrotterVibronic(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-        print(res.zeroed)
-        print(res.any_state)
-        print(res.algo_wires)
-        print(res.gate_counts)
+
         assert res.zeroed == expected_res["zeroed"]
         assert res.any_state == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
