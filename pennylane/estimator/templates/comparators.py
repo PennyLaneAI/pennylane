@@ -22,7 +22,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,unused-argument
 
@@ -69,6 +69,8 @@ class SingleQubitComparator(ResourceOperator):
     num_wires = 4
 
     def __init__(self, wires: WiresLike = None):
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -170,6 +172,8 @@ class TwoQubitComparator(ResourceOperator):
     num_wires = 4
 
     def __init__(self, wires: WiresLike = None):
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -326,6 +330,8 @@ class IntegerComparator(ResourceOperator):
         self.register_size = register_size
         self.geq = geq
         self.num_wires = register_size + 1
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -535,6 +541,8 @@ class RegisterComparator(ResourceOperator):
         self.second_register = second_register
         self.geq = geq
         self.num_wires = first_register + second_register + 1
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
