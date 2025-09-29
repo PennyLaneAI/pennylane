@@ -371,12 +371,12 @@ def _get_decomposition(
 
     lookup_op_type = op_type
     custom_decomp_dict = config.custom_decomps
-    
+
     if op_type in _SYMBOLIC_DECOMP_MAP:
         decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
         custom_decomp_dict = getattr(config, decomp_attr_name)
         lookup_op_type = comp_res_op.params["base_cmpr_op"].op_type
-    
+
     kwargs = config.resource_op_precisions.get(lookup_op_type, {})
     decomp_func = custom_decomp_dict.get(lookup_op_type, op_type.resource_decomp)
 
