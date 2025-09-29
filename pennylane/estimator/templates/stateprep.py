@@ -87,7 +87,7 @@ class UniformStatePrep(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -113,7 +113,7 @@ class UniformStatePrep(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_states": num_states})
 
     @classmethod
-    def resource_decomp(cls, num_states):
+    def resource_decomp(cls, num_states: int) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -198,7 +198,7 @@ class AliasSampling(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -331,7 +331,7 @@ class MPSPrep(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -588,7 +588,7 @@ class QROMStatePreparation(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, num_state_qubits, precision=None, positive_and_real=False, selswap_depths=1
-    ):
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -630,7 +630,7 @@ class QROMStatePreparation(ResourceOperator):
         positive_and_real,
         precision=None,
         selswap_depths=1,
-    ):
+    ) -> list[GateCount]:
         r"""A private function which implements two variants of the decomposition of QROMStatePrep,
         based on the value of the :code:`use_phase_grad_trick` argument.
 
@@ -781,7 +781,7 @@ class QROMStatePreparation(ResourceOperator):
         positive_and_real,
         precision=None,
         selswap_depths=1,
-    ):
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -791,7 +791,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive.
             precision (float): The precision threshold for loading in the binary representation
                 of the rotation angles.
-            select_swap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
+            selswap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
@@ -814,7 +814,9 @@ class QROMStatePreparation(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, num_state_qubits, positive_and_real, precision=None, selswap_depths=1):
+    def resource_decomp(
+        cls, num_state_qubits, positive_and_real, precision=None, selswap_depths=1
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -830,7 +832,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive.
             precision (float): The precision threshold for loading in the binary representation
                 of the rotation angles.
-            select_swap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
+            selswap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth.
 
         Resources:

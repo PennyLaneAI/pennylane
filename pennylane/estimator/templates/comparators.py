@@ -78,7 +78,7 @@ class SingleQubitComparator(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -87,7 +87,7 @@ class SingleQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -97,7 +97,7 @@ class SingleQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls):
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -194,7 +194,7 @@ class TwoQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def resource_rep(cls) -> dict:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -242,7 +242,7 @@ class TwoQubitComparator(ResourceOperator):
         return gate_list
 
     @classmethod
-    def TemporaryAND_based_decomp(cls):
+    def TemporaryAND_based_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -348,7 +348,7 @@ class IntegerComparator(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -365,7 +365,7 @@ class IntegerComparator(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, value: int, register_size: int, geq: bool = False
-    ) -> list[CompressedResourceOp]:
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -566,7 +566,7 @@ class RegisterComparator(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
