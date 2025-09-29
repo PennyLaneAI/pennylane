@@ -29,7 +29,6 @@ from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
-from pennylane.estimator.ops import Adjoint, Controlled, Pow
 # pylint: disable=too-many-arguments
 
 
