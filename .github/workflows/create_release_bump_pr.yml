@@ -45,7 +45,6 @@ jobs:
       if: ${{ env.branch_exists == 'true' }}
       uses: actions/checkout@v4
       with:
-        ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
         ref: ${{ env.rc_branch }}
 
     - name: Check for Catalyst and Lightning release
