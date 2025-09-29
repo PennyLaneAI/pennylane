@@ -55,15 +55,19 @@ class SingleQubitComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> single_qubit_compare = qre.SingleQubitComparator()
     >>> print(qre.estimate(single_qubit_compare))
     --- Resources: ---
-     Total qubits: 4
+     Total wires: 4
+        algorithmic wires: 4
+        allocated wires: 0
+             zero state: 0
+             any state: 0
      Total gates : 8
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'Toffoli': 1, 'CNOT': 4, 'X': 3}
+      'Toffoli': 1,
+      'CNOT': 4,
+      'X': 3
     """
 
     num_wires = 4
@@ -158,15 +162,19 @@ class TwoQubitComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> two_qubit_compare = qre.TwoQubitComparator()
     >>> print(qre.estimate(two_qubit_compare))
     --- Resources: ---
-     Total qubits: 5
+     Total wires: 5
+        algorithmic wires: 4
+        allocated wires: 1
+             zero state: 1
+             any state: 0
      Total gates : 10
-     Qubit breakdown:
-      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'Toffoli': 2, 'CNOT': 7, 'X': 1}
+      'Toffoli': 2,
+      'CNOT': 7,
+      'X': 1
     """
 
     num_wires = 4
@@ -247,11 +255,12 @@ class TwoQubitComparator(ResourceOperator):
 
             .. code-block:: bash
 
-                 x1 : ─╭X─╭●────╭●───────┤
-                 y1 : ─╰●─│─────├SWAP────┤
-                 x0 : ─╭X─├SWAP─│─────╭X─┤
-                 y0 : ─╰●─│─────╰SWAP─╰●─┤
-                |1> : ────╰SWAP──────────┤
+               x1: ─╭X───────╭●──────────╭●──────────┤
+               y1: ─╰●───────│────────╭X─├●────╭X────┤
+              |0>: ──────────│────────│──╰──╭●─│─────┤
+               x0: ─╭X─╭X────├●────╭X─│─────│──│──╭X─┤
+               y0: ─╰●─│─────│─────│──╰●────╰X─╰●─╰●─┤
+              |1>: ────╰●──X─╰───X─╰●────────────────┤
         """
         gate_list = []
 
@@ -311,16 +320,20 @@ class IntegerComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-
+    >>> from pennylane import estimator as qre
     >>> integer_compare = qre.IntegerComparator(value=4, register_size=6)
     >>> print(qre.estimate(integer_compare))
     --- Resources: ---
-     Total qubits: 9
+     Total wires: 9
+        algorithmic wires: 7
+        allocated wires: 2
+             zero state: 2
+             any state: 0
      Total gates : 19
-     Qubit breakdown:
-      zeroed qubits: 2, any_state qubits: 0, algorithmic qubits: 7
-     Gate breakdown:
-      {'X': 8, 'Toffoli': 3, 'Hadamard': 6, 'CNOT': 2}
+      'Toffoli': 3,
+      'CNOT': 2,
+      'X': 8,
+      'Hadamard': 6
     """
 
     resource_keys = {"value", "register_size", "geq"}
@@ -521,15 +534,20 @@ class RegisterComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> register_compare = qre.RegisterComparator(4, 6)
     >>> print(qre.estimate(register_compare))
     --- Resources: ---
-     Total qubits: 11
-     Total gates : 89
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 11
-     Gate breakdown:
-      {'Toffoli': 17, 'CNOT': 51, 'X': 18, 'Hadamard': 3}
+     Total wires: 17
+        algorithmic wires: 11
+        allocated wires: 6
+             zero state: 6
+             any state: 0
+     Total gates : 131
+      'Toffoli': 11,
+      'CNOT': 63,
+      'X': 36,
+      'Hadamard': 21
     """
 
     resource_keys = {"first_register", "second_register", "geq"}

@@ -59,6 +59,7 @@ class UniformStatePrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> unif_state_prep = qre.UniformStatePrep(10)
     >>> print(qre.estimate(unif_state_prep))
     --- Resources: ---
@@ -301,12 +302,15 @@ class MPSPrep(ResourceOperator):
     >>> mps = qre.MPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
     >>> print(qre.estimate(mps, gate_set={"CNOT", "RZ", "RY"}))
     --- Resources: ---
-     Total qubits: 13
+     Total wires: 13
+        algorithmic wires: 10
+        allocated wires: 3
+             zero state: 3
+             any state: 0
      Total gates : 1.654E+3
-     Qubit breakdown:
-      zeroed qubits: 3, any_state qubits: 0, algorithmic qubits: 10
-     Gate breakdown:
-      {'RZ': 728, 'CNOT': 774, 'RY': 152}
+      'RZ': 728,
+      'RY': 152,
+      'CNOT': 774
     """
 
     resource_keys = {"num_mps_matrices", "max_bond_dim", "precision"}
@@ -449,14 +453,20 @@ class QROMStatePreparation(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qrom_prep = qre.QROMStatePreparation(num_state_qubits=5, precision=1e-3)
-    >>> print(qre.estimate(qrom_prep, gate_set=qre.StandardGateSet))
+    >>> print(qre.estimate(qrom_prep))
     --- Resources: ---
-     Total qubits: 28
-     Total gates : 2.744E+3
-     Qubit breakdown:
-      zeroed qubits: 23, any_state qubits: 0, algorithmic qubits: 5
-     Gate breakdown:
-      {'X': 230, 'Toffoli': 236, 'CNOT': 1.522E+3, 'Hadamard': 732, 'S': 12, 'Adjoint(S)': 12}
+     Total wires: 28
+        algorithmic wires: 5
+        allocated wires: 23
+             zero state: 23
+             any state: 0
+     Total gates : 2.756E+3
+      'Toffoli': 236,
+      'CNOT': 1.522E+3,
+      'X': 230,
+      'Z': 12,
+      'S': 24,
+      'Hadamard': 732
 
     .. details::
         :title: Usage Details
