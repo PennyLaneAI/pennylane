@@ -45,6 +45,7 @@ from .ops.qubit import (
     MultiRZ,
     PauliRot,
     SingleExcitation,
+    QubitUnitary,
 )
 
 from .ops.op_math import (
@@ -67,4 +68,19 @@ from .ops.op_math import (
     Pow,
     Prod,
     ChangeOpBasis,
+)
+from .templates import (
+    OutOfPlaceSquare,
+    PhaseGradient,
+    OutMultiplier,
+    SemiAdder,
+    QFT,
+    AQFT,
+    BasisRotation,
+    Select,
+    QROM,
+    SelectPauliRot,
+    ControlledSequence,
+    QPE,
+    IterativeQPE,
 )
