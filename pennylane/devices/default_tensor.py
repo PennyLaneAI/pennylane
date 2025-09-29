@@ -45,7 +45,7 @@ from pennylane.measurements import (
 from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.templates.subroutines.trotter import _recursive_expression
+from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 
@@ -800,12 +800,10 @@ class DefaultTensor(Device):
         """
 
         obs = measurementprocess.obs
-        assert obs is not None, "variance must have an observable"
+
         obs_mat = qml.matrix(obs)
         expect_op = self.expval(measurementprocess)
-        expect_squar_op = self._local_expectation(
-            obs_mat @ qml.math.conj(obs_mat).T, tuple(obs.wires)
-        )
+        expect_squar_op = self._local_expectation(obs_mat @ obs_mat.conj().T, tuple(obs.wires))
 
         return expect_squar_op - np.square(expect_op)
 
@@ -959,7 +957,6 @@ class DefaultTensor(Device):
         )
 
 
-# pylint: disable=no-member
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
@@ -1040,8 +1037,9 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
     ops = ops._hyperparameters["base"].operands
     decomp = _recursive_expression(time / n, order, ops)[::-1] * n
     for o in decomp:
-        mat = qml.matrix(o).astype(device._c_dtype)  # pylint: disable=no-member
-        device._quimb_circuit.apply_gate(mat, *o.wires, parametrize=None)
+        device._quimb_circuit.apply_gate(
+            qml.matrix(o).astype(device._c_dtype), *o.wires, parametrize=None
+        )
 
 
 @singledispatch
@@ -1055,8 +1053,7 @@ def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
     ket = device._quimb_circuit.copy()
     for op in obs:
-        mat = qml.matrix(op).astype(device._c_dtype)  # pylint: disable=no-member
-        ket.apply_gate(mat, *op.wires, parametrize=None)
+        ket.apply_gate(qml.matrix(op).astype(device._c_dtype), *op.wires, parametrize=None)
     return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
 
 
