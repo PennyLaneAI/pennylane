@@ -92,5 +92,5 @@ jobs:
         git add pyproject.toml pennylane/compiler/compiler.py
         git commit -m "Bump minimum Lightning and Catalyst versions to ${lightning_version} and ${catalyst_version}"
        
-        git push origin bump-lightning-catalyst-test
+        git push origin bump-lightning-catalyst
         gh pr create --label "do not merge :warning:" --base ${{ env.rc_branch }} --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
