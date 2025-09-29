@@ -326,6 +326,10 @@ class TrotterCDF(ResourceOperator):
         self.compact_ham = compact_ham
 
         self.num_wires = 2 * compact_ham.params["num_orbitals"]
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+
         super().__init__(wires=wires)
 
     @property
@@ -599,6 +603,10 @@ class TrotterTHC(ResourceOperator):
         self.compact_ham = compact_ham
 
         self.num_wires = compact_ham.params["tensor_rank"] * 2
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+
         super().__init__(wires=wires)
 
     @property
@@ -890,6 +898,10 @@ class TrotterVibrational(ResourceOperator):
         self.coeff_precision = coeff_precision
 
         self.num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+
         super().__init__(wires=wires)
 
     @property
@@ -1243,6 +1255,10 @@ class TrotterVibronic(ResourceOperator):
             int(np.ceil(np.log2(compact_ham.params["num_states"])))
             + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
         )
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+
         super().__init__(wires=wires)
 
     @property

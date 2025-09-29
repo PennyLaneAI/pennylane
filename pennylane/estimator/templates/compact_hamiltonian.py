@@ -41,17 +41,21 @@ class CompactHamiltonian:
 
     >>> import pennylane.estimator as qre
     >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=8, tensor_rank=40)
-    >>> trotter_thc = qre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
+    >>> trotter_thc = qre.TrotterTHC(compact_ham, num_steps=100, order=2)
     >>> res = qre.estimate(trotter_thc)
     >>> print(res)
     --- Resources: ---
-     Total qubits: 80
+     Total wires: 80
+        algorithmic wires: 80
+        allocated wires: 0
+            zero state: 0
+            any state: 0
      Total gates : 3.960E+7
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 80
-     Gate breakdown:
-      {'T': 3.638E+7, 'S': 9.699E+5, 'Z': 6.466E+5, 'Hadamard': 6.466E+5, 'CNOT': 9.553E+5}
-
+      'T': 3.638E+7,
+      'CNOT': 9.553E+5,
+      'Z': 6.466E+5,
+      'S': 9.699E+5,
+      'Hadamard': 6.466E+5
     """
 
     def __init__(self, method_name: str, **params: dict[str, Any]):
