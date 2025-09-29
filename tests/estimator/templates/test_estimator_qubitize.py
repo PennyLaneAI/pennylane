@@ -127,7 +127,7 @@ class TestQubitizeTHC:
                 qre.CompactHamiltonian.thc(4, 20),
                 qre.PrepTHC(qre.CompactHamiltonian.thc(4,20), select_swap_depth=2),
                 None,
-                {"algo_qubits": 32, "ancilla_qubits": 109, "toffoli_gates": 983},
+                {"algo_qubits": 32, "ancilla_qubits": 109, "toffoli_gates": 967},
             ),
         ),
     )
