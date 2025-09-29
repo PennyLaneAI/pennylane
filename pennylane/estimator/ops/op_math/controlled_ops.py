@@ -151,8 +151,8 @@ class CH(ResourceOperator):
             qre.Controlled,
             {
                 "base_cmpr_op": resource_rep(qre.Hadamard),
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_h)]
@@ -295,8 +295,8 @@ class CY(ResourceOperator):
             qre.Controlled,
             {
                 "base_cmpr_op": resource_rep(qre.Y),
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_y)]
@@ -443,8 +443,8 @@ class CZ(ResourceOperator):
             qre.Controlled,
             {
                 "base_cmpr_op": resource_rep(qre.Z),
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_z)]
@@ -593,8 +593,8 @@ class CSWAP(ResourceOperator):
             qre.Controlled,
             {
                 "base_cmpr_op": resource_rep(qre.SWAP),
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_swap)]
@@ -740,8 +740,8 @@ class CCZ(ResourceOperator):
             qre.Controlled,
             {
                 "base_cmpr_op": resource_rep(qre.Z),
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires + 2,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
 
@@ -1005,8 +1005,8 @@ class TemporaryAND(ResourceOperator):
         mcx = resource_rep(
             qre.MultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
-                "num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_wires": num_ctrl_wires + 2,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(mcx)]
@@ -1265,7 +1265,7 @@ class Toffoli(ResourceOperator):
             qre.MultiControlledX,
             {
                 "num_ctrl_wires": num_ctrl_wires + 2,
-                "num_ctrl_values": num_zero_ctrl,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(mcx)]
@@ -1646,16 +1646,16 @@ class CRX(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
+        precision = target_resource_params["precision"]
         ctrl_rx = resource_rep(
             qre.Controlled,
             {
                 "base_cmpr_op": resource_rep(qre.RX, {"precision": precision}),
                 "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_ctrl_values": num_zero_ctrl,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_rx)]
-
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1804,12 +1804,13 @@ class CRY(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
+        precision = target_resource_params["precision"]
         ctrl_ry = resource_rep(
             qre.Controlled,
             {
                 "base_cmpr_op": resource_rep(qre.RY, {"precision": precision}),
                 "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_ctrl_values": num_zero_ctrl,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_ry)]
@@ -1970,7 +1971,7 @@ class CRZ(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(qre.RZ, {"precision": precision}),
                 "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_ctrl_values": num_zero_ctrl,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_rz)]
@@ -2037,7 +2038,7 @@ class CRot(ResourceOperator):
     resource_keys = {"precision"}
     num_wires = 2
 
-    def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None
+    def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
@@ -2149,7 +2150,7 @@ class CRot(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(qre.Rot, {"precision": precision}),
                 "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_ctrl_values": num_zero_ctrl,
+                "num_zero_ctrl": num_zero_ctrl,
             },
         )
         return [GateCount(ctrl_rot)]

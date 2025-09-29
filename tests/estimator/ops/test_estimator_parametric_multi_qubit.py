@@ -399,3 +399,61 @@ class TestPauliRot:
             qre.GateCount(qre.PauliRot.resource_rep(pauli_string=pauli_word, precision=precision))
         ]
         assert op.pow_resource_decomp(z, op.resource_params) == expected_res
+
+class TestPSWAP:
+    """Test the PSWAP class."""
+
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resource_params(self, precision):
+        """Test that the resource params are correct."""
+        if precision:
+            op = qre.PSWAP(precision=precision)
+        else:
+            op = qre.PSWAP()
+
+        assert op.resource_params == {"precision": precision}
+
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resource_rep(self, precision):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(qre.PSWAP, 2, {"precision": precision})
+        assert qre.PSWAP.resource_rep(precision=precision) == expected
+
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resources(self, precision):
+        """Test that the resources are correct."""
+        expected = [
+            qre.GateCount(qre.SWAP.resource_rep()),
+            qre.GateCount(qre.PhaseShift.resource_rep(precision=precision)),
+            qre.GateCount(qre.CNOT.resource_rep(), 2),
+        ]
+        assert qre.PSWAP.resource_decomp(precision=precision) == expected
+
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resources_adjoint(self, precision):
+        """Test that the adjoint resources are correct."""
+        expected = [qre.GateCount(qre.PSWAP.resource_rep(precision=precision))]
+        assert qre.PSWAP.adjoint_resource_decomp({"precision":precision}) == expected
+
+    @pytest.mark.parametrize("precision", (None, 1e-3))
+    def test_resources_controlled(self, precision):
+        """Test that the controlled resources are correct."""
+        expected = [
+            qre.GateCount(
+                qre.Controlled.resource_rep(
+                    qre.SWAP.resource_rep(),
+                    3,
+                    2,
+                )
+            ),
+            qre.GateCount(qre.CNOT.resource_rep(), 2),
+            qre.GateCount(
+                qre.Controlled.resource_rep(
+                    qre.PhaseShift.resource_rep(precision=precision),
+                    3,
+                    2,
+                )
+            ),
+        ]
+        op = qre.PSWAP(precision=precision)
+        assert op.controlled_resource_decomp(num_ctrl_wires=3, num_zero_ctrl=2, target_resource_params=op.resource_params) == expected

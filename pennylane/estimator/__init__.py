@@ -46,6 +46,7 @@ from .ops.qubit import (
     PauliRot,
     SingleExcitation,
     QubitUnitary,
+    PSWAP
 )
 
 from .ops.op_math import (
