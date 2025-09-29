@@ -23,6 +23,10 @@ import pennylane.estimator as qre
 
 class TestSingleExcitation:
     """Test the Resource SingleExcitation class."""
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            qre.SingleExcitation(wires=[0, 1, 2])
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     def test_resource_params(self, precision):

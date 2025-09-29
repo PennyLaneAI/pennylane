@@ -22,7 +22,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, signature-differs
 
@@ -83,6 +83,8 @@ class PhaseShift(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -172,9 +174,6 @@ class PhaseShift(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -250,6 +249,8 @@ class RX(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -336,9 +337,6 @@ class RX(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -414,6 +412,8 @@ class RY(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -497,9 +497,6 @@ class RY(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -574,6 +571,8 @@ class RZ(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -660,8 +659,6 @@ class RZ(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:
@@ -733,6 +730,8 @@ class Rot(ResourceOperator):
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -804,9 +803,6 @@ class Rot(ResourceOperator):
                 controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-
-        Raises:
-            ResourcesUndefinedError: Controlled version of this gate is not defined.
         """
         precision = target_resource_params.get("precision")
         if num_ctrl_wires == 1:

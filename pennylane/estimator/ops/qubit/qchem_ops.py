@@ -19,7 +19,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ
 
@@ -41,7 +41,7 @@ class SingleExcitation(ResourceOperator):
                     0 & 0 & 0 & 1
                 \end{bmatrix}.
 
-        The cost for implementing this transformation is given by:
+        This transformation can be expressed with the following decomposition:
 
         .. code-block:: bash
 
@@ -54,22 +54,29 @@ class SingleExcitation(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> se = qre.SingleExcitation()
-    >>> print(qre.estimate(se, qre.StandardGateSet))
+    >>> print(qre.estimate(se))
     --- Resources: ---
-    Total qubits: 2
-    Total gates : 16
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
-    Gate breakdown:
-     {'Adjoint(T)': 2, 'Hadamard': 4, 'S': 2, 'Adjoint(S)': 2, 'CNOT': 2, 'RZ': 1, 'RY': 1, 'T': 2}
-
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 108
+      'T': 92,
+      'CNOT': 2,
+      'Z': 4,
+      'S': 6,
+      'Hadamard': 4
     """
 
     num_wires = 2
     resource_keys = {"precision"}
 
     def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         super().__init__(wires=wires)
 

@@ -40,8 +40,7 @@ from pennylane import numpy as pnp
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
-from pennylane.tape import QuantumScript
-from pennylane.tape.tape import expand_tape
+from pennylane.tape import QuantumScript, expand_tape
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods

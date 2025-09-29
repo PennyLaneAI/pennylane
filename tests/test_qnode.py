@@ -1877,7 +1877,7 @@ class TestMCMConfiguration:
     def test_single_branch_statistics_error_without_qjit(self):
         """Test that an error is raised if attempting to use mcm_method="single-branch-statistics
         without qml.qjit"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("reference.qubit", wires=1)
 
         @qml.qnode(dev, mcm_method="single-branch-statistics")
         def circuit(x):

@@ -15,7 +15,8 @@ r"""Resource operators for parametric multi qubit operations."""
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
-from pennylane.wires import WiresLike
+
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, signature-differs
 
@@ -24,16 +25,16 @@ class MultiRZ(ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
-        precision (float | None): error threshold for Clifford+T decomposition of this operation
+        num_wires (int): the number of wires the operation acts upon
+        precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
         The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
-        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+        quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper.
 
         Specifically, the resources are given by one ``RZ`` gate and a cascade of
-        :math:`2 * (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
+        :math:`2 \times (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
         the gate acts on.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.MultiRZ`.
@@ -42,17 +43,20 @@ class MultiRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> multi_rz = qml.estimator.MultiRZ(num_wires=3)
+    >>> from pennylane import estimator as qre
+    >>> multi_rz = qre.MultiRZ(num_wires=3)
     >>> gate_set = {"CNOT", "RZ"}
     >>>
     >>> print(qml.estimator.estimate(multi_rz, gate_set))
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 5
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-     {'CNOT': 4, 'RZ': 1}
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 5
+      'RZ': 1,
+      'CNOT': 4
 
     """
 
@@ -63,6 +67,8 @@ class MultiRZ(ResourceOperator):
     ) -> None:
         self.num_wires = num_wires
         self.precision = precision
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -75,10 +81,10 @@ class MultiRZ(ResourceOperator):
 
         Resources:
             The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
-            quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+            quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper.
 
             Specifically, the resources are given by one ``RZ`` gate and a cascade of
-            :math:`2 * (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
+            :math:`2 \times (n - 1)` ``CNOT`` gates where :math:`n` is the number of qubits
             the gate acts on.
 
         Returns:
@@ -208,7 +214,7 @@ class PauliRot(ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Args:
-        pauli_string (str): a string describing the pauli operators that define the rotation
+        pauli_string (str): a string describing the Pauli operators that define the rotation
         precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wire the operation acts on
 
@@ -217,8 +223,8 @@ class PauliRot(ResourceOperator):
         the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
         The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
-        for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
-        in combination with the following identity:
+        for quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper,
+        in combination with the following identities:
 
         .. math::
 
@@ -228,7 +234,7 @@ class PauliRot(ResourceOperator):
             \end{align}
 
         Specifically, the resources are given by one :code:`RZ` gate and a cascade of
-        :math:`2 * (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+        :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
         the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
         a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word we
         conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
@@ -239,16 +245,21 @@ class PauliRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> pr = qre.PauliRot(pauli_string="XYZ")
-    >>> print(qre.estimate(pr, qre.StandardGateSet))
+    >>> print(qre.estimate(pr))
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 11
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-     {'Hadamard': 4, 'S': 1, 'Adjoint(S)': 1, 'RZ': 1, 'CNOT': 4}
-
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 55
+      'T': 44,
+      'CNOT': 4,
+      'Z': 1,
+      'S': 2,
+      'Hadamard': 4
     """
 
     resource_keys = {"pauli_string", "precision"}
@@ -259,6 +270,9 @@ class PauliRot(ResourceOperator):
         self.precision = precision
         self.pauli_string = pauli_string
         self.num_wires = len(pauli_string)
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -274,7 +288,7 @@ class PauliRot(ResourceOperator):
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
             The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
-            for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
+            for quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper,
             in combination with the following identity:
 
             .. math::
@@ -285,7 +299,7 @@ class PauliRot(ResourceOperator):
                 \end{align}
 
             Specifically, the resources are given by one :code:`RZ` gate and a cascade of
-            :math:`2 * (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+            :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
             the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
             a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word we
             conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
@@ -417,7 +431,7 @@ class PauliRot(ResourceOperator):
             .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RZ-gate and a cascade of
-            :math:`2 * (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
+            :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
             the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
             a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word
             we conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
