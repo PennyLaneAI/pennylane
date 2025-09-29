@@ -704,7 +704,16 @@ class CCZ(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        raise ResourcesUndefinedError
+        ctrl_z = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Z),
+                "num_ctrl_wires": num_ctrl_wires + 2,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+
+        return [GateCount(ctrl_z)]
 
     @classmethod
     def pow_resource_decomp(

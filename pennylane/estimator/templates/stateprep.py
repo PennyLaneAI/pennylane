@@ -896,6 +896,8 @@ class PrepTHC(ResourceOperator):
         self.select_swap_depth = select_swap_depth
         tensor_rank = compact_ham.params["tensor_rank"]
         self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+        if wires and len(wires) != self.num_wires:
+            raise ValueError("")
         super().__init__(wires=wires)
 
     @property
@@ -994,7 +996,7 @@ class PrepTHC(ResourceOperator):
 
         gate_list = []
 
-        # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 6 auxiliary account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
         gate_list.append(Allocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
