@@ -335,7 +335,7 @@ class TestControlled:
         ),
     )
     def test_estimate_for_controlled(self, base_op, ctrl_res, ctrl_ctrl_res):
-        """Test that the adjoint of this operator produces expected resources with estimate"""
+        """Test that the controlled operator produces expected resources with estimate"""
         ctrl_op = qre.Controlled(base_op, num_ctrl_wires=1, num_zero_ctrl=0)
         ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=1, num_zero_ctrl=0)
 
