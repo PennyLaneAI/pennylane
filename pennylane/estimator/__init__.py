@@ -93,16 +93,7 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
-)
-
-from .ops.templates.qubitize import (
-    QubitizeTHC
-)
-
-from .ops.templates.select import (
-    SelectTHC
-)
-
-from .ops.templates.compact_hamiltonian import (
+    QubitizeTHC,
+    SelectTHC,
     CompactHamiltonian
 )
