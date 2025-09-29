@@ -386,8 +386,6 @@ class TestQROMStatePrep:
         with pytest.raises(ValueError, match="Expected 10 wires, got 3"):
             qre.QROMStatePreparation(num_state_qubits=10, wires=[0, 1, 2])
 
-    # {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
-
     @pytest.mark.parametrize(
         "num_state_qubits, precision, positive_and_real, selswap_depths",
         (
