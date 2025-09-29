@@ -126,8 +126,6 @@ class TestAdjoint:
         adj_op = qre.Adjoint(base_op)
         adj_adj_op = qre.Adjoint(adj_op)
 
-        print("expected_res: ", qre.estimate(adj_adj_op))
-        print(qre.estimate(adj_adj_op), qre.estimate(adj_op))
         assert qre.estimate(adj_op) == adj_res
         assert qre.estimate(adj_adj_op) == adj_res
 
