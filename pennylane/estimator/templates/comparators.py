@@ -91,7 +91,7 @@ class SingleQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls, **kwargs):
+    def resource_decomp(cls):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -192,7 +192,7 @@ class TwoQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls, **kwargs):
+    def resource_decomp(cls):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -230,7 +230,7 @@ class TwoQubitComparator(ResourceOperator):
         return gate_list
 
     @classmethod
-    def TemporaryAND_based_decomp(cls, **kwargs):
+    def TemporaryAND_based_decomp(cls):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -363,7 +363,7 @@ class IntegerComparator(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, value, register_size, geq=False, **kwargs):
+    def resource_decomp(cls, value, register_size, geq=False):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
