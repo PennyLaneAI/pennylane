@@ -99,12 +99,12 @@ class TestSelectTHC:
                 compact_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
             )
         )
-        assert select_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
+        assert select_cost.algo_wires == expected_res["algo_qubits"]
         assert (
-            select_cost.qubit_manager.clean_qubits + select_cost.qubit_manager.dirty_qubits
+            select_cost.zeroed + select_cost.any_state
             == expected_res["ancilla_qubits"]
         )
-        assert select_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+        assert select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
         """Test that an error is raised for incompatible Hamiltonians."""

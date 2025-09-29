@@ -1726,12 +1726,12 @@ class TestPrepTHC:
                 compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth
             )
         )
-        assert prep_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
+        assert prep_cost.algo_wires == expected_res["algo_qubits"]
         assert (
-            prep_cost.qubit_manager.clean_qubits + prep_cost.qubit_manager.dirty_qubits
+            prep_cost.zeroed + prep_cost.any_state
             == expected_res["ancilla_qubits"]
         )
-        assert prep_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+        assert prep_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
         """Test that an error is raised for incompatible Hamiltonians."""

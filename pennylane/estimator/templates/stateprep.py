@@ -23,6 +23,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
+from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import WiresLike
 
@@ -834,19 +835,20 @@ class QROMStatePreparation(ResourceOperator):
             selswap_depths=selswap_depths,
         )
 
+
 class PrepTHC(ResourceOperator):
     r"""Resource class for preparing the state for tensor hypercontracted Hamiltonian. This operator customizes
     the Prepare circuit based on the structure of THC Hamiltonian.
 
     Args:
-        compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+        compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
             Hamiltonian for which the state is being prepared
-        coeff_precision (int, optional): The number of bits used to represent the precision for loading
+        coeff_precision (int | None): The number of bits used to represent the precision for loading
             the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-            :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-        select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+            :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+        select_swap_depth (int| None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
             used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
-        wires (list[int] or optional): the wires on which the operator acts
+        wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
         The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
@@ -870,7 +872,13 @@ class PrepTHC(ResourceOperator):
 
     resource_keys = {"compact_ham", "coeff_precision", "select_swap_depth"}
 
-    def __init__(self, compact_ham, coeff_precision=None, select_swap_depth=None, wires=None):
+    def __init__(
+        self,
+        compact_ham: CompactHamiltonian,
+        coeff_precision: int | None = None,
+        select_swap_depth: int | None = None,
+        wires: WiresLike | None = None,
+    ):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
@@ -896,12 +904,12 @@ class PrepTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (CompactHamiltonian): a tensor hypercontracted
+                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                   Hamiltonian for which the state is being prepared
-                * coeff_precision (int, optional): The number of bits used to represent the precision for loading
+                * coeff_precision (int | None): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                  :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-                * select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                  :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                   used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
@@ -912,18 +920,21 @@ class PrepTHC(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, coeff_precision=None, select_swap_depth=None
+        cls,
+        compact_ham: CompactHamiltonian,
+        coeff_precision: int | None = None,
+        select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the state is being prepared
-            coeff_precision (int, optional): The number of bits used to represent the precision for loading
+            coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -957,12 +968,12 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (int, optional): The number of bits used to represent the precision for loading
+            coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
@@ -1026,9 +1037,7 @@ class PrepTHC(ResourceOperator):
         gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Checking that inequality is satisfied
-        mcx = resource_rep(
-            qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0}
-        )
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0})
         gate_list.append(qre.GateCount(mcx, 1))
         gate_list.append(qre.GateCount(toffoli, 2))
 
@@ -1080,18 +1089,19 @@ class PrepTHC(ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(
-        cls, target_resource_params: dict,
+        cls,
+        target_resource_params: dict,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (int, optional): The number of bits used to represent the precision for loading
+            coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
+                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Resources:
             The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
@@ -1151,9 +1161,7 @@ class PrepTHC(ResourceOperator):
         gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
 
         # Checking that inequality is satisfied
-        mcx = resource_rep(
-            qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0}
-        )
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0})
         gate_list.append(qre.GateCount(mcx, 1))
         gate_list.append(qre.GateCount(toffoli, 2))
 
