@@ -1677,7 +1677,7 @@ class TestPrepTHC:
         ),
     )
     def test_resource_rep(self, compact_ham, coeff_prec, selswap_depth, num_wires):
-        """Test that the compressed representation is correct."""
+        """Test that the compressed representation of PrepTHC is correct."""
         expected = qre.CompressedResourceOp(
             qre.PrepTHC,
             num_wires,
