@@ -1660,7 +1660,7 @@ class TestPrepTHC:
         ),
     )
     def test_resource_params(self, compact_ham, coeff_prec, selswap_depth):
-        """Test that the resource params are correct."""
+        """Test that the resource params for PrepTHC are correct."""
         op = qre.PrepTHC(compact_ham, coeff_prec, selswap_depth)
         assert op.resource_params == {
             "compact_ham": compact_ham,
