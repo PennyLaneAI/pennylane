@@ -42,10 +42,10 @@ class QubitizeTHC(ResourceOperator):
     Args:
         compact_ham (~pennylane.estimator.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian for which the walk operator is being created
-        prep_op (Union[~pennylane.estimator.ResourceOperator, None]): An optional
+        prep_op (~pennylane.estimator.ResourceOperator | None): An optional
             resource operator, corresponding to the prepare routine. If :code:`None`, the
             default :class:`~.pennylane.estimator.PrepTHC` will be used.
-        select_op (Union[~pennylane.estimator.ResourceOperator, None]): An optional
+        select_op (~pennylane.estimator.ResourceOperator | None): An optional
             resource operator, corresponding to the select routine. If :code:`None`, the
             default :class:`~.pennylane.estimator.SelectTHC` will be used.
         coeff_precision (int | None): The number of bits used to represent the precision for loading
@@ -131,14 +131,14 @@ class QubitizeTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (CompactHamiltonian): a tensor hypercontracted
+                * compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                   Hamiltonian for which the walk operator is being created
-                * prep_op (CompressedResourceOp | None): An optional compressed
+                * prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                   resource operator, corresponding to the prepare routine. If :code:`None`, the
-                  default :class:`~.pennylane.estimator.PrepTHC` will be used.
-                * select_op (CompressedResourceOp | None): An optional compressed
+                  default :class:`~.pennylane.estimator.templates.PrepTHC` will be used.
+                * select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                   resource operator, corresponding to the select routine. If :code:`None`, the
-                  default :class:`~.pennylane.estimator.SelectTHC` will be used.
+                  default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
         """
         return {
             "compact_ham": self.compact_ham,
@@ -154,14 +154,14 @@ class QubitizeTHC(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (~pennylane.estimator.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            prep_op (Union[~pennylane.estimator.CompressedResourceOp, None]): An optional compressed
+            prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the prepare routine. If :code:`None`, the
-                default :class:`~.pennylane.estimator.ResourcePrepTHC` will be used.
-            select_op (Union[~pennylane.estimator.CompressedResourceOp, None]): An optional compressed
+                default :class:`~.pennylane.estimator.tempaltes.PrepTHC` will be used.
+            select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the select routine. If :code:`None`, the
-                default :class:`~.pennylane.estimator.ResourceSelectTHC` will be used.
+                default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -202,14 +202,14 @@ class QubitizeTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.PhaseGradient`.
 
         Args:
-            compact_ham (~pennylane.estimator.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            prep_op (~pennylane.estimator.CompressedResourceOp | None): An optional compressed
+            prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the prepare routine. If :code:`None`, the
-                default :class:`~.pennylane.estimator.PrepTHC` will be used.
-            select_op (~pennylane.estimator.CompressedResourceOp | None): An optional compressed
+                default :class:`~.pennylane.estimator.templates.PrepTHC` will be used.
+            select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the select routine. If :code:`None`, the
-                default :class:`~.pennylane.estimator.SelectTHC` will be used.
+                default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object

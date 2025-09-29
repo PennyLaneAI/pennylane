@@ -18,6 +18,7 @@ import math
 import numpy as np
 
 from pennylane import estimator as qre
+from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator import Allocate, Deallocate
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -25,7 +26,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-
+from pennylane.wires import WiresLike
 # pylint: disable=arguments-differ, too-many-arguments
 
 
@@ -42,12 +43,12 @@ class SelectTHC(ResourceOperator):
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian on which the select operator is being applied
-        rotation_precision (int, optional): The number of bits used to represent the precision for loading
+        rotation_precision (int | None): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
             :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-        select_swap_depth (int, optional): A parameter of :class:`~.pennylane.esimator.ops.templates.QROM`
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.esimator.ops.templates.QROM`
             used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
-        wires (list[int] or optional): the wires on which the operator acts
+        wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
         The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
@@ -70,7 +71,7 @@ class SelectTHC(ResourceOperator):
 
     resource_keys = {"compact_ham", "rotation_precision", "select_swap_depth"}
 
-    def __init__(self, compact_ham, rotation_precision=None, select_swap_depth=None, wires=None):
+    def __init__(self, compact_ham: CompactHamiltonian, rotation_precision: int | None = None, select_swap_depth: int | None = None, wires: WiresLike | None = None):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
@@ -102,12 +103,12 @@ class SelectTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (CompactHamiltonian): a tensor hypercontracted
+                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                   Hamiltonian on which the select operator is being applied
-                * rotation_precision (int, optional): The number of bits used to represent the precision for loading
+                * rotation_precision (int | None): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                   :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-                * select_swap_depth (int, optional): A parameter of :class:`~.pennylane.estimator.ops.templates.QROM`
+                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.ops.templates.QROM`
                   used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
@@ -118,18 +119,18 @@ class SelectTHC(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, rotation_precision=None, select_swap_depth=None
+        cls, compact_ham: CompactHamiltonian, rotation_precision: int | None = None, select_swap_depth: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~pennylane.labs.resource_estimation.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
-            rotation_precision (int, optional): The number of bits used to represent the precision for loading
+            rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.estimator.ops.templates.QROM`
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.ops.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Returns:
@@ -162,7 +163,7 @@ class SelectTHC(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham, rotation_precision=None, select_swap_depth=None, **kwargs
+        cls, compact_ham, rotation_precision: int | None = None, select_swap_depth: int | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -174,12 +175,12 @@ class SelectTHC(ResourceOperator):
             See also :class:`~.pennylane.labs.resource_estimation.PhaseGradient`.
 
         Args:
-            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
-            rotation_precision (int, optional): The number of bits used to represent the precision for loading
+            rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.QROM`
+                :data:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.resource_estimation.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
@@ -289,12 +290,9 @@ class SelectTHC(ResourceOperator):
     @classmethod
     def controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires,
-        ctrl_num_zero_ctrl,
-        compact_ham,
-        rotation_precision=None,
-        select_swap_depth=None,
-        **kwargs,
+        num_ctrl_wires: int,
+        num_zero_ctrl: int,
+        target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
 
@@ -305,15 +303,9 @@ class SelectTHC(ResourceOperator):
             See also :class:`~.pennylane.labs.resource_estimation.PhaseGradient`.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
-            ctrl_num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
-                Hamiltonian on which the select operator is being applied
-            rotation_precision (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.QROM`
-                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
@@ -324,6 +316,10 @@ class SelectTHC(ResourceOperator):
             in the decomposition.
         """
 
+        compact_ham = target_resource_params["compact_ham"]
+        rotation_precision = target_resource_params["rotation_precision"]
+        select_swap_depth = target_resource_params["select_swap_depth"]
+
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
@@ -333,8 +329,8 @@ class SelectTHC(ResourceOperator):
             mcx = resource_rep(
                 qre.MultiControlledX,
                 {
-                    "num_ctrl_wires": ctrl_num_ctrl_wires,
-                    "num_zero_ctrl": ctrl_num_zero_ctrl,
+                    "num_ctrl_wires": num_ctrl_wires,
+                    "num_zero_ctrl": num_zero_ctrl,
                 },
             )
             gate_list.append(Allocate(1))
