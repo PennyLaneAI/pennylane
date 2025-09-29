@@ -341,7 +341,8 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
 
     interface = interface_a
 
-    hypot = math.hypot(abs_a, abs_b) + 1e-15  # avoid division by zero
+    EPS = math.finfo(math.asarray(a).dtype).eps
+    hypot = math.hypot(abs_a, abs_b) + EPS  # avoid division by zero
 
     cosine = math.where(abs_b < tol, 0.0, abs_b / hypot)
     cosine = math.where(abs_a < tol, 1.0, cosine)
@@ -376,7 +377,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         g01 *= phase
     else:
         aprod = math.nan_to_num(abs_b * abs_a)
-        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + 1e-15))
+        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
         phase = math.where(abs_a < tol, 1.0, phase)
         g00 = phase * g00
 
