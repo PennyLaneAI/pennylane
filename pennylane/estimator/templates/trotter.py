@@ -428,17 +428,14 @@ class TrotterCDF(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
     ):
         """Returns the controlled resource decomposition.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
-                Hamiltonian to be approximately exponentiated
-            num_steps (int): number of Trotter steps to perform
-            order (int): order of the approximation, must be 1 or even.
-            num_ctrl_wires (int): the number of control wires for the controlled operations
-            num_zero_ctrl (int): the number of control values for the controlled operations
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): dictionary containing the size of the larger of the two registers being added together
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -448,6 +445,10 @@ class TrotterCDF(ResourceOperator):
         Resources:
             The original resources are controlled only on the Z rotation gates.
         """
+        compact_ham = target_resource_params["compact_ham"]
+        num_steps = target_resource_params["num_steps"]
+        order = target_resource_params["order"]
+
         k = order // 2
         gate_list = []
         num_orb = compact_ham.params["num_orbitals"]
@@ -708,17 +709,14 @@ class TrotterTHC(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
     ):
         """Returns the controlled resource decomposition.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
-                Hamiltonian to be approximately exponentiated
-            num_steps (int): number of Trotter steps to perform
-            order (int): order of the approximation, must be 1 or even
-            num_ctrl_wires (int): the number of control wires for the controlled operations
-            num_zero_ctrl (int): the number of control values for the controlled operations
+        num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): dictionary containing the size of the larger of the two registers being added together
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -728,6 +726,10 @@ class TrotterTHC(ResourceOperator):
         Resources:
             The original resources are controlled only on the Z rotation gates
         """
+        compact_ham = target_resource_params["compact_ham"]
+        num_steps = target_resource_params["num_steps"]
+        order = target_resource_params["order"]
+
         k = order // 2
         gate_list = []
         num_orb = compact_ham.params["num_orbitals"]

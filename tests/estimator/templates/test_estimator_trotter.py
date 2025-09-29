@@ -263,8 +263,13 @@ class TestTrotterCDF:
         compact_ham = qre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
         )
+        target_resource_params = {
+            "compact_ham": compact_ham,
+            "num_steps": num_steps,
+            "order": order,
+        }
         decomp = qre.TrotterCDF.controlled_resource_decomp(
-            compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
+            num_ctrl_wires, num_zero_ctrl, target_resource_params
         )
 
         gates_decomp = [(item.count, item.gate.name) for item in decomp]
@@ -531,8 +536,14 @@ class TestTrotterVibrational:
         """Test the controlled_resource_decomp method for TrotterTHC."""
 
         compact_ham = qre.CompactHamiltonian.thc(num_orbitals=num_orbitals, tensor_rank=tensor_rank)
+
+        target_resource_params = {
+            "compact_ham": compact_ham,
+            "num_steps": num_steps,
+            "order": order,
+        }
         decomp = qre.TrotterTHC.controlled_resource_decomp(
-            compact_ham, num_steps, order, num_ctrl_wires, num_zero_ctrl
+            num_ctrl_wires, num_zero_ctrl, target_resource_params
         )
 
         gates_decomp = [(item.count, item.gate.name) for item in decomp]
