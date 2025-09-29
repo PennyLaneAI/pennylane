@@ -153,8 +153,8 @@ class Adjoint(ResourceOperator):
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
 
         base_params.update(
-    (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
-)
+            (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
+        )
 
         try:
             return base_class.adjoint_resource_decomp(base_params)
@@ -358,8 +358,8 @@ class Controlled(ResourceOperator):
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
-    (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
-)
+            (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
+        )
 
         try:
             return base_class.controlled_resource_decomp(
@@ -565,8 +565,8 @@ class Pow(ResourceOperator):
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
-    (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
-)
+            (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
+        )
 
         if pow_z == 0:
             return [GateCount(resource_rep(qre.Identity))]
