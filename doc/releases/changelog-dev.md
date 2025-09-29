@@ -60,6 +60,7 @@
     [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
   * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
+    [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
