@@ -164,9 +164,9 @@ class SelectTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
 
-        if not (isinstance(rotation_precision, int) or rotation_precision is None):
+        if not isinstance(rotation_precision, int) and rotation_precision is not None:
             raise TypeError(
-                f"`rotation_precision` must be an integer, provided {type(rotation_precision)}."
+                f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
             )
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
