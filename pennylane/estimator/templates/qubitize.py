@@ -111,7 +111,7 @@ class QubitizeTHC(ResourceOperator):
     ):
         if compact_ham.method_name != "thc":
             raise TypeError(
-                f"Unsupported Hamiltonian representation for QubitizeTHC."
+                "Unsupported Hamiltonian representation for QubitizeTHC."
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
 
