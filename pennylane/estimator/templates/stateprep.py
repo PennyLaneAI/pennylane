@@ -24,7 +24,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
 
@@ -80,6 +80,9 @@ class UniformStatePrep(ResourceOperator):
         self.num_wires = k
         if L != 1:
             self.num_wires += int(math.ceil(math.log2(L)))
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -189,6 +192,8 @@ class AliasSampling(ResourceOperator):
         self.num_coeffs = num_coeffs
         self.precision = precision
         self.num_wires = int(math.ceil(math.log2(num_coeffs)))
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -317,6 +322,8 @@ class MPSPrep(ResourceOperator):
         self.precision = precision
         self.max_bond_dim = max_bond_dim
         self.num_mps_matrices = num_mps_matrices
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -528,6 +535,8 @@ class QROMStatePreparation(ResourceOperator):
     ):
         # Overriding the default init method to allow for CompactState as an input.
         self.num_wires = num_state_qubits
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
         self.positive_and_real = positive_and_real
 
