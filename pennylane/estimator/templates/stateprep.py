@@ -25,9 +25,9 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, Wires
 
-# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
+# pylint: disable= signature-differs, arguments-differ, too-many-arguments
 
 
 class UniformStatePrep(ResourceOperator):
@@ -847,7 +847,7 @@ class PrepTHC(ResourceOperator):
             the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
             :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
         select_swap_depth (int| None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
-            used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
@@ -857,16 +857,21 @@ class PrepTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
     >>> res = qre.estimate(qre.PrepTHC(compact_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total qubits: 185
+     Total wires: 185
+        algorithmic wires: 12
+        allocated wires: 173
+             zero state: 28
+             any state: 145
      Total gates : 1.485E+4
-     Qubit breakdown:
-      clean qubits: 28, dirty qubits: 145, algorithmic qubits: 12
-     Gate breakdown:
-      {'Hadamard': 797, 'Toffoli': 467, 'CNOT': 1.307E+4, 'X': 512}
+      'Toffoli': 467,
+      'CNOT': 1.307E+4,
+      'X': 512,
+      'Hadamard': 797
 
     """
 
@@ -896,8 +901,8 @@ class PrepTHC(ResourceOperator):
         self.select_swap_depth = select_swap_depth
         tensor_rank = compact_ham.params["tensor_rank"]
         self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
-        if wires and len(wires) != self.num_wires:
-            raise ValueError("")
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -912,7 +917,7 @@ class PrepTHC(ResourceOperator):
                   the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
                   :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
-                  used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
             "compact_ham": self.compact_ham,
@@ -937,9 +942,9 @@ class PrepTHC(ResourceOperator):
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
                 :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
-                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         if compact_ham.method_name != "thc":
             raise TypeError(
@@ -964,7 +969,10 @@ class PrepTHC(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
+        cls,
+        compact_ham: CompactHamiltonian,
+        coeff_precision: int | None = None,
+        select_swap_depth: int | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1100,11 +1108,8 @@ class PrepTHC(ResourceOperator):
         Args:
             compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (int | None): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
-                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
+
         Resources:
             The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
 
@@ -1113,7 +1118,6 @@ class PrepTHC(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        print("target_resource_params: ", target_resource_params)
         compact_ham = target_resource_params["compact_ham"]
         coeff_precision = target_resource_params["coeff_precision"]
         select_swap_depth = target_resource_params.get("select_swap_depth", None)

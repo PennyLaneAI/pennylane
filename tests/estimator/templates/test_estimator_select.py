@@ -60,13 +60,10 @@ class TestSelectTHC:
                 "select_swap_depth": selswap_depth,
             },
         )
-        assert (
-            qre.SelectTHC.resource_rep(compact_ham, rotation_prec, selswap_depth)
-            == expected
-        )
+        assert qre.SelectTHC.resource_rep(compact_ham, rotation_prec, selswap_depth) == expected
 
     # We are comparing the Toffoli and qubit cost here
-    # Expected number of Toffolis and qubits were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
+    # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
         "compact_ham, rotation_prec, selswap_depth, expected_res",
@@ -75,19 +72,19 @@ class TestSelectTHC:
                 qre.CompactHamiltonian.thc(58, 160),
                 13,
                 1,
-                {"algo_qubits": 138, "ancilla_qubits": 752, "toffoli_gates": 5997},
+                {"algo_wires": 138, "auxiliary_wires": 752, "toffoli_gates": 5997},
             ),
             (
                 qre.CompactHamiltonian.thc(10, 50),
                 None,
                 None,
-                {"algo_qubits": 38, "ancilla_qubits": 163, "toffoli_gates": 1139},
+                {"algo_wires": 38, "auxiliary_wires": 163, "toffoli_gates": 1139},
             ),
             (
                 qre.CompactHamiltonian.thc(4, 20),
                 None,
                 2,
-                {"algo_qubits": 24, "ancilla_qubits": 73, "toffoli_gates": 425},
+                {"algo_wires": 24, "auxiliary_wires": 73, "toffoli_gates": 425},
             ),
         ),
     )
@@ -99,11 +96,8 @@ class TestSelectTHC:
                 compact_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
             )
         )
-        assert select_cost.algo_wires == expected_res["algo_qubits"]
-        assert (
-            select_cost.zeroed + select_cost.any_state
-            == expected_res["ancilla_qubits"]
-        )
+        assert select_cost.algo_wires == expected_res["algo_wires"]
+        assert select_cost.zeroed + select_cost.any_state == expected_res["auxiliary_wires"]
         assert select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
@@ -128,6 +122,4 @@ class TestSelectTHC:
         with pytest.raises(
             TypeError, match=f"`rotation_precision` must be an integer, provided {type(2.5)}."
         ):
-            qre.SelectTHC.resource_rep(
-                qre.CompactHamiltonian.thc(58, 160), rotation_precision=2.5
-            )
+            qre.SelectTHC.resource_rep(qre.CompactHamiltonian.thc(58, 160), rotation_precision=2.5)

@@ -19,11 +19,7 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.templates.stateprep import (
-    AliasSampling,
-    MPSPrep,
-    QROMStatePreparation,
-)
+from pennylane.estimator.templates.stateprep import AliasSampling, MPSPrep, QROMStatePreparation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 
 # pylint: disable=no-self-use,too-many-arguments
@@ -1651,6 +1647,7 @@ class TestQROMStatePrep:
 
         assert actual_resources == expected_res
 
+
 class TestPrepTHC:
     """Test the PrepTHC class."""
 
@@ -1693,7 +1690,7 @@ class TestPrepTHC:
         assert qre.PrepTHC.resource_rep(compact_ham, coeff_prec, selswap_depth) == expected
 
     # We are comparing the Toffoli and qubit cost here
-    # Expected number of Toffolis and qubits were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
+    # Expected number of Toffolis and wires were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
     # The numbers were adjusted slightly to account for a different QROM decomposition
     @pytest.mark.parametrize(
         "compact_ham, coeff_prec, selswap_depth, expected_res",
@@ -1702,19 +1699,19 @@ class TestPrepTHC:
                 qre.CompactHamiltonian.thc(58, 160),
                 13,
                 1,
-                {"algo_qubits": 16, "ancilla_qubits": 86, "toffoli_gates": 13156},
+                {"algo_wires": 16, "auxiliary_wires": 86, "toffoli_gates": 13156},
             ),
             (
                 qre.CompactHamiltonian.thc(10, 50),
                 None,
                 None,
-                {"algo_qubits": 12, "ancilla_qubits": 174, "toffoli_gates": 579},
+                {"algo_wires": 12, "auxiliary_wires": 174, "toffoli_gates": 579},
             ),
             (
                 qre.CompactHamiltonian.thc(4, 20),
                 None,
                 2,
-                {"algo_qubits": 10, "ancilla_qubits": 109, "toffoli_gates": 279},
+                {"algo_wires": 10, "auxiliary_wires": 109, "toffoli_gates": 279},
             ),
         ),
     )
@@ -1722,27 +1719,18 @@ class TestPrepTHC:
         """Test that the resources are correct."""
 
         prep_cost = qre.estimate(
-            qre.PrepTHC(
-                compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth
-            )
+            qre.PrepTHC(compact_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth)
         )
-        assert prep_cost.algo_wires == expected_res["algo_qubits"]
-        assert (
-            prep_cost.zeroed + prep_cost.any_state
-            == expected_res["ancilla_qubits"]
-        )
+        assert prep_cost.algo_wires == expected_res["algo_wires"]
+        assert prep_cost.zeroed + prep_cost.any_state == expected_res["auxiliary_wires"]
         assert prep_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
         """Test that an error is raised for incompatible Hamiltonians."""
-        with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for PrepTHC."
-        ):
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian representation for PrepTHC."):
             qre.PrepTHC(qre.CompactHamiltonian.cdf(58, 160))
 
-        with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for PrepTHC."
-        ):
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian representation for PrepTHC."):
             qre.PrepTHC.resource_rep(qre.CompactHamiltonian.cdf(58, 160))
 
     def test_typeerror_precision(self):
@@ -1755,6 +1743,4 @@ class TestPrepTHC:
         with pytest.raises(
             TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
         ):
-            qre.PrepTHC.resource_rep(
-                qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5
-            )
+            qre.PrepTHC.resource_rep(qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)

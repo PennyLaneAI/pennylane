@@ -55,7 +55,7 @@ class TestQubitizeTHC:
             "prep_op": prep_op,
             "select_op": select_op,
             "coeff_precision": None,
-            "rotation_precision": None
+            "rotation_precision": None,
         }
 
     @pytest.mark.parametrize(
@@ -96,7 +96,7 @@ class TestQubitizeTHC:
                 "prep_op": prep_op,
                 "select_op": select_op,
                 "coeff_precision": None,
-                "rotation_precision": None
+                "rotation_precision": None,
             },
         )
         assert (
@@ -105,7 +105,7 @@ class TestQubitizeTHC:
         )
 
     # We are comparing the Toffoli and qubit cost here
-    # Expected number of Toffolis and qubits were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
+    # Expected number of Toffolis and wires were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
         "compact_ham, prep_op, select_op, expected_res",
@@ -115,19 +115,19 @@ class TestQubitizeTHC:
                 qre.CompactHamiltonian.thc(58, 160),
                 qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=13),
                 qre.SelectTHC(qre.CompactHamiltonian.thc(58, 160), rotation_precision=13),
-                {"algo_qubits": 152, "ancilla_qubits": 791, "toffoli_gates": 8579},
+                {"algo_wires": 152, "auxiliary_wires": 791, "toffoli_gates": 8579},
             ),
             (
                 qre.CompactHamiltonian.thc(10, 50),
                 None,
                 None,
-                {"algo_qubits": 49, "ancilla_qubits": 174, "toffoli_gates": 2299},
+                {"algo_wires": 49, "auxiliary_wires": 174, "toffoli_gates": 2299},
             ),
             (
                 qre.CompactHamiltonian.thc(4, 20),
-                qre.PrepTHC(qre.CompactHamiltonian.thc(4,20), select_swap_depth=2),
+                qre.PrepTHC(qre.CompactHamiltonian.thc(4, 20), select_swap_depth=2),
                 None,
-                {"algo_qubits": 32, "ancilla_qubits": 109, "toffoli_gates": 967},
+                {"algo_wires": 32, "auxiliary_wires": 109, "toffoli_gates": 967},
             ),
         ),
     )
@@ -142,11 +142,8 @@ class TestQubitizeTHC:
             )
         )
 
-        assert wo_cost.algo_wires == expected_res["algo_qubits"]
-        assert (
-            wo_cost.zeroed + wo_cost.any_state
-            == expected_res["ancilla_qubits"]
-        )
+        assert wo_cost.algo_wires == expected_res["algo_wires"]
+        assert wo_cost.zeroed + wo_cost.any_state == expected_res["auxiliary_wires"]
         assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
