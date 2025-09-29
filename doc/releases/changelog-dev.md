@@ -269,6 +269,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
+  can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
+  [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
+
 * :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
   [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
 
