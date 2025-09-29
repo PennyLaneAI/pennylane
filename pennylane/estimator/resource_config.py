@@ -22,14 +22,11 @@ from pennylane.estimator.ops import CRX, CRY, CRZ, RX, RY, RZ, QubitUnitary
 from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
+    PrepTHC,
     QROMStatePreparation,
+    QubitizeTHC,
     SelectPauliRot,
     SelectTHC,
-    PrepTHC,
-    QubitizeTHC,
-)
-from pennylane.estimator.ops import (
-    RX, RY, RZ, CRX, CRY, CRZ
 )
 
 if TYPE_CHECKING:
@@ -67,7 +64,10 @@ class ResourceConfig:
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
             SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
             PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
-            QubitizeTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION, "rotation_precision": _DEFAULT_BIT_PRECISION}
+            QubitizeTHC: {
+                "coeff_precision": _DEFAULT_BIT_PRECISION,
+                "rotation_precision": _DEFAULT_BIT_PRECISION,
+            },
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
