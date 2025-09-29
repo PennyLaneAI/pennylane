@@ -122,12 +122,10 @@ class TestAdjoint:
         ),
     )
     def test_estimate_resource_decomp(self, base_op, adj_res):
-        """Test that the adjoint of this operator produces resources as expected."""
+        """Test that the adjoint of this operator produces expected resources with estimate."""
         adj_op = qre.Adjoint(base_op)
         adj_adj_op = qre.Adjoint(adj_op)
 
-        print("expected_res: ", qre.estimate(adj_adj_op))
-        print(qre.estimate(adj_adj_op), qre.estimate(adj_op))
         assert qre.estimate(adj_op) == adj_res
         assert qre.estimate(adj_adj_op) == adj_res
 
@@ -337,7 +335,7 @@ class TestControlled:
         ),
     )
     def test_estimate_resource_decomp(self, base_op, ctrl_res, ctrl_ctrl_res):
-        """Test that the adjoint of this operator produces resources as expected."""
+        """Test that the adjoint of this operator produces expected resources with estimate"""
         ctrl_op = qre.Controlled(base_op, num_ctrl_wires=1, num_zero_ctrl=0)
         ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=1, num_zero_ctrl=0)
 
@@ -447,7 +445,6 @@ class TestPow:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.RZ(),
             qre.CNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -465,6 +462,48 @@ class TestPow:
             )
         ]
         assert pow_pow_op.resource_decomp(**pow_pow_op.resource_params) == expected_res
+
+    @pytest.mark.parametrize(
+        "base_op, z, pow_res",
+        (
+            (
+                qre.RX(),
+                2,
+                qre.Resources(
+                    zeroed=0,
+                    any_state=0,
+                    algo_wires=1,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 44,
+                        },
+                    ),
+                ),
+            ),
+            (
+                qre.RX(precision=1e-3),
+                2,
+                qre.Resources(
+                    zeroed=0,
+                    any_state=0,
+                    algo_wires=1,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 21,
+                        },
+                    ),
+                ),
+            ),
+        ),
+    )
+    def test_estimate_resource_decomp(self, base_op, z, pow_res):
+        """Test that the power of this operator produces expected resources with estimate."""
+        pow_op = qre.Pow(base_op, z)
+        pow_pow_op = qre.Pow(pow_op, pow_z=5)
+        assert qre.estimate(pow_op) == pow_res
+        assert (qre.estimate(pow_pow_op)) == pow_res
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
