@@ -16,6 +16,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -27,7 +28,6 @@ from .resource_mapping import _map_to_resource_op
 from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
-from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 
 # pylint: disable=too-many-arguments
 
