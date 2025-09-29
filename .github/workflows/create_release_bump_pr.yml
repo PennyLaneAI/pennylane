@@ -1,6 +1,7 @@
 name: Create PennyLane PR to bump RC versions
 
 on:
+  push:
   schedule:
     # Run every weekday at 5:50 EDT (cron is in UTC)
     - cron: "50 9 * * 1-5"
@@ -9,7 +10,7 @@ on:
 jobs:
   release_bump_pr:
     name: Setup the release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -32,7 +33,7 @@ jobs:
       run: |
         VERSION=$(python setup.py --version)
         IFS=. read MAJ MIN PAT <<< "${VERSION%-dev[0-9]*}"
-        RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
+        RC_BRANCH="sc-98284-rc-test" #"v${MAJ}.$((MIN-1)).${PAT}-rc0"
         if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
           echo "branch_exists=true" >> $GITHUB_ENV
           echo "rc_branch=$RC_BRANCH" >> $GITHUB_ENV
@@ -48,7 +49,7 @@ jobs:
         ref: ${{ env.rc_branch }}
 
     - name: Check for Catalyst and Lightning release
-      if: ${{ env.branch_exists == 'true' }}
+      # if: ${{ env.branch_exists == 'true' }}
       id: check_releases
       run: |
         catalyst_release_date=$(curl -s "https://pypi.org/pypi/pennylane-catalyst/json" | jq -r '.info.version as $v | .releases[$v][0].upload_time_iso_8601' || true)
@@ -62,13 +63,13 @@ jobs:
           echo lightning_release=true >> $GITHUB_ENV
         else
           echo "No, the packages are older than 7 days."
-          echo catalyst_release=false >> $GITHUB_ENV
-          lightning_release=false >> $GITHUB_ENV
+          echo catalyst_release=true >> $GITHUB_ENV
+          lightning_release=true >> $GITHUB_ENV
         fi
 
     - name: Create PR to bump Catalyst and Lightning versions
+      # if: ${{ env.catalyst_release == 'true' && env.lightning_release == 'true' }}
       env:
-        HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
       run: |
         git checkout -b bump-lightning-catalyst 
@@ -86,11 +87,11 @@ jobs:
         lightning_major_minor=$(echo "${lightning_version}" | grep -oE '^[0-9]+\.[0-9]+')
 
         sed -i -E "s/pennylane-lightning>=[0-9.]*/pennylane-lightning>=${lightning_major_minor}/" "pyproject.toml" # Update pyproject.toml
-        sed -i -E "s/PL_CATALYST_MIN_VERSION = Version\(\"[0-9.]*\"\)/PL_CATALYST_MIN_VERSION = Version(\"${catalyst_version}\")/" "pennylane/compiler/compiler.py" # * updates the versions for PennyLane-Lightning and PennyLane-Catalyst in .github/stable/external.txt.
+        sed -i -E "s/PL_CATALYST_MIN_VERSION = Version\(\"[0-9.]*\"\)/PL_CATALYST_MIN_VERSION = Version(\"${catalyst_version}\")/" "pennylane/compiler/compiler.py" 
 
         echo "Pushing changes and creating PR..."
         git add pyproject.toml pennylane/compiler/compiler.py
         git commit -m "Bump minimum Lightning and Catalyst versions to ${lightning_version} and ${catalyst_version}"
        
         git push origin bump-lightning-catalyst-test
-        gh pr create --label "do not merge :warning:" --base test-bump --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
+        gh pr create --label "do not merge :warning:" --base ${{ env.rc_branch }} --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
