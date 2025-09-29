@@ -369,6 +369,7 @@ class TestProd:
         with pytest.raises(ValueError, match="All factors of the Product must be"):
             qre.Prod([qre.X(), 3])
 
+
 class TestChangeOpBasis:
     """Tests for the ChangeOpBasis resource Op"""
 
