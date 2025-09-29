@@ -67,6 +67,14 @@
   * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
     `qml.estimator.ops`.
     [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
+  * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
+    ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
+    ``IterativeQPE`` were added to `qml.estimator.templates`.
+    [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
+  * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
+    ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
+    ``RegisterComparator`` were added to `qml.estimator.templates`.
+    [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -262,6 +270,13 @@
 
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
+
+* New intermediate representations (IRs) :func:`~transforms.parity_matrix` and 
+  :func:`~transforms.phase_polynomial` are available in PennyLane. These IRs are 
+  used in compilation passes to optimize CNOT and phase polynomial circuits, respectively. 
+  Also added :func:`~transforms.rowcol`, which uses the parity matrix as its IR for CNOT
+  routing under constraint connectivity.
+  [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
 
 * A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
   with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
@@ -734,6 +749,7 @@
 
 * Added concurrency support for `effective_hamiltonian` in labs.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
+  [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
 
 * Fixed a queueing issue in `ResourceOperator` tests.
   [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
@@ -1078,6 +1094,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
+  [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
+
 * `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
@@ -1271,6 +1290,9 @@
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
 <h3>Documentation 📝</h3>
+
+* Remove `>>>` and `...` from `.. code-block::` directives in docstrings.
+  [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
 * Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)

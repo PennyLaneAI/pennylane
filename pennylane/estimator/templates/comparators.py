@@ -86,7 +86,7 @@ class SingleQubitComparator(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, cls.num_wires, {})
 
@@ -112,7 +112,7 @@ class SingleQubitComparator(ResourceOperator):
             |0>: ────╰X─╰X────╰X──── x>y
 
         Returns:
-            list[GateCount]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -187,7 +187,7 @@ class TwoQubitComparator(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, cls.num_wires, {})
 
@@ -215,7 +215,7 @@ class TwoQubitComparator(ResourceOperator):
 
 
         Returns:
-            list[GateCount]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -355,7 +355,7 @@ class IntegerComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`n \lt L`.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = register_size + 1
         return CompressedResourceOp(
@@ -403,7 +403,7 @@ class IntegerComparator(ResourceOperator):
                 6: ────╰X─╰X─╰X─┤
 
         Returns:
-            list[GateCount]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -567,7 +567,7 @@ class RegisterComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`a \lt b`.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = first_register + second_register + 1
         return CompressedResourceOp(
@@ -595,7 +595,7 @@ class RegisterComparator(ResourceOperator):
             to combine the results from extra qubits.
 
         Returns:
-            list[GateCount]: A list of ``GateCount`` objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

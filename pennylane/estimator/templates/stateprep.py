@@ -98,7 +98,7 @@ class UniformStatePrep(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         k = (num_states & -num_states).bit_length() - 1
         L = num_states // (2**k)
@@ -121,9 +121,9 @@ class UniformStatePrep(ResourceOperator):
             The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
 
         gate_lst = []
@@ -209,7 +209,7 @@ class AliasSampling(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         num_wires = int(math.ceil(math.log2(num_coeffs)))
         return CompressedResourceOp(
@@ -230,9 +230,9 @@ class AliasSampling(ResourceOperator):
             The circuit uses coherent alias sampling to prepare a state with the given coefficients.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
 
         gate_lst = []
@@ -279,7 +279,7 @@ class MPSPrep(ResourceOperator):
     Args:
         num_mps_matrices (int): the number of matrices in the MPS representation
         max_bond_dim (int): the bond dimension of the MPS representation
-        precision (Union[None, float], optional): the precision used when loading the MPS matricies
+        precision (float | None): the precision used when loading the MPS matricies
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -327,7 +327,7 @@ class MPSPrep(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_mps_matrices (int): the number of matrices in the MPS representation
                 * max_bond_dim (int): the bond dimension of the MPS representation
-                * precision (Union[None, float], optional): the precision used when loading the
+                * precision (float | None): the precision used when loading the
                   MPS matrices
         """
         return {
@@ -344,10 +344,10 @@ class MPSPrep(ResourceOperator):
         Args:
             num_mps_matrices (int): the number of matrices in the MPS representation
             max_bond_dim (int): the bond dimension of the MPS representation
-            precision (Union[None, float], optional): the precision used when loading the MPS matrices
+            precision (float | None): the precision used when loading the MPS matrices
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "num_mps_matrices": num_mps_matrices,
@@ -370,7 +370,7 @@ class MPSPrep(ResourceOperator):
         Args:
             num_mps_matrices (int): the number of matrices in the MPS representation
             max_bond_dim (int): the bond dimension of the MPS representation
-            precision (Union[None, float], optional): the precision used when loading
+            precision (float | None): the precision used when loading
                 the MPS matrices
 
         Resources:
@@ -379,9 +379,9 @@ class MPSPrep(ResourceOperator):
             the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         num_work_wires = min(
             math.ceil(math.log2(max_bond_dim)), math.ceil(num_mps_matrices / 2)  # truncate bond dim
@@ -423,7 +423,7 @@ class QROMStatePreparation(ResourceOperator):
             of the rotation angles
         positive_and_real (bool): flag that the coefficients of the statevector are all real
             and positive
-        select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+        select_swap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth
         wires (Sequence[int], None): The wires to prepare the target state on. This excludes any
             additional qubits allocated during the decomposition (via select-swap).
@@ -489,11 +489,11 @@ class QROMStatePreparation(ResourceOperator):
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
         ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
 
         Alternatively, we can configure each value independently by specifying a list. Note the size
         of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
@@ -509,11 +509,11 @@ class QROMStatePreparation(ResourceOperator):
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
         ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 1, 'zeroed': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': None, 'zeroed': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'zeroed': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': None, 'zeroed': False}
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 1, 'restored': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': None, 'restored': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': None, 'restored': False}
     """
 
     resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
@@ -555,7 +555,7 @@ class QROMStatePreparation(ResourceOperator):
                   of the rotation angles
                 * positive_and_real (bool): flag that the coefficients of the statevector are all real
                   and positive
-                * selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                * selswap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
                   used to trade-off extra qubits for reduced circuit depth
         """
 
@@ -579,11 +579,11 @@ class QROMStatePreparation(ResourceOperator):
                 of the rotation angles
             positive_and_real (bool): flag that the coefficients of the statevector are all real
                 and positive
-            selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+            selswap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
         if isinstance(selswap_depths, (list, tuple, np.ndarray)):
@@ -626,7 +626,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive
             precision (float): the precision threshold for loading in the binary representation
                 of the rotation angles
-            select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+            select_swap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth
 
         Resources:
@@ -640,9 +640,9 @@ class QROMStatePreparation(ResourceOperator):
             `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_).
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         gate_counts = []
 
@@ -663,7 +663,7 @@ class QROMStatePreparation(ResourceOperator):
                         num_bitstrings=num_bitstrings,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=num_bit_flips,
-                        zeroed=False,
+                        restored=False,
                         select_swap_depth=selswap_depths[j],
                     )
                 )
@@ -678,7 +678,7 @@ class QROMStatePreparation(ResourceOperator):
                                 "num_bitstrings": num_bitstrings,
                                 "num_bit_flips": num_bit_flips,
                                 "size_bitstring": num_precision_wires,
-                                "zeroed": False,
+                                "restored": False,
                                 "select_swap_depth": selswap_depths[j],
                             },
                         ),
@@ -716,7 +716,7 @@ class QROMStatePreparation(ResourceOperator):
                         num_bitstrings=2**num_state_qubits,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=((2**num_state_qubits) * num_precision_wires // 2),
-                        zeroed=False,
+                        restored=False,
                         select_swap_depth=selswap_depths[-1],
                     )
                 )
@@ -731,7 +731,7 @@ class QROMStatePreparation(ResourceOperator):
                                 "num_bitstrings": 2**num_state_qubits,
                                 "size_bitstring": num_precision_wires,
                                 "num_bit_flips": ((2**num_state_qubits) * num_precision_wires // 2),
-                                "zeroed": False,
+                                "restored": False,
                                 "select_swap_depth": selswap_depths[-1],
                             },
                         ),
@@ -772,7 +772,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive.
             precision (float): The precision threshold for loading in the binary representation
                 of the rotation angles.
-            select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
+            select_swap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
@@ -782,9 +782,9 @@ class QROMStatePreparation(ResourceOperator):
             Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         return cls._decomp_selection_helper(
             use_phase_grad_trick=False,
@@ -811,7 +811,7 @@ class QROMStatePreparation(ResourceOperator):
                 and positive.
             precision (float): The precision threshold for loading in the binary representation
                 of the rotation angles.
-            select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
+            select_swap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
@@ -822,9 +822,9 @@ class QROMStatePreparation(ResourceOperator):
             (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to phase gradient.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
         """
         return cls._decomp_selection_helper(
             use_phase_grad_trick=True,
