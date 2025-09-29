@@ -436,8 +436,8 @@ class CZ(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
-            return [GateCount(resource_rep(qre.CCZ))]
+        if num_ctrl_wires == 1 and num_zero_ctrl == 0:
+            return [GateCount(resource_rep(CCZ))]
 
         ctrl_z = resource_rep(
             qre.Controlled,
