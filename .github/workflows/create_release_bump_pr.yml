@@ -93,4 +93,4 @@ jobs:
         git commit -m "Bump minimum Lightning and Catalyst versions to ${lightning_version} and ${catalyst_version}"
        
         git push origin bump-lightning-catalyst-test
-        gh pr create --label "do not merge" --base test-bump --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
+        gh pr create --label "do not merge :warning:" --base test-bump --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
