@@ -222,6 +222,11 @@ def to_openqasm(
     Returns:
         str: OpenQASM 2.0 program corresponding to the circuit.
 
+    .. warning::
+
+        By default, ``qml.to_openqasm`` adds a final measurement to all qubits, which collapses the quantum state. 
+        To avoid this behavior and preserve superposition states during a round-trip export/import, set the ``measure_all`` parameter to ``False`` when using ``qml.to_openqasm``.
+
     **Example**
 
     The following QNode can be serialized to an OpenQASM 2.0 program:
