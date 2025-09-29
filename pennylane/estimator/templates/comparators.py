@@ -350,13 +350,15 @@ class IntegerComparator(ResourceOperator):
         return {"value": self.value, "register_size": self.register_size, "geq": self.geq}
 
     @classmethod
-    def resource_rep(cls, value, register_size, geq=False):
+    def resource_rep(
+        cls, value: int, register_size: int, geq: bool = False
+    ) -> list[CompressedResourceOp]:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
             value (int): The value :math:`L` that the state’s decimal representation is compared against.
-                register_size (int): size of the register for basis state
+            register_size (int): size of the register for basis state
             geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
                 ``False``, the comparison made will be :math:`n \lt L`.
 
@@ -369,7 +371,7 @@ class IntegerComparator(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, value, register_size, geq=False):
+    def resource_decomp(cls, value: int, register_size: int, geq: bool = False) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -564,7 +566,9 @@ class RegisterComparator(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, first_register, second_register, geq=False):
+    def resource_rep(
+        cls, first_register: int, second_register: int, geq: bool = False
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -585,7 +589,9 @@ class RegisterComparator(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, first_register, second_register, geq=False):
+    def resource_decomp(
+        cls, first_register: int, second_register: int, geq: bool = False
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
