@@ -447,7 +447,6 @@ class TestPow:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.RZ(),
             qre.CNOT(wires=["ctrl", "trgt"]),
         ),
     )
@@ -465,6 +464,48 @@ class TestPow:
             )
         ]
         assert pow_pow_op.resource_decomp(**pow_pow_op.resource_params) == expected_res
+
+    @pytest.mark.parametrize(
+        "base_op, z, pow_res",
+        (
+            (
+                qre.RX(),
+                2,
+                qre.Resources(
+                    zeroed=0,
+                    any_state=0,
+                    algo_wires=1,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 44,
+                        },
+                    ),
+                ),
+            ),
+            (
+                qre.RX(precision=1e-3),
+                2,
+                qre.Resources(
+                    zeroed=0,
+                    any_state=0,
+                    algo_wires=1,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 21,
+                        },
+                    ),
+                ),
+            ),
+        ),
+    )
+    def test_estimate_resource_decomp(self, base_op, z, pow_res):
+        """Test that the power of this operator produces resources as expected."""
+        pow_op = qre.Pow(base_op, z)
+        pow_pow_op = qre.Pow(pow_op, pow_z=5)
+        assert qre.estimate(pow_op) == pow_res
+        assert (qre.estimate(pow_pow_op)) == pow_res
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
