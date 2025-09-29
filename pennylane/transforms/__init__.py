@@ -65,26 +65,47 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
     ~transforms.rz_phase_gradient
-    ~transforms.zx.optimize_t_count
-    ~transforms.zx.push_hadamards
-    ~transforms.zx.reduce_non_clifford
-    ~transforms.zx.todd
     ~transforms.rowcol
 
-There are also utility functions and decompositions available that assist with
-both transforms, and decompositions within the larger PennyLane codebase.
+Compilation transforms using ZX calculus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+There is a set of transforms that use ZX calculus to optimize circuits.
+
+.. currentmodule:: pennylane.transforms
 .. autosummary::
     :toctree: api
 
-    ~transforms.set_decomposition
-    ~transforms.pattern_matching
+    zx.optimize_t_count
+    zx.push_hadamards
+    zx.reduce_non_clifford
+    zx.todd
+
+The following utility functions assist when working explicitly with ZX diagrams,
+for example when writing custom ZX compilation passes.
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
     ~transforms.to_zx
     ~transforms.from_zx
     ~transforms.postorder_traverse
     ~transforms.preorder_traverse
     ~transforms.parity_matrix
     ~transforms.phase_polynomial
+
+Other compilation utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are additional utility functions and decompositions available that assist with
+both transforms and decompositions within the larger PennyLane codebase.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.set_decomposition
+    ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -347,10 +368,6 @@ from .transpile import transpile
 from .zx import (
     to_zx,
     from_zx,
-    optimize_t_count,
-    push_hadamards,
-    reduce_non_clifford,
-    todd,
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
