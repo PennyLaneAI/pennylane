@@ -95,5 +95,5 @@ from .templates import (
     RegisterComparator,
     QubitizeTHC,
     SelectTHC,
-    CompactHamiltonian
+    CompactHamiltonian,
 )

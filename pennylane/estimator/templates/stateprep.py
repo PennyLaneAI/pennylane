@@ -25,7 +25,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import WiresLike, Wires
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= signature-differs, arguments-differ, too-many-arguments
 
@@ -990,7 +990,7 @@ class PrepTHC(ResourceOperator):
             The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
@@ -1114,7 +1114,7 @@ class PrepTHC(ResourceOperator):
             The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

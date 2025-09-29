@@ -26,7 +26,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
-from pennylane.wires import WiresLike, Wires
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= signature-differs, arguments-differ
 
@@ -212,7 +212,7 @@ class SelectTHC(ResourceOperator):
             The resources are modified to remove the control from the Select operation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -328,7 +328,7 @@ class SelectTHC(ResourceOperator):
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

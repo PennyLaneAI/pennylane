@@ -149,6 +149,10 @@ class QubitizeTHC(ResourceOperator):
                 * select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                   resource operator, corresponding to the select routine. If :code:`None`, the
                   default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
+                * coeff_precision (int | None): The number of bits used to represent the precision for loading
+                  the coefficients of Hamiltonian.
+                * rotation_precision (int | None): The number of bits used to represent the precision for loading
+                  the rotation angles.
         """
         return {
             "compact_ham": self.compact_ham,
@@ -179,9 +183,13 @@ class QubitizeTHC(ResourceOperator):
             select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the select routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
+            coeff_precision (int | None): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian.
+            rotation_precision (int | None): The number of bits used to represent the precision for loading
+                the rotation angles.
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         if compact_ham.method_name != "thc":
             raise TypeError(
@@ -222,7 +230,7 @@ class QubitizeTHC(ResourceOperator):
 
             This decomposition assumes that an appropriately sized phase gradient state is available.
             Users should ensure that the cost of constructing this state has been accounted for.
-            See also :class:`~.pennylane.estimator.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
         Args:
             compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
@@ -239,7 +247,7 @@ class QubitizeTHC(ResourceOperator):
                 the rotation angles for basis rotation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
@@ -292,7 +300,7 @@ class QubitizeTHC(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource params of the target operator.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
 
