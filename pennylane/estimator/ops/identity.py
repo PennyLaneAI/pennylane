@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Resource operators for identity and global phase operations."""
 
-import pennylane import estimator as qre
+from pennylane import estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
