@@ -379,7 +379,7 @@ def _get_decomposition(
 
     else:
         kwargs = config.resource_op_precisions.get(op_type, {})
-        decomp_func = config._custom_decomps.get(  # pylint: disable=protected-access
+        decomp_func = config.custom_decomps.get(
             op_type, op_type.resource_decomp
         )
 
