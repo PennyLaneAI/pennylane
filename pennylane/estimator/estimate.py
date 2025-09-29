@@ -27,6 +27,7 @@ from .resource_mapping import _map_to_resource_op
 from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 
 from pennylane.estimator.ops import Adjoint, Controlled, Pow
 # pylint: disable=too-many-arguments
@@ -362,6 +363,7 @@ def _get_decomposition(
         A tuple containing the decomposition function and its associated kwargs.
     """
     op_type = comp_res_op.op_type
+
     _SYMBOLIC_DECOMP_MAP = {
         Adjoint: "_adj_custom_decomps",
         Controlled: "_ctrl_custom_decomps",

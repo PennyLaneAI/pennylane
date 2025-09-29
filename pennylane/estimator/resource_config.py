@@ -18,6 +18,7 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from pennylane.estimator.ops import CRX, CRY, CRZ, RX, RY, RZ
 from pennylane.estimator.ops.templates import (
     AliasSampling,
     MPSPrep,
