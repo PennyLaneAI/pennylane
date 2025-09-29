@@ -186,6 +186,7 @@ class TestPauliRotation:
         with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             resource_op_class(wires=[0, 1])
 
+
 class TestRot:
     """Test ResourceRot"""
 
@@ -288,6 +289,7 @@ class TestRot:
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             Rot(wires=[0, 1])
+
 
 class TestPhaseShift:
     """Test PhaseShift"""
