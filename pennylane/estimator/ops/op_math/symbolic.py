@@ -153,7 +153,9 @@ class Adjoint(ResourceOperator):
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
 
         base_params.update(
-            (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
         )
 
         try:
@@ -358,7 +360,9 @@ class Controlled(ResourceOperator):
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
-            (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
         )
 
         try:
@@ -565,7 +569,9 @@ class Pow(ResourceOperator):
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
-            (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
         )
 
         if pow_z == 0:
