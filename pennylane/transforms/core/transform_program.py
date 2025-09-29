@@ -77,7 +77,7 @@ def _apply_postprocessing_stack(
     >>> def postprocessing1(results):
     ...     return (results[0] + results[1], results[2] + results[3])
     >>> def postprocessing2(results):
-    .... return (results[0] + 1, results[1] + 2)
+    ...     return (results[0] + 1, results[1] + 2)
     >>> _apply_postprocessing_stack(results, [postprocessing1])
     (3.0, 7.0)
     >>> _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
