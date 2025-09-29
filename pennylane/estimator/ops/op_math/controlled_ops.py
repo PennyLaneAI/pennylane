@@ -1333,7 +1333,6 @@ class MultiControlledX(ResourceOperator):
         self.num_zero_ctrl = num_zero_ctrl
 
         self.num_wires = num_ctrl_wires + 1
-
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
