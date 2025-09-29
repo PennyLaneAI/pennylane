@@ -42,7 +42,7 @@ class TestQubitizeTHC:
         ),
     )
     def test_resource_params(self, compact_ham, prep_op, select_op):
-        """Test that the resource params are correct."""
+        """Test that the resource params for QubitizationTHC are correct."""
         op = qre.QubitizeTHC(compact_ham, prep_op=prep_op, select_op=select_op)
 
         if prep_op is not None:
