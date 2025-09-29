@@ -526,6 +526,8 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
     .. warning::
 
+        By default, ``qml.to_openqasm`` adds a final measurement to all qubits, which collapses the quantum state. 
+        To avoid this behavior and preserve superposition states during a round-trip export/import, set the ``measure_all`` parameter to ``False`` when using ``qml.to_openqasm``. 
         The ``qml.from_qasm`` function returns a callable that must be executed to run the imported circuit.
 
     .. details::
