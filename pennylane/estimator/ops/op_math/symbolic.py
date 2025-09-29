@@ -152,9 +152,9 @@ class Adjoint(ResourceOperator):
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
 
-        for key, value in kwargs.items():
-            if key in base_params and base_params[key] is None:
-                base_params[key] = value
+        base_params.update(
+    (k, v) for k, v in kwargs.items() if k in base_params and base_params[k] is None
+)
 
         try:
             return base_class.adjoint_resource_decomp(base_params)
