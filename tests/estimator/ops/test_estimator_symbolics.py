@@ -121,7 +121,7 @@ class TestAdjoint:
             ),
         ),
     )
-    def test_estimate_resource_decomp(self, base_op, adj_res):
+    def test_estimate_for_adjoint(self, base_op, adj_res):
         """Test that the adjoint of this operator produces expected resources with estimate."""
         adj_op = qre.Adjoint(base_op)
         adj_adj_op = qre.Adjoint(adj_op)
@@ -334,7 +334,7 @@ class TestControlled:
             ),
         ),
     )
-    def test_estimate_resource_decomp(self, base_op, ctrl_res, ctrl_ctrl_res):
+    def test_estimate_for_controlled(self, base_op, ctrl_res, ctrl_ctrl_res):
         """Test that the adjoint of this operator produces expected resources with estimate"""
         ctrl_op = qre.Controlled(base_op, num_ctrl_wires=1, num_zero_ctrl=0)
         ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=1, num_zero_ctrl=0)
@@ -498,7 +498,7 @@ class TestPow:
             ),
         ),
     )
-    def test_estimate_resource_decomp(self, base_op, z, pow_res):
+    def test_estimate_for_pow(self, base_op, z, pow_res):
         """Test that the power of this operator produces expected resources with estimate."""
         pow_op = qre.Pow(base_op, z)
         pow_pow_op = qre.Pow(pow_op, pow_z=5)
