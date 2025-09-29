@@ -1382,6 +1382,10 @@
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
+* Added a warning in the :doc:`qml.from_qasm </code/api/pennylane.from_qasm>` about the default measurement behavior in `qml.to_openqasm`, and clarified that 
+  `qml.from_qasm` returns a callable that must be executed.
+  [(#8354)](https://github.com/PennyLaneAI/pennylane/pull/8354)
+
 <h3>Bug fixes 🐛</h3>
 
 * `default.qubit` now properly validates the `mcm_method`.
