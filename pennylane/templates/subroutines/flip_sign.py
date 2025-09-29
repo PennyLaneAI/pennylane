@@ -61,10 +61,8 @@ class FlipSign(Operation):
 
     The result for the above circuit is:
 
-    .. code-block:: python
-
-        >>> circuit()
-        array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
+    >>> circuit()
+    array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
 
     """
 
