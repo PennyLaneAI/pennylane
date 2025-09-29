@@ -79,7 +79,10 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
         ops, meas = collector.collect()
         tape = QuantumScript(ops, meas)
         pass_name = pass_instance.name if hasattr(pass_instance, "name") else pass_instance
-        cache[pass_level] = (tape.draw(), pass_name if pass_level else "No transforms")
+        cache[pass_level] = (
+            tape.draw(show_matrices=False),
+            pass_name if pass_level else "No transforms",
+        )
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):

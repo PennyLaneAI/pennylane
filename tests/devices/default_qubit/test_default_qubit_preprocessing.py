@@ -218,6 +218,16 @@ class TestConfigSetup:
         processed = dev.setup_execution_config(config)
         assert processed.mcm_config.mcm_method == "deferred"
 
+    def test_error_on_unsupported_mcm_method(self):
+        """Test that an error is raised on unsupported mcm_method's."""
+
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="bad method"))
+
+        dev = qml.device("default.qubit")
+
+        with pytest.raises(DeviceError, match="not supported on default.qubit"):
+            dev.setup_execution_config(config)
+
 
 # pylint: disable=too-few-public-methods
 class TestPreprocessing:

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""This module contains the ResourceConfig class, which tracks the configuration for resource estimation"""
-
 from __future__ import annotations
 
 from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
+
+from pennylane.estimator.ops.qubit import QubitUnitary
+from pennylane.estimator.templates import SelectPauliRot
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -40,7 +42,10 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
-        self.resource_op_precisions = {}
+        self.resource_op_precisions = {
+            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
+            QubitUnitary: {"precision": _DEFAULT_PRECISION},
+        }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
         self._ctrl_custom_decomps = {}
@@ -99,7 +104,7 @@ class ResourceConfig:
         configurable or uses bit-precisions. A negative precision will also raise an error.
 
         Args:
-            op_type (type[ResourceOperator]): the operator class for which
+            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision
             precision (float): The desired precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
@@ -211,7 +216,7 @@ class ResourceConfig:
         """Sets a custom function to override the default resource decomposition.
 
         Args:
-            op_type (type[ResourceOperator]): the operator class whose decomposition is being overriden.
+            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
                 ``"adj"``, ``"pow"``, ``"ctrl"``,

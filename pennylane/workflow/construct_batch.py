@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable
-from functools import wraps
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
@@ -33,35 +32,6 @@ if TYPE_CHECKING:
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
-
-
-def null_postprocessing(results):
-    """A postprocessing function with null behaviour."""
-    return results[0]
-
-
-def expand_fn_transform(expand_fn: Callable) -> qml.transforms.core.TransformDispatcher:
-    """Construct a transform from a tape-to-tape function.
-
-    Args:
-        expand_fn (Callable): a function from a single tape to a single tape
-
-    Returns:
-
-        .TransformDispatcher: Returns a transform dispatcher object that that can transform any
-        circuit-like object in PennyLane.
-
-    >>> device = qml.device('default.mixed', wires=2)
-    >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
-    >>> my_transform
-    <transform: expand_fn>
-    """
-
-    @wraps(expand_fn)
-    def wrapped_expand_fn(tape, *args, **kwargs):
-        return (expand_fn(tape, *args, **kwargs),), null_postprocessing
-
-    return qml.transforms.transform(wrapped_expand_fn)
 
 
 def _get_full_transform_program(qnode: QNode, gradient_fn) -> qml.transforms.core.TransformProgram:
