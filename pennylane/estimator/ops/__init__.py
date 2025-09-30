@@ -32,11 +32,6 @@ from .qubit import (
     MultiRZ,
     SingleExcitation,
     QubitUnitary,
-    IsingXX,
-    IsingXY,
-    IsingYY,
-    IsingZZ,
-    PSWAP,
 )
 
 from .op_math import (
