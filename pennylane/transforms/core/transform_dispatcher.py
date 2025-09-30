@@ -393,6 +393,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         )
         return qnode
 
+
 class TransformContainer:  # pylint: disable=too-many-instance-attributes
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
     :func:`~.pennylane.transform`.
@@ -493,7 +494,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
 
 @TransformDispatcher.generic_register
-def _apply_to_tape(obj: qml.tape.QuantumScript, transform, *targs, **tkwargs):
+def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
@@ -575,7 +576,7 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
         with AnnotatedQueue() as q:
             qfunc_output = obj(*args, **kwargs)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
 
         with QueuingManager.stop_recording():
             if transform.is_informative:
