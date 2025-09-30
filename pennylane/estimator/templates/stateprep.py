@@ -472,21 +472,26 @@ class QROMStatePreparation(ResourceOperator):
 
         This operation uses the :code:`QROM` subroutine to dynamically load the rotation angles.
 
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"QROM", "Hadamard", "CNOT", "T", "Adjoint(QROM)"}
         >>> qrom_prep = qre.QROMStatePreparation(
         ...     num_state_qubits = 4,
         ...     precision = 1e-2,
-        ...     select_swap_depths = 2,  # default value is 1
+        ...     select_swap_depths = 1,
         ... )
         >>> res = qre.estimate(qrom_prep, gate_set)
         >>> print(res)
         --- Resources: ---
-         Total qubits: 21
-         Total gates : 2.680E+3
-         Qubit breakdown:
-          zeroed qubits: 17, any_state qubits: 0, algorithmic qubits: 4
-         Gate breakdown:
-          {'QROM': 5, 'Adjoint(QROM)': 5, 'CNOT': 580, 'T': 1.832E+3, 'Hadamard': 258}
+         Total wires: 21
+            algorithmic wires: 4
+            allocated wires: 17
+             zero state: 17
+             any state: 0
+         Total gates : 3.782E+3
+          'QROM': 5,
+          'T': 2.524E+3,
+          'CNOT': 825,
+          'Hadamard': 428
 
         The ``precision`` argument is used to allocate the target wires in the underlying QROM
         operations. It corresponds to the precision with which the rotation angles of the
@@ -501,15 +506,16 @@ class QROMStatePreparation(ResourceOperator):
         If an integer or :code:`None` is passed (the default value for this parameter is 1), then that
         is used as the ``select_swap_depth`` for all :code:`QROM` operations in the resource decomposition.
 
-        >>> for op in res.gate_types:
-        ...     if op.name == "QROM":
-        ...         print(op.name, op.params)
-        ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
+        >>> print(res.gate_breakdown())
+        QROM total: 5
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+        T total: 2.524E+3
+        CNOT total: 825
+        Hadamard total: 428
 
         Alternatively, we can configure each value independently by specifying a list. Note the size
         of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
@@ -518,18 +524,19 @@ class QROMStatePreparation(ResourceOperator):
         >>> qrom_prep = qre.QROMStatePreparation(
         ...     num_state_qubits = 4,
         ...     precision = 1e-2,
-        ...     select_swap_depths = [1, None, 2, 2, None],
+        ...     select_swap_depths = [1, None, 1, 1, None],
         ... )
         >>> res = qre.estimate(qrom_prep, gate_set)
-        >>> for op in res.gate_types:
-        ...     if op.name == "QROM":
-        ...         print(op.name, op.params)
-        ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 1, 'restored': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': None, 'restored': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'restored': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': None, 'restored': False}
+        >>> print(res.gate_breakdown())
+        QROM total: 5
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
+        T total: 2.524E+3
+        CNOT total: 825
+        Hadamard total: 428
     """
 
     resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
