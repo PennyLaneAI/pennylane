@@ -91,6 +91,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             max_work_wires=0,
             fixed_decomps=None,
             alt_decomps=None,
+            strict=False,
         ):  # pylint: disable=too-many-arguments
 
             self.max_expansion = max_expansion
@@ -164,6 +165,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                         max_expansion=max_expansion,
                         graph_solution=self._decomp_graph_solution,
                         max_work_wires=self._max_work_wires,
+                        strict=strict,
                     )
                 )
 
@@ -359,6 +361,7 @@ def decompose(
     max_work_wires: int | None = 0,
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
+    strict=False,
 ):  # pylint: disable=too-many-arguments
     """Decomposes a quantum circuit into a user-specified gate set.
 
@@ -760,6 +763,7 @@ def decompose(
             num_work_wires=max_work_wires,
             fixed_decomps=fixed_decomps,
             alt_decomps=alt_decomps,
+            strict=strict,
         )
 
     try:
@@ -772,6 +776,7 @@ def decompose(
                 max_expansion=max_expansion,
                 max_work_wires=max_work_wires,
                 graph_solution=decomp_graph_solution,
+                strict=strict,
             )
         ]
     except RecursionError as e:
@@ -995,6 +1000,7 @@ def _construct_and_solve_decomp_graph(
         target_gates,
         fixed_decomps=fixed_decomps,
         alt_decomps=alt_decomps,
+        strict=strict,
     )
 
     # Find the efficient pathways to the target gate set
