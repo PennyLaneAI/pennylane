@@ -42,6 +42,7 @@ def get_tape(angles, wires):
 
 class TestSelectPauliRot:
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 

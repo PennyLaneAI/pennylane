@@ -327,6 +327,13 @@
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
+* `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
+ of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
+ [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
+
+* Templates have been made compatible with `qml.capture`.
+  [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
+
 * :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
   [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
 
