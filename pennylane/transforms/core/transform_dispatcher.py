@@ -18,7 +18,7 @@ import functools
 import os
 import types
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from copy import copy
 
 import pennylane as qml
@@ -551,27 +551,27 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
             raise ValueError(
                 f"transform_config kwargs {transform_config} cannot be passed if a TransformDispatcher is provided."
             )
-        self._transform = transform
+        self._transform_dispatcher = transform
         self._args = tuple(args)
         self._kwargs = kwargs or {}
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        return f"<{self._transform.transform.__name__}({self._args}, {self._kwargs})>"
+        return f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
 
     def __call__(self, obj):
-        return self._transform(obj, *self.args, **self.kwargs)
+        return self._transform_dispatcher(obj, *self.args, **self.kwargs)
 
     def __iter__(self):
         return iter(
             (
-                self._transform.transform,
+                self._transform_dispatcher.transform,
                 self._args,
                 self._kwargs,
-                self._transform._classical_cotransform,
-                self._transform._plxpr_transform,
-                self._transform._is_informative,
-                self._transform.final_transform,
+                self._transform_dispatcher._classical_cotransform,
+                self._transform_dispatcher._plxpr_transform,
+                self._transform_dispatcher._is_informative,
+                self._transform_dispatcher.final_transform,
             )
         )
 
@@ -588,9 +588,9 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     @property
-    def transform(self):
+    def transform(self) -> Callable:
         """The stored quantum transform."""
-        return self._transform.transform
+        return self._transform_dispatcher.transform
 
     @property
     def args(self) -> tuple:
@@ -603,24 +603,24 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return self._kwargs
 
     @property
-    def classical_cotransform(self):
+    def classical_cotransform(self) -> None | Callable:
         """The stored quantum transform's classical co-transform."""
-        return self._transform.classical_cotransform
+        return self._transform_dispatcher.classical_cotransform
 
     @property
-    def plxpr_transform(self):
+    def plxpr_transform(self) -> None | Callable:
         """The stored quantum transform's PLxPR transform."""
-        return self._transform.plxpr_transform
+        return self._transform_dispatcher.plxpr_transform
 
     @property
     def is_informative(self) -> bool:
         """``True`` if the transform is informative."""
-        return self._transform.is_informative
+        return self._transform_dispatcher.is_informative
 
     @property
     def final_transform(self) -> bool:
         """``True`` if the transform needs to be executed"""
-        return self._transform.final_transform
+        return self._transform_dispatcher.final_transform
 
 
 def _create_transform_primitive(name):

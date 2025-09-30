@@ -248,9 +248,10 @@ class TestTransformContainer:
 
         c = TransformContainer(first_valid_transform, is_informative=True)
 
-        assert isinstance(c._transform, TransformDispatcher)  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        assert isinstance(c._transform_dispatcher, TransformDispatcher)
         assert c.is_informative
-        assert c._transform.is_informative  # pylint: disable=protected-access
+        assert c._transform_dispatcher.is_informative  # pylint: disable=protected-access
 
     def test_error_if_extra_kwargs_when_dispatcher(self):
         """Test that a ValueError is raised if extra kwargs are passed when a TransformDispatcher is provided."""
