@@ -147,15 +147,7 @@ class CH(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        ctrl_h = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.Hadamard),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_h)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(
@@ -291,15 +283,7 @@ class CY(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        ctrl_y = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.Y),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_y)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(
@@ -439,15 +423,7 @@ class CZ(ResourceOperator):
         if num_ctrl_wires == 1 and num_zero_ctrl == 0:
             return [GateCount(resource_rep(CCZ))]
 
-        ctrl_z = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.Z),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_z)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(
@@ -589,15 +565,7 @@ class CSWAP(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        ctrl_swap = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.SWAP),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_swap)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(
@@ -736,16 +704,7 @@ class CCZ(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        ctrl_z = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.Z),
-                "num_ctrl_wires": num_ctrl_wires + 2,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-
-        return [GateCount(ctrl_z)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(
@@ -1002,14 +961,7 @@ class TemporaryAND(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        mcx = resource_rep(
-            qre.MultiControlledX,
-            {
-                "num_ctrl_wires": num_ctrl_wires + 2,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(mcx)]
+        raise ResourcesUndefinedError
 
 
 class Toffoli(ResourceOperator):
@@ -1261,14 +1213,7 @@ class Toffoli(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        mcx = resource_rep(
-            qre.MultiControlledX,
-            {
-                "num_ctrl_wires": num_ctrl_wires + 2,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(mcx)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1646,16 +1591,7 @@ class CRX(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        precision = target_resource_params["precision"]
-        ctrl_rx = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.RX, {"precision": precision}),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_rx)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1804,16 +1740,7 @@ class CRY(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        precision = target_resource_params["precision"]
-        ctrl_ry = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.RY, {"precision": precision}),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_ry)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1965,16 +1892,7 @@ class CRZ(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        precision = target_resource_params["precision"]
-        ctrl_rz = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.RZ, {"precision": precision}),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_rz)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -2144,16 +2062,7 @@ class CRot(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        precision = target_resource_params["precision"]
-        ctrl_rot = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.Rot, {"precision": precision}),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_rot)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -2313,16 +2222,7 @@ class ControlledPhaseShift(ResourceOperator):
         raises:
             :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
         """
-        precision = target_resource_params["precision"]
-        ctrl_ps = resource_rep(
-            qre.Controlled,
-            {
-                "base_cmpr_op": resource_rep(qre.PhaseShift, {"precision": precision}),
-                "num_ctrl_wires": num_ctrl_wires + 1,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
-        return [GateCount(ctrl_ps)]
+        raise ResourcesUndefinedError
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
