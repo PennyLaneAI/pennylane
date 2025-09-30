@@ -37,6 +37,7 @@ except ImportError:
     has_jax = False
 
 
+# pylint: disable=unused-argument, too-many-arguments
 @lru_cache
 def _get_grad_prim():
     """Create a primitive for gradient computations.
@@ -50,7 +51,7 @@ def _get_grad_prim():
     grad_prim.prim_type = "higher_order"
 
     @grad_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, h):
+    def _(*args, argnum, jaxpr, n_consts, method, h, fn):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
         consts = args[:n_consts]
@@ -63,7 +64,7 @@ def _get_grad_prim():
 
     # pylint: disable=unused-argument
     @grad_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts, method, h):
+    def _(*args, argnum, jaxpr, n_consts, method, h, fn):
         if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
         return tuple(args[i + n_consts] for i in argnum)
@@ -77,6 +78,7 @@ def _shape(shape, dtype):
     return jax.core.ShapedArray(shape, dtype)
 
 
+# pylint: disable=unused-argument, too-many-arguments
 @lru_cache
 def _get_jacobian_prim():
     """Create a primitive for Jacobian computations.
@@ -90,7 +92,7 @@ def _get_jacobian_prim():
     jacobian_prim.prim_type = "higher_order"
 
     @jacobian_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, h):
+    def _(*args, argnum, jaxpr, n_consts, method, h, fn):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
         consts = args[:n_consts]
@@ -103,7 +105,7 @@ def _get_jacobian_prim():
 
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts, method, h):
+    def _(*args, argnum, jaxpr, n_consts, method, h, fn):
         in_avals = tuple(args[i + n_consts] for i in argnum)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
@@ -164,9 +166,15 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
             "argnum": shifted_argnum,
             "jaxpr": jaxpr.jaxpr,
             "n_consts": len(jaxpr.consts),
+            "fn": func,
+            "method": method,
+            "h": h,
         }
         out_flat = diff_prim.bind(
-            *jaxpr.consts, *abstract_shapes, *flat_args, **prim_kwargs, method=method, h=h
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
+            **prim_kwargs,
         )
 
         # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
