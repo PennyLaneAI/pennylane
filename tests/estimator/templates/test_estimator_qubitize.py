@@ -42,7 +42,7 @@ class TestQubitizeTHC:
         ),
     )
     def test_resource_params(self, compact_ham, prep_op, select_op):
-        """Test that the resource params for QubitizationTHC are correct."""
+        """Test that the resource params for QubitizeTHC are correct."""
         op = qre.QubitizeTHC(compact_ham, prep_op=prep_op, select_op=select_op)
 
         if prep_op is not None:
@@ -86,7 +86,7 @@ class TestQubitizeTHC:
         ),
     )
     def test_resource_rep(self, compact_ham, prep_op, select_op, num_wires):
-        """Test that the compressed representation is correct."""
+        """Test that the compressed representation  for QubitizeTHC is correct."""
 
         expected = qre.CompressedResourceOp(
             qre.QubitizeTHC,
@@ -132,7 +132,7 @@ class TestQubitizeTHC:
         ),
     )
     def test_resources(self, compact_ham, prep_op, select_op, expected_res):
-        """Test that the resources are correct."""
+        """Test that the resource decomposition for QubitizeTHC correct."""
 
         wo_cost = qre.estimate(
             qre.QubitizeTHC(

@@ -33,7 +33,7 @@ class TestSelectTHC:
         ),
     )
     def test_resource_params(self, compact_ham, rotation_prec, selswap_depth):
-        """Test that the resource params are correct."""
+        """Test that the resource params for SelectTHC are correct."""
         op = qre.SelectTHC(compact_ham, rotation_prec, selswap_depth)
         assert op.resource_params == {
             "compact_ham": compact_ham,
@@ -50,7 +50,7 @@ class TestSelectTHC:
         ),
     )
     def test_resource_rep(self, compact_ham, rotation_prec, selswap_depth, num_wires):
-        """Test that the compressed representation is correct."""
+        """Test that the compressed representation for SelectTHC is correct."""
         expected = qre.CompressedResourceOp(
             qre.SelectTHC,
             num_wires,
@@ -89,7 +89,7 @@ class TestSelectTHC:
         ),
     )
     def test_resources(self, compact_ham, rotation_prec, selswap_depth, expected_res):
-        """Test that the resources are correct."""
+        """Test that the resource decompostion for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(

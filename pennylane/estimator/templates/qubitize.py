@@ -16,13 +16,17 @@ import math
 
 import numpy as np
 
-from pennylane import estimator as qre
+from pennylane.estimator.ops.op_math.controlled_ops import MultiControlledX, Toffoli
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
+from pennylane.estimator.ops.qubit.non_parametric_ops import X
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
+from pennylane.estimator.templates.select import SelectTHC
+from pennylane.estimator.templates.stateprep import PrepTHC
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
@@ -260,7 +264,7 @@ class QubitizeTHC(ResourceOperator):
         if not select_op:
             # Select cost from Figure 5 in arXiv:2011.03494
             select_op = resource_rep(
-                qre.SelectTHC,
+                SelectTHC,
                 {"compact_ham": compact_ham, "rotation_precision": rotation_precision},
             )
         gate_list.append(GateCount(select_op))
@@ -268,16 +272,16 @@ class QubitizeTHC(ResourceOperator):
         if not prep_op:
             # Prep cost from Figure 3 and 4 in arXiv:2011.03494
             prep_op = resource_rep(
-                qre.PrepTHC,
+                PrepTHC,
                 {"compact_ham": compact_ham, "coeff_precision": coeff_precision},
             )
         gate_list.append(GateCount(prep_op))
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": prep_op})))
+        gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
         coeff_precision = prep_op.params["coeff_precision"] or coeff_precision
 
-        toffoli = resource_rep(qre.Toffoli)
+        toffoli = resource_rep(Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
 
         return gate_list
@@ -321,7 +325,7 @@ class QubitizeTHC(ResourceOperator):
 
         if num_ctrl_wires > 1:
             mcx = resource_rep(
-                qre.MultiControlledX,
+                MultiControlledX,
                 {
                     "num_ctrl_wires": num_ctrl_wires,
                     "num_zero_ctrl": num_zero_ctrl,
@@ -333,13 +337,13 @@ class QubitizeTHC(ResourceOperator):
         if not select_op:
             # Controlled Select cost from Fig 5 in arXiv:2011.03494
             select_op = resource_rep(
-                qre.SelectTHC,
+                SelectTHC,
                 {"compact_ham": compact_ham, "rotation_precision": rotation_precision},
             )
         gate_list.append(
             GateCount(
                 resource_rep(
-                    qre.Controlled,
+                    Controlled,
                     {"base_cmpr_op": select_op, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
                 )
             )
@@ -348,20 +352,20 @@ class QubitizeTHC(ResourceOperator):
         if not prep_op:
             # Prep cost from Fig 3 and 4 in arXiv:2011.03494
             prep_op = resource_rep(
-                qre.PrepTHC,
+                PrepTHC,
                 {"compact_ham": compact_ham, "coeff_precision": coeff_precision},
             )
         gate_list.append(GateCount(prep_op))
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": prep_op})))
+        gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494s
         coeff_precision = prep_op.params["coeff_precision"] or coeff_precision
-        toffoli = resource_rep(qre.Toffoli)
+        toffoli = resource_rep(Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
 
         if num_ctrl_wires > 1:
             gate_list.append(Deallocate(1))
         elif num_zero_ctrl > 0:
-            gate_list.append(GateCount(resource_rep(qre.X), 2 * num_zero_ctrl))
+            gate_list.append(GateCount(resource_rep(X), 2 * num_zero_ctrl))
 
         return gate_list

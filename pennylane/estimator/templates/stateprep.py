@@ -891,9 +891,9 @@ class PrepTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
 
-        if not (isinstance(coeff_precision, int) or coeff_precision is None):
+        if not isinstance(coeff_precision, int) and coeff_precision is not None:
             raise TypeError(
-                f"`coeff_precision` must be an integer, provided {type(coeff_precision)}."
+                f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
 
         self.compact_ham = compact_ham
@@ -952,9 +952,9 @@ class PrepTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
 
-        if not (isinstance(coeff_precision, int) or coeff_precision is None):
+        if not isinstance(coeff_precision, int) and coeff_precision is not None:
             raise TypeError(
-                f"`coeff_precision` must be an integer, provided {type(coeff_precision)}."
+                f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
 
         tensor_rank = compact_ham.params["tensor_rank"]
