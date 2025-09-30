@@ -1238,6 +1238,7 @@
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
+  [(#8359)](https://github.com/PennyLaneAI/pennylane/pull/8359)
 
 * Adds `measurements` as a "core" module in the tach specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
