@@ -20,11 +20,12 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 
-import pennylane as qml
 from pennylane import capture, math
 from pennylane.capture.autograph import wraps
 from pennylane.exceptions import TransformError
+from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
+from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
@@ -60,13 +61,15 @@ def _create_plxpr_fallback_transform(tape_transform):
     # pylint: disable=import-outside-toplevel
     try:
         import jax
+
+        from pennylane.tape import plxpr_to_tape
     except ImportError:
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
 
         def wrapper(*inner_args):
-            tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
+            tape = plxpr_to_tape(jaxpr, consts, *inner_args)
             with capture.pause():
                 tapes, _ = tape_transform(tape, *targs, **tkwargs)
 
@@ -568,10 +571,10 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
     @functools.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
         # removes the argument to the qfuncs from the active queuing context.
-        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         for l in leaves:
             if isinstance(l, Operator):
-                qml.QueuingManager.remove(l)
+                QueuingManager.remove(l)
 
         with AnnotatedQueue() as q:
             qfunc_output = obj(*args, **kwargs)
@@ -598,12 +601,12 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
         for op in transformed_tape.operations:
             apply(op)
 
-        mps = [qml.apply(mp) for mp in transformed_tape.measurements]
+        mps = [apply(mp) for mp in transformed_tape.measurements]
 
         if not mps:
             return qfunc_output
 
-        if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
+        if isinstance(qfunc_output, MeasurementProcess):
             return tuple(mps) if len(mps) > 1 else mps[0]
 
         if isinstance(qfunc_output, (tuple, list)):
