@@ -32,7 +32,7 @@ if util.find_spec("jax") is not None:
     jax_available = True
 else:
     jax_available = False
-    jax = None
+    jax = None  # type: ignore
 
 if jax_available:
     # pylint: disable=unnecessary-lambda

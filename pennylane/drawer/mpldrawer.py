@@ -294,7 +294,7 @@ class MPLDrawer:
             fig.set_figheight(figsize[1])
             self._fig = fig
 
-        self._ax = self._fig.add_axes(
+        self._ax = self._fig.add_axes(  # type: ignore
             [0, 0, 1, 1],
             xlim=(-2.5 if starting_dots else -2, self.n_layers + 1),
             ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5 * (c_wires > 0)),

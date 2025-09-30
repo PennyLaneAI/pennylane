@@ -24,10 +24,12 @@ from __future__ import annotations
 from collections import namedtuple
 from collections.abc import Sequence
 from functools import singledispatch
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
+from pennylane.ops.qubit.non_parametric_ops import SWAP
+from pennylane.wires import Wires
 
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
@@ -73,7 +75,7 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
     op_control_wires, control_values, base = unwrap_controls(op)
     is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
     if len(op.wires) == 0 or is_global_op:
-        op_wires = list(range(drawer.n_wires))
+        op_wires = Wires(list(range(drawer.n_wires)))
     else:
         op_wires = op.wires
     target_wires = [w for w in op_wires if w not in op_control_wires]
@@ -101,7 +103,7 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.SWAP, drawer, layer, _) -> None:
+def _(op: SWAP, drawer, layer, _) -> None:
     drawer.SWAP(layer, list(op.wires))
 
 
@@ -539,7 +541,7 @@ def tape_mpl(
             :target: javascript:void(0);
     """
 
-    restore_params = {}
+    restore_params: dict[str, Any] = {}
     if update_style := (has_mpl and style != "rcParams"):
         restore_params = mpl.rcParams.copy()
         _set_style(style)

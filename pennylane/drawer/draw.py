@@ -779,7 +779,7 @@ def draw_mpl(
 
     """
     if catalyst_qjit(qnode):
-        qnode = qnode.user_function
+        qnode = qnode.user_function  # type: ignore
 
     if hasattr(qnode, "construct"):
 
