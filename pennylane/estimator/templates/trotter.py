@@ -743,7 +743,7 @@ class TrotterTHC(ResourceOperator):
         r"""Returns the controlled resource decomposition.
 
         Args:
-        num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): dictionary containing the size of the larger of the two registers being added together
 
