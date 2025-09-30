@@ -33,3 +33,5 @@ from .parametric_ops_single_qubit import (
 from .parametric_ops_multi_qubit import MultiRZ, PauliRot
 
 from .qchem_ops import SingleExcitation
+
+from .matrix_ops import QubitUnitary

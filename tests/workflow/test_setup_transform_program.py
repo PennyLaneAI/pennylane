@@ -37,6 +37,7 @@ def mock_user_transform(tape):
     return [tape], null_postprocessing
 
 
+@qml.transform
 def device_transform(tape):
     """Mock user transform function"""
     return [tape], null_postprocessing
