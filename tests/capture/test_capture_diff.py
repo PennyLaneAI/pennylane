@@ -56,14 +56,16 @@ class TestExceptions:
             jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
-def diff_eqn_assertions(eqn, primitive, argnum=None, n_consts=0):
+def diff_eqn_assertions(eqn, primitive, argnum=None, n_consts=0, fn=None):
     argnum = [0] if argnum is None else argnum
     assert eqn.primitive == primitive
-    assert set(eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
+    assert set(eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h", "fn"}
     assert eqn.params["argnum"] == argnum
     assert eqn.params["n_consts"] == n_consts
     assert eqn.params["method"] is None
     assert eqn.params["h"] is None
+    if fn:
+        assert eqn.params["fn"] == fn
 
 
 class TestGrad:
@@ -95,7 +97,7 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), float, weak_type=True)] * len(argnum)
 
         grad_eqn = jaxpr.eqns[2]
-        diff_eqn_assertions(grad_eqn, grad_prim, argnum=argnum)
+        diff_eqn_assertions(grad_eqn, grad_prim, argnum=argnum, fn=inner_func)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
@@ -129,7 +131,7 @@ class TestGrad:
 
         grad_eqn = jaxpr_1.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_1.out_avals
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, grad_prim, fn=func)
         assert len(grad_eqn.params["jaxpr"].eqns) == 2
 
         manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
@@ -145,7 +147,7 @@ class TestGrad:
 
         grad_eqn = jaxpr_2.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_2.out_avals
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, grad_prim, fn=qml_func_1)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
         assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
 
@@ -159,7 +161,7 @@ class TestGrad:
 
         grad_eqn = jaxpr_3.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_3.out_avals
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, grad_prim, fn=qml_func_2)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
         assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
 
@@ -190,22 +192,23 @@ class TestGrad:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.grad
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1] ** 2, wires=0)
             return qml.expval(qml.Z(0))
 
+        g_circuit = qml.grad(circuit)
+
         x = jnp.array([0.5, 0.9])
-        res = circuit(x)
+        res = g_circuit(x)
         expected_res = (
             -jnp.sin(x[0]) * jnp.cos(x[1] ** 2),
             -2 * x[1] * jnp.sin(x[1] ** 2) * jnp.cos(x[0]),
         )
         assert qml.math.allclose(res, expected_res)
 
-        jaxpr = jax.make_jaxpr(circuit)(x)
+        jaxpr = jax.make_jaxpr(g_circuit)(x)
 
         assert len(jaxpr.eqns) == 1  # grad equation
         assert jaxpr.in_avals == [jax.core.ShapedArray((2,), fdtype)]
@@ -213,7 +216,7 @@ class TestGrad:
 
         grad_eqn = jaxpr.eqns[0]
         assert grad_eqn.invars[0].aval == jaxpr.in_avals[0]
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, grad_prim, fn=circuit)
         grad_jaxpr = grad_eqn.params["jaxpr"]
         assert len(grad_jaxpr.eqns) == 1  # qnode equation
 
@@ -271,7 +274,7 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
 
         grad_eqn = jaxpr.eqns[2]
-        diff_eqn_assertions(grad_eqn, grad_prim, argnum=argnum)
+        diff_eqn_assertions(grad_eqn, grad_prim, argnum=argnum, fn=inner_func)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
@@ -318,7 +321,7 @@ class TestGrad:
         grad_eqn = jaxpr.eqns[0]
         assert all(invar.aval == in_aval for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals))
         flat_argnum = [0, 1] * (0 in argnum) + [2] * (1 in argnum) + [3, 4, 5] * (2 in argnum)
-        diff_eqn_assertions(grad_eqn, grad_prim, argnum=flat_argnum)
+        diff_eqn_assertions(grad_eqn, grad_prim, argnum=flat_argnum, fn=circuit)
         grad_jaxpr = grad_eqn.params["jaxpr"]
         assert len(grad_jaxpr.eqns) == 1  # qnode equation
 
@@ -419,7 +422,7 @@ class TestJacobian:
         assert jaxpr.out_avals == exp_out_avals
 
         jac_eqn = jaxpr.eqns[0]
-        diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=argnum)
+        diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=argnum, fn=inner_func)
 
         manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y)
         # Evaluating jaxpr gives flat list results. Need to adapt the JAX output to that
@@ -458,7 +461,7 @@ class TestJacobian:
 
         jac_eqn = jaxpr_1.eqns[0]
         assert [var.aval for var in jac_eqn.outvars] == jaxpr_1.out_avals
-        diff_eqn_assertions(jac_eqn, jacobian_prim)
+        diff_eqn_assertions(jac_eqn, jacobian_prim, fn=func)
         assert len(jac_eqn.params["jaxpr"].eqns) == 5
 
         prod_sin = jnp.prod(x) * jnp.sin(x)
@@ -481,7 +484,7 @@ class TestJacobian:
 
         jac_eqn = jaxpr_2.eqns[0]
         assert [var.aval for var in jac_eqn.outvars] == jaxpr_2.out_avals
-        diff_eqn_assertions(jac_eqn, jacobian_prim)
+        diff_eqn_assertions(jac_eqn, jacobian_prim, fn=qml_func_1)
         assert len(jac_eqn.params["jaxpr"].eqns) == 1  # inner jacobian equation
         assert jac_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
@@ -603,7 +606,7 @@ class TestJacobian:
 
         jac_eqn = jaxpr.eqns[2]
 
-        diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=flat_argnum)
+        diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=flat_argnum, fn=inner_func)
         assert [var.aval for var in jac_eqn.outvars] == jaxpr.out_avals
 
         manual_out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
