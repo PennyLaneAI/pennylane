@@ -430,7 +430,7 @@ class TrotterCDF(ResourceOperator):
     def controlled_resource_decomp(
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
     ):
-        """Returns the controlled resource decomposition.
+        r"""Returns the controlled resource decomposition.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
@@ -711,7 +711,7 @@ class TrotterTHC(ResourceOperator):
     def controlled_resource_decomp(
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
     ):
-        """Returns the controlled resource decomposition.
+        r"""Returns the controlled resource decomposition.
 
         Args:
         num_ctrl_wires (int): the number of qubits the operation is controlled on
