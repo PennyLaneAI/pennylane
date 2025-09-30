@@ -637,7 +637,7 @@
 <h4>Other improvements</h4>
 
 * Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
 
 
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module
