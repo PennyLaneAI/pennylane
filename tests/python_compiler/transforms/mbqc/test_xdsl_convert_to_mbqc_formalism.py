@@ -88,7 +88,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
+                // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 %1 = quantum.custom "Hadamard"() %0 : !quantum.bit
+                %2 = quantum.custom "PauliX"() %1 : !quantum.bit
                 return
             }
         """
@@ -137,7 +139,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
+                // CHECK: [[qb4:%.+]] = quantum.custom "PauliY"() [[qb4:%.+]] : !quantum.bit
                 %1 = quantum.custom "S"() %0 : !quantum.bit
+                %2 = quantum.custom "PauliY"() %1 : !quantum.bit
                 return
             }
         """
@@ -189,7 +193,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
+                // CHECK: [[qb4:%.+]] = quantum.custom "PauliZ"() [[qb4:%.+]] : !quantum.bit
                 %1 = quantum.custom "RZ"(%param0) %0 : !quantum.bit
+                %2 = quantum.custom "PauliZ"() %1 : !quantum.bit
                 return
             }
         """
@@ -260,8 +266,10 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
+                // CHECK: [[qb4:%.+]] = quantum.custom "Identity"() [[qb4:%.+]] : !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = quantum.custom "RotXZX"(%param0, %param1, %param2) %0 : !quantum.bit
+                %2 = quantum.custom "Identity"() %1 : !quantum.bit
                 return
             }
         """
@@ -278,7 +286,10 @@ class TestConvertToMBQCFormalismPass:
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
                 // CHECK-NOT: quantum.custom "CNOT"()
+                // CHECK: quantum.gphase
                 %2, %3 = quantum.custom "CNOT"() %0, %1 : !quantum.bit, !quantum.bit
+                %4 = arith.constant 2 : f64
+                quantum.gphase %4
                 return
             }
         """
