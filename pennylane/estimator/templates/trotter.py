@@ -36,8 +36,9 @@ from pennylane.estimator.templates.subroutines import (
     Select,
     SemiAdder,
 )
+from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
@@ -119,7 +120,13 @@ class TrotterProduct(ResourceOperator):
 
     resource_keys = {"first_order_expansion", "num_steps", "order"}
 
-    def __init__(self, first_order_expansion, num_steps, order, wires=None):
+    def __init__(
+        self,
+        first_order_expansion: list,
+        num_steps: int,
+        order: int,
+        wires: WiresLike | None = None,
+    ):
 
         _dequeue(op_to_remove=first_order_expansion)
         self.queue()
@@ -173,9 +180,9 @@ class TrotterProduct(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        first_order_expansion,
-        num_steps,
-        order,
+        first_order_expansion: list,
+        num_steps: int,
+        order: int,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -198,7 +205,9 @@ class TrotterProduct(ResourceOperator):
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def resource_decomp(cls, first_order_expansion, num_steps, order) -> list[GateCount]:
+    def resource_decomp(
+        cls, first_order_expansion: list, num_steps: int, order: int
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -314,7 +323,13 @@ class TrotterCDF(ResourceOperator):
 
     resource_keys = {"compact_ham", "num_steps", "order"}
 
-    def __init__(self, compact_ham, num_steps, order, wires=None):
+    def __init__(
+        self,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
+        wires: WiresLike | None = None,
+    ):
 
         if compact_ham.method_name != "cdf":
             raise TypeError(
@@ -350,7 +365,9 @@ class TrotterCDF(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, compact_ham, num_steps, order) -> CompressedResourceOp:
+    def resource_rep(
+        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+    ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -372,7 +389,9 @@ class TrotterCDF(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, compact_ham, num_steps, order) -> list[GateCount]:
+    def resource_decomp(
+        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -592,7 +611,13 @@ class TrotterTHC(ResourceOperator):
 
     resource_keys = {"compact_ham", "num_steps", "order"}
 
-    def __init__(self, compact_ham, num_steps, order, wires=None):
+    def __init__(
+        self,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
+        wires: WiresLike | None = None,
+    ):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
@@ -628,7 +653,9 @@ class TrotterTHC(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, compact_ham, num_steps, order) -> CompressedResourceOp:
+    def resource_rep(
+        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+    ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -650,7 +677,9 @@ class TrotterTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, compact_ham, num_steps, order) -> list[GateCount]:
+    def resource_decomp(
+        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -879,12 +908,12 @@ class TrotterVibrational(ResourceOperator):
 
     def __init__(
         self,
-        compact_ham,
-        num_steps,
-        order,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
         phase_grad_precision=1e-6,
         coeff_precision=1e-3,
-        wires=None,
+        wires: WiresLike | None = None,
     ):
 
         if compact_ham.method_name != "vibrational":
@@ -931,7 +960,12 @@ class TrotterVibrational(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3
+        cls,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
+        phase_grad_precision=1e-6,
+        coeff_precision=1e-3,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -1085,7 +1119,12 @@ class TrotterVibrational(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision
+        cls,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
+        phase_grad_precision: float,
+        coeff_precision: float,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1233,12 +1272,12 @@ class TrotterVibronic(ResourceOperator):
 
     def __init__(
         self,
-        compact_ham,
-        num_steps,
-        order,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
         phase_grad_precision=1e-6,
         coeff_precision=1e-3,
-        wires=None,
+        wires: WiresLike | None = None,
     ):
 
         if compact_ham.method_name != "vibronic":
@@ -1288,7 +1327,12 @@ class TrotterVibronic(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3
+        cls,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
+        phase_grad_precision: float = 1e-6,
+        coeff_precision: float = 1e-3,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -1472,9 +1516,9 @@ class TrotterVibronic(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        compact_ham,
-        num_steps,
-        order,
+        compact_ham: CompactHamiltonian,
+        num_steps: int,
+        order: int,
         phase_grad_precision,
         coeff_precision,
     ) -> list[GateCount]:
