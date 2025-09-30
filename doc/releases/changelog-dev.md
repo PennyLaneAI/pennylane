@@ -323,6 +323,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
+ of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
+ [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
+
 * Templates have been made compatible with `qml.capture`.
   [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
 
