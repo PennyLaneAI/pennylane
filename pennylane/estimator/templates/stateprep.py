@@ -42,15 +42,15 @@ class UniformStatePrep(ResourceOperator):
 
     This operation uses ``Hadamard`` gates to create the uniform superposition when
     the number of states is a power of two. If the number of states is not a power of two,
-    amplitude amplification technique defined in
-    `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_ is used.
+    the amplitude amplification technique defined in
+    `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_ is used.
 
     Args:
         num_states (int): the number of states in the uniform superposition
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+        The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
         The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l`
         basis states.
 
@@ -120,7 +120,7 @@ class UniformStatePrep(ResourceOperator):
             num_states (int): the number of states over which the uniform superposition is being prepared
 
         Resources:
-            The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
             The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states.
 
         Returns:
@@ -168,7 +168,7 @@ class AliasSampling(ResourceOperator):
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+        The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
         The circuit uses coherent alias sampling to prepare a state with the given coefficients.
 
     **Example**
@@ -231,7 +231,7 @@ class AliasSampling(ResourceOperator):
             precision (float): the precision with which the coefficients are loaded
 
         Resources:
-            The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
             The circuit uses coherent alias sampling to prepare a state with the given coefficients.
 
         Returns:
@@ -288,9 +288,9 @@ class MPSPrep(ResourceOperator):
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        The resources for MPSPrep are according to the decomposition, which uses the generic
-        :class:`~.pennylane.estimator.QubitUnitary`. The decomposition is based on
-        the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
+        The resources for MPSPrep rely on a decomposition which uses the generic
+        :class:`~.pennylane.estimator.QubitUnitary`. This decomposition is based on
+        the routine described in `arXiv:2310.18410 <https://arxiv.org/abs/2310.18410>`_.
 
     .. seealso:: :class:`~.MPSPrep`
 
@@ -386,7 +386,7 @@ class MPSPrep(ResourceOperator):
         Resources:
             The resources for MPSPrep are estimated according to the decomposition, which uses the generic
             :class:`~.pennylane.estimator.QubitUnitary`. The decomposition is based on
-            the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
+            the routine described in `arXiv:2310.18410 <https://arxiv.org/abs/2310.18410>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
@@ -428,14 +428,16 @@ class QROMStatePreparation(ResourceOperator):
         See also :class:`~.pennylane.pennylane.estimator.PhaseGradient`.
 
     Args:
-        num_state_qubits (int): number of qubits required to represent the state-vector
+        num_state_qubits (int): number of qubits required to represent the statevector
         precision (float): the precision threshold for loading in the binary representation
             of the rotation angles
-        positive_and_real (bool): flag that the coefficients of the statevector are all real
+        positive_and_real (bool): indicates whether or not the coefficients of the statevector are all real
             and positive
-        select_swap_depths (int | Iterable(int) | None): a parameter of :code:`QROM`
-            used to trade-off extra qubits for reduced circuit depth
-        wires (Sequence[int], None): The wires to prepare the target state on. This excludes any
+        select_swap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
+            used to trade-off extra qubits for reduced circuit depth.
+            Can be ``None``, ``1`` or a positive integer power of two.
+            Defaults to ``None``, which internally corresponds to the optimal depth.
+        wires (Sequence[int], None): The wires on which to prepare the target state. This excludes any
             additional qubits allocated during the decomposition (via select-swap).
 
     Resources:
@@ -443,7 +445,7 @@ class QROMStatePreparation(ResourceOperator):
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
         :class:`~.pennylane.estimator.QROM` to dynamically load the rotation angles.
         These rotations gates are implemented using an in-place controlled-adder operation
-        (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to a phase gradient.
+        (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_) to a phase gradient state.
 
     .. seealso:: :class:`~.QROMStatePreparation`
 
@@ -655,7 +657,7 @@ class QROMStatePreparation(ResourceOperator):
             Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently. If
             :code:`use_phase_grad_trick == True` then these rotations gates are implmented using an
             inplace controlled semi-adder operation (see figure 4. of
-            `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_).
+            `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_).
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
@@ -839,7 +841,7 @@ class QROMStatePreparation(ResourceOperator):
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
             :class:`~.pennylane.estimator.QROM` to dynamically load the rotation angles.
             These rotations gates are implmented using an inplace controlled-adder operation
-            (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to phase gradient.
+            (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_) to phase gradient.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of

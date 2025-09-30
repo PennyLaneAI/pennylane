@@ -38,7 +38,7 @@ class SingleQubitComparator(ResourceOperator):
 
     Resources:
         The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
-        <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+        <https://arxiv.org/abs/1711.10460>`_. Specifically,
         the resources are given as :math:`1` ``TemporaryAND`` gate, :math:`4` ``CNOT`` gates,
         and :math:`3` ``X`` gates.
         The circuit which applies the comparison operation on qubits :math:`(x,y)` is
@@ -103,7 +103,7 @@ class SingleQubitComparator(ResourceOperator):
 
         Resources:
             The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            <https://arxiv.org/abs/1711.10460>`_. Specifically,
             the resources are given as :math:`1` ``TemporaryAND`` gate, :math:`4` ``CNOT`` gates,
             and :math:`3` ``X`` gates.
 
@@ -143,12 +143,12 @@ class TwoQubitComparator(ResourceOperator):
 
     Resources:
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-        <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+        <https://arxiv.org/abs/1711.10460>`_. Specifically,
         the resources are given as :math:`2` ``CSWAP`` gates,
         :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
         requires one zeroed auxiliary qubit.
-        The circuit which applies the comparison operation on registers :math:`(x0,x1)`
-        and :math:`(y0, y1)` is defined as:
+        The circuit which applies the comparison operation on registers :math:`(x_0,x_1)`
+        and :math:`(y_0, y_1)` is defined as:
 
         .. code-block:: bash
 
@@ -210,7 +210,7 @@ class TwoQubitComparator(ResourceOperator):
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            <https://arxiv.org/abs/1711.10460>`_. Specifically,
             the resources are given as :math:`2` ``CSWAP`` gates,
             :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
             requires one zeroed auxiliary qubit.
@@ -248,7 +248,7 @@ class TwoQubitComparator(ResourceOperator):
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            <https://arxiv.org/abs/1711.10460>`_. Specifically,
             the resources are given as :math:`2` ``CSWAP`` gates,
             :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
             is modified to use TemporaryAND gates for building blocks of CSWAP gates.
@@ -273,7 +273,7 @@ class TwoQubitComparator(ResourceOperator):
 
 
 class IntegerComparator(ResourceOperator):
-    r"""This operation applies a controlled `X` gate using integer comparison as the condition.
+    r"""This operation applies a controlled ``X`` gate using integer comparison as the condition.
 
     Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive
     integer, and a fixed positive integer :math:`L`, a target qubit is flipped if
@@ -287,7 +287,7 @@ class IntegerComparator(ResourceOperator):
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        This decomposition uses the minimum number of ``MultiControlledX`` gates.
+        This decomposition uses the minimum number of ``MultiControlledX`` gates required for the given integer value.
         The given integer is first converted into its binary representation, and compared to the quantum register
         iteratively, starting with the most significant bit, and progressively including more qubits.
         For example, when :code:`geq` is ``False``, :code:`value` is :math:`22` (Binary :math:`010110`), and
@@ -511,7 +511,7 @@ class IntegerComparator(ResourceOperator):
 
 
 class RegisterComparator(ResourceOperator):
-    r"""This operation applies a controlled `X` gate using register comparison as the condition.
+    r"""This operation applies a controlled ``X`` gate using register comparison as the condition.
 
     Given the basis states :math:`\vert a \rangle`, and  :math:`\vert b \rangle`,
     where :math:`a` and :math:`b` are positive
@@ -527,9 +527,9 @@ class RegisterComparator(ResourceOperator):
 
     Resources:
         The resources are obtained from appendix B of `arXiv:1711.10460
-        <https://arxiv.org/pdf/1711.10460>`_ for registers of same size.
-        If the size of registers differ, the unary iteration technique from
-        `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_ is used
+        <https://arxiv.org/abs/1711.10460>`_ for registers of the same size.
+        If the sizes of the registers differ, the unary iteration technique from
+        `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_ is used
         to combine the results from extra qubits.
 
     **Example**
@@ -621,9 +621,9 @@ class RegisterComparator(ResourceOperator):
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_ for registers of same size.
-            If the size of registers differ, the unary iteration technique from
-            `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_ is used
+            <https://arxiv.org/abs/1711.10460>`_ for registers of the same size.
+            If the sizes of the registers differ, the unary iteration technique from
+            `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_ is used
             to combine the results from extra qubits.
 
         Returns:
