@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains class to represent different Hamiltonians.
+Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
 
 from typing import Any

@@ -28,8 +28,8 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
-from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
-from pennylane.estimator.templates.subroutines import (
+from .compact_hamiltonian import CompactHamiltonian
+from .subroutines import (
     BasisRotation,
     OutMultiplier,
     OutOfPlaceSquare,
@@ -67,13 +67,13 @@ class TrotterProduct(ResourceOperator):
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
-    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+    For more details, see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
         first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators
             constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
         num_steps (int): number of Trotter steps to perform
-        order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+        order (int): order of the Suzuki-Trotter approximation; must be ``1`` or an even number
         wires (list[int] | None): The wires on which the operator acts. If provided, these wire
             labels will be used instead of the wires provided by the ResourceOperators in the
             :code:`first_order_expansion`.
@@ -85,7 +85,7 @@ class TrotterProduct(ResourceOperator):
 
         .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
 
         .. math::
@@ -246,7 +246,7 @@ class TrotterProduct(ResourceOperator):
 
 class TrotterCDF(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
-    exponential of compressed double factorized Hamiltonian.
+    exponential of a compressed double-factorized (CDF) Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
@@ -534,7 +534,7 @@ class TrotterCDF(ResourceOperator):
 
 class TrotterTHC(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
-    exponential of tensor hypercontracted Hamiltonian.
+    exponential of a tensor hypercontracted (THC) Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
@@ -825,7 +825,7 @@ class TrotterTHC(ResourceOperator):
 
 class TrotterVibrational(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
-    exponential of vibrational Hamiltonian.
+    exponential of a vibrational Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
@@ -1190,7 +1190,7 @@ class TrotterVibrational(ResourceOperator):
 
 class TrotterVibronic(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
-    exponential of real-space vibronic Hamiltonian.
+    exponential of a real-space vibronic Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
