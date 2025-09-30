@@ -97,7 +97,7 @@ class QubitizeTHC(ResourceOperator):
         * If provided, the precisions from :code:`prep_op` and :code:`select_op` take precedence.
         * If :code:`prep_op`, and :code:`select_op` are not provided or have the precision value set to `None`,
           the values for :code:`coeff_precision`, and :code:`rotation_precision` arguments are used.
-        * If both of the above are not specified, the default value from
+        * If both of the above are not specified, the value set in
           :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
 
     """
