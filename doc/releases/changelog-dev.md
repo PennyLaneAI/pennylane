@@ -636,6 +636,10 @@
 
 <h4>Other improvements</h4>
 
+* Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
+
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module
   to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
