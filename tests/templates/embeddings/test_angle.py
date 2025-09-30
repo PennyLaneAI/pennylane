@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qml.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
