@@ -158,7 +158,7 @@ class TwoQubitComparator(ResourceOperator):
              y0 : ─╰●─│─────╰SWAP─╰●─┤
             |1> : ────╰SWAP──────────┤
 
-        Note that this operation provides and an alternate decomposition using ``TemporaryAND``. See
+        Note that this operation provides an alternate decomposition using ``TemporaryAND``. See
         the ``TemporaryAND_based_decomp`` method for more details.
 
     **Example**
