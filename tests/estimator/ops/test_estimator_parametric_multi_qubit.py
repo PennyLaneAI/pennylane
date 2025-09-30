@@ -404,6 +404,11 @@ class TestPauliRot:
 class TestIsingXX:
     """Test the IsingXX class."""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
+            qre.IsingXX(precision=1e-3, wires=[0])
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     def test_resource_params(self, precision):
         """Test that the resource params are correct."""
@@ -470,6 +475,11 @@ class TestIsingXX:
 
 class TestIsingXY:
     """Test the IsingXY class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
+            qre.IsingXY(precision=1e-3, wires=[0])
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     def test_resource_params(self, precision):
@@ -548,6 +558,11 @@ class TestIsingXY:
 class TestIsingYY:
     """Test the IsingYY class."""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
+            qre.IsingYY(precision=1e-3, wires=[0])
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     def test_resource_params(self, precision):
         """Test that the resource params are correct."""
@@ -615,6 +630,11 @@ class TestIsingYY:
 class TestIsingZZ:
     """Test the IsingZZ class."""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
+            qre.IsingZZ(precision=1e-3, wires=[0])
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     def test_resource_params(self, precision):
         """Test that the resource params are correct."""
@@ -681,6 +701,11 @@ class TestIsingZZ:
 
 class TestPSWAP:
     """Test the PSWAP class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
+            qre.PSWAP(precision=1e-3, wires=[0])
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     def test_resource_params(self, precision):

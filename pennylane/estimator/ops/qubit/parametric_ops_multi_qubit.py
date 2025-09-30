@@ -577,6 +577,15 @@ class IsingXX(ResourceOperator):
     >>> ising_xx = qre.IsingXX()
     >>> gate_set = {"CNOT", "RX"}
     >>> print(qre.estimate(ising_xx, gate_set))
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 3
+      'RX': 1,
+      'CNOT': 2
 
     """
 
@@ -642,7 +651,7 @@ class IsingXX(ResourceOperator):
             precision (float | None): error threshold for Clifford+T decomposition of this operation
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
@@ -759,6 +768,15 @@ class IsingYY(ResourceOperator):
     >>> ising_yy = qre.IsingYY()
     >>> gate_set = {"CY", "RY"}
     >>> print(qre.estimate(ising_yy, gate_set))
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 3
+      'CY': 2,
+      'RY': 1
 
     """
 
@@ -939,6 +957,17 @@ class IsingXY(ResourceOperator):
     >>> ising_xy = qre.IsingXY()
     >>> gate_set = {"Hadamard", "CY", "RY", "RX"}
     >>> print(qre.estimate(ising_xy, gate_set))
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 6
+      'CY': 2,
+      'RY': 1,
+      'RX': 1,
+      'Hadamard': 2
 
     """
 
@@ -1124,10 +1153,19 @@ class IsingZZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> ising_zz = qre.IsingZZ()
     >>> gate_set = {"CNOT", "RZ"}
     >>> print(qre.estimate(ising_zz, gate_set))
-
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 3
+      'RZ': 1,
+      'CNOT': 2
     """
 
     num_wires = 2
@@ -1135,6 +1173,8 @@ class IsingZZ(ResourceOperator):
 
     def __init__(self, precision: float | None = None, wires: WiresLike | None = None) -> None:
         self.precision = precision
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @classmethod
@@ -1163,7 +1203,7 @@ class IsingZZ(ResourceOperator):
                 1: ─╰X─────RZ────╰X─┤
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1240,7 +1280,7 @@ class IsingZZ(ResourceOperator):
             :class:`~.pennylane.estimator.ops.CNOT` gates.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1305,10 +1345,19 @@ class PSWAP(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> from pennylane import estimator as qre
-    >>> pswap = qre.PWAP()
+    >>> pswap = qre.PSWAP()
     >>> gate_set = {"CNOT", "SWAP", "PhaseShift"}
     >>> print(qre.estimate(pswap, gate_set))
-
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 4
+      'SWAP': 1,
+      'PhaseShift': 1,
+      'CNOT': 2
 
     """
 
