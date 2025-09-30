@@ -1385,6 +1385,8 @@
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
+* The links pointing to pennylane.ai/plugins have now been updated to pennylane.ai/devices. [(#7719)](https://github.com/PennyLaneAI/pennylane/pull/7719)
+
 <h3>Bug fixes 🐛</h3>
 
 * `default.qubit` now properly validates the `mcm_method`.
@@ -1501,7 +1503,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Runor Agbaire
+Runor Agbaire,
+Catalina Albornoz,
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
