@@ -29,6 +29,8 @@ import pennylane as qml
 from pennylane.decomposition import DecompositionRule
 from pennylane.exceptions import EigvalsUndefinedError
 
+from .equal import assert_equal
+
 
 def _assert_error_raised(func, error, failure_comment):
     def inner_func(*args, **kwargs):
@@ -370,7 +372,12 @@ def _check_capture(op):
 
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-        assert op == new_op
+        assert_equal(op, new_op)
+
+        leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
+        assert not any(
+            qml.math.is_abstract(l) for l in leaves
+        ), "capture params cannot contain tracers"
     except Exception as e:
         raise ValueError(
             "The capture of the operation into jaxpr failed somehow."
@@ -484,10 +491,8 @@ def assert_valid(
 
         op = MyOp(qml.numpy.array(0.5), wires=0)
 
-    .. code-block::
-
-        >>> assert_valid(op)
-        AssertionError: op.data must be a tuple
+    >>> assert_valid(op)
+    AssertionError: op.data must be a tuple
 
     .. code-block:: python
 
@@ -498,11 +503,9 @@ def assert_valid(
                 super().__init__(wires=wires)
 
         op = MyOp(wires = 0)
-        assert_valid(op)
 
-    .. code-block::
-
-        ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
+    >>> assert_valid(op)
+    ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
 
     """
 
