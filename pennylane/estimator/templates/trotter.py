@@ -28,6 +28,7 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
+from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.templates.subroutines import (
     BasisRotation,
     OutMultiplier,
@@ -36,7 +37,6 @@ from pennylane.estimator.templates.subroutines import (
     Select,
     SemiAdder,
 )
-from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
