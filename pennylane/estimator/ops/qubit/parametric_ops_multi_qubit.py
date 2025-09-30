@@ -541,6 +541,7 @@ class PauliRot(ResourceOperator):
         precision = target_resource_params["precision"]
         return [GateCount(cls.resource_rep(pauli_string=pauli_string, precision=precision))]
 
+
 class IsingXX(ResourceOperator):
     r"""Resource class for the IsingXX gate.
 
@@ -667,10 +668,7 @@ class IsingXX(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-        target_resource_params: dict
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -697,7 +695,7 @@ class IsingXX(ResourceOperator):
         """
         precision = target_resource_params["precision"]
         cnot = qre.CNOT.resource_rep()
-        ctrl_rx =  qre.Controlled.resource_rep(
+        ctrl_rx = qre.Controlled.resource_rep(
             base_cmpr_op=qre.RX.resource_rep(precision=precision),
             num_ctrl_wires=num_ctrl_wires,
             num_zero_ctrl=num_zero_ctrl,
@@ -706,11 +704,7 @@ class IsingXX(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(ctrl_rx)]
 
     @classmethod
-    def pow_resource_decomp(
-        cls,
-        pow_z: int,
-        target_resource_params: dict
-    ) -> list[GateCount]:
+    def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -726,7 +720,7 @@ class IsingXX(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        precision = target_resource_params[precision]
+        precision = target_resource_params["precision"]
         return [GateCount(cls.resource_rep(precision=precision))]
 
 
@@ -778,7 +772,7 @@ class IsingYY(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls, precision: float | None =  None):
+    def resource_decomp(cls, precision: float | None = None):
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:
@@ -850,14 +844,12 @@ class IsingYY(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        precision = target_resource_params["precision"]
         return [GateCount(cls.resource_rep(precision=precision))]
 
     @classmethod
     def controlled_resource_decomp(
-        cls,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-        target_resource_params: dict
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1040,10 +1032,7 @@ class IsingXY(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-        target_resource_params: dict
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1076,9 +1065,9 @@ class IsingXY(ResourceOperator):
             num_zero_ctrl=num_zero_ctrl,
         )
         ctrl_ry = qre.Controlled.resource_rep(
-            base_cmpr_op=re.ResourceRY.resource_rep(precision=precision),
+            base_cmpr_op=qre.RY.resource_rep(precision=precision),
             num_ctrl_wires=num_ctrl_wires,
-            num_zero_ctrl= num_zero_ctrl,
+            num_zero_ctrl=num_zero_ctrl,
         )
 
         return [GateCount(h, 2), GateCount(cy, 2), GateCount(ctrl_ry), GateCount(ctrl_rx)]
@@ -1100,6 +1089,7 @@ class IsingXY(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        precision = target_resource_params["precision"]
         return [GateCount(cls.resource_rep(precision=precision))]
 
 
@@ -1230,10 +1220,7 @@ class IsingZZ(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-        target_resource_params: dict
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -1257,6 +1244,7 @@ class IsingZZ(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        precision = target_resource_params["precision"]
         cnot = qre.CNOT.resource_rep()
         ctrl_rz = qre.Controlled.resource_rep(
             base_cmpr_op=qre.RZ.resource_rep(precision=precision),
@@ -1271,18 +1259,20 @@ class IsingZZ(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
-            precision (float, optional): error threshold for clifford plus T decomposition of this operation
+            target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
             Taking arbitrary powers of a rotation produces a sum of rotations.
             The resources simplify to just one total Ising rotation.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        precision = target_resource_params["precision"]
         return [GateCount(cls.resource_rep(precision=precision))]
+
 
 class PSWAP(ResourceOperator):
     r"""Resource class for the PSWAP gate.
@@ -1412,10 +1402,7 @@ class PSWAP(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-        target_resource_params: dict
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 

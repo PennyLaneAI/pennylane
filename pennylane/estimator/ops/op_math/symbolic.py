@@ -151,14 +151,18 @@ class Adjoint(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
 
         try:
             return base_class.adjoint_resource_decomp(base_params)
         except ResourcesUndefinedError:
             gate_lst = []
-            decomp = base_class.resource_decomp(**base_params, **kwargs)
+            decomp = base_class.resource_decomp(**base_params)
 
             for gate in decomp[::-1]:  # reverse the order
                 gate_lst.append(_apply_adj(gate))
@@ -355,8 +359,12 @@ class Controlled(ResourceOperator):
         """
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
+
         try:
             return base_class.controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
@@ -371,7 +379,7 @@ class Controlled(ResourceOperator):
             x = resource_rep(qre.X)
             gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
-        decomp = base_class.resource_decomp(**base_params, **kwargs)
+        decomp = base_class.resource_decomp(**base_params)
         for action in decomp:
             if isinstance(action, GateCount):
                 gate = action.gate
@@ -560,8 +568,11 @@ class Pow(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
 
         if pow_z == 0:
             return [GateCount(resource_rep(qre.Identity))]

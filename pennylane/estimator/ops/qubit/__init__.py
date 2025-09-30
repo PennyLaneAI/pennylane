@@ -30,7 +30,7 @@ from .parametric_ops_single_qubit import (
     Rot,
 )
 
-from .parametric_ops_multi_qubit import MultiRZ, PauliRot, PSWAP
+from .parametric_ops_multi_qubit import MultiRZ, PauliRot, IsingXX, IsingXY, IsingYY, IsingZZ, PSWAP
 
 from .qchem_ops import SingleExcitation
 
