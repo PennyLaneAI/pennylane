@@ -1134,6 +1134,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * The `grad` and `jacobian` primitives now store the function under `fn`.
+  [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
