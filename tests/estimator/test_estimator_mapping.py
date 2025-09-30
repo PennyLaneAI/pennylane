@@ -47,6 +47,8 @@ class TestMapToResourceOp:
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
+            (qml.Identity(0), re_ops.Identity()),
+            (qml.GlobalPhase(0), re_ops.GlobalPhase()),
             # Single-Qubit Gates
             (qml.Hadamard(0), re_ops.Hadamard()),
             (qml.S(0), re_ops.S()),

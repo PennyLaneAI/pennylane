@@ -37,7 +37,7 @@
   * Added functionality to map PennyLane operations
     to their associated resource operators for resource estimation.
     [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
-    [(#xxxx)](https://github.com/PennyLaneAI/pennylane/pull/xxxx)
+    [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
 
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
