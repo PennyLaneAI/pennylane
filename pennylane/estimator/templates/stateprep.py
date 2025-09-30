@@ -47,7 +47,7 @@ class UniformStatePrep(ResourceOperator):
 
     Args:
         num_states (int): the number of states in the uniform superposition
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
@@ -165,7 +165,7 @@ class AliasSampling(ResourceOperator):
     Args:
         num_coeffs (int): the number of unique coefficients in the state
         precision (float): the precision with which the coefficients are loaded
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
@@ -209,7 +209,7 @@ class AliasSampling(ResourceOperator):
         return {"num_coeffs": self.num_coeffs, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_coeffs, precision=None) -> CompressedResourceOp:
+    def resource_rep(cls, num_coeffs: int, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -222,7 +222,7 @@ class AliasSampling(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, num_coeffs, precision=None) -> list[GateCount]:
+    def resource_decomp(cls, num_coeffs: int, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -285,7 +285,7 @@ class MPSPrep(ResourceOperator):
         num_mps_matrices (int): the number of matrices in the MPS representation
         max_bond_dim (int): the bond dimension of the MPS representation
         precision (float | None): the precision used when loading the MPS matricies
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources for MPSPrep rely on a decomposition which uses the generic
@@ -347,7 +347,9 @@ class MPSPrep(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, num_mps_matrices, max_bond_dim, precision=None) -> CompressedResourceOp:
+    def resource_rep(
+        cls, num_mps_matrices: int, max_bond_dim: int, precision: float | None = None
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -370,9 +372,9 @@ class MPSPrep(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        num_mps_matrices,
-        max_bond_dim,
-        precision=None,
+        num_mps_matrices: int,
+        max_bond_dim: int,
+        precision: float | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -437,7 +439,7 @@ class QROMStatePreparation(ResourceOperator):
             used to trade-off extra qubits for reduced circuit depth.
             Can be ``None``, ``1`` or a positive integer power of two.
             Defaults to ``None``, which internally corresponds to the optimal depth.
-        wires (Sequence[int], None): The wires on which to prepare the target state. This excludes any
+        wires (WiresLike | None): The wires on which to prepare the target state. This excludes any
             additional qubits allocated during the decomposition (via select-swap).
 
     Resources:
@@ -595,7 +597,11 @@ class QROMStatePreparation(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, num_state_qubits, precision=None, positive_and_real=False, selswap_depths=1
+        cls,
+        num_state_qubits: int,
+        precision: float | None = None,
+        positive_and_real: bool = False,
+        selswap_depths=1,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -633,10 +639,10 @@ class QROMStatePreparation(ResourceOperator):
     @classmethod
     def _decomp_selection_helper(
         cls,
-        use_phase_grad_trick,
-        num_state_qubits,
-        positive_and_real,
-        precision=None,
+        use_phase_grad_trick: bool,
+        num_state_qubits: int,
+        positive_and_real: bool,
+        precision: float | None = None,
         selswap_depths=1,
     ) -> list[GateCount]:
         r"""A private function which implements two variants of the decomposition of QROMStatePrep,
@@ -785,9 +791,9 @@ class QROMStatePreparation(ResourceOperator):
     @classmethod
     def controlled_ry_resource_decomp(
         cls,
-        num_state_qubits,
-        positive_and_real,
-        precision=None,
+        num_state_qubits: int,
+        positive_and_real: bool,
+        precision: float | None = None,
         selswap_depths=1,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
@@ -823,7 +829,11 @@ class QROMStatePreparation(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, num_state_qubits, positive_and_real, precision=None, selswap_depths=1
+        cls,
+        num_state_qubits: int,
+        positive_and_real: bool,
+        precision: float | None = None,
+        selswap_depths=1,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.

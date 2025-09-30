@@ -34,7 +34,7 @@ class SingleQubitComparator(ResourceOperator):
     by applying the operation's adjoint.
 
     Args:
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
@@ -139,7 +139,7 @@ class TwoQubitComparator(ResourceOperator):
     by applying the operation's adjoint.
 
     Args:
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
@@ -287,7 +287,7 @@ class IntegerComparator(ResourceOperator):
         register_size (int): size of the register for basis state
         geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
             ``False``, the comparison made will be :math:`n \lt L`.
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         This decomposition uses the minimum number of ``MultiControlledX`` gates required for the given integer value.
@@ -526,7 +526,7 @@ class RegisterComparator(ResourceOperator):
         second_register (int): the size of the second register
         geq (bool): If set to ``True``, the comparison made will be :math:`a \geq b`. If
             ``False``, the comparison made will be :math:`a \lt b`.
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B of `arXiv:1711.10460
