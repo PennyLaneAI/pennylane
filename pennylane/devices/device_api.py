@@ -1083,7 +1083,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
             self._original_device = original_device
 
         def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+            return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
 
         def preprocess(
             self,
@@ -1115,7 +1115,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
             self._original_device = original_device
 
         def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+            return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
 
         def preprocess_transforms(
             self,
@@ -1144,7 +1144,7 @@ def apply_to_device(obj: Device, transform, *targs, **tkwargs):
     if transform.final_transform:
         raise TransformError("Device transform does not support final transforms.")
 
-    if type(obj).preprocess != qml.devices.Device.preprocess:
+    if type(obj).preprocess != Device.preprocess:
         return _preprocess_device(obj, transform, targs, tkwargs)
 
     return _preprocess_transforms_device(obj, transform, targs, tkwargs)

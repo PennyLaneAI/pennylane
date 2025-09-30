@@ -516,13 +516,9 @@ def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
         )
     program.push_back(
         TransformContainer(
-            transform.transform,
+            transform,
             args=targs,
             kwargs=tkwargs,
-            classical_cotransform=transform.classical_cotransform,
-            plxpr_transform=transform.plxpr_transform,
-            is_informative=transform.is_informative,
-            final_transform=transform.final_transform,
         )
     )
     return program
