@@ -49,7 +49,9 @@ def test_add_transform_deprecation():
         match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44",
     ):
         circuit.add_transform(
-            qml.transforms.core.TransformContainer(qml.gradients.param_shift.expand_transform)
+            qml.transforms.core.TransformContainer(
+                qml.transform(qml.gradients.param_shift.expand_transform)
+            )
         )
 
 
