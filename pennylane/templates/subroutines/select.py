@@ -35,7 +35,7 @@ from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
-from .temporary_and import TemporaryAND
+from .arithmetic import TemporaryAND
 
 
 def _partial_select(K, control):

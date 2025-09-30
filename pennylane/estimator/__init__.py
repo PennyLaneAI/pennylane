@@ -42,6 +42,10 @@ from .ops.qubit import (
     RY,
     RZ,
     Rot,
+    MultiRZ,
+    PauliRot,
+    SingleExcitation,
+    QubitUnitary,
 )
 
 from .ops.op_math import (
@@ -59,4 +63,24 @@ from .ops.op_math import (
     MultiControlledX,
     TemporaryAND,
     Toffoli,
+    Adjoint,
+    Controlled,
+    Pow,
+    Prod,
+    ChangeOpBasis,
+)
+from .templates import (
+    OutOfPlaceSquare,
+    PhaseGradient,
+    OutMultiplier,
+    SemiAdder,
+    QFT,
+    AQFT,
+    BasisRotation,
+    Select,
+    QROM,
+    SelectPauliRot,
+    ControlledSequence,
+    QPE,
+    IterativeQPE,
 )

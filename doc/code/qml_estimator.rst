@@ -52,3 +52,12 @@ Resource Operators:
     :classes-only:
     :noindex:
 
+
+Resource Templates:
+-------------------
+
+.. automodsumm:: pennylane.estimator.templates
+    :toctree: api
+    :no-inherited-members:
+    :classes-only:
+    :noindex:

@@ -15,7 +15,7 @@ r"""Resource operators for controlled operations."""
 
 from typing import Literal
 
-from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X, Z
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -105,8 +105,8 @@ class CH(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        ry = resource_rep(RY)
-        h = resource_rep(Hadamard)
+        ry = resource_rep(qre.RY)
+        h = resource_rep(qre.Hadamard)
         cnot = resource_rep(CNOT)
         return [GateCount(h, 2), GateCount(ry, 2), GateCount(cnot, 1)]
 
@@ -170,7 +170,7 @@ class CH(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -241,10 +241,10 @@ class CY(ResourceOperator):
             ``S`` gates.
         """
         cnot = resource_rep(CNOT)
-        s = resource_rep(S)
-        z = resource_rep(Z)
+        s = resource_rep(qre.S)
+        s_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": s})
 
-        return [GateCount(cnot), GateCount(s, 2), GateCount(z)]
+        return [GateCount(cnot), GateCount(s), GateCount(s_dag)]
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
@@ -306,7 +306,7 @@ class CY(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -382,7 +382,7 @@ class CZ(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        h = resource_rep(Hadamard)
+        h = resource_rep(qre.Hadamard)
 
         return [GateCount(cnot), GateCount(h, 2)]
 
@@ -446,7 +446,7 @@ class CZ(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -588,7 +588,7 @@ class CSWAP(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -664,7 +664,7 @@ class CCZ(ResourceOperator):
             in the decomposition.
         """
         toffoli = resource_rep(Toffoli)
-        h = resource_rep(Hadamard)
+        h = resource_rep(qre.Hadamard)
         return [GateCount(toffoli), GateCount(h, 2)]
 
     @classmethod
@@ -727,7 +727,7 @@ class CCZ(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -857,7 +857,7 @@ class CNOT(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -939,7 +939,7 @@ class TemporaryAND(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        h = resource_rep(Hadamard)
+        h = resource_rep(qre.Hadamard)
         cz = resource_rep(CZ)
         return [GateCount(h), GateCount(cz)]
 
@@ -1027,18 +1027,24 @@ class Toffoli(ResourceOperator):
             list[:class:`~.estimator.resource_operator.GateCount`]: The resources of decomposing the elbow gates.
         """
         gate_types = []
-        t = resource_rep(T)
-        h = resource_rep(Hadamard)
+        t = resource_rep(qre.T)
+        t_dag = resource_rep(
+            qre.Adjoint,
+            {"base_cmpr_op": t},
+        )
+        h = resource_rep(qre.Hadamard)
         cnot = resource_rep(CNOT)
+        s_dag = resource_rep(
+            qre.Adjoint,
+            {"base_cmpr_op": resource_rep(qre.S)},
+        )
         cz = resource_rep(CZ)
-        s = resource_rep(S)
-        z = resource_rep(Z)
 
         if elbow == "left":
-            gate_types.append(GateCount(t, 4))
+            gate_types.append(GateCount(t, 2))
+            gate_types.append(GateCount(t_dag, 2))
             gate_types.append(GateCount(cnot, 3))
-            gate_types.append(GateCount(s, 3))
-            gate_types.append(GateCount(z, 3))
+            gate_types.append(GateCount(s_dag))
 
         if elbow == "right":
             gate_types.append(GateCount(h))
@@ -1081,20 +1087,20 @@ class Toffoli(ResourceOperator):
             return Toffoli.elbow_decomp(elbow)
 
         cnot = resource_rep(CNOT)
-        t = resource_rep(T)
-        h = resource_rep(Hadamard)
-        s = resource_rep(S)
+        t = resource_rep(qre.T)
+        h = resource_rep(qre.Hadamard)
+        s = resource_rep(qre.S)
         cz = resource_rep(CZ)
-        z = resource_rep(Z)
+        t_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": t})
 
         return [
             Allocate(2),
             GateCount(cnot, 9),
             GateCount(h, 3),
-            GateCount(s, 3),
+            GateCount(s),
             GateCount(cz),
-            GateCount(t, 4),
-            GateCount(z, 2),
+            GateCount(t, 2),
+            GateCount(t_dag, 2),
             Deallocate(2),
         ]
 
@@ -1136,18 +1142,11 @@ class Toffoli(ResourceOperator):
             return Toffoli.elbow_decomp(elbow)
 
         cnot = resource_rep(CNOT)
-        t = resource_rep(T)
-        h = resource_rep(Hadamard)
-        z = resource_rep(Z)
-        s = resource_rep(S)
+        t = resource_rep(qre.T)
+        h = resource_rep(qre.Hadamard)
+        t_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": t})
 
-        return [
-            GateCount(cnot, 6),
-            GateCount(h, 2),
-            GateCount(t, 7),
-            GateCount(z, 3),
-            GateCount(s, 3),
-        ]
+        return [GateCount(cnot, 6), GateCount(h, 2), GateCount(t, 4), GateCount(t_dag, 3)]
 
     @property
     def resource_params(self) -> dict:
@@ -1235,7 +1234,7 @@ class Toffoli(ResourceOperator):
         """
         elbow = target_resource_params.get("elbow")
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep(elbow=elbow))]
         )
@@ -1348,7 +1347,7 @@ class MultiControlledX(ResourceOperator):
         """
         gate_lst = []
 
-        x = resource_rep(X)
+        x = resource_rep(qre.X)
         if num_ctrl_wires == 0:
             if num_zero_ctrl:
                 return []
@@ -1368,7 +1367,18 @@ class MultiControlledX(ResourceOperator):
             gate_lst.append(GateCount(toffoli))
             return gate_lst
 
-        raise ResourcesUndefinedError
+        l_elbow = resource_rep(TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        res = [
+            Allocate(num_ctrl_wires - 2),
+            GateCount(l_elbow, num_ctrl_wires - 2),
+            GateCount(r_elbow, num_ctrl_wires - 2),
+            GateCount(toffoli, 1),
+            Deallocate(num_ctrl_wires - 2),
+        ]
+        gate_lst.extend(res)
+        return gate_lst
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -1446,7 +1456,7 @@ class MultiControlledX(ResourceOperator):
         num_ctrl_wires = target_resource_params.get("num_ctrl_wires")
         num_zero_ctrl = target_resource_params.get("num_zero_ctrl")
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep(num_ctrl_wires, num_zero_ctrl))]
         )
@@ -1538,8 +1548,9 @@ class CRX(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        h = resource_rep(Hadamard)
-        rz = resource_rep(RZ, {"precision": precision})
+        h = resource_rep(qre.Hadamard)
+        rz = resource_rep(qre.RZ, {"precision": precision})
+
         cnot = resource_rep(CNOT)
 
         return [GateCount(cnot, 2), GateCount(rz, 2), GateCount(h, 2)]
@@ -1689,7 +1700,7 @@ class CRY(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        ry = resource_rep(RY, {"precision": precision})
+        ry = resource_rep(qre.RY, {"precision": precision})
         return [GateCount(cnot, 2), GateCount(ry, 2)]
 
     @classmethod
@@ -1840,7 +1851,7 @@ class CRZ(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        rz = resource_rep(RZ, {"precision": precision})
+        rz = resource_rep(qre.RZ, {"precision": precision})
         return [GateCount(cnot, 2), GateCount(rz, 2)]
 
     @classmethod
@@ -2008,8 +2019,8 @@ class CRot(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        rz = resource_rep(RZ, {"precision": precision})
-        ry = resource_rep(RY, {"precision": precision})
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        ry = resource_rep(qre.RY, {"precision": precision})
 
         return [GateCount(cnot, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
@@ -2169,7 +2180,8 @@ class ControlledPhaseShift(ResourceOperator):
         [(2 x CNOT), (3 x RZ)]
         """
         cnot = resource_rep(CNOT)
-        rz = resource_rep(RZ, {"precision": precision})
+        rz = resource_rep(qre.RZ, {"precision": precision})
+
         return [GateCount(cnot, 2), GateCount(rz, 3)]
 
     @classmethod
