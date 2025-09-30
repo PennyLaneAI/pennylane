@@ -89,3 +89,90 @@ class TestMapToResourceOp:
     def test_map_to_resource_op(self, operator, expected_res_op):
         """Test that _map_to_resource_op maps to the appropriate resource operator"""
         assert _map_to_resource_op(operator) == expected_res_op
+
+    @pytest.mark.parametrize(
+        "operator, expected_res_op",
+        [
+            (
+                qtemps.OutMultiplier(x_wires=[0, 1], y_wires=[2], output_wires=[3, 4]),
+                re_temps.OutMultiplier(a_num_wires=2, b_num_wires=1),
+            ),
+            (
+                qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
+                re_temps.SemiAdder(max_register_size=3),
+            ),
+            (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3)),
+            (
+                qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4]),
+                re_temps.AQFT(order=3, num_wires=5),
+            ),
+            (
+                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                re_temps.BasisRotation(dim=4),
+            ),
+            (
+                qtemps.Select([qml.PauliX(2), qml.PauliY(2)], control=[0, 1]),
+                re_temps.Select(ops=[re_ops.X(), re_ops.Y()]),
+            ),
+            (
+                qtemps.QROM(
+                    bitstrings=["01", "11", "10"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3],
+                    work_wires=[4],
+                    clean=False,
+                ),
+                re_temps.QROM(num_bitstrings=3, size_bitstring=2, restored=False),
+            ),
+            (
+                qtemps.SelectPauliRot(
+                    angles=np.array([0.1, 0.2, 0.3, 0.4]),
+                    control_wires=[0, 1],
+                    target_wire=[2],
+                    rot_axis="Y",
+                ),
+                re_temps.SelectPauliRot(rot_axis="Y", num_ctrl_wires=2, precision=None),
+            ),
+            (
+                qml.QubitUnitary(np.eye(2), wires=0),
+                re_ops.QubitUnitary(num_wires=1, precision=None),
+            ),
+            (
+                qtemps.SelectPauliRot(
+                    angles=np.array([0.1, 0.2, 0.3, 0.4]),
+                    control_wires=[0, 1],
+                    target_wire=[2],
+                    rot_axis="Y",
+                ),
+                re_temps.SelectPauliRot(rot_axis="Y", num_ctrl_wires=2, precision=None),
+            ),
+            (
+                qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+                re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2),
+            ),
+            (
+                qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
+                re_temps.IntegerComparator(value=5, register_size=3, geq=False),
+            ),
+            (
+                qtemps.MPSPrep(
+                    [np.ones((2, 4)), np.ones((4, 2, 2)), np.ones((2, 2))], wires=[0, 1, 2]
+                ),
+                re_temps.MPSPrep(num_mps_matrices=3, max_bond_dim=4, precision=None),
+            ),
+            (
+                qtemps.QROMStatePreparation(
+                    np.array([0.25] * 16), wires=[0, 1, 2, 3], precision_wires=[4, 5]
+                ),
+                re_temps.QROMStatePreparation(
+                    num_state_qubits=6,
+                    precision=np.pi / 4,
+                    positive_and_real=False,
+                    select_swap_depths=1,
+                ),
+            ),
+        ],
+    )
+    def test_map_to_resource_op_templates(self, operator, expected_res_op):
+        """Test that _map_to_resource_op maps templates to the appropriate resource operator"""
+        assert _map_to_resource_op(operator) == expected_res_op
