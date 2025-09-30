@@ -133,6 +133,8 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
     to allow is to be used by singledispatch.
     """
+    #  error out on transform(*targs, **tkwargs)(obj)
+    # in that care, no special dispatch would be found.
     raise TransformError(
         "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
         "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
