@@ -327,6 +327,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Templates have been made compatible with `qml.capture`.
+  [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
+
 * :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
   [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
 
