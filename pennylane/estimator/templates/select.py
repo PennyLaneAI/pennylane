@@ -96,7 +96,7 @@ class SelectTHC(ResourceOperator):
 
         if not (isinstance(rotation_precision, int) or rotation_precision is None):
             raise TypeError(
-                f"`rotation_precision` must be an integer, provided {type(rotation_precision)}."
+                f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
             )
 
         self.compact_ham = compact_ham

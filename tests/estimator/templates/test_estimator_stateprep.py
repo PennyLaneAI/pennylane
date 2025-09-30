@@ -1736,11 +1736,13 @@ class TestPrepTHC:
     def test_type_error_precision(self):
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
-            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+            TypeError,
+            match=f"`coeff_precision` must be an integer, but type {type(2.5)} was provided.",
         ):
             qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
 
         with pytest.raises(
-            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+            TypeError,
+            match=f"`coeff_precision` must be an integer, but type {type(2.5)} was provided.",
         ):
             qre.PrepTHC.resource_rep(qre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
