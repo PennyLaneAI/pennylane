@@ -95,120 +95,120 @@ def _(op: qops.SWAP):
 
 @_map_to_resource_op.register
 def _(op: qops.PhaseShift):
-    return re_ops.ResourcePhaseShift()
+    return re_ops.PhaseShift()
 
 
 @_map_to_resource_op.register
 def _(op: qops.Rot):
-    return re_ops.ResourceRot()
+    return re_ops.Rot()
 
 
 @_map_to_resource_op.register
 def _(op: qops.RX):
-    return re_ops.ResourceRX()
+    return re_ops.RX()
 
 
 @_map_to_resource_op.register
 def _(op: qops.RY):
-    return re_ops.ResourceRY()
+    return re_ops.RY()
 
 
 @_map_to_resource_op.register
 def _(op: qops.RZ):
-    return re_ops.ResourceRZ()
+    return re_ops.RZ()
 
 
 @_map_to_resource_op.register
 def _(op: qops.MultiRZ):
-    return re_ops.ResourceMultiRZ(num_wires=len(op.wires))
+    return re_ops.MultiRZ(num_wires=len(op.wires))
 
 
 @_map_to_resource_op.register
 def _(op: qops.PauliRot):
-    return re_ops.ResourcePauliRot(pauli_string=op.hyperparameters["pauli_word"])
+    return re_ops.PauliRot(pauli_string=op.hyperparameters["pauli_word"])
 
 
 @_map_to_resource_op.register
 def _(op: qops.PSWAP):
-    return re_ops.ResourcePSWAP()
+    return re_ops.PSWAP()
 
 
 @_map_to_resource_op.register
 def _(op: qops.SingleExcitation):
-    return re_ops.ResourceSingleExcitation()
+    return re_ops.SingleExcitation()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CCZ):
-    return re_ops.ResourceCCZ()
+    return re_ops.CCZ()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CH):
-    return re_ops.ResourceCH()
+    return re_ops.CH()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CNOT):
-    return re_ops.ResourceCNOT()
+    return re_ops.CNOT()
 
 
 @_map_to_resource_op.register
 def _(op: qops.ControlledPhaseShift):
-    return re_ops.ResourceControlledPhaseShift()
+    return re_ops.ControlledPhaseShift()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CRot):
-    return re_ops.ResourceCRot()
+    return re_ops.CRot()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CRX):
-    return re_ops.ResourceCRX()
+    return re_ops.CRX()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CRY):
-    return re_ops.ResourceCRY()
+    return re_ops.CRY()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CRZ):
-    return re_ops.ResourceCRZ()
+    return re_ops.CRZ()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CSWAP):
-    return re_ops.ResourceCSWAP()
+    return re_ops.CSWAP()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CY):
-    return re_ops.ResourceCY()
+    return re_ops.CY()
 
 
 @_map_to_resource_op.register
 def _(op: qops.CZ):
-    return re_ops.ResourceCZ()
+    return re_ops.CZ()
 
 
 @_map_to_resource_op.register
 def _(op: qops.MultiControlledX):
-    return re_ops.ResourceMultiControlledX(
+    return re_ops.MultiControlledX(
         num_ctrl_wires=len(op.wires) - 1,
-        num_ctrl_values=len(op.control_values) - sum(op.control_values),
+        num_zero_ctrl=len(op.control_values) - sum(op.control_values),
     )
 
 
 @_map_to_resource_op.register
 def _(op: qtemps.TemporaryAND):
-    return re_ops.ResourceTempAND()
+    return re_ops.TemporaryAND()
 
 
 @_map_to_resource_op.register
 def _(op: qops.Toffoli):
-    return re_ops.ResourceToffoli()
+    return re_ops.Toffoli()
 
 
 @_map_to_resource_op.register
