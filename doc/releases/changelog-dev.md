@@ -77,6 +77,8 @@
     ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
     ``RegisterComparator`` were added to `qml.estimator.templates`.
     [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
+  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
+    [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
