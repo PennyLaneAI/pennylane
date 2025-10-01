@@ -388,6 +388,34 @@
   3: ────╰X─────┤  <Z>
   ```
 
+
+* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
+  [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
+
+* With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
+  [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+  [(#8228)](https://github.com/PennyLaneAI/pennylane/pull/8228)
+
+  * The :func:`~.transforms.decompose` transform now accepts a `max_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
+  [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
+  [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
+  [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
+  [(#8236)](https://github.com/PennyLaneAI/pennylane/pull/8236)
+
+  * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
+  [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
+
+* A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
+  [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
+
+* With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a decomposition cannot be found for an operator in the circuit, it no longer
+  raises an error. Instead, a warning is raised, and `op.decomposition()` (the current default method for decomposing gates) is
+  used as a fallback, while the rest of the circuit is still decomposed with
+  the new graph-based system. Additionally, a special warning message is
+  raised if the circuit contains a `GlobalPhase`, reminding the user that
+  `GlobalPhase` is not assumed to have a decomposition under the new system.
+  [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -787,35 +815,6 @@
 * The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
   Python compiler.
   [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
-
-<h4>Resource-efficient decompositions 🔎</h4>
-
-* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
-  [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
-
-* With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
-  [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
-  [(#8228)](https://github.com/PennyLaneAI/pennylane/pull/8228)
-
-  * The :func:`~.transforms.decompose` transform now accepts a `max_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
-  [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
-  [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
-  [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
-  [(#8236)](https://github.com/PennyLaneAI/pennylane/pull/8236)
-
-  * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
-  [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
-
-* A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
-  [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
-
-* With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a decomposition cannot be found for an operator in the circuit, it no longer
-  raises an error. Instead, a warning is raised, and `op.decomposition()` (the current default method for decomposing gates) is
-  used as a fallback, while the rest of the circuit is still decomposed with
-  the new graph-based system. Additionally, a special warning message is
-  raised if the circuit contains a `GlobalPhase`, reminding the user that
-  `GlobalPhase` is not assumed to have a decomposition under the new system.
-  [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
