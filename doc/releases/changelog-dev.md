@@ -179,7 +179,7 @@
   ```
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
-  This makes the expensive depth computation performed by `qml.specs` optional.
+  This makes the depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
   [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
@@ -248,7 +248,7 @@
 
 <h4>Change op basis 🍴</h4>
 
-* A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
+* A new :func:`~.ops.op_math.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
   A corresponding decomposition rule has been added to support efficiently controlling the pattern,
   in which only the central (target) operator is controlled, and not U or U†.
@@ -394,7 +394,7 @@
 * `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
   [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
 
-<h4>Sepcifying shots</h4>
+<h4>Specifying shots</h4>
 
 * The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
   [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
