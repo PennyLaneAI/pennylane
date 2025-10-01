@@ -22,7 +22,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,unused-argument
 
@@ -34,11 +34,11 @@ class SingleQubitComparator(ResourceOperator):
     by applying the operation's adjoint.
 
     Args:
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
-        <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+        <https://arxiv.org/abs/1711.10460>`_. Specifically,
         the resources are given as :math:`1` ``TemporaryAND`` gate, :math:`4` ``CNOT`` gates,
         and :math:`3` ``X`` gates.
         The circuit which applies the comparison operation on qubits :math:`(x,y)` is
@@ -55,24 +55,30 @@ class SingleQubitComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> single_qubit_compare = qre.SingleQubitComparator()
     >>> print(qre.estimate(single_qubit_compare))
     --- Resources: ---
-     Total qubits: 4
+     Total wires: 4
+        algorithmic wires: 4
+        allocated wires: 0
+             zero state: 0
+             any state: 0
      Total gates : 8
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'Toffoli': 1, 'CNOT': 4, 'X': 3}
+      'Toffoli': 1,
+      'CNOT': 4,
+      'X': 3
     """
 
     num_wires = 4
 
     def __init__(self, wires: WiresLike = None):
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -81,7 +87,7 @@ class SingleQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -91,13 +97,13 @@ class SingleQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls, **kwargs):
+    def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Resources:
             The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            <https://arxiv.org/abs/1711.10460>`_. Specifically,
             the resources are given as :math:`1` ``TemporaryAND`` gate, :math:`4` ``CNOT`` gates,
             and :math:`3` ``X`` gates.
 
@@ -133,16 +139,16 @@ class TwoQubitComparator(ResourceOperator):
     by applying the operation's adjoint.
 
     Args:
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-        <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+        <https://arxiv.org/abs/1711.10460>`_. Specifically,
         the resources are given as :math:`2` ``CSWAP`` gates,
         :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
         requires one zeroed auxiliary qubit.
-        The circuit which applies the comparison operation on registers :math:`(x0,x1)`
-        and :math:`(y0, y1)` is defined as:
+        The circuit which applies the comparison operation on registers :math:`(x_0,x_1)`
+        and :math:`(y_0, y_1)` is defined as:
 
         .. code-block:: bash
 
@@ -152,24 +158,33 @@ class TwoQubitComparator(ResourceOperator):
              y0 : ─╰●─│─────╰SWAP─╰●─┤
             |1> : ────╰SWAP──────────┤
 
+        Note that this operation provides an alternate decomposition using ``TemporaryAND``. See
+        the ``TemporaryAND_based_decomp`` method for more details.
+
     **Example**
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> two_qubit_compare = qre.TwoQubitComparator()
     >>> print(qre.estimate(two_qubit_compare))
     --- Resources: ---
-     Total qubits: 5
+     Total wires: 5
+        algorithmic wires: 4
+        allocated wires: 1
+             zero state: 1
+             any state: 0
      Total gates : 10
-     Qubit breakdown:
-      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'Toffoli': 2, 'CNOT': 7, 'X': 1}
+      'Toffoli': 2,
+      'CNOT': 7,
+      'X': 1
     """
 
     num_wires = 4
 
     def __init__(self, wires: WiresLike = None):
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
@@ -182,7 +197,7 @@ class TwoQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def resource_rep(cls) -> dict:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -192,13 +207,13 @@ class TwoQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls, **kwargs):
+    def resource_decomp(cls):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            <https://arxiv.org/abs/1711.10460>`_. Specifically,
             the resources are given as :math:`2` ``CSWAP`` gates,
             :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
             requires one zeroed auxiliary qubit.
@@ -230,24 +245,25 @@ class TwoQubitComparator(ResourceOperator):
         return gate_list
 
     @classmethod
-    def TemporaryAND_based_decomp(cls, **kwargs):
+    def TemporaryAND_based_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            <https://arxiv.org/abs/1711.10460>`_. Specifically,
             the resources are given as :math:`2` ``CSWAP`` gates,
             :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
             is modified to use TemporaryAND gates for building blocks of CSWAP gates.
 
             .. code-block:: bash
 
-                 x1 : ─╭X─╭●────╭●───────┤
-                 y1 : ─╰●─│─────├SWAP────┤
-                 x0 : ─╭X─├SWAP─│─────╭X─┤
-                 y0 : ─╰●─│─────╰SWAP─╰●─┤
-                |1> : ────╰SWAP──────────┤
+               x1: ─╭X───────╭●──────────╭●──────────┤
+               y1: ─╰●───────│────────╭X─├●────╭X────┤
+              |0>: ──────────│────────│──╰──╭●─│─────┤
+               x0: ─╭X─╭X────├●────╭X─│─────│──│──╭X─┤
+               y0: ─╰●─│─────│─────│──╰●────╰X─╰●─╰●─┤
+              |1>: ────╰●──X─╰───X─╰●────────────────┤
         """
         gate_list = []
 
@@ -260,7 +276,7 @@ class TwoQubitComparator(ResourceOperator):
 
 
 class IntegerComparator(ResourceOperator):
-    r"""This operation applies a controlled `X` gate using integer comparison as the condition.
+    r"""This operation applies a controlled ``X`` gate using integer comparison as the condition.
 
     Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive
     integer, and a fixed positive integer :math:`L`, a target qubit is flipped if
@@ -271,10 +287,10 @@ class IntegerComparator(ResourceOperator):
         register_size (int): size of the register for basis state
         geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
             ``False``, the comparison made will be :math:`n \lt L`.
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        This decomposition uses the minimum number of ``MultiControlledX`` gates.
+        This decomposition uses the minimum number of ``MultiControlledX`` gates required for the given integer value.
         The given integer is first converted into its binary representation, and compared to the quantum register
         iteratively, starting with the most significant bit, and progressively including more qubits.
         For example, when :code:`geq` is ``False``, :code:`value` is :math:`22` (Binary :math:`010110`), and
@@ -307,16 +323,20 @@ class IntegerComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-
+    >>> from pennylane import estimator as qre
     >>> integer_compare = qre.IntegerComparator(value=4, register_size=6)
     >>> print(qre.estimate(integer_compare))
     --- Resources: ---
-     Total qubits: 9
+     Total wires: 9
+        algorithmic wires: 7
+        allocated wires: 2
+             zero state: 2
+             any state: 0
      Total gates : 19
-     Qubit breakdown:
-      zeroed qubits: 2, any_state qubits: 0, algorithmic qubits: 7
-     Gate breakdown:
-      {'X': 8, 'Toffoli': 3, 'Hadamard': 6, 'CNOT': 2}
+      'Toffoli': 3,
+      'CNOT': 2,
+      'X': 8,
+      'Hadamard': 6
     """
 
     resource_keys = {"value", "register_size", "geq"}
@@ -326,10 +346,12 @@ class IntegerComparator(ResourceOperator):
         self.register_size = register_size
         self.geq = geq
         self.num_wires = register_size + 1
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -344,13 +366,15 @@ class IntegerComparator(ResourceOperator):
         return {"value": self.value, "register_size": self.register_size, "geq": self.geq}
 
     @classmethod
-    def resource_rep(cls, value, register_size, geq=False):
+    def resource_rep(
+        cls, value: int, register_size: int, geq: bool = False
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
             value (int): The value :math:`L` that the state’s decimal representation is compared against.
-                register_size (int): size of the register for basis state
+            register_size (int): size of the register for basis state
             geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
                 ``False``, the comparison made will be :math:`n \lt L`.
 
@@ -363,7 +387,7 @@ class IntegerComparator(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, value, register_size, geq=False, **kwargs):
+    def resource_decomp(cls, value: int, register_size: int, geq: bool = False) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -490,7 +514,7 @@ class IntegerComparator(ResourceOperator):
 
 
 class RegisterComparator(ResourceOperator):
-    r"""This operation applies a controlled `X` gate using register comparison as the condition.
+    r"""This operation applies a controlled ``X`` gate using register comparison as the condition.
 
     Given the basis states :math:`\vert a \rangle`, and  :math:`\vert b \rangle`,
     where :math:`a` and :math:`b` are positive
@@ -502,28 +526,33 @@ class RegisterComparator(ResourceOperator):
         second_register (int): the size of the second register
         geq (bool): If set to ``True``, the comparison made will be :math:`a \geq b`. If
             ``False``, the comparison made will be :math:`a \lt b`.
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from appendix B of `arXiv:1711.10460
-        <https://arxiv.org/pdf/1711.10460>`_ for registers of same size.
-        If the size of registers differ, the unary iteration technique from
-        `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_ is used
+        <https://arxiv.org/abs/1711.10460>`_ for registers of the same size.
+        If the sizes of the registers differ, the unary iteration technique from
+        `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_ is used
         to combine the results from extra qubits.
 
     **Example**
 
     The resources for this operation are computed using:
 
+    >>> from pennylane import estimator as qre
     >>> register_compare = qre.RegisterComparator(4, 6)
     >>> print(qre.estimate(register_compare))
     --- Resources: ---
-     Total qubits: 11
-     Total gates : 89
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 11
-     Gate breakdown:
-      {'Toffoli': 17, 'CNOT': 51, 'X': 18, 'Hadamard': 3}
+     Total wires: 17
+        algorithmic wires: 11
+        allocated wires: 6
+             zero state: 6
+             any state: 0
+     Total gates : 131
+      'Toffoli': 11,
+      'CNOT': 63,
+      'X': 36,
+      'Hadamard': 21
     """
 
     resource_keys = {"first_register", "second_register", "geq"}
@@ -535,10 +564,12 @@ class RegisterComparator(ResourceOperator):
         self.second_register = second_register
         self.geq = geq
         self.num_wires = first_register + second_register + 1
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -556,7 +587,9 @@ class RegisterComparator(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, first_register, second_register, geq=False):
+    def resource_rep(
+        cls, first_register: int, second_register: int, geq: bool = False
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -577,7 +610,9 @@ class RegisterComparator(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, first_register, second_register, geq=False, **kwargs):
+    def resource_decomp(
+        cls, first_register: int, second_register: int, geq: bool = False
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -589,9 +624,9 @@ class RegisterComparator(ResourceOperator):
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
-            <https://arxiv.org/pdf/1711.10460>`_ for registers of same size.
-            If the size of registers differ, the unary iteration technique from
-            `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_ is used
+            <https://arxiv.org/abs/1711.10460>`_ for registers of the same size.
+            If the sizes of the registers differ, the unary iteration technique from
+            `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_ is used
             to combine the results from extra qubits.
 
         Returns:
@@ -604,7 +639,7 @@ class RegisterComparator(ResourceOperator):
         compare_register = min(first_register, second_register)
 
         one_qubit_compare = resource_rep(qre.SingleQubitComparator)
-        two_qubit_compare = qre.TwoQubitComparator.TemporaryAND_based_decomp(**kwargs)
+        two_qubit_compare = qre.TwoQubitComparator.TemporaryAND_based_decomp()
 
         if first_register == second_register:
 

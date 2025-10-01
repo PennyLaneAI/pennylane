@@ -279,8 +279,7 @@ class TestControlled:
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(qre.CNOT): 4,
-                            resource_rep(qre.T): 84,
+                            resource_rep(qre.T): 42,
                             resource_rep(qre.Toffoli): 2,
                         },
                     ),
@@ -293,8 +292,8 @@ class TestControlled:
                         int,
                         {
                             resource_rep(qre.CNOT): 2,
-                            resource_rep(qre.T): 84,
-                            resource_rep(qre.Toffoli): 6,
+                            resource_rep(qre.T): 42,
+                            resource_rep(qre.Toffoli): 2,
                             resource_rep(qre.Toffoli, {"elbow": "left"}): 2,
                             resource_rep(qre.Hadamard): 6,
                         },
@@ -310,8 +309,7 @@ class TestControlled:
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(qre.CNOT): 4,
-                            resource_rep(qre.T): 176,
+                            resource_rep(qre.T): 88,
                             resource_rep(qre.Toffoli): 2,
                         },
                     ),
@@ -324,8 +322,8 @@ class TestControlled:
                         int,
                         {
                             resource_rep(qre.CNOT): 2,
-                            resource_rep(qre.T): 176,
-                            resource_rep(qre.Toffoli): 6,
+                            resource_rep(qre.T): 88,
+                            resource_rep(qre.Toffoli): 2,
                             resource_rep(qre.Toffoli, {"elbow": "left"}): 2,
                             resource_rep(qre.Hadamard): 6,
                         },
@@ -338,7 +336,6 @@ class TestControlled:
         """Test that the controlled operator produces expected resources with estimate"""
         ctrl_op = qre.Controlled(base_op, num_ctrl_wires=1, num_zero_ctrl=0)
         ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=1, num_zero_ctrl=0)
-
         assert qre.estimate(ctrl_op) == ctrl_res
         assert qre.estimate(ctrl_ctrl_op) == ctrl_ctrl_res
 
