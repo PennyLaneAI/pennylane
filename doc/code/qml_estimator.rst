@@ -64,7 +64,7 @@ Resource Templates:
 
 
 Resource Hamiltonians:
--------------------
+----------------------
 
 .. automodsumm:: pennylane.estimator.templates.compact_hamiltonian
     :toctree: api
