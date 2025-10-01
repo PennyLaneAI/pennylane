@@ -455,6 +455,26 @@
 
   [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
 
+<h4>Clifford+T decomposition</h4>
+
+* The :func:`~.clifford_t_decomposition` transform can now handle circuits with mid-circuit
+  measurements including Catalyst's measurements operations. It also now handles `RZ` and `PhaseShift`
+  operations where angles are odd multiples of `±pi/4` more efficiently while using `method="gridsynth"`.
+  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
+  [(#7942)](https://github.com/PennyLaneAI/pennylane/pull/7942)
+
+* The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
+  complete global phase information when used for decomposing a phase gate to Clifford+T basis.
+  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
+
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible
+  with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
+* Users can now specify a relative threshold value for the permissible operator norm error (`epsilon`) that
+  triggers rebuilding of the cache in the `qml.clifford_t_transform`, via new `cache_eps_rtol` keyword argument.
+  [(#8056)](https://github.com/PennyLaneAI/pennylane/pull/8056)
+
 <h4>Transforms</h4>
 
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and
@@ -532,26 +552,6 @@
 
 * The :func:`~.noise.fold_global` transform is refactored to collect operators into a list directly rather than relying on queuing.
   [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
-
-<h4>Clifford+T decomposition</h4>
-
-* The :func:`~.clifford_t_decomposition` transform can now handle circuits with mid-circuit
-  measurements including Catalyst's measurements operations. It also now handles `RZ` and `PhaseShift`
-  operations where angles are odd multiples of `±pi/4` more efficiently while using `method="gridsynth"`.
-  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
-  [(#7942)](https://github.com/PennyLaneAI/pennylane/pull/7942)
-
-* The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
-  complete global phase information when used for decomposing a phase gate to Clifford+T basis.
-  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
-
-* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible
-  with quantum just-in-time compilation via the `@qml.qjit` decorator.
-  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
-
-* Users can now specify a relative threshold value for the permissible operator norm error (`epsilon`) that
-  triggers rebuilding of the cache in the `qml.clifford_t_transform`, via new `cache_eps_rtol` keyword argument.
-  [(#8056)](https://github.com/PennyLaneAI/pennylane/pull/8056)
 
 <h4>Choi matrix functionality</h4>
 
