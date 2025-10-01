@@ -49,7 +49,7 @@ def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
     return jitted_qnode.mlir_module
 
 
-def draw(qnode: QNode, *, level: None | int = None) -> Callable:
+def draw(qnode: QNode, *, level: int | None = None) -> Callable:
     """
     Draw the QNode at the specified level.
 
@@ -62,7 +62,7 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
 
     Args:
         qnode (.QNode): the input QNode that is to be visualized. The QNode is assumed to be compiled with ``qjit``.
-        level (None | int): the level of transformation to visualize. If `None`, the final level is visualized.
+        level (Optional(int)): the level of transformation to visualize. If ``None``, the final level is visualized.
 
 
     Returns:
@@ -78,7 +78,7 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
         collector = QMLCollector(module)
         ops, meas = collector.collect()
         tape = QuantumScript(ops, meas)
-        pass_name = pass_instance.name if hasattr(pass_instance, "name") else pass_instance
+        pass_name = getattr(pass_instance, "name", pass_instance)
         cache[pass_level] = (
             tape.draw(show_matrices=False),
             pass_name if pass_level else "No transforms",
@@ -96,9 +96,9 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
         mlir_module = _get_mlir_module(qnode, args, kwargs)
         Compiler.run(mlir_module, callback=_draw_callback)
 
-        if not cache:
-            return None
+        if cache:
+            return cache.get(level, cache[max(cache.keys())])[0]
 
-        return cache.get(level, cache[max(cache.keys())])[0]
+        return None
 
     return wrapper
