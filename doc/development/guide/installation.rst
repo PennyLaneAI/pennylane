@@ -8,6 +8,10 @@ PennyLane requires the following libraries be installed:
 
 * `Python <http://python.org/>`_ >= 3.11
 
+After installing Python, we recommend using any virtual environment manager to install and manage
+dependencies. See the `Python documentation <https://docs.python.org/3/tutorial/venv.html>`_
+for more an example.
+
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
 
@@ -36,10 +40,6 @@ The following Python packages are optional:
 * ``openqasm3`` and ``antlr3_python3_runtime``: for ``qml.from_qasm3``
 * ``kahypar`` and ``opt_einsum`` for ``qcut``
 * ``cvxopt``for ``qml.kernels.closest_psd_matrix``
-
-If you do not have Python 3 installed, we recommend using a Python environment manager such as
-`venv <https://docs.python.org/3/library/venv.html>`_ or `virtualenv <https://virtualenv.pypa.io/en/latest/>`_
-to create an isolated environment for your installation.
 
 .. _install_interfaces:
 
