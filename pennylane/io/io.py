@@ -524,6 +524,10 @@ def from_qasm(quantum_circuit: str, measurements=None):
     0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
     1: ───────────────────╰X─┤
 
+    .. warning::
+ 
+        The ``qml.from_qasm`` function returns a callable that must be executed to run the imported circuit.
+
     .. details::
         :title: Removing terminal measurements
 
