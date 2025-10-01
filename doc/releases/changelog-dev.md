@@ -252,7 +252,7 @@
 
 <h4>Change op basis 🍴</h4>
 
-* A new :func:`~.ops.op_math.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
+* A new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (``U V U†``) to be represented by a single operator.
   A corresponding decomposition rule has been added to support efficiently controlling the pattern,
   in which only the central (target) operator is controlled, and not ``U`` or ``U†``.
