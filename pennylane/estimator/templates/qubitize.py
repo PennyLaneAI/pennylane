@@ -67,7 +67,7 @@ class QubitizeTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> from pennylane import estimator as qre
-    >>> thc_ham = qre.THCHamiltonian.thc(num_orbitals=20, tensor_rank=40)
+    >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> prep = qre.PrepTHC(thc_ham, coeff_precision=20, select_swap_depth=2)
     >>> res = qre.estimate(qre.QubitizeTHC(thc_ham, prep_op=prep))
     >>> print(res)
