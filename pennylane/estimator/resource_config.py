@@ -19,7 +19,6 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pennylane.estimator.ops import CRX, CRY, CRZ, RX, RY, RZ, QubitUnitary
-from pennylane.estimator.ops import QubitUnitary
 from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
