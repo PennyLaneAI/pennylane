@@ -77,6 +77,7 @@ def draw(qnode: QNode, *, level: int | None = None) -> Callable:
         pass_instance = previous_pass if previous_pass else next_pass
         collector = QMLCollector(module)
         ops, meas = collector.collect()
+        collector.graph_builder.render_graph(output_filename="blah.png")
         tape = QuantumScript(ops, meas)
         pass_name = getattr(pass_instance, "name", pass_instance)
         cache[pass_level] = (

@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable
+from itertools import compress
 from typing import TYPE_CHECKING
 
 from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr, IntegerType
+from xdsl.dialects.scf import ForOp
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
-from xdsl.ir import SSAValue
+from xdsl.ir import Block, SSAValue
 
 from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
@@ -136,10 +138,19 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
     """Resolve a constant parameter SSA value to a Python float or int."""
     op = ssa.owner
 
+    if isinstance(op, Block) and isinstance(op.parent.parent, ForOp):
+        return op.args[0].name_hint
+
     if isinstance(op, TensorExtractOp):
         return resolve_constant_params(op.tensor)
 
     match op.name:
+
+        case "tensor.from_elements":
+            return resolve_constant_params(op.operands[0])
+
+        case "arith.index_cast":
+            return resolve_constant_params(op.operands[0])
 
         case "arith.addf":
             return sum(resolve_constant_params(o) for o in op.operands)
@@ -175,12 +186,23 @@ def dispatch_wires_extract(op: ExtractOpPL):
 
 def resolve_constant_wire(ssa: SSAValue) -> float | int:
     """Resolve the wire for the given SSA qubit."""
+
     if isinstance(ssa, IntegerAttr):  # Catalyst
         return ssa.value.data
 
     op = ssa.owner
 
+    if isinstance(op, Block):
+        arg_name = list(compress(op.args, map(lambda arg: arg is ssa, op.args)))[0].name_hint
+        return arg_name
+
     match op:
+
+        case _ if op.name == "tensor.from_elements":
+            return resolve_constant_wire(op.operands[0])
+
+        case _ if op.name == "arith.index_cast":
+            return resolve_constant_params(op.operands[0])
 
         case TensorExtractOp(tensor=tensor):
             return resolve_constant_wire(tensor)

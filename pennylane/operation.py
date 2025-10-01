@@ -351,7 +351,7 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        wires = tuple(w if is_abstract(w) or isinstance(w, str) else int(w) for w in wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
