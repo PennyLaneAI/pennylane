@@ -31,7 +31,6 @@ from .subroutines import (
 
 from .trotter import TrotterCDF, TrotterProduct, TrotterTHC, TrotterVibrational, TrotterVibronic
 
-from .compact_hamiltonian import CompactHamiltonian
 from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling
 
 from .comparators import (

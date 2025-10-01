@@ -31,7 +31,12 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-from .compact_hamiltonian import CompactHamiltonian
+from .compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibrationalHamiltonian,
+    VibronicHamiltonian,
+)
 from .subroutines import (
     BasisRotation,
     OutMultiplier,
@@ -285,8 +290,8 @@ class TrotterCDF(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
-            Hamiltonian to be approximately exponentiated
+        compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): 
+            a compressed double factorized Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even.
         wires (list[int] | None): the wires on which the operator acts
@@ -321,7 +326,7 @@ class TrotterCDF(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
-    >>> compact_ham = qre.CompactHamiltonian.cdf(num_orbitals = 4, num_fragments = 4)
+    >>> compact_ham = qre.CDFHamiltonian(num_orbitals = 4, num_fragments = 4)
     >>> res = qre.estimate(qre.TrotterCDF(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
@@ -342,22 +347,22 @@ class TrotterCDF(ResourceOperator):
 
     def __init__(
         self,
-        compact_ham: CompactHamiltonian,
+        compact_ham: CDFHamiltonian,
         num_steps: int,
         order: int,
         wires: WiresLike | None = None,
     ):
 
-        if compact_ham.method_name != "cdf":
+        if not isinstance(compact_ham, CDFHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterCDF."
-                f"This method works with cdf Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with cdf Hamiltonian, {type(compact_ham)} provided"
             )
         self.num_steps = num_steps
         self.order = order
         self.compact_ham = compact_ham
 
-        self.num_wires = 2 * compact_ham.params["num_orbitals"]
+        self.num_wires = 2 * compact_ham.num_orbitals
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -370,7 +375,7 @@ class TrotterCDF(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
+                * compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
@@ -383,14 +388,14 @@ class TrotterCDF(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+        cls, compact_ham: CDFHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
-                Hamiltonian to be approximately exponentiated
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
+                a compressed double factorized Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
 
@@ -402,18 +407,18 @@ class TrotterCDF(ResourceOperator):
             "num_steps": num_steps,
             "order": order,
         }
-        num_wires = 2 * compact_ham.params["num_orbitals"]
+        num_wires = 2 * compact_ham.num_orbitals
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+        cls, compact_ham: CDFHamiltonian, num_steps: int, order: int
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a compressed double factorized
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -425,8 +430,8 @@ class TrotterCDF(ResourceOperator):
         """
         k = order // 2
         gate_list = []
-        num_orb = compact_ham.params["num_orbitals"]
-        num_frags = compact_ham.params["num_fragments"]
+        num_orb = compact_ham.num_orbitals
+        num_frags = compact_ham.num_fragments
 
         op_onebody = resource_rep(
             Prod,
@@ -487,8 +492,8 @@ class TrotterCDF(ResourceOperator):
 
         k = order // 2
         gate_list = []
-        num_orb = compact_ham.params["num_orbitals"]
-        num_frags = compact_ham.params["num_fragments"]
+        num_orb = compact_ham.num_orbitals
+        num_frags = compact_ham.num_fragments
 
         op_onebody = resource_rep(
             Prod,
@@ -578,7 +583,7 @@ class TrotterTHC(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+        compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even
@@ -614,7 +619,7 @@ class TrotterTHC(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
-    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
+    >>> compact_ham = qre.THCHamiltonian(num_orbitals=4, tensor_rank=4)
     >>> res = qre.estimate(qre.TrotterTHC(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
@@ -635,22 +640,22 @@ class TrotterTHC(ResourceOperator):
 
     def __init__(
         self,
-        compact_ham: CompactHamiltonian,
+        compact_ham: THCHamiltonian,
         num_steps: int,
         order: int,
         wires: WiresLike | None = None,
     ):
 
-        if compact_ham.method_name != "thc":
+        if not isinstance(compact_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with thc Hamiltonian, {type(compact_ham)} provided"
             )
         self.num_steps = num_steps
         self.order = order
         self.compact_ham = compact_ham
 
-        self.num_wires = compact_ham.params["tensor_rank"] * 2
+        self.num_wires = compact_ham.tensor_rank * 2
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -663,7 +668,7 @@ class TrotterTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+                * compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
@@ -676,13 +681,13 @@ class TrotterTHC(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+        cls, compact_ham: THCHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -695,18 +700,18 @@ class TrotterTHC(ResourceOperator):
             "num_steps": num_steps,
             "order": order,
         }
-        num_wires = compact_ham.params["tensor_rank"] * 2
+        num_wires = compact_ham.tensor_rank * 2
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
-        cls, compact_ham: CompactHamiltonian, num_steps: int, order: int
+        cls, compact_ham: THCHamiltonian, num_steps: int, order: int
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -718,8 +723,8 @@ class TrotterTHC(ResourceOperator):
         """
         k = order // 2
         gate_list = []
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = compact_ham.num_orbitals
+        tensor_rank = compact_ham.tensor_rank
 
         op_onebody = resource_rep(
             Prod,
@@ -783,8 +788,8 @@ class TrotterTHC(ResourceOperator):
 
         k = order // 2
         gate_list = []
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = compact_ham.num_orbitals
+        tensor_rank = compact_ham.tensor_rank
 
         op_onebody = resource_rep(
             Prod,
@@ -874,7 +879,7 @@ class TrotterVibrational(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
+        compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even
@@ -912,8 +917,8 @@ class TrotterVibrational(ResourceOperator):
     The resources for this operation are computed using
 
     >>> import pennylane.estimator as qre
-    >>> compact_ham = qre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
     >>> num_steps, order = (10, 2)
+    >>> compact_ham = qre.VibrationalHamiltonian(num_modes=2, grid_size=4, taylor_degree=2)
     >>> res = qre.estimate(qre.TrotterVibrational(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
@@ -936,7 +941,7 @@ class TrotterVibrational(ResourceOperator):
 
     def __init__(
         self,
-        compact_ham: CompactHamiltonian,
+        compact_ham: VibrationalHamiltonian,
         num_steps: int,
         order: int,
         phase_grad_precision: float | None = None,
@@ -944,10 +949,10 @@ class TrotterVibrational(ResourceOperator):
         wires: WiresLike | None = None,
     ):
 
-        if compact_ham.method_name != "vibrational":
+        if not isinstance(compact_ham, VibrationalHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibrational."
-                f"This method works with vibrational Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with vibrational Hamiltonian, {type(compact_ham)} provided"
             )
 
         self.num_steps = num_steps
@@ -956,7 +961,7 @@ class TrotterVibrational(ResourceOperator):
         self.phase_grad_precision = phase_grad_precision
         self.coeff_precision = coeff_precision
 
-        self.num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        self.num_wires = compact_ham.num_modes * compact_ham.grid_size
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -969,7 +974,7 @@ class TrotterVibrational(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
+                * compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
                   Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
@@ -989,7 +994,7 @@ class TrotterVibrational(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        compact_ham: CompactHamiltonian,
+        compact_ham: VibrationalHamiltonian,
         num_steps: int,
         order: int,
         phase_grad_precision: float | None = None,
@@ -999,7 +1004,7 @@ class TrotterVibrational(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
                 Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -1018,7 +1023,7 @@ class TrotterVibrational(ResourceOperator):
             "phase_grad_precision": phase_grad_precision,
             "coeff_precision": coeff_precision,
         }
-        num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+        num_wires = compact_ham.num_modes * compact_ham.grid_size
         return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
@@ -1092,12 +1097,12 @@ class TrotterVibrational(ResourceOperator):
         return gate_cache, cached_tree
 
     @staticmethod
-    def _rep_circuit(compact_ham, coeff_precision, num_rep):
+    def _rep_circuit(compact_ham: VibrationalHamiltonian, coeff_precision, num_rep):
         r"""Returns the expansion of the circuit with given number of repetitions."""
 
-        num_modes = compact_ham.params["num_modes"]
-        grid_size = compact_ham.params["grid_size"]
-        taylor_degree = compact_ham.params["taylor_degree"]
+        num_modes = compact_ham.num_modes
+        grid_size = compact_ham.grid_size
+        taylor_degree = compact_ham.taylor_degree
 
         gate_lst = []
         # Shifted QFT for kinetic part
@@ -1148,7 +1153,7 @@ class TrotterVibrational(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        compact_ham: CompactHamiltonian,
+        compact_ham: VibrationalHamiltonian,
         num_steps: int,
         order: int,
         phase_grad_precision: float | None = None,
@@ -1158,7 +1163,7 @@ class TrotterVibrational(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibrational
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
                 Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -1175,9 +1180,9 @@ class TrotterVibrational(ResourceOperator):
 
         k = order // 2
         gate_list = []
-        num_modes = compact_ham.params["num_modes"]
-        grid_size = compact_ham.params["grid_size"]
-        taylor_degree = compact_ham.params["taylor_degree"]
+        num_modes = compact_ham.num_modes
+        grid_size = compact_ham.grid_size
+        taylor_degree = compact_ham.taylor_degree
 
         phase_grad_wires = int(abs(np.floor(np.log2(phase_grad_precision))))
         coeff_wires = int(abs(np.floor(np.log2(coeff_precision))))
@@ -1245,7 +1250,7 @@ class TrotterVibronic(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real-space vibronic
+        compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation (must be 1 or even)
@@ -1282,8 +1287,8 @@ class TrotterVibronic(ResourceOperator):
     The resources for this operation are computed using
 
     >>> import pennylane.estimator as qre
-    >>> compact_ham = qre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> num_steps, order = (10, 2)
+    >>> compact_ham = qre.VibronicHamiltonian(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> res = qre.estimate(qre.TrotterVibronic(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
@@ -1306,7 +1311,7 @@ class TrotterVibronic(ResourceOperator):
 
     def __init__(
         self,
-        compact_ham: CompactHamiltonian,
+        compact_ham: VibronicHamiltonian,
         num_steps: int,
         order: int,
         phase_grad_precision: float | None = None,
@@ -1314,10 +1319,10 @@ class TrotterVibronic(ResourceOperator):
         wires: WiresLike | None = None,
     ):
 
-        if compact_ham.method_name != "vibronic":
+        if not isinstance(compact_ham, VibronicHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibronic."
-                f"This method works with vibronic Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with vibronic Hamiltonian, {type(compact_ham)} provided"
             )
 
         self.num_steps = num_steps
@@ -1327,8 +1332,8 @@ class TrotterVibronic(ResourceOperator):
         self.coeff_precision = coeff_precision
 
         self.num_wires = (
-            int(np.ceil(np.log2(compact_ham.params["num_states"])))
-            + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+            int(np.ceil(np.log2(compact_ham.num_states)))
+            + compact_ham.num_modes * compact_ham.grid_size
         )
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
@@ -1342,7 +1347,7 @@ class TrotterVibronic(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real-space vibronic
+                * compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
@@ -1362,7 +1367,7 @@ class TrotterVibronic(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        compact_ham: CompactHamiltonian,
+        compact_ham: VibronicHamiltonian,
         num_steps: int,
         order: int,
         phase_grad_precision: float | None = None,
@@ -1372,7 +1377,7 @@ class TrotterVibronic(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibronic
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -1391,8 +1396,8 @@ class TrotterVibronic(ResourceOperator):
             "coeff_precision": coeff_precision,
         }
         num_wires = (
-            int(np.ceil(np.log2(compact_ham.params["num_states"])))
-            + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+            int(np.ceil(np.log2(compact_ham.num_states)))
+            + compact_ham.num_modes * compact_ham.grid_size
         )
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -1482,13 +1487,13 @@ class TrotterVibronic(ResourceOperator):
         return gate_cache, cached_tree
 
     @staticmethod
-    def _rep_circuit(compact_ham, coeff_precision, num_rep):
+    def _rep_circuit(compact_ham: VibronicHamiltonian, coeff_precision, num_rep):
         r"""Returns the expansion of the circuit with given number of repetitions."""
 
-        num_modes = compact_ham.params["num_modes"]
-        num_states = compact_ham.params["num_states"]
-        grid_size = compact_ham.params["grid_size"]
-        taylor_degree = compact_ham.params["taylor_degree"]
+        num_modes = compact_ham.num_modes
+        num_states = compact_ham.num_states
+        grid_size = compact_ham.grid_size
+        taylor_degree = compact_ham.taylor_degree
 
         gate_lst = []
         # Shifted QFT for kinetic part
@@ -1550,7 +1555,7 @@ class TrotterVibronic(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        compact_ham: CompactHamiltonian,
+        compact_ham: VibronicHamiltonian,
         num_steps: int,
         order: int,
         phase_grad_precision: float | None,
@@ -1560,7 +1565,7 @@ class TrotterVibronic(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a real space vibronic
+            compact_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -1577,10 +1582,10 @@ class TrotterVibronic(ResourceOperator):
 
         k = order // 2
         gate_list = []
-        num_modes = compact_ham.params["num_modes"]
-        num_states = compact_ham.params["num_states"]
-        grid_size = compact_ham.params["grid_size"]
-        taylor_degree = compact_ham.params["taylor_degree"]
+        num_modes = compact_ham.num_modes
+        num_states = compact_ham.num_states
+        grid_size = compact_ham.grid_size
+        taylor_degree = compact_ham.taylor_degree
 
         phase_grad_wires = int(abs(np.floor(np.log2(phase_grad_precision))))
         coeff_wires = int(abs(np.floor(np.log2(coeff_precision))))
