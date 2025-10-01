@@ -14,116 +14,74 @@
 """
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
+from dataclasses import dataclass
 
-from typing import Any
 
-
-class CompactHamiltonian:
-    r"""A compact representation for the Hamiltonian of a quantum system.
+@dataclass(frozen=True)
+class CDFHamiltonian:
+    """Constructs a compressed double factorized Hamiltonian instance
 
     Args:
-        method_name (str): The name of the method used to construct the Hamiltonian.
-            The available methods are cdf, thc, vibrational, and vibronic.
-        **params (Any): Keyword arguments specific to the chosen construction method:
-
-            - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
-            - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
-            - For :meth:`~.CompactHamiltonian.vibrational`, parameters include ``num_modes``, ``grid_size`` and ``taylor_degree``.
-            - For :meth:`~.CompactHamiltonian.vibronic`, parameters include ``num_modes``, ``num_states``, ``grid_size`` and ``taylor_degree``.
-
+        num_orbitals (int): number of spatial orbitals
+        num_fragments (int): number of fragments in the compressed double factorization (CDF) representation
 
     Returns:
-        CompactHamiltonian: An instance of CompactHamiltonian
-
-    **Example**
-
-    The resources for trotterization of THC Hamiltonian can be extracted as:
-
-    >>> import pennylane.estimator as qre
-    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=8, tensor_rank=40)
-    >>> trotter_thc = qre.TrotterTHC(compact_ham, num_steps=100, order=2)
-    >>> res = qre.estimate(trotter_thc)
-    >>> print(res)
-    --- Resources: ---
-     Total wires: 80
-        algorithmic wires: 80
-        allocated wires: 0
-            zero state: 0
-            any state: 0
-     Total gates : 3.960E+7
-      'T': 3.638E+7,
-      'CNOT': 9.553E+5,
-      'Z': 6.466E+5,
-      'S': 9.699E+5,
-      'Hadamard': 6.466E+5
+        CDFHamiltonian: An instance of CDFHamiltonian
     """
 
-    def __init__(self, method_name: str, **params: dict[str, Any]):
-        self.method_name = method_name
-        self.params = params
+    num_orbitals: int
+    num_fragments: int
 
-    @classmethod
-    def cdf(cls, num_orbitals: int, num_fragments: int):
-        """Constructs a compressed double factorized Hamiltonian instance
 
-        Args:
-            num_orbitals (int): number of spatial orbitals
-            num_fragments (int): number of fragments in the compressed double factorization (CDF) representation
+@dataclass(frozen=True)
+class THCHamiltonian:
+    """Constructs a tensor hypercontracted Hamiltonian instance
 
-        Returns:
-            CompactHamiltonian: An instance of CompactHamiltonian initialized with CDF parameters.
-        """
-        return cls("cdf", num_orbitals=num_orbitals, num_fragments=num_fragments)
+    Args:
+        num_orbitals (int): number of spatial orbitals
+        tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
 
-    @classmethod
-    def thc(cls, num_orbitals: int, tensor_rank: int):
-        """Constructs a tensor hypercontracted Hamiltonian instance
+    Returns:
+        THCHamiltonian: An instance of THCHamiltonian
+    """
 
-        Args:
-            num_orbitals (int): number of spatial orbitals
-            tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
+    num_orbitals: int
+    tensor_rank: int
 
-        Returns:
-            CompactHamiltonian: An instance of CompactHamiltonian initialized with THC parameters.
-        """
-        return cls("thc", num_orbitals=num_orbitals, tensor_rank=tensor_rank)
 
-    @classmethod
-    def vibrational(cls, num_modes: int, grid_size: int, taylor_degree: int):
-        """Constructs a vibrational Hamiltonian instance
+@dataclass(frozen=True)
+class VibrationalHamiltonian:
+    """Constructs a vibrational Hamiltonian instance
 
-        Args:
-            num_modes (int): number of vibrational modes
-            grid_size (int): number of grid points used to discretize each mode
-            taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
+    Args:
+        num_modes (int): number of vibrational modes
+        grid_size (int): number of grid points used to discretize each mode
+        taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
 
-        Returns:
-            CompactHamiltonian: An instance of CompactHamiltonian initialized with vibrational Hamiltonian parameters.
-        """
-        return cls(
-            "vibrational",
-            num_modes=num_modes,
-            grid_size=grid_size,
-            taylor_degree=taylor_degree,
-        )
+    Returns:
+        VibrationalHamiltonian: An instance of VibrationalHamiltonian
+    """
 
-    @classmethod
-    def vibronic(cls, num_modes: int, num_states: int, grid_size: int, taylor_degree: int):
-        """Constructs a vibronic Hamiltonian instance
+    num_modes: int
+    grid_size: int
+    taylor_degree: int
 
-        Args:
-            num_modes (int): number of vibronic modes
-            num_states (int): number of vibronic states
-            grid_size (int): number of grid points used to discretize each mode
-            taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
 
-        Returns:
-            CompactHamiltonian: An instance of CompactHamiltonian initialized with vibronic Hamiltonian parameters.
-        """
-        return cls(
-            "vibronic",
-            num_modes=num_modes,
-            num_states=num_states,
-            grid_size=grid_size,
-            taylor_degree=taylor_degree,
-        )
+@dataclass(frozen=True)
+class VibronicHamiltonian:
+    """Constructs a vibronic Hamiltonian instance
+
+    Args:
+        num_modes (int): number of vibronic modes
+        num_states (int): number of vibronic states
+        grid_size (int): number of grid points used to discretize each mode
+        taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
+
+    Returns:
+        VibronicHamiltonian: An instance of VibronicHamiltonian
+    """
+
+    num_modes: int
+    num_states: int
+    grid_size: int
+    taylor_degree: int

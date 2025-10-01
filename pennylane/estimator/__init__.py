@@ -92,7 +92,6 @@ from .templates import (
     TrotterTHC,
     TrotterVibrational,
     TrotterVibronic,
-    CompactHamiltonian,
     MPSPrep,
     QROMStatePreparation,
     UniformStatePrep,
@@ -101,4 +100,11 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+)
+
+from .templates.compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibronicHamiltonian,
+    VibrationalHamiltonian,
 )

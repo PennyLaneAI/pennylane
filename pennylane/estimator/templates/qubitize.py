@@ -30,7 +30,7 @@ from pennylane.estimator.templates.stateprep import PrepTHC
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-from .compact_hamiltonian import CompactHamiltonian
+from .compact_hamiltonian import THCHamiltonian
 
 # pylint: disable=signature-differs, arguments-differ, too-many-arguments
 
@@ -45,7 +45,7 @@ class QubitizeTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
     Args:
-        compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): A tensor hypercontracted
+        thc_ham (:class:`~.pennylane.estimator.templates.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian for which the walk operator is being created.
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             resource operator, corresponding to the prepare routine. If :code:`None`, the
@@ -67,9 +67,9 @@ class QubitizeTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> from pennylane import estimator as qre
-    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> prep = qre.PrepTHC(compact_ham, coeff_precision=20, select_swap_depth=2)
-    >>> res = qre.estimate(qre.QubitizeTHC(compact_ham, prep_op=prep))
+    >>> thc_ham = qre.THCHamiltonian.thc(num_orbitals=20, tensor_rank=40)
+    >>> prep = qre.PrepTHC(thc_ham, coeff_precision=20, select_swap_depth=2)
+    >>> res = qre.estimate(qre.QubitizeTHC(thc_ham, prep_op=prep))
     >>> print(res)
     --- Resources: ---
      Total wires: 381
@@ -102,31 +102,31 @@ class QubitizeTHC(ResourceOperator):
 
     """
 
-    resource_keys = {"compact_ham", "prep_op", "select_op"}
+    resource_keys = {"thc_ham", "prep_op", "select_op"}
 
     def __init__(
         self,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         prep_op: ResourceOperator | None = None,
         select_op: ResourceOperator | None = None,
         coeff_precision: int | None = None,
         rotation_precision: int | None = None,
         wires: WiresLike | None = None,
     ):
-        if compact_ham.method_name != "thc":
+        if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
-                "Unsupported Hamiltonian representation for QubitizeTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+                f"Unsupported Hamiltonian representation for QubitizeTHC."
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        self.compact_ham = compact_ham
+        self.thc_ham = thc_ham
         self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
         self.select_op = select_op.resource_rep_from_op() if select_op else None
         self.coeff_precision = coeff_precision
         self.rotation_precision = rotation_precision
 
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
@@ -145,7 +145,7 @@ class QubitizeTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): A tensor hypercontracted
+                * thc_ham (:class:`~pennylane.estimator.templates.THCHamiltonian`): A tensor hypercontracted
                   Hamiltonian for which the walk operator is being created.
                 * prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                   resource operator, corresponding to the prepare routine. If :code:`None`, the
@@ -159,7 +159,7 @@ class QubitizeTHC(ResourceOperator):
                   the rotation angles.
         """
         return {
-            "compact_ham": self.compact_ham,
+            "thc_ham": self.thc_ham,
             "prep_op": self.prep_op,
             "select_op": self.select_op,
             "coeff_precision": self.coeff_precision,
@@ -169,7 +169,7 @@ class QubitizeTHC(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         prep_op: CompressedResourceOp | None = None,
         select_op: CompressedResourceOp | None = None,
         coeff_precision: int | None = None,
@@ -179,7 +179,7 @@ class QubitizeTHC(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): A tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.templates.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian for which the walk operator is being created.
             prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the prepare routine. If :code:`None`, the
@@ -195,14 +195,14 @@ class QubitizeTHC(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        if compact_ham.method_name != "thc":
+        if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for QubitizeTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
@@ -210,7 +210,7 @@ class QubitizeTHC(ResourceOperator):
         # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
         params = {
-            "compact_ham": compact_ham,
+            "thc_ham": thc_ham,
             "prep_op": prep_op,
             "select_op": select_op,
             "coeff_precision": coeff_precision,
@@ -221,7 +221,7 @@ class QubitizeTHC(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         prep_op: CompressedResourceOp | None = None,
         select_op: CompressedResourceOp | None = None,
         coeff_precision: int | None = None,
@@ -237,7 +237,7 @@ class QubitizeTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
         Args:
-            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.templates.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the prepare routine. If :code:`None`, the
@@ -258,14 +258,14 @@ class QubitizeTHC(ResourceOperator):
         """
         gate_list = []
 
-        tensor_rank = compact_ham.params["tensor_rank"]
+        tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
         if not select_op:
             # Select cost from Figure 5 in arXiv:2011.03494
             select_op = resource_rep(
                 SelectTHC,
-                {"compact_ham": compact_ham, "rotation_precision": rotation_precision},
+                {"thc_ham": thc_ham, "rotation_precision": rotation_precision},
             )
         gate_list.append(GateCount(select_op))
 
@@ -273,7 +273,7 @@ class QubitizeTHC(ResourceOperator):
             # Prep cost from Figure 3 and 4 in arXiv:2011.03494
             prep_op = resource_rep(
                 PrepTHC,
-                {"compact_ham": compact_ham, "coeff_precision": coeff_precision},
+                {"thc_ham": thc_ham, "coeff_precision": coeff_precision},
             )
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
@@ -310,11 +310,11 @@ class QubitizeTHC(ResourceOperator):
 
         """
         gate_list = []
-        compact_ham = target_resource_params["compact_ham"]
+        thc_ham = target_resource_params["thc_ham"]
         prep_op = target_resource_params["prep_op"]
         select_op = target_resource_params["select_op"]
 
-        tensor_rank = compact_ham.params["tensor_rank"]
+        tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
         if num_ctrl_wires > 1:
@@ -333,7 +333,7 @@ class QubitizeTHC(ResourceOperator):
             # Controlled Select cost from Fig 5 in arXiv:2011.03494
             select_op = resource_rep(
                 SelectTHC,
-                {"compact_ham": compact_ham, "rotation_precision": rotation_precision},
+                {"thc_ham": thc_ham, "rotation_precision": rotation_precision},
             )
         gate_list.append(
             GateCount(
@@ -349,7 +349,7 @@ class QubitizeTHC(ResourceOperator):
             # Prep cost from Fig 3 and 4 in arXiv:2011.03494
             prep_op = resource_rep(
                 PrepTHC,
-                {"compact_ham": compact_ham, "coeff_precision": coeff_precision},
+                {"thc_ham": thc_ham, "coeff_precision": coeff_precision},
             )
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))

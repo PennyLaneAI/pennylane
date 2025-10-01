@@ -26,24 +26,24 @@ class TestQubitizeTHC:
     """Test the QubitizeTHC class."""
 
     @pytest.mark.parametrize(
-        "compact_ham, prep_op, select_op",
+        "thc_ham, prep_op, select_op",
         (
             (
-                qre.CompactHamiltonian.thc(58, 160),
-                qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=13),
-                qre.SelectTHC(qre.CompactHamiltonian.thc(58, 160), rotation_precision=13),
+                qre.THCHamiltonian(58, 160),
+                qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
+                qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
             ),
-            (qre.CompactHamiltonian.thc(10, 50), None, None),
+            (qre.THCHamiltonian(10, 50), None, None),
             (
-                qre.CompactHamiltonian.thc(4, 20),
-                qre.PrepTHC(qre.CompactHamiltonian.thc(4, 20), select_swap_depth=2),
+                qre.THCHamiltonian(4, 20),
+                qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
                 None,
             ),
         ),
     )
-    def test_resource_params(self, compact_ham, prep_op, select_op):
+    def test_resource_params(self, thc_ham, prep_op, select_op):
         """Test that the resource params for QubitizeTHC are correct."""
-        op = qre.QubitizeTHC(compact_ham, prep_op=prep_op, select_op=select_op)
+        op = qre.QubitizeTHC(thc_ham, prep_op=prep_op, select_op=select_op)
 
         if prep_op is not None:
             prep_op = prep_op.resource_rep_from_op()
@@ -51,7 +51,7 @@ class TestQubitizeTHC:
             select_op = select_op.resource_rep_from_op()
 
         assert op.resource_params == {
-            "compact_ham": compact_ham,
+            "thc_ham": thc_ham,
             "prep_op": prep_op,
             "select_op": select_op,
             "coeff_precision": None,
@@ -59,40 +59,40 @@ class TestQubitizeTHC:
         }
 
     @pytest.mark.parametrize(
-        "compact_ham, prep_op, select_op, num_wires",
+        "thc_ham, prep_op, select_op, num_wires",
         (
             (
-                qre.CompactHamiltonian.thc(58, 160),
+                qre.THCHamiltonian(58, 160),
                 resource_rep(
                     qre.PrepTHC,
-                    {"compact_ham": qre.CompactHamiltonian.thc(58, 160), "coeff_precision": 13},
+                    {"thc_ham": qre.THCHamiltonian(58, 160), "coeff_precision": 13},
                 ),
                 resource_rep(
                     qre.SelectTHC,
-                    {"compact_ham": qre.CompactHamiltonian.thc(58, 160), "rotation_precision": 13},
+                    {"thc_ham": qre.THCHamiltonian(58, 160), "rotation_precision": 13},
                 ),
                 152,
             ),
-            (qre.CompactHamiltonian.thc(10, 50), None, None, 49),
+            (qre.THCHamiltonian(10, 50), None, None, 49),
             (
-                qre.CompactHamiltonian.thc(4, 20),
+                qre.THCHamiltonian(4, 20),
                 resource_rep(
                     qre.PrepTHC,
-                    {"compact_ham": qre.CompactHamiltonian.thc(4, 20), "select_swap_depth": 2},
+                    {"thc_ham": qre.THCHamiltonian(4, 20), "select_swap_depth": 2},
                 ),
                 None,
                 32,
             ),
         ),
     )
-    def test_resource_rep(self, compact_ham, prep_op, select_op, num_wires):
+    def test_resource_rep(self, thc_ham, prep_op, select_op, num_wires):
         """Test that the compressed representation  for QubitizeTHC is correct."""
 
         expected = qre.CompressedResourceOp(
             qre.QubitizeTHC,
             num_wires,
             {
-                "compact_ham": compact_ham,
+                "thc_ham": thc_ham,
                 "prep_op": prep_op,
                 "select_op": select_op,
                 "coeff_precision": None,
@@ -100,43 +100,42 @@ class TestQubitizeTHC:
             },
         )
         assert (
-            qre.QubitizeTHC.resource_rep(compact_ham, prep_op=prep_op, select_op=select_op)
-            == expected
+            qre.QubitizeTHC.resource_rep(thc_ham, prep_op=prep_op, select_op=select_op) == expected
         )
 
     # We are comparing the Toffoli and qubit cost here
     # Expected number of Toffolis and wires were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "compact_ham, prep_op, select_op, expected_res",
+        "thc_ham, prep_op, select_op, expected_res",
         (
             (
                 # This test was taken from arXiv:2501.06165, numbers are adjusted to only the walk operator cost without unary iteration
-                qre.CompactHamiltonian.thc(58, 160),
-                qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=13),
-                qre.SelectTHC(qre.CompactHamiltonian.thc(58, 160), rotation_precision=13),
+                qre.THCHamiltonian(58, 160),
+                qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
+                qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
                 {"algo_wires": 152, "auxiliary_wires": 791, "toffoli_gates": 8579},
             ),
             (
-                qre.CompactHamiltonian.thc(10, 50),
+                qre.THCHamiltonian(10, 50),
                 None,
                 None,
                 {"algo_wires": 49, "auxiliary_wires": 174, "toffoli_gates": 2299},
             ),
             (
-                qre.CompactHamiltonian.thc(4, 20),
-                qre.PrepTHC(qre.CompactHamiltonian.thc(4, 20), select_swap_depth=2),
+                qre.THCHamiltonian(4, 20),
+                qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
                 None,
                 {"algo_wires": 32, "auxiliary_wires": 109, "toffoli_gates": 967},
             ),
         ),
     )
-    def test_resources(self, compact_ham, prep_op, select_op, expected_res):
+    def test_resources(self, thc_ham, prep_op, select_op, expected_res):
         """Test that the resource decomposition for QubitizeTHC is correct."""
 
         wo_cost = qre.estimate(
             qre.QubitizeTHC(
-                compact_ham,
+                thc_ham,
                 prep_op=prep_op,
                 select_op=select_op,
             )
@@ -150,30 +149,30 @@ class TestQubitizeTHC:
     # Expected number of Toffolis and wires were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "compact_ham, prep_op, select_op, expected_res",
+        "thc_ham, prep_op, select_op, expected_res",
         (
             (
                 # This test was taken from arXiv:2501.06165, numbers are adjusted to only the walk operator cost without unary iteration
-                qre.CompactHamiltonian.thc(58, 160),
-                qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=13),
-                qre.SelectTHC(qre.CompactHamiltonian.thc(58, 160), rotation_precision=13),
+                qre.THCHamiltonian(58, 160),
+                qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
+                qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
                 {"algo_wires": 155, "auxiliary_wires": 792, "toffoli_gates": 8584},
             ),
             (
-                qre.CompactHamiltonian.thc(10, 50),
+                qre.THCHamiltonian(10, 50),
                 None,
                 None,
                 {"algo_wires": 52, "auxiliary_wires": 175, "toffoli_gates": 2304},
             ),
             (
-                qre.CompactHamiltonian.thc(4, 20),
-                qre.PrepTHC(qre.CompactHamiltonian.thc(4, 20), select_swap_depth=2),
+                qre.THCHamiltonian(4, 20),
+                qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
                 None,
                 {"algo_wires": 35, "auxiliary_wires": 110, "toffoli_gates": 972},
             ),
         ),
     )
-    def test_control_resources(self, compact_ham, prep_op, select_op, expected_res):
+    def test_control_resources(self, thc_ham, prep_op, select_op, expected_res):
         """Test that the controlled resource decomposition for QubitizeTHC is correct."""
 
         wo_cost = qre.estimate(
@@ -181,7 +180,7 @@ class TestQubitizeTHC:
                 num_ctrl_wires=3,
                 num_zero_ctrl=2,
                 base_op=qre.QubitizeTHC(
-                    compact_ham,
+                    thc_ham,
                     prep_op=prep_op,
                     select_op=select_op,
                 ),
@@ -197,9 +196,9 @@ class TestQubitizeTHC:
         with pytest.raises(
             TypeError, match="Unsupported Hamiltonian representation for QubitizeTHC."
         ):
-            qre.QubitizeTHC(qre.CompactHamiltonian.cdf(58, 160))
+            qre.QubitizeTHC(qre.CDFHamiltonian(58, 160))
 
         with pytest.raises(
             TypeError, match="Unsupported Hamiltonian representation for QubitizeTHC."
         ):
-            qre.QubitizeTHC.resource_rep(qre.CompactHamiltonian.cdf(58, 160))
+            qre.QubitizeTHC.resource_rep(qre.CDFHamiltonian(58, 160))
