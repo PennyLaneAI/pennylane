@@ -22,7 +22,7 @@ from .stablehlo import StableHLO
 from .transform import Transform
 
 
-def get_all_dialects():
+def get_universe_dialects():
     return {
         "catalyst": Catalyst,
         "mbqc": MBQC,

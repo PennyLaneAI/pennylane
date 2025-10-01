@@ -36,7 +36,7 @@ from .quantum import (
 )
 
 
-def get_all_passes():
+def get_universe_passes():
     return {
         "combine-global-phases": CombineGlobalPhasesPass,
         "convert-to-mbqc-formalism": ConvertToMBQCFormalismPass,

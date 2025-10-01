@@ -20,10 +20,10 @@ from .parser import QuantumParser
 from .pass_api import compiler_transform
 from .visualization import QMLCollector
 
-from .dialects import get_all_dialects
-from .transforms import get_all_passes
+from .dialects import get_universe_dialects
+from .transforms import get_universe_passes
 
-XDSL_UNIVERSE = Universe(all_dialects=get_all_dialects(), all_passes=get_all_passes())
+XDSL_UNIVERSE = Universe(all_dialects=get_universe_dialects(), all_passes=get_universe_passes())
 
 
 __all__ = [
