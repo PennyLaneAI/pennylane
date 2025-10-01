@@ -69,6 +69,7 @@ from .ops.op_math import (
     Prod,
     ChangeOpBasis,
 )
+
 from .templates import (
     OutOfPlaceSquare,
     PhaseGradient,
@@ -89,4 +90,12 @@ from .templates import (
     TrotterVibrational,
     TrotterVibronic,
     CompactHamiltonian,
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
 )

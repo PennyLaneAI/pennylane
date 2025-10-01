@@ -61,6 +61,7 @@
     [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
   * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
+    [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
   * The ``CompactHamiltonian`` class was added to `qml.estimator.templates` as a compact representation for the Hamiltonian of a quantum system.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
   * The resource templates related to Trotter were added to `qml.estimator.templates`.
@@ -76,6 +77,10 @@
     ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
     ``IterativeQPE`` were added to `qml.estimator.templates`.
     [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
+  * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
+    ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
+    ``RegisterComparator`` were added to `qml.estimator.templates`.
+    [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -326,6 +331,10 @@
 
 
 <h3>Improvements 🛠</h3>
+
+* `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
+ of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
+ [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
 
 * Templates have been made compatible with `qml.capture`.
   [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
@@ -1139,6 +1148,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add CI workflow to test documentation using `sybil`. 
+  [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
