@@ -365,6 +365,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qrom/qrom_thumbnail.png
 
 .. gallery-item::
+    :description: :doc:`QRAM <../code/api/pennylane.QRAM>`
+    :figure: _static/templates/TODO
+
+.. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
     :figure: _static/templates/prepselprep/prepselprep.png
 
