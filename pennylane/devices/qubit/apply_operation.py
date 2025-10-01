@@ -356,24 +356,21 @@ def apply_mid_measure(
     wire = op.wires
     interface = qml.math.get_deep_interface(state)
 
-    if postselect_mode == "fill-shots" and op.postselect is not None:
-        sample = op.postselect
+    # Always sample physically from the state; do not force values for postselection here.
+    axis = wire.toarray()[0]
+    slices = [slice(None)] * qml.math.ndim(state)
+    slices[axis] = 0
+    prob0 = qml.math.real(qml.math.norm(state[tuple(slices)])) ** 2
+
+    if prng_key is not None:
+        # pylint: disable=import-outside-toplevel
+        from jax.random import binomial
+
+        def binomial_fn(n, p):
+            return binomial(prng_key, n, p).astype(int)
     else:
-        axis = wire.toarray()[0]
-        slices = [slice(None)] * qml.math.ndim(state)
-        slices[axis] = 0
-        prob0 = qml.math.real(qml.math.norm(state[tuple(slices)])) ** 2
-
-        if prng_key is not None:
-            # pylint: disable=import-outside-toplevel
-            from jax.random import binomial
-
-            def binomial_fn(n, p):
-                return binomial(prng_key, n, p).astype(int)
-
-        else:
-            binomial_fn = np.random.binomial if rng is None else rng.binomial
-        sample = binomial_fn(1, 1 - prob0)
+        binomial_fn = np.random.binomial if rng is None else rng.binomial
+    sample = binomial_fn(1, 1 - prob0)
     mid_measurements[op] = sample
 
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
