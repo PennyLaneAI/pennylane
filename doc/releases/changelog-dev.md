@@ -1360,7 +1360,7 @@
 
 <h3>Documentation 📝</h3>
 
-* The :doc:`installation page </doc/development/installation>` was updated to include currently supported Python versions and installation instructions.
+* The :doc:`installation page </development/installation>` was updated to include currently supported Python versions and installation instructions.
   [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
 
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
