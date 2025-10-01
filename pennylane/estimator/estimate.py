@@ -16,6 +16,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -361,9 +362,22 @@ def _get_decomposition(
         A tuple containing the decomposition function and its associated kwargs.
     """
     op_type = comp_res_op.op_type
-    # TODO: Restore logic to handle symbolic operators when symboli operators are merged.
 
-    kwargs = config.resource_op_precisions.get(op_type, {})
-    decomp_func = config.custom_decomps.get(op_type, op_type.resource_decomp)
+    _SYMBOLIC_DECOMP_MAP = {
+        Adjoint: "_adj_custom_decomps",
+        Controlled: "_ctrl_custom_decomps",
+        Pow: "_pow_custom_decomps",
+    }
+
+    lookup_op_type = op_type
+    custom_decomp_dict = config.custom_decomps
+
+    if op_type in _SYMBOLIC_DECOMP_MAP:
+        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
+        custom_decomp_dict = getattr(config, decomp_attr_name)
+        lookup_op_type = comp_res_op.params["base_cmpr_op"].op_type
+
+    kwargs = config.resource_op_precisions.get(lookup_op_type, {})
+    decomp_func = custom_decomp_dict.get(lookup_op_type, op_type.resource_decomp)
 
     return decomp_func, kwargs
