@@ -167,6 +167,11 @@ def get_transform_program(
 ) -> qml.transforms.core.TransformProgram:
     """Extract a transform program at a designated level.
 
+    .. warning::
+
+        Using ``level=None`` is deprecated and will be removed in a future release.
+        Please use ``level='device'`` to include all transforms.
+
     Args:
         qnode (QNode): the qnode to get the transform program for.
         level (None, str, int, slice): An indication of what transforms to use from the full program.
@@ -310,6 +315,11 @@ def construct_batch(
     level: Literal["top", "user", "device", "gradient"] | int | slice | None = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
+
+    .. warning::
+
+        Using ``level=None`` is deprecated and will be removed in a future release.
+        Please use ``level='device'`` to include all transforms.
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
