@@ -1401,6 +1401,9 @@
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
+* Fixed a syntax rendering issue in the :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` for the `max_workers` parameter.
+  [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
+
 <h3>Bug fixes 🐛</h3>
 
 * `default.qubit` now properly validates the `mcm_method`.
