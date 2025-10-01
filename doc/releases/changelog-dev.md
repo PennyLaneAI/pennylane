@@ -708,6 +708,15 @@
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
+* The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
+  [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
+
+* The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
+  StableHLO dialect with missing upstream operations.
+  [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+  [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  [(#8113)](https://github.com/PennyLaneAI/pennylane/pull/8113)
+
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
 
@@ -856,15 +865,6 @@
 
 * New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
   [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
-
-* The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
-  [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
-
-* The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
-  StableHLO dialect with missing upstream operations.
-  [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
-  [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
-  [(#8113)](https://github.com/PennyLaneAI/pennylane/pull/8113)
 
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
