@@ -67,6 +67,8 @@
   * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
     `qml.estimator.ops.op_math`.
     [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
+  * Updated documentation and examples for the :mod:`~.estimator` module.
+    [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -1436,7 +1438,8 @@ David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
-Pablo Antonio Moreno Casares
+Pablo Antonio Moreno Casares,
+Anton Naim Ibrahim,
 Erick Ochoa,
 Lee James O'Riordan,
 Mudit Pandey,
