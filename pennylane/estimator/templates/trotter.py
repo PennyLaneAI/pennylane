@@ -111,15 +111,17 @@ class TrotterProduct(ResourceOperator):
     >>> res = qre.estimate(qre.TrotterProduct(first_order_expansion, num_steps, order), gate_set=gate_set)
     >>> print(res)
     --- Resources: ---
-     Total qubits: 1
+     Total wires: 1
+        algorithmic wires: 1
+        allocated wires: 0
+             zero state: 0
+             any state: 0
      Total gates : 3
-     Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-     Gate breakdown:
-      {'RX': 2, 'RY': 1}
+      'RX': 2,
+      'RY': 1
     """
 
-    resource_keys = {"first_order_expansion", "num_steps", "order"}
+    resource_keys = {"first_order_expansion", "num_steps", "order", "num_wires"}
 
     def __init__(
         self,
@@ -171,11 +173,13 @@ class TrotterProduct(ResourceOperator):
                   in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+                * num_wires (int): number of wires the operator acts on
         """
         return {
             "first_order_expansion": self.first_order_expansion,
             "num_steps": self.num_steps,
             "order": self.order,
+            "num_wires": self.num_wires,
         }
 
     @classmethod
@@ -184,6 +188,7 @@ class TrotterProduct(ResourceOperator):
         first_order_expansion: list,
         num_steps: int,
         order: int,
+        num_wires: int,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -194,6 +199,7 @@ class TrotterProduct(ResourceOperator):
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the Suzuki-Trotter approximation, must be 1 or even
+            num_wires (int): number of wires the operator acts on
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -202,12 +208,17 @@ class TrotterProduct(ResourceOperator):
             "first_order_expansion": first_order_expansion,
             "num_steps": num_steps,
             "order": order,
+            "num_wires": num_wires,
         }
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
-        cls, first_order_expansion: list, num_steps: int, order: int
+        cls,
+        first_order_expansion: list,
+        num_steps: int,
+        order: int,
+        num_wires: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -311,15 +322,20 @@ class TrotterCDF(ResourceOperator):
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = qre.CompactHamiltonian.cdf(num_orbitals = 4, num_fragments = 4)
-    >>> res = qre.estimate(TrotterCDF(compact_ham, num_steps, order))
+    >>> res = qre.estimate(qre.TrotterCDF(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total qubits: 8
+     Total wires: 8
+        algorithmic wires: 8
+        allocated wires: 0
+             zero state: 0
+             any state: 0
      Total gates : 2.238E+4
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 8
-     Gate breakdown:
-      {'T': 2.075E+4, 'S': 504.0, 'Z': 336.0, 'Hadamard': 336.0, 'CNOT': 448.0}
+      'T': 2.075E+4,
+      'CNOT': 448,
+      'Z': 336,
+      'S': 504,
+      'Hadamard': 336
     """
 
     resource_keys = {"compact_ham", "num_steps", "order"}
@@ -599,15 +615,20 @@ class TrotterTHC(ResourceOperator):
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
     >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
-    >>> res = qre.estimate(TrotterTHC(compact_ham, num_steps, order))
+    >>> res = qre.estimate(qre.TrotterTHC(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total qubits: 8
+     Total wires: 8
+        algorithmic wires: 8
+        allocated wires: 0
+             zero state: 0
+             any state: 0
      Total gates : 8.520E+3
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 8
-     Gate breakdown:
-      {'T': 7.888E+3, 'S': 216.0, 'Z': 144.0, 'Hadamard': 144.0, 'CNOT': 128.0}
+      'T': 7.888E+3,
+      'CNOT': 128,
+      'Z': 144,
+      'S': 216,
+      'Hadamard': 144
     """
 
     resource_keys = {"compact_ham", "num_steps", "order"}
@@ -892,17 +913,23 @@ class TrotterVibrational(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> compact_ham = qre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
-    >>> num_steps = 10
-    >>> order = 2
+    >>> num_steps, order = (10, 2)
     >>> res = qre.estimate(qre.TrotterVibrational(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total qubits: 83.0
-     Total gates : 1.238E+5
-     Qubit breakdown:
-      zeroed qubits: 75.0, any_state qubits: 0.0, algorithmic qubits: 8
-     Gate breakdown:
-      {'Z': 1, 'S': 1, 'T': 749.0, 'X': 1.216E+3, 'Toffoli': 2.248E+4, 'CNOT': 3.520E+4, 'Hadamard': 6.422E+4}
+     Total wires: 83
+        algorithmic wires: 8
+        allocated wires: 75
+             zero state: 75
+             any state: 0
+     Total gates : 1.239E+5
+      'Toffoli': 2.248E+4,
+      'T': 749,
+      'CNOT': 3.520E+4,
+      'X': 1.216E+3,
+      'Z': 1,
+      'S': 1,
+      'Hadamard': 6.422E+4
     """
 
     resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
@@ -912,8 +939,8 @@ class TrotterVibrational(ResourceOperator):
         compact_ham: CompactHamiltonian,
         num_steps: int,
         order: int,
-        phase_grad_precision=1e-6,
-        coeff_precision=1e-3,
+        phase_grad_precision: float | None = None,
+        coeff_precision: float | None = None,
         wires: WiresLike | None = None,
     ):
 
@@ -965,8 +992,8 @@ class TrotterVibrational(ResourceOperator):
         compact_ham: CompactHamiltonian,
         num_steps: int,
         order: int,
-        phase_grad_precision=1e-6,
-        coeff_precision=1e-3,
+        phase_grad_precision: float | None = None,
+        coeff_precision: float | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -1000,7 +1027,7 @@ class TrotterVibrational(ResourceOperator):
         while caching the coefficients."""
 
         cur_path, len_path = tuple(path), len(path)
-        coeff_wires = abs(np.floor(np.log2(coeff_precision)))
+        coeff_wires = int(abs(np.floor(np.log2(coeff_precision))))
         gate_cache = []
 
         x = X.resource_rep()
@@ -1032,7 +1059,7 @@ class TrotterVibrational(ResourceOperator):
 
             # Add the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            gate_cache.append(GateCount(x, coeff_wires / 2))
+            gate_cache.append(GateCount(x, int(coeff_wires / 2)))
 
             # Add the Multiplier for current coefficient
             multiplier = OutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
@@ -1076,7 +1103,7 @@ class TrotterVibrational(ResourceOperator):
         # Shifted QFT for kinetic part
 
         t = T.resource_rep()
-        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
@@ -1114,7 +1141,7 @@ class TrotterVibrational(ResourceOperator):
                 )
 
         # Shifted QFT Adjoint
-        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
 
         return gate_lst
 
@@ -1124,8 +1151,8 @@ class TrotterVibrational(ResourceOperator):
         compact_ham: CompactHamiltonian,
         num_steps: int,
         order: int,
-        phase_grad_precision: float,
-        coeff_precision: float,
+        phase_grad_precision: float | None = None,
+        coeff_precision: float | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1152,8 +1179,8 @@ class TrotterVibrational(ResourceOperator):
         grid_size = compact_ham.params["grid_size"]
         taylor_degree = compact_ham.params["taylor_degree"]
 
-        phase_grad_wires = abs(np.floor(np.log2(phase_grad_precision)))
-        coeff_wires = abs(np.floor(np.log2(coeff_precision)))
+        phase_grad_wires = int(abs(np.floor(np.log2(phase_grad_precision))))
+        coeff_wires = int(abs(np.floor(np.log2(coeff_precision))))
 
         x = X.resource_rep()
 
@@ -1256,17 +1283,23 @@ class TrotterVibronic(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> compact_ham = qre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
-    >>> num_steps = 10
-    >>> order = 2
+    >>> num_steps, order = (10, 2)
     >>> res = qre.estimate(qre.TrotterVibronic(compact_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total qubits: 85.0
+     Total wires: 85
+        algorithmic wires: 10
+        allocated wires: 75
+             zero state: 75
+             any state: 0
      Total gates : 1.332E+5
-     Qubit breakdown:
-      zeroed qubits: 75.0, any_state qubits: 0.0, algorithmic qubits: 10
-     Gate breakdown:
-      {'Z': 1, 'S': 1, 'T': 749.0, 'X': 1.456E+3, 'Hadamard': 6.638E+4, 'Toffoli': 2.320E+4, 'CNOT': 4.144E+4}
+      'Toffoli': 2.320E+4,
+      'T': 749,
+      'CNOT': 4.144E+4,
+      'X': 1.456E+3,
+      'Z': 1,
+      'S': 1,
+      'Hadamard': 6.638E+4
     """
 
     resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
@@ -1276,8 +1309,8 @@ class TrotterVibronic(ResourceOperator):
         compact_ham: CompactHamiltonian,
         num_steps: int,
         order: int,
-        phase_grad_precision=1e-6,
-        coeff_precision=1e-3,
+        phase_grad_precision: float | None = None,
+        coeff_precision: float | None = None,
         wires: WiresLike | None = None,
     ):
 
@@ -1332,8 +1365,8 @@ class TrotterVibronic(ResourceOperator):
         compact_ham: CompactHamiltonian,
         num_steps: int,
         order: int,
-        phase_grad_precision: float = 1e-6,
-        coeff_precision: float = 1e-3,
+        phase_grad_precision: float | None = None,
+        coeff_precision: float | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -1371,7 +1404,7 @@ class TrotterVibronic(ResourceOperator):
         while caching the coefficients."""
 
         cur_path, len_path = tuple(path), len(path)
-        coeff_wires = abs(int(np.floor(np.log2(coeff_precision))))
+        coeff_wires = int(abs(int(np.floor(np.log2(coeff_precision)))))
         gate_cache = []
 
         if 1 < len_path <= taylor_degree and cur_path not in cached_tree[len_path]:
@@ -1460,7 +1493,7 @@ class TrotterVibronic(ResourceOperator):
         gate_lst = []
         # Shifted QFT for kinetic part
         t = T.resource_rep()
-        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
@@ -1510,7 +1543,7 @@ class TrotterVibronic(ResourceOperator):
                 )
 
         # Shifted QFT Adjoint
-        gate_lst.append(GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
+        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
 
         return gate_lst
 
@@ -1520,8 +1553,8 @@ class TrotterVibronic(ResourceOperator):
         compact_ham: CompactHamiltonian,
         num_steps: int,
         order: int,
-        phase_grad_precision,
-        coeff_precision,
+        phase_grad_precision: float | None,
+        coeff_precision: float | None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -1549,8 +1582,8 @@ class TrotterVibronic(ResourceOperator):
         grid_size = compact_ham.params["grid_size"]
         taylor_degree = compact_ham.params["taylor_degree"]
 
-        phase_grad_wires = abs(np.floor(np.log2(phase_grad_precision)))
-        coeff_wires = abs(np.floor(np.log2(coeff_precision)))
+        phase_grad_wires = int(abs(np.floor(np.log2(phase_grad_precision))))
+        coeff_wires = int(abs(np.floor(np.log2(coeff_precision))))
 
         x = X.resource_rep()
 
