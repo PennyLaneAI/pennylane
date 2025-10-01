@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Resource operators for state preparation templates."""
 import math
-from typing import Dict
 
 import pennylane.estimator as qre
 import pennylane.numpy as np

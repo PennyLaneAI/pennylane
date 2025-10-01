@@ -158,7 +158,6 @@ class TwoQubitComparator(ResourceOperator):
              y0 : ─╰●─│─────╰SWAP─╰●─┤
             |1> : ────╰SWAP──────────┤
 
-
         Note that this operation provides an alternate decomposition using ``TemporaryAND``. See
         the ``TemporaryAND_based_decomp`` method for more details.
 
@@ -265,7 +264,6 @@ class TwoQubitComparator(ResourceOperator):
                x0: ─╭X─╭X────├●────╭X─│─────│──│──╭X─┤
                y0: ─╰●─│─────│─────│──╰●────╰X─╰●─╰●─┤
               |1>: ────╰●──X─╰───X─╰●────────────────┤
-
         """
         gate_list = []
 
