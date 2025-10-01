@@ -63,7 +63,7 @@ using development mode:
 
     git clone https://github.com/PennyLaneAI/pennylane
     cd pennylane
-    pip install -e .
+    python -m pip install -e .
 
 The ``-e`` flag ensures that edits to the source code will be reflected when
 importing PennyLane in Python.
@@ -82,4 +82,4 @@ pre-commit quality checks. Those can be installed easily via ``pip``:
 
 .. code-block:: bash
 
-    pip install -r requirements-dev.txt
+    python -m pip install -r requirements-dev.txt
