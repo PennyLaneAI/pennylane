@@ -249,11 +249,15 @@
 <h4>Change op basis 🍴</h4>
 
 * A new :func:`~.ops.op_math.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
-  which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
+  which allow a compute-uncompute pattern (``U V U†``) to be represented by a single operator.
   A corresponding decomposition rule has been added to support efficiently controlling the pattern,
-  in which only the central (target) operator is controlled, and not U or U†.
+  in which only the central (target) operator is controlled, and not ``U`` or ``U†``.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
+
+* The decompositions for several templates have been updated to use ``ChangeOpBasis``, including:
+  :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
+  [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
 
 <h4>Quantum optimizers compatible with QJIT 🫖</h4>
 
@@ -324,10 +328,6 @@
 
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
-
-* The decompositions for several templates have also been updated to use this pattern, including:
-  :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
-  [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
 
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
