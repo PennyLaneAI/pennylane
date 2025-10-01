@@ -14,7 +14,6 @@
 """Tests for default qubit."""
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
-from multiprocessing import set_start_method
 from unittest import mock
 
 import numpy as np
@@ -23,8 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.exceptions import DeviceError
-
-set_start_method("spawn")
 
 max_workers_list = [
     None,

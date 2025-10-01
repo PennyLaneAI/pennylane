@@ -511,7 +511,6 @@ class GlobalPhaseOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(QubitType)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,

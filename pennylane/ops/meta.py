@@ -228,9 +228,10 @@ class Snapshot(Operation):
         measurement=None,
         shots: Literal["workflow"] | None | int | Sequence[int] = "workflow",
     ):
-        if tag and not isinstance(tag, str):
+        if tag is not None and not isinstance(tag, (str, int)):
+            # ints are validated in snapshot transform, as the snapshot
+            # transform adds int tags
             raise ValueError("Snapshot tags can only be of type 'str'")
-        self.tag = tag
 
         if measurement is None:
             measurement = qml.state()
@@ -246,11 +247,26 @@ class Snapshot(Operation):
                 f"an instance of {qml.measurements.MeasurementProcess}"
             )
 
+        self.hyperparameters["tag"] = tag
         self.hyperparameters["measurement"] = measurement
         self.hyperparameters["shots"] = (
             shots if shots == "workflow" else qml.measurements.Shots(shots)
         )
         super().__init__(wires=measurement.wires)
+
+    def __repr__(self):
+        return f"<Snapshot: tag={self.tag}, measurement={self.hyperparameters['measurement']}, shots={self.hyperparameters['shots']}>"
+
+    @property
+    def tag(self) -> None | str | int:
+        """The tag for the snapshot."""
+        return self.hyperparameters["tag"]
+
+    def update_tag(self, new_tag: int | None | str):
+        """Create a new snapshot with an updated tag."""
+        new_op = copy(self)
+        new_op.hyperparameters["tag"] = new_tag
+        return new_op
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
@@ -262,16 +278,15 @@ class Snapshot(Operation):
     def _unflatten(cls, data, metadata):
         return cls(tag=metadata[0], measurement=data[0], shots=metadata[1])
 
-    # pylint: disable=W0613
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []
 
     def _controlled(self, _):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def adjoint(self):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Snapshot":
         new_measurement = self.hyperparameters["measurement"].map_wires(wire_map)

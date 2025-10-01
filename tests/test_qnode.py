@@ -49,7 +49,9 @@ def test_add_transform_deprecation():
         match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44",
     ):
         circuit.add_transform(
-            qml.transforms.core.TransformContainer(qml.gradients.param_shift.expand_transform)
+            qml.transforms.core.TransformContainer(
+                qml.transform(qml.gradients.param_shift.expand_transform)
+            )
         )
 
 
@@ -1877,7 +1879,7 @@ class TestMCMConfiguration:
     def test_single_branch_statistics_error_without_qjit(self):
         """Test that an error is raised if attempting to use mcm_method="single-branch-statistics
         without qml.qjit"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("reference.qubit", wires=1)
 
         @qml.qnode(dev, mcm_method="single-branch-statistics")
         def circuit(x):

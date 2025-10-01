@@ -92,7 +92,7 @@ class BroadcastInDimOp(IRDLOperation):
         assert isinstance(o_type, TensorType) and isinstance(r_type, TensorType)
 
         # broadcast_in_dim_c2: broadcast_dimensions size == operand rank
-        dims = tuple(self.broadcast_dimensions.get_values())  # pylint: disable=no-member
+        dims = tuple(self.broadcast_dimensions.get_values())
         operand_rank = o_type.get_num_dims()
         if len(dims) != operand_rank:
             raise VerifyException(

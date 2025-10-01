@@ -35,7 +35,7 @@ from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
-from .temporary_and import TemporaryAND
+from .arithmetic import TemporaryAND
 
 
 def _partial_select(K, control):
@@ -362,15 +362,16 @@ class Select(Operation):
         }
 
     def _flatten(self):
-        return (self.ops), (
+        return tuple(self.ops), (
             self.control,
             self.work_wires,
             self.partial,
         )
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, ops, control, **kwargs):
+        return super()._primitive_bind_call(*ops, wires=control, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
@@ -579,7 +580,6 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial, num_wor
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 @register_resources(_select_resources_multi_control)
 def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
 
@@ -1087,3 +1087,99 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
 
 
 add_decomps(Select, _select_decomp_unary)
+
+
+# Decomposition of Select using one work wire to control the target operations
+
+
+def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_work_wires, partial):
+    resources = defaultdict(int)
+
+    if partial:
+        if len(op_reps) == 1:
+            resources[_multi_controlled_rep(op_reps[0], 1, [1], num_work_wires - 1)] += 1
+            resources[
+                _multi_controlled_rep(
+                    resource_rep(X), num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                )
+            ] += 2
+        else:
+            # Use dummy control values, we will only care about the length of the outputs
+            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
+            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
+                resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
+                resources[
+                    _multi_controlled_rep(
+                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
+                    )
+                ] += 2
+    else:
+        state_iterator = product([0, 1], repeat=num_control_wires)
+
+        for state, rep in zip(state_iterator, op_reps):
+
+            resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
+            resources[
+                _multi_controlled_rep(resource_rep(X), num_control_wires, state, num_work_wires - 1)
+            ] += 2
+    return dict(resources)
+
+
+# pylint: disable=unused-argument
+def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
+    return num_work_wires >= 1
+
+
+@register_condition(_work_wire_condition)
+@register_resources(_select_multi_control_work_wire_resources)
+def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
+    """
+    Multi-controlled gate decomposition, in which, instead of directly controlling the target operator with all control
+    wires, an auxiliary qubit is employed to encode whether the control condition is satisfied. The target operator
+    is then applied as a single-qubit controlled gate from this auxiliary qubit.
+    An example of this decomposition can be found in Figure 1(a):  https://arxiv.org/abs/1812.00954
+    """
+
+    if len(ops) == 0:
+        return []
+
+    if partial:
+        if len(ops) == 1:
+            ctrl(
+                X(work_wires[:1]),
+                control,
+                control_values=[0] * len(control),
+                work_wires=work_wires[1:],
+            )
+            ctrl(ops[0], control=work_wires[:1], work_wires=work_wires[1:])
+            ctrl(
+                X(work_wires[:1]),
+                control,
+                control_values=[0] * len(control),
+                work_wires=work_wires[1:],
+            )
+            return []
+
+        ctrls_and_ctrl_states = _partial_select(len(ops), control)
+        for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
+            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+            ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
+            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+        return []
+
+    for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=False):
+        ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+        ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
+        ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+    return []
+
+
+add_decomps(Select, _select_decomp_multi_control_work_wire)
+
+# pylint: disable=protected-access
+if Select._primitive is not None:
+
+    @Select._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        ops, control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(Select, ops, control=control, **kwargs)

@@ -12,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""This module contains the ResourceConfig class, which tracks the configuration for resource estimation"""
-
 from __future__ import annotations
 
 from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
+
+from pennylane.estimator.ops import QubitUnitary
+from pennylane.estimator.templates import (
+    AliasSampling,
+    MPSPrep,
+    QROMStatePreparation,
+    SelectPauliRot,
+)
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -40,17 +47,43 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
-        self.resource_op_precisions = {}
+        self.resource_op_precisions = {
+            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
+            QubitUnitary: {"precision": _DEFAULT_PRECISION},
+            AliasSampling: {"precision": _DEFAULT_PRECISION},
+            MPSPrep: {"precision": _DEFAULT_PRECISION},
+            QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
+        }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
         self._ctrl_custom_decomps = {}
         self._pow_custom_decomps = {}
 
+    @property
+    def custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom base decompositions."""
+        return self._custom_decomps
+
+    @property
+    def adj_custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom adjoint decompositions."""
+        return self._adj_custom_decomps
+
+    @property
+    def ctrl_custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom controlled decompositions."""
+        return self._ctrl_custom_decomps
+
+    @property
+    def pow_custom_decomps(self) -> dict[type[ResourceOperator], Callable]:
+        """Returns the dictionary of custom power decompositions."""
+        return self._pow_custom_decomps
+
     def __str__(self) -> str:
-        decomps = [op.__name__ for op in self._custom_decomps]
-        adj_decomps = [f"Adjoint({op.__name__})" for op in self._adj_custom_decomps]
-        ctrl_decomps = [f"Controlled({op.__name__})" for op in self._ctrl_custom_decomps]
-        pow_decomps = [f"Pow({op.__name__})" for op in self._pow_custom_decomps]
+        decomps = [op.__name__ for op in self.custom_decomps]
+        adj_decomps = [f"Adjoint({op.__name__})" for op in self.adj_custom_decomps]
+        ctrl_decomps = [f"Controlled({op.__name__})" for op in self.ctrl_custom_decomps]
+        pow_decomps = [f"Pow({op.__name__})" for op in self.pow_custom_decomps]
 
         all_op_strings = decomps + adj_decomps + ctrl_decomps + pow_decomps
         op_names = ", ".join(all_op_strings)
@@ -68,7 +101,7 @@ class ResourceConfig:
         )
 
     def __repr__(self) -> str:
-        return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self._custom_decomps}, adj_custom_decomps = {self._adj_custom_decomps}, ctrl_custom_decomps = {self._ctrl_custom_decomps}, pow_custom_decomps = {self._pow_custom_decomps})"
+        return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self.custom_decomps}, adj_custom_decomps = {self.adj_custom_decomps}, ctrl_custom_decomps = {self.ctrl_custom_decomps}, pow_custom_decomps = {self.pow_custom_decomps})"
 
     def set_precision(self, op_type: type[ResourceOperator], precision: float) -> None:
         r"""Sets the precision for a given resource operator.
@@ -79,7 +112,7 @@ class ResourceConfig:
         configurable or uses bit-precisions. A negative precision will also raise an error.
 
         Args:
-            op_type (type[ResourceOperator]): the operator class for which
+            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision
             precision (float): The desired precision tolerance. A smaller
                 value corresponds to a higher precision compilation, which may
@@ -191,7 +224,7 @@ class ResourceConfig:
         """Sets a custom function to override the default resource decomposition.
 
         Args:
-            op_type (type[ResourceOperator]): the operator class whose decomposition is being overriden.
+            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
                 ``"adj"``, ``"pow"``, ``"ctrl"``,
