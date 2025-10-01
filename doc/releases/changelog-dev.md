@@ -306,6 +306,26 @@
 
 <h4>Resource-efficient decompositions</h4>
 
+* Several templates now have decompositions that can be accessed within the graph-based
+  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
+  that include these templates to be decomposed in a resource-efficient and performant
+  manner.
+  [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
+  [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
+  [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
+  [(#8075)](https://github.com/PennyLaneAI/pennylane/pull/8075)
+  [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
+
+  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`,
+  :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
+  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`,
+  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`,
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`,
+  :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, :class:`~.FABLE`,
+  :class:`~.Qubitization`, and :class:`~.Superposition`.
+
 * Two additions were made to :class:`~.Select` that affect how it gets decomposed:
 
   * A new keyword argument ``partial`` has been added to :class:`~.Select`. It allows for
@@ -363,26 +383,6 @@
   2: ─╰──╭●───╯─┤
   3: ────╰X─────┤  <Z>
   ```
-
-* Several templates now have decompositions that can be accessed within the graph-based
-  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
-  that include these templates to be decomposed in a resource-efficient and performant
-  manner.
-  [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
-  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
-  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
-  [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
-  [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
-  [(#8075)](https://github.com/PennyLaneAI/pennylane/pull/8075)
-  [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
-
-  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`,
-  :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
-  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`,
-  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`,
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`,
-  :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, :class:`~.FABLE`,
-  :class:`~.Qubitization`, and :class:`~.Superposition`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
