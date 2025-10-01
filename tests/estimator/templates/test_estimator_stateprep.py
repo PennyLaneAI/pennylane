@@ -1665,7 +1665,6 @@ class TestQROMStatePrep:
 
         assert actual_resources == expected_res
 
-
 class TestPrepTHC:
     """Test the PrepTHC class."""
 

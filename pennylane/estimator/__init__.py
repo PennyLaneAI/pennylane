@@ -102,4 +102,12 @@ from .templates import (
     TrotterVibrational,
     TrotterVibronic,
     CompactHamiltonian,
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
 )
