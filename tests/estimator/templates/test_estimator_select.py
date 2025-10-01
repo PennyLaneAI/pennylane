@@ -100,6 +100,50 @@ class TestSelectTHC:
         assert select_cost.zeroed + select_cost.any_state == expected_res["auxiliary_wires"]
         assert select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
+    # We are comparing the Toffoli and qubit cost here
+    # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
+    # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
+    @pytest.mark.parametrize(
+        "compact_ham, rotation_prec, selswap_depth, expected_res",
+        (
+            (
+                qre.CompactHamiltonian.thc(58, 160),
+                13,
+                1,
+                {"algo_wires": 139, "auxiliary_wires": 752, "toffoli_gates": 5998},
+            ),
+            (
+                qre.CompactHamiltonian.thc(10, 50),
+                None,
+                None,
+                {"algo_wires": 39, "auxiliary_wires": 163, "toffoli_gates": 1140},
+            ),
+            (
+                qre.CompactHamiltonian.thc(4, 20),
+                None,
+                2,
+                {"algo_wires": 25, "auxiliary_wires": 73, "toffoli_gates": 426},
+            ),
+        ),
+    )
+    def test_controlled_resources(self, compact_ham, rotation_prec, selswap_depth, expected_res):
+        """Test that the controlled resource decompostion for SelectTHC is correct."""
+
+        ctrl_select_cost = qre.estimate(
+            qre.Controlled(
+                num_ctrl_wires=1,
+                num_zero_ctrl=0,
+                base_op=qre.SelectTHC(
+                    compact_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
+                ),
+            )
+        )
+        assert ctrl_select_cost.algo_wires == expected_res["algo_wires"]
+        assert (
+            ctrl_select_cost.zeroed + ctrl_select_cost.any_state == expected_res["auxiliary_wires"]
+        )
+        assert ctrl_select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+
     def test_incompatible_hamiltonian(self):
         """Test that an error is raised for incompatible Hamiltonians."""
         with pytest.raises(

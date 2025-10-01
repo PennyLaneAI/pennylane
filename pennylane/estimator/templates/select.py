@@ -357,8 +357,10 @@ class SelectTHC(ResourceOperator):
         cswap = resource_rep(qre.CSWAP)
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
-        # QROM for loading rotation angles for 2-body integrals
+        # Data output for rotations
         gate_list.append(Allocate(rotation_precision * (num_orb - 1)))
+
+        # QROM for loading rotation angles for 2-body integrals
         qrom_twobody = resource_rep(
             qre.QROM,
             {
@@ -376,7 +378,7 @@ class SelectTHC(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(
                     qre.SemiAdder,
-                    {"max_register_size": rotation_precision},
+                    {"max_register_size": rotation_precision - 1},
                 ),
                 "num_ctrl_wires": 1,
                 "num_zero_ctrl": 0,
