@@ -27,7 +27,6 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     grad_prim,
-    jacobian_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -384,7 +383,8 @@ class TestHigherOrderPrimitiveIntegration:
 
         jaxpr = jax.make_jaxpr(f)(1.0, 2.0, 3.0)
 
-        assert jaxpr.eqns[0].primitive == jacobian_prim
+        assert jaxpr.eqns[0].primitive == grad_prim
+        assert not jaxpr.eqns[0].params["scalar_out"]
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]

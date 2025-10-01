@@ -289,7 +289,15 @@ class TestCaptureCircuitsWhileLoop:
 
         grad_eqn = jaxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h", "fn"}
+        assert set(grad_eqn.params.keys()) == {
+            "argnum",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
         assert grad_eqn.params["argnum"] == [0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation

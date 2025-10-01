@@ -27,7 +27,6 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     grad_prim,
-    jacobian_prim,
     measure_prim,
     qnode_prim,
 )
@@ -186,11 +185,6 @@ def _(self, *invals, jaxpr, n_consts, **params):
 
 
 # pylint: disable=unused-argument
-@CollectOpsandMeas.register_primitive(jacobian_prim)
-def _(self, *invals, jaxpr, n_consts, **params):
-    raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
-
-
 @CollectOpsandMeas.register_primitive(qnode_prim)
 def _(
     self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
