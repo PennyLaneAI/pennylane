@@ -180,7 +180,7 @@ def get_transform_program(
             - ``"top"``: Ignores transformations and returns the original tape as defined.
             - ``"user"``: Includes transformations that are manually applied by the user.
             - ``"gradient"``: Extracts the gradient-level tape.
-            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program.
+            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
             - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
 
         gradient_fn (None, str, TransformDispatcher): The processed gradient fn for the workflow.
