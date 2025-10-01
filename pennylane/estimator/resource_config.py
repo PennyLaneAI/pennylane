@@ -71,14 +71,14 @@ class ResourceConfig:
             QubitizeTHC: {
                 "coeff_precision": _DEFAULT_BIT_PRECISION,
                 "rotation_precision": _DEFAULT_BIT_PRECISION,
-                TrotterVibronic: {
-                    "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
-                    "coeff_precision": 1e-3,
-                },
-                TrotterVibrational: {
-                    "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
-                    "coeff_precision": 1e-3,
-                },
+            },
+            TrotterVibronic: {
+                "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
+                "coeff_precision": 1e-3,
+            },
+            TrotterVibrational: {
+                "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
+                "coeff_precision": 1e-3,
             },
         }
         self._custom_decomps = {}
