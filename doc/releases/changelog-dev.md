@@ -51,7 +51,6 @@
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
     [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
     [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
-
   * The test files were renamed to avoid the dual definition error with labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
