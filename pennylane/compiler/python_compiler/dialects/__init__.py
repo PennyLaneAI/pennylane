@@ -22,4 +22,15 @@ from .stablehlo import StableHLO
 from .transform import Transform
 
 
+def get_all_dialects():
+    return {
+        "catalyst": Catalyst,
+        "mbqc": MBQC,
+        "quantum": Quantum,
+        "qec": QEC,
+        # "stablehlo": StableHLO,
+        # "transform": Transform,
+    }
+
+
 __all__ = ["Catalyst", "MBQC", "Quantum", "QEC", "StableHLO", "Transform"]

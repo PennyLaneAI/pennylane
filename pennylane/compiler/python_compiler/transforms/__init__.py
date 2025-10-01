@@ -36,6 +36,19 @@ from .quantum import (
 )
 
 
+def get_all_passes():
+    return {
+        "combine-global-phases": CombineGlobalPhasesPass,
+        "convert-to-mbqc-formalism": ConvertToMBQCFormalismPass,
+        "decompose-graph-state": DecomposeGraphStatePass,
+        "diagonalize-final-measurements": DiagonalizeFinalMeasurementsPass,
+        "xdsl-cancel-inverses": IterativeCancelInversesPass,
+        "measurements-from-samples": MeasurementsFromSamplesPass,
+        "xdsl-merge-rotations": MergeRotationsPass,
+        "null-decompose-graph-state": NullDecomposeGraphStatePass,
+    }
+
+
 __all__ = [
     # Quantum
     "combine_global_phases_pass",
