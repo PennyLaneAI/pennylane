@@ -18,7 +18,9 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
 from pennylane.estimator.ops import CRX, CRY, CRZ, RX, RY, RZ, QubitUnitary
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
@@ -51,6 +53,12 @@ class ResourceConfig:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
         self.resource_op_precisions = {
+            RX: {"precision": _DEFAULT_PRECISION},
+            RY: {"precision": _DEFAULT_PRECISION},
+            RZ: {"precision": _DEFAULT_PRECISION},
+            CRX: {"precision": _DEFAULT_PRECISION},
+            CRY: {"precision": _DEFAULT_PRECISION},
+            CRZ: {"precision": _DEFAULT_PRECISION},
             RX: {"precision": _DEFAULT_PRECISION},
             RY: {"precision": _DEFAULT_PRECISION},
             RZ: {"precision": _DEFAULT_PRECISION},

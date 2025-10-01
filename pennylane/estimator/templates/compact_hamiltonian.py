@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains class to represent different Hamiltonians.
+Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
 
 from typing import Any
@@ -24,7 +24,7 @@ class CompactHamiltonian:
     Args:
         method_name (str): The name of the method used to construct the Hamiltonian.
             The available methods are cdf, thc, vibrational, and vibronic.
-        **params (Any): Keyword arguments specific to the chosen construction method,
+        **params (Any): Keyword arguments specific to the chosen construction method:
 
             - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
             - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
@@ -39,19 +39,23 @@ class CompactHamiltonian:
 
     The resources for trotterization of THC Hamiltonian can be extracted as:
 
-    >>> import pennylane.labs.resource_estimation as plre
-    >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=8, tensor_rank=40)
-    >>> trotter_thc = plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
-    >>> res = plre.estimate(trotter_thc)
+    >>> import pennylane.estimator as qre
+    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=8, tensor_rank=40)
+    >>> trotter_thc = qre.TrotterTHC(compact_ham, num_steps=100, order=2)
+    >>> res = qre.estimate(trotter_thc)
     >>> print(res)
     --- Resources: ---
-     Total qubits: 80
+     Total wires: 80
+        algorithmic wires: 80
+        allocated wires: 0
+            zero state: 0
+            any state: 0
      Total gates : 3.960E+7
-     Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 80
-     Gate breakdown:
-      {'T': 3.638E+7, 'S': 9.699E+5, 'Z': 6.466E+5, 'Hadamard': 6.466E+5, 'CNOT': 9.553E+5}
-
+      'T': 3.638E+7,
+      'CNOT': 9.553E+5,
+      'Z': 6.466E+5,
+      'S': 9.699E+5,
+      'Hadamard': 6.466E+5
     """
 
     def __init__(self, method_name: str, **params: dict[str, Any]):

@@ -96,4 +96,10 @@ from .templates import (
     QubitizeTHC,
     SelectTHC,
     CompactHamiltonian,
+    TrotterCDF,
+    TrotterProduct,
+    TrotterTHC,
+    TrotterVibrational,
+    TrotterVibronic,
+    CompactHamiltonian,
 )
