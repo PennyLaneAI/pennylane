@@ -4,9 +4,7 @@ Installation and dependencies
 Dependencies
 ------------
 
-PennyLane requires the following libraries be installed:
-
-* `Python <http://python.org/>`_ >= 3.11
+PennyLane requires `Python <http://python.org/>`_ >= 3.11 to be installed.
 
 After installing Python, we recommend using any virtual environment manager to install and manage
 dependencies. See the `Python documentation <https://docs.python.org/3/tutorial/venv.html>`_
