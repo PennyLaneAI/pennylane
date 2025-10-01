@@ -328,6 +328,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
+ of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
+ [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
+
+* Templates have been made compatible with `qml.capture`.
+  [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
+
 * :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
   [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
 
@@ -1137,6 +1144,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add CI workflow to test documentation using `sybil`. 
+  [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)

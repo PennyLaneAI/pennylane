@@ -19,11 +19,7 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.templates.stateprep import (
-    AliasSampling,
-    MPSPrep,
-    QROMStatePreparation,
-)
+from pennylane.estimator.templates.stateprep import AliasSampling, MPSPrep, QROMStatePreparation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 
 # pylint: disable=no-self-use,too-many-arguments
@@ -31,6 +27,11 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 
 class TestUniformStatePrep:
     """Test the ResourceUniformStatePrep class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            qre.UniformStatePrep(num_states=4, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "num_states",
@@ -118,6 +119,11 @@ class TestUniformStatePrep:
 
 class TestAliasSampling:
     """Test the ResourceAliasSampling class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
+            qre.AliasSampling(num_coeffs=10, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "num_coeffs, precision",
@@ -229,6 +235,11 @@ class TestAliasSampling:
 
 class TestMPSPrep:
     """Tests for the ResourceMPSPrep template"""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 10 wires, got 3"):
+            qre.MPSPrep(num_mps_matrices=10, max_bond_dim=2, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "num_mps, bond_dim, precision",
@@ -370,7 +381,10 @@ class TestMPSPrep:
 class TestQROMStatePrep:
     """Tests for the ResourceQROMStateprep template"""
 
-    # {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 10 wires, got 3"):
+            qre.QROMStatePreparation(num_state_qubits=10, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "num_state_qubits, precision, positive_and_real, selswap_depths",
