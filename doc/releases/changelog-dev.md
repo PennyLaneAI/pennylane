@@ -302,20 +302,25 @@
 
 <h4>Resource-efficient decompositions</h4>
 
-* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for
-  simplifications in the decomposition of ``Select`` under the assumption that the state of the
-  control wires has no overlap with computational basis states that are not used by ``Select``.
+* Two additions were made to :class:`~.Select` that affect how it gets decomposed:
+
+  * A new keyword argument ``partial`` has been added to :class:`~.Select`. It allows for
+    simplifications in the decomposition of ``Select`` under the assumption that the state of the
+    control wires has no overlap with computational basis states that are not used by ``Select``.
+
+  * A new decomposition has been added to :class:`~.Select`. It achieves cost reductions by adding
+    one `work_wire`. This decomposition is useful to perform efficient :class:`~.QROM` decompositions.
+
+  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
   [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
+  [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
+
 
 * The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
   with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
   no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
-
-* A new decomposition has been added to :class:`qml.Select`. It achieves cost reductions by adding
-  one `work_wire`. This decomposition is useful to perform efficient `qml.QROM` decompositions.
-  [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
 
 * :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
