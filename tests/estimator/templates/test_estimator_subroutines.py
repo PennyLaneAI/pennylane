@@ -1636,11 +1636,13 @@ class TestResourceQROM:
             qre.QROM.controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
                 num_zero_ctrl=num_zero_ctrl,
-                num_bitstrings=num_data_points,
-                size_bitstring=size_data_points,
-                num_bit_flips=num_bit_flips,
-                restored=restored,
-                select_swap_depth=depth,
+                target_resource_params={
+                    "num_bitstrings": num_data_points,
+                    "size_bitstring": size_data_points,
+                    "num_bit_flips": num_bit_flips,
+                    "restored": restored,
+                    "select_swap_depth": depth,
+                },
             )
             == expected_res
         )
