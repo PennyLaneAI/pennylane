@@ -745,9 +745,28 @@
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
   [(#8059)](https://github.com/PennyLaneAI/pennylane/pull/8059)
 
+
+* Migrated `setup.py` package build and install to `pyproject.toml`
+  [(#7375)](https://github.com/PennyLaneAI/pennylane/pull/7375)
+
+* Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
+ [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
+
+* Updated `qml.equal` dispatch for `MeasurementProcess` to return informative string messages when observables are not equal.
+ [(#7421)](https://github.com/PennyLaneAI/pennylane/pull/7421)
+
+* Updated requirements and pyproject files to include the other package.  
+  [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
+
+* Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
+
+* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
+  default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
+  [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
+  
 * The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
   Python compiler.
-  [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
+  [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/791
 
 * The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
