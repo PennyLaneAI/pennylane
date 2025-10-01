@@ -298,7 +298,7 @@ class TestConvertToMBQCFormalismPass:
     def test_cnot_gate(self, run_filecheck):
         """Test for lowering a CNOT gate to a MBQC formalism."""
         program = """
-            func.func @test_func(%arg0 : f64) {
+            func.func @test_func() {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 // CHECK-NEXT: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
