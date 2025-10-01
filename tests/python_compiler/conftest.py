@@ -42,7 +42,7 @@ def _run_filecheck_impl(program_str, pipeline=(), verify=False, roundtrip=False)
     if not deps_available:
         return
 
-    ctx = Context(allow_unregistered=True)
+    ctx = Context(allow_unregistered=False)
     xdsl_module = QuantumParser(ctx, program_str, extra_dialects=(test.Test,)).parse_module()
 
     if roundtrip:
