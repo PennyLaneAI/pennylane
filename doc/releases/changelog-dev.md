@@ -705,6 +705,9 @@
   [(#8180)](https://github.com/PennyLaneAI/pennylane/pull/8180)
   [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
 
+* The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
+  [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
 * The Python `Quantum` dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
 
@@ -850,9 +853,6 @@
 * Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
-
-* The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
-  [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
 * New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
   [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
@@ -1161,7 +1161,7 @@
 
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
-  
+
 * Add CI workflow to test documentation using `sybil`. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
 
