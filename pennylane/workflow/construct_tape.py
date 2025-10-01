@@ -30,6 +30,11 @@ def construct_tape(
 ) -> Callable[..., QuantumScript]:
     """Constructs the tape for a designated stage in the transform program.
 
+    .. warning::
+
+        Using ``level=None`` is deprecated and will be removed in a future release.
+        Please use ``level='device'`` to include all transforms.
+
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (None, str, int, slice): Specifies which stage of the QNode's transform program to use for tape construction.
