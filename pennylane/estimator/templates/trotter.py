@@ -290,7 +290,7 @@ class TrotterCDF(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): 
+        cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
             a compressed double factorized Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even.
@@ -422,6 +422,29 @@ class TrotterCDF(ResourceOperator):
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
+
+        Resources:
+            The resources are defined according to the recursive formula presented above.
+            The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+            number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+
+            .. math::
+
+                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+
+            Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+            This reduces the counts for those terms to:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+            The resources for a single step expansion of compressed double factorized Hamiltonian are
+            calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
+
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -715,6 +738,29 @@ class TrotterTHC(ResourceOperator):
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
+
+        Resources:
+            The resources are defined according to the recursive formula presented above.
+            The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+            number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+
+            .. math::
+
+                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+
+            Furthermore, because of the symmetric form of the recursive formula, the first and last
+            terms get grouped. This reduces the counts for those terms to:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+            The resources for a single step expansion of tensor hypercontracted Hamiltonian are
+            calculated based on `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_.
+
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -1178,6 +1224,28 @@ class TrotterVibrational(ResourceOperator):
             coeff_precision (float): precision for the loading of coefficients, default value is
                 ``1e-3``
 
+        Resources:
+            The resources are defined according to the recursive formula presented above.
+            The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+            number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+
+            .. math::
+
+                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+
+            Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+            This reduces the counts for those terms to:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+            The resources for a single step expansion of vibrational Hamiltonian are calculated based on
+            `arXiv:2504.10602 <https://arxiv.org/pdf/2504.10602>`_.
+
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
@@ -1585,6 +1653,28 @@ class TrotterVibronic(ResourceOperator):
                 ``1e-6``
             coeff_precision (float): precision for the loading of coefficients, default value is
                 ``1e-3``
+
+        Resources:
+            The resources are defined according to the recursive formula presented above.
+            The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+            number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+
+            .. math::
+
+                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+
+            Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+            This reduces the counts for those terms to:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+            The resources for a single step expansion of real-space vibronic Hamiltonian are calculated
+            based on `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
