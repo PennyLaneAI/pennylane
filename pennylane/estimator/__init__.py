@@ -87,7 +87,6 @@ from .templates import (
     PrepTHC,
     QubitizeTHC,
     SelectTHC,
-    CompactHamiltonian,
     TrotterCDF,
     TrotterProduct,
     TrotterTHC,
