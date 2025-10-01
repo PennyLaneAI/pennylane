@@ -25,6 +25,7 @@ import pennylane as qml
 
 
 # pylint: disable=protected-access
+@pytest.mark.jax
 @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""

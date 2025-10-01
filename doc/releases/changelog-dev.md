@@ -46,6 +46,10 @@
     ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
     ``IterativeQPE`` were added to `qml.estimator.templates`.
     [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
+  * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
+    ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
+    ``RegisterComparator`` were added to `qml.estimator.templates`.
+    [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
 
 <h4>Dynamic wire allocation 🎁</h4>
 
@@ -612,6 +616,10 @@
           ╚═══╝
   ```
 
+* `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
+ of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
+ [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
+
 * The JAX version is now included in :func:`pennylane.about`.
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
 
@@ -625,6 +633,9 @@
 * `qml.counts` can now be captured with program capture into plxpr. It still cannot be interpreted or executed
   with program capture.
   [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
+
+* Templates have been made compatible with `qml.capture`.
+  [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
 
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
@@ -1150,6 +1161,9 @@
 
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
+  
+* Add CI workflow to test documentation using `sybil`. 
+  [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
