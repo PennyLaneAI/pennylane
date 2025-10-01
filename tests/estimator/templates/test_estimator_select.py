@@ -18,11 +18,17 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, too-many-arguments
 
 
 class TestSelectTHC:
     """Test the SelectTHC class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        ch = qre.THCHamiltonian(2, 4)
+        with pytest.raises(ValueError, match="Expected 16 wires, got 3"):
+            qre.ControlledSequence(base=qre.SelectTHC(ch, wires=[0, 1, 2]))
 
     @pytest.mark.parametrize(
         "thc_ham, rotation_prec, selswap_depth",
@@ -104,35 +110,43 @@ class TestSelectTHC:
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "thc_ham, rotation_prec, selswap_depth, expected_res",
+        "thc_ham, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res",
         (
             (
                 qre.THCHamiltonian(58, 160),
                 13,
                 1,
-                {"algo_wires": 141, "auxiliary_wires": 753, "toffoli_gates": 6002},
+                1,
+                1,
+                {"algo_wires": 139, "auxiliary_wires": 752, "toffoli_gates": 5998},
             ),
             (
                 qre.THCHamiltonian(10, 50),
                 None,
                 None,
-                {"algo_wires": 41, "auxiliary_wires": 164, "toffoli_gates": 1144},
+                2,
+                0,
+                {"algo_wires": 40, "auxiliary_wires": 164, "toffoli_gates": 1142},
             ),
             (
                 qre.THCHamiltonian(4, 20),
                 None,
                 2,
+                3,
+                2,
                 {"algo_wires": 27, "auxiliary_wires": 74, "toffoli_gates": 430},
             ),
         ),
     )
-    def test_controlled_resources(self, thc_ham, rotation_prec, selswap_depth, expected_res):
+    def test_controlled_resources(
+        self, thc_ham, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res
+    ):
         """Test that the controlled resource decompostion for SelectTHC is correct."""
 
         ctrl_select_cost = qre.estimate(
             qre.Controlled(
-                num_ctrl_wires=3,
-                num_zero_ctrl=2,
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
                 base_op=qre.SelectTHC(
                     thc_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
                 ),

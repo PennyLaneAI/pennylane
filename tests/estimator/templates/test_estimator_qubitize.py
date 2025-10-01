@@ -25,6 +25,12 @@ from pennylane.estimator import resource_rep
 class TestQubitizeTHC:
     """Test the QubitizeTHC class."""
 
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        ch = qre.THCHamiltonian(2, 4)
+        with pytest.raises(ValueError, match="Expected 20 wires, got 3"):
+            qre.ControlledSequence(base=qre.QubitizeTHC(ch, wires=[0, 1, 2]))
+
     @pytest.mark.parametrize(
         "thc_ham, prep_op, select_op",
         (
@@ -149,36 +155,44 @@ class TestQubitizeTHC:
     # Expected number of Toffolis and wires were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "thc_ham, prep_op, select_op, expected_res",
+        "thc_ham, prep_op, select_op, num_ctrl_wires, num_zero_ctrl, expected_res",
         (
             (
                 # This test was taken from arXiv:2501.06165, numbers are adjusted to only the walk operator cost without unary iteration
                 qre.THCHamiltonian(58, 160),
                 qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
                 qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
-                {"algo_wires": 155, "auxiliary_wires": 792, "toffoli_gates": 8584},
+                1,
+                1,
+                {"algo_wires": 153, "auxiliary_wires": 791, "toffoli_gates": 8580},
             ),
             (
                 qre.THCHamiltonian(10, 50),
                 None,
                 None,
-                {"algo_wires": 52, "auxiliary_wires": 175, "toffoli_gates": 2304},
+                2,
+                0,
+                {"algo_wires": 51, "auxiliary_wires": 175, "toffoli_gates": 2302},
             ),
             (
                 qre.THCHamiltonian(4, 20),
                 qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
                 None,
+                3,
+                2,
                 {"algo_wires": 35, "auxiliary_wires": 110, "toffoli_gates": 972},
             ),
         ),
     )
-    def test_control_resources(self, thc_ham, prep_op, select_op, expected_res):
+    def test_control_resources(
+        self, thc_ham, prep_op, select_op, num_ctrl_wires, num_zero_ctrl, expected_res
+    ):
         """Test that the controlled resource decomposition for QubitizeTHC is correct."""
 
         wo_cost = qre.estimate(
             qre.Controlled(
-                num_ctrl_wires=3,
-                num_zero_ctrl=2,
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
                 base_op=qre.QubitizeTHC(
                     thc_ham,
                     prep_op=prep_op,
