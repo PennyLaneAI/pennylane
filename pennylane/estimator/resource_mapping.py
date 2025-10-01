@@ -129,11 +129,6 @@ def _(op: qops.PauliRot):
 
 
 @_map_to_resource_op.register
-def _(op: qops.PSWAP):
-    return re_ops.PSWAP()
-
-
-@_map_to_resource_op.register
 def _(op: qops.SingleExcitation):
     return re_ops.SingleExcitation()
 

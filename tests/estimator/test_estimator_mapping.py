@@ -136,6 +136,10 @@ class TestMapToResourceOp:
                 re_temps.SelectPauliRot(rot_axis="Y", num_ctrl_wires=2, precision=None),
             ),
             (
+                qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2]),
+                re_temps.ControlledSequence(base=re_ops.RX(), num_control_wires=3),
+            ),
+            (
                 qml.QubitUnitary(np.eye(2), wires=0),
                 re_ops.QubitUnitary(num_wires=1, precision=None),
             ),
