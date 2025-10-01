@@ -49,14 +49,34 @@ class TestConvertToMBQCFormalismPass:
             pipeline = (ConvertToMBQCFormalismPass(),)
             run_filecheck(program, pipeline)
 
+    def test_unconverted_gate_set(self, run_filecheck):
+        """Test for supported gates that are not converted in the pass"""
+        program = """
+            func.func @test_func(%arg0 :f64) {
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+                // CHECK-NEXT: [[q0:%.+]] = quantum.custom "PauliX"() [[q0:%.+]] : !quantum.bit
+                %1 = quantum.custom "PauliX"() %0 : !quantum.bit
+                // CHECK-NEXT: [[q0:%.+]] = quantum.custom "PauliY"() [[q0:%.+]] : !quantum.bit
+                %2 = quantum.custom "PauliY"() %1 : !quantum.bit
+                // CHECK-NEXT: [[q0:%.+]] = quantum.custom "PauliZ"() [[q0:%.+]] : !quantum.bit
+                %3 = quantum.custom "PauliZ"() %2 : !quantum.bit
+                // CHECK: [[q0:%.+]] = quantum.custom "Identity"() [[q0:%.+]] : !quantum.bit
+                %4 = quantum.custom "Identity"() %3 : !quantum.bit
+                // CHECK-NEXT: quantum.gphase
+                quantum.gphase %arg0
+                return
+            }
+        """
+        pipeline = (ConvertToMBQCFormalismPass(),)
+        run_filecheck(program, pipeline)
+
     def test_hadamard_gate(self, run_filecheck):
         """Test for lowering a Hadamard gate to a MBQC formalism."""
         program = """
             func.func @test_func() {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK-NEXT: [[q0:%.+]] = quantum.custom "PauliX"() [[q0:%.+]] : !quantum.bit
-                %1 = quantum.custom "PauliX"() %0 : !quantum.bit
                 // CHECK-NEXT: [[adj_matrix:%.+]] = arith.constant dense<[true, false, true, false, false, true]> : tensor<6xi1>
                 // CHECK-NEXT: [[graph_state:%.+]] = mbqc.graph_state_prep([[adj_matrix:%.+]] : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
                 // CHECK-NEXT: [[qb1:%.+]] = quantum.extract [[graph_state:%.+]][0] : !quantum.reg -> !quantum.bit
@@ -91,7 +111,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
-                %2 = quantum.custom "Hadamard"() %1 : !quantum.bit
+                %1 = quantum.custom "Hadamard"() %0 : !quantum.bit
                 return
             }
         """
@@ -105,8 +125,6 @@ class TestConvertToMBQCFormalismPass:
             func.func @test_func() {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK-NEXT: [[q0:%.+]] = quantum.custom "PauliY"() [[q0:%.+]] : !quantum.bit
-                %1 = quantum.custom "PauliY"() %0 : !quantum.bit
                 // CHECK-NEXT: [[adj_matrix:%.+]] = arith.constant dense<[true, false, true, false, false, true]> : tensor<6xi1>
                 // CHECK-NEXT: [[graph_state:%.+]] = mbqc.graph_state_prep([[adj_matrix:%.+]] : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
                 // CHECK-NEXT: [[qb1:%.+]] = quantum.extract [[graph_state:%.+]][0] : !quantum.reg -> !quantum.bit
@@ -143,7 +161,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
-                %2 = quantum.custom "S"() %1 : !quantum.bit
+                %1 = quantum.custom "S"() %0 : !quantum.bit
                 return
             }
         """
@@ -157,8 +175,6 @@ class TestConvertToMBQCFormalismPass:
             func.func @test_func(%param0: f64) {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK-NEXT: [[q0:%.+]] = quantum.custom "PauliZ"() [[q0:%.+]] : !quantum.bit
-                %1 = quantum.custom "PauliZ"() %0 : !quantum.bit
                 // CHECK-NEXT: [[adj_matrix:%.+]] = arith.constant dense<[true, false, true, false, false, true]> : tensor<6xi1>
                 // CHECK-NEXT: [[graph_state:%.+]] = mbqc.graph_state_prep([[adj_matrix:%.+]] : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
                 // CHECK-NEXT: [[qb1:%.+]] = quantum.extract [[graph_state:%.+]][0] : !quantum.reg -> !quantum.bit
@@ -198,7 +214,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
-                %2 = quantum.custom "RZ"(%param0) %1 : !quantum.bit
+                %1 = quantum.custom "RZ"(%param0) %0 : !quantum.bit
                 return
             }
         """
@@ -212,8 +228,6 @@ class TestConvertToMBQCFormalismPass:
             func.func @test_func(%param0: f64, %param1: f64, %param2: f64) {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q0:%.+]] = quantum.custom "Identity"() [[q0:%.+]] : !quantum.bit
-                %1 = quantum.custom "Identity"() %0 : !quantum.bit
                 // CHECK-NEXT: [[adj_matrix:%.+]] = arith.constant dense<[true, false, true, false, false, true]> : tensor<6xi1>
                 // CHECK-NEXT: [[graph_state:%.+]] = mbqc.graph_state_prep([[adj_matrix:%.+]] : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
                 // CHECK-NEXT: [[qb1:%.+]] = quantum.extract [[graph_state:%.+]][0] : !quantum.reg -> !quantum.bit
@@ -273,7 +287,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
                 // CHECK-NEXT: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
-                %2 = quantum.custom "RotXZX"(%param0, %param1, %param2) %1 : !quantum.bit
+                %1 = quantum.custom "RotXZX"(%param0, %param1, %param2) %0 : !quantum.bit
                 return
             }
         """
@@ -289,8 +303,6 @@ class TestConvertToMBQCFormalismPass:
                 %0 = "test.op"() : () -> !quantum.bit
                 // CHECK-NEXT: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
-                // CHECK-NEXT: quantum.gphase
-                quantum.gphase %arg0
                 // CHECK-NOT: quantum.custom "CNOT"()
                 %2, %3 = quantum.custom "CNOT"() %0, %1 : !quantum.bit, !quantum.bit
                 return
