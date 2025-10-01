@@ -150,7 +150,7 @@ class TrotterProduct(ResourceOperator):
         self.num_steps = num_steps
         self.order = order
 
-        if wires:  # User defined wires take precedent
+        if wires is not None:  # User defined wires take precedent
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
 
