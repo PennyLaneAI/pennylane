@@ -16,14 +16,13 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import Type, TypeVar
 
+from xdsl import context, passes, pattern_rewriter
+from xdsl.dialects import builtin, func
+from xdsl.ir import Operation, SSAValue
+from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum
-
-from xdsl.dialects import builtin, func
-from xdsl.ir import Operation, SSAValue
-from xdsl import context, passes, pattern_rewriter
-from xdsl.rewriter import InsertPoint
 
 T = TypeVar("T")
 
@@ -60,6 +59,7 @@ class OutlineStateEvolutionPass(passes.ModulePass):
 
 outline_state_evolution_pass = compiler_transform(OutlineStateEvolutionPass)
 
+
 class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
     """RewritePattern for outline state evolution regions in a quantum function."""
 
@@ -78,11 +78,11 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         """Transform a quantum function (qnode) to outline state evolution regions."""
         if "qnode" not in func_op.attributes:
             return
-        
+
         self.original_func_op = func_op
 
         self.module = get_parent_of_type(func_op, builtin.ModuleOp)
-        
+
         assert self.module is not None, "got orphaned qnode function"
 
         # Simplify the quantum I/O to use only registers at boundaries
@@ -102,7 +102,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             else (op.idx_attr if hasattr(op, "idx_attr") else None)
         )
 
-    def simplify_quantum_io(self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter) -> func.FuncOp:
+    def simplify_quantum_io(
+        self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+    ) -> func.FuncOp:
         """Simplify quantum I/O to use only registers at segment boundaries.
 
         This ensures that state evolution regions only take registers as input/output,
@@ -381,7 +383,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         call_op = func.CallOp(self.state_evolution_func.sym_name.data, call_args, result_types)
 
-
         call_result_mapper = {}
         for i, required_output in enumerate(self.required_outputs):
             if i < len(call_op.results):
@@ -392,7 +393,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # instead.
         for op in reversed(ops_list):
             op.detach()
-
 
         new_ops = []
         for op in pre_ops:
@@ -412,4 +412,3 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         for op in new_ops:
             original_block.add_op(op)
-
