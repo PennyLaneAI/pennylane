@@ -328,6 +328,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
+  can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
+  [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
+
 * `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
  of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
  [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
