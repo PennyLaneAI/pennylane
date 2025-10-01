@@ -6,7 +6,7 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >= 3.10
+* `Python <http://python.org/>`_ >= 3.11
 
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
@@ -37,9 +37,9 @@ The following Python packages are optional:
 * ``kahypar`` and ``opt_einsum`` for ``qcut``
 * ``cvxopt``for ``qml.kernels.closest_psd_matrix``
 
-If you currently do not have Python 3 installed, we recommend
-`Anaconda for Python 3 <https://www.anaconda.com/download/>`_, a distributed version
-of Python packaged for scientific computation.
+If you do not have Python 3 installed, we recommend using a Python environment manager such as
+`venv <https://docs.python.org/3/library/venv.html>`_ or `virtualenv <https://virtualenv.pypa.io/en/latest/>`_
+to create an isolated environment for your installation.
 
 .. _install_interfaces:
 
@@ -49,7 +49,7 @@ Interface dependencies
 For development of the PyTorch and JAX interfaces, there are additional
 requirements which must be installed manually:
 
-* **JAX interface**: ``jax`` and ``jaxlib`` == 0.6.0
+* **JAX interface**: ``jax`` and ``jaxlib`` ~= 0.6.0
 
 * **PyTorch interface**: ``pytorch``
 
