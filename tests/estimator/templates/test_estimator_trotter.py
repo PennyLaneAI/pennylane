@@ -127,7 +127,7 @@ class TestTrotterCDF:
         """Test that an error is raised when wrong number of wires is provided."""
         compact_ham = qre.CDFHamiltonian(num_orbitals=8, num_fragments=4)
         with pytest.raises(ValueError, match="Expected 16 wires, got 3"):
-            qre.TrotterCDF(compact_ham=compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
+            qre.TrotterCDF(compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
 
     # Expected resources were obtained manually based on
     # https://arxiv.org/abs/2506.15784
@@ -270,7 +270,7 @@ class TestTrotterCDF:
 
         compact_ham = qre.CDFHamiltonian(num_orbitals=num_orbitals, num_fragments=num_fragments)
         target_resource_params = {
-            "compact_ham": compact_ham,
+            "cdf_ham": compact_ham,
             "num_steps": num_steps,
             "order": order,
         }
@@ -290,7 +290,7 @@ class TestTrotterTHC:
         """Test that an error is raised when wrong number of wires is provided."""
         compact_ham = qre.THCHamiltonian(num_orbitals=8, tensor_rank=20)
         with pytest.raises(ValueError, match="Expected 40 wires, got 3"):
-            qre.TrotterTHC(compact_ham=compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
+            qre.TrotterTHC(compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
 
     # Expected resources were obtained manually
     # based on https://arxiv.org/abs/2407.04432
@@ -372,7 +372,7 @@ class TestTrotterVibrational:
         """Test that an error is raised when wrong number of wires is provided."""
         compact_ham = qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3)
         with pytest.raises(ValueError, match="Expected 32 wires, got 3"):
-            qre.TrotterVibrational(compact_ham=compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
+            qre.TrotterVibrational(compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
 
     # Expected resources were obtained manually based on
     # https://arxiv.org/pdf/2504.10602
@@ -518,7 +518,7 @@ class TestTrotterVibronic:
             taylor_degree=3,
         )
         with pytest.raises(ValueError, match="Expected 33 wires, got 3"):
-            qre.TrotterVibronic(compact_ham=compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
+            qre.TrotterVibronic(compact_ham, num_steps=100, order=2, wires=[0, 1, 2])
 
     # Expected resources were obtained manually based on
     # https://arxiv.org/abs/2411.13669
