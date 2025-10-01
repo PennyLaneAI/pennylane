@@ -176,10 +176,12 @@ def get_transform_program(
         qnode (QNode): the qnode to get the transform program for.
         level (None, str, int, slice): An indication of what transforms to use from the full program.
 
-            * ``None``: use the full transform program
-            * ``str``: Acceptable keys are ``"user"``, ``"device"``, ``"top"`` and ``"gradient"``
-            * ``int``: How many transforms to include, starting from the front of the program
-            * ``slice``: a slice to select out components of the transform program.
+            - ``None`` or ``"device"``: Uses the entire transformation pipeline.
+            - ``"top"``: Ignores transformations and returns the original tape as defined.
+            - ``"user"``: Includes transformations that are manually applied by the user.
+            - ``"gradient"``: Extracts the gradient-level tape.
+            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program.
+            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
 
         gradient_fn (None, str, TransformDispatcher): The processed gradient fn for the workflow.
 
@@ -323,12 +325,9 @@ def construct_batch(
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): And indication of what transforms to use from the full program.
-
-            * ``None``: use the full transform program.
-            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
-            * ``int``: How many transforms to include, starting from the front of the program.
-            * ``slice``: a slice to select out components of the transform program.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            this argument.
 
     Returns:
         Callable:  A function with the same call signature as the initial quantum function. This function returns
