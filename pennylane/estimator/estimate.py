@@ -55,7 +55,7 @@ def estimate(
         config (:class:`~.pennylane.estimator.resource_config.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
     Returns:
-        :class:`~.pennylane.estimator.resource_operator.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
+        :class:`~.pennylane.estimator.resources_base.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
 
     Raises:
         TypeError: could not obtain resources for workflow of type :code:`type(workflow)`
@@ -63,7 +63,7 @@ def estimate(
     **Example**
 
     The resources of a quantum workflow can be estimated by passing the quantum function describing the
-    workflow directly into this function.
+    workflow.
 
     .. code-block:: python
 
@@ -80,27 +80,21 @@ def estimate(
             qre.QFT(num_wires=3, wires=[0, 1, 2])
             return
 
-    Note that a python function is passed here, not a :class:`~.QNode`. The resources for this
-    workflow are then obtained by:
+    The resources for this workflow are then obtained by:
 
     >>> import pennylane.estimator as qre
-    >>> config = qre.ResourceConfig()
-    >>> config.set_single_qubit_rot_precision(1e-4)
-    >>> res = qre.estimate(
-    ...     my_circuit,
-    ...     gate_set = qre.DefaultGateSet,
-    ...     config = config,
-    ... )()
-    ...
+    >>> res = qre.estimate(my_circuit)()
     >>> print(res)
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 279
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-     {'Hadamard': 5, 'CNOT': 10, 'T': 264}
-
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 499
+      'T': 484,
+      'CNOT': 10,
+      'Hadamard': 5
     """
     return _estimate_resources_dispatch(workflow, gate_set, zeroed, any_state, tight_budget, config)
 

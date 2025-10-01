@@ -322,7 +322,7 @@ class OutMultiplier(ResourceOperator):
 
 
 class SemiAdder(ResourceOperator):
-    r"""Resource class for the SemiOutAdder gate.
+    r"""Resource class for the SemiAdder gate.
 
     Args:
         max_register_size (int): the size of the larger of the two registers being added together
