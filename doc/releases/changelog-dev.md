@@ -72,6 +72,10 @@
     ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
     ``IterativeQPE`` were added to `qml.estimator.templates`.
     [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
+  * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
+    ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
+    ``RegisterComparator`` were added to `qml.estimator.templates`.
+    [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -1139,6 +1143,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add CI workflow to test documentation using `sybil`. 
+  [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
