@@ -61,7 +61,7 @@ class TestConvertToMBQCFormalismPass:
                 %2 = quantum.custom "PauliY"() %1 : !quantum.bit
                 // CHECK-NEXT: [[q0:%.+]] = quantum.custom "PauliZ"() [[q0:%.+]] : !quantum.bit
                 %3 = quantum.custom "PauliZ"() %2 : !quantum.bit
-                // CHECK: [[q0:%.+]] = quantum.custom "Identity"() [[q0:%.+]] : !quantum.bit
+                // CHECK-NEXT: [[q0:%.+]] = quantum.custom "Identity"() [[q0:%.+]] : !quantum.bit
                 %4 = quantum.custom "Identity"() %3 : !quantum.bit
                 // CHECK-NEXT: quantum.gphase
                 quantum.gphase %arg0
