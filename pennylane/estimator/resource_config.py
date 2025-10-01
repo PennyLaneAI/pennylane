@@ -18,12 +18,15 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.ops.templates import (
+from pennylane.estimator.ops import CRX, CRY, CRZ, RX, RY, RZ, QubitUnitary
+from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
+    PrepTHC,
     QROMStatePreparation,
-    QubitUnitary,
+    QubitizeTHC,
     SelectPauliRot,
+    SelectTHC,
 )
 
 if TYPE_CHECKING:
@@ -48,11 +51,23 @@ class ResourceConfig:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
         self.resource_op_precisions = {
+            RX: {"precision": _DEFAULT_PRECISION},
+            RY: {"precision": _DEFAULT_PRECISION},
+            RZ: {"precision": _DEFAULT_PRECISION},
+            CRX: {"precision": _DEFAULT_PRECISION},
+            CRY: {"precision": _DEFAULT_PRECISION},
+            CRZ: {"precision": _DEFAULT_PRECISION},
             SelectPauliRot: {"precision": _DEFAULT_PRECISION},
             QubitUnitary: {"precision": _DEFAULT_PRECISION},
             AliasSampling: {"precision": _DEFAULT_PRECISION},
             MPSPrep: {"precision": _DEFAULT_PRECISION},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
+            SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
+            PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
+            QubitizeTHC: {
+                "coeff_precision": _DEFAULT_BIT_PRECISION,
+                "rotation_precision": _DEFAULT_BIT_PRECISION,
+            },
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}

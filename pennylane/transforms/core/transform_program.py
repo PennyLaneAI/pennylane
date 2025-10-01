@@ -76,7 +76,7 @@ def _apply_postprocessing_stack(
     >>> def postprocessing1(results):
     ...     return (results[0] + results[1], results[2] + results[3])
     >>> def postprocessing2(results):
-    .... return (results[0] + 1, results[1] + 2)
+    ...     return (results[0] + 1, results[1] + 2)
     >>> _apply_postprocessing_stack(results, [postprocessing1])
     (3.0, 7.0)
     >>> _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
@@ -271,16 +271,14 @@ class TransformProgram:
             raise TransformError("Only transform dispatcher can be added to the transform program.")
 
         if transform.expand_transform:
-            self.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
+            self.push_back(
+                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+            )
         self.push_back(
             TransformContainer(
-                transform.transform,
+                transform,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=transform.classical_cotransform,
-                plxpr_transform=transform.plxpr_transform,
-                is_informative=transform.is_informative,
-                final_transform=transform.final_transform,
             )
         )
 
@@ -302,18 +300,16 @@ class TransformProgram:
 
         self.insert_front(
             TransformContainer(
-                transform.transform,
+                transform,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=transform.classical_cotransform,
-                plxpr_transform=transform.plxpr_transform,
-                is_informative=transform.is_informative,
-                final_transform=transform.final_transform,
             )
         )
 
         if transform.expand_transform:
-            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
+            self.insert_front(
+                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+            )
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.

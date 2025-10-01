@@ -17,14 +17,19 @@ Tests for quantum algorithmic subroutines resource operators.
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.estimator import GateCount, resource_rep
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 
 # pylint: disable=no-self-use,too-many-arguments,use-implicit-booleaness-not-comparison
 
 
 class TestSingleQubitComparator:
     """Test the ResourceSingleQubitComparator class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
+            qre.SingleQubitComparator(wires=[0, 1, 2])
 
     def test_resource_params(self):
         """Test that the resource params are correct."""
@@ -48,6 +53,11 @@ class TestSingleQubitComparator:
 
 class TestTwoQubitComparator:
     """Test the ResourceTwoQubitComparator class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
+            qre.TwoQubitComparator(wires=[0, 1, 2])
 
     def test_resource_params(self):
         """Test that the resource params are correct."""
@@ -73,6 +83,11 @@ class TestTwoQubitComparator:
 
 class TestIntegerComparator:
     """Test the ResourceIntegerComparator class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
+            qre.IntegerComparator(10, 3, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "value, register_size, geq",
@@ -110,6 +125,20 @@ class TestIntegerComparator:
             (10, 3, True, []),
             (10, 3, False, [GateCount(resource_rep(qre.X))]),
             (0, 3, True, [GateCount(resource_rep(qre.X))]),
+            (
+                3,
+                2,
+                True,
+                [
+                    GateCount(
+                        resource_rep(
+                            qre.MultiControlledX,
+                            {"num_ctrl_wires": 2, "num_zero_ctrl": 0},
+                        ),
+                        1,
+                    ),
+                ],
+            ),
             (
                 10,
                 4,
@@ -185,6 +214,11 @@ class TestIntegerComparator:
 
 class TestRegisterComparator:
     """Test the ResourceRegisterComparator class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 21 wires, got 3"):
+            qre.RegisterComparator(10, 10, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "first_register, second_register, geq",

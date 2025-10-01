@@ -151,14 +151,18 @@ class Adjoint(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
 
         try:
             return base_class.adjoint_resource_decomp(base_params)
         except ResourcesUndefinedError:
             gate_lst = []
-            decomp = base_class.resource_decomp(**base_params, **kwargs)
+            decomp = base_class.resource_decomp(**base_params)
 
             for gate in decomp[::-1]:  # reverse the order
                 gate_lst.append(_apply_adj(gate))
@@ -355,8 +359,12 @@ class Controlled(ResourceOperator):
         """
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
+
         try:
             return base_class.controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
@@ -371,7 +379,7 @@ class Controlled(ResourceOperator):
             x = resource_rep(qre.X)
             gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
-        decomp = base_class.resource_decomp(**base_params, **kwargs)
+        decomp = base_class.resource_decomp(**base_params)
         for action in decomp:
             if isinstance(action, GateCount):
                 gate = action.gate
@@ -442,7 +450,7 @@ class Controlled(ResourceOperator):
 class Pow(ResourceOperator):
     r"""Resource class for the symbolic Pow operation.
 
-    A symbolic class used to represent some base operation raised to a power.
+    This symbolic class can be used to represent some base operation raised to a power.
 
     Args:
         base_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The operator to exponentiate.
@@ -560,8 +568,11 @@ class Pow(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
 
         if pow_z == 0:
             return [GateCount(resource_rep(qre.Identity))]
@@ -607,7 +618,7 @@ class Pow(ResourceOperator):
 class Prod(ResourceOperator):
     r"""Resource class for the symbolic Prod operation.
 
-    A symbolic class used to represent a product of some base operations.
+    This symbolic class can be used to represent a product of some base operations.
 
     Args:
         res_ops (tuple[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): A tuple of
@@ -673,15 +684,9 @@ class Prod(ResourceOperator):
         ops = []
         counts = []
 
-        for item in res_ops:
-            if isinstance(item, (list, tuple)):
-                op, count = item
-                ops.append(op)
-                counts.append(count)
-            else:
-                op = item
-                ops.append(op)
-                counts.append(1)
+        ops, counts = zip(
+            *(item if isinstance(item, (list, tuple)) else (item, 1) for item in res_ops)
+        )
 
         _dequeue(op_to_remove=ops)
         self.queue()
@@ -701,11 +706,13 @@ class Prod(ResourceOperator):
 
         else:  # Otherwise determine the wires from the factors in the product
             ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
-            fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+            num_unique_wires_required = max(op.num_wires for op in cmpr_ops)
 
-            if len(ops_wires) < fewest_unique_wires:  # If factors didn't provide enough wire labels
+            if (
+                len(ops_wires) < num_unique_wires_required
+            ):  # If factors didn't provide enough wire labels
                 self.wires = None  # we assume they all act on the same set
-                self.num_wires = fewest_unique_wires
+                self.num_wires = num_unique_wires_required
 
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires
@@ -780,7 +787,7 @@ class Prod(ResourceOperator):
 class ChangeOpBasis(ResourceOperator):
     r"""Change of Basis resource operator.
 
-    A symbolic class used to represent a change of basis operation with a compute-uncompute pattern.
+    This symbolic class can be used to represent a change of basis operation with a compute-uncompute pattern.
     This is a special type of operator which can be expressed as
     :math:`\hat{U}_{compute} \cdot \hat{V} \cdot \hat{U}_{uncompute}`. If no :code:`uncompute_op` is
     provided then the adjoint of the :code:`compute_op` is used by default.
@@ -791,7 +798,8 @@ class ChangeOpBasis(ResourceOperator):
         target_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A resource operator
             representing the base operation.
         uncompute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
-            resource operator representing the inverse of the basis change operation.
+            resource operator representing the inverse of the basis change operation. If no
+            :code:`uncompute_op` is provided then the adjoint of the :code:`compute_op` is used by default.
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
@@ -873,14 +881,16 @@ class ChangeOpBasis(ResourceOperator):
 
         else:  # Otherwise determine the wires from the compute, base & uncompute ops
             ops_wires = Wires.all_wires([op.wires for op in ops_to_remove if op.wires is not None])
-            fewest_unique_wires = max(
+            num_unique_wires_required = max(
                 op.num_wires
                 for op in [self.cmpr_target_op, self.cmpr_compute_op, self.cmpr_uncompute_op]
             )
 
-            if len(ops_wires) < fewest_unique_wires:  # If factors didn't provide enough wire labels
+            if (
+                len(ops_wires) < num_unique_wires_required
+            ):  # If factors didn't provide enough wire labels
                 self.wires = None
-                self.num_wires = fewest_unique_wires
+                self.num_wires = num_unique_wires_required
 
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires
@@ -898,12 +908,14 @@ class ChangeOpBasis(ResourceOperator):
                   to the base operation.
                 * cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the uncompute operation.
+                * num_wires (int): the number of wires this operator acts upon
 
         """
         return {
             "cmpr_compute_op": self.cmpr_compute_op,
             "cmpr_target_op": self.cmpr_target_op,
             "cmpr_uncompute_op": self.cmpr_uncompute_op,
+            "num_wires": self.num_wires,
         }
 
     @classmethod
@@ -952,6 +964,7 @@ class ChangeOpBasis(ResourceOperator):
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
+        num_wires: int,  # pylint: disable=unused-argument
     ):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.

@@ -33,7 +33,7 @@ class TestSelectTHC:
         ),
     )
     def test_resource_params(self, compact_ham, rotation_prec, selswap_depth):
-        """Test that the resource params are correct."""
+        """Test that the resource params for SelectTHC are correct."""
         op = qre.SelectTHC(compact_ham, rotation_prec, selswap_depth)
         assert op.resource_params == {
             "compact_ham": compact_ham,
@@ -50,7 +50,7 @@ class TestSelectTHC:
         ),
     )
     def test_resource_rep(self, compact_ham, rotation_prec, selswap_depth, num_wires):
-        """Test that the compressed representation is correct."""
+        """Test that the compressed representation for SelectTHC is correct."""
         expected = qre.CompressedResourceOp(
             qre.SelectTHC,
             num_wires,
@@ -60,13 +60,10 @@ class TestSelectTHC:
                 "select_swap_depth": selswap_depth,
             },
         )
-        assert (
-            qre.SelectTHC.resource_rep(compact_ham, rotation_prec, selswap_depth)
-            == expected
-        )
+        assert qre.SelectTHC.resource_rep(compact_ham, rotation_prec, selswap_depth) == expected
 
     # We are comparing the Toffoli and qubit cost here
-    # Expected number of Toffolis and qubits were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
+    # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
         "compact_ham, rotation_prec, selswap_depth, expected_res",
@@ -75,36 +72,33 @@ class TestSelectTHC:
                 qre.CompactHamiltonian.thc(58, 160),
                 13,
                 1,
-                {"algo_qubits": 138, "ancilla_qubits": 752, "toffoli_gates": 5997},
+                {"algo_wires": 138, "auxiliary_wires": 752, "toffoli_gates": 5997},
             ),
             (
                 qre.CompactHamiltonian.thc(10, 50),
                 None,
                 None,
-                {"algo_qubits": 38, "ancilla_qubits": 163, "toffoli_gates": 1139},
+                {"algo_wires": 38, "auxiliary_wires": 163, "toffoli_gates": 1139},
             ),
             (
                 qre.CompactHamiltonian.thc(4, 20),
                 None,
                 2,
-                {"algo_qubits": 24, "ancilla_qubits": 73, "toffoli_gates": 425},
+                {"algo_wires": 24, "auxiliary_wires": 73, "toffoli_gates": 425},
             ),
         ),
     )
     def test_resources(self, compact_ham, rotation_prec, selswap_depth, expected_res):
-        """Test that the resources are correct."""
+        """Test that the resource decompostion for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
                 compact_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
             )
         )
-        assert select_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
-        assert (
-            select_cost.qubit_manager.clean_qubits + select_cost.qubit_manager.dirty_qubits
-            == expected_res["ancilla_qubits"]
-        )
-        assert select_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+        assert select_cost.algo_wires == expected_res["algo_wires"]
+        assert select_cost.zeroed + select_cost.any_state == expected_res["auxiliary_wires"]
+        assert select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
         """Test that an error is raised for incompatible Hamiltonians."""
@@ -118,16 +112,16 @@ class TestSelectTHC:
         ):
             qre.SelectTHC.resource_rep(qre.CompactHamiltonian.cdf(58, 160))
 
-    def test_typeerror_precision(self):
+    def test_type_error_precision(self):
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
-            TypeError, match=f"`rotation_precision` must be an integer, provided {type(2.5)}."
+            TypeError,
+            match=f"`rotation_precision` must be an integer, but type {type(2.5)} was provided.",
         ):
             qre.SelectTHC(qre.CompactHamiltonian.thc(58, 160), rotation_precision=2.5)
 
         with pytest.raises(
-            TypeError, match=f"`rotation_precision` must be an integer, provided {type(2.5)}."
+            TypeError,
+            match=f"`rotation_precision` must be an integer, but type {type(2.5)} was provided.",
         ):
-            qre.SelectTHC.resource_rep(
-                qre.CompactHamiltonian.thc(58, 160), rotation_precision=2.5
-            )
+            qre.SelectTHC.resource_rep(qre.CompactHamiltonian.thc(58, 160), rotation_precision=2.5)

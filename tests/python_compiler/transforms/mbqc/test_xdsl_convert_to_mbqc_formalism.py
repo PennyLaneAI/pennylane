@@ -36,6 +36,19 @@ from pennylane.ftqc import RotXZX
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
 
+    def test_unsupported_gate(self, run_filecheck):
+        """Test for error threw for unsupported gate"""
+        program = """
+            func.func @test_func() {
+                %0 = "test.op"() : () -> !quantum.bit
+                %1 = quantum.custom "IsingXX"() %0 : !quantum.bit
+                return
+            }
+        """
+        with pytest.raises(NotImplementedError):
+            pipeline = (ConvertToMBQCFormalismPass(),)
+            run_filecheck(program, pipeline)
+
     def test_hadamard_gate(self, run_filecheck):
         """Test for lowering a Hadamard gate to a MBQC formalism."""
         program = """

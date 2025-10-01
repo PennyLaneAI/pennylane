@@ -47,6 +47,7 @@ from .ops.qubit import (
     MultiRZ,
     PauliRot,
     SingleExcitation,
+    QubitUnitary,
 )
 
 from .ops.op_math import (
@@ -71,7 +72,7 @@ from .ops.op_math import (
     ChangeOpBasis,
 )
 
-from .ops.templates import (
+from .templates import (
     OutOfPlaceSquare,
     PhaseGradient,
     OutMultiplier,
@@ -82,7 +83,6 @@ from .ops.templates import (
     Select,
     QROM,
     SelectPauliRot,
-    QubitUnitary,
     ControlledSequence,
     QPE,
     IterativeQPE,
@@ -95,16 +95,7 @@ from .ops.templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
-)
-
-from .ops.templates.qubitize import (
-    QubitizeTHC
-)
-
-from .ops.templates.select import (
-    SelectTHC
-)
-
-from .ops.templates.compact_hamiltonian import (
-    CompactHamiltonian
+    QubitizeTHC,
+    SelectTHC,
+    CompactHamiltonian,
 )
