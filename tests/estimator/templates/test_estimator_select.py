@@ -110,19 +110,19 @@ class TestSelectTHC:
                 qre.CompactHamiltonian.thc(58, 160),
                 13,
                 1,
-                {"algo_wires": 139, "auxiliary_wires": 752, "toffoli_gates": 5998},
+                {"algo_wires": 141, "auxiliary_wires": 753, "toffoli_gates": 6002},
             ),
             (
                 qre.CompactHamiltonian.thc(10, 50),
                 None,
                 None,
-                {"algo_wires": 39, "auxiliary_wires": 163, "toffoli_gates": 1140},
+                {"algo_wires": 41, "auxiliary_wires": 164, "toffoli_gates": 1144},
             ),
             (
                 qre.CompactHamiltonian.thc(4, 20),
                 None,
                 2,
-                {"algo_wires": 25, "auxiliary_wires": 73, "toffoli_gates": 426},
+                {"algo_wires": 27, "auxiliary_wires": 74, "toffoli_gates": 430},
             ),
         ),
     )
@@ -131,8 +131,8 @@ class TestSelectTHC:
 
         ctrl_select_cost = qre.estimate(
             qre.Controlled(
-                num_ctrl_wires=1,
-                num_zero_ctrl=0,
+                num_ctrl_wires=3,
+                num_zero_ctrl=2,
                 base_op=qre.SelectTHC(
                     compact_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
                 ),

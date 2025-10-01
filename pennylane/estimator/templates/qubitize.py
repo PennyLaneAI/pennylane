@@ -311,14 +311,8 @@ class QubitizeTHC(ResourceOperator):
         """
         gate_list = []
         compact_ham = target_resource_params["compact_ham"]
-        coeff_precision = (
-            target_resource_params["prep_op"].resource_params["coeff_precision"]
-            or target_resource_params["coeff_precision"]
-        )
-        rotation_precision = (
-            target_resource_params["select_op"].resource_params["rotation_precision"]
-            or target_resource_params["rotation_precision"]
-        )
+        prep_op = target_resource_params["prep_op"]
+        select_op = target_resource_params["select_op"]
 
         tensor_rank = compact_ham.params["tensor_rank"]
         m_register = int(np.ceil(np.log2(tensor_rank)))
@@ -335,6 +329,7 @@ class QubitizeTHC(ResourceOperator):
             gate_list.append(GateCount(mcx, 2))
 
         if not select_op:
+            rotation_precision = target_resource_params["rotation_precision"]
             # Controlled Select cost from Fig 5 in arXiv:2011.03494
             select_op = resource_rep(
                 SelectTHC,
@@ -350,6 +345,7 @@ class QubitizeTHC(ResourceOperator):
         )
 
         if not prep_op:
+            coeff_precision = target_resource_params["coeff_precision"]
             # Prep cost from Fig 3 and 4 in arXiv:2011.03494
             prep_op = resource_rep(
                 PrepTHC,
@@ -359,7 +355,10 @@ class QubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494s
-        coeff_precision = prep_op.params["coeff_precision"] or coeff_precision
+        coeff_precision = (
+            prep_op.params["coeff_precision"] or target_resource_params["coeff_precision"]
+        )
+
         toffoli = resource_rep(Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
 

@@ -41,6 +41,5 @@ from .comparators import (
     TwoQubitComparator,
     RegisterComparator,
 )
-from .compact_hamiltonian import CompactHamiltonian
 from .qubitize import QubitizeTHC
 from .select import SelectTHC

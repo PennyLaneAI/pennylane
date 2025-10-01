@@ -28,6 +28,9 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.wires import Wires, WiresLike
+
 from .compact_hamiltonian import CompactHamiltonian
 from .subroutines import (
     BasisRotation,
@@ -37,8 +40,6 @@ from .subroutines import (
     Select,
     SemiAdder,
 )
-from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 

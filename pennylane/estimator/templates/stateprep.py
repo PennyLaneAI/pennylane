@@ -28,6 +28,7 @@ from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= signature-differs, arguments-differ, too-many-arguments
 
+
 class UniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition.
 
@@ -872,6 +873,7 @@ class QROMStatePreparation(ResourceOperator):
             precision=precision,
             selswap_depths=selswap_depths,
         )
+
 
 class PrepTHC(ResourceOperator):
     r"""Resource class for preparing the state for tensor hypercontracted Hamiltonian. This operator customizes

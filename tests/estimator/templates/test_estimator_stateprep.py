@@ -1665,8 +1665,15 @@ class TestQROMStatePrep:
 
         assert actual_resources == expected_res
 
+
 class TestPrepTHC:
     """Test the PrepTHC class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        ch = qre.CompactHamiltonian.thc(4, 10)
+        with pytest.raises(ValueError, match="Expected 8 wires, got 3"):
+            qre.PrepTHC(ch, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "compact_ham, coeff_prec, selswap_depth",

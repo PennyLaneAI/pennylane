@@ -132,13 +132,59 @@ class TestQubitizeTHC:
         ),
     )
     def test_resources(self, compact_ham, prep_op, select_op, expected_res):
-        """Test that the resource decomposition for QubitizeTHC correct."""
+        """Test that the resource decomposition for QubitizeTHC is correct."""
 
         wo_cost = qre.estimate(
             qre.QubitizeTHC(
                 compact_ham,
                 prep_op=prep_op,
                 select_op=select_op,
+            )
+        )
+
+        assert wo_cost.algo_wires == expected_res["algo_wires"]
+        assert wo_cost.zeroed + wo_cost.any_state == expected_res["auxiliary_wires"]
+        assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+
+    # We are comparing the Toffoli and qubit cost here
+    # Expected number of Toffolis and wires were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
+    # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
+    @pytest.mark.parametrize(
+        "compact_ham, prep_op, select_op, expected_res",
+        (
+            (
+                # This test was taken from arXiv:2501.06165, numbers are adjusted to only the walk operator cost without unary iteration
+                qre.CompactHamiltonian.thc(58, 160),
+                qre.PrepTHC(qre.CompactHamiltonian.thc(58, 160), coeff_precision=13),
+                qre.SelectTHC(qre.CompactHamiltonian.thc(58, 160), rotation_precision=13),
+                {"algo_wires": 155, "auxiliary_wires": 792, "toffoli_gates": 8584},
+            ),
+            (
+                qre.CompactHamiltonian.thc(10, 50),
+                None,
+                None,
+                {"algo_wires": 52, "auxiliary_wires": 175, "toffoli_gates": 2304},
+            ),
+            (
+                qre.CompactHamiltonian.thc(4, 20),
+                qre.PrepTHC(qre.CompactHamiltonian.thc(4, 20), select_swap_depth=2),
+                None,
+                {"algo_wires": 35, "auxiliary_wires": 110, "toffoli_gates": 972},
+            ),
+        ),
+    )
+    def test_control_resources(self, compact_ham, prep_op, select_op, expected_res):
+        """Test that the controlled resource decomposition for QubitizeTHC is correct."""
+
+        wo_cost = qre.estimate(
+            qre.Controlled(
+                num_ctrl_wires=3,
+                num_zero_ctrl=2,
+                base_op=qre.QubitizeTHC(
+                    compact_ham,
+                    prep_op=prep_op,
+                    select_op=select_op,
+                ),
             )
         )
 
