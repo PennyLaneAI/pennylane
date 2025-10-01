@@ -256,7 +256,7 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
     @register_resources(
         _resource_fn,
         work_wires=inner_decomp._work_wire_spec,
-        heuristic=inner_decomp.heuristic_resources,
+        exact=inner_decomp.exact_resources,
     )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]

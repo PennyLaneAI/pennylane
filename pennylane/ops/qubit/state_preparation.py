@@ -191,7 +191,7 @@ def _basis_state_decomp_resources(num_wires):
     return {qml.X: num_wires - 1 or num_wires, qml.RX: 1, qml.GlobalPhase: 1}
 
 
-@register_resources(_basis_state_decomp_resources, heuristic=True)
+@register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
     if qml.math.is_abstract(state) and not (qml.capture.enabled() or qml.compiler.active()):

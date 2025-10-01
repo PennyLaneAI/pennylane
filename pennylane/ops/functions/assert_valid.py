@@ -158,15 +158,16 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
 
-    if rule.heuristic_resources:
+    if rule.exact_resources:
+        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        assert non_zero_gate_counts == actual_gate_counts, (
+            f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
+            f"\nActual gate counts:\n{actual_gate_counts}"
+        )
+    else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
         assert all(op in gate_counts for op in actual_gate_counts)
-    else:
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        assert (
-            non_zero_gate_counts == actual_gate_counts
-        ), f"\nGate counts expected from resource function:\n{non_zero_gate_counts}\nActual gate counts:\n{actual_gate_counts}"
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix:

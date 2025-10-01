@@ -283,9 +283,9 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     def _resource_fn(num_wires):  # pylint: disable=unused-argument
         return su2_resource() | {ops.GlobalPhase: 1}
 
-    # Resources are heuristic because the global phase or rotations might be skipped
+    # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda num_wires: num_wires == 1)
-    @register_resources(_resource_fn, heuristic=True)
+    @register_resources(_resource_fn, exact=False)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -376,7 +376,7 @@ def _two_qubit_resource(**_):
 
 
 @register_condition(lambda num_wires: num_wires == 2)
-@register_resources(_two_qubit_resource, heuristic=True)
+@register_resources(_two_qubit_resource, exact=False)
 def two_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a two-qubit unitary."""
 

@@ -472,9 +472,9 @@ def _mottonen_resources(num_wires):
     return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
 
 
-# Heuristic because it might over-estimate the resources
+# Not exact because it might over-estimate the resources
 mottonen_decomp = qml.register_resources(
-    _mottonen_resources, MottonenStatePreparation.compute_decomposition, heuristic=True
+    _mottonen_resources, MottonenStatePreparation.compute_decomposition, exact=False
 )
 
 qml.add_decomps(MottonenStatePreparation, mottonen_decomp)

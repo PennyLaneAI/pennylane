@@ -281,9 +281,9 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     }
 
 
-# Resources are heuristic because rotations might be skipped for zero angles
+# Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_ctrl_decomp_bisect_condition)
-@register_resources(_ctrl_decomp_bisect_resources, heuristic=True)
+@register_resources(_ctrl_decomp_bisect_resources, exact=False)
 def ctrl_decomp_bisect_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
@@ -319,9 +319,9 @@ def _single_ctrl_decomp_zyz_resources(**__):
     }
 
 
-# Resources are heuristic because rotations might be skipped for zero angles
+# Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_single_ctrl_decomp_zyz_condition)
-@register_resources(_single_ctrl_decomp_zyz_resources, heuristic=True)
+@register_resources(_single_ctrl_decomp_zyz_resources, exact=False)
 def single_ctrl_decomp_zyz_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
     https://arxiv.org/pdf/quant-ph/9503016"""
@@ -356,9 +356,9 @@ def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wir
     }
 
 
-# Resources are heuristic because rotations might be skipped for zero angle(s)
+# Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(_multi_ctrl_decomp_zyz_condition)
-@register_resources(_multi_ctrl_decomp_zyz_resources, heuristic=True)
+@register_resources(_multi_ctrl_decomp_zyz_resources, exact=False)
 def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
@@ -399,9 +399,9 @@ def _controlled_two_qubit_unitary_resource(
     return gate_counts
 
 
-# Resources are heuristic because rotations might be skipped for zero angle(s)
+# Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(lambda num_target_wires, **_: num_target_wires == 2)
-@register_resources(_controlled_two_qubit_unitary_resource, heuristic=True)
+@register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
     zero_control_wires = [w for w, val in zip(wires[:-2], control_values) if not val]
