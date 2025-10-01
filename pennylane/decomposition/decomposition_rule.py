@@ -164,7 +164,8 @@ def register_resources(
         qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
             returns a decorator for acting on a function.
         exact (bool): whether the resources are computed exactly (``True``, default) or
-            estimated heuristically (``False``).
+            estimated heuristically (``False``). This information is only relevant for testing
+            and validation purposes.
 
     Returns:
         DecompositionRule:
