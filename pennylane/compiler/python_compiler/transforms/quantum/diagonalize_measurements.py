@@ -102,6 +102,16 @@ class DiagonalizeFinalMeasurementsPattern(
 
                 qubit = gate.out_qubits[0]
 
+            # we need to replace the initial qubit use everwhere EXCEPT the use that is now the
+            # input to the first diagonalizing gate. Its not enough to only change the NambedObsOp,
+            # because the qubit might be deallocated later
+            observable.qubit.replace_by_if(
+                qubit, lambda use: not isinstance(use.operation, CustomOp)
+            )
+
+            # then we also update the observable to be in the Z basis. Since this is done with the
+            # rewriter, we don't need to call `rewriter.notify_modified(observable)` regarding this
+            # or regarding the updated qubit above
             diag_obs = NamedObsOp(
                 qubit=qubit, obs_type=NamedObservableAttr(NamedObservable("PauliZ"))
             )
@@ -118,7 +128,9 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([DiagonalizeFinalMeasurementsPattern()])
+            pattern_rewriter.GreedyRewritePatternApplier(
+                [DiagonalizeFinalMeasurementsPattern()],
+            ),
         ).rewrite_module(module)
 
 
