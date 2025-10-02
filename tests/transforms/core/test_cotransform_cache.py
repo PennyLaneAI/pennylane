@@ -30,7 +30,7 @@ def test_classical_jacobian_error_if_not_in_cache():
         qml.RY(x * y, 0)
         return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
 
-    container = TransformContainer(qml.transforms.merge_rotations.transform)
+    container = TransformContainer(qml.transforms.merge_rotations)
     x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})

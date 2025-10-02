@@ -276,12 +276,9 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     cqnode._transform_program = transform_program
     cqnode.transform_program.push_back(
         TransformContainer(
-            self._transform,
+            self,
             targs,
             {**tkwargs},
-            self._classical_cotransform,
-            self._is_informative,
-            self._final_transform,
         )
     )
 

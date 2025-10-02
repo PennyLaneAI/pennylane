@@ -12,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""This module contains the ResourceConfig class, which tracks the configuration for resource estimation"""
-
 from __future__ import annotations
 
 from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
+
+from pennylane.estimator.ops import CRX, CRY, CRZ, RX, RY, RZ, QubitUnitary
+from pennylane.estimator.templates import (
+    AliasSampling,
+    MPSPrep,
+    QROMStatePreparation,
+    SelectPauliRot,
+)
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -40,7 +47,19 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
-        self.resource_op_precisions = {}
+        self.resource_op_precisions = {
+            RX: {"precision": _DEFAULT_PRECISION},
+            RY: {"precision": _DEFAULT_PRECISION},
+            RZ: {"precision": _DEFAULT_PRECISION},
+            CRX: {"precision": _DEFAULT_PRECISION},
+            CRY: {"precision": _DEFAULT_PRECISION},
+            CRZ: {"precision": _DEFAULT_PRECISION},
+            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
+            QubitUnitary: {"precision": _DEFAULT_PRECISION},
+            AliasSampling: {"precision": _DEFAULT_PRECISION},
+            MPSPrep: {"precision": _DEFAULT_PRECISION},
+            QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
+        }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
         self._ctrl_custom_decomps = {}

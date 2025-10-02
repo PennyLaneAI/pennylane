@@ -29,6 +29,7 @@ from pennylane.templates.state_preparations.mottonen import (
 )
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
