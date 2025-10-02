@@ -539,14 +539,15 @@ class TestCatalystControlFlow:
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
+    @pytest.mark.parametrize("argnum", (None, 0))
     @pytest.mark.parametrize("g_fn", (qml.grad, qml.jacobian))
-    def test_lazy_dispatch_grad(self, g_fn):
+    def test_lazy_dispatch_grad(self, g_fn, argnum):
         """Test that grad is lazily dispatched to the catalyst version at runtime."""
 
         def f(x):
             return x**2
 
-        g = qml.qjit(g_fn(f))(0.5)
+        g = qml.qjit(g_fn(f, argnum=argnum))(0.5)
         assert qml.math.allclose(g, 1.0)
         assert qml.math.get_interface(g) == "jax"
 
