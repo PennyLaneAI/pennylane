@@ -306,15 +306,15 @@ class TestCaptureIntegration:
 
     def test_no_dynamic_allocation_size(self):
         """Test that allocation size must be static with capture."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def c(n: int):
+            allocate(n)
+
         with pytest.raises(
             NotImplementedError,
             match="Number of allocated wires must be static when capture is enabled.",
         ):
-
-            @qml.qnode(qml.device("default.qubit", wires=2))
-            def c(n: int):
-                allocate(n)
-
             c(1)
 
 
