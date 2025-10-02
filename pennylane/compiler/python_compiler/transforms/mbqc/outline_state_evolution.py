@@ -42,11 +42,7 @@ class OutlineStateEvolutionPass(passes.ModulePass):
 
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
-        """Apply the convert-to-mbqc-formalism pass."""
-        self.apply_on_qnode(module, OutlineStateEvolutionPattern())
-
-    def apply_on_qnode(self, module: builtin.ModuleOp, pattern: pattern_rewriter.RewritePattern):
-        """Apply given pattern once to the QNode function in this module."""
+        """Apply the outline-state-evolution pass."""
         rewriter = pattern_rewriter.PatternRewriter(module)
         qnode = None
         for op in module.ops:
@@ -54,7 +50,7 @@ class OutlineStateEvolutionPass(passes.ModulePass):
                 qnode = op
                 break
         assert qnode is not None, "expected QNode in module"
-        pattern.match_and_rewrite(qnode, rewriter)
+        OutlineStateEvolutionPattern().match_and_rewrite(qnode, rewriter)
 
 
 outline_state_evolution_pass = compiler_transform(OutlineStateEvolutionPass)
