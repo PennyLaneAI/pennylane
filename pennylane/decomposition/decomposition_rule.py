@@ -371,7 +371,7 @@ class DecompositionRule:
         func: Callable,
         resources: Callable | dict | None = None,
         work_wires: Callable | dict | None = None,
-        exact_resources: bool = False,
+        exact_resources: bool = True,
     ):
 
         self._impl = func
@@ -427,7 +427,7 @@ class DecompositionRule:
         """Adds a condition for this decomposition rule."""
         self._conditions.append(condition)
 
-    def set_resources(self, resources: Callable | dict, exact_resources: bool) -> None:
+    def set_resources(self, resources: Callable | dict, exact_resources: bool = True) -> None:
         """Sets the resources for this decomposition rule."""
 
         if isinstance(resources, dict):
