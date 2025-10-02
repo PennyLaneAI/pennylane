@@ -25,7 +25,7 @@ import pennylane.templates as qtemps
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.operation import Operation
 
-# pylint: disable= no-self-use
+# pylint: disable= no-self-use,too-few-public-methods
 
 
 class TestMapToResourceOp:
@@ -211,11 +211,9 @@ class TestMapToResourceOp:
 
         def actual_circ():
             DummyOp(theta=1.23, wires=[0, 1])
-            return
 
         def expected_circ():
             re_ops.RX(wires=0)
             re_ops.CNOT(wires=[0, 1])
-            return
 
         assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
