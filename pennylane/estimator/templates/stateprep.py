@@ -877,7 +877,7 @@ class QROMStatePreparation(ResourceOperator):
 
 class PrepTHC(ResourceOperator):
     r"""Resource class for preparing the state for tensor hypercontracted (THC) Hamiltonian.
-    
+
     This operator customizes the Prepare circuit based on the structure of THC Hamiltonian.
 
     Args:
