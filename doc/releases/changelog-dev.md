@@ -73,6 +73,7 @@
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
+  [(#8381)](https://github.com/PennyLaneAI/pennylane/pull/8381)
 
   The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated
   wires are handled:
@@ -828,6 +829,9 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Update docstring in `perturbation_error` to use the correct positional argument name.
+  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+
 * Renamed several labs test file names to prevent conflict with names in PennyLane tests.
   [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
 
@@ -1567,6 +1571,7 @@ Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
+Elton Law,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares
 Erick Ochoa,
@@ -1577,5 +1582,6 @@ Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,
+Paul Haochen Wang,
 David Wierichs,
 Jake Zaia
