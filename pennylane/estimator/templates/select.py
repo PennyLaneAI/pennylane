@@ -19,13 +19,13 @@ import numpy as np
 
 from pennylane import estimator as qre
 from pennylane.estimator import Allocate, Deallocate
+from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.estimator.templates.compact_hamiltonian import THCHamiltonian
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= signature-differs, arguments-differ

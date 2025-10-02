@@ -16,13 +16,13 @@ import math
 
 import pennylane.estimator as qre
 import pennylane.numpy as np
+from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.estimator.templates.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 

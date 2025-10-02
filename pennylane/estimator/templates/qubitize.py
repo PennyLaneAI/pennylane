@@ -16,6 +16,7 @@ import math
 
 import numpy as np
 
+from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.ops.op_math.controlled_ops import MultiControlledX, Toffoli
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
 from pennylane.estimator.ops.qubit.non_parametric_ops import X
@@ -29,8 +30,6 @@ from pennylane.estimator.templates.select import SelectTHC
 from pennylane.estimator.templates.stateprep import PrepTHC
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
-
-from .compact_hamiltonian import THCHamiltonian
 
 # pylint: disable=signature-differs, arguments-differ, too-many-arguments
 
