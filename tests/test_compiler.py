@@ -539,6 +539,17 @@ class TestCatalystControlFlow:
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
+    @pytest.mark.parametrize("g_fn", (qml.grad, qml.jacobian))
+    def test_lazy_dispatch_grad(self, g_fn):
+        """Test that grad is lazily dispatched to the catalyst version at runtime."""
+
+        def f(x):
+            return x**2
+
+        g = qml.qjit(g_fn(f))(0.5)
+        assert qml.math.allclose(g, 1.0)
+        assert qml.math.get_interface(g) == "jax"
+
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
@@ -669,7 +680,7 @@ class TestCatalystGrad:
 
         with pytest.raises(
             ValueError,
-            match="Invalid values 'method='fd'' and 'h=0.3' without QJIT",
+            match="Invalid values method='fd' and h='0.3' without QJIT",
         ):
             workflow(np.array([2.0, 1.0]))
 

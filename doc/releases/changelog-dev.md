@@ -1158,6 +1158,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
+  capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
+  [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
+
 * Adds `measurements` as a "core" module in the tach specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 

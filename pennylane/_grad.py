@@ -301,7 +301,9 @@ class grad:
             )(*args, **kwargs)
 
         if self._method or self._h:  # pragma: no cover
-            raise ValueError(f"Invalid values '{self._method=}' and '{self._h=}' without QJIT.")
+            raise ValueError(
+                f"Invalid values method='{self._method}' and h='{self._h}' without QJIT."
+            )
 
         return self._autograd_call(*args, **kwargs)
 
@@ -614,7 +616,9 @@ class jacobian:
             return g(*args, **kwargs)
 
         if self._method or self._h:
-            raise ValueError(f"Invalid values '{self._method=}' and '{self._h=}' without QJIT.")
+            raise ValueError(
+                f"Invalid values method='{self._method}' and h='{self._h}' without QJIT."
+            )
 
         return self._autograd_call(*args, **kwargs)
 
