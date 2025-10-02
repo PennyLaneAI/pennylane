@@ -267,24 +267,28 @@ class ResourceConfig:
 
         .. code-block:: pycon
 
-            >>> print(qre.estimate_resources(qre.X(), gate_set={"Hadamard", "Z", "S"}))
+            >>> print(qre.estimate(qre.X(), gate_set={"Hadamard", "Z", "S"}))
             --- Resources: ---
-            Total qubits: 1
-            Total gates : 4
-            Qubit breakdown:
-              clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-            Gate breakdown:
-              {'Hadamard': 2, 'S': 2}
+             Total wires: 1
+                algorithmic wires: 1
+                allocated wires: 0
+            	 zero state: 0
+            	 any state: 0
+             Total gates : 4
+              'S': 2,
+              'Hadamard': 2
             >>> config = qre.ResourceConfig()
             >>> config.set_decomp(qre.X, custom_res_decomp)
-            >>> print(qre.estimate_resources(qre.X(), gate_set={"Hadamard", "Z", "S"}, config=config))
+            >>> print(qre.estimate(qre.X(), gate_set={"Hadamard", "Z", "S"}, config=config))
             --- Resources: ---
-            Total qubits: 1
-            Total gates : 3
-            Qubit breakdown:
-              clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-            Gate breakdown:
-              {'S': 1, 'Hadamard': 2}
+             Total wires: 1
+                algorithmic wires: 1
+                allocated wires: 0
+            	 zero state: 0
+            	 any state: 0
+             Total gates : 3
+              'S': 2,
+              'Hadamard': 1
         """
         if decomp_type is None:
             decomp_type = DecompositionType("base")
