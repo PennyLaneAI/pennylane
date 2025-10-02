@@ -364,11 +364,20 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
-        >>> res1 = qre.estimate(qre.SemiAdder(10))
+        >>> import pennylane.estimator as qre
+        >>> def circ():
+        ...     qre.SemiAdder(10)
+        ...     qre.Toffoli()
+        ...     qre.RX(precision=1e-5)
+        ...     qre.RX(precision=1e-7)
+        >>> res1 = qre.estimate(circ, gate_set=['Toffoli', 'RX', 'CNOT', 'Hadamard'])()
         >>> print(res1.gate_breakdown())
-        Toffoli total: 9
+        RX total: 2
+            RX {'precision': 1e-05}: 1
+            RX {'precision': 1e-07}: 1
+        Toffoli total: 10
             Toffoli {'elbow': 'left'}: 9
+            Toffoli {'elbow': None}: 1
         CNOT total: 60
         Hadamard total: 27
 
