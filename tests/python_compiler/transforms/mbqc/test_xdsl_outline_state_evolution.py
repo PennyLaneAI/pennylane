@@ -65,10 +65,6 @@ class TestOutlineStateEvolutionPass:
         res = circuit()
         assert res == 1.0
 
-    # TODOs: we need to support the program structure maintain.
-    @pytest.mark.xfail(
-        reason="program structure is not support for the current outline_state_evolution_pass"
-    )
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_e2e_for_loop(self):
         """Test that the outline_state_evolution_pass end to end on null.qubit."""
