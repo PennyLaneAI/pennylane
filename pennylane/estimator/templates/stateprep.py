@@ -63,12 +63,17 @@ class UniformStatePrep(ResourceOperator):
     >>> unif_state_prep = qre.UniformStatePrep(10)
     >>> print(qre.estimate(unif_state_prep))
     --- Resources: ---
-     Total qubits: 5
-     Total gates : 124
-     Qubit breakdown:
-      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'Hadamard': 16, 'X': 12, 'CNOT': 4, 'Toffoli': 4, 'T': 88}
+    Total wires: 5
+        algorithmic wires: 4
+        allocated wires: 1
+        zero state: 1
+        any state: 0
+    Total gates : 124
+    'Toffoli': 4,
+    'T': 88,
+    'CNOT': 4,
+    'X': 12,
+    'Hadamard': 16
     """
 
     resource_keys = {"num_states"}
@@ -179,12 +184,17 @@ class AliasSampling(ResourceOperator):
     >>> alias_sampling = qre.AliasSampling(num_coeffs=100)
     >>> print(qre.estimate(alias_sampling))
     --- Resources: ---
-     Total qubits: 81
-     Total gates : 6.157E+3
-     Qubit breakdown:
-      zeroed qubits: 6, any_state qubits: 68, algorithmic qubits: 7
-     Gate breakdown:
-      {'Hadamard': 730, 'X': 479, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
+    Total wires: 133
+        algorithmic wires: 7
+        allocated wires: 126
+        zero state: 58
+        any state: 68
+    Total gates : 6.505E+3
+    'Toffoli': 272,
+    'T': 88,
+    'CNOT': 4.646E+3,
+    'X': 595,
+    'Hadamard': 904
     """
 
     resource_keys = {"num_coeffs", "precision"}
@@ -513,11 +523,11 @@ class QROMStatePreparation(ResourceOperator):
 
         >>> print(res.gate_breakdown())
         QROM total: 5
-            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
         T total: 2.524E+3
         CNOT total: 825
         Hadamard total: 428
@@ -534,11 +544,11 @@ class QROMStatePreparation(ResourceOperator):
         >>> res = qre.estimate(qrom_prep, gate_set)
         >>> print(res.gate_breakdown())
         QROM total: 5
-            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
         T total: 2.524E+3
         CNOT total: 825
         Hadamard total: 428
