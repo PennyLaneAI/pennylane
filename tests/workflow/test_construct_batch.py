@@ -26,33 +26,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
 from pennylane.workflow import construct_batch, get_transform_program
-from pennylane.workflow.construct_batch import expand_fn_transform
-
-
-def test_expand_fn_transform():
-    """Tests the expand_fn_transform."""
-
-    def my_expand_fn(tape, op1, op2=qml.S(0), op3=qml.S(0)):
-        """my docstring."""
-        return qml.tape.QuantumScript(
-            tape.operations + [op1, op2, op3], tape.measurements, tape.shots
-        )
-
-    t = expand_fn_transform(my_expand_fn)
-
-    assert isinstance(t, qml.transforms.core.TransformDispatcher)
-    tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=50)
-
-    batch, fn = t(tape, qml.PauliX(0), op3=qml.T(0))
-    assert len(batch) == 1
-    expected = qml.tape.QuantumScript(
-        [qml.S(0), qml.PauliX(0), qml.S(0), qml.T(0)], [qml.expval(qml.PauliZ(0))], shots=50
-    )
-    qml.assert_equal(batch[0], expected)
-    assert fn(("a",)) == "a"
-
-    assert repr(t) == "<transform: my_expand_fn>"
-    assert t.__doc__ == "my docstring."
 
 
 class TestTransformProgramGetter:
@@ -88,14 +61,12 @@ class TestTransformProgramGetter:
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        expected_p0 = TransformContainer(qml.transforms.cancel_inverses.transform)
-        expected_p1 = TransformContainer(
-            qml.transforms.merge_rotations.transform, kwargs={"atol": 1e-5}
-        )
-        expected_p2 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
+        expected_p0 = TransformContainer(qml.transforms.cancel_inverses)
+        expected_p1 = TransformContainer(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
+        expected_p2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
 
         ps_expand_fn = TransformContainer(
-            qml.gradients.param_shift.expand_transform, kwargs={"shifts": 2}
+            qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
         p0 = get_transform_program(circuit, level=0)
@@ -189,11 +160,11 @@ class TestTransformProgramGetter:
 
         program = get_transform_program(circuit)
 
-        m1 = TransformContainer(qml.transforms.merge_rotations.transform)
+        m1 = TransformContainer(qml.transforms.merge_rotations)
         assert program[:1] == TransformProgram([m1])
 
         m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
-        assert program[1].transform == m2.transform.transform
+        assert program[1].transform == m2.transform
         assert program[1].kwargs["device"] == dev
 
         # a little hard to check the contents of a expand_fn transform
