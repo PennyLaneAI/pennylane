@@ -44,7 +44,7 @@ class QubitizeTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
     Args:
-        thc_ham (:class:`~.pennylane.estimator.templates.THCHamiltonian`): A tensor hypercontracted
+        thc_ham (:class:`~.pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian for which the walk operator is being created.
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             resource operator, corresponding to the prepare routine. If :code:`None`, the
