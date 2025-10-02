@@ -157,6 +157,19 @@ class TestMapToResourceOp:
                 re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2),
             ),
             (
+                qml.TrotterProduct(
+                    qml.dot([0.25, 0.75], [qml.X(0), qml.Z(0)]),
+                    time=1.0,
+                    n=10,
+                    order=2,
+                ),
+                re_temps.TrotterProduct(
+                    first_order_expansion=[re_ops.X(), re_ops.Z()],
+                    num_steps=10,
+                    order=2,
+                ),
+            ),
+            (
                 qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
                 re_temps.IntegerComparator(value=5, register_size=3, geq=False),
             ),

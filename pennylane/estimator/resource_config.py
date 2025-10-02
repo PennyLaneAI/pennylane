@@ -25,6 +25,7 @@ from pennylane.estimator.templates import (
     QROMStatePreparation,
     SelectPauliRot,
 )
+from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -47,6 +48,7 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
+        _DEFAULT_PHASEGRAD_PRECISION = 1e-6
         self.resource_op_precisions = {
             RX: {"precision": _DEFAULT_PRECISION},
             RY: {"precision": _DEFAULT_PRECISION},
@@ -59,6 +61,14 @@ class ResourceConfig:
             AliasSampling: {"precision": _DEFAULT_PRECISION},
             MPSPrep: {"precision": _DEFAULT_PRECISION},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
+            TrotterVibronic: {
+                "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
+                "coeff_precision": 1e-3,
+            },
+            TrotterVibrational: {
+                "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
+                "coeff_precision": 1e-3,
+            },
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
