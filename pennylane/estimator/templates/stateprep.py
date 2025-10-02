@@ -886,7 +886,7 @@ class PrepTHC(ResourceOperator):
         coeff_precision (int | None): The number of bits used to represent the precision for loading
             the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
             :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
-        select_swap_depth (int| None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
