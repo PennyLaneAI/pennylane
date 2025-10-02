@@ -36,7 +36,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 # pylint: disable= no-self-use, arguments-differ
 
 
-class ResourceTestCNOT(ResourceOperator):
+class TestCNOT(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 2
@@ -55,7 +55,7 @@ class ResourceTestCNOT(ResourceOperator):
         raise ResourcesUndefinedError
 
 
-class ResourceTestHadamard(ResourceOperator):
+class TestHadamard(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 1
@@ -74,7 +74,7 @@ class ResourceTestHadamard(ResourceOperator):
         raise ResourcesUndefinedError
 
 
-class ResourceTestT(ResourceOperator):
+class TestT(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 1
@@ -93,7 +93,7 @@ class ResourceTestT(ResourceOperator):
         raise ResourcesUndefinedError
 
 
-class ResourceTestZ(ResourceOperator):
+class TestZ(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 1
@@ -109,11 +109,11 @@ class ResourceTestZ(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls):
-        t = resource_rep(ResourceTestT)
+        t = resource_rep(TestT)
         return [GateCount(t, count=4)]
 
 
-class ResourceTestRZ(ResourceOperator):
+class TestRZ(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 1
@@ -133,12 +133,12 @@ class ResourceTestRZ(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, precision):
-        t = resource_rep(ResourceTestT)
+        t = resource_rep(TestT)
         t_counts = round(1 / precision)
         return [GateCount(t, count=t_counts)]
 
 
-class ResourceTestAlg1(ResourceOperator):
+class TestAlg1(ResourceOperator):
     """Dummy class for testing"""
 
     num_wires = 2
@@ -158,8 +158,8 @@ class ResourceTestAlg1(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_iter):
-        cnot = resource_rep(ResourceTestCNOT)
-        h = resource_rep(ResourceTestHadamard)
+        cnot = resource_rep(TestCNOT)
+        h = resource_rep(TestHadamard)
 
         return [
             Allocate(num_wires=num_iter),
@@ -169,7 +169,7 @@ class ResourceTestAlg1(ResourceOperator):
         ]
 
 
-class ResourceTestAlg2(ResourceOperator):
+class TestAlg2(ResourceOperator):
     """Dummy class for testing"""
 
     resource_keys = {"num_wires"}
@@ -188,8 +188,8 @@ class ResourceTestAlg2(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_wires):
-        rz = resource_rep(ResourceTestRZ, {"precision": 1e-2})
-        alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
+        rz = resource_rep(TestRZ, {"precision": 1e-2})
+        alg1 = resource_rep(TestAlg1, {"num_iter": 3})
 
         return [
             Allocate(num_wires=num_wires),
@@ -201,7 +201,7 @@ class ResourceTestAlg2(ResourceOperator):
 
 def mock_rotation_decomp(precision):
     """A mock decomposition for rotation gates returning TestT gates for testing."""
-    t = resource_rep(ResourceTestT)
+    t = resource_rep(TestT)
     t_counts = round(1 / precision)
     return [GateCount(t, count=t_counts)]
 
@@ -239,14 +239,14 @@ class TestEstimateResources:
         when the num_wires argument is used."""
 
         def my_circuit():
-            ResourceTestAlg2(num_wires=4)
+            TestAlg2(num_wires=4)
 
         res = estimate(my_circuit, gate_set={"TestAlg2"})()
         expected = Resources(
             zeroed=0,
             any_state=0,
             algo_wires=4,
-            gate_types={resource_rep(ResourceTestAlg2, {"num_wires": 4}): 1},
+            gate_types={resource_rep(TestAlg2, {"num_wires": 4}): 1},
         )
         assert res == expected
 
@@ -267,22 +267,22 @@ class TestEstimateResources:
 
         def my_circuit():
             for w in range(5):
-                ResourceTestHadamard(wires=[w])
-            ResourceTestCNOT(wires=[0, 1])
-            ResourceTestRZ(wires=[1])
-            ResourceTestRZ(precision=1e-2, wires=[2])
-            ResourceTestCNOT(wires=[3, 4])
-            ResourceTestAlg1(num_iter=5, wires=[5, 6])
+                TestHadamard(wires=[w])
+            TestCNOT(wires=[0, 1])
+            TestRZ(wires=[1])
+            TestRZ(precision=1e-2, wires=[2])
+            TestCNOT(wires=[3, 4])
+            TestAlg1(num_iter=5, wires=[5, 6])
 
-        # See implementation of ResourceTestRZ to see how it decomposes down to
-        # ResourceTestT based on the precision value, hence why
+        # See implementation of TestRZ to see how it decomposes down to
+        # TestT based on the precision value, hence why
         # round(1/1e-2) + round(1/1e-9)
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestT): round(1 / 1e-2) + round(1 / 1e-9),
-                resource_rep(ResourceTestCNOT): 7,
-                resource_rep(ResourceTestHadamard): 10,
+                resource_rep(TestT): round(1 / 1e-2) + round(1 / 1e-9),
+                resource_rep(TestCNOT): 7,
+                resource_rep(TestHadamard): 10,
             },
         )
         expected_resources = Resources(
@@ -291,20 +291,20 @@ class TestEstimateResources:
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         custom_config = ResourceConfig()
-        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": 1e-9}
+        custom_config.resource_op_precisions[TestRZ] = {"precision": 1e-9}
         computed_resources = estimate(my_circuit, gate_set=gate_set, config=custom_config)()
         assert computed_resources == expected_resources
 
     def test_estimate_resources_from_resource_operator(self):
         """Test that we can accurately obtain resources from resource operator"""
-        op = ResourceTestAlg2(num_wires=4)
+        op = TestAlg2(num_wires=4)
         actual_resources = estimate(op, gate_set={"TestRZ", "TestAlg1"})
 
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
-                resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
+                resource_rep(TestRZ, {"precision": 1e-2}): 4,
+                resource_rep(TestAlg1, {"num_iter": 3}): 2,
             },
         )
         expected_resources = Resources(zeroed=4, algo_wires=4, gate_types=expected_gates)
@@ -312,14 +312,14 @@ class TestEstimateResources:
 
     def test_estimate_resources_from_scaled_resource_operator(self):
         """Test that we can accurately obtain resources from resource operator"""
-        op = 2 * ResourceTestAlg2(num_wires=4)
+        op = 2 * TestAlg2(num_wires=4)
         actual_resources = estimate(op, gate_set={"TestRZ", "TestAlg1"})
 
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 8,
-                resource_rep(ResourceTestAlg1, {"num_iter": 3}): 4,
+                resource_rep(TestRZ, {"precision": 1e-2}): 8,
+                resource_rep(TestAlg1, {"num_iter": 3}): 4,
             },
         )
         expected_resources = Resources(zeroed=4, algo_wires=4, gate_types=expected_gates)
@@ -330,8 +330,8 @@ class TestEstimateResources:
         gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
-                resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
+                resource_rep(TestRZ, {"precision": 1e-2}): 4,
+                resource_rep(TestAlg1, {"num_iter": 3}): 2,
             },
         )
         resources = Resources(zeroed=0, algo_wires=4, gate_types=gates)
@@ -342,9 +342,9 @@ class TestEstimateResources:
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestT): 4 * round(1 / 1e-2),
-                resource_rep(ResourceTestCNOT): 6,
-                resource_rep(ResourceTestHadamard): 6,
+                resource_rep(TestT): 4 * round(1 / 1e-2),
+                resource_rep(TestCNOT): 6,
+                resource_rep(TestHadamard): 6,
             },
         )
         # TODO: optimize allocation
@@ -413,9 +413,9 @@ class TestEstimateResources:
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(ResourceTestRZ, {"precision": 1e-2}): 4,
-                            resource_rep(ResourceTestAlg1, {"num_iter": 3}): 2,
-                            resource_rep(ResourceTestZ): 4,
+                            resource_rep(TestRZ, {"precision": 1e-2}): 4,
+                            resource_rep(TestAlg1, {"num_iter": 3}): 2,
+                            resource_rep(TestZ): 4,
                         },
                     ),
                 ),
@@ -429,9 +429,9 @@ class TestEstimateResources:
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(ResourceTestT): 416,
-                            resource_rep(ResourceTestCNOT): 6,
-                            resource_rep(ResourceTestHadamard): 6,
+                            resource_rep(TestT): 416,
+                            resource_rep(TestCNOT): 6,
+                            resource_rep(TestHadamard): 6,
                         },
                     ),
                 ),
@@ -442,9 +442,9 @@ class TestEstimateResources:
         """Test that changing the gate_set correctly updates the resources"""
 
         def my_circ(num_wires):
-            ResourceTestAlg2(num_wires, wires=range(num_wires))
+            TestAlg2(num_wires, wires=range(num_wires))
             for w in range(num_wires):
-                ResourceTestZ(wires=w)
+                TestZ(wires=w)
 
         actual_resources = estimate(my_circ, gate_set=gate_set)(num_wires=4)
         assert actual_resources == expected_resources
@@ -453,15 +453,15 @@ class TestEstimateResources:
     def test_varying_config(self, error_val):
         """Test that changing the resource_config correctly updates the resources"""
         custom_config = ResourceConfig()
-        custom_config.resource_op_precisions[ResourceTestRZ] = {"precision": error_val}
+        custom_config.resource_op_precisions[TestRZ] = {"precision": error_val}
 
-        op = ResourceTestRZ()  # don't specify precision
+        op = TestRZ()  # don't specify precision
         computed_resources = estimate(op, gate_set={"TestT"}, config=custom_config)
 
         expected_resources = Resources(
             zeroed=0,
             algo_wires=1,
-            gate_types=defaultdict(int, {resource_rep(ResourceTestT): round(1 / error_val)}),
+            gate_types=defaultdict(int, {resource_rep(TestT): round(1 / error_val)}),
         )
 
         assert computed_resources == expected_resources
