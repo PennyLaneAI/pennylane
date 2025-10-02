@@ -19,14 +19,17 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CDFHamiltonian:
-    """Constructs a compressed double factorized Hamiltonian instance
+    """For a compressed double-factorized (CDF) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
     Args:
         num_orbitals (int): number of spatial orbitals
-        num_fragments (int): number of fragments in the compressed double factorization (CDF) representation
+        num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
 
     Returns:
         CDFHamiltonian: An instance of CDFHamiltonian
+
+    .. seealso::
+        :class:`~.estimator.templates.TrotterCDF
     """
 
     num_orbitals: int
@@ -35,7 +38,7 @@ class CDFHamiltonian:
 
 @dataclass(frozen=True)
 class THCHamiltonian:
-    """Constructs a tensor hypercontracted Hamiltonian instance
+    """For a tensor hypercontracted (THC) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
     Args:
         num_orbitals (int): number of spatial orbitals
@@ -43,6 +46,9 @@ class THCHamiltonian:
 
     Returns:
         THCHamiltonian: An instance of THCHamiltonian
+
+    .. seealso::
+        :class:`~.estimator.templates.TrotterTHC
     """
 
     num_orbitals: int
@@ -51,7 +57,7 @@ class THCHamiltonian:
 
 @dataclass(frozen=True)
 class VibrationalHamiltonian:
-    """Constructs a vibrational Hamiltonian instance
+    """For a vibrational Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
     Args:
         num_modes (int): number of vibrational modes
@@ -60,6 +66,9 @@ class VibrationalHamiltonian:
 
     Returns:
         VibrationalHamiltonian: An instance of VibrationalHamiltonian
+
+    .. seealso::
+        :class:`~.estimator.templates.TrotterVibrational
     """
 
     num_modes: int
@@ -69,7 +78,7 @@ class VibrationalHamiltonian:
 
 @dataclass(frozen=True)
 class VibronicHamiltonian:
-    """Constructs a vibronic Hamiltonian instance
+    """For a vibronic Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
     Args:
         num_modes (int): number of vibronic modes
@@ -79,6 +88,9 @@ class VibronicHamiltonian:
 
     Returns:
         VibronicHamiltonian: An instance of VibronicHamiltonian
+
+    .. seealso::
+        :class:`~.estimator.templates.TrotterVibronic
     """
 
     num_modes: int
