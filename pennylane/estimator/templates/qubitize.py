@@ -91,7 +91,7 @@ class QubitizeTHC(ResourceOperator):
         **Precision Precedence**
 
         The :code:`coeff_precision` and :code:`rotation_precision` arguments are used to determine
-        the number of bits for loading the coefficients, and the rotation angles respectively.
+        the number of bits for loading the coefficients and the rotation angles, respectively.
         The final value is determined by the following precedence:
 
         * If provided, the precisions from :code:`prep_op` and :code:`select_op` take precedence.
