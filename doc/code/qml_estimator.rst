@@ -61,3 +61,12 @@ Resource Templates:
     :no-inherited-members:
     :classes-only:
     :noindex:
+
+
+Resource Hamiltonians:
+----------------------
+
+.. automodsumm:: pennylane.estimator.compact_hamiltonian
+    :toctree: api
+    :no-inherited-members:
+    :classes-only:
