@@ -36,9 +36,11 @@
   * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
     [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
-  * The ``CompactHamiltonian`` class was added to `qml.estimator.templates` as a compact representation for the Hamiltonian of a quantum system.
+  * The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
+    classes were added to `qml.estimator` as compact representation for the Hamiltonian of a quantum system.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
-  * The resource templates related to Trotter were added to `qml.estimator.templates`.
+  * The resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
+    ``TrotterVibronic`` related to Suzuki-Trotter method were added to `qml.estimator.templates`.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
