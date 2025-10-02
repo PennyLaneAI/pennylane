@@ -787,6 +787,7 @@
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
+  [(#8376)](https://github.com/PennyLaneAI/pennylane/pull/8376)
 
   ```python
   @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
