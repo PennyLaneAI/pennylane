@@ -25,6 +25,9 @@ import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane import math
 from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.estimator.resource_mapping import _map_to_resource_op
+# TODO: Use mapping in core, for now, just prototype functionality.
+from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op as labs_mapper 
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
@@ -49,11 +52,9 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @singledispatch
-def _get_op_call_graph(op):  # pylint: disable=unused-argument
+def _get_op_call_graph(op):
     """Return call graph for PennyLane Operator. If the call graph is not implemented,
-    return ``None``, which means we will build the call graph via decomposition"""
-
-    # TODO: Integrate with resource operators and the new decomposition pipelines
+    return ``None``, which means we will build the call graph via decomposition"""    
     return None
 
 
