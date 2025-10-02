@@ -55,20 +55,21 @@ class Resources:
     >>> res = qre.Resources(zeroed=3, gate_types=gt)
     >>> print(res)
     --- Resources: ---
-     Total wires: 2
+     Total wires: 3
         algorithmic wires: 0
-        allocated wires: 2
-             zero state: 2
-             any state: 0
+        allocated wires: 3
+    	 zero state: 3
+    	 any state: 0
      Total gates : 21
       'RX': 4,
       'X': 7,
       'Hadamard': 10
-    >>>
+    
+    A more detailed breakdown of resources can be generated using the ``gate_breakdown`` method:
     >>> print(res.gate_breakdown())
     RX total: 4
-        RX {'eps': 1e-08}: 2
-        RX {'eps': 1e-06}: 2
+        RX {'precision': 1e-08}: 2
+        RX {'precision': 1e-06}: 2
     X total: 7
     Hadamard total: 10
 
