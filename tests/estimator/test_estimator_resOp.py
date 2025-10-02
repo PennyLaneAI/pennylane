@@ -680,6 +680,23 @@ class TestGateCount:
 
         assert repr(gc) == "(3 x DummyX)"
 
+    def test_repr_symbolic(self):
+        """Test that repr works as expected with symbolic ops"""
+        cr_op = CompressedResourceOp(DummyX, 1, {"num_wires": 1}, None)
+        gc = GateCount(
+            resource_rep(
+                qre_ops.Controlled, {"base_cmpr_op": cr_op, "num_ctrl_wires": 1, "num_zero_ctrl": 0}
+            ),
+            count=3,
+        )
+
+        assert repr(gc) == "(3 x Controlled(DummyX))"
+
+        cr_op = CompressedResourceOp(DummyX, 1, {"num_wires": 1}, None)
+        gc = GateCount(resource_rep(qre_ops.Adjoint, {"base_cmpr_op": cr_op}), count=3)
+
+        assert repr(gc) == "(3 x Adjoint(DummyX))"
+
 
 def test_resource_rep():
     """Test that the resource_rep method works as expected"""

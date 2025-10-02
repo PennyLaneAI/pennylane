@@ -441,6 +441,9 @@ class GateCount:
         return self.gate == other.gate and self.count == other.count
 
     def __repr__(self) -> str:
+        if self.gate._name in ["Adjoint", "Controlled"]:
+            base_gate_name = self.gate.params["base_cmpr_op"]._name
+            return f"({self.count} x {self.gate._name}({base_gate_name}))"
         return f"({self.count} x {self.gate._name})"
 
 
