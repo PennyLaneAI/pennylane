@@ -66,16 +66,25 @@ class TestOutlineStateEvolutionPass:
         assert res == 1.0
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_gates_in_mbqc_gate_set_e2e_for_loop(self):
+    def test_gates_in_mbqc_gate_set_e2e_loop(self):
         """Test that the outline_state_evolution_pass end to end on null.qubit."""
         dev = qml.device("null.qubit", wires=1000)
 
         @qml.for_loop(0, 1000, 1)
-        def loop_func(i):
+        def for_fn(i):
             qml.H(i)
             qml.S(i)
             RotXZX(0.1, 0.2, 0.3, wires=[i])
             qml.RZ(phi=0.1, wires=[i])
+
+        @qml.while_loop(lambda i: i > 1000)
+        def while_fn(i):
+            qml.H(i)
+            qml.S(i)
+            RotXZX(0.1, 0.2, 0.3, wires=[i])
+            qml.RZ(phi=0.1, wires=[i])
+            i = i + 1
+            return i
 
         @qml.qjit(
             target="mlir",
@@ -90,7 +99,8 @@ class TestOutlineStateEvolutionPass:
         @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
-            loop_func()
+            for_fn()
+            while_fn(0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
 
