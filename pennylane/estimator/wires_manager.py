@@ -46,7 +46,7 @@ class WireResourceManager:
     ...             tight_budget=False,
     ...     )
     >>> print(q)
-    WireResourceManager(zeroed wires=2, any state wires=2, algorithmic wires=0, tight budget=False)
+    WireResourceManager(zeroed wires=2, any_state wires=2, algorithmic wires=0, tight budget=False)
 
     """
 
