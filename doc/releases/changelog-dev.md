@@ -11,7 +11,6 @@
   * Added functionality to map PennyLane operations
     to their associated resource operators for resource estimation.
     [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
-
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
@@ -26,7 +25,6 @@
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
     [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
     [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
-
   * The test files were renamed to avoid the dual definition error with labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
@@ -37,9 +35,8 @@
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
     [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
   * The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
-    classes were added to `qml.estimator` as compact representation for the Hamiltonian of a quantum system.
-    [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
-  * The resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
+    classes were added to store metadata of the Hamiltonian of a quantum system,
+    and the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
     ``TrotterVibronic`` related to Suzuki-Trotter method were added to `qml.estimator.templates`.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
