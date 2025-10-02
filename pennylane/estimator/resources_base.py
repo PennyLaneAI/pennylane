@@ -46,13 +46,14 @@ class Resources:
     **Example**
 
     >>> from pennylane import estimator as qre
+    >>> from collections import defaultdict
     >>> H = qre.resource_rep(qre.Hadamard)
     >>> X = qre.resource_rep(qre.X)
     >>> RX = qre.resource_rep(qre.RX, {"precision":1e-8})
     >>> RX_2 = qre.resource_rep(qre.RX, {"precision":1e-6})
-    >>> gt = defaultdict(int, {H: 10, X:7, RX:2, RX_2:2})
+    >>> gate_types = defaultdict(int, {H: 10, X:7, RX:2, RX_2:2})
     >>>
-    >>> res = qre.Resources(zeroed=3, gate_types=gt)
+    >>> res = qre.Resources(zeroed=3, gate_types=gate_types)
     >>> print(res)
     --- Resources: ---
      Total wires: 3
@@ -66,6 +67,7 @@ class Resources:
       'Hadamard': 10
 
     A more detailed breakdown of resources can be generated using the ``gate_breakdown`` method:
+
     >>> print(res.gate_breakdown())
     RX total: 4
         RX {'precision': 1e-08}: 2
@@ -303,7 +305,7 @@ class Resources:
 
         Returns:
             dict: A dictionary with operator names (str) as keys
-                and the number of occurances in the circuit (int) as values.
+                and the number of occurrences in the circuit (int) as values.
         """
         gate_counts = defaultdict(int)
 
