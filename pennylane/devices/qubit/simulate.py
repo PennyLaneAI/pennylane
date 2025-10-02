@@ -22,7 +22,7 @@ from functools import partial, singledispatch
 import numpy as np
 from numpy.random import default_rng
 
-from pennylane import math, ops
+from pennylane import math, measurements, ops
 from pennylane.logging import debug_logger
 from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
@@ -35,8 +35,6 @@ from pennylane.measurements import (
     Shots,
     VarianceMP,
     find_post_processed_mcms,
-    probs,
-    sample,
 )
 from pennylane.operation import StatePrepBase
 from pennylane.tape import QuantumScript
@@ -487,7 +485,7 @@ def simulate_tree_mcm(
         if stack.is_full(depth):
             # Call `combine_measurements` to count-average measurements
             measurement_dicts = get_measurement_dicts(terminal_measurements, stack, depth)
-            measurements = combine_measurements(
+            _measurements = combine_measurements(
                 terminal_measurements, measurement_dicts, mcm_samples
             )
             mcm_current[depth:] = 0  # Reset current branch
@@ -495,10 +493,10 @@ def simulate_tree_mcm(
             # Go up one level to explore alternate subtree of the same depth
             depth -= 1
             if mcm_current[depth] == 1:
-                stack.results_1[depth] = measurements
+                stack.results_1[depth] = _measurements
                 mcm_current[depth] = 0
             else:
-                stack.results_0[depth] = measurements
+                stack.results_0[depth] = _measurements
                 mcm_current[depth] = 1
             # Update MCM values
             mid_measurements.update(
@@ -545,7 +543,7 @@ def simulate_tree_mcm(
                     stack.counts[depth][mcm_current[depth]] = 0
                 else:
                     stack.probs[depth][mcm_current[depth]] = 0
-            measurements = tuple()
+            _measurements = tuple()
         else:
             # If num_shots is non-zero, simulate the current depth circuit segment
             if depth == 0:
@@ -561,7 +559,9 @@ def simulate_tree_mcm(
                 mid_measurements=mid_measurements,
                 **execution_kwargs,
             )
-            measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
+            _measurements = measure_final_state(
+                circtmp, state, is_state_batched, **execution_kwargs
+            )
 
         #####################################
         # Update stack & step down the tree #
@@ -577,13 +577,13 @@ def simulate_tree_mcm(
                     and mcms[depth].postselect is not None
                     and postselect_mode == "fill-shots"
                 ):
-                    samples = mcms[depth].postselect * math.ones_like(measurements)
+                    samples = mcms[depth].postselect * math.ones_like(_measurements)
                 else:
-                    samples = math.atleast_1d(measurements)
+                    samples = math.atleast_1d(_measurements)
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:
-                stack.probs[depth] = dict(zip([False, True], measurements))
+                stack.probs[depth] = dict(zip([False, True], _measurements))
                 samples = None
             # Store a copy of the state-vector to project on the one-branch
             stack.states[depth] = state
@@ -595,16 +595,16 @@ def simulate_tree_mcm(
         ################################################
 
         if not skip_subtree and not invalid_postselect:
-            measurements = insert_mcms(circuit, measurements, mid_measurements)
+            _measurements = insert_mcms(circuit, _measurements, mid_measurements)
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
         if mcm_current[depth] == 0:
-            stack.results_0[depth] = measurements
+            stack.results_0[depth] = _measurements
             mcm_current[depth] = True
             mid_measurements[mcms[depth]] = True
             continue
         # If at a one-branch leaf, update measurements
-        stack.results_1[depth] = measurements
+        stack.results_1[depth] = _measurements
 
     ##################################################
     # Finalize terminal measurements post-processing #
@@ -647,7 +647,11 @@ def split_circuit_at_mcms(circuit):
     first = 0
     for last, op in mcm_gen:
         new_operations = circuit.operations[first:last]
-        new_measurements = [sample(wires=op.wires)] if circuit.shots else [probs(wires=op.wires)]
+        new_measurements = (
+            [measurements.sample(wires=op.wires)]
+            if circuit.shots
+            else [measurements.probs(wires=op.wires)]
+        )
         circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
 
@@ -698,16 +702,16 @@ def insert_mcms(circuit, results, mid_measurements):
     return new_results
 
 
-def get_measurement_dicts(measurements, stack, depth):
+def get_measurement_dicts(_measurements, stack, depth):
     """Combine a probs dictionary and two tuples of measurements into a
     tuple of dictionaries storing the probs and measurements of both branches."""
     # We use `circuits[-1].measurements` since it contains the
     # target measurements (this is the only tape segment with
     # unmodified measurements)
     probs, results_0, results_1 = stack.probs[depth], stack.results_0[depth], stack.results_1[depth]
-    measurement_dicts = [{} for _ in measurements]
+    measurement_dicts = [{} for _ in _measurements]
     # Special treatment for single measurements
-    single_measurement = len(measurements) == 1
+    single_measurement = len(_measurements) == 1
     # Store each measurement in a dictionary `{branch: (prob, measure)}`
     for branch, prob in probs.items():
         meas = results_0 if branch == 0 else results_1
