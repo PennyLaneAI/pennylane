@@ -106,7 +106,7 @@ class TestSelectTHC:
         assert select_cost.zeroed + select_cost.any_state == expected_res["auxiliary_wires"]
         assert select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
-    # We are comparing the Toffoli and qubit cost here
+    # The Toffoli and qubit costs are compared here
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
