@@ -109,7 +109,7 @@ class TestQubitizeTHC:
             qre.QubitizeTHC.resource_rep(thc_ham, prep_op=prep_op, select_op=select_op) == expected
         )
 
-    # We are comparing the Toffoli and qubit cost here
+    # The Toffoli and qubit costs are compared here
     # Expected number of Toffolis and wires were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
