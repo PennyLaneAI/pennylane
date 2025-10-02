@@ -272,8 +272,8 @@ class ResourceConfig:
              Total wires: 1
                 algorithmic wires: 1
                 allocated wires: 0
-            	 zero state: 0
-            	 any state: 0
+                 zero state: 0
+                 any state: 0
              Total gates : 4
               'S': 2,
               'Hadamard': 2
@@ -284,8 +284,8 @@ class ResourceConfig:
              Total wires: 1
                 algorithmic wires: 1
                 allocated wires: 0
-            	 zero state: 0
-            	 any state: 0
+                 zero state: 0
+                 any state: 0
              Total gates : 3
               'S': 2,
               'Hadamard': 1
