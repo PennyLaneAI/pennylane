@@ -18,8 +18,10 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal
 
+import jax
+from jax.interpreters import partial_eval as pe
+
 from pennylane.capture import enabled as capture_enabled
-from pennylane.capture.dynamic_shapes import pe
 from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
@@ -362,7 +364,9 @@ def allocate(
     state = AllocateState(state)
     if capture_enabled():
         if isinstance(num_wires, pe.DynamicJaxprTracer):
-            raise NotImplementedError("Number of allocated wires must be static when capture is enabled.")
+            raise NotImplementedError(
+                "Number of allocated wires must be static when capture is enabled."
+            )
         wires = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
     else:
         wires = [DynamicWire() for _ in range(num_wires)]
