@@ -1036,7 +1036,7 @@ class IsingXY(ResourceOperator):
             precision (float | None): error threshold for Clifford+T decomposition of this operation
 
         Returns:
-            `:class:~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
