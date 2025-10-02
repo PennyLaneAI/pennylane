@@ -632,6 +632,10 @@
 
 <h4>Other improvements</h4>
 
+* An xDSL `Universe` containing all custom dialects and passes has been registered as an entry point, allowing
+  usage of PennyLane's dialects and passes with xDSL's command-line tools
+  [(#8372)](https://github.com/PennyLaneAI/pennylane/pull/8372)
+
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module
   to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
