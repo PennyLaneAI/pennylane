@@ -29,7 +29,7 @@ class CDFHamiltonian:
         CDFHamiltonian: An instance of CDFHamiltonian
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterCDF
+        :class:`~.estimator.templates.TrotterCDF`
     """
 
     num_orbitals: int
@@ -48,7 +48,7 @@ class THCHamiltonian:
         THCHamiltonian: An instance of THCHamiltonian
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterTHC
+        :class:`~.estimator.templates.TrotterTHC`
     """
 
     num_orbitals: int
@@ -68,7 +68,7 @@ class VibrationalHamiltonian:
         VibrationalHamiltonian: An instance of VibrationalHamiltonian
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterVibrational
+        :class:`~.estimator.templates.TrotterVibrational`
     """
 
     num_modes: int
@@ -90,7 +90,7 @@ class VibronicHamiltonian:
         VibronicHamiltonian: An instance of VibronicHamiltonian
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterVibronic
+        :class:`~.estimator.templates.TrotterVibronic`
     """
 
     num_modes: int
