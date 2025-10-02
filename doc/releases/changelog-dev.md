@@ -1362,6 +1362,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The :doc:`installation page </development/guide/installation>` was updated to include currently supported Python versions and installation instructions.
+  [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
+
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
   to guard users from an incompatibility that currently exists between the two.
   Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
