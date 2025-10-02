@@ -1713,7 +1713,7 @@ class TestPrepTHC:
         )
         assert qre.PrepTHC.resource_rep(thc_ham, coeff_prec, selswap_depth) == expected
 
-    # We are comparing the Toffoli and qubit cost here
+    # The Toffoli and qubit costs are compared here
     # Expected number of Toffolis and wires were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
     # The numbers were adjusted slightly to account for a different QROM decomposition
     @pytest.mark.parametrize(
