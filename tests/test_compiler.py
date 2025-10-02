@@ -681,9 +681,19 @@ class TestCatalystGrad:
 
         with pytest.raises(
             ValueError,
-            match="Invalid values method='fd' and h='0.3' without QJIT",
+            match="method = 'fd' unsupported without QJIT.",
         ):
             workflow(np.array([2.0, 1.0]))
+
+    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+    def test_h_error(self, grad_fn):
+        """Test an error is raised if h is passed without qjit."""
+
+        def f(x):
+            return x**2
+
+        with pytest.raises(ValueError, match="unsupported without QJIT. "):
+            grad_fn(f, h=1e-6)(0.5)
 
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""

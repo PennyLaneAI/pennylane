@@ -300,10 +300,10 @@ class grad:
                 self._fun, self._argnum, _get_grad_prim(), method=self._method, h=self._h
             )(*args, **kwargs)
 
-        if self._method or self._h:  # pragma: no cover
-            raise ValueError(
-                f"Invalid values method='{self._method}' and h='{self._h}' without QJIT."
-            )
+        if self._method:
+            raise ValueError(f"method = '{self._method}' unsupported without QJIT. Must be `None`.")
+        if self._h:
+            raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
         return self._autograd_call(*args, **kwargs)
 
@@ -615,10 +615,10 @@ class jacobian:
             )
             return g(*args, **kwargs)
 
-        if self._method or self._h:
-            raise ValueError(
-                f"Invalid values method='{self._method}' and h='{self._h}' without QJIT."
-            )
+        if self._method:
+            raise ValueError(f"method = '{self._method}' unsupported without QJIT. Must be `None`.")
+        if self._h:
+            raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
         return self._autograd_call(*args, **kwargs)
 
