@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functions to sample a state."""
 
-
 import numpy as np
 
 import pennylane as qml
@@ -129,7 +128,6 @@ def _get_num_wire_groups_for_expval_H(obs):
 
 
 def _get_num_executions_for_sum(obs):
-
     if obs.grouping_indices:
         return len(obs.grouping_indices)
 
@@ -209,7 +207,7 @@ def measure_with_samples(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    mid_measurements: dict = None,
+    mid_measurements: dict | None = None,
 ) -> list[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
