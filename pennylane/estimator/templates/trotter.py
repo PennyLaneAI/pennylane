@@ -54,8 +54,8 @@ class TrotterProduct(ResourceOperator):
     exponential of a Hamiltonian operator.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
-    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
@@ -86,7 +86,7 @@ class TrotterProduct(ResourceOperator):
 
     Resources:
         The resources are defined according to the recursive formula presented above.
-        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
         .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
@@ -103,11 +103,15 @@ class TrotterProduct(ResourceOperator):
 
     .. seealso:: The corresponding PennyLane operation :class:`~.TrotterProduct`
 
-    The resources can be computed as:
+    .. seealso::
+        :class:`~.estimator.templates.TrotterCDF`,
+        :class:`~.estimator.templates.TrotterTHC`,
+        :class:`~.estimator.templates.TrotterVibrational`,
+        :class:`~.estimator.templates.TrotterVibronic`
 
     **Example**
 
-    The resources for this operation are computed using
+    The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
@@ -266,8 +270,8 @@ class TrotterCDF(ResourceOperator):
     exponential of a compressed double-factorized (CDF) Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
-    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
@@ -290,15 +294,15 @@ class TrotterCDF(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
+        cdf_ham (:class:`~.pennylane.estimator.compact_hamiltonian.CDFHamiltonian`):
             a compressed double factorized Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
-        order (int): order of the approximation, must be 1 or even.
+        order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
     Resources:
         The resources are defined according to the recursive formula presented above.
-        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
         .. math::
@@ -318,11 +322,14 @@ class TrotterCDF(ResourceOperator):
         The resources for a single step expansion of compressed double factorized Hamiltonian are
         calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
 
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`
+
     .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
 
-    The resources for this operation are computed using
+    The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
@@ -582,8 +589,8 @@ class TrotterTHC(ResourceOperator):
     exponential of a tensor hypercontracted (THC) Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
-    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
@@ -606,15 +613,15 @@ class TrotterTHC(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        thc_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+        thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
-        order (int): order of the approximation, must be 1 or even
+        order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
     Resources:
         The resources are defined according to the recursive formula presented above.
-        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
         .. math::
@@ -634,11 +641,14 @@ class TrotterTHC(ResourceOperator):
         The resources for a single step expansion of tensor hypercontracted Hamiltonian are
         calculated based on `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_.
 
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.THCHamiltonian`
+
     .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
 
-    The resources for this operation are computed using
+    The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (1, 2)
@@ -901,8 +911,8 @@ class TrotterVibrational(ResourceOperator):
     exponential of a vibrational Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
-    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
@@ -925,17 +935,17 @@ class TrotterVibrational(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        vibration_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
+        vibration_ham (:class:`~.pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
-        order (int): order of the approximation, must be 1 or even
+        order (int): order of the approximation, must be ``1`` or an even number
         phase_grad_precision (float | None): precision for the phase gradient calculation
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts
 
     Resources:
         The resources are defined according to the recursive formula presented above.
-        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
         .. math::
@@ -955,10 +965,14 @@ class TrotterVibrational(ResourceOperator):
         The resources for a single step expansion of vibrational Hamiltonian are calculated based on
         `arXiv:2504.10602 <https://arxiv.org/pdf/2504.10602>`_.
 
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.VibrationalHamiltonian`
+
+    .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
 
-    The resources for this operation are computed using
+    The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (10, 2)
@@ -1292,8 +1306,8 @@ class TrotterVibronic(ResourceOperator):
     exponential of a real-space vibronic Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
-    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
@@ -1316,17 +1330,17 @@ class TrotterVibronic(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
+        vibronic_ham (:class:`~.pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
-        order (int): order of the approximation (must be 1 or even)
+        order (int): order of the approximation, must be ``1`` or an even number
         phase_grad_precision (float | None): precision for the phase gradient calculation
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts.
 
     Resources:
         The resources are defined according to the recursive formula presented above.
-        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
         .. math::
@@ -1346,9 +1360,14 @@ class TrotterVibronic(ResourceOperator):
         The resources for a single step expansion of real-space vibronic Hamiltonian are calculated
         based on `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
 
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian`
+
+    .. seealso:: :class:`~.TrotterProduct`        
+
     **Example**
 
-    The resources for this operation are computed using
+    The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
     >>> num_steps, order = (10, 2)
