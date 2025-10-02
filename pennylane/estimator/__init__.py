@@ -69,6 +69,7 @@ from .ops.op_math import (
     Prod,
     ChangeOpBasis,
 )
+
 from .templates import (
     OutOfPlaceSquare,
     PhaseGradient,
@@ -83,4 +84,24 @@ from .templates import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    TrotterCDF,
+    TrotterProduct,
+    TrotterTHC,
+    TrotterVibrational,
+    TrotterVibronic,
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
+)
+
+from .compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibronicHamiltonian,
+    VibrationalHamiltonian,
 )
