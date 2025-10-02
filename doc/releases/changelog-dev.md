@@ -1279,6 +1279,10 @@
   implementation
   [(#7895)](https://github.com/PennyLaneAI/pennylane/pull/7895)
 
+* Add a `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+  quantum gate operations to a private callable.
+  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
+
 * Make `pennylane.io` a tertiary module.
   [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
 
@@ -1544,4 +1548,5 @@ Alex Preciado,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
+Hongsheng, Zheng,
 Jake Zaia
