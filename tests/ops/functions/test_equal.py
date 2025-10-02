@@ -3058,6 +3058,28 @@ def test_not_equal_prep_sel_prep(op, other_op):
     assert qml.equal(op, other_op) is False
 
 
+def test_qsvt():
+    """Test that QSVT operators can be compared."""
+
+    projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
+    op1 = qml.QSVT(qml.X(0), projectors)
+    op2 = qml.QSVT(qml.Y(0), projectors)
+    op3 = qml.QSVT(qml.X(0), projectors[:1])
+    op4 = qml.QSVT(qml.X(0), projectors[::-1])
+
+    for op in [op1, op2, op3, op4]:
+        qml.assert_equal(op, op)
+
+    with pytest.raises(AssertionError, match=r"different block encodings"):
+        qml.assert_equal(op1, op2)
+
+    with pytest.raises(AssertionError, match=r"different number of projectors"):
+        qml.assert_equal(op1, op3)
+
+    with pytest.raises(AssertionError, match=r"different projectors at position 0"):
+        qml.assert_equal(op1, op4)
+
+
 def test_select():
     """Test that Select operators can be compared."""
 

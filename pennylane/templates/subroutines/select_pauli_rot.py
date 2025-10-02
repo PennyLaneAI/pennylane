@@ -141,10 +141,11 @@ class SelectPauliRot(Operation):
             rot_axis=self.hyperparameters["rot_axis"],
         )
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        """Bind arguments to the primitive operation."""
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, angles, control_wires, target_wire, **kwargs):
+        wires = [*control_wires, target_wire]
+        return super()._primitive_bind_call(angles, wires=wires, **kwargs)
 
     def decomposition(self):
         """Return the operator's decomposition using its parameters and hyperparameters."""
@@ -210,3 +211,11 @@ def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
 
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
+
+# pylint: disable=protected-access
+if SelectPauliRot._primitive is not None:
+
+    @SelectPauliRot._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        (angles,), (*control_wires, target_wire) = args[:-n_wires], args[-n_wires:]
+        return type.__call__(SelectPauliRot, angles, control_wires, target_wire, **kwargs)

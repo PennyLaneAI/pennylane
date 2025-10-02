@@ -28,3 +28,14 @@ from .subroutines import (
     QPE,
     IterativeQPE,
 )
+
+from .trotter import TrotterCDF, TrotterProduct, TrotterTHC, TrotterVibrational, TrotterVibronic
+
+from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling
+
+from .comparators import (
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
+)

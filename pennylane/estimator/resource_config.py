@@ -18,8 +18,14 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.ops.qubit import QubitUnitary
-from pennylane.estimator.templates import SelectPauliRot
+from pennylane.estimator.ops import CRX, CRY, CRZ, RX, RY, RZ, QubitUnitary
+from pennylane.estimator.templates import (
+    AliasSampling,
+    MPSPrep,
+    QROMStatePreparation,
+    SelectPauliRot,
+)
+from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -42,9 +48,27 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_BIT_PRECISION = 15
+        _DEFAULT_PHASEGRAD_PRECISION = 1e-6
         self.resource_op_precisions = {
+            RX: {"precision": _DEFAULT_PRECISION},
+            RY: {"precision": _DEFAULT_PRECISION},
+            RZ: {"precision": _DEFAULT_PRECISION},
+            CRX: {"precision": _DEFAULT_PRECISION},
+            CRY: {"precision": _DEFAULT_PRECISION},
+            CRZ: {"precision": _DEFAULT_PRECISION},
             SelectPauliRot: {"precision": _DEFAULT_PRECISION},
             QubitUnitary: {"precision": _DEFAULT_PRECISION},
+            AliasSampling: {"precision": _DEFAULT_PRECISION},
+            MPSPrep: {"precision": _DEFAULT_PRECISION},
+            QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
+            TrotterVibronic: {
+                "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
+                "coeff_precision": 1e-3,
+            },
+            TrotterVibrational: {
+                "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
+                "coeff_precision": 1e-3,
+            },
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
