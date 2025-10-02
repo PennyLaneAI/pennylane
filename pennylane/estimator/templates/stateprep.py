@@ -1146,7 +1146,7 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.templates.THCHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
