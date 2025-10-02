@@ -607,6 +607,9 @@
 
 <h4>Other improvements</h4>
 
+* Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
+  [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
+
 * The `qml.sample` function can now receive an optional `dtype` parameter
   which sets the type and precision of the samples returned by this measurement process.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
