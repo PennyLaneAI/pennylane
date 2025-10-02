@@ -644,7 +644,7 @@ class ResourceQubitizeDF(ResourceOperator):
         gate_list.append(GateCount(cswap, 2*num_orbitals))
 
         #step4g: Reverse the qrom
-        qrom_rot_twobody_adj = resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": num_orbitals, "clean": False, "select_swap_depth": select_swap_depths})
+        qrom_rot_twobody_adj = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_rot_twobody})
         gate_list.append(GateCount(qrom_rot_twobody_adj,1))
 
         #step4h: Reverse the addition
@@ -652,7 +652,7 @@ class ResourceQubitizeDF(ResourceOperator):
 
         # Step 5: Invert the state prep cost, same as step: 3, with a different QROM cost
         # Appropriately changed step 3 numbers except for QROM
-        qrom_prep2_adj = resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": num_orbitals , "clean": False, "select_swap_depth": select_swap_depths})
+        qrom_prep2_adj = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_prep2_adj})
         gate_list.append(GateCount(qrom_prep2_adj, 1))
 
         # Step 6: Reflection cost
@@ -667,14 +667,14 @@ class ResourceQubitizeDF(ResourceOperator):
         qrom_rot_onebody = resource_rep(plre.ResourceQROM, {"num_bitstrings": Lxi, "size_bitstring": num_orbitals*rotation_precision_bits , "clean": False, "select_swap_depth": select_swap_depths})
         gate_list.append(GateCount(qrom_rot_onebody,1))
 
-        qrom_rot_onebody_adj = resource_rep(plre.ResourceQROM, {"num_bitstrings": Lxi, "size_bitstring": num_orbitals, "clean": False, "select_swap_depth": select_swap_depths})
+        qrom_rot_onebody_adj = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_rot_onebody})
         gate_list.append(GateCount(qrom_rot_onebody_adj,1))
 
-        qrom_prep2_onebody_adj = resource_rep(plre.ResourceQROM, {"num_bitstrings": Lxi, "size_bitstring": num_orbitals, "clean": False, "select_swap_depth": select_swap_depths})
+        qrom_prep2_onebody_adj = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_prep2_onebody})
         gate_list.append(GateCount(qrom_prep2_onebody_adj, 1))
 
         # Step 8: Invert the QROM in step:2
-        qrom_output_adj = resource_rep(plre.ResourceQROM, {"num_bitstrings": L+1, "size_bitstring": nxi , "clean": False, "select_swap_depth": select_swap_depths})
+        qrom_output_adj = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_output})
         gate_list.append(GateCount(qrom_output_adj,1))
 
         # Step 9: Reflection needed for walk operator
