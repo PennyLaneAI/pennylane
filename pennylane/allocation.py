@@ -18,9 +18,6 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal
 
-import jax
-from jax.interpreters import partial_eval as pe
-
 from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
@@ -28,6 +25,7 @@ from pennylane.wires import DynamicWire, Wires
 has_jax = True
 try:
     import jax
+    from jax.interpreters import partial_eval as pe
 
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QmlPrimitive
