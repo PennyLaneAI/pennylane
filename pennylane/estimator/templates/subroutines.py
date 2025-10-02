@@ -702,20 +702,20 @@ class QPE(ResourceOperator):
         >>> adj_aqft = qre.Adjoint(aqft)
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=adj_aqft)
         >>> print(qre.estimate(qpe))
-    --- Resources: ---
-    Total wires: 8
-        algorithmic wires: 6
-        allocated wires: 2
-        zero state: 2
-        any state: 0
-    Total gates : 321
-    'Toffoli': 7,
-    'T': 222,
-    'CNOT': 34,
-    'X': 4,
-    'Z': 8,
-    'S': 8,
-    'Hadamard': 38
+        --- Resources: ---
+        Total wires: 8
+            algorithmic wires: 6
+            allocated wires: 2
+            zero state: 2
+            any state: 0
+        Total gates : 321
+        'Toffoli': 7,
+        'T': 222,
+        'CNOT': 34,
+        'X': 4,
+        'Z': 8,
+        'S': 8,
+        'Hadamard': 38
     """
 
     resource_keys = {"base_cmpr_op", "num_estimation_wires", "adj_qft_cmpr_op"}
@@ -1628,7 +1628,6 @@ class QROM(ResourceOperator):
     'CNOT': 72,
     'X': 34,
     'Hadamard': 56
-
     """
 
     resource_keys = {
