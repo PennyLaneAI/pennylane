@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pennylane"
-description = "PennyLane is a cross-platform Python library for quantum computing, quantum chemistry and quantum machine learning."
+description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Built by researchers, for research. "
 readme = "README.md"
 license =  "Apache-2.0"
 requires-python = ">=3.11"
