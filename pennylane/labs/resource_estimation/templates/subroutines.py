@@ -127,11 +127,10 @@ class ResourcePhaseGradient(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The phase gradient state is defined as an
-        equal superposition of phaseshifts where each shift is progressively more precise. This
-        is achieved by applying Hadamard gates to each qubit and then applying RZ-rotations to each
-        qubit with progressively smaller rotation angle. The first three rotations can be compiled to
-        a Z-gate, S-gate and a T-gate.
+        The phase gradient state is defined as an equal superposition of phaseshifts where each shift
+        is progressively more precise. This is achieved by applying Hadamard gates to each qubit and
+        then applying RZ-rotations to each qubit with progressively smaller rotation angle. The first
+        three rotations can be compiled to a Z-gate, S-gate and a T-gate.
 
     **Example**
 
@@ -1483,7 +1482,7 @@ class ResourceSelect(ResourceOperator):
 
 
 class ResourceQROM(ResourceOperator):
-    """Resource class for the QROM template.
+    r"""Resource class for the QROM template.
 
     Args:
         num_bitstrings (int): the number of bitstrings that are to be encoded
@@ -1492,9 +1491,11 @@ class ResourceQROM(ResourceOperator):
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
         clean (bool, optional): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code`True`.
-        select_swap_depth (Union[int, None], optional): A natural number that determines if data
-            will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-            Defaults to :code:`None`, which internally determines the optimal depth.
+        select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+            if data will be loaded in parallel by adding more rows following Figure 1.C of
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+            :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+            determines the optimal depth.
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
@@ -1516,11 +1517,11 @@ class ResourceQROM(ResourceOperator):
     >>> print(plre.estimate_resources(qrom))
     --- Resources: ---
     Total qubits: 11
-    Total gates : 178.0
+    Total gates : 178
     Qubit breakdown:
      clean qubits: 3, dirty qubits: 0, algorithmic qubits: 8
     Gate breakdown:
-     {'Hadamard': 56, 'X': 34, 'CNOT': 72.0, 'Toffoli': 16}
+     {'Hadamard': 56, 'X': 34, 'CNOT': 72, 'Toffoli': 16}
 
     """
 
@@ -1560,7 +1561,7 @@ class ResourceQROM(ResourceOperator):
         self.clean = clean
         self.num_bitstrings = num_bitstrings
         self.size_bitstring = size_bitstring
-        self.num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring / 2)
+        self.num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring // 2)
 
         if wires is not None:
             self.num_wires = len(wires)
@@ -1571,6 +1572,18 @@ class ResourceQROM(ResourceOperator):
         else:
             self.num_control_wires = math.ceil(math.log2(num_bitstrings))
             self.num_wires = size_bitstring + self.num_control_wires
+
+        if select_swap_depth is not None:
+            if not isinstance(select_swap_depth, int):
+                raise ValueError(
+                    f"`select_swap_depth` must be None or an integer. Got {type(select_swap_depth)}"
+                )
+
+            exponent = int(math.log2(select_swap_depth))
+            if 2**exponent != select_swap_depth:
+                raise ValueError(
+                    f"`select_swap_depth` must be 1 or a positive integer power of 2. Got {select_swap_depth}"
+                )
 
         self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
@@ -1594,9 +1607,11 @@ class ResourceQROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+                if data will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                determines the optimal depth.
             wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
@@ -1612,7 +1627,9 @@ class ResourceQROM(ResourceOperator):
         """
 
         if select_swap_depth:
-            select_swap_depth = 2 ** math.floor(math.log2(select_swap_depth))
+            max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
+            select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
+
         W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -1620,9 +1637,11 @@ class ResourceQROM(ResourceOperator):
         l = math.ceil(math.log2(L_opt))
 
         gate_cost = []
-        gate_cost.append(
-            AllocWires((W_opt - 1) * size_bitstring + (l - 1))
-        )  # Swap registers + work_wires for UI trick
+        num_alloc_wires = (W_opt - 1) * size_bitstring  # Swap registers
+        if L_opt > 1:
+            num_alloc_wires += l - 1  # + work_wires for UI trick
+
+        gate_cost.append(AllocWires(num_alloc_wires))
 
         x = resource_rep(re.ResourceX)
         cnot = resource_rep(re.ResourceCNOT)
@@ -1639,20 +1658,29 @@ class ResourceQROM(ResourceOperator):
             select_clean_prefactor = 2
 
         # SELECT cost:
-        gate_cost.append(
-            GateCount(x, select_clean_prefactor * (2 * (L_opt - 2) + 1))
-        )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
-        gate_cost.append(
-            GateCount(
-                cnot, select_clean_prefactor * (L_opt - 2) + select_clean_prefactor * num_bit_flips
-            )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
-        )
-        gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 2)))
-        gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 2)))
+        if L_opt > 1:
+            gate_cost.append(
+                GateCount(x, select_clean_prefactor * (2 * (L_opt - 2) + 1))
+            )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    select_clean_prefactor * (L_opt - 2) + select_clean_prefactor * num_bit_flips,
+                )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
+            )
+            gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 2)))
+            gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 2)))
 
-        gate_cost.append(FreeWires(l - 1))  # release UI trick work wires
+            gate_cost.append(FreeWires(l - 1))  # release UI trick work wires
 
-        # # SWAP cost:
+        else:
+            gate_cost.append(
+                GateCount(
+                    x, select_clean_prefactor * num_bit_flips
+                )  # each unitary in the select is just an X gate to load the data
+            )
+
+        # SWAP cost:
         ctrl_swap = resource_rep(re.ResourceCSWAP)
         gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
 
@@ -1671,6 +1699,10 @@ class ResourceQROM(ResourceOperator):
         clean,
     ):
         r"""The resource decomposition for QROM controlled on a single wire."""
+        if select_swap_depth:
+            max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
+            select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
+
         W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -1678,9 +1710,11 @@ class ResourceQROM(ResourceOperator):
         l = math.ceil(math.log2(L_opt))
 
         gate_cost = []
-        gate_cost.append(
-            FreeWires((W_opt - 1) * size_bitstring + l)
-        )  # Swap registers + work_wires for UI trick
+        num_alloc_wires = (W_opt - 1) * size_bitstring  # Swap registers
+        if L_opt > 1:
+            num_alloc_wires += l  # + work_wires for UI trick
+
+        gate_cost.append(AllocWires(num_alloc_wires))
 
         x = resource_rep(re.ResourceX)
         cnot = resource_rep(re.ResourceCNOT)
@@ -1697,18 +1731,27 @@ class ResourceQROM(ResourceOperator):
             select_clean_prefactor = 2
 
         # SELECT cost:
-        gate_cost.append(
-            GateCount(x, select_clean_prefactor * (2 * (L_opt - 1)))
-        )  # conjugate 0 controlled toffolis
-        gate_cost.append(
-            GateCount(
-                cnot, select_clean_prefactor * (L_opt - 1) + select_clean_prefactor * num_bit_flips
-            )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
-        )
-        gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 1)))
-        gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 1)))
+        if L_opt > 1:
+            gate_cost.append(
+                GateCount(x, select_clean_prefactor * (2 * (L_opt - 1)))
+            )  # conjugate 0 controlled toffolis
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    select_clean_prefactor * (L_opt - 1) + select_clean_prefactor * num_bit_flips,
+                )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
+            )
+            gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 1)))
+            gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 1)))
 
-        gate_cost.append(FreeWires(l))  # release UI trick work wires
+            gate_cost.append(FreeWires(l))  # release UI trick work wires
+        else:
+            gate_cost.append(
+                GateCount(
+                    x,
+                    select_clean_prefactor * num_bit_flips,
+                )  #  each unitary in the select is just an X
+            )
 
         # SWAP cost:
         w = math.ceil(math.log2(W_opt))
@@ -1749,9 +1792,11 @@ class ResourceQROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+                if data will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                determines the optimal depth.
 
         Resources:
             The resources for QROM are taken from the following two papers:
@@ -1808,9 +1853,16 @@ class ResourceQROM(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
-                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-                * clean (bool, optional): Determine if allocated qubits should be reset after the computation (at the cost of higher gate counts). Defaults to :code`True`.
-                * select_swap_depth (Union[int, None], optional): A natural number that determines if data will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Defaults to :code:`None`, which internally determines the optimal depth.
+                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset.
+                  Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the
+                  dataset.
+                * clean (bool, optional): Determine if allocated qubits should be reset after the
+                  computation (at the cost of higher gate counts). Defaults to :code`True`.
+                * select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that
+                  determines if data will be loaded in parallel by adding more rows following
+                  Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be
+                  :code:`None`, :code:`1` or a positive integer power of two. Defaults to :code:`None`,
+                  which internally determines the optimal depth.
 
         """
 
@@ -1841,15 +1893,29 @@ class ResourceQROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+                if data will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                determines the optimal depth.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
         if num_bit_flips is None:
             num_bit_flips = num_bitstrings * size_bitstring // 2
+
+        if select_swap_depth is not None:
+            if not isinstance(select_swap_depth, int):
+                raise ValueError(
+                    f"`select_swap_depth` must be None or an integer. Got {type(select_swap_depth)}"
+                )
+
+            exponent = int(math.log2(select_swap_depth))
+            if 2**exponent != select_swap_depth:
+                raise ValueError(
+                    f"`select_swap_depth` must be 1 or a positive integer power of 2. Got f{select_swap_depth}"
+                )
 
         params = {
             "num_bitstrings": num_bitstrings,
@@ -1920,7 +1986,7 @@ class ResourceQubitUnitary(ResourceOperator):
         return {"num_wires": self.num_wires, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_wires, precision) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -2161,14 +2227,14 @@ class ResourceSelectPauliRot(ResourceOperator):
             in the decomposition.
         """
         precision = precision or kwargs["config"]["precision_select_pauli_rot"]
-        num_prec_wires = abs(math.floor(math.log2(precision)))
+        num_prec_wires = math.ceil(math.log2(math.pi / precision)) + 1
         gate_lst = []
 
         qrom = resource_rep(
             re.ResourceQROM,
             {
                 "num_bitstrings": 2**num_ctrl_wires,
-                "num_bit_flips": 2**num_ctrl_wires * num_prec_wires / 2,
+                "num_bit_flips": 2**num_ctrl_wires * num_prec_wires // 2,
                 "size_bitstring": num_prec_wires,
                 "clean": False,
             },
