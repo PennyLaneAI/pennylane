@@ -52,14 +52,14 @@ class OutOfPlaceSquare(ResourceOperator):
     >>> out_square = qre.OutOfPlaceSquare(register_size=3)
     >>> print(qre.estimate(out_square))
     --- Resources: ---
-     Total wires: 9
+    Total wires: 9
         algorithmic wires: 9
         allocated wires: 0
-    	 zero state: 0
-    	 any state: 0
+        zero state: 0
+        any state: 0
     Total gates : 7
-      'Toffoli': 4,
-      'CNOT': 3
+    'Toffoli': 4,
+    'CNOT': 3
     """
 
     resource_keys = {"register_size"}
@@ -146,17 +146,17 @@ class PhaseGradient(ResourceOperator):
     >>> gate_set={"Z", "S", "T", "RZ", "Hadamard"}
     >>> print(qre.estimate(phase_grad, gate_set))
     --- Resources: ---
-     Total wires: 5
+    Total wires: 5
         algorithmic wires: 5
         allocated wires: 0
-         zero state: 0
-         any state: 0
+        zero state: 0
+        any state: 0
     Total gates : 10
-     'RZ': 2,
-     'T': 1,
-     'Z': 1,
-     'S': 1,
-     'Hadamard': 5
+    'RZ': 2,
+    'T': 1,
+    'Z': 1,
+    'S': 1,
+    'Hadamard': 5
     """
 
     resource_keys = {"num_wires"}
