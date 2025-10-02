@@ -103,6 +103,12 @@ class TrotterProduct(ResourceOperator):
 
     .. seealso:: The corresponding PennyLane operation :class:`~.TrotterProduct`
 
+    .. seealso::
+        :class:`~.estimator.templates.TrotterCDF`,
+        :class:`~.estimator.templates.TrotterTHC`,
+        :class:`~.estimator.templates.TrotterVibrational`,
+        :class:`~.estimator.templates.TrotterVibronic`
+
     **Example**
 
     The resources for this operation are computed using:
@@ -315,6 +321,9 @@ class TrotterCDF(ResourceOperator):
 
         The resources for a single step expansion of compressed double factorized Hamiltonian are
         calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
+
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`
 
     .. seealso:: :class:`~.TrotterProduct`
 
@@ -631,6 +640,9 @@ class TrotterTHC(ResourceOperator):
 
         The resources for a single step expansion of tensor hypercontracted Hamiltonian are
         calculated based on `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_.
+
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.THCHamiltonian`
 
     .. seealso:: :class:`~.TrotterProduct`
 
@@ -953,6 +965,10 @@ class TrotterVibrational(ResourceOperator):
         The resources for a single step expansion of vibrational Hamiltonian are calculated based on
         `arXiv:2504.10602 <https://arxiv.org/pdf/2504.10602>`_.
 
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.VibrationalHamiltonian`
+
+    .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
 
@@ -1343,6 +1359,11 @@ class TrotterVibronic(ResourceOperator):
 
         The resources for a single step expansion of real-space vibronic Hamiltonian are calculated
         based on `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
+
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian`
+
+    .. seealso:: :class:`~.TrotterProduct`        
 
     **Example**
 
