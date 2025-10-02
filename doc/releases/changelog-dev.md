@@ -71,7 +71,7 @@
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
-  [(#????)](https://github.com/PennyLaneAI/pennylane/pull/????)
+  [(#8381)](https://github.com/PennyLaneAI/pennylane/pull/8381)
 
   The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated
   wires are handled:
