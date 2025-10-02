@@ -23,6 +23,7 @@ from .visualization import QMLCollector
 from .dialects import get_universe_dialects
 from .transforms import get_universe_passes
 
+# Universe is used to expose custom dialects and transforms to xDSL
 XDSL_UNIVERSE = Universe(all_dialects=get_universe_dialects(), all_passes=get_universe_passes())
 
 

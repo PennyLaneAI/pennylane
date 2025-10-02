@@ -37,6 +37,9 @@ from .quantum import (
 
 
 def get_universe_passes():
+    """Get a mapping between all available pass names to pass classes. This is used
+    to initialize the PennyLane-xDSL universe, which is needed to make the passes
+    readily available to xDSL command-line tools."""
     return {
         "combine-global-phases": CombineGlobalPhasesPass,
         "convert-to-mbqc-formalism": ConvertToMBQCFormalismPass,
