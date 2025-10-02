@@ -58,13 +58,13 @@ class Resources:
      Total wires: 3
         algorithmic wires: 0
         allocated wires: 3
-    	 zero state: 3
-    	 any state: 0
+         zero state: 3
+         any state: 0
      Total gates : 21
       'RX': 4,
       'X': 7,
       'Hadamard': 10
-    
+
     A more detailed breakdown of resources can be generated using the ``gate_breakdown`` method:
     >>> print(res.gate_breakdown())
     RX total: 4
