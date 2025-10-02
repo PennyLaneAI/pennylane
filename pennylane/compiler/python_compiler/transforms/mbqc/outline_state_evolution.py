@@ -279,8 +279,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         """get missing values for ops
         Given a list of operations, return the values that are missing from the operations.
         """
-        ops_defined_values = set()
-
         ops_walk = list(chain(*[op.walk() for op in ops]))
 
         ops_defined_values = set()
@@ -290,7 +288,15 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             ops_defined_values.update(nested_op.results)
             all_operands.update(nested_op.operands)
 
-        return list(all_operands - ops_defined_values)
+            if hasattr(nested_op, "regions") and nested_op.regions:
+                for region in nested_op.regions:
+                    for block in region.blocks:
+                        ops_defined_values.update(block.args)
+
+        missing_values = list(all_operands - ops_defined_values)
+        missing_values = [v for v in missing_values if v is not None]
+
+        return missing_values
 
     def analyze_required_outputs(
         self, ops: list[Operation], terminal_op: Operation
@@ -412,3 +418,5 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         for op in new_ops:
             original_block.add_op(op)
+
+        print(self.module)
