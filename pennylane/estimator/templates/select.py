@@ -32,7 +32,7 @@ from pennylane.wires import Wires, WiresLike
 
 
 class SelectTHC(ResourceOperator):
-    r"""Resource class for creating the custom Select operator for tensor hypercontracted Hamiltonian.
+    r"""Resource class for creating the custom Select operator for tensor hypercontracted (THC) Hamiltonian.
     This operator customizes the Select circuit to use the structure of THC Hamiltonian.
 
     .. note::
