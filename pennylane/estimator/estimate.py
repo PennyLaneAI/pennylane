@@ -44,7 +44,7 @@ def estimate(
     with respect to a given gateset.
 
     Args:
-        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources`): The quantum circuit or operator
+        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | QNode): The quantum circuit or operator
             for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to track
             counts for throughout the quantum workflow.
