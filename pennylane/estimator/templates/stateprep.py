@@ -16,13 +16,13 @@ import math
 
 import pennylane.estimator as qre
 import pennylane.numpy as np
+from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
@@ -886,11 +886,12 @@ class QROMStatePreparation(ResourceOperator):
 
 
 class PrepTHC(ResourceOperator):
-    r"""Resource class for preparing the state for tensor hypercontracted Hamiltonian. This operator customizes
-    the Prepare circuit based on the structure of THC Hamiltonian.
+    r"""Resource class for preparing the state for tensor hypercontracted (THC) Hamiltonian.
+
+    This operator customizes the Prepare circuit based on the structure of THC Hamiltonian.
 
     Args:
-        compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+        thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
             Hamiltonian for which the state is being prepared
         coeff_precision (int | None): The number of bits used to represent the precision for loading
             the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
@@ -907,8 +908,8 @@ class PrepTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> from pennylane import estimator as qre
-    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = qre.estimate(qre.PrepTHC(compact_ham, coeff_precision=15))
+    >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
      Total wires: 185
@@ -924,20 +925,20 @@ class PrepTHC(ResourceOperator):
 
     """
 
-    resource_keys = {"compact_ham", "coeff_precision", "select_swap_depth"}
+    resource_keys = {"thc_ham", "coeff_precision", "select_swap_depth"}
 
     def __init__(
         self,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         coeff_precision: int | None = None,
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
     ):
 
-        if compact_ham.method_name != "thc":
+        if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for PrepTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
         if not isinstance(coeff_precision, int) and coeff_precision is not None:
@@ -945,10 +946,10 @@ class PrepTHC(ResourceOperator):
                 f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
 
-        self.compact_ham = compact_ham
+        self.thc_ham = thc_ham
         self.coeff_precision = coeff_precision
         self.select_swap_depth = select_swap_depth
-        tensor_rank = compact_ham.params["tensor_rank"]
+        tensor_rank = thc_ham.tensor_rank
         self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -960,7 +961,7 @@ class PrepTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+                * thc_ham (:class:`~.pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian for which the state is being prepared
                 * coeff_precision (int | None): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
@@ -969,7 +970,7 @@ class PrepTHC(ResourceOperator):
                   used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
-            "compact_ham": self.compact_ham,
+            "thc_ham": self.thc_ham,
             "coeff_precision": self.coeff_precision,
             "select_swap_depth": self.select_swap_depth,
         }
@@ -977,7 +978,7 @@ class PrepTHC(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         coeff_precision: int | None = None,
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
@@ -985,7 +986,7 @@ class PrepTHC(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the state is being prepared
             coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
@@ -995,10 +996,10 @@ class PrepTHC(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        if compact_ham.method_name != "thc":
+        if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for PrepTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
         if not isinstance(coeff_precision, int) and coeff_precision is not None:
@@ -1006,11 +1007,11 @@ class PrepTHC(ResourceOperator):
                 f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
 
-        tensor_rank = compact_ham.params["tensor_rank"]
+        tensor_rank = thc_ham.tensor_rank
         num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
 
         params = {
-            "compact_ham": compact_ham,
+            "thc_ham": thc_ham,
             "coeff_precision": coeff_precision,
             "select_swap_depth": select_swap_depth,
         }
@@ -1019,7 +1020,7 @@ class PrepTHC(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         coeff_precision: int | None = None,
         select_swap_depth: int | None = None,
     ) -> list[GateCount]:
@@ -1027,7 +1028,7 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
@@ -1044,8 +1045,8 @@ class PrepTHC(ResourceOperator):
             in the decomposition.
 
         """
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
@@ -1155,7 +1156,7 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
@@ -1167,11 +1168,11 @@ class PrepTHC(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        compact_ham = target_resource_params["compact_ham"]
+        thc_ham = target_resource_params["thc_ham"]
         coeff_precision = target_resource_params["coeff_precision"]
         select_swap_depth = target_resource_params.get("select_swap_depth", None)
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
         coeff_register = int(math.ceil(math.log2(num_coeff)))

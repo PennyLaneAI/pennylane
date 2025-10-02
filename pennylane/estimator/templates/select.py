@@ -19,21 +19,20 @@ import numpy as np
 
 from pennylane import estimator as qre
 from pennylane.estimator import Allocate, Deallocate
+from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.estimator.templates.compact_hamiltonian import CompactHamiltonian
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= signature-differs, arguments-differ
 
 
 class SelectTHC(ResourceOperator):
-    r"""Resource class for creating the custom Select operator for tensor hypercontracted Hamiltonian.
-    This operator customizes the Select circuit to use the structure of THC Hamiltonian.
+    r"""Resource class for creating the custom Select operator for tensor hypercontracted (THC) Hamiltonian.
 
     .. note::
 
@@ -42,7 +41,7 @@ class SelectTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
     Args:
-        compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): A tensor hypercontracted
+        thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which the select operator is being applied.
         rotation_precision (int | None): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
@@ -59,8 +58,8 @@ class SelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> from pennylane import estimator as qre
-    >>> compact_ham = qre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = qre.estimate(qre.SelectTHC(compact_ham, rotation_precision=15))
+    >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
      Total wires: 371
@@ -78,20 +77,20 @@ class SelectTHC(ResourceOperator):
 
     """
 
-    resource_keys = {"compact_ham", "rotation_precision", "select_swap_depth"}
+    resource_keys = {"thc_ham", "rotation_precision", "select_swap_depth"}
 
     def __init__(
         self,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         rotation_precision: int | None = None,
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
     ):
 
-        if compact_ham.method_name != "thc":
+        if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for SelectTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
         if not (isinstance(rotation_precision, int) or rotation_precision is None):
@@ -99,11 +98,11 @@ class SelectTHC(ResourceOperator):
                 f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
             )
 
-        self.compact_ham = compact_ham
+        self.thc_ham = thc_ham
         self.rotation_precision = rotation_precision
         self.select_swap_depth = select_swap_depth
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
 
         # num_orb*2 for state register, 2*log(M) for \mu and \nu registers
         # 6 extras are for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
@@ -121,7 +120,7 @@ class SelectTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (:class:`~.pennylane.estimator.templates.CompactHamiltonian`): a tensor hypercontracted
+                * thc_ham (:class:`~.pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian on which the select operator is being applied
                 * rotation_precision (int | None): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
@@ -130,7 +129,7 @@ class SelectTHC(ResourceOperator):
                   used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
-            "compact_ham": self.compact_ham,
+            "thc_ham": self.thc_ham,
             "rotation_precision": self.rotation_precision,
             "select_swap_depth": self.select_swap_depth,
         }
@@ -138,7 +137,7 @@ class SelectTHC(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        compact_ham: CompactHamiltonian,
+        thc_ham: THCHamiltonian,
         rotation_precision: int | None = None,
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
@@ -146,7 +145,7 @@ class SelectTHC(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): A tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
@@ -158,25 +157,25 @@ class SelectTHC(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
 
-        if compact_ham.method_name != "thc":
+        if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for SelectTHC."
-                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
         if not isinstance(rotation_precision, int) and rotation_precision is not None:
             raise TypeError(
                 f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
             )
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
 
         # num_orb*2 for state register, 2*log(M) for \mu and \nu registers
         # 6 extras are for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
         params = {
-            "compact_ham": compact_ham,
+            "thc_ham": thc_ham,
             "rotation_precision": rotation_precision,
             "select_swap_depth": select_swap_depth,
         }
@@ -185,7 +184,7 @@ class SelectTHC(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        compact_ham,
+        thc_ham,
         rotation_precision: int | None = None,
         select_swap_depth: int | None = None,
     ) -> list[GateCount]:
@@ -199,7 +198,7 @@ class SelectTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
         Args:
-            compact_ham (:class:`~pennylane.estimator.templates.CompactHamiltonian`): A tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
@@ -217,8 +216,8 @@ class SelectTHC(ResourceOperator):
             in the decomposition.
         """
 
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
 
         gate_list = []
         # Total select cost from Eq. 43 in arXiv:2011.03494
@@ -333,12 +332,12 @@ class SelectTHC(ResourceOperator):
             in the decomposition.
         """
 
-        compact_ham = target_resource_params["compact_ham"]
+        thc_ham = target_resource_params["thc_ham"]
         rotation_precision = target_resource_params["rotation_precision"]
         select_swap_depth = target_resource_params["select_swap_depth"]
 
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
 
         gate_list = []
 
@@ -357,8 +356,10 @@ class SelectTHC(ResourceOperator):
         cswap = resource_rep(qre.CSWAP)
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
-        # QROM for loading rotation angles for 2-body integrals
+        # Data output for rotations
         gate_list.append(Allocate(rotation_precision * (num_orb - 1)))
+
+        # QROM for loading rotation angles for 2-body integrals
         qrom_twobody = resource_rep(
             qre.QROM,
             {
@@ -376,7 +377,7 @@ class SelectTHC(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(
                     qre.SemiAdder,
-                    {"max_register_size": rotation_precision},
+                    {"max_register_size": rotation_precision - 1},
                 ),
                 "num_ctrl_wires": 1,
                 "num_zero_ctrl": 0,
