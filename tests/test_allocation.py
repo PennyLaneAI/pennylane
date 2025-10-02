@@ -311,6 +311,7 @@ class TestCaptureIntegration:
             match="Number of allocated wires must be static when capture is enabled.",
         ):
 
+            @qml.qnode(qml.device("default.qubit", wires=2))
             def c(n: int):
                 allocate(n)
 
