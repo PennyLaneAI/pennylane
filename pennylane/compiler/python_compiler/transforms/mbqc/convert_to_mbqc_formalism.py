@@ -35,6 +35,24 @@ from ...dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, GlobalPhase
 from ...pass_api import compiler_transform
 from .graph_state_utils import generate_adj_matrix, get_num_aux_wires
 
+_PAULIS = {
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Identity",
+}
+
+_MBQC_ONE_QUBIT_GATES = {
+    "Hadamard",
+    "S",
+    "RZ",
+    "RotXZX",
+}
+
+_MBQC_TWO_QUBIT_GATES = {
+    "CNOT",
+}
+
 
 @dataclass(frozen=True)
 class ConvertToMBQCFormalismPass(passes.ModulePass):
@@ -555,12 +573,7 @@ class ConvertToMBQCFormalismPattern(
             two_wire_adj_matrix_op = None
             for op in region.ops:
                 # TODOs: Refactor the code below in this loop into separate functions
-                if isinstance(op, CustomOp) and op.gate_name.data in [
-                    "Hadamard",
-                    "S",
-                    "RZ",
-                    "RotXZX",
-                ]:
+                if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_ONE_QUBIT_GATES:
                     # Allocate auxiliary qubits and entangle them
                     if one_wire_adj_matrix_op is None:
                         adj_matrix = generate_adj_matrix(op.gate_name.data)
@@ -602,7 +615,7 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
                     # Remove op operation
                     rewriter.erase_op(op)
-                elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
+                elif isinstance(op, CustomOp) and op.gate_name.data in _MBQC_TWO_QUBIT_GATES:
                     # Allocate auxiliary qubits and entangle them
                     if two_wire_adj_matrix_op is None:
                         adj_matrix = generate_adj_matrix(op.gate_name.data)
@@ -650,14 +663,7 @@ class ConvertToMBQCFormalismPattern(
                     # Remove op operation
                     rewriter.erase_op(op)
                 elif isinstance(op, GlobalPhaseOp) or (
-                    isinstance(op, CustomOp)
-                    and op.gate_name.data
-                    in [
-                        "PauliX",
-                        "PauliY",
-                        "PauliZ",
-                        "Identity",
-                    ]
+                    isinstance(op, CustomOp) and op.gate_name.data in _PAULIS
                 ):
                     continue
                 elif isinstance(op, CustomOp):
