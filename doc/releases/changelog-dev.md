@@ -1541,6 +1541,10 @@
   :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
+* Fixes a bug where tests in `python_compiler` pass even when there exists undefined operations within a dialect.
+  [(8380)](https://github.com/PennyLaneAI/pennylane/pull/8380)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1561,6 +1565,7 @@ Simone Gasperini,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
+Jeffrey Kam,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares
