@@ -315,6 +315,8 @@ class TestCaptureIntegration:
             def c(n: int):
                 allocate(n)
 
+            c(1)
+
 
 @pytest.mark.integration
 class TestDeviceIntegration:
