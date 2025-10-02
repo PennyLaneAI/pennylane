@@ -304,6 +304,16 @@ class TestCaptureIntegration:
         with pytest.raises(NotImplementedError):
             deallocate(2)
 
+    def test_no_dynamic_allocation_size(self):
+        """Test that allocation size must be static with capture."""
+        with pytest.raises(
+            NotImplementedError,
+            match="Number of allocated wires must be static when capture is enabled.",
+        ):
+
+            def c(n: int):
+                allocate(n)
+
 
 @pytest.mark.integration
 class TestDeviceIntegration:
