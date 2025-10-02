@@ -89,6 +89,11 @@ from .templates import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    TrotterCDF,
+    TrotterProduct,
+    TrotterTHC,
+    TrotterVibrational,
+    TrotterVibronic,
     MPSPrep,
     QROMStatePreparation,
     UniformStatePrep,
@@ -97,4 +102,11 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+)
+
+from .compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibronicHamiltonian,
+    VibrationalHamiltonian,
 )
