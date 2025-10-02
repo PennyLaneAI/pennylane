@@ -285,6 +285,16 @@ def _(op: qtemps.QuantumPhaseEstimation):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.TrotterProduct):
+    res_ops = [_map_to_resource_op(term) for term in op.hyperparameters["base"].terms()[1]]
+    return re_temps.TrotterProduct(
+        first_order_expansion=res_ops,
+        num_steps=op.hyperparameters["n"],
+        order=op.hyperparameters["order"],
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.MPSPrep):
     max_bond_dim = max(data.shape[-1] for data in op.mps)
     return re_temps.MPSPrep(num_mps_matrices=len(op.mps), max_bond_dim=max_bond_dim)
