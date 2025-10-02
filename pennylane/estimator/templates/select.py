@@ -41,7 +41,7 @@ class SelectTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
     Args:
-        hamiltonian (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
+        thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which the select operator is being applied.
         rotation_precision (int | None): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
@@ -58,8 +58,8 @@ class SelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> from pennylane import estimator as qre
-    >>> hamiltonian =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
-    >>> res = qre.estimate(qre.SelectTHC(hamiltonian, rotation_precision=15))
+    >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
      Total wires: 371
