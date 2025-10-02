@@ -22,8 +22,7 @@ from functools import partial, singledispatch
 import numpy as np
 from numpy.random import default_rng
 
-import pennylane.math as math
-from pennylane import measurements, ops
+from pennylane import math, ops
 from pennylane.logging import debug_logger
 from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
@@ -36,6 +35,8 @@ from pennylane.measurements import (
     Shots,
     VarianceMP,
     find_post_processed_mcms,
+    probs,
+    sample,
 )
 from pennylane.operation import StatePrepBase
 from pennylane.tape import QuantumScript
@@ -646,11 +647,7 @@ def split_circuit_at_mcms(circuit):
     first = 0
     for last, op in mcm_gen:
         new_operations = circuit.operations[first:last]
-        new_measurements = (
-            [measurements.sample(wires=op.wires)]
-            if circuit.shots
-            else [measurements.probs(wires=op.wires)]
-        )
+        new_measurements = [sample(wires=op.wires)] if circuit.shots else [probs(wires=op.wires)]
         circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
 

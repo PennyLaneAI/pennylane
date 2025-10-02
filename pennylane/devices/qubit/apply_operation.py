@@ -20,9 +20,8 @@ from string import ascii_letters as alphabet
 import numpy as np
 import scipy as sp
 
-import pennylane.devices.qubit as qubit
-import pennylane.math as math
-from pennylane import ops, pulse, templates
+from pennylane import math, ops, pulse, templates
+from pennylane.devices import qubit
 from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
 

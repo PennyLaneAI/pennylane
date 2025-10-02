@@ -23,8 +23,7 @@ from functools import partial, singledispatch
 import numpy as np
 
 import pennylane as qml
-import pennylane.math as math
-from pennylane import compiler, measurements
+from pennylane import compiler, math, measurements
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
