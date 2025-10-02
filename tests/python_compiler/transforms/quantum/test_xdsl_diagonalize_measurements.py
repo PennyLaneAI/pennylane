@@ -268,6 +268,47 @@ class TestDiagonalizeFinalMeasurementsPass:
         pipeline = (DiagonalizeFinalMeasurementsPass(),)
         run_filecheck(program, pipeline)
 
+    def test_additional_qubit_uses_are_updated(self, run_filecheck):
+        """Test that when diagonalizing the circuit, if the MLIR contains
+        later manipulations of the qubit going into the observable, these are
+        updated as well. While quantum.custom operations can't be applied to
+        the same SSA value that is passed to the observable, it can still
+        be inserted into a register or deallocated.
+
+        The simplified program for this test is based on the circuit
+
+        @qml.qjit(target="mlir")
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circuit():
+            return qml.expval(qml.X(1))
+        """
+
+        # we expect that instead of the SSA value that comes out of quantum.extract being passed to
+        # both quantum.namedobs and the quantum.insert, it will be passed to the Hadamard, and the
+        # SSA value that is output by the *Hadmard* operation will be passed to namedobs and insert.
+        program = """
+            func.func @test_func() {
+                %0 = quantum.alloc(3) : !quantum.reg
+                %1 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.*]] = quantum.extract
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                // CHECK: [[q0_1:%.*]] = quantum.custom "Hadamard"() [[q0]]
+                // CHECK-NEXT: quantum.namedobs [[q0_1]][PauliZ]
+                %4 = quantum.namedobs %3[PauliX] : !quantum.obs
+                %5 = quantum.expval %4 : f64
+
+                // CHECK: quantum.insert [[q:%.+]][[[q:%.+]]], [[q0_1]]
+                %6 = tensor.extract %1[] : tensor<i64>
+                %7 = quantum.insert %0[%6], %3 : !quantum.reg, !quantum.bit
+                quantum.dealloc %7 : !quantum.reg
+            }
+        """
+
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
+
 
 class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
     """Integration tests going through plxpr (program capture enabled)"""
