@@ -1348,6 +1348,7 @@
   [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
   [(#8301)](https://github.com/PennyLaneAI/pennylane/pull/8301)
   [(#8314)](https://github.com/PennyLaneAI/pennylane/pull/8314)
+  [(#8362)](https://github.com/PennyLaneAI/pennylane/pull/8362)
 
 * Added a `graph_state_utils` submodule to `python_compiler.transforms.mbqc` for common utilities
   for MBQC workflows.
