@@ -145,7 +145,7 @@ class SelectTHC(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.templates.THCHamiltonian`): A tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
