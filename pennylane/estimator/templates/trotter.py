@@ -294,7 +294,7 @@ class TrotterCDF(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
+        cdf_ham (:class:`~.pennylane.estimator.compact_hamiltonian.CDFHamiltonian`):
             a compressed double factorized Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
@@ -613,7 +613,7 @@ class TrotterTHC(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        thc_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+        thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
@@ -935,7 +935,7 @@ class TrotterVibrational(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        vibration_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
+        vibration_ham (:class:`~.pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
@@ -1330,7 +1330,7 @@ class TrotterVibronic(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
+        vibronic_ham (:class:`~.pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
