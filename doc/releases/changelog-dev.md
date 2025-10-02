@@ -37,7 +37,7 @@
   * The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
     classes were added to store metadata of the Hamiltonian of a quantum system,
     and the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
-    ``TrotterVibronic`` related to Suzuki-Trotter method were added to `qml.estimator.templates`.
+    ``TrotterVibronic`` related to the Suzuki-Trotter method were added to `qml.estimator.templates`.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
