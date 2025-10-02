@@ -1018,7 +1018,7 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.templates.THCHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
