@@ -17,6 +17,12 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 
 import numpy as np
 
+from pennylane.estimator.compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibrationalHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
@@ -31,12 +37,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-from .compact_hamiltonian import (
-    CDFHamiltonian,
-    THCHamiltonian,
-    VibrationalHamiltonian,
-    VibronicHamiltonian,
-)
 from .subroutines import (
     BasisRotation,
     OutMultiplier,
