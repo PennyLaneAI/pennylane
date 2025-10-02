@@ -19,13 +19,13 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.math import is_abstract
 from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
     import jax
-    from jax.interpreters import partial_eval as pe
 
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QmlPrimitive
@@ -361,7 +361,7 @@ def allocate(
     """
     state = AllocateState(state)
     if capture_enabled():
-        if isinstance(num_wires, pe.DynamicJaxprTracer):
+        if is_abstract(num_wires):
             raise NotImplementedError(
                 "Number of allocated wires must be static when capture is enabled."
             )
