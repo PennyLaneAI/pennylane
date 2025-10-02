@@ -17,6 +17,12 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 
 import numpy as np
 
+from pennylane.estimator.compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibrationalHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
@@ -31,12 +37,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-from .compact_hamiltonian import (
-    CDFHamiltonian,
-    THCHamiltonian,
-    VibrationalHamiltonian,
-    VibronicHamiltonian,
-)
 from .subroutines import (
     BasisRotation,
     OutMultiplier,
@@ -929,10 +929,8 @@ class TrotterVibrational(ResourceOperator):
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even
-        phase_grad_precision (float): precision for the phase gradient calculation, default value is
-            ``1e-6``
-        coeff_precision (float): precision for the loading of coefficients, default value is
-            ``1e-3``
+        phase_grad_precision (float | None): precision for the phase gradient calculation
+        coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts
 
     Resources:
@@ -1030,10 +1028,8 @@ class TrotterVibrational(ResourceOperator):
                   Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
-                * phase_grad_precision (float): precision for the phase gradient calculation, default value
-                  is ``1e-6``
-                * coeff_precision (float): precision for the loading of coefficients, default value is
-                  ``1e-3``
+                * phase_grad_precision (float): precision for the phase gradient calculation,
+                * coeff_precision (float): precision for the loading of coefficients,
         """
         return {
             "vibration_ham": self.vibration_ham,
@@ -1060,10 +1056,8 @@ class TrotterVibrational(ResourceOperator):
                 Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
-            phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                ``1e-6``
-            coeff_precision (float): precision for the loading of coefficients, default value is
-                ``1e-3``
+            phase_grad_precision (float | None): precision for the phase gradient calculation
+            coeff_precision (float | None): precision for the loading of coefficients
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -1219,10 +1213,8 @@ class TrotterVibrational(ResourceOperator):
                 Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
-            phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                ``1e-6``
-            coeff_precision (float): precision for the loading of coefficients, default value is
-                ``1e-3``
+            phase_grad_precision (float | None): precision for the phase gradient calculation
+            coeff_precision (float | None): precision for the loading of coefficients
 
         Resources:
             The resources are defined according to the recursive formula presented above.
@@ -1328,10 +1320,8 @@ class TrotterVibronic(ResourceOperator):
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation (must be 1 or even)
-        phase_grad_precision (float): precision for the phase gradient calculation, default value is
-            ``1e-6``
-        coeff_precision (float): precision for the loading of coefficients, default value is
-            ``1e-3``
+        phase_grad_precision (float | None): precision for the phase gradient calculation
+        coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts.
 
     Resources:
@@ -1431,10 +1421,8 @@ class TrotterVibronic(ResourceOperator):
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
-                * phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                  ``1e-6``
-                * coeff_precision (float): precision for the loading of coefficients, default value is
-                  ``1e-3``
+                * phase_grad_precision (float): precision for the phase gradient calculation
+                * coeff_precision (float): precision for the loading of coefficients
         """
         return {
             "vibronic_ham": self.vibronic_ham,
@@ -1461,10 +1449,8 @@ class TrotterVibronic(ResourceOperator):
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
-            phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                ``1e-6``
-            coeff_precision (float): precision for the loading of coefficients, default value is
-                ``1e-3``
+            phase_grad_precision (float | None): precision for the phase gradient calculation
+            coeff_precision (float | None): precision for the loading of coefficients
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
@@ -1649,10 +1635,8 @@ class TrotterVibronic(ResourceOperator):
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
-            phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                ``1e-6``
-            coeff_precision (float): precision for the loading of coefficients, default value is
-                ``1e-3``
+            phase_grad_precision (float | None): precision for the phase gradient calculation
+            coeff_precision (float | None): precision for the loading of coefficients
 
         Resources:
             The resources are defined according to the recursive formula presented above.

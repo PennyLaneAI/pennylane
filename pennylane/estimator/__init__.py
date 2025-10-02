@@ -102,7 +102,7 @@ from .templates import (
     RegisterComparator,
 )
 
-from .templates.compact_hamiltonian import (
+from .compact_hamiltonian import (
     CDFHamiltonian,
     THCHamiltonian,
     VibronicHamiltonian,

@@ -356,6 +356,66 @@ class TestTrotterTHC:
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
+    @pytest.mark.parametrize(
+        "num_orbitals, tensor_rank, num_steps, order, num_ctrl_wires, num_zero_ctrl, gates_expected",
+        (
+            (
+                4,
+                4,
+                1,
+                1,
+                1,
+                0,
+                [
+                    (2, "BasisRotation"),
+                    (2, "BasisRotation"),
+                    (1, "Prod"),
+                    (1, "Prod"),
+                ],
+            ),
+            (
+                4,
+                4,
+                1,
+                2,
+                1,
+                0,
+                [
+                    (4, "BasisRotation"),
+                    (2, "Prod"),
+                    (2, "BasisRotation"),
+                    (1, "Prod"),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_resource_decomp(
+        self,
+        num_orbitals,
+        tensor_rank,
+        num_steps,
+        order,
+        num_ctrl_wires,
+        num_zero_ctrl,
+        gates_expected,
+    ):
+        """Test the controlled_resource_decomp method for TrotterTHC."""
+
+        compact_ham = qre.THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=tensor_rank)
+
+        target_resource_params = {
+            "thc_ham": compact_ham,
+            "num_steps": num_steps,
+            "order": order,
+        }
+        decomp = qre.TrotterTHC.controlled_resource_decomp(
+            num_ctrl_wires, num_zero_ctrl, target_resource_params
+        )
+
+        gates_decomp = [(item.count, item.gate.name) for item in decomp]
+
+        assert gates_decomp == gates_expected
+
     def test_type_error(self):
         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
         compact_ham = qre.CDFHamiltonian(num_orbitals=4, num_fragments=10)

@@ -36,9 +36,11 @@
   * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
     [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
-  * The ``CompactHamiltonian`` class was added to `qml.estimator.templates` as a compact representation for the Hamiltonian of a quantum system.
+  * The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
+    classes were added to `qml.estimator` as compact representation for the Hamiltonian of a quantum system.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
-  * The resource templates related to Trotter were added to `qml.estimator.templates`.
+  * The resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
+    ``TrotterVibronic`` related to Suzuki-Trotter method were added to `qml.estimator.templates`.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
@@ -1146,6 +1148,7 @@
 * The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
+  [(#8364)](https://github.com/PennyLaneAI/pennylane/pull/8364)
 
 * `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
   with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
