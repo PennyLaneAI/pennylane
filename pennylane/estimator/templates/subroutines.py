@@ -28,7 +28,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
+# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
 
 
 class OutOfPlaceSquare(ResourceOperator):
@@ -423,7 +423,7 @@ class SemiAdder(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict | None = None
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -1832,31 +1832,14 @@ class QROM(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-        num_bitstrings: int,
-        size_bitstring: int,
-        num_bit_flips: int = None,
-        select_swap_depth: int = None,
-        restored=True,
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_bitstrings (int): the number of bitstrings that are to be encoded
-            size_bitstring (int): the length of each bitstring
-            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
-                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            restored (bool, optional): Determine if allocated qubits should be reset after the computation
-                (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (int | None): A parameter :math:`\lambda` that determines
-                if data will be loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
-                determines the optimal depth.
+            target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
             The resources for QROM are taken from the following two papers:
@@ -1874,6 +1857,11 @@ class QROM(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        num_bitstrings = target_resource_params["num_bitstrings"]
+        size_bitstring = target_resource_params["size_bitstring"]
+        num_bit_flips = target_resource_params.get("num_bit_flips", None)
+        select_swap_depth = target_resource_params.get("select_swap_depth", None)
+        restored = target_resource_params.get("restored", True)
         gate_cost = []
         if num_zero_ctrl:
             x = qre.X.resource_rep()
