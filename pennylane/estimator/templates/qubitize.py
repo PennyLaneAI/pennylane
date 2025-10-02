@@ -48,10 +48,10 @@ class QubitizeTHC(ResourceOperator):
             Hamiltonian for which the walk operator is being created.
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             resource operator, corresponding to the prepare routine. If :code:`None`, the
-            default :class:`~.pennylane.estimator.templates.PrepTHC` will be used.
+            default :class:`~.pennylane.estimator.templates.stateprep.PrepTHC` will be used.
         select_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             resource operator, corresponding to the select routine. If :code:`None`, the
-            default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
+            default :class:`~.pennylane.estimator.templates.select.SelectTHC` will be used.
         coeff_precision (int | None): The number of bits used to represent the precision for loading
             the coefficients of Hamiltonian.
         rotation_precision (int | None): The number of bits used to represent the precision for loading
