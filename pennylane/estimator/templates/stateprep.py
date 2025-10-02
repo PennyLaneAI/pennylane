@@ -951,7 +951,7 @@ class PrepTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * thc_ham (:class:`~.pennylane.estimator.templates.THCHamiltonian`): a tensor hypercontracted
+                * thc_ham (:class:`~.pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian for which the state is being prepared
                 * coeff_precision (int | None): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
