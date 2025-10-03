@@ -36,7 +36,15 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.ops import Hadamard, PauliX, PauliY
 
-from ...dialects.quantum import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
+from ...dialects.quantum import (
+    CustomOp,
+    GlobalPhaseOp,
+    MultiRZOp,
+    NamedObservable,
+    NamedObservableAttr,
+    NamedObsOp,
+    QubitUnitaryOp,
+)
 from ...pass_api import compiler_transform
 
 
@@ -106,7 +114,11 @@ class DiagonalizeFinalMeasurementsPattern(
             # input to the first diagonalizing gate. Its not enough to only change the NamedObsOp,
             # because the qubit might be inserted/deallocated later
             uses_to_change = [
-                use for use in observable.qubit.uses if not isinstance(use.operation, (CustomOp, GlobalPhaseOp, MultiRZOp, QubitUnitaryOp))
+                use
+                for use in observable.qubit.uses
+                if not isinstance(
+                    use.operation, (CustomOp, GlobalPhaseOp, MultiRZOp, QubitUnitaryOp)
+                )
             ]
             observable.qubit.replace_by_if(qubit, lambda use: use in uses_to_change)
             for use in uses_to_change:
@@ -129,9 +141,9 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
     # pylint: disable= no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
-        pattern_rewriter.PatternRewriteWalker(
-            DiagonalizeFinalMeasurementsPattern()
-        ).rewrite_module(module)
+        pattern_rewriter.PatternRewriteWalker(DiagonalizeFinalMeasurementsPattern()).rewrite_module(
+            module
+        )
 
 
 diagonalize_final_measurements_pass = compiler_transform(DiagonalizeFinalMeasurementsPass)
