@@ -52,12 +52,12 @@ class CompressedResourceOp:
 
         This representation is the minimal amount of information required to estimate resources for an operator.
 
-    **Example**
+        **Example**
 
-    >>> from pennylane import estimator as qre
-    >>> compressed_hadamard = qre.CompressedResourceOp(qre.Hadamard, num_wires=1)
-    >>> print(compressed_hadamard)
-    CompressedResourceOp(Hadamard, num_wires=1)
+        >>> from pennylane import estimator as qre
+        >>> compressed_hadamard = qre.CompressedResourceOp(qre.Hadamard, num_wires=1)
+        >>> print(compressed_hadamard)
+        CompressedResourceOp(Hadamard, num_wires=1)
     """
 
     def __init__(
