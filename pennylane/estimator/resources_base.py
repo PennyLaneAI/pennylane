@@ -65,7 +65,8 @@ class Resources:
       'X': 7,
       'Hadamard': 10
 
-    A more detailed breakdown of resources can be generated using the :meth:`~.resource_operator.Resources.gate_breakdown` method:
+    A more detailed breakdown of resources can be generated using the
+    :meth:`~.estimator.resources_base.Resources.gate_breakdown` method:
 
     >>> print(res.gate_breakdown())
     RX total: 4

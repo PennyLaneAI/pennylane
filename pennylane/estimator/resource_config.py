@@ -48,6 +48,39 @@ class DecompositionType(StrEnum):
 class ResourceConfig:
     """A container to track the configuration for precisions and custom decompositions for the
     resource estimation pipeline.
+
+    Multiple configurations can be used to easily analyze the same workflows with different settings.
+    Customize configurations using methods such as the :meth:`~.estimator.resource_config.set_single_qubit_rot_precision`
+    method for single qubit rotation precisions, the :meth:`~.estimator.resource_config.set_precision` method to set various
+    operator precisions, and the :meth:`~.estimator.resource_config.set_decomp` method to set custom resource decompositions.
+
+    The default configuration is shown here:
+
+    >>> from pennylane import estimator as qre
+    >>> config = qre.ResourceConfig()
+    >>> print(config)
+    ResourceConfig(
+        precisions = {
+            RX: {'precision': 1e-09},
+            RY: {'precision': 1e-09},
+            RZ: {'precision': 1e-09},
+            CRX: {'precision': 1e-09},
+            CRY: {'precision': 1e-09},
+            CRZ: {'precision': 1e-09},
+            SelectPauliRot: {'precision': 1e-09},
+            QubitUnitary: {'precision': 1e-09},
+            AliasSampling: {'precision': 1e-09},
+            MPSPrep: {'precision': 1e-09},
+            QROMStatePreparation: {'precision': 1e-09},
+            SelectTHC: {'rotation_precision': 15},
+            PrepTHC: {'coeff_precision': 15},
+            QubitizeTHC: {'coeff_precision': 15, 'rotation_precision': 15},
+            TrotterVibronic: {'phase_grad_precision': 1e-06, 'coeff_precision': 0.001},
+            TrotterVibrational: {'phase_grad_precision': 1e-06, 'coeff_precision': 0.001}
+            },
+        custom decomps = []
+    )
+
     """
 
     def __init__(self) -> None:
