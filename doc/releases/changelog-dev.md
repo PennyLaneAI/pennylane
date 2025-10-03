@@ -899,6 +899,10 @@
 * Perturbation error function now sums over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
+* `Sum`, `Prod`, `SProd`, and `LinearCombination` are now represented by a reference in the text
+  drawer, with a longer label printed underneath.
+  [(#7279)](https://github.com/PennyLaneAI/pennylane/pull/7279)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.workflow.construct_batch.expand_fn_transform` is deleted as it was local and no longer getting used.

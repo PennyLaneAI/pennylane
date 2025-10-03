@@ -603,6 +603,17 @@ class TestMaxLength:
 
         assert max(len(s) for s in out.split("\n")) <= ml
 
+    def test_max_length_large_observable(self):
+        """Test that max_length also caps the length of large observables."""
+
+        _tape = qml.tape.QuantumScript([], [qml.expval(sum(qml.X(i) for i in range(10)))])
+
+        out = tape_text(_tape, max_length=20)
+        assert max(len(s) for s in out.split("\n")) <= 20
+
+        last_line = out.rsplit("\n", maxsplit=1)
+        assert last_line == "H0 = X+X+X+X+X+X+..."
+
 
 single_op_tests_data = [
     (
@@ -650,13 +661,13 @@ single_op_tests_data = [
     (qml.sample(op=qml.PauliX(0)), "0: ───┤  Sample[X]"),
     (
         qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)),
-        "0: ───┤ ╭<(0.10*X)@Y>\n1: ───┤ ╰<(0.10*X)@Y>",
+        "0: ───┤ ╭<H0>\n1: ───┤ ╰<H0>\nH0 = (0.10*X)@Y",
     ),
     (
         qml.expval(
             0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
         ),
-        "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
+        "0: ───┤ ╭<H0>\n1: ───┤ ╰<H0>\nH0 = (0.10*X)+(0.20*Y)+(0.30*Z)+(0.40*Z)",
     ),
     # Operations (both regular and controlled) and nested multi-valued controls
     (qml.ctrl(qml.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
@@ -804,6 +815,27 @@ class TestShowMatrices:
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
+
+
+def test_multiple_uses_of_large_observable():
+    """Test that labelling integrates correctly when we have multuple uses of the same large observable."""
+
+    H1 = qml.sum(*(qml.X(i) for i in range(5)))
+    H2 = qml.sum(*(qml.X(i) for i in range(5)))
+    H3 = qml.sum(*(qml.X(i) for i in range(5)))
+
+    _tape = qml.tape.QuantumScript([qml.evolve(H1, 0.5)], [qml.expval(H2), qml.var(H3)])
+    out = tape_text(_tape)
+
+    expected = (
+        "0: ─╭Exp(-0.5j H0)─┤ ╭<H0> ╭Var[H0]\n"
+        "1: ─├Exp(-0.5j H0)─┤ ├<H0> ├Var[H0]\n"
+        "2: ─├Exp(-0.5j H0)─┤ ├<H0> ├Var[H0]\n"
+        "3: ─├Exp(-0.5j H0)─┤ ├<H0> ├Var[H0]\n"
+        "4: ─╰Exp(-0.5j H0)─┤ ╰<H0> ╰Var[H0]\n"
+        "H0 = X+X+X+X+X"
+    )
+    assert out == expected
 
 
 def test_nested_tapes():
