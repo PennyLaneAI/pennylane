@@ -95,6 +95,7 @@ from pennylane.measurements import (
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod
 from pennylane.ops import LinearCombination as Hamiltonian
+from pennylane import ops
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -121,6 +122,7 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
 )
+from pennylane import transforms
 from pennylane.noise import (
     add_noise,
     insert,
