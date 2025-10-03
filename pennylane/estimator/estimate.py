@@ -66,7 +66,7 @@ def estimate(
 
     .. code-block:: python
 
-        from pennylane import estimator as qre
+        import pennylane.estimator as qre
 
         def my_circuit():
             for w in range(2):
@@ -79,7 +79,7 @@ def estimate(
 
     The resources for this workflow are then obtained by:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> res = qre.estimate(my_circuit)()
     >>> print(res)
     --- Resources: ---
@@ -102,7 +102,7 @@ def estimate(
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import estimator as qre
+            import pennylane.estimator as qre
 
             dev = qml.device("null.qubit")
 

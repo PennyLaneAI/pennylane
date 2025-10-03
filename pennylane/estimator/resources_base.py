@@ -46,12 +46,11 @@ class Resources:
     **Example**
 
     >>> from pennylane import estimator as qre
-    >>> from collections import defaultdict
     >>> H = qre.resource_rep(qre.Hadamard)
     >>> X = qre.resource_rep(qre.X)
     >>> RX = qre.resource_rep(qre.RX, {"precision":1e-8})
     >>> RX_2 = qre.resource_rep(qre.RX, {"precision":1e-6})
-    >>> gate_types = defaultdict(int, {H: 10, X:7, RX:2, RX_2:2})
+    >>> gate_types = {H: 10, X:7, RX:2, RX_2:2}
     >>>
     >>> res = qre.Resources(zeroed=3, gate_types=gate_types)
     >>> print(res)
