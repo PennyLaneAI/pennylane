@@ -500,13 +500,14 @@ class QROMStatePreparation(ResourceOperator):
          Total wires: 21
             algorithmic wires: 4
             allocated wires: 17
-             zero state: 17
-             any state: 0
-         Total gates : 3.782E+3
+        	 zero state: 17
+        	 any state: 0
+         Total gates : 2.680E+3
           'QROM': 5,
-          'T': 2.524E+3,
-          'CNOT': 825,
-          'Hadamard': 428
+          'Adjoint(QROM)': 5,
+          'T': 1.832E+3,
+          'CNOT': 580,
+          'Hadamard': 258
 
         The ``precision`` argument is used to allocate the target wires in the underlying QROM
         operations. It corresponds to the precision with which the rotation angles of the
@@ -522,18 +523,24 @@ class QROMStatePreparation(ResourceOperator):
         is used as the ``select_swap_depth`` for all :code:`QROM` operations in the resource decomposition.
 
         >>> print(res.gate_breakdown())
+        Adjoint(QROM) total: 5
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
         QROM total: 5
             QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
-        T total: 2.524E+3
-        CNOT total: 825
-        Hadamard total: 428
+        T total: 1.832E+3
+        CNOT total: 580
+        Hadamard total: 258
 
         Alternatively, we can configure each value independently by specifying a list. Note the size
-        of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
+        of this list should be :code:`num_state_qubits + 1` (or :code:`num_state_qubits` if the state
         is positive and real).
 
         >>> qrom_prep = qre.QROMStatePreparation(
@@ -543,15 +550,21 @@ class QROMStatePreparation(ResourceOperator):
         ... )
         >>> res = qre.estimate(qrom_prep, gate_set)
         >>> print(res.gate_breakdown())
+        Adjoint(QROM) total: 5
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
         QROM total: 5
             QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
-        T total: 2.524E+3
-        CNOT total: 825
-        Hadamard total: 428
+        T total: 1.832E+3
+        CNOT total: 580
+        Hadamard total: 258
     """
 
     resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
