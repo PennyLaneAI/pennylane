@@ -424,8 +424,15 @@ def _gather_counts(measurement: CountsMP, samples, is_valid, postselect_mode=Non
             values = list(itertools.product(*values))
             tmp = Counter({float(*v): 0 for v in values})
 
-    for i, d in enumerate(samples):
-        tmp.update({k if isinstance(k, str) else float(k): v * is_valid[i] for k, v in d.items()})
+    if postselect_mode == "fill-shots":
+        # Keep only valid rows so joint measurement correlations are preserved.
+        for i, d in enumerate(samples):
+            if bool(is_valid[i]):
+                tmp.update({k if isinstance(k, str) else float(k): v for k, v in d.items()})
+    else:
+        # Existing behavior: weight by validity (works for hw-like / pad-invalid-samples).
+        for i, d in enumerate(samples):
+            tmp.update({k if isinstance(k, str) else float(k): v * is_valid[i] for k, v in d.items()})
 
     if not measurement.all_outcomes:
         tmp = Counter({k: v for k, v in tmp.items() if v > 0})
@@ -439,6 +446,7 @@ def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=No
         is_valid = qml.math.reshape(is_valid, (-1, 1))
     if postselect_mode == "pad-invalid-samples":
         return qml.math.where(is_valid, samples, fill_in_value)
+    # For "fill-shots" (and default), we drop invalid rows to preserve per-shot alignment.
     return samples[is_valid]
 
 
@@ -512,6 +520,13 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
         mcm_samples = [m.concretize(samples) for m in mv]
         mcm_samples = qml.math.concatenate(mcm_samples, axis=1)
+
+        # For "fill-shots", preserve joint per-shot alignment by filtering rows up front.
+        if postselect_mode == "fill-shots":
+            mcm_samples = mcm_samples[is_valid]
+            # After filtering rows, downstream gatherers can ignore is_valid for this branch.
+            is_valid = qml.math.ones_like(qml.math.sum(mcm_samples, axis=1), dtype=bool)
+
         if isinstance(measurement, ProbabilityMP):
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))

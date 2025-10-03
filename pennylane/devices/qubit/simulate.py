@@ -559,14 +559,8 @@ def simulate_tree_mcm(
             depth += 1
             # Update the active branch samples with `update_mcm_samples`
             if finite_shots:
-                if (
-                    mcms[depth]
-                    and mcms[depth].postselect is not None
-                    and postselect_mode == "fill-shots"
-                ):
-                    samples = mcms[depth].postselect * qml.math.ones_like(measurements)
-                else:
-                    samples = qml.math.atleast_1d(measurements)
+                # Always record the actual sampled outcomes; do not force postselected values here.
+                samples = qml.math.atleast_1d(measurements)
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:
