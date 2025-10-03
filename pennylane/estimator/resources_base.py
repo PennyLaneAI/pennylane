@@ -66,6 +66,7 @@ class Resources:
       'Hadamard': 10
 
     A more detailed breakdown of resources can be generated using the ``gate_breakdown`` method:
+
     >>> print(res.gate_breakdown())
     RX total: 4
         RX {'precision': 1e-08}: 2
