@@ -852,8 +852,27 @@ class TestDynamicShapeValidation:
         def f(val, n):
             return qml.cond(val, true_fn, false_fn=false_fn)(n)
 
-        with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            f(True, 3)
+        # should pass now
+        f(True, 3)
+
+    def test_scalar_type_promotion(self):
+        """Test that scalar type promotion works (int vs float)."""
+
+        def true_fn(x):
+            return x + 1  # int
+
+        def false_fn(x):
+            return x + 2.0  # float
+
+        def f(val, x):
+            return qml.cond(val, true_fn, false_fn)(x)
+
+        # This should work with type promotion
+        result = f(True, jax.numpy.array(5))
+        assert result == 6  # 5 + 1
+
+        result = f(False, jax.numpy.array(5))
+        assert result == 7.0  # 5 + 2.0
 
     def test_one_dynamic_shape_other_not(self):
         """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
