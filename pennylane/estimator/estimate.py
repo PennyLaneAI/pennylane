@@ -46,8 +46,7 @@ def estimate(
     Args:
         workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | QNode): The quantum circuit or operator
             for which to estimate resources.
-        gate_set (set[str] | None): A set of names (strings) of the fundamental operators to track
-            counts for throughout the quantum workflow.
+        gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count throughout the quantum workflow.
         zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires may be allocated when they
@@ -177,7 +176,7 @@ def _resources_from_qfunc(
             if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
                 if hasattr(op, "wires") and op.wires:
                     circuit_wires.append(op.wires)
-                elif hasattr(op, 'num_wires') and op.num_wires:
+                elif hasattr(op, "num_wires") and op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
             else:
                 raise ValueError(

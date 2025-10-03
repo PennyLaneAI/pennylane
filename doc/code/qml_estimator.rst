@@ -14,7 +14,7 @@ Functionality within :mod:`~.estimator` is intended purely for resource estimati
 Resource Estimation Functions:
 ------------------------------
 
-:func:`~.estimator.estimate.estimate` is the standard entry point for estimating the resources required by a quantum program.
+The :func:`~.estimator.estimate.estimate` function is the standard entry point for estimating the resources required by a quantum program.
 Submit a program written with either standard PennyLane operators (:class:`~.Operation`)
 or resource operators (:class:`~.estimator.resource_operator.ResourceOperator`),
 and instantly receive the resource estimate in the form of :class:`~.estimator.resources_base.Resources`.

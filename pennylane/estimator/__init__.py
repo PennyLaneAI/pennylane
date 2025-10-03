@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""This module contains tools dedicated for logical resource estimation."""
+r"""This module contains tools dedicated to logical resource estimation."""
 
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
