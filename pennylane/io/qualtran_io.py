@@ -23,14 +23,11 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane import math
 from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.estimator.estimate import estimate
 from pennylane.operation import Operation, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
 from pennylane.tape import make_qscript
-from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
