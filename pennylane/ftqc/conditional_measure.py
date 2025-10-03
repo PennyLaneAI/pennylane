@@ -59,7 +59,7 @@ def cond_measure(
         dev = qml.device("default.qubit", wires=3)
 
         @diagonalize_mcms
-        @qml.set_shots(shots=10_000)
+        @qml.set_shots(shots=1_000)
         @qml.qnode(dev, mcm_method="one-shot")
         def qnode(x, y):
             qml.RY(x, 0)
