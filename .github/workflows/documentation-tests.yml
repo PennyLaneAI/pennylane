@@ -59,28 +59,12 @@ jobs:
           --ignore=pennylane/labs
           --ignore=pennylane/compiler/python_compiler
           "
-          IGNORE_OPTS_UTILITY="
-          --ignore=pennylane/exceptions
-          --ignore=pennylane/concurrency
-          "
           IGNORE_OPTS_CORE="
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
-          --ignore=pennylane/pytrees
-          --ignore=pennylane/numpy
-          --ignore=pennylane/logging
-          --ignore=pennylane/registers.py
-          --ignore=pennylane/queuing.py
-          --ignore=pennylane/configuration
           --ignore=pennylane/compiler
-          --ignore=pennylane/boolean_fn.py
-          --ignore=pennylane/_grad.py
-          --ignore=pennylane/circuit_graph.py
-          --ignore=pennylane/allocation.py
           --ignore=pennylane/measurements
-          --ignore=pennylane/operation.py
           --ignore=pennylane/ops
-          --ignore=pennylane/tape
           --ignore=pennylane/transforms
           --ignore=pennylane/capture
           --ignore=pennylane/decomposition
@@ -88,7 +72,6 @@ jobs:
           --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
-          --ignore=pennylane/pauli
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
@@ -98,13 +81,10 @@ jobs:
           IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/resource
           --ignore=pennylane/io
+          --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
-          --ignore=pennylane/kernels
           --ignore=pennylane/data
-          --ignore=pennylane/liealg
-          --ignore=pennylane/fermi
-          --ignore=pennylane/bose
           --ignore=pennylane/spin
           --ignore=pennylane/drawer
           --ignore=pennylane/fourier
@@ -116,7 +96,6 @@ jobs:
 
           IGNORE_OPTS="
           ${IGNORE_OPTS_CLOSED}
-          ${IGNORE_OPTS_UTILITY}
           ${IGNORE_OPTS_CORE}
           ${IGNORE_OPTS_AUXILIARY}
           ${IGNORE_OPTS_TERTIARY}

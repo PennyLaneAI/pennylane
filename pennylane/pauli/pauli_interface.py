@@ -39,7 +39,7 @@ def pauli_word_prefactor(observable):
     >>> pauli_word_prefactor(qml.Identity(0))
     1
     >>> pauli_word_prefactor(qml.X(0) @ qml.Y(1))
-    1
+    1.0
     >>> pauli_word_prefactor(qml.X(0) @ qml.Y(0))
     1j
     """

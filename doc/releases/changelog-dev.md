@@ -58,7 +58,7 @@
   * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
     [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
   * Fixed some issues and updated docs for the :mod:`~.estimator` module.
-    [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
+    [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
 
 <h4>Dynamic wire allocation 🎁</h4>
 
@@ -1183,6 +1183,8 @@
 
 * Add CI workflow to test documentation using `sybil`. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
+  [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
+  [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
