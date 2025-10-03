@@ -74,7 +74,7 @@ class CompressedResourceOp:
         self.num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
-        self._name = name or op_type.make_tracking_name(**self.params)
+        self._name = name or op_type.tracking_name(**self.params)
 
     def __hash__(self) -> int:
         return hash((self.op_type, self.num_wires, self._hashable_params))
@@ -372,15 +372,10 @@ class ResourceOperator(ABC):
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
-    # pylint: disable=unused-argument
     @classmethod
-    def make_tracking_name(cls, *args, **kwargs) -> str:
+    def tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
-        return cls.__name__.replace("Resource", "")
-
-    def tracking_name(self) -> str:
-        r"""Returns the tracking name built with the operator's parameters."""
-        return self.make_tracking_name(**self.resource_params)
+        return cls.__name__
 
 
 def _dequeue(
