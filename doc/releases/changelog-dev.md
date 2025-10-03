@@ -1559,7 +1559,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Runor Agbaire
+Runor Agbaire,
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
@@ -1577,7 +1577,7 @@ David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Elton Law,
-Mehrdad Malekmohammadi
+Mehrdad Malekmohammadi,
 Pablo Antonio Moreno Casares,
 Anton Naim Ibrahim,
 Erick Ochoa,
@@ -1590,4 +1590,4 @@ Shuli Shu,
 Jay Soni,
 Paul Haochen Wang,
 David Wierichs,
-Jake Zaia
+Jake Zaia.
