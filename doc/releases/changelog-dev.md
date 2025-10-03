@@ -1364,6 +1364,7 @@
 * Add nightly RC builds script to `.github/workflows`.
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
+
 <h3>Documentation 📝</h3>
 
 * The :doc:`installation page </development/guide/installation>` was updated to include currently supported Python versions and installation instructions.
