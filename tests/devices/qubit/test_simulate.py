@@ -1303,6 +1303,35 @@ class TestTreeTraversalStack:
 class TestMidMeasurements:
     """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``."""
 
+    @pytest.mark.parametrize(
+        "shots, postselect_mode, error",
+        [
+            (10, "fill-shots", True),
+            (None, "fill-shots", False),
+            (10, "hw-like", False),
+            (None, "hw-like", False),
+        ],
+    )
+    def test_defer_measurements_fill_shots_zero_prob_postselection_error(
+        self, shots, postselect_mode, error
+    ):
+        """Test that an error is raised if `postselect_mode="fill-shots"` with finite shots
+        and the postselection probability is zero when using defer_measurements."""
+
+        # State is |0>, so postselection probability is zero
+        qs = qml.tape.QuantumScript(
+            [qml.measurements.MidMeasureMP(0, postselect=1)], [qml.expval(qml.Z(0))], shots=shots
+        )
+        [deferred_qs], _ = qml.defer_measurements(qs)
+
+        if error:
+            with pytest.raises(RuntimeError, match="The probability of the postselected"):
+                simulate(deferred_qs, mcm_method="deferred", postselect_mode=postselect_mode)
+
+        else:
+            # No error should be raised
+            simulate(deferred_qs, mcm_method="deferred", postselect_mode=postselect_mode)
+
     @pytest.mark.parametrize("val", [0, 1])
     def test_basic_mid_meas_circuit(self, val):
         """Test execution with a basic circuit with mid-circuit measurements."""
