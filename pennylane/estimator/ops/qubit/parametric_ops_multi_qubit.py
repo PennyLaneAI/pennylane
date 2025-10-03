@@ -42,7 +42,7 @@ class MultiRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> multi_rz = qre.MultiRZ(num_wires=3)
     >>> gate_set = {"CNOT", "RZ"}
     >>>
@@ -244,7 +244,7 @@ class PauliRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> pr = qre.PauliRot(pauli_string="XYZ")
     >>> print(qre.estimate(pr))
     --- Resources: ---

@@ -17,7 +17,7 @@ import math
 
 import numpy as np
 
-from pennylane import estimator as qre
+import pennylane.estimator as qre
 from pennylane.estimator import Allocate, Deallocate
 from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
@@ -46,7 +46,7 @@ class SelectTHC(ResourceOperator):
         rotation_precision (int | None): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
             :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
-        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutine.QROM`
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
@@ -57,7 +57,7 @@ class SelectTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
     >>> print(res)
