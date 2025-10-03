@@ -18,9 +18,9 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
 from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
@@ -242,12 +242,12 @@ class ResourceConfig:
         if precision < 0:
             raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
 
-        self.resource_op_precisions[RX] = precision
-        self.resource_op_precisions[RY] = precision
-        self.resource_op_precisions[RZ] = precision
-        self.resource_op_precisions[CRX] = precision
-        self.resource_op_precisions[CRY] = precision
-        self.resource_op_precisions[CRZ] = precision
+        self.resource_op_precisions[RX]["precision"] = precision
+        self.resource_op_precisions[RY]["precision"] = precision
+        self.resource_op_precisions[RZ]["precision"] = precision
+        self.resource_op_precisions[CRX]["precision"] = precision
+        self.resource_op_precisions[CRY]["precision"] = precision
+        self.resource_op_precisions[CRZ]["precision"] = precision
 
     def set_decomp(
         self,
