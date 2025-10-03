@@ -59,7 +59,7 @@ class UniformStatePrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> unif_state_prep = qre.UniformStatePrep(10)
     >>> print(qre.estimate(unif_state_prep))
     --- Resources: ---
@@ -487,7 +487,7 @@ class QROMStatePreparation(ResourceOperator):
 
         This operation uses the :code:`QROM` subroutine to dynamically load the rotation angles.
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"QROM", "Hadamard", "CNOT", "T", "Adjoint(QROM)"}
         >>> qrom_prep = qre.QROMStatePreparation(
         ...     num_state_qubits = 4,
@@ -920,7 +920,7 @@ class PrepTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
     >>> print(res)

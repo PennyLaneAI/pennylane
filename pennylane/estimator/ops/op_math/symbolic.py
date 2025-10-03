@@ -54,7 +54,7 @@ class Adjoint(ResourceOperator):
 
     We can see how the resources differ by choosing a suitable gateset and estimating resources:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> gate_set = {
     ...     "SWAP",
     ...     "Adjoint(SWAP)",
@@ -221,7 +221,7 @@ class Controlled(ResourceOperator):
 
     The controlled operation can be constructed like this:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> x = qre.X()
     >>> cx = qre.Controlled(x, num_ctrl_wires=1, num_zero_ctrl=0)
     >>> ccx = qre.Controlled(x, num_ctrl_wires=2, num_zero_ctrl=2)
@@ -469,7 +469,7 @@ class Pow(ResourceOperator):
 
     The operation raised to a power :math:`z` can be constructed like this:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> z = qre.Z()
     >>> z_2 = qre.Pow(z, 2)
     >>> z_5 = qre.Pow(z, 5)
@@ -639,7 +639,7 @@ class Prod(ResourceOperator):
 
     We can construct a product operator as follows:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> factors = [qre.X(), qre.Y(), qre.Z()]
     >>> prod_xyz = qre.Prod(factors)
     >>>
@@ -813,7 +813,7 @@ class ChangeOpBasis(ResourceOperator):
     The change of basis operation can be constructed as follows with each operation defining the
     compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> compute_u = qre.Hadamard()
     >>> base_v = qre.Z()
     >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
@@ -988,7 +988,7 @@ class ChangeOpBasis(ResourceOperator):
         The change of basis operation can be constructed as follows with each operation defining the
         compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> compute_u = qre.Hadamard()
         >>> base_v = qre.Z()
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)

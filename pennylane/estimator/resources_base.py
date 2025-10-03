@@ -45,7 +45,7 @@ class Resources:
 
     **Example**
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> H = qre.resource_rep(qre.Hadamard)
     >>> X = qre.resource_rep(qre.X)
     >>> RX = qre.resource_rep(qre.RX, {"precision":1e-8})
@@ -112,7 +112,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res2 = qre.estimate(qre.QFT(num_wires=4), gate_set)
@@ -165,7 +165,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res2 = qre.estimate(qre.QFT(num_wires=4), gate_set)
@@ -221,7 +221,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res_in_series = res1.multiply_series(3)
@@ -265,7 +265,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res_in_parallel = res1.multiply_parallel(3)
@@ -366,7 +366,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> def circ():
         ...     qre.SemiAdder(10)
         ...     qre.Toffoli()

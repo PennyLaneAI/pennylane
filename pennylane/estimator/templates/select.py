@@ -17,7 +17,7 @@ import math
 
 import numpy as np
 
-from pennylane import estimator as qre
+import pennylane.estimator as qre
 from pennylane.estimator import Allocate, Deallocate
 from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
@@ -57,7 +57,7 @@ class SelectTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
     >>> print(res)

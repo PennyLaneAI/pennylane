@@ -56,7 +56,7 @@ class ResourceConfig:
 
     The default configuration is shown here:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> config = qre.ResourceConfig()
     >>> print(config)
     ResourceConfig(
@@ -186,7 +186,7 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            from pennylane import estimator as qre
+            import pennylane.estimator as qre
 
             config = qre.ResourceConfig()
 
@@ -251,7 +251,7 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            from pennylane import estimator as qre
+            import pennylane.estimator as qre
 
             config = qre.ResourceConfig()
             rot_ops = [qre.RX, qre.RY, qre.RZ, qre.CRX, qre.CRY, qre.CRZ]
@@ -299,7 +299,7 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            from pennylane import estimator as qre
+            import pennylane.estimator as qre
 
             def custom_res_decomp(**kwargs):
                 h = qre.resource_rep(qre.Hadamard)

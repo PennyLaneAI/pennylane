@@ -53,7 +53,7 @@ class QubitUnitary(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> qu = qre.QubitUnitary(num_wires=3)
     >>> gate_set =["RZ", "RY", "CNOT"]
     >>> print(qre.estimate(qu, gate_set))

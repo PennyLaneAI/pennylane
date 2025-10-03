@@ -39,7 +39,7 @@ class WireResourceManager:
 
     **Example**
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> q = qre.WireResourceManager(
     ...             zeroed=2,
     ...             any_state=2,
@@ -178,7 +178,7 @@ class Allocate(_WireAction):
 
         First, we define a custom decomposition which doesn't track the extra work wire:
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp(num_ctrl_wires=3, num_zero_ctrl=0, **kwargs):
         ...     gate_list = []
@@ -197,7 +197,7 @@ class Allocate(_WireAction):
         Now, if we want to track the allocation of wires using ``Allocate``, the decomposition
         can be redefined as:
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp(num_ctrl_wires=3, num_zero_ctrl=0, **kwargs):
         ...     gate_list = []
@@ -237,7 +237,7 @@ class Deallocate(_WireAction):
 
         First, we define a custom decomposition which allocates the work wire but doesn't free it.
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp(num_ctrl_wires=3, num_zero_ctrl=0, **kwargs):
         ...     gate_list = []
@@ -257,7 +257,7 @@ class Deallocate(_WireAction):
         We can free this wire using ``Deallocate``, allowing it to be reused with more operations.
         The decomposition can be redefined as:
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> from pennylane.estimator import GateCount, resource_rep
         >>> def resource_decomp(num_ctrl_wires=3, num_zero_ctrl=0, **kwargs):
         ...     gate_list = []
