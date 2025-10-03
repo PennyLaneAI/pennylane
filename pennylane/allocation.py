@@ -19,6 +19,7 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.math import is_abstract
 from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
@@ -164,7 +165,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     use it as one of the wires requested in the second allocation, resulting in a total of three wires
     being required from the device, including two dynamically allocated wires:
 
-    >>> print(qml.draw(c, level="device")())
+    >>> print(qml.draw(circuit, level="device")())
     0: ──H─╭●─╭●───────┤  <Z>
     1: ────╰X─╰X─╭SWAP─┤
     2: ──────────╰SWAP─┤
@@ -226,6 +227,9 @@ def allocate(
     .. note::
         The ``allocate`` function can be used as a context manager with automatic deallocation
         (recommended for most cases) or with manual deallocation via :func:`~.deallocate`.
+
+    .. note::
+        The ``num_wires`` argument must be static when capture is enabled.
 
     .. seealso::
         :func:`~.deallocate`
@@ -357,6 +361,10 @@ def allocate(
     """
     state = AllocateState(state)
     if capture_enabled():
+        if is_abstract(num_wires):
+            raise NotImplementedError(
+                "Number of allocated wires must be static when capture is enabled."
+            )
         wires = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
     else:
         wires = [DynamicWire() for _ in range(num_wires)]

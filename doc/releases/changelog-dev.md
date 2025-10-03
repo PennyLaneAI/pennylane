@@ -55,6 +55,11 @@
     ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
     ``RegisterComparator`` were added to `qml.estimator.templates`.
     [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
+  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
+    [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
+  * Fixed some issues and updated docs for the :mod:`~.estimator` module.
+    [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
+    [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h4>Dynamic wire allocation 🎁</h4>
 
@@ -71,6 +76,7 @@
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
+  [(#8381)](https://github.com/PennyLaneAI/pennylane/pull/8381)
 
   The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated
   wires are handled:
@@ -607,6 +613,9 @@
 
 <h4>Other improvements</h4>
 
+* Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
+  [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
+
 * The `qml.sample` function can now receive an optional `dtype` parameter
   which sets the type and precision of the samples returned by this measurement process.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
@@ -822,6 +831,9 @@
   [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Update docstring in `perturbation_error` to use the correct positional argument name.
+  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
 
 * Renamed several labs test file names to prevent conflict with names in PennyLane tests.
   [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
@@ -1161,6 +1173,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
+  use `ubuntu-24.04` runners. [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
+
 * Adds `measurements` as a "core" module in the tach specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
@@ -1169,6 +1184,8 @@
 
 * Add CI workflow to test documentation using `sybil`. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
+  [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
+  [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
@@ -1545,7 +1562,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Runor Agbaire
+Runor Agbaire,
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
@@ -1562,8 +1579,10 @@ Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
-Mehrdad Malekmohammadi
-Pablo Antonio Moreno Casares
+Elton Law,
+Mehrdad Malekmohammadi,
+Pablo Antonio Moreno Casares,
+Anton Naim Ibrahim,
 Erick Ochoa,
 Lee James O'Riordan,
 Mudit Pandey,
@@ -1572,5 +1591,6 @@ Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,
+Paul Haochen Wang,
 David Wierichs,
-Jake Zaia
+Jake Zaia.

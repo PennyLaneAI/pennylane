@@ -15,7 +15,7 @@ r"""Resource operators for PennyLane subroutine templates."""
 import math
 from collections import defaultdict
 
-from pennylane import estimator as qre
+import pennylane.estimator as qre
 from pennylane import numpy as qnp
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -52,12 +52,14 @@ class OutOfPlaceSquare(ResourceOperator):
     >>> out_square = qre.OutOfPlaceSquare(register_size=3)
     >>> print(qre.estimate(out_square))
     --- Resources: ---
-    Total qubits: 9
+    Total wires: 9
+        algorithmic wires: 9
+        allocated wires: 0
+        zero state: 0
+        any state: 0
     Total gates : 7
-    Qubit breakdown:
-     zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 9
-    Gate breakdown:
-     {'Toffoli': 4, 'CNOT': 3}
+    'Toffoli': 4,
+    'CNOT': 3
     """
 
     resource_keys = {"register_size"}
@@ -144,12 +146,17 @@ class PhaseGradient(ResourceOperator):
     >>> gate_set={"Z", "S", "T", "RZ", "Hadamard"}
     >>> print(qre.estimate(phase_grad, gate_set))
     --- Resources: ---
-    Total qubits: 5
+    Total wires: 5
+        algorithmic wires: 5
+        allocated wires: 0
+        zero state: 0
+        any state: 0
     Total gates : 10
-    Qubit breakdown:
-     zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 5
-    Gate breakdown:
-     {'Hadamard': 5, 'Z': 1, 'S': 1, 'T': 1, 'RZ': 2}
+    'RZ': 2,
+    'T': 1,
+    'Z': 1,
+    'S': 1,
+    'Hadamard': 5
     """
 
     resource_keys = {"num_wires"}
@@ -239,12 +246,15 @@ class OutMultiplier(ResourceOperator):
     >>> out_mul = qre.OutMultiplier(4, 4)
     >>> print(qre.estimate(out_mul))
     --- Resources: ---
-    Total qubits: 16
+    Total wires: 16
+        algorithmic wires: 16
+        allocated wires: 0
+        zero state: 0
+        any state: 0
     Total gates : 70
-    Qubit breakdown:
-     zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 16
-    Gate breakdown:
-     {'Toffoli': 14, 'Hadamard': 42, 'CNOT': 14}
+    'Toffoli': 14,
+    'CNOT': 14,
+    'Hadamard': 42
     """
 
     resource_keys = {"a_num_wires", "b_num_wires"}
@@ -322,7 +332,7 @@ class OutMultiplier(ResourceOperator):
 
 
 class SemiAdder(ResourceOperator):
-    r"""Resource class for the SemiOutAdder gate.
+    r"""Resource class for the SemiAdder gate.
 
     Args:
         max_register_size (int): the size of the larger of the two registers being added together
@@ -342,12 +352,15 @@ class SemiAdder(ResourceOperator):
     >>> semi_add = qre.SemiAdder(max_register_size=4)
     >>> print(qre.estimate(semi_add))
     --- Resources: ---
-    Total qubits: 11
+    Total wires: 11
+        algorithmic wires: 8
+        allocated wires: 3
+        zero state: 3
+        any state: 0
     Total gates : 30
-    Qubit breakdown:
-     zeroed qubits: 3, any_state qubits: 0, algorithmic qubits: 8
-    Gate breakdown:
-     {'CNOT': 18, 'Toffoli': 3, 'Hadamard': 9}
+    'Toffoli': 3,
+    'CNOT': 18,
+    'Hadamard': 9
     """
 
     resource_keys = {"max_register_size"}
@@ -519,12 +532,13 @@ class ControlledSequence(ResourceOperator):
     >>> gate_set={"CRX"}
     >>> print(qre.estimate(ctrl_seq, gate_set))
     --- Resources: ---
-     Total qubits: 4
-     Total gates : 3
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'CRX': 3}
+    Total wires: 4
+        algorithmic wires: 4
+        allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 3
+    'CRX': 3
     """
 
     resource_keys = {"base_cmpr_op", "num_ctrl_wires"}
@@ -655,12 +669,15 @@ class QPE(ResourceOperator):
     >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5)
     >>> print(qre.estimate(qpe, gate_set))
     --- Resources: ---
-     Total qubits: 6
+     Total wires: 6
+        algorithmic wires: 6
+        allocated wires: 0
+         zero state: 0
+         any state: 0
      Total gates : 11
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 6
-     Gate breakdown:
-      {'Hadamard': 5, 'CRX': 5, 'Adjoint(QFT(5))': 1}
+      'CRX': 5,
+      'Adjoint(QFT(5))': 1,
+      'Hadamard': 5
 
     .. details::
         :title: Usage Details
@@ -675,12 +692,15 @@ class QPE(ResourceOperator):
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=None)
         >>> print(qre.estimate(qpe))
         --- Resources: ---
-         Total qubits: 6
+         Total wires: 6
+            algorithmic wires: 6
+            allocated wires: 0
+                 zero state: 0
+                 any state: 0
          Total gates : 1.586E+3
-         Qubit breakdown:
-          zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 6
-         Gate breakdown:
-          {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
+          'T': 1.530E+3,
+          'CNOT': 36,
+          'Hadamard': 20
 
         Now we use the :class:`~.pennylane.estimator.templates.AQFT`:
 
@@ -689,12 +709,19 @@ class QPE(ResourceOperator):
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=adj_aqft)
         >>> print(qre.estimate(qpe))
         --- Resources: ---
-         Total qubits: 8
-         Total gates : 321
-         Qubit breakdown:
-          zeroed qubits: 2, any_state qubits: 0, algorithmic qubits: 6
-         Gate breakdown:
-          {'Hadamard': 38, 'CNOT': 34, 'T': 222, 'Toffoli': 7, 'X': 4, 'S': 8, 'Z': 8}
+         Total wires: 8
+            algorithmic wires: 6
+             allocated wires: 2
+             zero state: 2
+            any state: 0
+        Total gates : 321
+         'Toffoli': 7,
+         'T': 222,
+         'CNOT': 34,
+         'X': 4,
+         'Z': 8,
+         'S': 8,
+         'Hadamard': 38
     """
 
     resource_keys = {"base_cmpr_op", "num_estimation_wires", "adj_qft_cmpr_op"}
@@ -752,7 +779,7 @@ class QPE(ResourceOperator):
         cls,
         base_cmpr_op: CompressedResourceOp,
         num_estimation_wires: int,
-        adj_qft_cmpr_op: CompressedResourceOp,
+        adj_qft_cmpr_op: CompressedResourceOp = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -777,7 +804,12 @@ class QPE(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, base_cmpr_op, num_estimation_wires, adj_qft_cmpr_op):
+    def resource_decomp(
+        cls,
+        base_cmpr_op: CompressedResourceOp,
+        num_estimation_wires: int,
+        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+    ):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -810,11 +842,16 @@ class QPE(ResourceOperator):
             GateCount(adj_qft_cmpr_op),
         ]
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(
+        base_cmpr_op: CompressedResourceOp,
+        num_estimation_wires: int,
+        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+    ) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = self.base_cmpr_op.name
-        adj_qft_name = None if self.adj_qft_cmpr_op is None else self.adj_qft_cmpr_op.name
-        return f"QPE({base_name}, {self.num_estimation_wires}, adj_qft={adj_qft_name})"
+        base_name = base_cmpr_op.name
+        adj_qft_name = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.name
+        return f"QPE({base_name}, {num_estimation_wires}, adj_qft={adj_qft_name})"
 
 
 class IterativeQPE(ResourceOperator):
@@ -838,12 +875,15 @@ class IterativeQPE(ResourceOperator):
     >>> iqpe = qre.IterativeQPE(qre.RX(), 5)
     >>> print(qre.estimate(iqpe, gate_set))
     --- Resources: ---
-     Total qubits: 2
-     Total gates : 25
-     Qubit breakdown:
-      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 1
-     Gate breakdown:
-      {'Hadamard': 10, 'CRX': 5, 'PhaseShift': 10}
+    Total wires: 2
+        algorithmic wires: 1
+        allocated wires: 1
+        zero state: 1
+        any state: 0
+    Total gates : 25
+    'CRX': 5,
+    'PhaseShift': 10,
+    'Hadamard': 10
     """
 
     resource_keys = {"base_cmpr_op", "num_iter"}
@@ -949,12 +989,15 @@ class QFT(ResourceOperator):
     >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
     >>> print(qre.estimate(qft, gate_set))
     --- Resources: ---
-     Total qubits: 3
-     Total gates : 7
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 3
-     Gate breakdown:
-      {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+    Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 7
+    'SWAP': 1,
+    'ControlledPhaseShift': 3,
+    'Hadamard': 3
 
     .. details::
         :title: Usage Details
@@ -970,18 +1013,15 @@ class QFT(ResourceOperator):
         >>> config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
         >>> print(qre.estimate(qre.QFT(3), config=config))
         --- Resources: ---
-         Total wires: 5
+        Total wires: 4
             algorithmic wires: 3
-            allocated wires: 2
-             zero state: 2
-             any state: 0
-         Total gates : 859
-          'Toffoli': 13,
-          'T': 801,
-          'CNOT': 24,
-          'Z': 3,
-          'S': 3,
-          'Hadamard': 15
+            allocated wires: 1
+            zero state: 1
+            any state: 0
+        Total gates : 17
+        'Toffoli': 5,
+        'CNOT': 6,
+        'Hadamard': 6
     """
 
     resource_keys = {"num_wires"}
@@ -1092,9 +1132,10 @@ class QFT(ResourceOperator):
 
         return gate_types
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"QFT({self.num_wires})"
+        return f"QFT({num_wires})"
 
 
 class AQFT(ResourceOperator):
@@ -1128,12 +1169,16 @@ class AQFT(ResourceOperator):
     >>> gate_set = {"SWAP", "Hadamard", "T", "CNOT"}
     >>> print(qre.estimate(aqft, gate_set))
     --- Resources: ---
-     Total qubits: 4
-     Total gates : 57
-     Qubit breakdown:
-      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 3
-     Gate breakdown:
-      {'Hadamard': 7, 'CNOT': 9, 'T': 40, 'SWAP': 1}
+    Total wires: 4
+        algorithmic wires: 3
+        allocated wires: 1
+        zero state: 1
+        any state: 0
+    Total gates : 57
+    'SWAP': 1,
+    'T': 40,
+    'CNOT': 9,
+    'Hadamard': 7
     """
 
     resource_keys = {"order, num_wires"}
@@ -1249,9 +1294,10 @@ class AQFT(ResourceOperator):
 
         return gate_types
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(order, num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"AQFT({self.order}, {self.num_wires})"
+        return f"AQFT({order}, {num_wires})"
 
 
 class BasisRotation(ResourceOperator):
@@ -1279,12 +1325,17 @@ class BasisRotation(ResourceOperator):
     >>> basis_rot = qre.BasisRotation(dim = 5)
     >>> print(qre.estimate(basis_rot))
     --- Resources: ---
-    Total qubits: 5
+    Total wires: 5
+        algorithmic wires: 5
+        allocated wires: 0
+        zero state: 0
+        any state: 0
     Total gates : 1.740E+3
-    Qubit breakdown:
-     zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 5
-    Gate breakdown:
-     {'T': 1.580E+3, 'S': 60, 'Z': 40, 'Hadamard': 40, 'CNOT': 20}
+    'T': 1.580E+3,
+    'CNOT': 20,
+    'Z': 40,
+    'S': 60,
+    'Hadamard': 40
     """
 
     resource_keys = {"dim"}
@@ -1349,9 +1400,10 @@ class BasisRotation(ResourceOperator):
         num_wires = dim
         return CompressedResourceOp(cls, num_wires, params)
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(dim) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"BasisRotation({self.num_wires})"
+        return f"BasisRotation({dim})"
 
 
 class Select(ResourceOperator):
@@ -1378,12 +1430,18 @@ class Select(ResourceOperator):
     >>> select_op = qre.Select(ops=ops)
     >>> print(qre.estimate(select_op))
     --- Resources: ---
-    Total qubits: 4
+    Total wires: 4
+        algorithmic wires: 3
+        allocated wires: 1
+        zero state: 1
+        any state: 0
     Total gates : 24
-    Qubit breakdown:
-     zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-     {'CNOT': 7, 'S': 2, 'Z': 1, 'Hadamard': 8, 'X': 4, 'Toffoli': 2}
+    'Toffoli': 2,
+    'CNOT': 7,
+    'X': 4,
+    'Z': 1,
+    'S': 2,
+    'Hadamard': 8
     """
 
     resource_keys = {"num_wires", "cmpr_ops"}
@@ -1579,13 +1637,16 @@ class QROM(ResourceOperator):
     ... )
     >>> print(qre.estimate(qrom))
     --- Resources: ---
-    Total qubits: 11
+    Total wires: 11
+        algorithmic wires: 8
+        allocated wires: 3
+        zero state: 3
+        any state: 0
     Total gates : 178
-    Qubit breakdown:
-     restored qubits: 3, any_state qubits: 0, algorithmic qubits: 8
-    Gate breakdown:
-     {'Hadamard': 56, 'X': 34, 'CNOT': 72, 'Toffoli': 16}
-
+    'Toffoli': 16,
+    'CNOT': 72,
+    'X': 34,
+    'Hadamard': 56
     """
 
     resource_keys = {
@@ -2000,14 +2061,16 @@ class SelectPauliRot(ResourceOperator):
     ...     num_ctrl_wires = 4,
     ...     precision = 1e-3,
     ... )
-    >>> print(qre.estimate(mltplxr, qre.StandardGateSet))
+    >>> print(qre.estimate(mltplxr, gate_set=['RY','CNOT']))
     --- Resources: ---
-     Total qubits: 5
-     Total gates : 32
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 5
-     Gate breakdown:
-      {'RY': 16, 'CNOT': 16}
+    Total wires: 5
+        algorithmic wires: 5
+        allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 32
+    'RY': 16,
+    'CNOT': 16
     """
 
     resource_keys = {"num_ctrl_wires", "rot_axis", "precision"}
