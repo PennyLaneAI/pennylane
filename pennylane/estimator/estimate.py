@@ -143,13 +143,11 @@ def _resources_from_qfunc(
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
-            if isinstance(op, (ResourceOperator, Operator)):
-                if op.wires:
+            if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
+                if hasattr(op, "wires") and op.wires:
                     circuit_wires.append(op.wires)
-                elif op.num_wires:
+                elif hasattr(op, 'num_wires') and op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
-            elif isinstance(op, MeasurementProcess):  # Skip tracking cost of quantum resources
-                pass
             else:
                 raise ValueError(
                     f"Queued object '{op}' is not a ResourceOperator or Operator, and cannot be processed."
