@@ -104,7 +104,7 @@ class DiagonalizeFinalMeasurementsPattern(
 
             # we need to replace the initial qubit use everwhere EXCEPT the use that is now the
             # input to the first diagonalizing gate. Its not enough to only change the NamedObsOp,
-            # because the qubit might be deallocated later
+            # because the qubit might be inserted/deallocated later
             uses_to_change = [
                 use for use in observable.qubit.uses if not isinstance(use.operation, CustomOp)
             ]
@@ -129,9 +129,11 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
     # pylint: disable= no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
-        pattern_rewriter.PatternRewriteWalker(DiagonalizeFinalMeasurementsPattern()).rewrite_module(
-            module
-        )
+        pattern_rewriter.PatternRewriteWalker(
+            pattern_rewriter.GreedyRewritePatternApplier(
+                [DiagonalizeFinalMeasurementsPattern()],
+            ),
+        ).rewrite_module(module)
 
 
 diagonalize_final_measurements_pass = compiler_transform(DiagonalizeFinalMeasurementsPass)
