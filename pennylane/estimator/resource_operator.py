@@ -410,7 +410,7 @@ class GateCount:
     >>> qft = qre.resource_rep(qre.QFT, {"num_wires": 3})
     >>> counts = qre.GateCount(qft, 5)
     >>> counts
-    (5 x QFT)
+    (5 x QFT(3))
 
     """
 
