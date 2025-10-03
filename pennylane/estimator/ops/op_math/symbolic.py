@@ -822,8 +822,8 @@ class ChangeOpBasis(ResourceOperator):
      Total wires: 1
         algorithmic wires: 1
         allocated wires: 0
-                 zero state: 0
-                 any state: 0
+             zero state: 0
+             any state: 0
      Total gates : 3
       'Adjoint(Hadamard)': 1,
       'Z': 1,
@@ -838,9 +838,9 @@ class ChangeOpBasis(ResourceOperator):
      Total wires: 1
         algorithmic wires: 1
         allocated wires: 0
-         zero state: 0
-         any state: 0
-     Total gates : 4
+    	     zero state: 0
+    	     any state: 0
+     Total gates : 3
       'Z': 1,
       'Hadamard': 2
 
@@ -997,12 +997,12 @@ class ChangeOpBasis(ResourceOperator):
          Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-                 zero state: 0
-                 any state: 0
+        	     zero state: 0
+        	     any state: 0
          Total gates : 3
+          'Adjoint(Hadamard)': 1,
           'Z': 1,
           'Hadamard': 1
-          'Adjoint(Hadamard)': 1
 
         We can also set the :code:`uncompute_op` directly.
 
@@ -1013,12 +1013,11 @@ class ChangeOpBasis(ResourceOperator):
          Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-                 zero state: 0
-                 any state: 0
+        	 zero state: 0
+        	 any state: 0
          Total gates : 3
           'Z': 1,
-          'Hadamard': 1
-          'Adjoint(Hadamard)': 1
+          'Hadamard': 2
         """
         return [
             GateCount(cmpr_compute_op),
