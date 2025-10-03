@@ -59,6 +59,7 @@
     [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
   * Fixed some issues and updated docs for the :mod:`~.estimator` module.
     [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
+    [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h4>Dynamic wire allocation 🎁</h4>
 
