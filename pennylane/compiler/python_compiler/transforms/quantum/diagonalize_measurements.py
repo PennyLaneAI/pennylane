@@ -129,9 +129,9 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
     # pylint: disable= no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
-        pattern_rewriter.PatternRewriteWalker(
-            DiagonalizeFinalMeasurementsPattern()
-        ).rewrite_module(module)
+        pattern_rewriter.PatternRewriteWalker(DiagonalizeFinalMeasurementsPattern()).rewrite_module(
+            module
+        )
 
 
 diagonalize_final_measurements_pass = compiler_transform(DiagonalizeFinalMeasurementsPass)
