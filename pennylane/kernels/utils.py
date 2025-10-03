@@ -37,7 +37,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
 
     Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
 
-    .. code-block :: python
+    .. code-block:: python
 
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev)
@@ -51,12 +51,13 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     We can then compute the kernel matrix on a set of 4 (random) feature
     vectors ``X`` via
 
-    >>> X = np.random.random((4, 2))
+    >>> rng = np.random.default_rng(seed=1234)
+    >>> X = rng.random((4, 2))
     >>> qml.kernels.square_kernel_matrix(X, kernel)
-    tensor([[1.        , 0.9532702 , 0.96864001, 0.90932897],
-            [0.9532702 , 1.        , 0.99727485, 0.95685561],
-            [0.96864001, 0.99727485, 1.        , 0.96605621],
-            [0.90932897, 0.95685561, 0.96605621, 1.        ]], requires_grad=True)
+    array([[1.        , 0.9957817 , 0.88043387, 0.87011008],
+           [0.9957817 , 1.        , 0.90680189, 0.88760331],
+           [0.88043387, 0.90680189, 1.        , 0.98850996],
+           [0.87011008, 0.88760331, 0.98850996, 1.        ]])
     """
     N = math.shape(X)[0]
     if assume_normalized_kernel and N == 1:
@@ -101,7 +102,7 @@ def kernel_matrix(X1, X2, kernel):
 
     Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
 
-    .. code-block :: python
+    .. code-block:: python
 
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev)
@@ -116,13 +117,14 @@ def kernel_matrix(X1, X2, kernel):
     pairs of datapoints, where the points stem from different datasets, like a training
     and a test dataset.
 
-    >>> X_train = np.random.random((4,2))
-    >>> X_test = np.random.random((3,2))
+    >>> rng = np.random.default_rng(seed=1234)
+    >>> X_train = rng.random((4,2))
+    >>> X_test = rng.random((3,2))
     >>> qml.kernels.kernel_matrix(X_train, X_test, kernel)
-    tensor([[0.88875298, 0.90655175, 0.89926447],
-            [0.93762197, 0.98163781, 0.93076383],
-            [0.91977339, 0.9799841 , 0.91582698],
-            [0.80376818, 0.98720925, 0.79349212]], requires_grad=True)
+    array([[0.99656842, 0.91774724, 0.93966202],
+           [0.99958227, 0.91468777, 0.91127346],
+           [0.89479886, 0.937256  , 0.80459952],
+           [0.87448042, 0.96924743, 0.84069076]])
 
     As we can see, for :math:`n` and :math:`m` datapoints in the first and second
     dataset respectively, the output matrix has the shape :math:`n\times m`.

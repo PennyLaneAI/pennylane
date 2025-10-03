@@ -16,6 +16,8 @@ Test the resource configuration class.
 """
 import pytest
 
+from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import ResourceOperator
 
@@ -142,6 +144,22 @@ class TestResourceConfig:
 
         with pytest.raises(ValueError, match="Precision must be a non-negative value"):
             config.set_single_qubit_rot_precision(negative_precision)
+
+    def test_set_single_qubit_rot_precision(self):
+        """Test that the set_single_qubit_rot_precision works as expected"""
+        config = ResourceConfig()
+        custom_precision = 1.23 * 1e-4
+
+        for single_qubit_rot_op in [RX, RY, RZ, CRX, CRY, CRZ]:
+            assert (
+                config.resource_op_precisions[single_qubit_rot_op]["precision"] != custom_precision
+            )
+
+        config.set_single_qubit_rot_precision(precision=custom_precision)
+        for single_qubit_rot_op in [RX, RY, RZ, CRX, CRY, CRZ]:
+            assert (
+                config.resource_op_precisions[single_qubit_rot_op]["precision"] == custom_precision
+            )
 
     def test_set_precision_raises_for_negative_value(self):
         """Test that set_precision raises a ValueError for a negative precision."""

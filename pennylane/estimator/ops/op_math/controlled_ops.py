@@ -1376,7 +1376,7 @@ class MultiControlledX(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qml.estimator.MultiControlledX.resource_decomp(num_ctrl_wires=5, num_zero_ctrl=2)
-    [(4 x X), AllocWires(3), (3 x TemporaryAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
+    [(4 x X), Allocate(3), (3 x TemporaryAND), (3 x Adjoint(TemporaryAND)), (1 x Toffoli), Deallocate(3)]
     """
 
     resource_keys = {"num_ctrl_wires", "num_zero_ctrl"}

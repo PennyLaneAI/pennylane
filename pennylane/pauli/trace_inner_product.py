@@ -74,7 +74,7 @@ def trace_inner_product(
         >>> A = qml.X(0) - 1j * qml.Y(0)
         >>> Ad = qml.X(0) + 1j * qml.Y(0)
         >>> B = qml.X(0) + 1j * qml.Y(0)
-        >>> trace_inner_product(Ad, B) == trace_inner_product(qml.matrix(A), qml.matrix(B))
+        >>> print(trace_inner_product(Ad, B) == trace_inner_product(qml.matrix(A), qml.matrix(B)))
         True
 
     """

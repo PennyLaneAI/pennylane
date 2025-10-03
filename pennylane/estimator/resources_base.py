@@ -45,30 +45,33 @@ class Resources:
 
     **Example**
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> H = qre.resource_rep(qre.Hadamard)
     >>> X = qre.resource_rep(qre.X)
     >>> RX = qre.resource_rep(qre.RX, {"precision":1e-8})
     >>> RX_2 = qre.resource_rep(qre.RX, {"precision":1e-6})
-    >>> gt = defaultdict(int, {H: 10, X:7, RX:2, RX_2:2})
+    >>> gate_types = {H: 10, X:7, RX:2, RX_2:2}
     >>>
-    >>> res = qre.Resources(zeroed=3, gate_types=gt)
+    >>> res = qre.Resources(zeroed=3, gate_types=gate_types)
     >>> print(res)
     --- Resources: ---
-     Total wires: 2
+     Total wires: 3
         algorithmic wires: 0
-        allocated wires: 2
-             zero state: 2
-             any state: 0
+        allocated wires: 3
+         zero state: 3
+         any state: 0
      Total gates : 21
       'RX': 4,
       'X': 7,
       'Hadamard': 10
-    >>>
+
+    A more detailed breakdown of resources can be generated using the
+    :meth:`~.estimator.resources_base.Resources.gate_breakdown` method:
+
     >>> print(res.gate_breakdown())
     RX total: 4
-        RX {'eps': 1e-08}: 2
-        RX {'eps': 1e-06}: 2
+        RX {'precision': 1e-08}: 2
+        RX {'precision': 1e-06}: 2
     X total: 7
     Hadamard total: 10
 
@@ -109,7 +112,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res2 = qre.estimate(qre.QFT(num_wires=4), gate_set)
@@ -162,7 +165,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res2 = qre.estimate(qre.QFT(num_wires=4), gate_set)
@@ -218,7 +221,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res_in_series = res1.multiply_series(3)
@@ -262,7 +265,7 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
+        >>> import pennylane.estimator as qre
         >>> gate_set = {"X", "Y", "Z", "CNOT", "T", "S", "Hadamard"}
         >>> res1 = qre.estimate(qre.Toffoli(), gate_set)
         >>> res_in_parallel = res1.multiply_parallel(3)
@@ -302,7 +305,7 @@ class Resources:
 
         Returns:
             dict: A dictionary with operator names (str) as keys
-                and the number of occurances in the circuit (int) as values.
+                and the number of occurrences in the circuit (int) as values.
         """
         gate_counts = defaultdict(int)
 
@@ -363,11 +366,20 @@ class Resources:
 
         **Example**
 
-        >>> from pennylane import estimator as qre
-        >>> res1 = qre.estimate(qre.SemiAdder(10))
+        >>> import pennylane.estimator as qre
+        >>> def circ():
+        ...     qre.SemiAdder(10)
+        ...     qre.Toffoli()
+        ...     qre.RX(precision=1e-5)
+        ...     qre.RX(precision=1e-7)
+        >>> res1 = qre.estimate(circ, gate_set=['Toffoli', 'RX', 'CNOT', 'Hadamard'])()
         >>> print(res1.gate_breakdown())
-        Toffoli total: 9
+        RX total: 2
+            RX {'precision': 1e-05}: 1
+            RX {'precision': 1e-07}: 1
+        Toffoli total: 10
             Toffoli {'elbow': 'left'}: 9
+            Toffoli {'elbow': None}: 1
         CNOT total: 60
         Hadamard total: 27
 

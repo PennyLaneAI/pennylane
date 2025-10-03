@@ -511,7 +511,7 @@ def group_observables(
     >>> obs_groupings
     [[Y(0), X(0) @ X(1)], [Z(1)]]
     >>> coeffs_groupings
-    [[1.43, 4.21], [0.97]]
+    [[np.float64(1.43), np.float64(4.21)], [np.float64(0.97)]]
     """
 
     if coefficients is not None and qml.math.shape(coefficients)[0] != len(observables):

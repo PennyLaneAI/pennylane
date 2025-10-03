@@ -162,7 +162,7 @@ class PauliWord(dict):
     >>> w1 = PauliWord({0:"X", 1:"Y"})
     >>> w2 = PauliWord({1:"X", 2:"Z"})
     >>> w1 @ w2
-    -1j * Z(1) @ Z(2) @ X(0)
+    -1j * X(0) @ Z(1) @ Z(2)
 
     We can multiply scalars to Pauli words or add/subtract them, resulting in a :class:`~PauliSentence` instance.
 
@@ -541,7 +541,6 @@ class PauliSentence(dict):
 
     **Examples**
 
-    >>> from pennylane import PauliSentence, PauliWord
     >>> ps = PauliSentence({
     ...     PauliWord({0:'X', 1:'Y'}): 1.23,
     ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
@@ -577,6 +576,8 @@ class PauliSentence(dict):
     Or, alternatively, use :func:`~commutator`.
 
     >>> qml.commutator(op1, op2, pauli=True)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
 
     Note that we need to specify ``pauli=True`` as :func:`~.commutator` returns PennyLane operators by default.
 
