@@ -234,22 +234,15 @@ class TestDiagonalizeFinalMeasurementsPass:
         pipeline = (DiagonalizeFinalMeasurementsPass(),)
         run_filecheck(program, pipeline)
 
-    def test_with_overlapping_observables(self, run_filecheck):
-        """Test diagonalizing a circuit with overlapping observables (i.e. the requested
-        measurements are on the same wire, but commute). The simplified program
-        for this test is based on the circuit
+    def test_overlapping_observables_raises_error(self, run_filecheck):
+        """Test the case where multiple overlapping (commuting) observables exist in
+        the same circuit (an error is raised - split_non_commuting should have been applied).
 
         @qml.qjit(target="mlir")
         @qml.qnode(qml.device("lightning.qubit", wires=1))
         def circuit():
             return qml.var(qml.X(0)), qml.var(qml.X(0))
         """
-
-        # Note: ideally, we would like to see this only contain a single Hadamard, that's used by
-        # both branches of measurements. The HLOLoweringPass currently merges these two branches, but
-        # without that, this would return incorrect results (which would be captured in integration tests
-        # below). This also shouldn't occur as long as split_non_commuting is a part of the pipeline before
-        # diagonalization.
 
         program = """
             func.func @test_func() {
@@ -266,7 +259,11 @@ class TestDiagonalizeFinalMeasurementsPass:
             """
 
         pipeline = (DiagonalizeFinalMeasurementsPass(),)
-        run_filecheck(program, pipeline)
+
+        with pytest.raises(
+            RuntimeError, match="the circuit contains multiple observables with the same wire"
+        ):
+            run_filecheck(program, pipeline)
 
     def test_additional_qubit_uses_are_updated(self, run_filecheck):
         """Test that when diagonalizing the circuit, if the MLIR contains
@@ -417,40 +414,23 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         assert np.allclose(expected_res(phi, theta), circuit_compiled(phi, theta))
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_with_overlapping_observables(self):
+    def test_overlapping_observables_raises_error(self):
         """Test the case where multiple overlapping (commuting) observables exist in
-        the same circuit. Here we want to be sure not to diagonalize the Y(0)
-        observable twice (once for each occurrence in measurements)"""
-
-        # Note that this seems to work without split_non_commuting ONLY because the
-        # HLOLoweringPass merges the identical branches into one branch; otherwise
-        # the diagonalizing gate would be applied twice before calculating the output
-        # for the second MeasurementProcess
+        the same circuit (an error is raised - split_non_commuting should have been applied)."""
 
         dev = qml.device("lightning.qubit", wires=2)
 
+        @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @diagonalize_final_measurements_pass
         @qml.qnode(dev)
-        def circuit_ref(x):
+        def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Y(0)), qml.var(qml.Y(0))
 
-        def expected_res(x):
-            return -np.sin(x), 1 - np.sin(x) ** 2
-
-        phi = 0.7316
-
-        qml.capture.disable()
-        assert np.allclose(
-            expected_res(phi), circuit_ref(phi)
-        ), "Sanity check failed, is expected_res correct?"
-        qml.capture.enable()
-
-        circuit_compiled = qml.qjit(
-            diagonalize_final_measurements_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
-
-        assert np.allclose(expected_res(phi), circuit_compiled(phi))
+        with pytest.raises(
+            RuntimeError, match="the circuit contains multiple observables with the same wire"
+        ):
+            _ = circuit(1.23)
 
     @pytest.mark.xfail(reason="for now, assume split_non_commuting is always applied")
     @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -580,38 +560,23 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
 
         assert np.allclose(expected_res(phi, theta), circuit_compiled(phi, theta))
 
-    def test_with_overlapping_observables(self):
+    def test_overlapping_observables_raises_error(self):
         """Test the case where multiple overlapping (commuting) observables exist in
-        the same circuit."""
-
-        # Note that this seems to work without split_non_commuting ONLY because the
-        # HLOLoweringPass merges the identical branches into one branch; otherwise
-        # the diagonalizing gate would be applied twice before calculating the output
-        # for the second MeasurementProcess
+        the same circuit (an error is raised - split_non_commuting should have been applied)."""
 
         dev = qml.device("lightning.qubit", wires=2)
 
+        @qml.qjit()
+        @catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-final-measurements")
         @qml.qnode(dev)
-        def circuit_ref(x):
+        def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Y(0)), qml.var(qml.Y(0))
 
-        def expected_res(x):
-            return -np.sin(x), 1 - np.sin(x) ** 2
-
-        phi = 0.7316
-
-        assert np.allclose(
-            expected_res(phi), circuit_ref(phi)
-        ), "Sanity check failed, is expected_res correct?"
-
-        circuit_compiled = qml.qjit(
-            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-final-measurements")(
-                circuit_ref
-            ),
-        )
-
-        assert np.allclose(expected_res(phi), circuit_compiled(phi))
+        with pytest.raises(
+            RuntimeError, match="the circuit contains multiple observables with the same wire"
+        ):
+            _ = circuit(1.23)
 
     @pytest.mark.xfail(reason="for now, assume split_non_commuting is always applied")
     def test_non_commuting_observables_raise_error(self):

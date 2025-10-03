@@ -120,6 +120,15 @@ class DiagonalizeFinalMeasurementsPattern(
                     use.operation, (CustomOp, GlobalPhaseOp, MultiRZOp, QubitUnitaryOp)
                 )
             ]
+            num_observables = len(
+                [use for use in uses_to_change if isinstance(use.operation, NamedObsOp)]
+            )
+
+            if num_observables > 1:
+                raise RuntimeError(
+                    "Each wire can only have one set of diagonalizing gates applied, but the circuit contains multiple observables with the same wire."
+                )
+
             observable.qubit.replace_by_if(qubit, lambda use: use in uses_to_change)
             for use in uses_to_change:
                 rewriter.notify_op_modified(use.operation)
