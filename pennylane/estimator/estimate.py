@@ -146,7 +146,7 @@ def _resources_from_qfunc(
             if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
                 if hasattr(op, "wires") and op.wires:
                     circuit_wires.append(op.wires)
-                elif hasattr(op, 'num_wires') and op.num_wires:
+                elif hasattr(op, "num_wires") and op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
             else:
                 raise ValueError(
