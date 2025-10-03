@@ -752,7 +752,7 @@ class QPE(ResourceOperator):
         cls,
         base_cmpr_op: CompressedResourceOp,
         num_estimation_wires: int,
-        adj_qft_cmpr_op: CompressedResourceOp,
+        adj_qft_cmpr_op: CompressedResourceOp = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -777,7 +777,12 @@ class QPE(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, base_cmpr_op, num_estimation_wires, adj_qft_cmpr_op):
+    def resource_decomp(
+        cls,
+        base_cmpr_op: CompressedResourceOp,
+        num_estimation_wires: int,
+        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+    ):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
