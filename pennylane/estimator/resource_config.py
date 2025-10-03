@@ -221,23 +221,16 @@ class ResourceConfig:
             import pennylane.estimator as qre
 
             config = qre.ResourceConfig()
-            print(f"Default RX precision: {config.resource_op_precisions[qre.RX]['precision']}")
-            print(f"Default RY precision: {config.resource_op_precisions[qre.RY]['precision']}")
-            print(f"Default RZ precision: {config.resource_op_precisions[qre.RZ]['precision']}")
+            rot_ops = [qre.RX, qre.RY, qre.RZ, qre.CRX, qre.CRY, qre.CRZ]
+            print([config.resource_op_precisions[op]['precision'] for op in rot_ops])
 
             config.set_single_qubit_rot_precision(1e-5)
-            print(f"Updated RX precision: {config.resource_op_precisions[qre.RX]['precision']}")
-            print(f"Updated RY precision: {config.resource_op_precisions[qre.RY]['precision']}")
-            print(f"Updated RZ precision: {config.resource_op_precisions[qre.RZ]['precision']}")
+            print([config.resource_op_precisions[op]['precision'] for op in rot_ops])
 
         .. code-block:: pycon
 
-            Default RX precision: 1e-09
-            Default RY precision: 1e-09
-            Default RZ precision: 1e-09
-            Updated RX precision: 1e-05
-            Updated RY precision: 1e-05
-            Updated RZ precision: 1e-05
+            [1e-09, 1e-09, 1e-09, 1e-09, 1e-09, 1e-09]
+            [1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05]
         """
         if precision < 0:
             raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
