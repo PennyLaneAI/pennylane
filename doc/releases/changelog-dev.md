@@ -57,7 +57,7 @@
     [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
   * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
     [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
-  * Updated documentation and examples for the :mod:`~.estimator` module.
+  * Fixed some issues and updated docs for the :mod:`~.estimator` module.
     [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h4>Dynamic wire allocation 🎁</h4>

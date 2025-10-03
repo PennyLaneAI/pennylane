@@ -36,7 +36,9 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
         op (~.Operation): base operation to be mapped
 
     Return:
-        (~.estimator.ResourceOperator): the resource operator equivalent of the base operator
+        (~.estimator.ResourceOperator): the resource operator equivalent of the base operator. If
+        there is no resource operator equivalent, the decomposition in terms of resource operators
+        is returned.
 
     Raises:
         TypeError: The op is not a valid operation
