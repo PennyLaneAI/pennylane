@@ -36,6 +36,26 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 # pylint: disable= no-self-use, arguments-differ
 
 
+def _circuit_w_expval(circ):
+    circ()
+    return qml.expval(qml.Z(0))
+
+
+def _circuit_w_sample(circ):
+    circ()
+    return qml.sample(wires=[0])
+
+
+def _circuit_w_probs(circ):
+    circ()
+    return qml.probs()
+
+
+def _circuit_w_state(circ):
+    circ()
+    return qml.state()
+
+
 class TestCNOT(ResourceOperator):
     """Dummy class for testing"""
 
@@ -465,3 +485,22 @@ class TestEstimateResources:
         )
 
         assert computed_resources == expected_resources
+
+    measurement_circuits = (
+        _circuit_w_expval,
+        _circuit_w_sample,
+        _circuit_w_probs,
+        _circuit_w_state,
+    )
+
+    @pytest.mark.parametrize("circ_w_measurement", measurement_circuits)
+    def test_estimate_ignores_measurementprocess(self, circ_w_measurement):
+        """Test that the estimate function ignores measurement processes"""
+
+        def circ():
+            qml.Hadamard(wires=[0])
+            qml.X(wires=[1])
+            qml.RX(1.23, wires=[0])
+            qml.CNOT(wires=[0, 1])
+
+        assert estimate(circ)() == estimate(circ_w_measurement)(circ)
