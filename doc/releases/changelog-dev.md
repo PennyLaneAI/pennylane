@@ -510,6 +510,7 @@
 * The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+  [(#7715)](https://github.com/PennyLaneAI/pennylane/pull/7715)
 
 * Users can now specify a relative threshold value for the permissible operator norm error (`epsilon`) that
   triggers rebuilding of the cache in the `qml.clifford_t_transform`, via new `cache_eps_rtol` keyword argument.
@@ -1517,7 +1518,7 @@
 
 * Fixes a bug in :func:`~.matrix` where an operator's
   constituents were incorrectly queued if its decomposition was requested.
-  [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)
+  [(#7976)](https://github.com/PennyLaneAI/pennylane/pull/7976)
 
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
