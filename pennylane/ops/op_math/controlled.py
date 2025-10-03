@@ -968,6 +968,7 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     )
 
 
+# pylint: disable=too-many-return-statements
 def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     """Custom handling for decomposing a controlled operation"""
 
@@ -995,7 +996,8 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
         # (Id_{2^N} - |1><1|^N)⊗ Id_2 + |1><1|^N ⊗ e^{i\phi}
         # = (Id_{2^{N-1}} - |1><1|^{N-1}) ⊗ Id_4 + |1><1|^{N-1} ⊗ [|0><0|+|1><1|e^{i\phi}]⊗ Id_2
         return [ctrl(phase_shift, control=op.control_wires[:-1])]
-    elif isinstance(op.base, qml.Identity):
+
+    if isinstance(op.base, qml.Identity):
         # A controlled identity is just the identity.
         return [qml.Identity(wires=[*op.control_wires, *op.base.wires])]
 
