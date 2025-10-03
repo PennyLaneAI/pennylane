@@ -366,7 +366,7 @@ class Resources:
 
         **Example**
 
-        >>> import pennylane.estimator as qre
+        >>> from pennylane import estimator as qre
         >>> def circ():
         ...     qre.SemiAdder(10)
         ...     qre.Toffoli()

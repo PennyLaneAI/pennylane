@@ -487,7 +487,7 @@ class QROMStatePreparation(ResourceOperator):
 
         This operation uses the :code:`QROM` subroutine to dynamically load the rotation angles.
 
-        >>> import pennylane.estimator as qre
+        >>> from pennylane import estimator as qre
         >>> gate_set = {"QROM", "Hadamard", "CNOT", "T", "Adjoint(QROM)"}
         >>> qrom_prep = qre.QROMStatePreparation(
         ...     num_state_qubits = 4,

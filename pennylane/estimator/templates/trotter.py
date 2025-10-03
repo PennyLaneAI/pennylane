@@ -113,7 +113,7 @@ class TrotterProduct(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (1, 2)
     >>> first_order_expansion = [qre.RX(), qre.RY()] # H = X + Y
     >>> gate_set = {"RX", "RY"}
@@ -331,7 +331,7 @@ class TrotterCDF(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (1, 2)
     >>> cdf_ham = qre.CDFHamiltonian(num_orbitals = 4, num_fragments = 4)
     >>> res = qre.estimate(qre.TrotterCDF(cdf_ham, num_steps, order))
@@ -650,7 +650,7 @@ class TrotterTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (1, 2)
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=4, tensor_rank=4)
     >>> res = qre.estimate(qre.TrotterTHC(thc_ham, num_steps, order))
@@ -974,7 +974,7 @@ class TrotterVibrational(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (10, 2)
     >>> vibration_ham = qre.VibrationalHamiltonian(num_modes=2, grid_size=4, taylor_degree=2)
     >>> res = qre.estimate(qre.TrotterVibrational(vibration_ham, num_steps, order))
@@ -1369,7 +1369,7 @@ class TrotterVibronic(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (10, 2)
     >>> vibronic_ham = qre.VibronicHamiltonian(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> res = qre.estimate(qre.TrotterVibronic(vibronic_ham, num_steps, order))

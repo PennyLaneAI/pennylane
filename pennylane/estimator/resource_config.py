@@ -186,7 +186,7 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            import pennylane.estimator as qre
+            from pennylane import estimator as qre
 
             config = qre.ResourceConfig()
 
@@ -251,7 +251,7 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            import pennylane.estimator as qre
+            from pennylane import estimator as qre
 
             config = qre.ResourceConfig()
             rot_ops = [qre.RX, qre.RY, qre.RZ, qre.CRX, qre.CRY, qre.CRZ]
@@ -303,7 +303,7 @@ class ResourceConfig:
 
         .. code-block:: python
 
-            import pennylane.estimator as qre
+            from pennylane import estimator as qre
 
             def custom_res_decomp(**kwargs):
                 h = qre.resource_rep(qre.Hadamard)

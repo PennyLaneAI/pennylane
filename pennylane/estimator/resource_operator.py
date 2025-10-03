@@ -463,7 +463,7 @@ def resource_rep(
     transform (:code:`QFT`) operation. We begin by checking what parameters are required for
     resource estimation and then provide them accordingly:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> qre.QFT.resource_keys
     {'num_wires'}
     >>> cmpr_qft = qre.resource_rep(
