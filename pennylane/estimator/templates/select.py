@@ -41,12 +41,12 @@ class SelectTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
     Args:
-        thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
+        thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which the select operator is being applied.
         rotation_precision (int | None): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
             :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
-        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
@@ -120,7 +120,7 @@ class SelectTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * thc_ham (:class:`~.pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
+                * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian on which the select operator is being applied
                 * rotation_precision (int | None): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
@@ -145,7 +145,7 @@ class SelectTHC(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
@@ -198,7 +198,7 @@ class SelectTHC(ResourceOperator):
             See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): A tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the

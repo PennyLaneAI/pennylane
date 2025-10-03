@@ -19,6 +19,7 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.math import is_abstract
 from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
@@ -227,6 +228,9 @@ def allocate(
         The ``allocate`` function can be used as a context manager with automatic deallocation
         (recommended for most cases) or with manual deallocation via :func:`~.deallocate`.
 
+    .. note::
+        The ``num_wires`` argument must be static when capture is enabled.
+
     .. seealso::
         :func:`~.deallocate`
 
@@ -357,6 +361,10 @@ def allocate(
     """
     state = AllocateState(state)
     if capture_enabled():
+        if is_abstract(num_wires):
+            raise NotImplementedError(
+                "Number of allocated wires must be static when capture is enabled."
+            )
         wires = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
     else:
         wires = [DynamicWire() for _ in range(num_wires)]

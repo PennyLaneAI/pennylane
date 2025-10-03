@@ -891,12 +891,12 @@ class PrepTHC(ResourceOperator):
     This operator customizes the Prepare circuit based on the structure of THC Hamiltonian.
 
     Args:
-        thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
+        thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
             Hamiltonian for which the state is being prepared
         coeff_precision (int | None): The number of bits used to represent the precision for loading
             the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
             :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
-        select_swap_depth (int| None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
@@ -961,7 +961,7 @@ class PrepTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * thc_ham (:class:`~.pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
+                * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian for which the state is being prepared
                 * coeff_precision (int | None): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
@@ -986,7 +986,7 @@ class PrepTHC(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the state is being prepared
             coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
@@ -1028,7 +1028,7 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision (int | None): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
@@ -1156,7 +1156,7 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.THCHamiltonian`): a tensor hypercontracted
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 

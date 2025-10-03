@@ -75,6 +75,7 @@
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
+  [(#8381)](https://github.com/PennyLaneAI/pennylane/pull/8381)
 
   The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated
   wires are handled:
@@ -611,6 +612,9 @@
 
 <h4>Other improvements</h4>
 
+* Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
+  [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
+
 * The `qml.sample` function can now receive an optional `dtype` parameter
   which sets the type and precision of the samples returned by this measurement process.
   [(#8189)](https://github.com/PennyLaneAI/pennylane/pull/8189)
@@ -826,6 +830,9 @@
   [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Update docstring in `perturbation_error` to use the correct positional argument name.
+  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
 
 * Renamed several labs test file names to prevent conflict with names in PennyLane tests.
   [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
@@ -1164,6 +1171,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
+  use `ubuntu-24.04` runners. [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
 
 * Adds `measurements` as a "core" module in the tach specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
@@ -1566,6 +1576,7 @@ Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
+Elton Law,
 Mehrdad Malekmohammadi
 Pablo Antonio Moreno Casares,
 Anton Naim Ibrahim,
@@ -1577,5 +1588,6 @@ Justin Pickering,
 Alex Preciado,
 Shuli Shu,
 Jay Soni,
+Paul Haochen Wang,
 David Wierichs,
 Jake Zaia
