@@ -1593,7 +1593,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Options are:
             * `"_ops"`
             * `"_measurements"`
-            * `None`
+            * `None` (deprecated)
         """
         return "_ops"
 
@@ -2381,7 +2381,7 @@ if not isinstance(obj, Operator) or not obj.has_generator:
     return False
 try:
     generator = obj.generator()
-    _, ops = generator.terms() 
+    _, ops = generator.terms()
     return len(ops) > 1
 except TermsUndefinedError:
     return False
