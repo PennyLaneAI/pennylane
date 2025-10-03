@@ -89,7 +89,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     >>> params = jnp.array([0.1, 0.2])
     >>> iters = 1000
     >>> optimization_qjit(params=params, iters=iters)
-    Array([ 3.14159265, -1.57079633], dtype=float64)
+    Array([ 3.14..., -1.57...], dtype=float64)
 
     Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit``.
     """

@@ -212,18 +212,18 @@ class RiemannianGradientOptimizer:
 
     >>> for step in range(6):
     ...    circuit, cost = opt.step_and_cost()
-    ...    print(f"Step {step} - cost {cost}")
-    Step 0 - cost -1.3351865007304005
-    Step 1 - cost -1.9937887238935206
-    Step 2 - cost -2.1524234485729834
-    Step 3 - cost -2.1955105378898487
-    Step 4 - cost -2.2137628169764256
-    Step 5 - cost -2.2234364822091575
+    ...    print(f"Step {step}: cost = {cost}")
+    Step 0: cost = ...
+    Step 1: cost = ...
+    Step 2: cost = ...
+    Step 3: cost = ...
+    Step 4: cost = ...
+    Step 5: cost = ...
 
     The optimized circuit is returned at each step, and can be used as any other QNode:
 
-    >>> circuit()
-    -2.2283086057521713
+    >>> print(circuit())
+    -2.2...
     """
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

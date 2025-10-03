@@ -155,60 +155,66 @@ def cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     >>> import networkx as nx
     >>> g = nx.complete_graph(3).to_directed()
     >>> h_m = cycle_mixer(g)
-    >>> print(h_m)
-      (-0.25) [X0 Y1 Y5]
-    + (-0.25) [X1 Y0 Y3]
-    + (-0.25) [X2 Y3 Y4]
-    + (-0.25) [X3 Y2 Y1]
-    + (-0.25) [X4 Y5 Y2]
-    + (-0.25) [X5 Y4 Y0]
-    + (0.25) [X0 X1 X5]
-    + (0.25) [Y0 Y1 X5]
-    + (0.25) [Y0 X1 Y5]
-    + (0.25) [X1 X0 X3]
-    + (0.25) [Y1 Y0 X3]
-    + (0.25) [Y1 X0 Y3]
-    + (0.25) [X2 X3 X4]
-    + (0.25) [Y2 Y3 X4]
-    + (0.25) [Y2 X3 Y4]
-    + (0.25) [X3 X2 X1]
-    + (0.25) [Y3 Y2 X1]
-    + (0.25) [Y3 X2 Y1]
-    + (0.25) [X4 X5 X2]
-    + (0.25) [Y4 Y5 X2]
-    + (0.25) [Y4 X5 Y2]
-    + (0.25) [X5 X4 X0]
-    + (0.25) [Y5 Y4 X0]
-    + (0.25) [Y5 X4 Y0]
+    >>> from pprint import pprint
+    >>> pprint(h_m)
+    (
+        0.25 * (X(0) @ X(1) @ X(5))
+      + 0.25 * (Y(0) @ Y(1) @ X(5))
+      + 0.25 * (Y(0) @ X(1) @ Y(5))
+      + -0.25 * (X(0) @ Y(1) @ Y(5))
+      + 0.25 * (X(1) @ X(0) @ X(3))
+      + 0.25 * (Y(1) @ Y(0) @ X(3))
+      + 0.25 * (Y(1) @ X(0) @ Y(3))
+      + -0.25 * (X(1) @ Y(0) @ Y(3))
+      + 0.25 * (X(2) @ X(3) @ X(4))
+      + 0.25 * (Y(2) @ Y(3) @ X(4))
+      + 0.25 * (Y(2) @ X(3) @ Y(4))
+      + -0.25 * (X(2) @ Y(3) @ Y(4))
+      + 0.25 * (X(3) @ X(2) @ X(1))
+      + 0.25 * (Y(3) @ Y(2) @ X(1))
+      + 0.25 * (Y(3) @ X(2) @ Y(1))
+      + -0.25 * (X(3) @ Y(2) @ Y(1))
+      + 0.25 * (X(4) @ X(5) @ X(2))
+      + 0.25 * (Y(4) @ Y(5) @ X(2))
+      + 0.25 * (Y(4) @ X(5) @ Y(2))
+      + -0.25 * (X(4) @ Y(5) @ Y(2))
+      + 0.25 * (X(5) @ X(4) @ X(0))
+      + 0.25 * (Y(5) @ Y(4) @ X(0))
+      + 0.25 * (Y(5) @ X(4) @ Y(0))
+      + -0.25 * (X(5) @ Y(4) @ Y(0))
+    )
 
     >>> import rustworkx as rx
     >>> g = rx.generators.directed_mesh_graph(3, [0,1,2])
     >>> h_m = cycle_mixer(g)
-    >>> print(h_m)
-      (-0.25) [X0 Y1 Y5]
-    + (-0.25) [X1 Y0 Y3]
-    + (-0.25) [X2 Y3 Y4]
-    + (-0.25) [X3 Y2 Y1]
-    + (-0.25) [X4 Y5 Y2]
-    + (-0.25) [X5 Y4 Y0]
-    + (0.25) [X0 X1 X5]
-    + (0.25) [Y0 Y1 X5]
-    + (0.25) [Y0 X1 Y5]
-    + (0.25) [X1 X0 X3]
-    + (0.25) [Y1 Y0 X3]
-    + (0.25) [Y1 X0 Y3]
-    + (0.25) [X2 X3 X4]
-    + (0.25) [Y2 Y3 X4]
-    + (0.25) [Y2 X3 Y4]
-    + (0.25) [X3 X2 X1]
-    + (0.25) [Y3 Y2 X1]
-    + (0.25) [Y3 X2 Y1]
-    + (0.25) [X4 X5 X2]
-    + (0.25) [Y4 Y5 X2]
-    + (0.25) [Y4 X5 Y2]
-    + (0.25) [X5 X4 X0]
-    + (0.25) [Y5 Y4 X0]
-    + (0.25) [Y5 X4 Y0]
+    >>> from pprint import pprint
+    >>> pprint(h_m)
+    (
+        0.25 * (X(0) @ X(1) @ X(5))
+      + 0.25 * (Y(0) @ Y(1) @ X(5))
+      + 0.25 * (Y(0) @ X(1) @ Y(5))
+      + -0.25 * (X(0) @ Y(1) @ Y(5))
+      + 0.25 * (X(1) @ X(0) @ X(3))
+      + 0.25 * (Y(1) @ Y(0) @ X(3))
+      + 0.25 * (Y(1) @ X(0) @ Y(3))
+      + -0.25 * (X(1) @ Y(0) @ Y(3))
+      + 0.25 * (X(2) @ X(3) @ X(4))
+      + 0.25 * (Y(2) @ Y(3) @ X(4))
+      + 0.25 * (Y(2) @ X(3) @ Y(4))
+      + -0.25 * (X(2) @ Y(3) @ Y(4))
+      + 0.25 * (X(3) @ X(2) @ X(1))
+      + 0.25 * (Y(3) @ Y(2) @ X(1))
+      + 0.25 * (Y(3) @ X(2) @ Y(1))
+      + -0.25 * (X(3) @ Y(2) @ Y(1))
+      + 0.25 * (X(4) @ X(5) @ X(2))
+      + 0.25 * (Y(4) @ Y(5) @ X(2))
+      + 0.25 * (Y(4) @ X(5) @ Y(2))
+      + -0.25 * (X(4) @ Y(5) @ Y(2))
+      + 0.25 * (X(5) @ X(4) @ X(0))
+      + 0.25 * (Y(5) @ Y(4) @ X(0))
+      + 0.25 * (Y(5) @ X(4) @ Y(0))
+      + -0.25 * (X(5) @ Y(4) @ Y(0))
+    )
 
     Args:
         graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
@@ -333,7 +339,7 @@ def loss_hamiltonian(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
     >>> g = nx.complete_graph(3).to_directed()
     >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
     >>> for k, v in edge_weight_data.items():
-            g[k[0]][k[1]]["weight"] = v
+    ...    g[k[0]][k[1]]["weight"] = v
     >>> h = loss_hamiltonian(g)
     >>> h
     (
@@ -349,17 +355,10 @@ def loss_hamiltonian(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
     >>> g = rx.generators.directed_mesh_graph(3, [0, 1, 2])
     >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
     >>> for k, v in edge_weight_data.items():
-            g.update_edge(k[0], k[1], {"weight": v})
+    ...     g.update_edge(k[0], k[1], {"weight": v})
     >>> h = loss_hamiltonian(g)
     >>> print(h)
-    (
-        -0.6931471805599453 * Z(0)
-      + 0.0 * Z(1)
-      + 0.4054651081081644 * Z(2)
-      + 0.6931471805599453 * Z(3)
-      + 0.9162907318741551 * Z(4)
-      + 1.0986122886681098 * Z(5)
-    )
+     -0.6931471805599453 * Z(0) + 0.0 * Z(1) + 0.4054651081081644 * Z(2) + 0.6931471805599453 * Z(3) + 0.9162907318741551 * Z(4) + 1.0986122886681098 * Z(5)
 
     Args:
         graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges

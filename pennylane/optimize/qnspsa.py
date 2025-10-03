@@ -116,15 +116,15 @@ class QNSPSAOptimizer:
     >>> params = np.random.rand(2)
     >>> opt = QNSPSAOptimizer(stepsize=5e-2)
     >>> for i in range(51):
-    >>>     params, loss = opt.step_and_cost(cost, params)
-    >>>     if i % 10 == 0:
+    ...     params, loss = opt.step_and_cost(cost, params)
+    ...     if i % 10 == 0:
     ...         print(f"Step {i}: cost = {loss:.4f}")
-    Step 0: cost = 0.9987
-    Step 10: cost = 0.9841
-    Step 20: cost = 0.8921
-    Step 30: cost = 0.0910
-    Step 40: cost = -0.9369
-    Step 50: cost = -0.9984
+    Step 0: cost = ...
+    Step 10: cost = ...
+    Step 20: cost = ...
+    Step 30: cost = ...
+    Step 40: cost = ...
+    Step 50: cost = ...
     """
 
     # pylint: disable=too-many-arguments

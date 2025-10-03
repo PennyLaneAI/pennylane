@@ -139,7 +139,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> opt = qml.QNGOptimizer(eta)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
-    tensor([ 0.01100528, -0.02799954], requires_grad=True)
+    tensor([ 0.01..., -0.02...], requires_grad=True)
 
     An alternative function to calculate the metric tensor of the QNode can be provided to ``step``
     via the ``metric_tensor_fn`` keyword argument. For example, we can provide a function
@@ -147,7 +147,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit)
     >>> opt.step(circuit, init_params, metric_tensor_fn=adj_metric_tensor)
-    tensor([ 0.01100528, -0.02799954], requires_grad=True)
+    tensor([ 0.01..., -0.02...], requires_grad=True)
 
     .. note::
 

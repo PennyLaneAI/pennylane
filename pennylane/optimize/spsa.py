@@ -96,7 +96,6 @@ class SPSAOptimizer:
 
     For VQE/VQE-like problems, the objective function can be the following:
 
-    >>> from pennylane import numpy as np
     >>> coeffs = [0.2, -0.543, 0.4514]
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2),
     ...             qml.X(3) @ qml.Z(1)]
@@ -105,61 +104,26 @@ class SPSAOptimizer:
     >>> dev = qml.device("default.qubit", wires=num_qubits)
     >>> @qml.qnode(dev)
     ... def cost(params, num_qubits=1):
-    ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+    ...     qml.BasisState(pnp.array([1, 1, 0, 0]), wires=range(num_qubits))
     ...     for i in range(num_qubits):
     ...         qml.Rot(*params[i], wires=0)
     ...         qml.CNOT(wires=[2, 3])
     ...         qml.CNOT(wires=[2, 0])
     ...         qml.CNOT(wires=[3, 1])
     ...     return qml.expval(H)
-    ...
-    >>> params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
+    >>> rng = pnp.random.default_rng(seed=42)
+    >>> params = rng.normal(0, pnp.pi, (num_qubits, 3))
+    >>> params = pnp.array(params, requires_grad=True)
 
     Once constructed, the cost function can be passed directly to the
     ``step`` or ``step_and_cost`` function of the optimizer:
 
-    >>> max_iterations = 100
+    >>> max_iterations = 200
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
     >>> for _ in range(max_iterations):
     ...     params, energy = opt.step_and_cost(cost, params, num_qubits=num_qubits)
     >>> print(energy)
-    -0.4294539602541956
-
-    The algorithm provided by SPSA does not rely on built-in automatic differentiation capabilities of the interface being used
-    and therefore the optimizer can be used in more complex hybrid classical-quantum workflow with any of the interfaces:
-
-    >>> import tensorflow as tf
-    >>> n_qubits = 1
-    >>> max_iterations = 20
-    >>> dev = qml.device("default.qubit", wires=n_qubits)
-    >>> @qml.qnode(dev, interface="tf")
-    ... def layer_fn_spsa(inputs, weights):
-    ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
-    ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-    ...     return qml.expval(qml.Z(0))
-    ...
-    >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
-    ... def fn(params, tensor_in, tensor_out):
-    ...     with tf.init_scope():
-    ...             for _ in range(max_iterations):
-    ...                     # Some classical steps before the quantum computation
-    ...                     params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
-    ...                                     tf.constant(tensor_in),
-    ...                                     tf.Variable(params))
-    ...                     params = params_a[1]
-    ...                     tensor_out = layer_res
-    ...                     # Some classical steps after the quantum computation
-    ...     return layer_res
-    ...
-    >>> tensor_in = tf.Variable([0.27507603])
-    >>> tensor_out = tf.Variable([0])
-    >>> params = tf.Variable([[3.97507603],
-    ...     [3.12950603],
-    ...     [1.00854038],
-    ...     [1.25907603]])
-    >>> loss = fn(params, tensor_in, tensor_out)
-    >>> print(loss)
-    tf.Tensor(-0.9995854230771829, shape=(), dtype=float64)
+    -0.43...
     """
 
     # pylint: disable-msg=too-many-arguments

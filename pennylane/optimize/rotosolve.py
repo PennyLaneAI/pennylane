@@ -208,12 +208,14 @@ class RotosolveOptimizer:
 
     Next, we create a QNode we wish to optimize:
 
-    .. code-block :: python
+    .. code-block:: python
 
         dev = qml.device('default.qubit', wires=3)
 
         @qml.qnode(dev)
-        def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):
+        def cost_function(rot_param, layer_par, crot_param):
+            rot_weights = pnp.ones(3)
+            crot_weights = pnp.ones(3)
             for i, par in enumerate(rot_param * rot_weights):
                 qml.RX(par, wires=i)
             for w in dev.wires:
@@ -237,17 +239,13 @@ class RotosolveOptimizer:
     ``crot_param`` enter the QNode are integer-valued.
     The number of frequencies per parameter are summarized in ``nums_frequency``.
 
-    .. code-block :: python
-
-        from pennylane import numpy as np
+    .. code-block:: python
 
         init_param = (
-            np.array([0.3, 0.2, 0.67], requires_grad=True),
-            np.array(1.1, requires_grad=True),
-            np.array([-0.2, 0.1, -2.5], requires_grad=True),
+            pnp.array([0.3, 0.2, 0.67], requires_grad=True),
+            pnp.array(1.1, requires_grad=True),
+            pnp.array([-0.2, 0.1, -2.5], requires_grad=True),
         )
-        rot_weights = np.ones(3)
-        crot_weights = np.ones(3)
 
         nums_frequency = {
             "rot_param": {(0,): 1, (1,): 1, (2,): 1},
@@ -273,18 +271,10 @@ class RotosolveOptimizer:
     ...         *param,
     ...         nums_frequency=nums_frequency,
     ...         full_output=True,
-    ...         rot_weights=rot_weights,
-    ...         crot_weights=crot_weights,
     ...     )
-    ...     print(f"Cost before step: {cost}")
-    ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
     ...     cost_rotosolve.extend(sub_cost)
-    Cost before step: 0.04200821039253547
-    Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
-    Cost before step: -0.9999999990681161
-    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
-    Cost before step: -0.9999999999999996
-    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+    >>> print("Final cost:", cost)
+    Final cost: -0.99...
 
     The optimized values for the parameters are now stored in ``param``
     and the optimization behaviour can be assessed by plotting ``cost_rotosolve``,
@@ -296,35 +286,46 @@ class RotosolveOptimizer:
     but their concrete values. For the example QNode above, this happens if the
     weights are no longer one:
 
-    >>> rot_weights = np.array([0.4, 0.8, 1.2], requires_grad=False)
-    >>> crot_weights = np.array([0.5, 1.0, 1.5], requires_grad=False)
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def cost_function(rot_param, layer_par, crot_param):
+            rot_weights = pnp.array([0.4, 0.8, 1.2], requires_grad=False)
+            crot_weights = pnp.array([0.5, 1.0, 1.5], requires_grad=False)
+            for i, par in enumerate(rot_param * rot_weights):
+                qml.RX(par, wires=i)
+            for w in dev.wires:
+                qml.RX(layer_par, wires=w)
+            for i, par in enumerate(crot_param*crot_weights):
+                qml.CRY(par, wires=[i, (i+1)%3])
+            return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
+
     >>> spectrum_fn = qml.fourier.qnode_spectrum(cost_function)
-    >>> spectra = spectrum_fn(*param, rot_weights=rot_weights, crot_weights=crot_weights)
-    >>> spectra["rot_param"]
-    {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]}
-    >>> spectra["crot_param"]
-    {(0,): [-0.5, -0.25, 0.0, 0.25, 0.5], (1,): [-1.0, -0.5, 0.0, 0.5, 1.0], (2,): [-1.5, -0.75, 0.0, 0.75, 1.5]}
+    >>> spectra = spectrum_fn(*param)
+    >>> from pprint import pprint
+    >>> pprint(spectra["rot_param"])
+    {(0,): [np.float64(-0.4), 0.0, np.float64(0.4)], (1,): [np.float64(-0.8), 0.0, np.float64(0.8)], (2,): [np.float64(-1.2), 0.0, np.float64(1.2)]}
+    >>> pprint(spectra["crot_param"])
+    {(0,): [np.float64(-0.5), np.float64(-0.25), np.float64(0.0), np.float64(0.25), np.float64(0.5)], (1,): [np.float64(-1.0), np.float64(-0.5), np.float64(0.0), np.float64(0.5), np.float64(1.0)], (2,): [np.float64(-1.5), np.float64(-0.75), np.float64(0.0), np.float64(0.75), np.float64(1.5)]}
 
     We may provide these spectra instead of ``nums_frequency`` to Rotosolve to
     enable the optimization of the QNode at these weights:
 
     >>> param = init_param
-    >>> for step in range(num_steps):
+    >>> for step in range(num_steps): # doctest: +SKIP
     ...     param, cost, sub_cost = opt.step_and_cost(
     ...         cost_function,
     ...         *param,
     ...         spectra=spectra,
     ...         full_output=True,
-    ...         rot_weights = rot_weights,
-    ...         crot_weights = crot_weights,
     ...     )
     ...     print(f"Cost before step: {cost}")
     ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
-    Cost before step: 0.09299359486191039
-    Minimization substeps: [-0.268008 -0.713209 -0.24993  -0.871989 -0.907672 -0.907892 -0.940474]
-    Cost before step: -0.9404742138557066
-    Minimization substeps: [-0.940474 -1.       -1.       -1.       -1.       -1.       -1.      ]
-    Cost before step: -1.0
+    Cost before step: 0.0929935948619103
+    Minimization substeps: [-0.268008 -0.876533 -0.995005 -0.995005 -1.       -1.       -1.      ]
+    Cost before step: -0.9999999995717788
+    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+    Cost before step: -1.0000000000000002
     Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
 
     As we can see, while the optimization got a bit harder and the optimizer takes a bit longer

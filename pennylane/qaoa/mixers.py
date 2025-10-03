@@ -97,21 +97,17 @@ def xy_mixer(graph: nx.Graph | rx.PyGraph):
     >>> graph = Graph([(0, 1), (1, 2)])
     >>> mixer_h = qaoa.xy_mixer(graph)
     >>> print(mixer_h)
-      (0.5) [X0 X1]
-    + (0.5) [Y0 Y1]
-    + (0.5) [X1 X2]
-    + (0.5) [Y1 Y2]
+    0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1)) + 0.5 * (X(1) @ X(2)) + 0.5 * (Y(1) @ Y(2))
 
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
+    NodeIndices[0, 1, 2]
     >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
+    EdgeIndices[0, 1]
     >>> mixer_h = xy_mixer(graph)
     >>> print(mixer_h)
-      (0.5) [X0 X1]
-    + (0.5) [Y0 Y1]
-    + (0.5) [X1 X2]
-    + (0.5) [Y1 Y2]
+    0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1)) + 0.5 * (X(1) @ X(2)) + 0.5 * (Y(1) @ Y(2))
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
@@ -170,8 +166,9 @@ def bit_flip_mixer(graph: nx.Graph | rx.PyGraph, b: int):
     >>> from pennylane import qaoa
     >>> from networkx import Graph
     >>> graph = Graph([(0, 1), (1, 2)])
-    >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
-    >>> mixer_h
+    >>> mixer_h = bit_flip_mixer(graph, 0)
+    >>> from pprint import pprint
+    >>> pprint(mixer_h)
     (
         0.5 * X(0)
       + 0.5 * (X(0) @ Z(1))
@@ -186,9 +183,12 @@ def bit_flip_mixer(graph: nx.Graph | rx.PyGraph, b: int):
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
+    NodeIndices[0, 1, 2]
     >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
-    >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
-    >>> print(mixer_h)
+    EdgeIndices[0, 1]
+    >>> mixer_h = bit_flip_mixer(graph, 0)
+    >>> from pprint import pprint
+    >>> pprint(mixer_h)
     (
         0.5 * X(0)
       + 0.5 * (X(0) @ Z(1))
