@@ -907,6 +907,9 @@
 * Perturbation error function now sums over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
+* Added optional importance sampling functionality to Trotter error estimation.
+  [(#8247)](https://github.com/PennyLaneAI/pennylane/pull/8247)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.workflow.construct_batch.expand_fn_transform` is deleted as it was local and no longer getting used.
