@@ -51,7 +51,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxext.opengraph",
     "m2r2",
-    "sphinx_automodapi.smart_resolver"
+    "sphinx_automodapi.smart_resolver",
 ]
 
 # Open Graph metadata
