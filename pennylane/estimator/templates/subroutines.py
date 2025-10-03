@@ -672,8 +672,8 @@ class QPE(ResourceOperator):
      Total wires: 6
         algorithmic wires: 6
         allocated wires: 0
-    	 zero state: 0
-    	 any state: 0
+         zero state: 0
+         any state: 0
      Total gates : 11
       'CRX': 5,
       'Adjoint(QFT(5))': 1,
@@ -695,8 +695,8 @@ class QPE(ResourceOperator):
          Total wires: 6
             algorithmic wires: 6
             allocated wires: 0
-        	 zero state: 0
-        	 any state: 0
+                 zero state: 0
+                 any state: 0
          Total gates : 1.586E+3
           'T': 1.530E+3,
           'CNOT': 36,

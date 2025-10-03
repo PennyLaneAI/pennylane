@@ -500,8 +500,8 @@ class QROMStatePreparation(ResourceOperator):
          Total wires: 21
             algorithmic wires: 4
             allocated wires: 17
-        	 zero state: 17
-        	 any state: 0
+                 zero state: 17
+                 any state: 0
          Total gates : 2.680E+3
           'QROM': 5,
           'Adjoint(QROM)': 5,
