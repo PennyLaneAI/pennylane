@@ -59,16 +59,21 @@ class UniformStatePrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> unif_state_prep = qre.UniformStatePrep(10)
     >>> print(qre.estimate(unif_state_prep))
     --- Resources: ---
-     Total qubits: 5
-     Total gates : 124
-     Qubit breakdown:
-      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'Hadamard': 16, 'X': 12, 'CNOT': 4, 'Toffoli': 4, 'T': 88}
+    Total wires: 5
+        algorithmic wires: 4
+        allocated wires: 1
+        zero state: 1
+        any state: 0
+    Total gates : 124
+    'Toffoli': 4,
+    'T': 88,
+    'CNOT': 4,
+    'X': 12,
+    'Hadamard': 16
     """
 
     resource_keys = {"num_states"}
@@ -179,12 +184,17 @@ class AliasSampling(ResourceOperator):
     >>> alias_sampling = qre.AliasSampling(num_coeffs=100)
     >>> print(qre.estimate(alias_sampling))
     --- Resources: ---
-     Total qubits: 81
-     Total gates : 6.157E+3
-     Qubit breakdown:
-      zeroed qubits: 6, any_state qubits: 68, algorithmic qubits: 7
-     Gate breakdown:
-      {'Hadamard': 730, 'X': 479, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
+    Total wires: 133
+        algorithmic wires: 7
+        allocated wires: 126
+        zero state: 58
+        any state: 68
+    Total gates : 6.505E+3
+    'Toffoli': 272,
+    'T': 88,
+    'CNOT': 4.646E+3,
+    'X': 595,
+    'Hadamard': 904
     """
 
     resource_keys = {"num_coeffs", "precision"}
@@ -490,13 +500,14 @@ class QROMStatePreparation(ResourceOperator):
          Total wires: 21
             algorithmic wires: 4
             allocated wires: 17
-             zero state: 17
-             any state: 0
-         Total gates : 3.782E+3
+                 zero state: 17
+                 any state: 0
+         Total gates : 2.680E+3
           'QROM': 5,
-          'T': 2.524E+3,
-          'CNOT': 825,
-          'Hadamard': 428
+          'Adjoint(QROM)': 5,
+          'T': 1.832E+3,
+          'CNOT': 580,
+          'Hadamard': 258
 
         The ``precision`` argument is used to allocate the target wires in the underlying QROM
         operations. It corresponds to the precision with which the rotation angles of the
@@ -512,18 +523,24 @@ class QROMStatePreparation(ResourceOperator):
         is used as the ``select_swap_depth`` for all :code:`QROM` operations in the resource decomposition.
 
         >>> print(res.gate_breakdown())
+        Adjoint(QROM) total: 5
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
         QROM total: 5
-            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-        T total: 2.524E+3
-        CNOT total: 825
-        Hadamard total: 428
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+        T total: 1.832E+3
+        CNOT total: 580
+        Hadamard total: 258
 
         Alternatively, we can configure each value independently by specifying a list. Note the size
-        of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
+        of this list should be :code:`num_state_qubits + 1` (or :code:`num_state_qubits` if the state
         is positive and real).
 
         >>> qrom_prep = qre.QROMStatePreparation(
@@ -533,15 +550,21 @@ class QROMStatePreparation(ResourceOperator):
         ... )
         >>> res = qre.estimate(qrom_prep, gate_set)
         >>> print(res.gate_breakdown())
+        Adjoint(QROM) total: 5
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
         QROM total: 5
-            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
-        T total: 2.524E+3
-        CNOT total: 825
-        Hadamard total: 428
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
+        T total: 1.832E+3
+        CNOT total: 580
+        Hadamard total: 258
     """
 
     resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
@@ -897,7 +920,7 @@ class PrepTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
     >>> print(res)
