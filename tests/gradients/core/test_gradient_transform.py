@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.gradient_transform module."""
+
 import inspect
 
 import pytest
@@ -19,12 +20,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
-    SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
     _validate_gradient_methods,
     choose_trainable_param_indices,
 )
 from pennylane.transforms.core import TransformDispatcher
+from pennylane.workflow.qnode import SUPPORTED_GRADIENT_KWARGS
 
 
 def test_supported_gradient_kwargs():

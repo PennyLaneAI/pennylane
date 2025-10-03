@@ -356,7 +356,6 @@ from .general_shift_rules import (
     generate_shift_rule,
     generate_shifted_tapes,
 )
-from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
 from .hadamard_gradient import hadamard_grad
 from .jvp import batch_jvp, compute_jvp_multi, compute_jvp_single, jvp
 from .metric_tensor import metric_tensor

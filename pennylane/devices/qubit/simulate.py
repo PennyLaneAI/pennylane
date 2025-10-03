@@ -184,9 +184,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(
-        sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
-    )
+    interface = Interface(interface).get_like()
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface)
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -208,7 +207,11 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         if isinstance(op, ops.Projector):
             prng_key, key = jax_random_split(prng_key)
             state, new_shots = _postselection_postprocess(
-                state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
+                state,
+                is_state_batched,
+                circuit.shots,
+                prng_key=key,
+                **execution_kwargs,
             )
             circuit._shots = new_shots
 
@@ -566,14 +569,7 @@ def simulate_tree_mcm(
             depth += 1
             # Update the active branch samples with `update_mcm_samples`
             if finite_shots:
-                if (
-                    mcms[depth]
-                    and mcms[depth].postselect is not None
-                    and postselect_mode == "fill-shots"
-                ):
-                    samples = mcms[depth].postselect * math.ones_like(measurements)
-                else:
-                    samples = math.atleast_1d(measurements)
+                samples = math.atleast_1d(measurements)
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:

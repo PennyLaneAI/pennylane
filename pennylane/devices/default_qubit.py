@@ -14,6 +14,7 @@
 """
 The default.qubit device is PennyLane's standard qubit-based device.
 """
+
 from __future__ import annotations
 
 import logging
@@ -25,7 +26,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from pennylane import capture, math, ops
+from pennylane import capture, math, ops, transforms
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
@@ -43,9 +44,12 @@ from pennylane.measurements import (
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
-from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
-from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import defer_measurements, dynamic_one_shot
+from pennylane.transforms import (
+    broadcast_expand,
+    convert_to_numpy_parameters,
+    defer_measurements,
+    dynamic_one_shot,
+)
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -189,7 +193,7 @@ def accepted_sample_measurement(m: MeasurementProcess) -> bool:
     ):
         return False
 
-    if m.obs is not None:
+    if isinstance(m.obs, Operator):
         return observable_accepts_sampling(m.obs)
 
     return True
@@ -201,7 +205,7 @@ def accepted_analytic_measurement(m: MeasurementProcess) -> bool:
     if not isinstance(m, StateMeasurement):
         return False
 
-    if m.obs is not None:
+    if isinstance(m.obs, Operator):
         return observable_accepts_analytic(m.obs, isinstance(m, ExpectationMP))
 
     return True
@@ -602,7 +606,7 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
         if config.mcm_config.mcm_method == "deferred":
             transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-        transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
+        transform_program.add_transform(transforms.decompose, gate_set=stopping_condition)
 
         return transform_program
 
@@ -743,7 +747,6 @@ class DefaultQubit(Device):
         return replace(config, **updated_values)
 
     def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
-
         if capture.enabled():
             return self._capture_setup_mcm_config(mcm_config)
 
@@ -808,7 +811,6 @@ class DefaultQubit(Device):
             )
 
         if max_workers is None:
-
             return tuple(
                 _simulate_wrapper(
                     c,

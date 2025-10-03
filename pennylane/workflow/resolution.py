@@ -158,6 +158,11 @@ def _resolve_mcm_config(
                 "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
             )
 
+    if mcm_config.postselect_mode == "fill-shots" and mcm_config.mcm_method != "deferred":
+        raise ValueError(
+            "Using postselect_mode='fill-shots' is only supported with mcm_method='deferred'."
+        )
+
     if mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError(
             "Cannot use mcm_method='single-branch-statistics' without qml.qjit or capture enabled."

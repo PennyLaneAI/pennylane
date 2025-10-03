@@ -15,14 +15,23 @@
 
 import inspect
 import logging
+from collections.abc import Callable
 from functools import partial, wraps
+from typing import TypeVar
+
+from typing_extensions import ParamSpec
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 # Stack level allows moving up the stack with the log records, and prevents
 # the decorator function names appearing in the resulting messages.
 _debug_log_kwargs = {"stacklevel": 2}
 
 
-def log_string_debug_func(func, log_level, use_entry, override=None):
+def log_string_debug_func(
+    func: Callable[P, R], log_level, use_entry, override=None
+) -> Callable[P, R]:
     """
     This decorator utility generates a string containing the called function, the passed arguments, and the source of the function call.
     """

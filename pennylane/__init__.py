@@ -103,8 +103,6 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute, set_shots
-from pennylane import workflow
 
 from pennylane.transforms import (
     transform,
@@ -120,15 +118,6 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
-)
-from pennylane.noise import (
-    add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -146,6 +135,17 @@ from pennylane.ops.functions import (
     iterative_qpe,
     commutator,
     comm,
+)
+from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane import workflow
+from pennylane.noise import (
+    add_noise,
+    insert,
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
