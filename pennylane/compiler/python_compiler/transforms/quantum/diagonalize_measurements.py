@@ -130,9 +130,7 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier(
-                [DiagonalizeFinalMeasurementsPattern()],
-            ),
+            DiagonalizeFinalMeasurementsPattern()
         ).rewrite_module(module)
 
 
