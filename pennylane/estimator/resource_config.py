@@ -18,9 +18,9 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
 from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
