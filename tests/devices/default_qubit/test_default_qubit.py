@@ -1803,6 +1803,7 @@ def test_projector_dynamic_type(max_workers, n_wires):
         assert np.isclose(res, 1 / 2**n_wires)
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "interface",
     [
@@ -2121,6 +2122,69 @@ class TestPostselection:
                 )
                 if not 0 in expected_shape:  # No nan values if array is empty
                     assert qml.math.all(qml.math.isnan(r))
+
+    @pytest.mark.parametrize(
+        "shots, postselect_mode, error",
+        [
+            (10, "fill-shots", True),
+            (None, "fill-shots", False),
+            (10, "hw-like", False),
+            (None, "hw-like", False),
+        ],
+    )
+    def test_defer_measurements_fill_shots_zero_prob_postselection_error(
+        self, shots, postselect_mode, error, interface, use_jit
+    ):
+        """Test that an error is raised if `postselect_mode="fill-shots"` with finite shots
+        and the postselection probability is zero when using defer_measurements."""
+        if use_jit and interface != "jax":
+            pytest.skip("Can't jit with non-jax interfaces.")
+
+        dev = DefaultQubit()
+
+        @qml.qnode(
+            dev,
+            shots=shots,
+            interface=interface,
+            mcm_method="deferred",
+            postselect_mode=postselect_mode,
+        )
+        def circuit():
+            # State is |0>, so postselection probability is zero
+            qml.measure(0, postselect=1)
+            return qml.expval(qml.Z(0))
+
+        if use_jit:
+            if postselect_mode == "hw-like":
+                pytest.xfail(
+                    reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
+                )
+
+            # pylint: disable=import-outside-toplevel
+            import jax
+
+            # We do not raise an error if using jax.jit, because we cannot check whether or not
+            # the probability is zero. But, this is only the case with analytic execution because
+            # with shots, we perform the execution in a pure callback, so the state is concrete.
+            error = error if shots else False
+            circuit = jax.jit(circuit)
+
+            # When jitting, we go through JAX's error handling, so the expected error is not the same
+            # as without jitting
+            expected_error = Exception
+            err_message = ""
+
+        else:
+            expected_error = RuntimeError
+            err_message = "The probability of the postselected"
+
+        if error:
+            with pytest.raises(expected_error, match=err_message):
+                circuit()
+
+        else:
+            # no error
+            circuit()
 
 
 class TestIntegration:
