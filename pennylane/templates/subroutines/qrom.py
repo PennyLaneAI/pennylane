@@ -110,6 +110,8 @@ class QROM(Operation):
         work_wires (Sequence[int]): the auxiliary wires used for the computation
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
 
+    ..see-also:: :class:`~.QRAM`, :class:`~.QROMStatePreparation`
+
     **Example**
 
     In this example, the QROM operator is applied to encode the third bitstring, associated with index 2, in the target wires.
