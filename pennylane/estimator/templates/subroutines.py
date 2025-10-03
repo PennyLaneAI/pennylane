@@ -664,17 +664,20 @@ class QPE(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
     >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5)
     >>> print(qre.estimate(qpe, gate_set))
     --- Resources: ---
-     Total qubits: 6
+     Total wires: 6
+        algorithmic wires: 6
+        allocated wires: 0
+    	 zero state: 0
+    	 any state: 0
      Total gates : 11
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 6
-     Gate breakdown:
-      {'Hadamard': 5, 'CRX': 5, 'Adjoint(QFT(5))': 1}
+      'CRX': 5,
+      'Adjoint(QFT(5))': 1,
+      'Hadamard': 5
 
     .. details::
         :title: Usage Details
@@ -685,16 +688,19 @@ class QPE(ResourceOperator):
 
         For example, consider the cost using the default :class:`~.pennylane.estimator.templates.QFT` implementation below:
 
-        >>> import pennylane.estimator as qre
+        >>> from pennylane import estimator as qre
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=None)
         >>> print(qre.estimate(qpe))
         --- Resources: ---
-         Total qubits: 6
+         Total wires: 6
+            algorithmic wires: 6
+            allocated wires: 0
+        	 zero state: 0
+        	 any state: 0
          Total gates : 1.586E+3
-         Qubit breakdown:
-          zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 6
-         Gate breakdown:
-          {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
+          'T': 1.530E+3,
+          'CNOT': 36,
+          'Hadamard': 20
 
         Now we use the :class:`~.pennylane.estimator.templates.AQFT`:
 
@@ -703,19 +709,19 @@ class QPE(ResourceOperator):
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=adj_aqft)
         >>> print(qre.estimate(qpe))
         --- Resources: ---
-        Total wires: 8
+         Total wires: 8
             algorithmic wires: 6
-            allocated wires: 2
-            zero state: 2
+             allocated wires: 2
+             zero state: 2
             any state: 0
         Total gates : 321
-        'Toffoli': 7,
-        'T': 222,
-        'CNOT': 34,
-        'X': 4,
-        'Z': 8,
-        'S': 8,
-        'Hadamard': 38
+         'Toffoli': 7,
+         'T': 222,
+         'CNOT': 34,
+         'X': 4,
+         'Z': 8,
+         'S': 8,
+         'Hadamard': 38
     """
 
     resource_keys = {"base_cmpr_op", "num_estimation_wires", "adj_qft_cmpr_op"}
