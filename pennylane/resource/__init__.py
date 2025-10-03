@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The ``resource`` module provides classes and functionality to estimate the quantum resources
+The ``resource`` module provides classes and functionality to track the quantum resources
 (number of qubits, circuit depth, etc.) required to implement advanced quantum algorithms.
 
+.. seealso::
+    The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
 Expectation Value Functions
 ---------------------------

@@ -55,6 +55,11 @@
     ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
     ``RegisterComparator`` were added to `qml.estimator.templates`.
     [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
+  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
+    [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
+  * Fixed some issues and updated docs for the :mod:`~.estimator` module.
+    [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
+    [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h4>Dynamic wire allocation 🎁</h4>
 
@@ -1168,6 +1173,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
+  use `ubuntu-24.04` runners. [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
+
 * Adds `measurements` as a "core" module in the tach specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
@@ -1176,6 +1184,8 @@
 
 * Add CI workflow to test documentation using `sybil`. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
+  [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
+  [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
@@ -1557,7 +1567,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Runor Agbaire
+Runor Agbaire,
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
@@ -1575,8 +1585,9 @@ David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Elton Law,
-Mehrdad Malekmohammadi
-Pablo Antonio Moreno Casares
+Mehrdad Malekmohammadi,
+Pablo Antonio Moreno Casares,
+Anton Naim Ibrahim,
 Erick Ochoa,
 Lee James O'Riordan,
 Mudit Pandey,
@@ -1587,4 +1598,4 @@ Shuli Shu,
 Jay Soni,
 Paul Haochen Wang,
 David Wierichs,
-Jake Zaia
+Jake Zaia.
