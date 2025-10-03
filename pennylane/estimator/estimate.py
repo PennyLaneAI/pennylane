@@ -101,6 +101,7 @@ def estimate(
         programs written with standard PennyLane operators (:class:`~.Operation`).
 
         .. code-block:: python
+        
             import pennylane as qml
             from pennylane import estimator as qre
 
