@@ -50,9 +50,9 @@ class ResourceConfig:
     resource estimation pipeline.
 
     Multiple configurations can be used to easily analyze the same workflows with different settings.
-    Customize configurations using methods such as the :meth:`~.estimator.resource_config.set_single_qubit_rot_precision`
-    method for single qubit rotation precisions, the :meth:`~.estimator.resource_config.set_precision` method to set various
-    operator precisions, and the :meth:`~.estimator.resource_config.set_decomp` method to set custom resource decompositions.
+    Customize configurations using methods such as the :meth:`~.estimator.resource_config.ResourceConfig.set_single_qubit_rot_precision`
+    method for single qubit rotation precisions, the :meth:`~.estimator.resource_config.ResourceConfig.set_precision` method to set various
+    operator precisions, and the :meth:`~.estimator.resource_config.ResourceConfig.set_decomp` method to set custom resource decompositions.
 
     The default configuration is shown here:
 
