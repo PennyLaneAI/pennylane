@@ -92,7 +92,7 @@ jobs:
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-latest
+      default_runner: ubuntu-24.04
       force_large_runner: ${{ inputs.use_large_runner }}
 
   warnings-as-errors-setup:

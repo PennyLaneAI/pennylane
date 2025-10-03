@@ -191,7 +191,8 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
     }
 
 
-@register_resources(_select_pauli_rot_resource)
+# Not exact resources because rotations might be skipped based on angles
+@register_resources(_select_pauli_rot_resource, exact=False)
 def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
     r"""Decomposes the SelectPauliRot"""
 
