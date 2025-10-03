@@ -101,7 +101,7 @@ def estimate(
         programs written with standard PennyLane operators (:class:`~.Operation`).
 
         .. code-block:: python
-        
+
             import pennylane as qml
             from pennylane import estimator as qre
 
@@ -115,7 +115,7 @@ def estimate(
                 qml.RX(1.23*np.pi, wires=0)
                 qml.RY(1.23*np.pi, wires=1)
                 qml.QFT(wires=[0, 1, 2])
-                return
+                return qml.state()
 
         .. code-block:: pycon
 
