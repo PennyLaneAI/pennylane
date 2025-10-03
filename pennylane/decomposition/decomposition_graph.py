@@ -213,6 +213,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         gate_set: set[type | str] | dict[type | str, float],
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
+        strict: bool = False,
     ):
         self._gate_set_weights: dict[str, float]
         if isinstance(gate_set, dict):
@@ -243,6 +244,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         alt_decomps = alt_decomps or {}
         self._fixed_decomps = {_to_name(k): v for k, v in fixed_decomps.items()}
         self._alt_decomps = {_to_name(k): v for k, v in alt_decomps.items()}
+
+        self._strict = strict
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
