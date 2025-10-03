@@ -118,8 +118,8 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     if not qml.math.is_abstract(state) and qml.math.allclose(norm, 0.0):
         if postselect_mode == "fill-shots" and shots:
             raise RuntimeError(
-                "The probability of the postselected state is 0. This will lead to invalid "
-                "results when using postselect_mode='fill-shots'."
+                "The probability of the postselected mid-circuit measurement outcome is 0. "
+                "This leads to invalid results when using postselect_mode='fill-shots'."
             )
         norm = 0.0
 
