@@ -78,9 +78,8 @@ class GraphStatePrep(Operation):
     **Example:**
         The graph state preparation layer can be customized by the user.
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            import pennylane as qml
             from pennylane.ftqc import generate_lattice, GraphStatePrep, QubitGraph
 
             dev = qml.device('default.qubit')
@@ -124,10 +123,9 @@ class GraphStatePrep(Operation):
 
         Consider the following example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             import networkx as nx
-            import pennylane as qml
             from pennylane.ftqc import GraphStatePrep
 
             dev = qml.device("default.qubit")
