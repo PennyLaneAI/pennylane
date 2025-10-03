@@ -1459,6 +1459,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if using postselection with finite shots and :class:`~pennylane.devices.DefaultQubit` when
+  `mcm_method="deferred"` and `postselect_mode="fill-shots"`, as this previously led to invalid results.
+
 * `default.qubit` now properly validates the `mcm_method`.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
