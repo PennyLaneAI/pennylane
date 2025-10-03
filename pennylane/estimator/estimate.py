@@ -67,22 +67,20 @@ def estimate(
 
     .. code-block:: python
 
-        import pennylane.estimator as qre
+        from pennylane import estimator as qre
 
         def my_circuit():
             for w in range(2):
                 qre.Hadamard(wires=w)
-
             qre.CNOT(wires=[0,1])
             qre.RX(wires=0)
             qre.RY(wires=1)
-
             qre.QFT(num_wires=3, wires=[0, 1, 2])
             return
 
     The resources for this workflow are then obtained by:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> res = qre.estimate(my_circuit)()
     >>> print(res)
     --- Resources: ---
@@ -95,6 +93,45 @@ def estimate(
       'T': 484,
       'CNOT': 10,
       'Hadamard': 5
+
+    .. details::
+        :title: Usage Details
+
+        :func:`~.estimator.estimate.estimate` also offers mapping functionality, allowing resource estimation for
+        programs written with standard PennyLane operators (:class:`~.Operation`).
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane import estimator as qre
+
+            dev = qml.device("null.qubit")
+
+            @qml.qnode(dev)
+            def circ():
+                for w in range(2):
+                    qml.Hadamard(wires=w)
+                qml.CNOT(wires=[0,1])
+                qml.RX(1.23*np.pi, wires=0)
+                qml.RY(1.23*np.pi, wires=1)
+                qml.QFT(wires=[0, 1, 2])
+                return qml.state()
+
+        .. code-block:: pycon
+
+            >>> res = qre.estimate(circ)()
+            >>> print(res)
+            --- Resources: ---
+             Total wires: 3
+                algorithmic wires: 3
+                allocated wires: 0
+                 zero state: 0
+                 any state: 0
+             Total gates : 499
+              'T': 484,
+              'CNOT': 10,
+              'Hadamard': 5
+
     """
     return _estimate_resources_dispatch(workflow, gate_set, zeroed, any_state, tight_budget, config)
 
@@ -137,11 +174,13 @@ def _resources_from_qfunc(
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
-            if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
+            if isinstance(op, (ResourceOperator, Operator)):
                 if op.wires:
                     circuit_wires.append(op.wires)
                 elif op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
+            elif isinstance(op, MeasurementProcess):  # Skip tracking cost of quantum resources
+                pass
             else:
                 raise ValueError(
                     f"Queued object '{op}' is not a ResourceOperator or Operator, and cannot be processed."

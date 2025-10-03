@@ -74,7 +74,7 @@ class CompressedResourceOp:
         self.num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
-        self._name = name or op_type.make_tracking_name(**self.params)
+        self._name = name or op_type.tracking_name(**self.params)
 
     def __hash__(self) -> int:
         return hash((self.op_type, self.num_wires, self._hashable_params))
@@ -372,15 +372,10 @@ class ResourceOperator(ABC):
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
-    # pylint: disable=unused-argument
     @classmethod
-    def make_tracking_name(cls, *args, **kwargs) -> str:
+    def tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
-        return cls.__name__.replace("Resource", "")
-
-    def tracking_name(self) -> str:
-        r"""Returns the tracking name built with the operator's parameters."""
-        return self.make_tracking_name(**self.resource_params)
+        return cls.__name__
 
 
 def _dequeue(
@@ -415,7 +410,7 @@ class GateCount:
     >>> qft = qre.resource_rep(qre.QFT, {"num_wires": 3})
     >>> counts = qre.GateCount(qft, 5)
     >>> counts
-    (5 x QFT)
+    (5 x QFT(3))
 
     """
 
@@ -441,9 +436,6 @@ class GateCount:
         return self.gate == other.gate and self.count == other.count
 
     def __repr__(self) -> str:
-        if self.gate._name in ["Adjoint", "Controlled"]:
-            base_gate_name = self.gate.params["base_cmpr_op"]._name
-            return f"({self.count} x {self.gate._name}({base_gate_name}))"
         return f"({self.count} x {self.gate._name})"
 
 
@@ -471,7 +463,7 @@ def resource_rep(
     transform (:code:`QFT`) operation. We begin by checking what parameters are required for
     resource estimation and then provide them accordingly:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> qre.QFT.resource_keys
     {'num_wires'}
     >>> cmpr_qft = qre.resource_rep(

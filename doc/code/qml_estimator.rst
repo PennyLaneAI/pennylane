@@ -5,7 +5,7 @@ qml.estimator
 
 .. automodule:: pennylane.estimator
 
-The :mod:`~.estimator` module is the centre for resource estimation in PennyLane.  
+The :mod:`~.estimator` module is the centre for quantum resource estimation in PennyLane.  
 Functionality within :mod:`~.estimator` is intended purely for resource estimation, and is *not* intended for true program compilation and execution.
 
 .. seealso::

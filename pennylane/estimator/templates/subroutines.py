@@ -48,7 +48,7 @@ class OutOfPlaceSquare(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> out_square = qre.OutOfPlaceSquare(register_size=3)
     >>> print(qre.estimate(out_square))
     --- Resources: ---
@@ -141,7 +141,7 @@ class PhaseGradient(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> phase_grad = qre.PhaseGradient(num_wires=5)
     >>> gate_set={"Z", "S", "T", "RZ", "Hadamard"}
     >>> print(qre.estimate(phase_grad, gate_set))
@@ -242,7 +242,7 @@ class OutMultiplier(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> out_mul = qre.OutMultiplier(4, 4)
     >>> print(qre.estimate(out_mul))
     --- Resources: ---
@@ -348,7 +348,7 @@ class SemiAdder(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> semi_add = qre.SemiAdder(max_register_size=4)
     >>> print(qre.estimate(semi_add))
     --- Resources: ---
@@ -524,7 +524,7 @@ class ControlledSequence(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> ctrl_seq = qre.ControlledSequence(
     ...     base = qre.RX(),
     ...     num_control_wires = 3,
@@ -664,17 +664,20 @@ class QPE(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
     >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5)
     >>> print(qre.estimate(qpe, gate_set))
     --- Resources: ---
-     Total qubits: 6
+     Total wires: 6
+        algorithmic wires: 6
+        allocated wires: 0
+         zero state: 0
+         any state: 0
      Total gates : 11
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 6
-     Gate breakdown:
-      {'Hadamard': 5, 'CRX': 5, 'Adjoint(QFT(5))': 1}
+      'CRX': 5,
+      'Adjoint(QFT(5))': 1,
+      'Hadamard': 5
 
     .. details::
         :title: Usage Details
@@ -685,16 +688,19 @@ class QPE(ResourceOperator):
 
         For example, consider the cost using the default :class:`~.pennylane.estimator.templates.QFT` implementation below:
 
-        >>> import pennylane.estimator as qre
+        >>> from pennylane import estimator as qre
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=None)
         >>> print(qre.estimate(qpe))
         --- Resources: ---
-         Total qubits: 6
+         Total wires: 6
+            algorithmic wires: 6
+            allocated wires: 0
+                 zero state: 0
+                 any state: 0
          Total gates : 1.586E+3
-         Qubit breakdown:
-          zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 6
-         Gate breakdown:
-          {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
+          'T': 1.530E+3,
+          'CNOT': 36,
+          'Hadamard': 20
 
         Now we use the :class:`~.pennylane.estimator.templates.AQFT`:
 
@@ -703,19 +709,19 @@ class QPE(ResourceOperator):
         >>> qpe = qre.QPE(qre.RX(precision=1e-3), 5, adj_qft_op=adj_aqft)
         >>> print(qre.estimate(qpe))
         --- Resources: ---
-        Total wires: 8
+         Total wires: 8
             algorithmic wires: 6
-            allocated wires: 2
-            zero state: 2
+             allocated wires: 2
+             zero state: 2
             any state: 0
         Total gates : 321
-        'Toffoli': 7,
-        'T': 222,
-        'CNOT': 34,
-        'X': 4,
-        'Z': 8,
-        'S': 8,
-        'Hadamard': 38
+         'Toffoli': 7,
+         'T': 222,
+         'CNOT': 34,
+         'X': 4,
+         'Z': 8,
+         'S': 8,
+         'Hadamard': 38
     """
 
     resource_keys = {"base_cmpr_op", "num_estimation_wires", "adj_qft_cmpr_op"}
@@ -836,11 +842,16 @@ class QPE(ResourceOperator):
             GateCount(adj_qft_cmpr_op),
         ]
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(
+        base_cmpr_op: CompressedResourceOp,
+        num_estimation_wires: int,
+        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+    ) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = self.base_cmpr_op.name
-        adj_qft_name = None if self.adj_qft_cmpr_op is None else self.adj_qft_cmpr_op.name
-        return f"QPE({base_name}, {self.num_estimation_wires}, adj_qft={adj_qft_name})"
+        base_name = base_cmpr_op.name
+        adj_qft_name = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.name
+        return f"QPE({base_name}, {num_estimation_wires}, adj_qft={adj_qft_name})"
 
 
 class IterativeQPE(ResourceOperator):
@@ -859,7 +870,7 @@ class IterativeQPE(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> gate_set = {"Hadamard", "CRX", "PhaseShift"}
     >>> iqpe = qre.IterativeQPE(qre.RX(), 5)
     >>> print(qre.estimate(iqpe, gate_set))
@@ -973,7 +984,7 @@ class QFT(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> qft = qre.QFT(3)
     >>> gate_set = {"SWAP", "Hadamard", "ControlledPhaseShift"}
     >>> print(qre.estimate(qft, gate_set))
@@ -997,7 +1008,7 @@ class QFT(ResourceOperator):
         :class:`~.pennylane.estimator.resource_config.ResourceConfig` class. See the
         following example for more details.
 
-        >>> import pennylane.estimator as qre
+        >>> from pennylane import estimator as qre
         >>> config = qre.ResourceConfig()
         >>> config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
         >>> print(qre.estimate(qre.QFT(3), config=config))
@@ -1121,9 +1132,10 @@ class QFT(ResourceOperator):
 
         return gate_types
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"QFT({self.num_wires})"
+        return f"QFT({num_wires})"
 
 
 class AQFT(ResourceOperator):
@@ -1152,7 +1164,7 @@ class AQFT(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> aqft = qre.AQFT(order=2, num_wires=3)
     >>> gate_set = {"SWAP", "Hadamard", "T", "CNOT"}
     >>> print(qre.estimate(aqft, gate_set))
@@ -1282,9 +1294,10 @@ class AQFT(ResourceOperator):
 
         return gate_types
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(order, num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"AQFT({self.order}, {self.num_wires})"
+        return f"AQFT({order}, {num_wires})"
 
 
 class BasisRotation(ResourceOperator):
@@ -1308,7 +1321,7 @@ class BasisRotation(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> basis_rot = qre.BasisRotation(dim = 5)
     >>> print(qre.estimate(basis_rot))
     --- Resources: ---
@@ -1387,9 +1400,10 @@ class BasisRotation(ResourceOperator):
         num_wires = dim
         return CompressedResourceOp(cls, num_wires, params)
 
-    def tracking_name(self) -> str:
+    @staticmethod
+    def tracking_name(dim) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"BasisRotation({self.num_wires})"
+        return f"BasisRotation({dim})"
 
 
 class Select(ResourceOperator):
@@ -1411,7 +1425,7 @@ class Select(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> ops = [qre.X(), qre.Y(), qre.Z()]
     >>> select_op = qre.Select(ops=ops)
     >>> print(qre.estimate(select_op))
@@ -1616,7 +1630,7 @@ class QROM(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> qrom = qre.QROM(
     ...     num_bitstrings=10,
     ...     size_bitstring=4,
@@ -2041,7 +2055,7 @@ class SelectPauliRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> mltplxr = qre.SelectPauliRot(
     ...     rot_axis = "Y",
     ...     num_ctrl_wires = 4,

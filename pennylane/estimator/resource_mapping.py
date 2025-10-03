@@ -22,7 +22,9 @@ import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
+from .ops.op_math.symbolic import Prod
 from .resource_operator import ResourceOperator
 
 
@@ -45,7 +47,14 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
     if not isinstance(op, Operation):
         raise TypeError(f"Operator of type {type(op)} is not a valid operation.")
 
-    raise NotImplementedError("Operation doesn't have a resource equivalent.")
+    if op.has_decomposition:
+        decomp = op.decomposition()
+        decomp_wires = Wires.all_wires([d_op.wires for d_op in decomp])
+        return Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=decomp_wires)
+
+    raise NotImplementedError(
+        "Operation doesn't have a resource equivalent and doesn't define a decomposition."
+    )
 
 
 @_map_to_resource_op.register

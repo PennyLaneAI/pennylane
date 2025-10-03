@@ -54,7 +54,7 @@ class TrotterProduct(ResourceOperator):
     exponential of a Hamiltonian operator.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -113,7 +113,7 @@ class TrotterProduct(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (1, 2)
     >>> first_order_expansion = [qre.RX(), qre.RY()] # H = X + Y
     >>> gate_set = {"RX", "RY"}
@@ -270,7 +270,7 @@ class TrotterCDF(ResourceOperator):
     exponential of a compressed double-factorized (CDF) Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -331,7 +331,7 @@ class TrotterCDF(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (1, 2)
     >>> cdf_ham = qre.CDFHamiltonian(num_orbitals = 4, num_fragments = 4)
     >>> res = qre.estimate(qre.TrotterCDF(cdf_ham, num_steps, order))
@@ -650,7 +650,7 @@ class TrotterTHC(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (1, 2)
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=4, tensor_rank=4)
     >>> res = qre.estimate(qre.TrotterTHC(thc_ham, num_steps, order))
@@ -911,7 +911,7 @@ class TrotterVibrational(ResourceOperator):
     exponential of a vibrational Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -974,7 +974,7 @@ class TrotterVibrational(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (10, 2)
     >>> vibration_ham = qre.VibrationalHamiltonian(num_modes=2, grid_size=4, taylor_degree=2)
     >>> res = qre.estimate(qre.TrotterVibrational(vibration_ham, num_steps, order))
@@ -1306,7 +1306,7 @@ class TrotterVibronic(ResourceOperator):
     exponential of a real-space vibronic Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -1363,13 +1363,13 @@ class TrotterVibronic(ResourceOperator):
     .. seealso::
         :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian`
 
-    .. seealso:: :class:`~.TrotterProduct`        
+    .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
 
     The resources for this operation are computed using:
 
-    >>> import pennylane.estimator as qre
+    >>> from pennylane import estimator as qre
     >>> num_steps, order = (10, 2)
     >>> vibronic_ham = qre.VibronicHamiltonian(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> res = qre.estimate(qre.TrotterVibronic(vibronic_ham, num_steps, order))

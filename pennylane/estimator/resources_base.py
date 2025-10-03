@@ -66,7 +66,8 @@ class Resources:
       'X': 7,
       'Hadamard': 10
 
-    A more detailed breakdown of resources can be generated using the ``gate_breakdown`` method:
+    A more detailed breakdown of resources can be generated using the
+    :meth:`~.estimator.resources_base.Resources.gate_breakdown` method:
 
     >>> print(res.gate_breakdown())
     RX total: 4
@@ -366,7 +367,7 @@ class Resources:
 
         **Example**
 
-        >>> import pennylane.estimator as qre
+        >>> from pennylane import estimator as qre
         >>> def circ():
         ...     qre.SemiAdder(10)
         ...     qre.Toffoli()

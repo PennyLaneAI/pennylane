@@ -25,7 +25,7 @@ import pennylane.templates as qtemps
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.operation import Operation
 
-# pylint: disable= no-self-use
+# pylint: disable= no-self-use,too-few-public-methods
 
 
 class TestMapToResourceOp:
@@ -195,3 +195,25 @@ class TestMapToResourceOp:
     def test_map_to_resource_op_templates(self, operator, expected_res_op):
         """Test that _map_to_resource_op maps templates to the appropriate resource operator"""
         assert _map_to_resource_op(operator) == expected_res_op
+
+    def test_map_from_decomposition(self):
+        """Test that the decomposition is used when a resource equivalent is not defined"""
+
+        class DummyOp(Operation):
+            num_wires = 2
+
+            def __init__(self, theta, wires=None, id=None):
+                super().__init__(theta, wires=wires, id=id)
+
+            @staticmethod
+            def compute_decomposition(theta, wires):
+                return [qml.RX(theta, wires[0]), qml.CNOT(wires)]
+
+        def actual_circ():
+            DummyOp(theta=1.23, wires=[0, 1])
+
+        def expected_circ():
+            re_ops.RX(wires=0)
+            re_ops.CNOT(wires=[0, 1])
+
+        assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
