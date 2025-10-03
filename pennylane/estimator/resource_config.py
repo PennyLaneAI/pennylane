@@ -242,6 +242,9 @@ class ResourceConfig:
         if precision < 0:
             raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
 
+        for op in [RX, RY, RZ, CRX, CRY, CRZ]:
+            self.resource_op_precisions[op]["precision"] = precision
+
     def set_decomp(
         self,
         op_type: type[ResourceOperator],

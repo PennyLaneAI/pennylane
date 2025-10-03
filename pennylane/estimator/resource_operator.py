@@ -74,7 +74,7 @@ class CompressedResourceOp:
         self.num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
-        self._name = name or op_type.make_tracking_name(**self.params)
+        self._name = name or op_type.tracking_name(**self.params)
 
     def __hash__(self) -> int:
         return hash((self.op_type, self.num_wires, self._hashable_params))
@@ -372,15 +372,10 @@ class ResourceOperator(ABC):
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
-    # pylint: disable=unused-argument
     @classmethod
-    def make_tracking_name(cls, *args, **kwargs) -> str:
+    def tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
-        return cls.__name__.replace("Resource", "")
-
-    def tracking_name(self) -> str:
-        r"""Returns the tracking name built with the operator's parameters."""
-        return self.make_tracking_name(**self.resource_params)
+        return cls.__name__
 
 
 def _dequeue(
@@ -415,7 +410,7 @@ class GateCount:
     >>> qft = qre.resource_rep(qre.QFT, {"num_wires": 3})
     >>> counts = qre.GateCount(qft, 5)
     >>> counts
-    (5 x QFT(3))
+    (5 x QFT)
 
     """
 
@@ -451,7 +446,7 @@ def resource_rep(
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
 
-    Note, the :code:`resource_params` dictionary should specify the required resource
+    Note that the :code:`resource_params` dictionary should specify the required resource
     parameters of the operator. The required resource parameters are listed in the
     :code:`resource_keys` class property of every :class:`~.pennylane.estimator.ResourceOperator`.
 
@@ -460,14 +455,15 @@ def resource_rep(
         resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
 
     Returns:
-        :class:`~.pennylane.estimator.CompressedResourceOp`: A compressed representation of a resource operator
+        :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of a resource operator
 
     **Example**
 
-    In this example we obtain the compressed resource representation for :code:`QFT`.
-    We begin by checking what parameters are required for resource estimation, and then providing
-    them accordingly:
+    This example shows how to obtain the compressed resource representation for the quantum Fourier
+    transform (:code:`QFT`) operation. We begin by checking what parameters are required for
+    resource estimation and then provide them accordingly:
 
+    >>> import pennylane.estimator as qre
     >>> qre.QFT.resource_keys
     {'num_wires'}
     >>> cmpr_qft = qre.resource_rep(
@@ -475,7 +471,7 @@ def resource_rep(
     ...     {"num_wires": 3},
     ... )
     >>> cmpr_qft
-    QFT(3)
+    CompressedResourceOp(QFT, num_wires=3, params={'num_wires':3})
 
     """
 
