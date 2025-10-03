@@ -21,7 +21,6 @@ import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
