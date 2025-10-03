@@ -31,6 +31,7 @@ try:
 except ImportError:
     torch = None
 
+
 namespace = {
     "qml": qml,
     "np": base_numpy,
