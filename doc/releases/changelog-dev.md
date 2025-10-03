@@ -1443,6 +1443,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Return `dtype` of `qml.samples` when using `mcm_method="tree-traversal"` is now `int` - consistent with other MCMs.
+  [(#8274)](https://github.com/PennyLaneAI/pennylane/pull/8274)
+
 * `default.qubit` now properly validates the `mcm_method`.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
