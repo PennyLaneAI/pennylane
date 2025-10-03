@@ -72,11 +72,9 @@ def estimate(
         def my_circuit():
             for w in range(2):
                 qre.Hadamard(wires=w)
-
             qre.CNOT(wires=[0,1])
             qre.RX(wires=0)
             qre.RY(wires=1)
-
             qre.QFT(num_wires=3, wires=[0, 1, 2])
             return
 
@@ -95,6 +93,44 @@ def estimate(
       'T': 484,
       'CNOT': 10,
       'Hadamard': 5
+
+    .. details::
+        :title: Usage Details
+
+        :func:`~.estimator.estimate.estimate` also offers mapping functionality, allowing resource estimation for
+        programs written with standard PennyLane operators (:class:`~.Operation`).
+
+        .. code-block:: python
+            import pennylane as qml
+            from pennylane import estimator as qre
+
+            dev = qml.device("null.qubit")
+
+            @qml.qnode(dev)
+            def circ():
+                for w in range(2):
+                    qml.Hadamard(wires=w)
+                qml.CNOT(wires=[0,1])
+                qml.RX(1.23*np.pi, wires=0)
+                qml.RY(1.23*np.pi, wires=1)
+                qml.QFT(wires=[0, 1, 2])
+                return
+
+        .. code-block:: pycon
+
+            >>> res = qre.estimate(circ)()
+            >>> print(res)
+            --- Resources: ---
+             Total wires: 3
+                algorithmic wires: 3
+                allocated wires: 0
+                 zero state: 0
+                 any state: 0
+             Total gates : 499
+              'T': 484,
+              'CNOT': 10,
+              'Hadamard': 5
+
     """
     return _estimate_resources_dispatch(workflow, gate_set, zeroed, any_state, tight_budget, config)
 
