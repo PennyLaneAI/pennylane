@@ -65,7 +65,6 @@ jobs:
           --ignore=pennylane/compiler
           --ignore=pennylane/measurements
           --ignore=pennylane/ops
-          --ignore=pennylane/tape
           --ignore=pennylane/transforms
           --ignore=pennylane/capture
           --ignore=pennylane/decomposition
