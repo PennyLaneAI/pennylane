@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
+
 import logging
 
 # pylint: disable=protected-access
@@ -21,7 +22,7 @@ from functools import partial, singledispatch
 import numpy as np
 from numpy.random import default_rng
 
-import pennylane as qml
+from pennylane import math, ops
 from pennylane.logging import debug_logger
 from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
@@ -30,9 +31,16 @@ from pennylane.measurements import (
     MidMeasureMP,
     ProbabilityMP,
     SampleMP,
+    ShotCopies,
+    Shots,
     VarianceMP,
     find_post_processed_mcms,
+    probs,
+    sample,
 )
+from pennylane.operation import StatePrepBase
+from pennylane.tape import QuantumScript
+from pennylane.transforms.core import transform
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
 
@@ -79,14 +87,14 @@ class TreeTraversalStack:
         self.states[depth] = None
 
 
-class _FlexShots(qml.measurements.Shots):
+class _FlexShots(Shots):
     """Shots class that allows zero shots."""
 
     # pylint: disable=super-init-not-called
     def __init__(self, shots=None):
         if isinstance(shots, int):
             self.total_shots = shots
-            self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
+            self.shot_vector = (ShotCopies(shots, 1),)
         elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
         else:
@@ -113,9 +121,9 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     # equal to zero so that the state can become invalid. This way, execution can continue, and
     # bad postselection gives results that are invalid rather than results that look valid but
     # are incorrect.
-    norm = qml.math.norm(state)
+    norm = math.norm(state)
 
-    if not qml.math.is_abstract(state) and qml.math.allclose(norm, 0.0):
+    if not math.is_abstract(state) and math.allclose(norm, 0.0):
         norm = 0.0
 
     if shots:
@@ -131,7 +139,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
         postselected_shots = (
             shots
-            if postselect_mode == "fill-shots" or qml.math.is_abstract(norm)
+            if postselect_mode == "fill-shots" or math.is_abstract(norm)
             else [int(binomial_fn(s, float(norm**2))) for s in shots]
         )
 
@@ -173,7 +181,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     interface = execution_kwargs.get("interface", None)
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+    if len(circuit) > 0 and isinstance(circuit[0], StatePrepBase):
         prep = circuit[0]
 
     state = create_initial_state(
@@ -197,7 +205,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             **execution_kwargs,
         )
         # Handle postselection on mid-circuit measurements
-        if isinstance(op, qml.Projector):
+        if isinstance(op, ops.Projector):
             prng_key, key = jax_random_split(prng_key)
             state, new_shots = _postselection_postprocess(
                 state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
@@ -210,7 +218,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     for _ in range(circuit.num_wires - len(circuit.op_wires)):
         # if any measured wires are not operated on, we pad the state with zeros.
         # We know they belong at the end because the circuit is in standard wire-order
-        state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
+        state = math.stack([state, math.zeros_like(state)], axis=-1)
 
     return state, is_state_batched
 
@@ -279,7 +287,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 
 @debug_logger
 def simulate(
-    circuit: qml.tape.QuantumScript,
+    circuit: QuantumScript,
     debugger=None,
     state_cache: dict | None = None,
     **execution_kwargs,
@@ -335,7 +343,7 @@ def simulate(
         results = []
         aux_circ = circuit.copy(shots=[1])
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
-        if qml.math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
+        if math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
             import jax
 
@@ -368,7 +376,7 @@ def simulate(
 
 # pylint: disable=too-many-branches,too-many-statements
 def simulate_tree_mcm(
-    circuit: qml.tape.QuantumScript,
+    circuit: QuantumScript,
     debugger=None,
     **execution_kwargs,
 ) -> Result:
@@ -435,7 +443,7 @@ def simulate_tree_mcm(
     # `mcm_samples` is a register of MCMs. It is necessary to correctly keep track of
     # correlated MCM values which may be requested by terminal measurements.
     mcm_samples = {
-        k + 1: qml.math.empty((circuit.shots.total_shots,), dtype=bool) if finite_shots else None
+        k + 1: math.empty((circuit.shots.total_shots,), dtype=bool) if finite_shots else None
         for k in measured_mcms_indices
     }
 
@@ -448,7 +456,7 @@ def simulate_tree_mcm(
     # For example, if `d = 2` and `mcm_current = [0, 1, 1, 0]` we are on the 11-branch,
     # i.e. the first two MCMs had outcome 1. The last entry isn't meaningful until we are
     # at depth `d=3`.
-    mcm_current = qml.math.zeros(n_mcms + 1, dtype=int)
+    mcm_current = math.zeros(n_mcms + 1, dtype=int)
     # `mid_measurements` maps the elements of `mcm_current` to their respective MCMs
     # This is used by `get_final_state::apply_operation` for `Conditional` operations
     mid_measurements = dict(zip(mcms[1:], mcm_current[1:].tolist()))
@@ -465,7 +473,6 @@ def simulate_tree_mcm(
     depth = 0
 
     while stack.any_is_empty(1):
-
         ###########################################
         # Combine measurements & step up the tree #
         ###########################################
@@ -539,7 +546,7 @@ def simulate_tree_mcm(
                 initial_state = stack.states[0]
             else:
                 initial_state = branch_state(stack.states[depth], mcm_current[depth], mcms[depth])
-            circtmp = circuits[depth].copy(shots=qml.measurements.shots.Shots(shots))
+            circtmp = circuits[depth].copy(shots=Shots(shots))
 
             circtmp = prepend_state_prep(circtmp, initial_state, interface, sorted(circuit.wires))
             state, is_state_batched = get_final_state(
@@ -564,9 +571,9 @@ def simulate_tree_mcm(
                     and mcms[depth].postselect is not None
                     and postselect_mode == "fill-shots"
                 ):
-                    samples = mcms[depth].postselect * qml.math.ones_like(measurements)
+                    samples = mcms[depth].postselect * math.ones_like(measurements)
                 else:
-                    samples = qml.math.atleast_1d(measurements)
+                    samples = math.atleast_1d(measurements)
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:
@@ -634,9 +641,7 @@ def split_circuit_at_mcms(circuit):
     first = 0
     for last, op in mcm_gen:
         new_operations = circuit.operations[first:last]
-        new_measurements = (
-            [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
-        )
+        new_measurements = [sample(wires=op.wires)] if circuit.shots else [probs(wires=op.wires)]
         circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
 
@@ -648,9 +653,7 @@ def split_circuit_at_mcms(circuit):
             last_circuit_measurements.append(m)
 
     circuits.append(
-        qml.tape.QuantumScript(
-            last_circuit_operations, last_circuit_measurements, shots=circuit.shots
-        )
+        QuantumScript(last_circuit_operations, last_circuit_measurements, shots=circuit.shots)
     )
     return circuits
 
@@ -662,13 +665,13 @@ def prepend_state_prep(circuit, state, interface, wires):
     or measurements. This function makes sure that an initial state with the correct size is created
     on the first invocation of ``simulate_tree_mcm``. ``wires`` should be the wires attribute
     of the original circuit (which included all wires)."""
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+    if len(circuit) > 0 and isinstance(circuit[0], StatePrepBase):
         return circuit
 
     interface = Interface(interface)
     state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
     new_ops = [
-        qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)
+        ops.StatePrep(math.ravel(state), wires=wires, validate_norm=False)
     ] + circuit.operations
     return circuit.copy(operations=new_ops)
 
@@ -679,12 +682,12 @@ def insert_mcms(circuit, results, mid_measurements):
         return results
     results = list(results)
     new_results = []
-    mid_measurements = {k: qml.math.array([[v]]) for k, v in mid_measurements.items()}
+    mid_measurements = {k: math.array([[v]]) for k, v in mid_measurements.items()}
     for m in circuit.measurements:
         if m.mv is None:
             new_results.append(results.pop(0))
         else:
-            new_results.append(gather_mcm(m, mid_measurements, qml.math.array([[True]])))
+            new_results.append(gather_mcm(m, mid_measurements, math.array([[True]])))
 
     return new_results
 
@@ -695,12 +698,16 @@ def get_measurement_dicts(measurements, stack, depth):
     # We use `circuits[-1].measurements` since it contains the
     # target measurements (this is the only tape segment with
     # unmodified measurements)
-    probs, results_0, results_1 = stack.probs[depth], stack.results_0[depth], stack.results_1[depth]
+    _probs, results_0, results_1 = (
+        stack.probs[depth],
+        stack.results_0[depth],
+        stack.results_1[depth],
+    )
     measurement_dicts = [{} for _ in measurements]
     # Special treatment for single measurements
     single_measurement = len(measurements) == 1
     # Store each measurement in a dictionary `{branch: (prob, measure)}`
-    for branch, prob in probs.items():
+    for branch, prob in _probs.items():
         meas = results_0 if branch == 0 else results_1
         if single_measurement:
             meas = [meas]
@@ -723,18 +730,18 @@ def branch_state(state, branch, mcm):
     if isinstance(state, np.ndarray):
         # FASTER
         state = state.copy()
-        slices = [slice(None)] * qml.math.ndim(state)
+        slices = [slice(None)] * math.ndim(state)
         axis = mcm.wires.toarray()[0]
         slices[axis] = int(not branch)
         state[tuple(slices)] = 0.0
-        state /= qml.math.norm(state)
+        state /= math.norm(state)
     else:
         # SLOWER
-        state = apply_operation(qml.Projector([branch], mcm.wires), state)
-        state = state / qml.math.norm(state)
+        state = apply_operation(ops.Projector([branch], mcm.wires), state)
+        state = state / math.norm(state)
 
     if mcm.reset and branch == 1:
-        state = apply_operation(qml.PauliX(mcm.wires), state)
+        state = apply_operation(ops.PauliX(mcm.wires), state)
     return state
 
 
@@ -743,15 +750,15 @@ def samples_to_counts(samples):
 
     This function forces integer keys and values which are required by ``simulate_tree_mcm``.
     """
-    counts_1 = int(qml.math.count_nonzero(samples))
+    counts_1 = int(math.count_nonzero(samples))
     return {0: samples.size - counts_1, 1: counts_1}
 
 
 def counts_to_probs(counts):
     """Converts counts to probs."""
-    probs = qml.math.array(list(counts.values()))
-    probs = probs / qml.math.sum(probs)
-    return dict(zip(counts.keys(), probs))
+    _probs = math.array(list(counts.values()))
+    _probs = _probs / math.sum(_probs)
+    return dict(zip(counts.keys(), _probs))
 
 
 def prune_mcm_samples(mcm_samples):
@@ -764,11 +771,11 @@ def prune_mcm_samples(mcm_samples):
     """
     if not mcm_samples or all(v is None for v in mcm_samples.values()):
         return mcm_samples
-    mask = qml.math.ones(list(mcm_samples.values())[0].shape, dtype=bool)
+    mask = math.ones(list(mcm_samples.values())[0].shape, dtype=bool)
     for mcm, s in mcm_samples.items():
         if mcm.postselect is None:
             continue
-        mask = qml.math.logical_and(mask, s == mcm.postselect)
+        mask = math.logical_and(mask, s == mcm.postselect)
     return {k: v[mask] for k, v in mcm_samples.items()}
 
 
@@ -786,7 +793,7 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     """
     if depth not in mcm_samples or mcm_samples[depth] is None:
         return mcm_samples, cumcounts
-    count1 = qml.math.sum(samples)
+    count1 = math.sum(samples)
     count0 = samples.size - count1
     mcm_samples[depth][cumcounts[depth] : cumcounts[depth] + count0] = 0
     cumcounts[depth] += count0
@@ -795,7 +802,7 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     return mcm_samples, cumcounts
 
 
-@qml.transform
+@transform
 def variance_transform(circuit):
     """Replace variance measurements by expectation value measurements of both the observable and the observable square.
 
@@ -827,7 +834,7 @@ def variance_transform(circuit):
     new_measurements.extend(extra_measurements)
     return (
         (
-            qml.tape.QuantumScript(
+            QuantumScript(
                 circuit.operations,
                 new_measurements,
                 shots=circuit.shots,
@@ -840,7 +847,7 @@ def variance_transform(circuit):
 def measurement_with_no_shots(measurement):
     """Returns a NaN scalar or array of the correct size when executing an all-invalid-shot circuit."""
     if isinstance(measurement, ProbabilityMP):
-        return np.nan * qml.math.ones(2 ** len(measurement.wires))
+        return np.nan * math.ones(2 ** len(measurement.wires))
     return np.nan
 
 
@@ -861,7 +868,7 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
             comb_meas = measurement_with_no_shots(circ_meas)
         elif need_mcm_samples and circ_meas.mv is not None:
             mcm_samples = {k: v.reshape((-1, 1)) for k, v in mcm_samples.items()}
-            is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
+            is_valid = math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = gather_mcm(circ_meas, mcm_samples, is_valid)
         elif not results or not results[0]:
             if len(results) > 0:
@@ -901,7 +908,7 @@ def _(original_measurement: ExpectationMP, measures):
     for v in measures.values():
         if not v[0] or v[1] is tuple():
             continue
-        cum_value += qml.math.multiply(v[0], v[1])
+        cum_value += math.multiply(v[0], v[1])
         total_counts += v[0]
     return cum_value / total_counts
 
@@ -914,7 +921,7 @@ def _(original_measurement: ProbabilityMP, measures):
     for v in measures.values():
         if not v[0] or v[1] is tuple():
             continue
-        cum_value += qml.math.multiply(v[0], v[1])
+        cum_value += math.multiply(v[0], v[1])
         total_counts += v[0]
     return cum_value / total_counts
 
@@ -923,14 +930,14 @@ def _(original_measurement: ProbabilityMP, measures):
 def _(original_measurement: SampleMP, measures):
     """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
-        qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
+        math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
     )
-    return qml.math.concatenate(new_sample)
+    return math.concatenate(new_sample)
 
 
 @debug_logger
 def simulate_one_shot_native_mcm(
-    circuit: qml.tape.QuantumScript, debugger=None, **execution_kwargs
+    circuit: QuantumScript, debugger=None, **execution_kwargs
 ) -> Result:
     """Simulate a single shot of a single quantum script with native mid-circuit measurements.
 
