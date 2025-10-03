@@ -55,6 +55,8 @@
     ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
     ``RegisterComparator`` were added to `qml.estimator.templates`.
     [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
+  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
+    [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
 
 <h4>Dynamic wire allocation 🎁</h4>
 
