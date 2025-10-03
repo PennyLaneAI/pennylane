@@ -106,7 +106,7 @@ class DiagonalizeFinalMeasurementsPattern(
             # input to the first diagonalizing gate. Its not enough to only change the NamedObsOp,
             # because the qubit might be inserted/deallocated later
             uses_to_change = [
-                use for use in observable.qubit.uses if not isinstance(use.operation, CustomOp)
+                use for use in observable.qubit.uses if not isinstance(use.operation, (CustomOp, GlobalPhaseOp, MultiRZOp, QubitUnitaryOp))
             ]
             observable.qubit.replace_by_if(qubit, lambda use: use in uses_to_change)
             for use in uses_to_change:
