@@ -87,7 +87,6 @@ jobs:
           --ignore=pennylane/fourier
           --ignore=pennylane/debugging
           --ignore=pennylane/qcut
-          --ignore=pennylane/estimator
           --ignore=pennylane/qchem
           "
 
