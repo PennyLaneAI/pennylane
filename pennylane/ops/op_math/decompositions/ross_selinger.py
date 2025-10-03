@@ -221,10 +221,7 @@ def rs_decomposition(
 
     Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
 
-    .. code-block:: python3
-
-        import numpy as np
-        import pennylane as qml
+    .. code-block:: python
 
         op  = qml.RZ(np.pi/3, wires=0)
         ops = qml.ops.rs_decomposition(op, epsilon=1e-3)

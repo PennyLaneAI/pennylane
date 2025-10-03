@@ -119,8 +119,10 @@ def exp(op, coeff=1, num_steps=None, id=None):
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
-        AttributeError: 'list' object has no attribute 'batch_size'
+        >>> qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
+        Traceback (most recent call last):
+            ...
+        TypeError: base is expected to be of type Operator, but received <class 'list'>
 
     **Example**
 
@@ -147,7 +149,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
     ...     qml.exp(qml.X(0), -0.5j * x)
     ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
-    0: ──Exp─┤  <Z>
+    0: ──Exp(0.00-0.61j X)─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
@@ -156,8 +158,9 @@ def exp(op, coeff=1, num_steps=None, id=None):
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
-    >>> circuit()
-    tensor(20.08553692, requires_grad=True)
+    >>> print(circuit())
+    20.085...
+
 
     """
     return Exp(op, coeff, num_steps=num_steps, id=id)
@@ -205,7 +208,7 @@ class Exp(ScalarSymbolicOp, Operation):
     ...     Exp(qml.X(0), -0.5j * x)
     ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
-    0: ──Exp─┤  <Z>
+    0: ──Exp(0.00-0.61j X)─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
@@ -214,8 +217,8 @@ class Exp(ScalarSymbolicOp, Operation):
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
-    >>> circuit()
-    tensor(20.08553692, requires_grad=True)
+    >>> print(circuit())
+    20.085...
 
     """
 
@@ -494,9 +497,9 @@ class Exp(ScalarSymbolicOp, Operation):
 
         >>> obs = Exp(qml.X(0), 3)
         >>> qml.eigvals(obs)
-        array([20.08553692,  0.04978707])
+        array([20.08...,  0.049...])
         >>> np.exp(3 * qml.eigvals(qml.X(0)))
-        tensor([20.08553692,  0.04978707], requires_grad=True)
+        array([20.08...,  0.049...])
 
         """
         base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
@@ -539,8 +542,11 @@ class Exp(ScalarSymbolicOp, Operation):
 
         we get the generator
 
+        >>> U = qml.ops.op_math.Evolution(0.5 * qml.Y(0) + qml.Z(0) @ qml.X(1), 1)
+        >>> print(U)
+        Evolution(-1j 0.5 * Y(0) + Z(0) @ X(1))
         >>> U.generator()
-          0.5 * Y(0) + Z(0) @ X(1)
+        -1 * (0.5 * Y(0) + Z(0) @ X(1))
 
         """
         if self.has_generator:

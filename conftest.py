@@ -19,6 +19,7 @@ from sybil import Sybil
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
 
 import numpy as base_numpy
+import scipy as base_scipy
 import pennylane as qml
 
 try:
@@ -35,6 +36,7 @@ except ImportError:
 namespace = {
     "qml": qml,
     "np": base_numpy,
+    "sp": base_scipy,
     "pnp": qml.numpy,
     "jax": jax,
     "torch": torch,
@@ -50,6 +52,8 @@ def reset_pennylane_state(namespace):
     """
     qml.capture.disable()
     qml.decomposition.disable_graph()
+    jax.config.update("jax_dynamic_shapes", False)
+    # jax.config.update("jax_enable_x64", False)
 
 
 pytest_collect_file = Sybil(

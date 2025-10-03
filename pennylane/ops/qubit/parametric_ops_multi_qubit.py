@@ -108,7 +108,8 @@ class MultiRZ(Operation):
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
-                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
+               dtype=torch.complex128)
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
@@ -154,7 +155,8 @@ class MultiRZ(Operation):
 
         >>> qml.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
-                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
+                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
+               dtype=torch.complex128)
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
@@ -367,7 +369,7 @@ class PauliRot(Operation):
         >>> op.label(decimals=2)
         'RXYY\n(0.10)'
         >>> op.label(base_label="PauliRot")
-        'PauliRot\n(0.10)'
+        'PauliRot'
 
         """
         pauli_word = self.hyperparameters["pauli_word"]
@@ -416,8 +418,8 @@ class PauliRot(Operation):
         **Example**
 
         >>> qml.PauliRot.compute_matrix(0.5, 'X')
-        [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
-         [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
+        array([[0.96891242+0.j        , 0.        -0.24740396j],
+               [0.        -0.24740396j, 0.96891242+0.j        ]])
         """
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
@@ -495,7 +497,7 @@ class PauliRot(Operation):
         **Example**
 
         >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
-        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
         if (
             math.get_interface(theta) == "tensorflow"
@@ -529,12 +531,8 @@ class PauliRot(Operation):
 
         **Example:**
 
-        >>> qml.PauliRot.compute_decomposition(1.2, "XY", wires=(0,1))
-        [H(0),
-        RX(1.5707963267948966, wires=[1]),
-        MultiRZ(1.2, wires=[0, 1]),
-        H(0),
-        RX(-1.5707963267948966, wires=[1])]
+        >>> qml.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
+        [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
 
         """
         if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
@@ -667,21 +665,21 @@ class PCPhase(Operation):
 
     >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
     >>> print(qml.draw(op_13.decomposition)())
-    1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
-    2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
-    3: ──GlobalPhase(-1.23)────────────├○───────────┤
-    4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+    1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
+    2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
+    3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+    4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
     If ``dim`` is a power of two, a single (multi-controlled) ``PhaseShift`` gate is sufficient:
 
     >>> op_16 = qml.PCPhase(1.23, dim=16, wires=range(6))
     >>> print(qml.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
-    0: ──GlobalPhase(1.23)────╭○───────────┤
-    1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─┤
-    2: ──GlobalPhase(1.23)─────────────────┤
-    3: ──GlobalPhase(1.23)─────────────────┤
-    4: ──GlobalPhase(1.23)─────────────────┤
-    5: ──GlobalPhase(1.23)─────────────────┤
+    0: ────╭○───────────╭GlobalPhase(1.23)─┤  
+    1: ──X─╰Rϕ(2.46)──X─├GlobalPhase(1.23)─┤  
+    2: ─────────────────├GlobalPhase(1.23)─┤  
+    3: ─────────────────├GlobalPhase(1.23)─┤  
+    4: ─────────────────├GlobalPhase(1.23)─┤  
+    5: ─────────────────╰GlobalPhase(1.23)─┤
 
     """
 
@@ -814,10 +812,10 @@ class PCPhase(Operation):
 
         >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
         >>> print(qml.draw(op_13.decomposition)())
-        1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
-        2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
-        3: ──GlobalPhase(-1.23)────────────├○───────────┤
-        4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+        1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
+        2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
+        3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+        4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
         In the following we provide a detailed example for illustration purposes.
 
@@ -883,10 +881,10 @@ class PCPhase(Operation):
         which concludes the decomposition, now reading:
 
         >>> print(qml.draw(op_3.decomposition)())
-        0: ──GlobalPhase(1.23)────╭○───────────╭○─────────┤
-        1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─├○─────────┤
-        2: ──GlobalPhase(1.23)─────────────────├●─────────┤
-        3: ──GlobalPhase(1.23)─────────────────╰Rϕ(-2.46)─┤
+        0: ────╭○───────────╭○─────────╭GlobalPhase(1.23)─┤  
+        1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤  
+        2: ─────────────────├●─────────├GlobalPhase(1.23)─┤  
+        3: ─────────────────╰Rϕ(-2.46)─╰GlobalPhase(1.23)─┤
 
         """
         with queuing.AnnotatedQueue() as q:
@@ -1229,7 +1227,7 @@ class IsingXX(Operation):
         **Example:**
 
         >>> qml.IsingXX.compute_decomposition(1.23, wires=(0,1))
-        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]]
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
         decomp_ops = [
@@ -1376,7 +1374,8 @@ class IsingYY(Operation):
         tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.2474j],
                 [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
-                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]])
+                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]],
+               dtype=torch.complex128)
         """
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
@@ -1958,10 +1957,14 @@ class PSWAP(Operation):
         **Example**
 
         >>> qml.PSWAP.compute_matrix(0.5)
-        array([[1.        +0.j, 0.        +0.j        , 0.        +0.j        , 0.        +0.j],
-              [0.        +0.j, 0.        +0.j        , 0.87758256+0.47942554j, 0.        +0.j],
-              [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
-              [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
+        array([[1.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                0.87758256+0.47942554j, 0.        +0.j        ],
+               [0.        +0.j        , 0.87758256+0.47942554j,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 1.        +0.j        ]])
         """
         if (
             math.get_interface(phi) == "tensorflow"
@@ -2007,7 +2010,8 @@ class PSWAP(Operation):
         **Example**
 
         >>> qml.PSWAP.compute_eigvals(0.5)
-        array([ 1.        +0.j        ,  1.        +0.j,       -0.87758256-0.47942554j,  0.87758256+0.47942554j])
+        array([ 1.        +0.j        ,  1.        +0.j        ,
+               -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
         if (
             math.get_interface(phi) == "tensorflow"
@@ -2127,10 +2131,10 @@ class CPhaseShift00(Operation):
         **Example**
 
         >>> qml.CPhaseShift00.compute_matrix(torch.tensor(0.5))
-            tensor([[0.8776+0.4794j, 0.0+0.0j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j, 1.0+0.0j]])
+        tensor([[0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
         if (
             math.get_interface(phi) == "tensorflow"
@@ -2351,10 +2355,10 @@ class CPhaseShift01(Operation):
         **Example**
 
         >>> qml.CPhaseShift01.compute_matrix(torch.tensor(0.5))
-            tensor([[1.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
         if (
             math.get_interface(phi) == "tensorflow"
@@ -2565,10 +2569,10 @@ class CPhaseShift10(Operation):
         **Example**
 
         >>> qml.CPhaseShift10.compute_matrix(torch.tensor(0.5))
-            tensor([[1.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j],
-                    [0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
         if (
             math.get_interface(phi) == "tensorflow"

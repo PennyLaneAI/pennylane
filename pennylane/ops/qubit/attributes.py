@@ -45,8 +45,8 @@ class Attribute(set):
     transforms.
 
     >>> pauli_ops.add("PauliY")
-    >>> pauli_ops
-    ["PauliX", "PauliY", "PauliZ"]
+    >>> assert len(pauli_ops) == 3
+
     """
 
     def add(self, obj):
