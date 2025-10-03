@@ -665,6 +665,7 @@ def from_string(fermi_string):
 
     **Example**
 
+    >>> from pennylane.fermi import from_string
     >>> print(from_string('0+ 1- 0+ 1-'))
     a⁺(0) a(1) a⁺(0) a(1)
 
