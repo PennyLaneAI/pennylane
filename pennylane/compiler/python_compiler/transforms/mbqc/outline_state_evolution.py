@@ -135,15 +135,18 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     op.operands = (current_reg, op.idx, op.qubit)
                     current_reg = op.out_qreg
 
-                case _ if isinstance(
-                    op,
-                    (
-                        quantum.ComputationalBasisOp,
-                        quantum.NamedObsOp,
-                        quantum.HamiltonianOp,
-                        quantum.TensorOp,
-                    ),
-                ) and not terminal_boundary_op:
+                case _ if (
+                    isinstance(
+                        op,
+                        (
+                            quantum.ComputationalBasisOp,
+                            quantum.NamedObsOp,
+                            quantum.HamiltonianOp,
+                            quantum.TensorOp,
+                        ),
+                    )
+                    and not terminal_boundary_op
+                ):
                     insert_ops = set()
 
                     # create a register boundary before the terminal operation
