@@ -41,7 +41,7 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
 )
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import (
@@ -77,8 +77,6 @@ if TYPE_CHECKING:
     from numbers import Number
 
     from jax.extend.core import Jaxpr
-
-    from pennylane.operation import Operator
 
 
 # Base gate set for DefaultQubit
