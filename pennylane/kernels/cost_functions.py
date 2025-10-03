@@ -169,8 +169,8 @@ def target_alignment(
 
     >>> target_alignment = qml.kernels.target_alignment(X, Y, kernel)
     >>> normalized_polarity = qml.kernels.polarity(X, Y, kernel, normalize=True)
-    >>> np.isclose(target_alignment, normalized_polarity)
-    np.True_
+    >>> print(np.isclose(target_alignment, normalized_polarity))
+    True
     """
     return polarity(
         X,

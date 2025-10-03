@@ -73,7 +73,6 @@ jobs:
           --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
-          --ignore=pennylane/pauli
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize

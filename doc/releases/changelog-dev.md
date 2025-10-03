@@ -37,6 +37,7 @@
   * Added functionality to map PennyLane operations
     to their associated resource operators for resource estimation.
     [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
+
   * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
@@ -67,6 +68,10 @@
   * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
     `qml.estimator.ops`.
     [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
+  * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
+    ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
+    ``IterativeQPE`` were added to `qml.estimator.templates`.
+    [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -209,6 +214,45 @@
     (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
     [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
+  As an example, consider the following circuit:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.T(0)
+      qml.CNOT([0, 1])
+      qml.S(0)
+      qml.T(0)
+      qml.T(1)
+      qml.CNOT([0, 2])
+      qml.T(1)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──T─╭●──S──T─╭●────┤  State
+  1: ────╰X──T────│───T─┤  State
+  2: ─────────────╰X────┤  State
+  ```
+
+  We can apply the holistic :func:`~.transforms.zx.optimize_t_count` compilation pass to
+  reduce the number of ``T`` gates. In this case, all ``T`` gates can be removed!
+
+  ```pycon
+  >>> print(qml.draw(qml.transforms.zx.optimize_t_count(circuit))())
+  0: ──Z─╭●────╭●─┤  State
+  1: ────╰X──S─│──┤  State
+  2: ──────────╰X─┤  State
+  ```
+
+  The documentation was updated to include its own section on ZX calculus-based passes.
+  [(#8201)](https://github.com/PennyLaneAI/pennylane/pull/8201)
+
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
@@ -263,6 +307,13 @@
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+* New intermediate representations (IRs) :func:`~transforms.parity_matrix` and 
+  :func:`~transforms.phase_polynomial` are available in PennyLane. These IRs are 
+  used in compilation passes to optimize CNOT and phase polynomial circuits, respectively. 
+  Also added :func:`~transforms.rowcol`, which uses the parity matrix as its IR for CNOT
+  routing under constraint connectivity.
+  [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
+
 * A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
   with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
   subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
@@ -271,6 +322,13 @@
 
 
 <h3>Improvements 🛠</h3>
+
+* `qml.transforms.core.TransformContainer` now holds onto a `TransformDispatcher`, `args`, and `kwargs`, instead
+ of the transform's defining function and unpacked properties. It can still be constructed via the old signature as well.
+ [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
+
+* Templates have been made compatible with `qml.capture`.
+  [(#8211)](https://github.com/PennyLaneAI/pennylane/pull/8211)
 
 * :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
   [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
@@ -734,12 +792,13 @@
 
 * Added concurrency support for `effective_hamiltonian` in labs.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
+  [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
 
 * Fixed a queueing issue in `ResourceOperator` tests.
   [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
 
 * The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
-  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
+  submodule :mod:`.transforms.zx`. The same functions are available, but their signature
   may have changed.
   - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
   - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
@@ -808,6 +867,9 @@
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
 <h3>Breaking changes 💔</h3>
+
+* `qml.workflow.construct_batch.expand_fn_transform` is deleted as it was local and no longer getting used.
+  [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
 
 * Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
   If you would like to get the canonical interface you can simply use the `Enum` like,
@@ -1082,6 +1144,9 @@
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
   [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
 
+* The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
+  [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
+
 * `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
@@ -1329,6 +1394,9 @@
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
+
+* `default.qubit` now properly validates the `mcm_method`.
+  [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
 * :class:`~.SpecialUnitary` now correctly obeys the interfaces of input parameters when large numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)

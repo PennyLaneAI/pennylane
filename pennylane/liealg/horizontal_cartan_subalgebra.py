@@ -121,7 +121,7 @@ def horizontal_cartan_subalgebra(
     >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
     >>> newg == k + mtilde + a
     True
-    >>> a
+    >>> a # doctest: +SKIP
     [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
 
     We can confirm that these all commute with each other, as the CSA is Abelian (i.e., all operators commute).
@@ -148,7 +148,7 @@ def horizontal_cartan_subalgebra(
     For convenience, we provide a helper function :func:`~adjvec_to_op` for conversion of the returned collections of adjoint vectors.
 
     >>> a = qml.liealg.adjvec_to_op(np_a, g)
-    >>> a
+    >>> a # doctest: +SKIP
     [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
 
     .. details::

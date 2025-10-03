@@ -607,7 +607,7 @@ class BoseSentence(dict):
 
         >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> bs = qml.BoseSentence({bw: 1})
-        >>> print(bw.normal_order())
+        >>> print(bs.normal_order())
         2.0 * I
         + 4.0 * b⁺(0) b(0)
         + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
