@@ -99,32 +99,32 @@ def _check_decomposition(op, skip_wire_mapping):
         )(*op.data, wires=op.wires, **op.hyperparameters)
 
 
-def _check_decomposition_new(op, heuristic_resources=False):
+def _check_decomposition_new(op):
     """Checks involving the new system of decompositions."""
-
-    if type(op).resource_params is qml.operation.Operator.resource_params:
+    op_type = type(op)
+    if op_type.resource_params is qml.operation.Operator.resource_params:
         assert not qml.decomposition.has_decomp(
-            type(op)
+            op_type
         ), "resource_params must be defined for operators with decompositions"
         return
 
     assert set(op.resource_params.keys()) == set(
-        type(op).resource_keys
+        op_type.resource_keys
     ), "resource_params must have the same keys as specified by resource_keys"
 
-    for rule in qml.list_decomps(type(op)):
-        _test_decomposition_rule(op, rule, heuristic_resources=heuristic_resources)
+    for rule in qml.list_decomps(op_type):
+        _test_decomposition_rule(op, rule)
 
-    for rule in qml.list_decomps(f"Adjoint({type(op).__name__})"):
+    for rule in qml.list_decomps(f"Adjoint({op_type.__name__})"):
         adj_op = qml.ops.Adjoint(op)
-        _test_decomposition_rule(adj_op, rule, heuristic_resources=heuristic_resources)
+        _test_decomposition_rule(adj_op, rule)
 
-    for rule in qml.list_decomps(f"Pow({type(op).__name__})"):
+    for rule in qml.list_decomps(f"Pow({op_type.__name__})"):
         for z in [2, 3, 4, 8, 9]:
             pow_op = qml.ops.Pow(op, z)
-            _test_decomposition_rule(pow_op, rule, heuristic_resources=heuristic_resources)
+            _test_decomposition_rule(pow_op, rule)
 
-    for rule in qml.list_decomps(f"C({type(op).__name__})"):
+    for rule in qml.list_decomps(f"C({op_type.__name__})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl_op = qml.ops.Controlled(
                 op,
@@ -132,10 +132,10 @@ def _check_decomposition_new(op, heuristic_resources=False):
                 control_values=[c_value] * n_ctrl_wires,
                 work_wires=[i + len(op.wires) + n_ctrl_wires for i in range(n_workers)],
             )
-            _test_decomposition_rule(ctrl_op, rule, heuristic_resources=heuristic_resources)
+            _test_decomposition_rule(ctrl_op, rule)
 
 
-def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
+def _test_decomposition_rule(op, rule: DecompositionRule):
     """Tests that a decomposition rule is consistent with the operator."""
 
     if not rule.is_applicable(**op.resource_params):
@@ -160,15 +160,16 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
 
-    if heuristic_resources:
+    if rule.exact_resources:
+        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        assert non_zero_gate_counts == actual_gate_counts, (
+            f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
+            f"\nActual gate counts:\n{actual_gate_counts}"
+        )
+    else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
         assert all(op in gate_counts for op in actual_gate_counts)
-    else:
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        assert (
-            non_zero_gate_counts == actual_gate_counts
-        ), f"\nGate counts expected from resource function:\n{non_zero_gate_counts}\nActual gate counts:\n{actual_gate_counts}"
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix:
@@ -460,7 +461,6 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
-    heuristic_resources=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
@@ -476,8 +476,6 @@ def assert_valid(
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
-        heuristic_resources: If ``True``, the decomposition is not required to match exactly
-            with the registered resource estimate.
 
     **Examples:**
 
@@ -524,7 +522,7 @@ def assert_valid(
     _check_bind_new_parameters(op)
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
-        _check_decomposition_new(op, heuristic_resources=heuristic_resources)
+        _check_decomposition_new(op)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)

@@ -1664,3 +1664,109 @@ class TestQROMStatePrep:
             )
 
         assert actual_resources == expected_res
+
+
+class TestPrepTHC:
+    """Test the PrepTHC class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        ch = qre.THCHamiltonian(4, 10)
+        with pytest.raises(ValueError, match="Expected 8 wires, got 3"):
+            qre.PrepTHC(ch, wires=[0, 1, 2])
+
+    @pytest.mark.parametrize(
+        "thc_ham, coeff_prec, selswap_depth",
+        (
+            (qre.THCHamiltonian(58, 160), 13, 1),
+            (qre.THCHamiltonian(10, 50), None, None),
+            (qre.THCHamiltonian(4, 20), None, 2),
+        ),
+    )
+    def test_resource_params(self, thc_ham, coeff_prec, selswap_depth):
+        """Test that the resource params for PrepTHC are correct."""
+        op = qre.PrepTHC(thc_ham, coeff_prec, selswap_depth)
+        assert op.resource_params == {
+            "thc_ham": thc_ham,
+            "coeff_precision": coeff_prec,
+            "select_swap_depth": selswap_depth,
+        }
+
+    @pytest.mark.parametrize(
+        "thc_ham, coeff_prec, selswap_depth, num_wires",
+        (
+            (qre.THCHamiltonian(58, 160), 13, 1, 16),
+            (qre.THCHamiltonian(10, 50), None, None, 12),
+            (qre.THCHamiltonian(4, 20), None, 2, 10),
+        ),
+    )
+    def test_resource_rep(self, thc_ham, coeff_prec, selswap_depth, num_wires):
+        """Test that the compressed representation of PrepTHC is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.PrepTHC,
+            num_wires,
+            {
+                "thc_ham": thc_ham,
+                "coeff_precision": coeff_prec,
+                "select_swap_depth": selswap_depth,
+            },
+        )
+        assert qre.PrepTHC.resource_rep(thc_ham, coeff_prec, selswap_depth) == expected
+
+    # The Toffoli and qubit costs are compared here
+    # Expected number of Toffolis and wires were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
+    # The numbers were adjusted slightly to account for a different QROM decomposition
+    @pytest.mark.parametrize(
+        "thc_ham, coeff_prec, selswap_depth, expected_res",
+        (
+            (
+                qre.THCHamiltonian(58, 160),
+                13,
+                1,
+                {"algo_wires": 16, "auxiliary_wires": 86, "toffoli_gates": 13156},
+            ),
+            (
+                qre.THCHamiltonian(10, 50),
+                None,
+                None,
+                {"algo_wires": 12, "auxiliary_wires": 174, "toffoli_gates": 579},
+            ),
+            (
+                qre.THCHamiltonian(4, 20),
+                None,
+                2,
+                {"algo_wires": 10, "auxiliary_wires": 109, "toffoli_gates": 279},
+            ),
+        ),
+    )
+    def test_resources(self, thc_ham, coeff_prec, selswap_depth, expected_res):
+        """Test that the resources for PrepTHC are correct."""
+
+        prep_cost = qre.estimate(
+            qre.PrepTHC(thc_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth)
+        )
+        assert prep_cost.algo_wires == expected_res["algo_wires"]
+        assert prep_cost.zeroed + prep_cost.any_state == expected_res["auxiliary_wires"]
+        assert prep_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+
+    def test_incompatible_hamiltonian(self):
+        """Test that an error is raised for incompatible Hamiltonians."""
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian representation for PrepTHC."):
+            qre.PrepTHC(qre.CDFHamiltonian(58, 160))
+
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian representation for PrepTHC."):
+            qre.PrepTHC.resource_rep(qre.CDFHamiltonian(58, 160))
+
+    def test_type_error_precision(self):
+        "Test that an error is raised when wrong type is provided for precision."
+        with pytest.raises(
+            TypeError,
+            match=f"`coeff_precision` must be an integer, but type {type(2.5)} was provided.",
+        ):
+            qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=2.5)
+
+        with pytest.raises(
+            TypeError,
+            match=f"`coeff_precision` must be an integer, but type {type(2.5)} was provided.",
+        ):
+            qre.PrepTHC.resource_rep(qre.THCHamiltonian(58, 160), coeff_precision=2.5)

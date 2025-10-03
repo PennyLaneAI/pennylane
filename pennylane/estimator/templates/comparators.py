@@ -55,7 +55,7 @@ class SingleQubitComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> single_qubit_compare = qre.SingleQubitComparator()
     >>> print(qre.estimate(single_qubit_compare))
     --- Resources: ---
@@ -165,7 +165,7 @@ class TwoQubitComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> two_qubit_compare = qre.TwoQubitComparator()
     >>> print(qre.estimate(two_qubit_compare))
     --- Resources: ---
@@ -323,7 +323,7 @@ class IntegerComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> integer_compare = qre.IntegerComparator(value=4, register_size=6)
     >>> print(qre.estimate(integer_compare))
     --- Resources: ---
@@ -539,7 +539,7 @@ class RegisterComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> register_compare = qre.RegisterComparator(4, 6)
     >>> print(qre.estimate(register_compare))
     --- Resources: ---
