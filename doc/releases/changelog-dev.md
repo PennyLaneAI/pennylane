@@ -319,6 +319,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* ``Controlled(Identity)`` is now directly decomposed to a single Identity operator instead of going
+  through a numeric decomposition algorithm.
+  [(#8388)](https://github.com/PennyLaneAI/pennylane/pull/8388)
+
 <h4>Resource-efficient decompositions</h4>
 
 * Several templates now have decompositions that can be accessed within the graph-based
