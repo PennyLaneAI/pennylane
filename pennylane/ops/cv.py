@@ -1449,4 +1449,4 @@ __obs__ = {
 }
 
 
-__all__ = tuple(__ops__ | __obs__)
+__all__ = list(__ops__ | __obs__)
