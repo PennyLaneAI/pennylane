@@ -14,6 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+
 from __future__ import annotations
 
 import copy
@@ -26,12 +27,13 @@ from typing import TYPE_CHECKING, Literal, get_args
 
 from cachetools import Cache, LRUCache
 
-import pennylane as qml
+from pennylane import capture, devices
+from pennylane import logging as qlog
 from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
-from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
+from pennylane.measurements import MeasurementProcess, MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -55,6 +57,34 @@ if TYPE_CHECKING:
     SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
 
+SUPPORTED_GRADIENT_KWARGS = {
+    "approx_order",
+    "argnum",
+    "atol",
+    "aux_wire",
+    "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
+    "device_wires",
+    "diagonal_shifts",
+    "fallback_fn",
+    "f0",
+    "force_order2",
+    "gradient_recipes",
+    "h",
+    "mode",
+    "n",
+    "num_directions",
+    "num_split_times",
+    "off_diagonal_shifts",
+    "sampler",
+    "sampler_rng",
+    "sampler_seed",
+    "shifts",
+    "strategy",
+    "use_broadcasting",
+    "validate_params",
+}
+
+
 def _convert_to_interface(result: Result, interface: Interface) -> Result:
     """
     Recursively convert a result to the given interface.
@@ -75,8 +105,8 @@ def _convert_to_interface(result: Result, interface: Interface) -> Result:
 def _make_execution_config(
     circuit: QNode | None,
     diff_method: str | None = None,
-    mcm_config: qml.devices.MCMConfig | None = None,
-) -> qml.devices.ExecutionConfig:
+    mcm_config: devices.MCMConfig | None = None,
+) -> devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
@@ -86,23 +116,22 @@ def _make_execution_config(
     elif grad_on_execution == "best":
         grad_on_execution = None
 
-    return qml.devices.ExecutionConfig(
+    return devices.ExecutionConfig(
         interface=circuit_interface,
         gradient_keyword_arguments=gradient_kwargs,
         gradient_method=diff_method,
         grad_on_execution=grad_on_execution,
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
-        mcm_config=mcm_config or qml.devices.MCMConfig(),
+        mcm_config=mcm_config or devices.MCMConfig(),
     )
 
 
 def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: bool) -> Result:
-
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
     qfunc_output_leaves, qfunc_output_structure = pytrees.flatten(
-        qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, (MeasurementProcess))
     )
 
     # counts results are treated as a leaf
@@ -110,7 +139,7 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
 
     # patch for transforms that change the number of results like metric_tensor
     if len(results_leaves) != len(qfunc_output_leaves):
-        if isinstance(qfunc_output, (Sequence, qml.measurements.MeasurementProcess)):
+        if isinstance(qfunc_output, (Sequence, MeasurementProcess)):
             return results
         return type(qfunc_output)(results)
 
@@ -126,13 +155,13 @@ def _validate_mcm_config(
     postselect_mode: Literal["hw-like", "fill-shots"] | None,
     mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None,
 ) -> None:
-    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
+    devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
     measurement_processes = pytrees.flatten(
         qfunc_output,
-        is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess),
+        is_leaf=lambda obj: isinstance(obj, MeasurementProcess),
     )[0]
 
     # user provides no measurements or non-measurements
@@ -146,11 +175,11 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
             measurement_processes = [
                 m.base.item()
                 for m in measurement_processes[0]
-                if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
+                if isinstance(m.base.item(), MeasurementProcess)
             ]
 
     if not measurement_processes or not all(
-        isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
+        isinstance(m, MeasurementProcess) for m in measurement_processes
     ):
         raise QuantumFunctionError(
             "A quantum function must return either a single measurement, "
@@ -545,7 +574,7 @@ class QNode:
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 (
                     func
-                    if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
+                    if not (logger.isEnabledFor(qlog.TRACE) and inspect.isfunction(func))
                     else "\n" + inspect.getsource(func)
                 ),
                 repr(device),
@@ -558,11 +587,11 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
+        if not isinstance(device, (devices.LegacyDevice, devices.Device)):
             raise QuantumFunctionError("Invalid device. Device must be a valid PennyLane device.")
 
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
+        if not isinstance(device, devices.Device):
+            device = devices.LegacyDeviceFacade(device)
 
         gradient_kwargs = gradient_kwargs or {}
 
@@ -622,15 +651,13 @@ class QNode:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
-        copied_qnode._transform_program = qml.transforms.core.TransformProgram(
-            self.transform_program
-        )
+        copied_qnode._transform_program = TransformProgram(self.transform_program)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
     def __repr__(self) -> str:
         """String representation."""
-        if not isinstance(self.device, qml.devices.LegacyDeviceFacade):
+        if not isinstance(self.device, devices.LegacyDeviceFacade):
             return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}', shots='{self.shots}'>"
 
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}', shots='{}'>"
@@ -660,7 +687,7 @@ class QNode:
     @property
     def interface(self) -> str:
         """The interface used by the QNode"""
-        return "jax" if qml.capture.enabled() else self._interface.value
+        return "jax" if capture.enabled() else self._interface.value
 
     @interface.setter
     def interface(self, value: str):
@@ -738,7 +765,7 @@ class QNode:
         tensor(0.5403, dtype=torch.float64)
         """
         if not kwargs:
-            valid_params = set(self._init_args.copy()) | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            valid_params = set(self._init_args.copy()) | SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
@@ -771,7 +798,7 @@ class QNode:
             updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
-        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        updated_qn._transform_program = TransformProgram(self.transform_program)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
@@ -830,7 +857,7 @@ class QNode:
         return kwargs.pop("shots", self.shots)
 
     @debug_logger
-    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
+    def construct(self, args, kwargs) -> QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
         shots = self._get_shots(kwargs)
@@ -855,7 +882,6 @@ class QNode:
         return tape
 
     def _impl_call(self, *args, **kwargs) -> Result:
-
         # construct the tape
         tape = self.construct(args, kwargs)
 
@@ -885,7 +911,7 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> Result:
-        if qml.capture.enabled():
+        if capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 
             return capture_qnode(self, *args, **kwargs)

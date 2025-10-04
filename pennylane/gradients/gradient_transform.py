@@ -13,39 +13,13 @@
 # limitations under the License.
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
+
 import warnings
 
 from pennylane import math
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pytrees import flatten, unflatten
 from pennylane.tape import QuantumScript
-
-SUPPORTED_GRADIENT_KWARGS = {
-    "approx_order",
-    "argnum",
-    "atol",
-    "aux_wire",
-    "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
-    "device_wires",
-    "diagonal_shifts",
-    "fallback_fn",
-    "f0",
-    "force_order2",
-    "gradient_recipes",
-    "h",
-    "mode",
-    "n",
-    "num_directions",
-    "num_split_times",
-    "off_diagonal_shifts",
-    "sampler",
-    "sampler_rng",
-    "sampler_seed",
-    "shifts",
-    "strategy",
-    "use_broadcasting",
-    "validate_params",
-}
 
 
 def assert_no_state_returns(measurements, transform_name):
