@@ -48,7 +48,7 @@ jobs:
           pip install --upgrade setuptools
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre pennylane-catalyst
           pip install -e .
-          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch
+          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
@@ -79,16 +79,12 @@ jobs:
           --ignore=pennylane/templates
           "
           IGNORE_OPTS_TERTIARY="
-          --ignore=pennylane/resource
           --ignore=pennylane/io
           --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
           --ignore=pennylane/data
-          --ignore=pennylane/spin
-          --ignore=pennylane/drawer
           --ignore=pennylane/fourier
-          --ignore=pennylane/noise
           --ignore=pennylane/debugging
           --ignore=pennylane/qcut
           --ignore=pennylane/qchem
