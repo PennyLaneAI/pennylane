@@ -1391,6 +1391,11 @@
 * Add nightly RC builds script to `.github/workflows`.
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
+* The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
+  that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
+  [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
+
+
 <h3>Documentation 📝</h3>
 
 * The :doc:`installation page </development/guide/installation>` was updated to include currently supported Python versions and installation instructions.

@@ -36,7 +36,15 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.ops import Hadamard, PauliX, PauliY
 
-from ...dialects.quantum import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
+from ...dialects.quantum import (
+    CustomOp,
+    GlobalPhaseOp,
+    MultiRZOp,
+    NamedObservable,
+    NamedObservableAttr,
+    NamedObsOp,
+    QubitUnitaryOp,
+)
 from ...pass_api import compiler_transform
 
 
@@ -102,6 +110,31 @@ class DiagonalizeFinalMeasurementsPattern(
 
                 qubit = gate.out_qubits[0]
 
+            # we need to replace the initial qubit use everwhere EXCEPT the use that is now the
+            # input to the first diagonalizing gate. Its not enough to only change the NamedObsOp,
+            # because the qubit might be inserted/deallocated later
+            uses_to_change = [
+                use
+                for use in observable.qubit.uses
+                if not isinstance(
+                    use.operation, (CustomOp, GlobalPhaseOp, MultiRZOp, QubitUnitaryOp)
+                )
+            ]
+            num_observables = len(
+                [use for use in uses_to_change if isinstance(use.operation, NamedObsOp)]
+            )
+
+            if num_observables > 1:
+                raise RuntimeError(
+                    "Each wire can only have one set of diagonalizing gates applied, but the circuit contains multiple observables with the same wire."
+                )
+
+            observable.qubit.replace_by_if(qubit, lambda use: use in uses_to_change)
+            for use in uses_to_change:
+                rewriter.notify_op_modified(use.operation)
+
+            # then we also update the observable to be in the Z basis. Since this is done with the
+            # rewriter, we don't need to call `rewriter.notify_modified(observable)` regarding this
             diag_obs = NamedObsOp(
                 qubit=qubit, obs_type=NamedObservableAttr(NamedObservable("PauliZ"))
             )
@@ -117,9 +150,9 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
     # pylint: disable= no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
-        pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([DiagonalizeFinalMeasurementsPattern()])
-        ).rewrite_module(module)
+        pattern_rewriter.PatternRewriteWalker(DiagonalizeFinalMeasurementsPattern()).rewrite_module(
+            module
+        )
 
 
 diagonalize_final_measurements_pass = compiler_transform(DiagonalizeFinalMeasurementsPass)
