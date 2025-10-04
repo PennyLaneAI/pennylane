@@ -686,7 +686,7 @@ class InterferometerUnitary(CVOperation):
 
     def adjoint(self):
         U = self.parameters[0]
-        return InterferometerUnitary(math.T(qml_math.conj(U)), wires=self.wires)
+        return InterferometerUnitary(math.T(math.conj(U)), wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
