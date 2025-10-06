@@ -1,5 +1,5 @@
 
-# Release 0.43.0-dev (development release)
+# Release 0.43.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -1195,6 +1195,7 @@
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
   [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
   [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
+  [(#8386)](https://github.com/PennyLaneAI/pennylane/pull/8386)
   [(#8331)](https://github.com/PennyLaneAI/pennylane/pull/8331)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
