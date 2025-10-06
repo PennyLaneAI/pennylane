@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""This file contains the implementation of the outline_state_evolution transform,
+written using xDSL."""
+
 from dataclasses import dataclass
 from itertools import chain
 from typing import Type, TypeVar
