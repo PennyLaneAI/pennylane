@@ -35,12 +35,12 @@ from pennylane.measurements import MeasurementProcess, SampleMeasurement, StateM
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import resolve_dynamic_wires
 from pennylane.transforms.core import transform
 from pennylane.transforms.decompose import (
     _construct_and_solve_decomp_graph,
     _operator_decomposition_gen,
 )
+from pennylane.transforms.resolve_dynamic_wires import resolve_dynamic_wires
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -393,7 +393,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     graph_solution = None
     if target_gates is not None and enabled_graph():
-
         # Filter out MeasurementProcess instances that shouldn't be decomposed
         decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
 
