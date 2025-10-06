@@ -189,6 +189,7 @@ from pennylane import data
 from pennylane import noise
 from pennylane.noise import NoiseModel
 
+import pennylane.devices
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
