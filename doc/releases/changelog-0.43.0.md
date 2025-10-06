@@ -1459,9 +1459,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* An error is now raised if postselection is requested for a zero-probability mid-circuit measurement outcome
-  with finite shots and :class:`~pennylane.devices.DefaultQubit` when `mcm_method="deferred"` and
-  `postselect_mode="fill-shots"`, as this previously led to invalid results.
+* An error is now raised if postselection is requested for a zero-probability mid-circuit measurement outcome with finite
+  shots and :class:`~pennylane.devices.DefaultQubit` when `mcm_method="deferred"` and `postselect_mode="fill-shots"`, as
+  this previously led to invalid results.
+  [(#8389)](https://github.com/PennyLaneAI/pennylane/pull/8389)
 
 * `default.qubit` now properly validates the `mcm_method`.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
