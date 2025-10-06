@@ -384,7 +384,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                 value_mapper[orig_arg] = cloned_arg
 
             for orig_nested_op, cloned_nested_op in zip(orig_block.ops, cloned_block.ops):
-                self._update_value_mapper_recursively(orig_nested_op, cloned_nested_op, value_mapper)
+                self._update_value_mapper_recursively(
+                    orig_nested_op, cloned_nested_op, value_mapper
+                )
 
     def _finalize_transformation(self, rewriter: pattern_rewriter.PatternRewriter):
         """Replace the original function with a call to the state evolution function."""
