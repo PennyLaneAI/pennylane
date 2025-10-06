@@ -63,7 +63,8 @@
 
 <h4>Dynamic wire allocation 🎁</h4>
 
-* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+* A :class:`~pennylane.allocation.DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -72,7 +73,6 @@
   wire management.
 
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
-  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
