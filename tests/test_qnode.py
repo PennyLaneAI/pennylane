@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
+
 import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
@@ -1160,7 +1161,6 @@ class TestIntegration:
         """Test that an error is raised in the device_vjp is unsupported."""
 
         class DummyDev(qml.devices.Device):
-
             def execute(self, circuits, execution_config=qml.devices.ExecutionConfig()):
                 return 0
 
@@ -1895,6 +1895,10 @@ class TestMCMConfiguration:
     @pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred"])
     def test_execution_does_not_mutate_config(self, mcm_method, postselect_mode):
         """Test that executing a QNode does not mutate its mid-circuit measurement config options"""
+
+        if postselect_mode == "fill-shots" and mcm_method != "deferred":
+            pytest.skip("fill-shots is disabled for anything but deferred.")
+
         dev = qml.device("default.qubit", wires=2)
 
         original_config = qml.devices.MCMConfig(

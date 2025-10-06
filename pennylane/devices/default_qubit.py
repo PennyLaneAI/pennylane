@@ -47,10 +47,12 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBat
 from pennylane.transforms import (
     broadcast_expand,
     convert_to_numpy_parameters,
+)
+from pennylane.transforms import decompose as transforms_decompose
+from pennylane.transforms import (
     defer_measurements,
     dynamic_one_shot,
 )
-from pennylane.transforms import decompose as transforms_decompose
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
