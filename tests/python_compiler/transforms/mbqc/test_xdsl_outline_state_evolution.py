@@ -62,7 +62,7 @@ class TestOutlineStateEvolutionPass:
         @qml.qnode(dev)
         def circuit():
             # CHECK: func.call @circuit.state_evolution
-            # CHECK: func.func @circuit.state_evolution
+            # CHECK: func.func private @circuit.state_evolution
             while_for(0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
