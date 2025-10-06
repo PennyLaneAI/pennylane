@@ -185,12 +185,14 @@
   print(qml.specs(circuit, level="device")()["resources"])
   ```
   ```
-  Resources(num_wires=2,
-            num_gates=2,
-            gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 1}),
-            depth=2,
-            shots=Shots(total_shots=None, shot_vector=()))
+  num_wires: 2
+  num_gates: 2
+  depth: 2
+  shots: Shots(total=None)
+  gate_types:
+  {'CNOT': 1, 'Hadamard': 1}
+  gate_sizes:
+  {2: 1, 1: 1}
   ```
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
