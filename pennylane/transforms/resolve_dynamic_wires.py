@@ -16,7 +16,7 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 """
 from collections.abc import Hashable, Sequence
 
-from pennylane.allocation import Allocate, AllocateState, Deallocate
+from pennylane.allocation import AllocateState
 from pennylane.exceptions import AllocationError
 from pennylane.measurements import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -236,12 +236,13 @@ def resolve_dynamic_wires(
 
     new_ops = []
     for op in tape.operations:
-        if isinstance(op, Allocate):
+        # check name faster than isinstance
+        if op.name == "Allocate":
             for w in op.wires:
                 wire, ops = manager.get_wire(**op.hyperparameters)
                 new_ops += ops
                 wire_map[w] = wire
-        elif isinstance(op, Deallocate):
+        elif op.name == "Deallocate":
             for w in op.wires:
                 deallocated.add(w)
                 manager.return_wire(wire_map.pop(w))
