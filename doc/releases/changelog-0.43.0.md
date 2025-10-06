@@ -1,5 +1,5 @@
 
-# Release 0.43.0 (current release)
+# Release 0.43.0-dev (development release)
 
 <h3>New features since last release</h3>
 
@@ -319,10 +319,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* ``Controlled(Identity)`` is now directly decomposed to a single Identity operator instead of going
-  through a numeric decomposition algorithm.
-  [(#8388)](https://github.com/PennyLaneAI/pennylane/pull/8388)
-
 <h4>Resource-efficient decompositions</h4>
 
 * Several templates now have decompositions that can be accessed within the graph-based
@@ -331,78 +327,77 @@
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
-  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
   [(#8075)](https://github.com/PennyLaneAI/pennylane/pull/8075)
   [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
 
-  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`,
-  :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
-  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`,
-  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`,
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`,
-  :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, :class:`~.FABLE`,
-  :class:`~.Qubitization`, and :class:`~.Superposition`.
+  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, 
+  :class:`~.MottonenStatePreparation`, :class:`~.MPSPrep`, :class:`~.Multiplier`, 
+  :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`, 
+  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, 
+  :class:`~.QROM`, :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, 
+  :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, :class:`~.FermionicDoubleExcitation`, 
+  :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`, 
+  :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, 
+  :class:`~.FABLE`, :class:`~.Qubitization`, and :class:`~.Superposition`.
 
 * Two additions were made to :class:`~.Select` that affect how it gets decomposed:
 
-  * A new keyword argument ``partial`` has been added to :class:`~.Select`. It allows for
-    simplifications in the decomposition of ``Select`` under the assumption that the state of the
-    control wires has no overlap with computational basis states that are not used by ``Select``.
+  * A new keyword argument ``partial`` has been added, which allows for simplifications in the 
+    decomposition of ``Select`` under the assumption that the state of the control wires has no 
+    overlap with computational basis states that are not used by ``Select``.
 
-  * A new decomposition has been added to :class:`~.Select`. It achieves cost reductions by adding
-    one `work_wire`. This decomposition is useful to perform efficient :class:`~.QROM` decompositions.
+  * A new decomposition rule has been added to :class:`~.Select`. It achieves cost reductions by 
+    adding one ``work_wire``. This decomposition is useful to perform efficient :class:`~.QROM` 
+    decompositions.
 
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
   [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
   [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
 
-
-* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
-  with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
-  no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
+* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift 
+  gates with angle :math:`\pm \pi` for real-valued (orthogonal) rotation matrices. This uses the 
+  fact that no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant 
+  equal to :math:`\pm 1`.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
-* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
-  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
-
-* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
+* The :func:`~.transforms.decompose` transform is now able to decompose 
+  classically controlled operations, i.e., operations nested inside ``cond``.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+  ```python
+  from functools import partial
+
+  dev = qml.device('default.qubit')
+
+  @partial(qml.transforms.decompose, gate_set={qml.RY, qml.RZ, qml.measurements.MidMeasureMP})
+  @qml.qnode(dev)
+  def circuit():
+      m0 = qml.measure(0)
+      qml.cond(m0 == 0, qml.Rot)(qml.numpy.pi / 2, qml.numpy.pi / 2, qml.numpy.pi / 2, wires=1)
+      return qml.expval(qml.X(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit, level=0)())
+  0: ──┤↗├──────────────────────┤  <X>
+  1: ───║───Rot(1.57,1.57,1.57)─┤     
+        ╚═══╝  
+  >>> print(qml.draw(circuit, level=1)())
+  0: ──┤↗├───────────────────────────────┤  <X>
+  1: ───║───RZ(1.57)──RY(1.57)──RZ(1.57)─┤     
+        ╚═══╩═════════╩═════════╝              
+  ```
+
 * Various decompositions of :class:`~.MultiControlledX` now utilize :class:`~.TemporaryAND` in
-  place of :class:`~.Toffoli` gates, leading to cheaper decompositions.
+  place of :class:`~.Toffoli` gates, leading to more resource-efficient decompositions.
   [(#8172)](https://github.com/PennyLaneAI/pennylane/pull/8172)
 
 * Changed how basis states are assigned internally in `qml.Superposition`, improving its
   decomposition slightly both regarding classical computing time and gate decomposition.
   [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
-
-* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
-  have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
-  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
-
-  ```python
-  import pennylane as qml
-
-  @qml.draw
-  @qml.qnode(qml.device("lightning.qubit", wires=4))
-  def node():
-      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
-      qml.CNOT([2, 3])
-      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
-      return qml.expval(qml.Z(3))
-  ```
-
-  ```pycon
-  print(node())
-  0: ─╭●─────●╮─┤
-  1: ─├○─────○┤─┤
-  2: ─╰──╭●───╯─┤
-  3: ────╰X─────┤  <Z>
-  ```
-
 
 * :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
@@ -431,6 +426,11 @@
   `GlobalPhase` is not assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 
+* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal 
+  implementation to promote feature parity in preparation for the graph-based decomposition system 
+  to be the default decomposition method in PennyLane.
+  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -446,9 +446,9 @@
 * `qml.to_openqasm` now supports mid circuit measurements and conditionals of unprocessed measurement values.
   [(#8210)](https://github.com/PennyLaneAI/pennylane/pull/8210)
 
-<h4>Specifying shots</h4>
+<h4>Setting shots</h4>
 
-* The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
+* The number of ``shots`` can now be specified directly in QNodes as a standard keyword argument.
   [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
 
   ```python
@@ -465,7 +465,8 @@
   np.float64(-0.004)
   ```
 
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~.set_shots`. 
+  However, decorating with :func:`~.set_shots` overrides QNode ``shots``:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
@@ -473,34 +474,24 @@
   Shots(total=123)
   ```
 
-* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`.
-  Users can now use this when designing quantum circuits with experimental program capture enabled.
+* The :func:`~.set_shots` transform can now be directly applied to a QNode without the need for 
+  `functools.partial`, providing a more user-friendly syntax and negating having to import the 
+  `functools` package.
+  [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
   ```python
-  import pennylane as qml
-  import jax.numpy as jnp
-
-  qml.capture.enable()
-
-  @qml.qnode(qml.device("default.qubit", wires=3))
-  def circuit(val):
-    angles = jnp.zeros(3)
-    angles[0:3] += val
-
-    for i, angle in enumerate(angles):
-        qml.RX(angle, i)
-
-    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
+  @qml.qnode(dev)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
   ```
 
   ```pycon
-  >>> circuit(jnp.pi)
-  (Array(-1, dtype=float32),
-   Array(-1, dtype=float32),
-   Array(-1, dtype=float32))
+  >>> circuit()
+  0.002
   ```
-
-  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
 
 <h4>Clifford+T decomposition</h4>
 
@@ -517,7 +508,6 @@
 * The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
-  [(#7715)](https://github.com/PennyLaneAI/pennylane/pull/7715)
 
 * Users can now specify a relative threshold value for the permissible operator norm error (`epsilon`) that
   triggers rebuilding of the cache in the `qml.clifford_t_transform`, via new `cache_eps_rtol` keyword argument.
@@ -618,6 +608,30 @@
 
 <h4>Other improvements</h4>
 
+* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
+  have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
+  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
+
+  ```python
+  import pennylane as qml
+
+  @qml.draw
+  @qml.qnode(qml.device("lightning.qubit", wires=4))
+  def node():
+      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
+      qml.CNOT([2, 3])
+      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+      return qml.expval(qml.Z(3))
+  ```
+
+  ```pycon
+  print(node())
+  0: ─╭●─────●╮─┤
+  1: ─├○─────○┤─┤
+  2: ─╰──╭●───╯─┤
+  3: ────╰X─────┤  <Z>
+  ```
+
 * Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
   [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
 
@@ -714,6 +728,35 @@
 
   [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
 
+* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`.
+  Users can now use this when designing quantum circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[0:3] += val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(-1, dtype=float32),
+   Array(-1, dtype=float32),
+   Array(-1, dtype=float32))
+  ```
+
+  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
+
 * Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
   now use these logical operations in control flow when designing quantum circuits with experimental
   program capture enabled.
@@ -801,23 +844,6 @@
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
   [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
-
-* The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
-  [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
-  [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
-
-  ```python
-  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
-  @qml.qnode(dev)
-  def circuit():
-      qml.H(0)
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> circuit()
-  0.002
-  ```
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
@@ -1179,11 +1205,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
-  use `ubuntu-24.04` runners. 
-  [(#8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
-
-* Issues with imports and circular dependencies in files were addressed in the ``ops/``and ``templates/`` directories.
-  [(#7865)](https://github.com/PennyLaneAI/pennylane/pull/7865)
+  use `ubuntu-24.04` runners. [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
 
 * Adds `measurements` as a "core" module in the tach specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
@@ -1195,8 +1217,6 @@
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
   [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
   [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
-  [(#8386)](https://github.com/PennyLaneAI/pennylane/pull/8386)
-  [(#8331)](https://github.com/PennyLaneAI/pennylane/pull/8331)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
@@ -1531,7 +1551,7 @@
 
 * Fixes a bug in :func:`~.matrix` where an operator's
   constituents were incorrectly queued if its decomposition was requested.
-  [(#7976)](https://github.com/PennyLaneAI/pennylane/pull/7976)
+  [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)
 
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
