@@ -515,9 +515,7 @@ def _molecular_hamiltonian(
         )
 
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = qml.math.array(
-            coordinates.reshape(len(symbols), 3), like=qml.math.get_deep_interface(coordinates)
-        )
+        geometry_dhf =coordinates.reshape(len(symbols), 3)
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
         geometry_dhf = qml.math.array(coordinates, like=qml.math.get_deep_interface(coordinates))
@@ -557,10 +555,13 @@ def _molecular_hamiltonian(
         )
 
         requires_grad = args is not None
-        use_jax = any(qml.math.get_deep_interface(x) == "jax" for x in [coordinates, alpha, coeff])
-        interface_args = [{"like": "autograd", "requires_grad": requires_grad}, {"like": "jax"}][
-            use_jax
-        ]
+        interface = qml.math.get_deep_interface((coordinates, alpha, coeff))
+        if interface == "autograd":
+            interface_args = {"like": "autograd", "requires_grad": requires_grad}
+        elif interface in {"numpy", "jax"}:
+            interface_args = {"like": interface}
+        else:
+            raise ValueError(f"unsupported interface {interface} for molecular_hamiltonian")
         h = (
             qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
             if requires_grad
