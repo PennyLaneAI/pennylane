@@ -880,9 +880,9 @@ class QuantumScript:
             # unless modified.
             _ops = update.get("operations")
             _measurements = update.get("measurements")
-            if not _ops:
+            if _ops is None:
                 _ops = (copy.copy(op) for op in self.operations)
-            if not _measurements:
+            if _measurements is None:
                 _measurements = (copy.copy(mp) for mp in self.measurements)
         else:
             # Perform a shallow copy of the operation and measurement queues. The
