@@ -51,16 +51,15 @@ def cond_measure(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x, measure_y
         from functools import partial
 
         dev = qml.device("default.qubit", wires=3)
 
         @diagonalize_mcms
-        @partial(qml.set_shots, shots=1000)
+        @qml.set_shots(shots=1_000)
         @qml.qnode(dev, mcm_method="one-shot")
         def qnode(x, y):
             qml.RY(x, 0)
@@ -74,8 +73,8 @@ def cond_measure(
             return qml.expval(qml.X(2))
 
 
-        >>> qnode(np.pi/3, np.pi/2)
-        0.3806
+    >>> print(qnode(np.pi/3, np.pi/2)) # doctest: +SKIP
+    0.3914
 
     .. note::
 
