@@ -348,58 +348,56 @@
     decomposition of ``Select`` under the assumption that the state of the control wires has no 
     overlap with computational basis states that are not used by ``Select``.
 
-  * A new decomposition has been added to :class:`~.Select`. It achieves cost reductions by adding
-    one `work_wire`. This decomposition is useful to perform efficient :class:`~.QROM` decompositions.
+  * A new decomposition rule has been added to :class:`~.Select`. It achieves cost reductions by 
+    adding one ``work_wire``. This decomposition is useful to perform efficient :class:`~.QROM` 
+    decompositions.
 
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
   [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
   [(#8276)](https://github.com/PennyLaneAI/pennylane/pull/8276)
 
-
-* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
-  with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
-  no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
+* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift 
+  gates with angle :math:`\pm \pi` for real-valued (orthogonal) rotation matrices. This uses the 
+  fact that no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant 
+  equal to :math:`\pm 1`.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
-* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
-  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
-
-* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
+* The :func:`~.transforms.decompose` transform is now able to decompose 
+  classically controlled operations, i.e., operations nested inside ``cond``.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+  ```python
+  from functools import partial
+
+  dev = qml.device('default.qubit')
+
+  @partial(qml.transforms.decompose, gate_set={qml.RY, qml.RZ, qml.measurements.MidMeasureMP})
+  @qml.qnode(dev)
+  def circuit():
+      m0 = qml.measure(0)
+      qml.cond(m0 == 0, qml.Rot)(qml.numpy.pi / 2, qml.numpy.pi / 2, qml.numpy.pi / 2, wires=1)
+      return qml.expval(qml.X(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit, level=0)())
+  0: ──┤↗├──────────────────────┤  <X>
+  1: ───║───Rot(1.57,1.57,1.57)─┤     
+        ╚═══╝  
+  >>> print(qml.draw(circuit, level=1)())
+  0: ──┤↗├───────────────────────────────┤  <X>
+  1: ───║───RZ(1.57)──RY(1.57)──RZ(1.57)─┤     
+        ╚═══╩═════════╩═════════╝              
+  ```
+
 * Various decompositions of :class:`~.MultiControlledX` now utilize :class:`~.TemporaryAND` in
-  place of :class:`~.Toffoli` gates, leading to cheaper decompositions.
+  place of :class:`~.Toffoli` gates, leading to more resource-efficient decompositions.
   [(#8172)](https://github.com/PennyLaneAI/pennylane/pull/8172)
 
 * Changed how basis states are assigned internally in `qml.Superposition`, improving its
   decomposition slightly both regarding classical computing time and gate decomposition.
   [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
-
-* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
-  have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
-  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
-
-  ```python
-  import pennylane as qml
-
-  @qml.draw
-  @qml.qnode(qml.device("lightning.qubit", wires=4))
-  def node():
-      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
-      qml.CNOT([2, 3])
-      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
-      return qml.expval(qml.Z(3))
-  ```
-
-  ```pycon
-  print(node())
-  0: ─╭●─────●╮─┤
-  1: ─├○─────○┤─┤
-  2: ─╰──╭●───╯─┤
-  3: ────╰X─────┤  <Z>
-  ```
-
 
 * :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
@@ -427,6 +425,11 @@
   raised if the circuit contains a `GlobalPhase`, reminding the user that
   `GlobalPhase` is not assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
+
+* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal 
+  implementation to promote feature parity in preparation for the graph-based decomposition system 
+  to be the default decomposition method in PennyLane.
+  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -604,6 +607,30 @@
   ```
 
 <h4>Other improvements</h4>
+
+* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
+  have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
+  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
+
+  ```python
+  import pennylane as qml
+
+  @qml.draw
+  @qml.qnode(qml.device("lightning.qubit", wires=4))
+  def node():
+      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
+      qml.CNOT([2, 3])
+      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+      return qml.expval(qml.Z(3))
+  ```
+
+  ```pycon
+  print(node())
+  0: ─╭●─────●╮─┤
+  1: ─├○─────○┤─┤
+  2: ─╰──╭●───╯─┤
+  3: ────╰X─────┤  <Z>
+  ```
 
 * Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
   [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
