@@ -63,13 +63,11 @@
 
 <h4>Dynamic wire allocation 🎁</h4>
 
-* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
-
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
   that rely on smart and efficient handling of wires, such as decompositions of gates that require
-  temporary auxiliary wires and logical patterns in subroutines that benefit from having dynamic
-  wire management.
+  auxiliary wires and logical patterns in subroutines that benefit from having dynamic wire 
+  management.
 
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
   [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
@@ -81,12 +79,12 @@
   The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated
   wires are handled:
 
-  * `num_wires`: the number of wires to dynamically allocate.
-  * `state = "zero"/"any"`: the initial state that the dynamically allocated wires are requested to
-    be in. Currently, supported values are `"zero"` (initialize in the all-zero state) or `"any"`
+  * ``num_wires``: the number of wires to dynamically allocate.
+  * ``state = "zero"/"any"``: the initial state that the dynamically allocated wires are requested to
+    be in. Currently, supported values are ``"zero"`` (initialize in the all-zero state) or ``"any"``
     (any arbitrary state).
-  * `restored = True/False`: a user-guarantee that the allocated wires will be restored to their
-    original state (`True`) or not (`False`) when those wires are deallocated.
+  * ``restored = True/False``: a user-guarantee that the allocated wires will be restored to their
+    original state (``True``) or not (``False``) when those wires are deallocated.
 
   The recommended way to safely allocate and deallocate wires is to use :func:`~.allocate` as a
   context manager:
@@ -127,7 +125,7 @@
 
   For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic allocation
   calls in the most resource-efficient manner before sending the program to the device. Consider the
-  following circuit, which contains two dynamic allocations within a `for` loop.
+  following circuit, which contains two dynamic allocations within a ``for`` loop.
 
   ```python
   @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal")
@@ -156,9 +154,9 @@
 
   The user-level circuit drawing shows four separate allocations and deallocations (two per loop
   iteration). However, the circuit that the device receives gets automatically compiled to only use
-  **two** additional wires (wires labelled `1` and `2` in the diagram below). This is due to the
-  fact that `new_qubit1` and `new_qubit2` can both be reused after they've been deallocated in
-  the first iteration of the `for` loop:
+  **two** additional wires (wires labelled ``1`` and ``2`` in the diagram below). This is due to the
+  fact that ``new_qubit1`` and ``new_qubit2`` can both be reused after they've been deallocated in
+  the first iteration of the ``for`` loop:
 
   ```
   >>> print(qml.draw(circuit, level="device")())
@@ -167,6 +165,9 @@
   2: ───║────────Z─╰X───║────────Z─╰X─┤
         ╚════════╝      ╚════════╝
   ```
+
+  Additionally, :func:`~.allocate` and :func:`~.deallocate` work with :func:`~.qjit` with 
+  [some restrictions](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/sharp_bits.html#functionality-differences-from-pennylane).
 
 <h4>Resource tracking with Catalyst 👓</h4>
 
