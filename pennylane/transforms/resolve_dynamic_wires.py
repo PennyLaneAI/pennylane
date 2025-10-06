@@ -248,7 +248,7 @@ def resolve_dynamic_wires(
         else:
             if wire_map:
                 op = op.map_wires(wire_map)
-            if intersection := deallocated.intersection(set(op.wires)):
+            if deallocated and (intersection := deallocated.intersection(set(op.wires))):
                 raise AllocationError(
                     f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
                 )
