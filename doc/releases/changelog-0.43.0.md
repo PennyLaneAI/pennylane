@@ -1,5 +1,5 @@
 
-# Release 0.43.0-dev (development release)
+# Release 0.43.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -320,6 +320,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* ``Controlled(Identity)`` is now directly decomposed to a single Identity operator instead of going
+  through a numeric decomposition algorithm.
+  [(#8388)](https://github.com/PennyLaneAI/pennylane/pull/8388)
+
 <h4>Resource-efficient decompositions</h4>
 
 * Several templates now have decompositions that can be accessed within the graph-based
@@ -514,6 +518,7 @@
 * The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+  [(#7715)](https://github.com/PennyLaneAI/pennylane/pull/7715)
 
 * Users can now specify a relative threshold value for the permissible operator norm error (`epsilon`) that
   triggers rebuilding of the cache in the `qml.clifford_t_transform`, via new `cache_eps_rtol` keyword argument.
@@ -1175,7 +1180,11 @@
 <h3>Internal changes ⚙️</h3>
 
 * GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
-  use `ubuntu-24.04` runners. [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
+  use `ubuntu-24.04` runners. 
+  [(#8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
+
+* Issues with imports and circular dependencies in files were addressed in the ``ops/``and ``templates/`` directories.
+  [(#7865)](https://github.com/PennyLaneAI/pennylane/pull/7865)
 
 * Adds `measurements` as a "core" module in the tach specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
@@ -1187,6 +1196,8 @@
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
   [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
   [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
+  [(#8386)](https://github.com/PennyLaneAI/pennylane/pull/8386)
+  [(#8331)](https://github.com/PennyLaneAI/pennylane/pull/8331)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
@@ -1521,7 +1532,7 @@
 
 * Fixes a bug in :func:`~.matrix` where an operator's
   constituents were incorrectly queued if its decomposition was requested.
-  [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)
+  [(#7976)](https://github.com/PennyLaneAI/pennylane/pull/7976)
 
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)

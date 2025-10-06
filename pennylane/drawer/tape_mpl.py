@@ -452,6 +452,8 @@ def tape_mpl(
 
     .. code-block:: python
 
+        import matplotlib.pyplot as plt
+
         fig, ax = qml.drawer.tape_mpl(tape)
         fig.suptitle("My Circuit", fontsize="xx-large")
 
