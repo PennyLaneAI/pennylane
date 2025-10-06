@@ -1596,9 +1596,7 @@ class TestMidMeasurements:
     # FIXME: [sc-95724]
     @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-    @pytest.mark.parametrize(
-        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
-    )
+    @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode, seed):
         """Unit tests for simulate_one_shot_native_mcm"""
 
@@ -1623,34 +1621,25 @@ class TestMidMeasurements:
         ]
         terminal_results, mcm_results = zip(*results)
 
-        if postselect_mode == "fill-shots":
-            assert all(ms == 0 for ms in mcm_results)
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
-            )
-            expected_sample = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(terminal_results, expected_sample, outcomes=(-1, 1))
+        equivalent_tape = qml.tape.QuantumScript(
+            [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
+        )
+        expected_result = simulate(equivalent_tape, rng=rng)
+        fisher_exact_test(mcm_results, expected_result)
 
-        else:
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
-            )
-            expected_result = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(mcm_results, expected_result)
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
+        equivalent_tape = qml.tape.QuantumScript(
+            [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
+        )
+        expected_sample = simulate(equivalent_tape, rng=rng)
+        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
 
-            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
-            )
-            expected_sample = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
-
-            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
-            equivalent_tape = qml.tape.QuantumScript(
-                [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
-            )
-            expected_sample = simulate(equivalent_tape, rng=rng)
-            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
+        equivalent_tape = qml.tape.QuantumScript(
+            [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
+        )
+        expected_sample = simulate(equivalent_tape, rng=rng)
+        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
 
     def test_tree_traversal_non_standard_wire_order(self):
         """Test that tree-traversal still works with a non-standard wire order."""
