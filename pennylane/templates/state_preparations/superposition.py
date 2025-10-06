@@ -49,26 +49,22 @@ def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
     state of length :math:`4` will be mapped as
     :math:`\{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots\}`.
 
-    .. code-block:: pycon
-
-        >>> basis_states = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
-        >>> order_states(basis_states)
-        {(1, 1, 0, 0): (0, 0, 0, 0),
-         (1, 0, 1, 0): (0, 0, 0, 1),
-         (0, 1, 0, 1): (0, 0, 1, 0),
-         (1, 0, 0, 1): (0, 0, 1, 1)}
+    >>> basis_states = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
+    >>> order_states(basis_states)
+    {(1, 1, 0, 0): (0, 0, 0, 0),
+        (1, 0, 1, 0): (0, 0, 0, 1),
+        (0, 1, 0, 1): (0, 0, 1, 0),
+        (1, 0, 0, 1): (0, 0, 1, 1)}
 
     If a state in ``basis_states`` is one of the first :math:`m` basis states,
     this state will be mapped to itself, i.e. it will be a fixed point of the mapping.
 
-    .. code-block:: pycon
-
-        >>> basis_states = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
-        >>> order_states(basis_states)
-        {(0, 0, 0, 1): (0, 0, 0, 1),
-         (1, 1, 0, 0): (0, 0, 0, 0),
-         (0, 1, 0, 1): (0, 0, 1, 0),
-         (1, 0, 0, 1): (0, 0, 1, 1)}
+    >>> basis_states = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
+    >>> order_states(basis_states)
+    {(0, 0, 0, 1): (0, 0, 0, 1),
+        (1, 1, 0, 0): (0, 0, 0, 0),
+        (0, 1, 0, 1): (0, 0, 1, 0),
+        (1, 0, 0, 1): (0, 0, 1, 1)}
 
     """
 
@@ -171,7 +167,7 @@ class Superposition(Operation):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
 
         import pennylane as qml
         import numpy as np
@@ -187,11 +183,9 @@ class Superposition(Operation):
             qml.Superposition(coeffs, bases, wires, work_wire)
             return qml.probs(wires)
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [0.33333333 0.         0.33333333 0.         0.         0.
-        0.         0.33333333]
+    >>> print(circuit())
+    [0.33333333 0.         0.33333333 0.         0.         0.
+    0.         0.33333333]
 
 
     .. details::

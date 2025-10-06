@@ -35,7 +35,7 @@ from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
-from .arithmetic import TemporaryAND
+from .temporary_and import TemporaryAND
 
 
 def _partial_select(K, control):
@@ -362,16 +362,15 @@ class Select(Operation):
         }
 
     def _flatten(self):
-        return tuple(self.ops), (
+        return (self.ops), (
             self.control,
             self.work_wires,
             self.partial,
         )
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, ops, control, **kwargs):
-        return super()._primitive_bind_call(*ops, wires=control, **kwargs)
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
@@ -1175,11 +1174,3 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
 
 add_decomps(Select, _select_decomp_multi_control_work_wire)
-
-# pylint: disable=protected-access
-if Select._primitive is not None:
-
-    @Select._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        ops, control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(Select, ops, control=control, **kwargs)

@@ -105,17 +105,19 @@ class GQSP(Operation):
         }
 
     def _flatten(self):
-        return (*self.data, self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
+        data = self.parameters
+        return data, (
+            self.hyperparameters["unitary"],
+            self.hyperparameters["control"],
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        # Data contains (angles, derived_data_from_unitary, unitary)
-        return cls(unitary=data[-1], angles=data[0], control=metadata[0])
+        return cls(unitary=metadata[0], angles=data[0], control=metadata[1])
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, unitary, angles, control, id=None):
-        return super()._primitive_bind_call(unitary, angles, wires=control, id=id)
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -217,7 +219,7 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
     for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
-        ops.ctrl(unitary, control=control, control_values=[0])
+        ops.Controlled(unitary, control_wires=[control], control_values=[0])
 
         ops.X(control)
         ops.U3(2 * theta, phi, lamb, wires=control)
@@ -226,11 +228,3 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
 
 add_decomps(GQSP, _GQSP_decomposition)
-
-# pylint: disable=protected-access
-if GQSP._primitive is not None:
-
-    @GQSP._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        (unitary, angles), control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(GQSP, unitary, angles, control=control, **kwargs)
