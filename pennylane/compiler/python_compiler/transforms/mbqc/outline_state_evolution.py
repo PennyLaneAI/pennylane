@@ -202,7 +202,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
     def _create_state_evolution_function(self, rewriter: pattern_rewriter.PatternRewriter):
         """Create a new function for the state evolution region using clone approach."""
 
-        alloc_op, terminal_boundary_op = self.find_evolution_range()
+        alloc_op, terminal_boundary_op = self._find_evolution_range()
         if not alloc_op or not terminal_boundary_op:
             raise ValueError("Could not find alloc_op or terminal_boundary_op")
 
@@ -367,7 +367,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             cloned_op = op.clone(value_mapper)
             target_block.add_op(cloned_op)
 
-            self.update_value_mapper_recursively(op, cloned_op, value_mapper)
+            self._update_value_mapper_recursively(op, cloned_op, value_mapper)
 
     def _update_value_mapper_recursively(self, orig_op, cloned_op, value_mapper):
         """update value_mapper for all operations in operation"""
@@ -375,7 +375,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             value_mapper[orig_result] = new_result
 
         for orig_region, cloned_region in zip(orig_op.regions, cloned_op.regions):
-            self.update_region_value_mapper(orig_region, cloned_region, value_mapper)
+            self._update_region_value_mapper(orig_region, cloned_region, value_mapper)
 
     def _update_region_value_mapper(self, orig_region, cloned_region, value_mapper):
         """update value_mapper for all operations in region"""
@@ -384,7 +384,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                 value_mapper[orig_arg] = cloned_arg
 
             for orig_nested_op, cloned_nested_op in zip(orig_block.ops, cloned_block.ops):
-                self.update_value_mapper_recursively(orig_nested_op, cloned_nested_op, value_mapper)
+                self._update_value_mapper_recursively(orig_nested_op, cloned_nested_op, value_mapper)
 
     def _finalize_transformation(self, rewriter: pattern_rewriter.PatternRewriter):
         """Replace the original function with a call to the state evolution function."""
