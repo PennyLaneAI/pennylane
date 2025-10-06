@@ -27,7 +27,7 @@ from pennylane.compiler.python_compiler.dialects import quantum
 T = TypeVar("T")
 
 
-def get_parent_of_type(op: Operation, kind: Type[T]) -> T | None:
+def _get_parent_of_type(op: Operation, kind: Type[T]) -> T | None:
     """Walk up the parent tree until an op of the specified type is found."""
     while (op := op.parent_op()) and not isinstance(op, kind):
         pass
@@ -62,43 +62,54 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
     def __init__(self):
         self.module: builtin.ModuleOp = None
         self.original_func_op: func.FuncOp = None
-        self.alloc_op: quantum.AllocOp = None
 
-        # state evolution region
+        # To determine the boundary of quantum gate operations in the IR
+        self.alloc_op: quantum.AllocOp = None
+        self.terminal_boundary_op: Operation = None
+
+        # Input and outputs of the state evolution func
         self.missing_inputs: list[SSAValue] = None
         self.required_outputs: list[SSAValue] = None
-        self.terminal_boundary_op: Operation = None
+
+        # State evolution function region
         self.state_evolution_func: func.FuncOp = None
 
     def match_and_rewrite(self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
-        """Transform a quantum function (qnode) to outline state evolution regions."""
+        """Transform a quantum function (qnode) to outline state evolution regions.
+        This implementation assumes that there is only one `quantum.alloc` operation in
+        the func operations with a "qnode" attribute and all quantum operations are between
+        the unique `quantum.alloc` operation and the ternimal_boundary_op. All operations in between
+        are to be moved to the newly created outline-state-evolution function operation."""
         if "qnode" not in func_op.attributes:
             return
 
         self.original_func_op = func_op
 
-        self.module = get_parent_of_type(func_op, builtin.ModuleOp)
+        self.module = _get_parent_of_type(func_op, builtin.ModuleOp)
 
         assert self.module is not None, "got orphaned qnode function"
 
         # Simplify the quantum I/O to use only registers at boundaries
-        self.simplify_quantum_io(func_op, rewriter)
+        self._simplify_quantum_io(func_op, rewriter)
 
-        # Create a new function for the state evolution region
-        self.create_state_evolution_function(rewriter)
+        # Create a new function op for the state evolution region and insert it
+        # into the parent scope of the original func with qnode attribute
+        self._create_state_evolution_function(rewriter)
 
         # Replace the original region with a call to the state evolution function
-        self.finalize_transformation(rewriter)
+        # by inserting the corresponding callOp and update the rest of operations
+        # in the qnode func.
+        self._finalize_transformation(rewriter)
 
-    def get_idx(self, op: Operation) -> int | None:
-        """Get the index of the operation."""
-        return (
-            op.idx
-            if hasattr(op, "idx") and op.idx
-            else (op.idx_attr if hasattr(op, "idx_attr") else None)
-        )
+    def _get_extract_idx(self, op: Operation) -> int | None:
+        """Get the extract index from an ExtractOp op."""
+        if hasattr(op, "idx") and op.idx:
+            return op.idx
+        elif hasattr(op, "idx_attr"):
+            return op.idx_attr
+        return None
 
-    def simplify_quantum_io(
+    def _simplify_quantum_io(
         self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
     ) -> func.FuncOp:
         """Simplify quantum I/O to use only registers at segment boundaries.
@@ -106,6 +117,8 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         This ensures that state evolution regions only take registers as input/output,
         not individual qubits.
         """
+        # Note that there are three operations in qunatum dialects would update a qreg
+        # 1, quantum.alloc; 2, quantum.insert; 3, quantum.adjoint.
         current_reg = None
         qubit_to_reg_idx = {}
         terminal_boundary_op = None
@@ -116,16 +129,16 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     current_reg = op.qreg
                 case quantum.ExtractOp():
                     # Update register mapping
-                    extract_idx = self.get_idx(op)
+                    extract_idx = self._get_extract_idx(op)
                     qubit_to_reg_idx[op.qubit] = extract_idx
                     op.operands = (current_reg, extract_idx)
                 case quantum.MeasureOp():
+                    # TODOs: what if the qubit that quantum.measure target at is reset?
                     qubit_to_reg_idx[op.out_qubit] = qubit_to_reg_idx[op.in_qubit]
                     del qubit_to_reg_idx[op.in_qubit]
                 case quantum.CustomOp():
-                    # Handle quantum gate operations
+                    # To update the qubit_to_reg_idx map for the return type.
                     for i, qb in enumerate(chain(op.in_qubits, op.in_ctrl_qubits)):
-                        qubit_to_reg_idx[op.out_qubits[i]] = i
                         qubit_to_reg_idx[op.results[i]] = qubit_to_reg_idx[qb]
                         del qubit_to_reg_idx[qb]
                 case quantum.InsertOp():
@@ -149,7 +162,8 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                 ):
                     insert_ops = set()
 
-                    # create a register boundary before the terminal operation
+                    # Insert all qubits recorded in the qubit_to_reg_idx dict before the
+                    # pre-assumed terminal opeartions.
                     rewriter.insertion_point = InsertPoint.before(op)
                     for qb, idx in qubit_to_reg_idx.items():
                         insert_op = quantum.InsertOp(current_reg, idx, qb)
@@ -157,7 +171,11 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         insert_ops.add(insert_op)
                         current_reg = insert_op.out_qreg
 
+                    # Add the `"terminal_boundary"` attribute to the last newly added
+                    # `quantum.insert` operation.
                     list(insert_ops)[-1].attributes["terminal_boundary"] = builtin.UnitAttr()
+                    # Now a terminal boundary operation is created and terminal_boundary_op
+                    # should be updated.
                     terminal_boundary_op = list(insert_ops)[-1]
 
                     # extract ops
@@ -168,17 +186,20 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         qb.replace_by_if(
                             extract_op.qubit, lambda use: use.operation not in insert_ops
                         )
+                        # update the qubit_to_reg_idx dict
                         qubit_to_reg_idx[extract_op.qubit] = idx
                         del qubit_to_reg_idx[qb]
 
                 case _:
                     # Handle other operations that might has qreg result
+                    # Note that this branch might not be tested so far as adjoint op is not
+                    # tested so far.
                     if reg := next(
                         (reg for reg in op.results if isinstance(reg.type, quantum.QuregType)), None
                     ):
                         current_reg = reg
 
-    def create_state_evolution_function(self, rewriter: pattern_rewriter.PatternRewriter):
+    def _create_state_evolution_function(self, rewriter: pattern_rewriter.PatternRewriter):
         """Create a new function for the state evolution region using clone approach."""
 
         alloc_op, terminal_boundary_op = self.find_evolution_range()
@@ -189,13 +210,13 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             raise ValueError("alloc_op and terminal_boundary_op are not in the same block")
 
         # collect operation from alloc_op to terminal_boundary_op
-        ops_to_clone = self.collect_operations_in_range(alloc_op, terminal_boundary_op)
+        ops_to_clone = self._collect_operations_in_range(alloc_op, terminal_boundary_op)
 
         # analyze missing values for ops
-        missing_inputs = self.analyze_missing_values_for_ops(ops_to_clone)
+        missing_inputs = self._analyze_missing_values_for_ops(ops_to_clone)
 
         # analyze required outputs for ops
-        required_outputs = self.analyze_required_outputs(ops_to_clone, terminal_boundary_op)
+        required_outputs = self._analyze_required_outputs(ops_to_clone, terminal_boundary_op)
 
         register_inputs = []
         other_inputs = []
@@ -230,18 +251,16 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         for missing_val, block_arg in zip(ordered_inputs, block.args):
             value_mapper[missing_val] = block_arg
 
-        self.clone_operations_to_block(ops_to_clone, block, value_mapper)
-        self.add_return_statement(block, ordered_outputs, value_mapper)
+        self._clone_operations_to_block(ops_to_clone, block, value_mapper)
+        self._add_return_statement(block, ordered_outputs, value_mapper)
 
         self.missing_inputs = ordered_inputs
         self.required_outputs = ordered_outputs
         self.alloc_op = alloc_op
         self.terminal_boundary_op = terminal_boundary_op
         self.state_evolution_func = state_evolution_func
-        # print("create_state_evolution_function successfully")
-        # print(self.module)
 
-    def find_evolution_range(self):
+    def _find_evolution_range(self):
         """find alloc_op and terminal_boundary_op"""
         alloc_op = None
         terminal_boundary_op = None
@@ -254,7 +273,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         return alloc_op, terminal_boundary_op
 
-    def collect_operations_in_range(self, begin_op, end_op):
+    def _collect_operations_in_range(self, begin_op, end_op):
         """collect top-level operations in range, let op.clone() handle nesting"""
         ops_to_clone = []
 
@@ -278,9 +297,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         return ops_to_clone
 
-    def analyze_missing_values_for_ops(self, ops: list[Operation]) -> list[SSAValue]:
-        """get missing values for ops
-        Given a list of operations, return the values that are missing from the operations.
+    def _analyze_missing_values_for_ops(self, ops: list[Operation]) -> list[SSAValue]:
+        """Get missing values for ops. Given a list of operations, return the values
+        that are missing from the operations.
         """
         ops_walk = list(chain(*[op.walk() for op in ops]))
 
@@ -301,14 +320,14 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         return missing_values
 
-    def analyze_required_outputs(
+    def _analyze_required_outputs(
         self, ops: list[Operation], terminal_op: Operation
     ) -> list[SSAValue]:
-        """get required outputs for ops
+        """Get required outputs for ops.
         Given a list of operations and a terminal operation, return the values that are
-        required by the operations after the terminal operation.
-        Noted: It's only consdider the values that are defined in the operations and required by
-        the operations after the terminal operation!
+        required by the operations after the terminal operation. Noted: It's only consdider
+        the values that are defined in the operations and required by the operations after
+        the terminal operation!
         """
         ops_walk = list(chain(*[op.walk() for op in ops]))
 
@@ -331,7 +350,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         return list(required_outputs)
 
-    def add_return_statement(self, target_block, required_outputs, value_mapper):
+    def _add_return_statement(self, target_block, required_outputs, value_mapper):
         """add return statement to function"""
         return_values = []
         for output_val in required_outputs:
@@ -342,7 +361,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         return_op = func.ReturnOp(*return_values)
         target_block.add_op(return_op)
 
-    def clone_operations_to_block(self, ops_to_clone, target_block, value_mapper):
+    def _clone_operations_to_block(self, ops_to_clone, target_block, value_mapper):
         """Clone operations to target block, use value_mapper to update references"""
         for op in ops_to_clone:
             cloned_op = op.clone(value_mapper)
@@ -350,7 +369,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
             self.update_value_mapper_recursively(op, cloned_op, value_mapper)
 
-    def update_value_mapper_recursively(self, orig_op, cloned_op, value_mapper):
+    def _update_value_mapper_recursively(self, orig_op, cloned_op, value_mapper):
         """update value_mapper for all operations in operation"""
         for orig_result, new_result in zip(orig_op.results, cloned_op.results):
             value_mapper[orig_result] = new_result
@@ -358,7 +377,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         for orig_region, cloned_region in zip(orig_op.regions, cloned_op.regions):
             self.update_region_value_mapper(orig_region, cloned_region, value_mapper)
 
-    def update_region_value_mapper(self, orig_region, cloned_region, value_mapper):
+    def _update_region_value_mapper(self, orig_region, cloned_region, value_mapper):
         """update value_mapper for all operations in region"""
         for orig_block, cloned_block in zip(orig_region.blocks, cloned_region.blocks):
             for orig_arg, cloned_arg in zip(orig_block.args, cloned_block.args):
@@ -367,7 +386,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             for orig_nested_op, cloned_nested_op in zip(orig_block.ops, cloned_block.ops):
                 self.update_value_mapper_recursively(orig_nested_op, cloned_nested_op, value_mapper)
 
-    def finalize_transformation(self, rewriter: pattern_rewriter.PatternRewriter):
+    def _finalize_transformation(self, rewriter: pattern_rewriter.PatternRewriter):
         """Replace the original function with a call to the state evolution function."""
         original_block = self.original_func_op.body.block
         ops_list = list(original_block.ops)
@@ -379,6 +398,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                 begin_idx = i + 1
             elif op == self.terminal_boundary_op:
                 end_idx = i + 1
+                break
 
         assert begin_idx is not None, "alloc_op not found in original function"
         assert end_idx is not None, "terminal_boundary_op not found in original function"
@@ -392,6 +412,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         call_op = func.CallOp(self.state_evolution_func.sym_name.data, call_args, result_types)
 
+        # call_result_mapper is required for the clone operation. See more [here](https://github.com/xdslproject/xdsl/blob/e1301e0204bcf6ea5ed433e7da00bee57d07e695/xdsl/ir/core.py#L1429)_.
         call_result_mapper = {}
         for i, required_output in enumerate(self.required_outputs):
             if i < len(call_op.results):
@@ -400,13 +421,16 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # TODO: I just removed all ops and add them again to update with value_mapper.
         # It's not efficient, just because it's easy to implement. Should using replace use method
         # instead.
+        # Deattach all ops of the orginal function
         for op in reversed(ops_list):
             op.detach()
 
+        # Add a list of ops before the quantum.alloc ops in the original function
         new_ops = []
         for op in pre_ops:
             new_ops.append(op)
 
+        # Add a callOp to the box
         new_ops.append(call_op)
 
         value_mapper = call_result_mapper.copy()
@@ -421,5 +445,3 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         for op in new_ops:
             original_block.add_op(op)
-
-        print(self.module)
