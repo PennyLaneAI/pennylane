@@ -399,12 +399,18 @@
   through a numeric decomposition algorithm.
   [(#8388)](https://github.com/PennyLaneAI/pennylane/pull/8388)
 
-* Changed how basis states are assigned internally in `qml.Superposition`, improving its
-  decomposition slightly both regarding classical computing time and gate decomposition.
+* The internal assignment of basis states in :class:`~.Superposition` was improved, resulting in its
+  decomposition being more performant and efficient.
   [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
 
-* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
+* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator 
+  instances as arguments instead of types.
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
+
+  ```pycon
+  >>> qml.decomposition.has_decomp(qml.MultiControlledX)
+  True
+  ```
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
