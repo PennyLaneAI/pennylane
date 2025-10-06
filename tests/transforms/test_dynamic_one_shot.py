@@ -98,46 +98,41 @@ def test_postselection_error_with_wrong_device():
             return qml.probs(wires=[0])
 
 
-@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
-def test_postselect_mode(postselect_mode):
+def test_postselect_mode():
     """Test that invalid shots are discarded if requested"""
     shots = 100
     dev = qml.device("default.qubit")
 
     @qml.set_shots(shots)
-    @qml.qnode(dev, postselect_mode=postselect_mode)
+    @qml.qnode(dev, postselect_mode="hw-like")
     def f(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=1)
         return qml.sample(wires=[0, 1])
 
     res = f(np.pi / 2)
-    if postselect_mode == "hw-like":
-        assert len(res) < shots
-    else:
-        assert len(res) == shots
+    assert len(res) < shots
     assert np.all(res != np.iinfo(np.int32).min)
 
 
-@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
-def test_postselect_mode_transform(postselect_mode):
-    """Test that invalid shots are discarded if requested"""
+def test_fill_shots_not_supported():
+    """Test that fill-shots is not supported with dynamic-one-shot."""
+
     shots = 100
     dev = qml.device("default.qubit")
 
     @qml.set_shots(shots)
-    @qml.qnode(dev, mcm_method="one-shot", postselect_mode=postselect_mode)
+    @qml.qnode(dev, postselect_mode="fill-shots")
     def f(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=1)
         return qml.sample(wires=[0, 1])
 
-    res = f(np.pi / 2)
-    if postselect_mode == "hw-like":
-        assert len(res) < shots
-    else:
-        assert len(res) == shots
-    assert np.all(res != np.iinfo(np.int32).min)
+    with pytest.raises(
+        ValueError,
+        match="Using postselect_mode='fill-shots' is only supported with mcm_method='deferred'",
+    ):
+        f(np.pi / 2)
 
 
 @pytest.mark.jax
@@ -300,7 +295,6 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
         raw_results = (single_shot_res,) * shots
 
     else:
-
         # When postselecting, we start by creating results for two shots as alternating indices
         # will have valid results.
         # Alternating tuple. Only the values at odd indices are valid
