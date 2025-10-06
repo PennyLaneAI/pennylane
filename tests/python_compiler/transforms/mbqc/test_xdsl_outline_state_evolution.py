@@ -38,6 +38,38 @@ class TestOutlineStateEvolutionPass:
     """Unit tests for OutlineStateEvolutionPass."""
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_outline_state_evolution_pass_lower(self, run_filecheck_qjit):
+        """Test if outline_state_evolution_pass works would create a state_evolution funcOp."""
+        dev = qml.device("null.qubit", wires=1000)
+
+        @qml.while_loop(lambda i: i > 1000)
+        def while_for(i):
+            qml.H(i)
+            qml.S(i)
+            RotXZX(0.1, 0.2, 0.3, wires=[i])
+            qml.RZ(phi=0.1, wires=[i])
+            i = i + 1
+            return i
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            pipelines=mbqc_pipeline(),
+            autograph=True,
+        )
+        @outline_state_evolution_pass
+        @qml.set_shots(1000)
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK: func.call @circuit.state_evolution
+            # CHECK: func.func @circuit.state_evolution
+            while_for(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(wires=0))
+
+        run_filecheck_qjit(circuit)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_e2e_wo_for_loop(self):
         """Test that the outline_state_evolution_pass end to end on null.qubit."""
         dev = qml.device("null.qubit", wires=1000)
