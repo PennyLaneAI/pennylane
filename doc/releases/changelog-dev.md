@@ -80,9 +80,9 @@
   wires are handled:
 
   * ``num_wires``: the number of wires to dynamically allocate.
-  * ``state = "zero"/"any"``: the initial state that the dynamically allocated wires are requested to
-    be in. Currently, supported values are ``"zero"`` (initialize in the all-zero state) or ``"any"``
-    (any arbitrary state).
+  * ``state = "zero"/"any"``: the initial state that the dynamically allocated wires are requested 
+    to be in. Currently, supported values are ``"zero"`` (initialize in the all-zero state) or 
+    ``"any"`` (any arbitrary state).
   * ``restored = True/False``: a user-guarantee that the allocated wires will be restored to their
     original state (``True``) or not (``False``) when those wires are deallocated.
 
