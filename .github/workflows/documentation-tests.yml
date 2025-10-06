@@ -55,7 +55,6 @@ jobs:
       - name: Run documentation tests
         run: |
           IGNORE_OPTS_CLOSED="
-          --ignore=pennylane/ftqc
           --ignore=pennylane/labs
           --ignore=pennylane/compiler/python_compiler
           "
