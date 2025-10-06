@@ -402,7 +402,6 @@ def simulate_tree_mcm(
     """
     PROBS_TOL = 0.0
     interface = execution_kwargs.get("interface", None)
-    postselect_mode = execution_kwargs.get("postselect_mode", None)
 
     ##########################
     # shot vector processing #
