@@ -195,8 +195,8 @@
   {2: 1, 1: 1}
   ```
 
-* The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
-  This makes the depth computation performed by `qml.specs` optional.
+* The :func:`~.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
+  This makes the depth computation performed by :func:`~.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
   [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
