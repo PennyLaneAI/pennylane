@@ -1178,6 +1178,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removes excess copies in `QuantumScript.copy`.
+
 * GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
   use `ubuntu-24.04` runners. 
   [(#8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
