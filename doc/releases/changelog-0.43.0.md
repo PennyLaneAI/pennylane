@@ -462,47 +462,19 @@
 
   ```pycon
   >>> circuit.shots
-  Shots(total=1000)
+  Shots(total_shots=1000, shot_vector=(ShotCopies(1000 shots x 1),))
   >>> circuit()
   np.float64(-0.004)
   ```
 
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~.set_shots`. Note, however, that
+  decorating with :func:`~.set_shots` overrides QNode `shots`:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
   >>> new_circ.shots
-  Shots(total=123)
+  Shots(total_shots=123, shot_vector=(ShotCopies(123 shots x 1),))
   ```
-
-* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`.
-  Users can now use this when designing quantum circuits with experimental program capture enabled.
-
-  ```python
-  import pennylane as qml
-  import jax.numpy as jnp
-
-  qml.capture.enable()
-
-  @qml.qnode(qml.device("default.qubit", wires=3))
-  def circuit(val):
-    angles = jnp.zeros(3)
-    angles[0:3] += val
-
-    for i, angle in enumerate(angles):
-        qml.RX(angle, i)
-
-    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
-  ```
-
-  ```pycon
-  >>> circuit(jnp.pi)
-  (Array(-1, dtype=float32),
-   Array(-1, dtype=float32),
-   Array(-1, dtype=float32))
-  ```
-
-  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
 
 <h4>Clifford+T decomposition</h4>
 
@@ -619,6 +591,35 @@
   ```
 
 <h4>Other improvements</h4>
+
+* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`.
+  Users can now use this when designing quantum circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[0:3] += val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(-1, dtype=float32),
+   Array(-1, dtype=float32),
+   Array(-1, dtype=float32))
+  ```
+
+  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
 
 * Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
   [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
