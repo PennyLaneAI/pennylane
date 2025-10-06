@@ -620,7 +620,7 @@ class TestCatalystGrad:
 
         @qml.qjit
         def dsquare(x: float):
-            return catalyst.grad(square)(x)
+            return qml.grad(square)(x)
 
         assert jnp.allclose(dsquare(2.3), 4.6)
 
@@ -678,22 +678,6 @@ class TestCatalystGrad:
         result = qml.qjit(workflow)(np.array([2.0, 1.0]))
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
         assert jnp.allclose(result, reference)
-
-        with pytest.raises(
-            ValueError,
-            match="method = 'fd' unsupported without QJIT.",
-        ):
-            workflow(np.array([2.0, 1.0]))
-
-    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
-    def test_h_error(self, grad_fn):
-        """Test an error is raised if h is passed without qjit."""
-
-        def f(x):
-            return x**2
-
-        with pytest.raises(ValueError, match="unsupported without QJIT. "):
-            grad_fn(f, h=1e-6)(0.5)
 
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
