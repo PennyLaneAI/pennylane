@@ -107,7 +107,7 @@ class TestOutlineStateEvolutionPass:
             )
 
         res = circuit()
-        assert res == 0.0
+        assert res == (0.0, 0.0)
 
     @pytest.mark.xfail(reason="measurements_from_samples_pass only supports NamedObs")
     @pytest.mark.usefixtures("enable_disable_plxpr")
