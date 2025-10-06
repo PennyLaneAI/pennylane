@@ -402,10 +402,9 @@ class MPSPrep(Operation):
             self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
         )
 
+    # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
     def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None, right_canonicalize=False):
-
-
         return super()._primitive_bind_call(
             *mps, wires=wires, work_wires=work_wires, id=id, right_canonicalize=right_canonicalize
         )
@@ -503,9 +502,10 @@ class MPSPrep(Operation):
 
 if MPSPrep._primitive is not None:  # pylint: disable=protected-access
 
-    @MPSPrep._primitive.def_impl  # pylint: disable=protected-access
-    def _(*args, **kwargs):
-        return type.__call__(MPSPrep, args, **kwargs)
+    @MPSPrep._primitive.def_impl # pylint: disable=protected-access
+    def _(*args, n_wires, **kwargs):
+        mps, wires = args[:-n_wires], args[-n_wires:]
+        return type.__call__(MPSPrep, mps, wires=wires, **kwargs)
 
 
 def _mps_prep_decomposition_resources(
