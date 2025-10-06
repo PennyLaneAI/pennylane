@@ -240,7 +240,7 @@ def _semiadder_resources(num_y_wires):
     }
 
 
-@register_resources(_semiadder_resources, exact=False)
+@register_resources(_semiadder_resources)
 def _semiadder(x_wires, y_wires, work_wires, **_):
 
     num_y_wires = len(y_wires)

@@ -29,7 +29,7 @@ from .qpe import QuantumPhaseEstimation
 from .qmc import QuantumMonteCarlo
 from .all_singles_doubles import AllSinglesDoubles
 from .grover import GroverOperator
-from .kupccgsd import kUpCCGSD
+from .qchem.kupccgsd import kUpCCGSD
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .basis_rotation import BasisRotation
