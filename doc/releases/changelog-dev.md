@@ -276,15 +276,19 @@
 
 <h4>Quantum optimizers compatible with QJIT 🫖</h4>
 
-* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
-  quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
+* Leveraging :func:`~.qjit` to optimize hybrid workflows with the momentum quantum natural gradient 
+  optimizer is now possible with :class:`~.MomentumQNGOptimizerQJIT`. This provides better scaling
+  than its non-JIT-compatible counterpart.
   [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
 
-  Similar to the :class:`~.QNGOptimizerQJIT` optimizer, :class:`~.MomentumQNGOptimizerQJIT` offers a
-  `qml.qjit`-compatible analogue to the existing :class:`~.MomentumQNGOptimizer` with an Optax-like interface:
+  The v0.42 release saw the addition of the :class:`~.QNGOptimizerQJIT` optimizer, which is a 
+  ``qml.qjit``-compatible analogue to :class:`~.QNGOptimizer`. In this release, we've added the 
+  :class:`~.MomentumQNGOptimizerQJIT` optimizer, which is the ``qml.qjit``-compatible analogue to 
+  :class:`~.MomentumQNGOptimizer`. Both optimizers have an 
+  [Optax](https://optax.readthedocs.io/en/stable/getting_started.html#basic-usage-of-optax)-like 
+  interface:
 
   ```python
-  import pennylane as qml
   import jax.numpy as jnp
 
   dev = qml.device("lightning.qubit", wires=2)
@@ -310,11 +314,18 @@
       return params
   ```
 
+  Quantum just-in-time compilation works exceptionally well with repeatedly executing the same 
+  function in a ``for`` loop. As you can see, :math:`10^5` iterations takes seconds:
+
   ```pycon
+  >>> import time
   >>> params = jnp.array([0.1, 0.2])
-  >>> iters = 1000
+  >>> iters = 100_000
+  >>> start = time.process_time()
   >>> optimization_qjit(params=params, iters=iters)
   Array([ 3.14159265, -1.57079633], dtype=float64)
+  >>> time.process_time() - start
+  21.319525
   ```
 
 <h3>Improvements 🛠</h3>
