@@ -395,6 +395,10 @@
   place of :class:`~.Toffoli` gates, leading to more resource-efficient decompositions.
   [(#8172)](https://github.com/PennyLaneAI/pennylane/pull/8172)
 
+* ``Controlled(Identity)`` is now directly decomposed to a single Identity operator instead of going
+  through a numeric decomposition algorithm.
+  [(#8388)](https://github.com/PennyLaneAI/pennylane/pull/8388)
+
 * Changed how basis states are assigned internally in `qml.Superposition`, improving its
   decomposition slightly both regarding classical computing time and gate decomposition.
   [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
