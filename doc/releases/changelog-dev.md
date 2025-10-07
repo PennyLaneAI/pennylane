@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
+  can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
+  [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
