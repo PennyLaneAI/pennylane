@@ -5,8 +5,9 @@
 
 <h4>A brand new resource estimation module 🧮</h4>
 
-* The Resource estimation toolkit was upgraded and has migrated from
-  :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
+* A new toolkit dedicated to resource estimation is now available in the :mod:`~.estimator` module!
+  The functionality therein is designed to rapidly estimate the quantum resources required to execute a program,
+  and it can flexibly analyze programs written at different levels of abstraction.
 
   * Added functionality to map PennyLane operations
     to their associated resource operators for resource estimation.
@@ -60,6 +61,10 @@
   * Fixed some issues and updated docs for the :mod:`~.estimator` module.
     [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
     [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
+
+  The resource estimation tools in the :mod:`~.estimator` module
+  were originally prototyped in the :mod:`~.labs` module.
+  Check it out too for the latest cutting-edge research functionality!
 
 <h4>Dynamic wire allocation 🎁</h4>
 
