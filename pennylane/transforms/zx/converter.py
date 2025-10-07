@@ -153,7 +153,7 @@ def to_zx(tape, expand_measurements=False):
     It is now a PyZX graph and can apply function from the framework on your Graph, for example you can draw it:
 
     >>> pyzx.draw_matplotlib(g)
-    <Figure size 800x200 with 1 Axes>
+    <Figure size ... with 1 Axes>
 
     Alternatively you can use the transform directly on a quantum tape and get PyZX graph.
 
@@ -289,8 +289,7 @@ def to_zx(tape, expand_measurements=False):
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tapes_opt_reorder, fn = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
-            tape_opt_reorder = fn(tapes_opt_reorder)
+            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
 
             @qml.qnode(device=dev)
             def mod_5_4():
@@ -298,8 +297,9 @@ def to_zx(tape, expand_measurements=False):
                     qml.apply(g)
                 return qml.expval(qml.Z(0))
 
-        >>> mod_5_4()
-        tensor(1., requires_grad=True)
+        >>> result = mod_5_4()
+        >>> assert np.isclose(result, 1.0)
+
 
     .. note::
 
@@ -478,14 +478,16 @@ def from_zx(graph, decompose_phases=True):
 
     You can check that the operations are similar but some were decomposed in the process.
 
-    >>> pennylane_tape.operations
+    >>> ops = pennylane_tape.operations
+    >>> from pprint import pprint
+    >>> pprint(ops)
     [Z(0),
      T(0),
-     RX(0.1, wires=[1]),
+     RX(0.10..., wires=[1]),
      Z(0),
      Adjoint(T(0)),
      Z(1),
-     RZ(0.3, wires=[0]),
+     RZ(0.30..., wires=[0]),
      X(0),
      CNOT(wires=[1, 0]),
      CNOT(wires=[0, 1]),
