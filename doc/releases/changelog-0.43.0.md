@@ -1459,10 +1459,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `default.qubit` now properly validates the `mcm_method`.
+* Fixed a bug in `default.qubit` where it wasn't properly validating the `mcm_method` keyword argument.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
-* :class:`~.SpecialUnitary` now correctly obeys the interfaces of input parameters when large numbers of wires are used.
+* Fixed compatibility with JAX and PyTorch input parameters in :class:`~.SpecialUnitary` when large
+  numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
 
 * Autograph will now be correctly applied to the wrapped functions of :func:`~pennylane.adjoint`
@@ -1473,7 +1474,7 @@
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
 
 * `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
-  in the circuit with the `ctrl` happens.
+  in the circuit where the `ctrl` happens.
   [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
 * JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
@@ -1526,7 +1527,8 @@
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
 
-* Fixes an issue with tree-traversal and non-sequential wire orders.
+* Fixes an issue with tree-traversal MCM method and non-sequential wire orders that produced incorrect
+  results.
   [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
 
 * Fixes a bug in :func:`~.matrix` where an operator's
