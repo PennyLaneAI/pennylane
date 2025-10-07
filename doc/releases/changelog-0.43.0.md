@@ -909,9 +909,6 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Pin `autoray` to `v0.8.0` for PennyLane `v0.43.0` release to prevent potential bug fix releases.
-  [(#8412)](https://github.com/PennyLaneAI/pennylane/pull/8412)
-
 * `qml.workflow.construct_batch.expand_fn_transform` is deleted as it was local and no longer getting used.
   [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
 
@@ -1243,12 +1240,20 @@
   [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
   [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
 
+* Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
+  [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
+  [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
+  [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
+
 * The `autograph` keyword argument has been removed from the `QNode` constructor.
   To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
   [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
 
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
+
+* Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
+  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
