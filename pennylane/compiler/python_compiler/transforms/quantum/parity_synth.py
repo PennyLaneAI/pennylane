@@ -26,7 +26,7 @@ from xdsl.dialects import builtin, func  # arith
 from xdsl.rewriter import InsertPoint
 
 from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
-from ...dialects.quantum import CustomOp, QubitType  # , GlobalPhaseOp
+from ...dialects.quantum import CustomOp, QubitType
 from ...pass_api import compiler_transform
 
 ### xDSL-agnostic part
@@ -94,7 +94,7 @@ def _loop_body_parity_network_synth(
 
 def _parity_network_synth(
     P: np.ndarray,
-    # connectivity: nx.Graph | None = None,
+    connectivity: nx.Graph | None = None,
 ) -> list[int, list[tuple[int]]]:
     """Main subroutine for the ``ParitySynth`` pass, mostly a ``for``-loop wrapper around
     ``_loop_body_parity_network_synth``. It synthesizes the parity network, as described
@@ -102,7 +102,7 @@ def _parity_network_synth(
 
     Args:
         P (np.ndarray): Parity table to be synthesized.
-        #connectivity (nx.Graph): Connectivity to be taken into account during synthesis.
+        connectivity (nx.Graph): Connectivity to be taken into account during synthesis.
             #Currently not supported yet.
 
     Returns:
@@ -111,8 +111,8 @@ def _parity_network_synth(
         inverse of the parity matrix implemented by the synthesized circuit.
 
     """
-    # if connectivity is not None:
-    # raise NotImplementedError
+    if connectivity is not None:
+        raise NotImplementedError("to do")
 
     if len(P) == 0:
         return [], None
@@ -144,7 +144,6 @@ def make_phase_polynomial(
     parity_matrix = np.eye(len(wire_map), dtype=int)
     parity_table = []
     angles = []
-    # global_phase = 0.
     for op in ops:
         name = op.gate_name.data
         if name == "CNOT":
@@ -154,33 +153,12 @@ def make_phase_polynomial(
             wire_map[op.out_qubits[1]] = target
             continue
         angles.append(op.operands[0])  # RZ
-        # pylint: disable=pointless-string-statement
-        """
-        if name == "RZ":
-            angles.append(op.operands[0])
-        else:
-            if name == "PhaseShift":
-                # PhaseShift(ϕ) = RZ(ϕ) . GlobalPhase(-ϕ/2)
-                angle = op.operands[0]
-            elif name == "Z":
-                # Z = RZ(π) . GlobalPhase(-π/2)
-                angle = np.pi
-            elif name == "S":
-                # S = RZ(π/2) . GlobalPhase(-π/4)
-                angle = np.pi / 2
-            else:
-                # T = RZ(π/4) . GlobalPhase(-π/8)
-                angle = np.pi / 4
-
-            angles.append(angle)
-            global_phase -= angle / 2
-        """
 
         wire = wire_map[op.in_qubits[0]]
         parity_table.append(parity_matrix[wire].copy())  # append _current_ parity (hence the copy)
         wire_map[op.out_qubits[0]] = wire
 
-    return parity_matrix % 2, np.array(parity_table).T % 2, np.array(angles)  # , global_phase
+    return parity_matrix % 2, np.array(parity_table).T % 2, np.array(angles)
 
 
 # todo: parity table reduction function (for repeated parities)
@@ -190,10 +168,9 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
     """Rewrite pattern that applies ``ParitySynth`` to subcircuits that constitute
     phase polynomials."""
 
-    def __init__(self, *args, **kwargs):  # connectivity: nx.Graph | None = None, **kwargs):
+    def __init__(self, *args, connectivity: nx.Graph | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.connectivity = connectivity
-        # self.global_phase = 0.
+        self.connectivity = connectivity
         self._reset_vars()
 
     def _reset_vars(self):
@@ -243,9 +220,6 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         # todo: to this properly by using a different rewriter or so
         rewriter.has_done_action = False
 
-        # rewriter.insert_op(GlobalPhaseOp(params=(self.global_phase,)), InsertPoint.before(op))
-        # self.global_phase = 0.
-
     @staticmethod
     def _cnot(i, j, inv_wire_map):
         """Create a CNOT operator acting on the qubits that map to wires ``i`` and ``j``
@@ -278,14 +252,12 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         # Calculate the new circuit by going to phase polynomial IR and back, including synthesis
         # of trailing CNOTs via rowcol
         M, P, angles = make_phase_polynomial(self.phase_polynomial_ops, self.init_wire_map)
-        # M, P, angles, phi = make_phase_polynomial(self.phase_polynomial_ops, self.init_wire_map)
-        # self.global_phase += phi
         # todo: call parity table reduction function once it exists
-        subcircuits, inv_network_parity_matrix = _parity_network_synth(P)  # , self.connectivity)
-        # inv_network_parity_matrix might be None if the parity table was empty
+        subcircuits, inv_network_parity_matrix = _parity_network_synth(P, self.connectivity)
+        # `inv_network_parity_matrix` might be None if the parity table was empty
         if inv_network_parity_matrix is not None:
             M = (M @ inv_network_parity_matrix) % 2
-        rowcol_circuit = _rowcol_parity_matrix(M)  # , self.connectivity)
+        rowcol_circuit = _rowcol_parity_matrix(M, self.connectivity)
 
         # Apply the new circuit
         for idx, phase_wire, subcircuit in subcircuits:
