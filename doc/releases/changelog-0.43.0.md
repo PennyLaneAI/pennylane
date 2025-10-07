@@ -137,7 +137,7 @@
               with qml.allocate(1, state="any", restored=False) as new_qubit2:
                   m0 = qml.measure(new_qubit1[0], reset=True)
                   qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
-                  qml.CNOT((0, new_qubit2))
+                  qml.CNOT((0, new_qubit2[0]))
 
       return qml.expval(qml.Z(0))
   ```
