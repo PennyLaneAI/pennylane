@@ -1459,64 +1459,68 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug in `default.qubit` where it wasn't properly validating the `mcm_method` keyword argument.
+* Fixed a bug in ``default.qubit`` where it wasn't properly validating the ``mcm_method`` keyword argument.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
 * Fixed compatibility with JAX and PyTorch input parameters in :class:`~.SpecialUnitary` when large
   numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
 
-* Autograph will now be correctly applied to the wrapped functions of :func:`~pennylane.adjoint`
-  and :func:`~pennylane.ctrl`.
+* With ``qml.capture.enable()``, autograph will now be correctly applied to functions containing 
+  control flow that are then wrapped in :func:`~pennylane.adjoint` or :func:`~pennylane.ctrl`.
   [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
 
-* Parameter batching now works for Z-basis gates when executing with `default.mixed`.
+* Parameter batching now works for Z-basis gates when executing with ``default.mixed``.
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
 
-* `qml.ctrl(qml.Barrier(), control_wires)` now just returns the original Barrier operation, but placed
-  in the circuit where the `ctrl` happens.
+* ``qml.ctrl(qml.Barrier(), control_wires)`` now just returns the original ``Barrier`` operation, but placed
+  in the circuit where the ``ctrl`` happens.
   [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
 * JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
   [(#8222)](https://github.com/PennyLaneAI/pennylane/pull/8222)
 
-* Pauli arithmetic can now handle abstract coefficients when participating in a jitted function.
+* Pauli arithmetic operations (e.g., ``op.simplify()``) can now handle abstract/runtime coefficients 
+  when participating in a jitted function.
   [(#8190)](https://github.com/PennyLaneAI/pennylane/pull/8190)
 
 * Operators queued with :func:`pennylane.apply` no longer get dequeued by subsequent dequeuing operations
-  (e.g. :func:`pennylane.adjoint`).
+  (e.g., :func:`pennylane.adjoint`).
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
-* Fixed a bug in the decomposition rules of :class:`~.Select` with the new decomposition system
+* Fixed a bug in the decomposition rules of :class:`~.Select` with the graph-based decomposition system
   that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
-  This enables the new decomposition system with ``Select`` of parametrized target ``ops``.
+  This enables the graph-based decomposition system with ``Select`` being provided parametrized target 
+  ``ops``.
   [(#8186)](https://github.com/PennyLaneAI/pennylane/pull/8186)
 
-* `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
-  more robustly. In particular, the generator is simplified prior to decomposition. Now more
-  time evolution ops can be supported on devices that do not natively support them.
+* ``Exp`` and ``Evolution`` now have improved decompositions, allowing them to handle more situations
+  more robustly. In particular, the generator is simplified prior to decomposition. Now, more
+  time evolution operators can be supported on devices that do not natively support them.
   [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
-* A scalar product of a norm one scalar and an operator now decomposes into a `GlobalPhase` and the operator.
-  For example, `-1 * qml.X(0)` now decomposes into `[qml.GlobalPhase(-np.pi), qml.X(0)]`.
+* A scalar product of a norm one scalar and an operator now decomposes into a ``GlobalPhase`` and the operator.
+  For example, ``-1 * qml.X(0)`` now decomposes into ``[qml.GlobalPhase(-np.pi), qml.X(0)]``. This improves
+  the decomposition of ``Select`` when there are complicated target ``ops``.
   [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
-* Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
-  :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
-  a caching issue.
+* Fixed a bug that made the queueing behaviour of :meth:`qml.PauliWord.operation <~.pauli.PauliWord.operation>` 
+  and :meth:`qmle.PauliSentence.operation <~.pauli.PauliSentence.operation>` depndent on the global 
+  state of a program due to a caching issue.
   [(#8135)](https://github.com/PennyLaneAI/pennylane/pull/8135)
 
 * A more informative error is raised when extremely deep circuits are attempted to be drawn.
   [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
 
-* An error is now raised if sequences of classically processed mid circuit measurements
-  are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
+* An error is now raised if sequences of classically processed mid-circuit measurements
+  are used as input to :func:`pennylane.counts` or :func:`pennylane.probs` (e.g., 
+  ``qml.counts([2*qml.measure(0), qml.measure(1)])``)
   [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
 
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
-* Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
+* Fixed the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
   [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
 
 * The `~.for_loop` function with capture enabled can now handle over indexing
@@ -1527,18 +1531,18 @@
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
 
-* Fixes an issue with tree-traversal MCM method and non-sequential wire orders that produced incorrect
+* Fixed an issue with tree-traversal MCM method and non-sequential wire orders that produced incorrect
   results.
   [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
 
-* Fixes a bug in :func:`~.matrix` where an operator's
+* Fixed a bug in :func:`~.matrix` where an operator's
   constituents were incorrectly queued if its decomposition was requested.
   [(#7976)](https://github.com/PennyLaneAI/pennylane/pull/7976)
 
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
-* Fixes issue related to :func:`~.transforms.to_zx` adding the support for
+* Fixed issue related to :func:`~.transforms.to_zx` adding the support for
   `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.
   [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
 
@@ -1552,22 +1556,22 @@
 * Calling `QNode.update` no longer acts as if `set_shots` has been applied.
   [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
-* Fixes attributes and types in the quantum dialect.
+* Fixed attributes and types in the quantum dialect.
   This allows for types to be inferred correctly when parsing.
   [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
 
-* Fixes `SemiAdder` to work when inputs are defined with a single wire.
+* Fixed `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
 
-* Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
+* Fixed a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
   [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
-* Fixes a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
+* Fixed a bug where a copy of `ShadowExpvalMP` was incorrect for a multi-term composite observable.
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
-* Fixes a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, :func:`~.transforms.single_qubit_fusion`,
+* Fixed a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, :func:`~.transforms.single_qubit_fusion`,
   :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
