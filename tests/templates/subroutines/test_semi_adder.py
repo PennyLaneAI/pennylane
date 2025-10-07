@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
@@ -152,7 +153,8 @@ class TestSemiAdder:
 
         for rule in qml.list_decomps(qml.SemiAdder):
             _test_decomposition_rule(
-                qml.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule, heuristic_resources=True
+                qml.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
+                rule,
             )
 
     @pytest.mark.jax

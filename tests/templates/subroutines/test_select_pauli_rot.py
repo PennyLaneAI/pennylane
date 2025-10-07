@@ -42,6 +42,7 @@ def get_tape(angles, wires):
 
 class TestSelectPauliRot:
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
@@ -54,7 +55,7 @@ class TestSelectPauliRot:
             rot_axis="X",
         )
 
-        qml.ops.functions.assert_valid(op, heuristic_resources=True)
+        qml.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("angles", "rot_axis", "target_wire", "msg_match"),
