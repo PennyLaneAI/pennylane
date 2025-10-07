@@ -18,10 +18,9 @@
       A lightweight class corresponding to an operator type alongside its parameters.
     * :class:`~.estimator.resource_operator.GateCount`:
       A class to represent a gate and its number of occurrences in a circuit or decomposition.
-  [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
-  [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
-  [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-
+    [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
+    [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
+    [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
