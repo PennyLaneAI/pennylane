@@ -1511,6 +1511,27 @@ class TestQNodeVmapIntegration:
 class TestQNodeAutographIntegration:
     """Tests for Autograph integration with QNodes."""
 
+    def test_autograph_with_qnode_transforms(self):
+        """Test that autograph can be used when transforms are applied to the qnode."""
+
+        dev = qml.device('default.qubit', wires=[0,1,2])
+
+        @qml.capture.run_autograph
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def c(n):
+            for i in range(n):
+                qml.H(i)
+            return qml.state()
+        
+        jaxpr = jax.make_jaxpr(c)(3)
+        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        j2 = jaxpr.eqns[0].params['inner_jaxpr']
+        assert j2.eqns[0].primitive == qnode_prim
+        j3 = j2.eqns[0].params['qfunc_jaxpr']
+        assert j3.eqns[0].primitive == qml.capture.primitives.for_loop_prim
+        assert j3.eqns[0].invars[1] is j3.invars[0]
+
     @pytest.mark.parametrize("autograph", [True, False])
     def test_python_for_loop(self, autograph):
         """Tests that native Python for loops can be used with the QNode."""
