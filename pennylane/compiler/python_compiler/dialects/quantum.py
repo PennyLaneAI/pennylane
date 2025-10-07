@@ -492,10 +492,10 @@ class GlobalPhaseOp(IRDLOperation):
     name = "quantum.gphase"
 
     assembly_format = """
-           `(` $params `)` 
-           attr-dict 
-           ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  
-           ( `ctrlvals` `(` $in_ctrl_values^ `)` )? 
+           `(` $params `)`
+           attr-dict
+           ( `ctrls` `(` $in_ctrl_qubits^ `)` )?
+           ( `ctrlvals` `(` $in_ctrl_values^ `)` )?
            `:` type(results)
        """
 
