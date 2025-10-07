@@ -1383,11 +1383,12 @@
 
 <h3>Documentation 📝</h3>
 
-* The :doc:`installation page </development/guide/installation>` was updated to include currently supported Python versions and installation instructions.
+* The :doc:`installation page </development/guide/installation>` was updated to include
+  currently supported Python versions and installation instructions.
   [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
 
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
-  to guard users from an incompatibility that currently exists between the two.
+  to avoid using them together as the output might be different than expected.
   Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
@@ -1397,10 +1398,11 @@
 * Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
-* The documentation of `qml.device` has been updated.
+* The documentation of `qml.device` has been updated to reflect the usage of :func:`~pennylane.set_shots`.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
-* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
+* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>`
+  page was pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
@@ -1414,10 +1416,11 @@
   performed operations on the target qubits.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
-* Updated the code examples in the documentation of :func:`~.specs`.
+* Updated the code examples in the documentation of :func:`~.specs` to replace keyword arguments
+  with `gradient_kwargs` in the QNode definition.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
-* Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
+* Clarified the optional developer-facing use case for `Operator.pow` and `Operator.adjoint`.
   [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
 
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
@@ -1426,14 +1429,15 @@
 * Improved the docstrings of all optimizers for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
-* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
+* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting` to
+  give the correct output.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 * Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
-* Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
-  Trimmed the outdated part of discussion regarding different choices of `alpha`.
+* Trimmed out the outdated part of an explanation about the different choices of
+  the `alpha` parameter in `ClassicalShadow.entropy`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 * A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted
