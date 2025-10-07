@@ -390,12 +390,16 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     def _capture_callable_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
 
-        @wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
             import jax  # pylint: disable=import-outside-toplevel
 
+            # pylint: disable=unnecessary-lambda
             ag_qfunc = (
-                run_autograph(qfunc) if control_status_ctx().status.name == "ENABLED" else qfunc
+                run_autograph(
+                    lambda *inner_args, **inner_kwargs: qfunc(*inner_args, **inner_kwargs)
+                )
+                if control_status_ctx().status.name == "ENABLED"
+                else qfunc
             )
             flat_qfunc = qml.capture.flatfn.FlatFn(ag_qfunc)
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
@@ -421,7 +425,12 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             assert flat_qfunc.out_tree is not None
             return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
 
-        return qfunc_transformed
+        # pylint: disable=unnecessary-lambda
+        qfunc_transformed2 = wraps(qfunc)(
+            lambda *args, **kwargs: qfunc_transformed(*args, **kwargs)
+        )
+
+        return qfunc_transformed2
 
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
