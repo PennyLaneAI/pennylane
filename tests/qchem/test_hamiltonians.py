@@ -29,7 +29,7 @@ from pennylane.fermi import from_string
 def test_molecular_hamiltonian_numpy_data():
     """Test that if numpy data is used with molecular hamiltonian, that numpy data is outputted."""
     symbols = ["H", "H"]
-    coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
+    coordinates = np.array([[0.0, 0.0, -0.6614], [0.0, 0.0, 0.6614]])
 
     H, _ = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     assert all(qml.math.get_interface(d) == "numpy" for d in H.data)

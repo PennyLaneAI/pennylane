@@ -555,7 +555,7 @@ def _molecular_hamiltonian(
         )
 
         requires_grad = args is not None
-        interface = qml.math.get_deep_interface((coordinates, alpha, coeff))
+        interface = qml.math.get_interface(coordinates, alpha, coeff)
         if interface == "autograd":
             interface_args = {"like": "autograd", "requires_grad": requires_grad}
         elif interface in {"numpy", "jax"}:
