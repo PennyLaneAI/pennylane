@@ -91,6 +91,28 @@ def null_postprocessing(results: ResultBatch) -> Result:
     return results[0]
 
 
+def _new_ops(operations, manager, wire_map, deallocated):
+    for op in operations:
+        # check name faster than isinstance
+        if op.name == "Allocate":
+            for w in op.wires:
+                wire, ops = manager.get_wire(**op.hyperparameters)
+                yield from ops
+                wire_map[w] = wire
+        elif op.name == "Deallocate":
+            for w in op.wires:
+                deallocated.add(w)
+                manager.return_wire(wire_map.pop(w))
+        else:
+            if wire_map:
+                op = op.map_wires(wire_map)
+            if deallocated and (intersection := deallocated.intersection(set(op.wires))):
+                raise AllocationError(
+                    f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
+                )
+            yield op
+
+
 @transform
 def resolve_dynamic_wires(
     tape: QuantumScript,
@@ -234,26 +256,8 @@ def resolve_dynamic_wires(
     wire_map = {}
     deallocated = set()
 
-    new_ops = []
-    for op in tape.operations:
-        # check name faster than isinstance
-        if op.name == "Allocate":
-            for w in op.wires:
-                wire, ops = manager.get_wire(**op.hyperparameters)
-                new_ops += ops
-                wire_map[w] = wire
-        elif op.name == "Deallocate":
-            for w in op.wires:
-                deallocated.add(w)
-                manager.return_wire(wire_map.pop(w))
-        else:
-            if wire_map:
-                op = op.map_wires(wire_map)
-            if deallocated and (intersection := deallocated.intersection(set(op.wires))):
-                raise AllocationError(
-                    f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
-                )
-            new_ops.append(op)
+    # note that manager, wire_map, and deallocated updated in place
+    new_ops = list(_new_ops(tape.operations, manager, wire_map, deallocated))
 
     if wire_map:
         mps = [mp.map_wires(wire_map) for mp in tape.measurements]
@@ -264,10 +268,12 @@ def resolve_dynamic_wires(
             raise AllocationError(
                 f"Encountered deallocated wires {intersection} in {mp}. Dynamic wires cannot be used after deallocation."
             )
-        
+
     if not wire_map and not deallocated:
         return (tape,), null_postprocessing
     # use private trainable params to avoid calculating them if they haven't already been set
     return (
-        tape.copy(ops=new_ops, measurements=mps, trainable_params=tape._trainable_params), # pylint: disable=protected-access
+        tape.copy(
+            ops=new_ops, measurements=mps, trainable_params=tape._trainable_params
+        ),  # pylint: disable=protected-access
     ), null_postprocessing
