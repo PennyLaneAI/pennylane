@@ -298,7 +298,8 @@ def to_zx(tape, expand_measurements=False):
                 return qml.expval(qml.Z(0))
 
         >>> result = mod_5_4()
-        >>> assert np.isclose(result, 1.0)
+        >>> print(np.isclose(result, 1.0))
+        True
 
 
     .. note::
