@@ -655,16 +655,17 @@ class ConvertToMBQCFormalismPattern(
                     x_correct, z_correct = self._hadamard_parity(mres, op, rewriter)
 
                     # Deallocate the non-result auxiliary qubits and target qubit in the qreg
-                    self._deallocate_aux_qubits(graph_qubits_dict, [5], op, rewriter)
 
-                    # insert_qubit_op = InsertOp(qreg, target_wire, graph_qubits_dict[5])
-                    # rewriter.insert_op(insert_qubit_op, InsertPoint.before(op))
-                    # updated_qubit_op = ExtractOp(qreg, target_wire)
-                    # rewriter.insert_op(updated_qubit_op, InsertPoint.before(op))
+                    insert_qubit_op = InsertOp(qreg, target_wire, graph_qubits_dict[5])
+                    rewriter.insert_op(insert_qubit_op, InsertPoint.before(op))
+                    updated_qubit_op = ExtractOp(qreg, target_wire)
+                    rewriter.insert_op(updated_qubit_op, InsertPoint.before(op))
+
+                    self._deallocate_aux_qubits(graph_qubits_dict, [1], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
-                    # rewriter.replace_all_uses_with(op.results[0], updated_qubit_op.results[0])
-                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
+                    rewriter.replace_all_uses_with(op.results[0], updated_qubit_op.results[0])
+                    
                     # Remove op operation
                     prev_op = op
                     updated_x = arith.XOrIOp(x_correct, target_z_record.result)
