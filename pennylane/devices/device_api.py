@@ -1104,7 +1104,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
 
 def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
     class TransformedDevice(type(original_device)):
-        """A transformed device with updated preprocess method."""
+        """A transformed device with updated preprocess_transforms method."""
 
         def __init__(self, original_device, transform, targs, tkwargs):
             for key, value in original_device.__dict__.items():
