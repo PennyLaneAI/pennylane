@@ -35,7 +35,6 @@ from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-from pennylane.transforms.core.transform_dispatcher import apply_to_callable
 from pennylane.typing import TensorLike
 
 from .execution import execute
