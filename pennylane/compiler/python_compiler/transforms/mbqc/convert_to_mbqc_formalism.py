@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf, tensor
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
-from xdsl.ir import SSAValue
+from xdsl.ir import Operation, SSAValue
 from xdsl.ir.core import OpResult
 from xdsl.rewriter import InsertPoint
 
@@ -564,6 +564,14 @@ class ConvertToMBQCFormalismPattern(
                 dealloc_qubit_op = DeallocQubitOp(graph_qubits_dict[node])
                 rewriter.insert_op(dealloc_qubit_op, InsertPoint.before(insert_before))
 
+    def _get_wire_idx(self, op: SSAValue):
+        if isinstance(op.owner, ExtractOp):
+            return op.owner.idx
+        else:
+            for operand in op.owner.operands:
+                if operand == op:
+                    self._get_wire_idx(operand)
+
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
@@ -608,7 +616,7 @@ class ConvertToMBQCFormalismPattern(
 
                 elif isinstance(op, CustomOp) and op.gate_name.data == "Hadamard":
                     # TODOs: use a method to walk up to the target wire SSA value that can be interpreted by the tensor.extract
-                    target_wire = op.operands[0].owner.operands[1]
+                    target_wire = self._get_wire_idx(op.operands[0])
 
                     target_wire_index = arith.IndexCastOp(
                         target_wire, target_type=builtin.IndexType()
@@ -665,7 +673,7 @@ class ConvertToMBQCFormalismPattern(
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
                     rewriter.replace_all_uses_with(op.results[0], updated_qubit_op.results[0])
-                    
+
                     # Remove op operation
                     prev_op = op
                     updated_x = arith.XOrIOp(x_correct, target_z_record.result)
