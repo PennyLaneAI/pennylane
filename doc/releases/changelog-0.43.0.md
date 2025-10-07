@@ -213,7 +213,7 @@
   optimize [phase polynomials](https://pennylane.ai/compilation/phase-polynomial-intermediate-representation),
   and reduce the number of gates in non-Clifford circuits. These transforms include:
 
-  * :func:`~.transforms.zx.optimize_t_count` to reduce the number of gates in a Clifford + T circuit by applying
+  * :func:`~.transforms.zx.optimize_t_count`: reduces the number of gates in a Clifford + T circuit by applying
     a sequence of passes that combine ZX-based commutation and cancellation rules and the
     Third Order Duplicate and Destroy (TODD) algorithm.
 
