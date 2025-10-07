@@ -25,11 +25,13 @@
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
-  * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
+  * The :class:`~.estimator.wires_manager.WireResourceManager`,
+    :class:`~.estimator.wires_manager.Allocate`, and :class:`~.estimator.wires_manager.Allocate`
     classes were added to manage and track wire usage for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
 
-  * Added a new `ResourceConfig` class to store the configuration used for resource estimation,
+  * Added a new :class:`~.estimator.resource_config.ResourceConfig` class
+    to store the configuration used for resource estimation,
     including operator precisions and custom decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
 
@@ -38,10 +40,10 @@
     [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
     [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
 
-  * The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
-    classes were added to store metadata of the Hamiltonian of a quantum system,
-    and the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
-    ``TrotterVibronic`` related to the Suzuki-Trotter method were added to `qml.estimator.templates`.
+  * Added the ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
+    classes to store metadata of the Hamiltonian of a quantum system,
+    and added the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
+    ``TrotterVibronic`` related to the Suzuki-Trotter method.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
 
   * The resource operators for ``Identity``, ``GlobalPhase``, non-parametric operators and single-qubit
@@ -63,11 +65,11 @@
     [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
   * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
     ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
-    ``RegisterComparator`` were added to `qml.estimator.templates`.
+    ``RegisterComparator`` were added.
     [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
-  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
+  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added.
     [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
-  * The test files were renamed to avoid the dual definition error with labs module.
+  * The test files were renamed to avoid dual definition error with the labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Fixed some issues and updated docs for the :mod:`~.estimator` module.
     [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
