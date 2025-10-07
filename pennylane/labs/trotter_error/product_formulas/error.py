@@ -96,11 +96,11 @@ def effective_hamiltonian(
     with executor(max_workers=num_workers) as ex:
         partial_sum = ex.starmap(
             _eval_commutator,
-            (
+            [
                 (commutator, coeff, fragments)
                 for ith_order in bch
                 for commutator, coeff in ith_order.items()
-            ),
+            ],
         )
 
     eff = _AdditiveIdentity()
@@ -195,7 +195,7 @@ def perturbation_error(
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
     >>>
-    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3)
+    >>> errors = perturbation_error(pf, frags, [state1, state2], max_order=3)
     >>> print(errors)
     [{3: 0.9189251160920876j}, {3: 4.7977166824268505j}]
     """

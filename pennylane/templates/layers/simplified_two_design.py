@@ -83,8 +83,8 @@ class SimplifiedTwoDesign(Operation):
                               [pi, 0.]]
             weights = [weights_layer1, weights_layer2]
 
-            >>> circuit(init_weights, weights)
-            [1., -1., 1.]
+        >>> circuit(init_weights, weights)
+        [1., -1., 1.]
 
         **Parameter shapes**
 

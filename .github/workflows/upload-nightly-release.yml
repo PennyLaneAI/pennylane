@@ -9,7 +9,7 @@ on:
 jobs:
   setup:
     name: Setup the release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout PennyLane repo
       uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
   upload:
     name: Upload wheels to TestPyPI
     needs: [setup]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 

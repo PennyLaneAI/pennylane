@@ -15,7 +15,7 @@ r"""Resource operators for controlled operations."""
 
 from typing import Literal
 
-from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X, Z
+import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -105,8 +105,8 @@ class CH(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        ry = resource_rep(RY)
-        h = resource_rep(Hadamard)
+        ry = resource_rep(qre.RY)
+        h = resource_rep(qre.Hadamard)
         cnot = resource_rep(CNOT)
         return [GateCount(h, 2), GateCount(ry, 2), GateCount(cnot, 1)]
 
@@ -144,10 +144,26 @@ class CH(ResourceOperator):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.Hadamard` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
         """
-        raise ResourcesUndefinedError
+        ctrl_h = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Hadamard),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_h)]
 
     @classmethod
     def pow_resource_decomp(
@@ -170,7 +186,7 @@ class CH(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -241,10 +257,10 @@ class CY(ResourceOperator):
             ``S`` gates.
         """
         cnot = resource_rep(CNOT)
-        s = resource_rep(S)
-        z = resource_rep(Z)
+        s = resource_rep(qre.S)
+        s_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": s})
 
-        return [GateCount(cnot), GateCount(s, 2), GateCount(z)]
+        return [GateCount(cnot), GateCount(s), GateCount(s_dag)]
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
@@ -280,10 +296,25 @@ class CY(ResourceOperator):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.Y` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        ctrl_y = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Y),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_y)]
 
     @classmethod
     def pow_resource_decomp(
@@ -306,7 +337,7 @@ class CY(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -382,7 +413,7 @@ class CZ(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        h = resource_rep(Hadamard)
+        h = resource_rep(qre.Hadamard)
 
         return [GateCount(cnot), GateCount(h, 2)]
 
@@ -417,13 +448,28 @@ class CZ(ResourceOperator):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.Z` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if num_ctrl_wires == 1 and num_zero_ctrl == 0:
             return [GateCount(resource_rep(CCZ))]
 
-        raise ResourcesUndefinedError
+        ctrl_z = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Z),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_z)]
 
     @classmethod
     def pow_resource_decomp(
@@ -446,7 +492,7 @@ class CZ(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -562,10 +608,25 @@ class CSWAP(ResourceOperator):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.SWAP` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        ctrl_swap = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.SWAP),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_swap)]
 
     @classmethod
     def pow_resource_decomp(
@@ -588,7 +649,7 @@ class CSWAP(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -664,7 +725,7 @@ class CCZ(ResourceOperator):
             in the decomposition.
         """
         toffoli = resource_rep(Toffoli)
-        h = resource_rep(Hadamard)
+        h = resource_rep(qre.Hadamard)
         return [GateCount(toffoli), GateCount(h, 2)]
 
     @classmethod
@@ -701,10 +762,26 @@ class CCZ(ResourceOperator):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.Z` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        ctrl_z = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Z),
+                "num_ctrl_wires": num_ctrl_wires + 2,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+
+        return [GateCount(ctrl_z)]
 
     @classmethod
     def pow_resource_decomp(
@@ -727,7 +804,7 @@ class CCZ(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -819,8 +896,15 @@ class CNOT(ResourceOperator):
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+
+        Resources:
+            The resources are expressed as one general :class:`~.pennylane.estimator.ops.MultiControlledX` gate.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
         """
         if num_ctrl_wires == 1 and num_zero_ctrl == 0:
             return [GateCount(resource_rep(Toffoli))]
@@ -857,7 +941,7 @@ class CNOT(ResourceOperator):
             in the decomposition.
         """
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep())]
         )
@@ -939,7 +1023,7 @@ class TemporaryAND(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        h = resource_rep(Hadamard)
+        h = resource_rep(qre.Hadamard)
         cz = resource_rep(CZ)
         return [GateCount(h), GateCount(cz)]
 
@@ -958,10 +1042,22 @@ class TemporaryAND(ResourceOperator):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed as one general :class:`~.pennylane.estimator.ops.MultiControlledX` gate.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires + 2,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(mcx)]
 
 
 class Toffoli(ResourceOperator):
@@ -1027,18 +1123,24 @@ class Toffoli(ResourceOperator):
             list[:class:`~.estimator.resource_operator.GateCount`]: The resources of decomposing the elbow gates.
         """
         gate_types = []
-        t = resource_rep(T)
-        h = resource_rep(Hadamard)
+        t = resource_rep(qre.T)
+        t_dag = resource_rep(
+            qre.Adjoint,
+            {"base_cmpr_op": t},
+        )
+        h = resource_rep(qre.Hadamard)
         cnot = resource_rep(CNOT)
+        s_dag = resource_rep(
+            qre.Adjoint,
+            {"base_cmpr_op": resource_rep(qre.S)},
+        )
         cz = resource_rep(CZ)
-        s = resource_rep(S)
-        z = resource_rep(Z)
 
         if elbow == "left":
-            gate_types.append(GateCount(t, 4))
+            gate_types.append(GateCount(t, 2))
+            gate_types.append(GateCount(t_dag, 2))
             gate_types.append(GateCount(cnot, 3))
-            gate_types.append(GateCount(s, 3))
-            gate_types.append(GateCount(z, 3))
+            gate_types.append(GateCount(s_dag))
 
         if elbow == "right":
             gate_types.append(GateCount(h))
@@ -1081,20 +1183,20 @@ class Toffoli(ResourceOperator):
             return Toffoli.elbow_decomp(elbow)
 
         cnot = resource_rep(CNOT)
-        t = resource_rep(T)
-        h = resource_rep(Hadamard)
-        s = resource_rep(S)
+        t = resource_rep(qre.T)
+        h = resource_rep(qre.Hadamard)
+        s = resource_rep(qre.S)
         cz = resource_rep(CZ)
-        z = resource_rep(Z)
+        t_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": t})
 
         return [
             Allocate(2),
             GateCount(cnot, 9),
             GateCount(h, 3),
-            GateCount(s, 3),
+            GateCount(s),
             GateCount(cz),
-            GateCount(t, 4),
-            GateCount(z, 2),
+            GateCount(t, 2),
+            GateCount(t_dag, 2),
             Deallocate(2),
         ]
 
@@ -1136,18 +1238,11 @@ class Toffoli(ResourceOperator):
             return Toffoli.elbow_decomp(elbow)
 
         cnot = resource_rep(CNOT)
-        t = resource_rep(T)
-        h = resource_rep(Hadamard)
-        z = resource_rep(Z)
-        s = resource_rep(S)
+        t = resource_rep(qre.T)
+        h = resource_rep(qre.Hadamard)
+        t_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": t})
 
-        return [
-            GateCount(cnot, 6),
-            GateCount(h, 2),
-            GateCount(t, 7),
-            GateCount(z, 3),
-            GateCount(s, 3),
-        ]
+        return [GateCount(cnot, 6), GateCount(h, 2), GateCount(t, 4), GateCount(t_dag, 3)]
 
     @property
     def resource_params(self) -> dict:
@@ -1211,10 +1306,22 @@ class Toffoli(ResourceOperator):
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed as one general :class:`~.pennylane.estimator.ops.MultiControlledX` gate.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires + 2,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(mcx)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1235,7 +1342,7 @@ class Toffoli(ResourceOperator):
         """
         elbow = target_resource_params.get("elbow")
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep(elbow=elbow))]
         )
@@ -1269,7 +1376,7 @@ class MultiControlledX(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qml.estimator.MultiControlledX.resource_decomp(num_ctrl_wires=5, num_zero_ctrl=2)
-    [(4 x X), AllocWires(3), (3 x TemporaryAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
+    [(4 x X), Allocate(3), (3 x TemporaryAND), (3 x Adjoint(TemporaryAND)), (1 x Toffoli), Deallocate(3)]
     """
 
     resource_keys = {"num_ctrl_wires", "num_zero_ctrl"}
@@ -1348,7 +1455,7 @@ class MultiControlledX(ResourceOperator):
         """
         gate_lst = []
 
-        x = resource_rep(X)
+        x = resource_rep(qre.X)
         if num_ctrl_wires == 0:
             if num_zero_ctrl:
                 return []
@@ -1368,7 +1475,18 @@ class MultiControlledX(ResourceOperator):
             gate_lst.append(GateCount(toffoli))
             return gate_lst
 
-        raise ResourcesUndefinedError
+        l_elbow = resource_rep(TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        res = [
+            Allocate(num_ctrl_wires - 2),
+            GateCount(l_elbow, num_ctrl_wires - 2),
+            GateCount(r_elbow, num_ctrl_wires - 2),
+            GateCount(toffoli, 1),
+            Deallocate(num_ctrl_wires - 2),
+        ]
+        gate_lst.extend(res)
+        return gate_lst
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -1446,7 +1564,7 @@ class MultiControlledX(ResourceOperator):
         num_ctrl_wires = target_resource_params.get("num_ctrl_wires")
         num_zero_ctrl = target_resource_params.get("num_zero_ctrl")
         return (
-            [GateCount(resource_rep(Identity))]
+            [GateCount(resource_rep(qre.Identity))]
             if pow_z % 2 == 0
             else [GateCount(cls.resource_rep(num_ctrl_wires, num_zero_ctrl))]
         )
@@ -1538,8 +1656,9 @@ class CRX(ResourceOperator):
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        h = resource_rep(Hadamard)
-        rz = resource_rep(RZ, {"precision": precision})
+        h = resource_rep(qre.Hadamard)
+        rz = resource_rep(qre.RZ, {"precision": precision})
+
         cnot = resource_rep(CNOT)
 
         return [GateCount(cnot, 2), GateCount(rz, 2), GateCount(h, 2)]
@@ -1577,10 +1696,27 @@ class CRX(ResourceOperator):
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.RX` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_rx = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.RX, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_rx)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1689,7 +1825,7 @@ class CRY(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        ry = resource_rep(RY, {"precision": precision})
+        ry = resource_rep(qre.RY, {"precision": precision})
         return [GateCount(cnot, 2), GateCount(ry, 2)]
 
     @classmethod
@@ -1726,10 +1862,26 @@ class CRY(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.RY` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_ry = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.RY, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_ry)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1840,7 +1992,7 @@ class CRZ(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        rz = resource_rep(RZ, {"precision": precision})
+        rz = resource_rep(qre.RZ, {"precision": precision})
         return [GateCount(cnot, 2), GateCount(rz, 2)]
 
     @classmethod
@@ -1878,10 +2030,26 @@ class CRZ(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.RZ` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_rz = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.RZ, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_rz)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -2008,8 +2176,8 @@ class CRot(ResourceOperator):
             in the decomposition.
         """
         cnot = resource_rep(CNOT)
-        rz = resource_rep(RZ, {"precision": precision})
-        ry = resource_rep(RY, {"precision": precision})
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        ry = resource_rep(qre.RY, {"precision": precision})
 
         return [GateCount(cnot, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
@@ -2048,10 +2216,26 @@ class CRot(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.Rot` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_rot = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.Rot, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_rot)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -2169,7 +2353,8 @@ class ControlledPhaseShift(ResourceOperator):
         [(2 x CNOT), (3 x RZ)]
         """
         cnot = resource_rep(CNOT)
-        rz = resource_rep(RZ, {"precision": precision})
+        rz = resource_rep(qre.RZ, {"precision": precision})
+
         return [GateCount(cnot, 2), GateCount(rz, 3)]
 
     @classmethod
@@ -2207,10 +2392,26 @@ class ControlledPhaseShift(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
-        raises:
-            :class:`~.pennylane.exceptions.ResourcesUndefinedError`: Controlled version of this gate is not defined.
+        Resources:
+            The resources are expressed using the symbolic :class:`~.pennylane.estimator.ops.Controlled`. The resources
+            are computed according to the :code:`controlled_resource_decomp()` of the base
+            :class:`~.pennylane.estimator.ops.PhaseShift` class.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        raise ResourcesUndefinedError
+        precision = target_resource_params["precision"]
+        ctrl_ps = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": resource_rep(qre.PhaseShift, {"precision": precision}),
+                "num_ctrl_wires": num_ctrl_wires + 1,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        return [GateCount(ctrl_ps)]
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:

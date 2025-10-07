@@ -28,6 +28,10 @@ from .qubit import (
     RY,
     RZ,
     Rot,
+    PauliRot,
+    MultiRZ,
+    SingleExcitation,
+    QubitUnitary,
 )
 
 from .op_math import (
@@ -45,4 +49,9 @@ from .op_math import (
     MultiControlledX,
     TemporaryAND,
     Toffoli,
+    Adjoint,
+    Controlled,
+    Pow,
+    Prod,
+    ChangeOpBasis,
 )

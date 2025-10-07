@@ -30,3 +30,5 @@ from .controlled_ops import (
     TemporaryAND,
     Toffoli,
 )
+
+from .symbolic import Adjoint, Controlled, Pow, Prod, ChangeOpBasis

@@ -58,7 +58,8 @@ def test_resolved_construction_lightning_qubit(interface):
 
     config = construct_execution_config(qn, resolve=True)()
 
-    mcm_config = MCMConfig(None, None)
+    postselect_mode = "fill-shots" if "jax-jit" == interface else None
+    mcm_config = MCMConfig("deferred", postselect_mode)
     expected_config = ExecutionConfig(
         grad_on_execution=True,
         use_device_gradient=True,
