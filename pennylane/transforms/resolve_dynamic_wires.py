@@ -272,8 +272,7 @@ def resolve_dynamic_wires(
     if not wire_map and not deallocated:
         return (tape,), null_postprocessing
     # use private trainable params to avoid calculating them if they haven't already been set
+    # pylint: disable=protected-access
     return (
-        tape.copy(
-            ops=new_ops, measurements=mps, trainable_params=tape._trainable_params
-        ),  # pylint: disable=protected-access
+        tape.copy(ops=new_ops, measurements=mps, trainable_params=tape._trainable_params),
     ), null_postprocessing
