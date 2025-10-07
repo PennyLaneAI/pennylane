@@ -587,16 +587,13 @@ class ConvertToMBQCFormalismPattern(
                     prev_op = op
                     num_qubits = op.nqubits_attr.value.data
                     xz_record_tensor_type = tensor.TensorType(builtin.i1, [num_qubits])
-                    const_nqubit = arith.ConstantOp.from_int_and_width(num_qubits, 64)
-                    rewriter.insert_op(const_nqubit, InsertPoint.after(prev_op))
-                    prev_op = const_nqubit
                     const_zero = arith.ConstantOp.from_int_and_width(0, 1)
                     rewriter.insert_op(const_zero, InsertPoint.after(prev_op))
 
                     prev_op = const_zero
                     x_record = tensor.SplatOp(
                         input=const_zero.result,
-                        dynamicSizes=[const_nqubit.result],
+                        dynamicSizes=(),
                         result_type=xz_record_tensor_type,
                     )
                     rewriter.insert_op(x_record, InsertPoint.after(prev_op))
@@ -604,7 +601,7 @@ class ConvertToMBQCFormalismPattern(
                     prev_op = x_record
                     z_record = tensor.SplatOp(
                         input=const_zero.result,
-                        dynamicSizes=[const_nqubit.result],
+                        dynamicSizes=(),
                         result_type=xz_record_tensor_type,
                     )
                     rewriter.insert_op(z_record, InsertPoint.after(prev_op))
@@ -613,9 +610,18 @@ class ConvertToMBQCFormalismPattern(
                     # TODOs: use a method to walk up to the target wire SSA value that can be interpreted by the tensor.extract
                     target_wire = op.operands[0].owner.operands[1]
 
-                    target_x_record = tensor.ExtractOp(x_record.result, target_wire, builtin.i1)
+                    target_wire_index = arith.IndexCastOp(
+                        target_wire, target_type=builtin.IndexType()
+                    )
+                    rewriter.insert_op(target_wire_index, InsertPoint.before(op))
+
+                    target_x_record = tensor.ExtractOp(
+                        x_record.result, target_wire_index.result, builtin.i1
+                    )
                     rewriter.insert_op(target_x_record, InsertPoint.before(op))
-                    target_z_record = tensor.ExtractOp(z_record.result, target_wire, builtin.i1)
+                    target_z_record = tensor.ExtractOp(
+                        z_record.result, target_wire_index.result, builtin.i1
+                    )
                     rewriter.insert_op(target_z_record, InsertPoint.before(op))
 
                     if one_wire_adj_matrix_op is None:
@@ -651,13 +657,14 @@ class ConvertToMBQCFormalismPattern(
                     # Deallocate the non-result auxiliary qubits and target qubit in the qreg
                     self._deallocate_aux_qubits(graph_qubits_dict, [5], op, rewriter)
 
-                    insert_qubit_op = InsertOp(qreg, op.operands[0], graph_qubits_dict[5])
-                    rewriter.insert_op(insert_qubit_op, InsertPoint.before(op))
-                    updated_qubit_op = ExtractOp(qreg, op.operands[0])
-                    rewriter.insert_op(updated_qubit_op, InsertPoint.before(op))
+                    # insert_qubit_op = InsertOp(qreg, target_wire, graph_qubits_dict[5])
+                    # rewriter.insert_op(insert_qubit_op, InsertPoint.before(op))
+                    # updated_qubit_op = ExtractOp(qreg, target_wire)
+                    # rewriter.insert_op(updated_qubit_op, InsertPoint.before(op))
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
-                    rewriter.replace_all_uses_with(op.results[0], updated_qubit_op.results[0])
+                    # rewriter.replace_all_uses_with(op.results[0], updated_qubit_op.results[0])
+                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
                     # Remove op operation
                     prev_op = op
                     updated_x = arith.XOrIOp(x_correct, target_z_record.result)
@@ -669,13 +676,13 @@ class ConvertToMBQCFormalismPattern(
                     prev_op = updated_z
 
                     update_x_record = tensor.InsertOp(
-                        updated_x.result, x_record.result, target_wire
+                        updated_x.result, x_record.result, target_wire_index.result
                     )
                     rewriter.insert_op(update_x_record, InsertPoint.after(prev_op))
 
                     prev_op = update_x_record
                     update_x_record = tensor.InsertOp(
-                        updated_z.result, x_record.result, target_wire
+                        updated_z.result, x_record.result, target_wire_index.result
                     )
                     rewriter.insert_op(update_x_record, InsertPoint.after(prev_op))
 
