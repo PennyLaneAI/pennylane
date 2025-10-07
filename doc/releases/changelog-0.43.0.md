@@ -909,10 +909,15 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `autoray == 0.8.0` is proactively pinned for PennyLane v0.43.0 to prevent potential bug fix releases.
+  [(#8412)](https://github.com/PennyLaneAI/pennylane/pull/8412)
+
 * `qml.workflow.construct_batch.expand_fn_transform` is deleted as it was local and no longer getting used.
   [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
 
 * Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
+  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
+
   If you would like to get the canonical interface you can simply use the `Enum` like,
 
   ```pycon
@@ -923,10 +928,8 @@
   Interface.JAX_JIT
   ```
 
-  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
-
 * :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing
-  them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
+  them independently. In addition, it is now more consistent with other PennyLane operators, dequeuing its
   input ``lcu``.
   [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
 
@@ -951,33 +954,34 @@
 
   ```pycon
   >>> @qml.qnode(qml.device('default.qubit'))
-  ... def c():
+  ... def circuit():
   ...   return qml.sample(wires=0)
   ```
 
   Before the change, we had:
 
   ```pycon
-  >>> qml.set_shots(c, shots=1)()
+  >>> qml.set_shots(circuit, shots=1)()
   0
   ```
 
   and now we have:
 
   ```pycon
-  >>> qml.set_shots(c, shots=1)()
+  >>> qml.set_shots(circuit, shots=1)()
   array([[0]])
   ```
 
   Previous behavior can be recovered by squeezing the output:
 
   ```pycon
-  >>> qml.math.squeeze(qml.set_shots(c, shots=1)())
-  0
+  >>> qml.math.squeeze(qml.set_shots(circuit, shots=1)())
+  array(0)
   ```
 
 * Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly.
   This prevents the potential mutation of a global object.
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
   This means that functions like,
   ```python
@@ -986,7 +990,9 @@
       ...
   ...
   ```
+
   should be written as follows,
+
   ```python
   ...
     def some_func(..., execution_config: ExecutionConfig | None = None):
@@ -995,8 +1001,6 @@
   ...
   ```
 
-  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
-
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified.
   They now accept an operation or a list of operations as quantum unitaries.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
@@ -1004,7 +1008,7 @@
   In past versions of PennyLane, these templates required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
   respectively, along with separate parameters and wires.
 
-  With this release, each template has been improved to accept one or more operators as  unitaries.
+  With this release, each template has been improved to accept one or more operators as unitaries.
   The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
 
   ```python
@@ -1028,14 +1032,13 @@
 
 * Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
   Top level import and usage is advised. The functions now live in the `liealg` module.
+  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+  [(#7994)](https://github.com/PennyLaneAI/pennylane/pull/7994)
 
   ```python
   import pennylane.liealg
   from pennylane.liealg import lie_closure, structure_constants, center
   ```
-
-  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
-  [(#7994)](https://github.com/PennyLaneAI/pennylane/pull/7994)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The
