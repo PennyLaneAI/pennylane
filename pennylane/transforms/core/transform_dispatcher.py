@@ -256,8 +256,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         """
         return generic_apply_transform(obj, self, *targs, **tkwargs)
 
-    @classmethod
-    def generic_register(cls, arg=None):
+    @staticmethod
+    def generic_register(arg=None):
         """Returns a decorator for registering a default application behavior for a transform for a new class.
 
         Given a special new class, we can register how transforms should apply to them via:
