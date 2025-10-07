@@ -301,7 +301,6 @@ def to_zx(tape, expand_measurements=False):
         >>> print(np.isclose(result, 1.0))
         True
 
-
     .. note::
 
         This function is a PennyLane adaptation to `circuit_to_graph <https://github.com/zxcalc/pyzx/blob/master/pyzx/circuit/graphparser.py#L89>`_.
