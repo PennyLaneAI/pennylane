@@ -1463,6 +1463,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Applying a transform to a qnode with capture enabled now returned a qnode. This allows autograph
+  to transform the user function when transforms are applied to the qnode.
+  [(#8307)](https://github.com/PennyLaneAI/pennylane/pull/8307)
+
 * `default.qubit` now properly validates the `mcm_method`.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
