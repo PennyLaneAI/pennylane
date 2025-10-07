@@ -532,8 +532,8 @@
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
   [(#7942)](https://github.com/PennyLaneAI/pennylane/pull/7942)
 
-* The :func:`~.ops.rs_decomposition` method now performs exact decomposition and returns
-  complete global phase information when used for decomposing a phase gate to Clifford+T basis.
+* The :func:`~.ops.rs_decomposition` method now gives decompositions with exact global phase
+  information. 
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
 
 * Users can now specify a relative threshold value for the permissible operator norm error 
@@ -813,7 +813,7 @@
   [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
 
 * Two new ``draw`` and ``generate_mlir_graph`` functions have been introduced in the 
-  ``qml.compiler.compiler.visualization`` module to visualize circuits with the new unified 
+  ``qml.compiler.python_compiler.visualization`` module to visualize circuits with the new unified 
   compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
   [(#8180)](https://github.com/PennyLaneAI/pennylane/pull/8180)
@@ -831,50 +831,53 @@
 * The ``Quantum`` xDSL dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
 
-* A callback mechanism has been added to ``qml.compiler.compiler`` submodule to inspect the 
+* A callback mechanism has been added to ``qml.compiler.python_compiler`` submodule to inspect the 
   intermediate representation of the program between multiple compilation passes.
   [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
 
-* Added a `QuantumParser` class to the `qml.compiler.compiler` submodule that automatically loads 
-  relevant dialects.
+* A ``QuantumParser`` class has been added to the `qml.compiler.python_compiler` submodule that 
+  automatically loads relevant dialects.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
 
-* The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
-  been optimized to factor out the redundant sign in the diagonal phase matrix for the
-  real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
-  :math:`-1`, only a single element of the phase matrix is required.
-  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+* Two new operations have been added to the ``Quantum`` dialect of the unified compiler:
 
-* A new device preprocess transform, `~.devices.preprocess.no_analytic`, is available for hardware devices and hardware-like simulators.
-  It validates that all executions are shot-based.
-  [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
+  * ``NumQubitsOp``: calculates the number of currently allocated qubits.
+    [(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
 
-* Added the `NumQubitsOp` operation to the `Quantum` dialect of the Python compiler.
-[(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
-
-* PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
-  [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
-
-* A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
-  qubit allocation.
-  [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
-  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
-
-* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
-  has been added for the experimental xDSL Python compiler integration. This pass replaces all
-  terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
-  postprocessing instructions to recover the original measurement.
+  * ``AllocQubitOp`` and ``DeallocQubitOp``: allocates and deallocates qubits, respectively.
+    [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
+  
+* A compilation pass written called 
+  ``qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`` has been added for 
+  integration with the unified compiler framework. This pass replaces all terminal measurements in a 
+  program with a single :func:`~.sample` measurement, and adds postprocessing instructions to 
+  recover the original measurement.
   [(#7620)](https://github.com/PennyLaneAI/pennylane/pull/7620)
 
-* A combine-global-phase pass has been added to the xDSL Python compiler integration.
-  Note that the current implementation can only combine all the global phase operations at
-  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent
-  region.
+* A combine-global-phase pass has been added to the unified compiler framework. Note that the 
+  current implementation can only combine all the global phase operations at the last global phase 
+  operation in the same region. In other words, global phase operations inside a control flow region 
+  can't be combined with those in their parent region.
   [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
 
-* The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
-  Python compiler.
-  [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
+* The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has been 
+  optimized to factor out the redundant sign in the diagonal phase matrix for the real-valued 
+  (orthogonal) rotation matrices. For example, in case the determinant of a matrix is :math:`-1`, 
+  only a single element of the phase matrix is required.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
+* A new device preprocess transform, `~.devices.preprocess.no_analytic`, is available for hardware 
+  devices and hardware-like simulators. It validates that all executions are shot-based.
+  [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
+
+* PennyLane is now compatible with ``quimb == 1.11.2`` after a bug affecting ``default.tensor`` was 
+  fixed.
+  [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
+
+* A new :func:`~.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for 
+  dynamic wire allocation.
+  [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
+  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
