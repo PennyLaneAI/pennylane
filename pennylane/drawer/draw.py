@@ -71,7 +71,7 @@ def draw(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(qml.device('lightning.qubit', wires=2))
         def circuit(a, w):
@@ -532,12 +532,12 @@ def draw_mpl(
 
         .. code-block:: python
 
-            def circuit():
+            def deep_circuit():
                 for _ in range(10):
                     qml.X(0)
                 return qml.expval(qml.Z(0))
 
-            [(fig1, ax1), (fig2, ax2)] = qml.draw_mpl(circuit, max_length=5)()
+            [(fig1, ax1), (fig2, ax2)] = qml.draw_mpl(deep_circuit, max_length=5)()
 
         .. figure:: ../../_static/draw_mpl/max_length1.png
                 :align: center
@@ -556,6 +556,8 @@ def draw_mpl(
         users can perform further customization of the graphic.
 
         .. code-block:: python
+
+            import matplotlib.pyplot as plt
 
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.suptitle("My Circuit", fontsize="xx-large")

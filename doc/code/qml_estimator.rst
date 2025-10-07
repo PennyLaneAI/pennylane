@@ -5,9 +5,19 @@ qml.estimator
 
 .. automodule:: pennylane.estimator
 
+The :mod:`~.estimator` module is the centre for quantum resource estimation in PennyLane.  
+Functionality within :mod:`~.estimator` is intended purely for resource estimation, and is *not* intended for true program compilation and execution.
+
+.. seealso::
+    The :mod:`~.resource` module for resource tracking of compiled programs.
 
 Resource Estimation Functions:
 ------------------------------
+
+The :func:`~.estimator.estimate.estimate` function is the standard entry point for estimating the resources required by a quantum program.
+Submit a program written with either standard PennyLane operators (:class:`~.Operation`)
+or resource operators (:class:`~.estimator.resource_operator.ResourceOperator`),
+and instantly receive the resource estimate in the form of :class:`~.estimator.resources_base.Resources`.
 
 .. currentmodule:: pennylane.estimator
 
@@ -61,3 +71,12 @@ Resource Templates:
     :no-inherited-members:
     :classes-only:
     :noindex:
+
+
+Resource Hamiltonians:
+----------------------
+
+.. automodsumm:: pennylane.estimator.compact_hamiltonian
+    :toctree: api
+    :no-inherited-members:
+    :classes-only:

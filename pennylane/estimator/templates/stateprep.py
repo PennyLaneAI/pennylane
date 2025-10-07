@@ -16,6 +16,7 @@ import math
 
 import pennylane.estimator as qre
 import pennylane.numpy as np
+from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -25,7 +26,7 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
+# pylint: disable= signature-differs, arguments-differ, too-many-arguments
 
 
 class UniformStatePrep(ResourceOperator):
@@ -58,16 +59,21 @@ class UniformStatePrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> unif_state_prep = qre.UniformStatePrep(10)
     >>> print(qre.estimate(unif_state_prep))
     --- Resources: ---
-     Total qubits: 5
-     Total gates : 124
-     Qubit breakdown:
-      zeroed qubits: 1, any_state qubits: 0, algorithmic qubits: 4
-     Gate breakdown:
-      {'Hadamard': 16, 'X': 12, 'CNOT': 4, 'Toffoli': 4, 'T': 88}
+    Total wires: 5
+        algorithmic wires: 4
+        allocated wires: 1
+        zero state: 1
+        any state: 0
+    Total gates : 124
+    'Toffoli': 4,
+    'T': 88,
+    'CNOT': 4,
+    'X': 12,
+    'Hadamard': 16
     """
 
     resource_keys = {"num_states"}
@@ -178,12 +184,17 @@ class AliasSampling(ResourceOperator):
     >>> alias_sampling = qre.AliasSampling(num_coeffs=100)
     >>> print(qre.estimate(alias_sampling))
     --- Resources: ---
-     Total qubits: 81
-     Total gates : 6.157E+3
-     Qubit breakdown:
-      zeroed qubits: 6, any_state qubits: 68, algorithmic qubits: 7
-     Gate breakdown:
-      {'Hadamard': 730, 'X': 479, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
+    Total wires: 133
+        algorithmic wires: 7
+        allocated wires: 126
+        zero state: 58
+        any state: 68
+    Total gates : 6.505E+3
+    'Toffoli': 272,
+    'T': 88,
+    'CNOT': 4.646E+3,
+    'X': 595,
+    'Hadamard': 904
     """
 
     resource_keys = {"num_coeffs", "precision"}
@@ -489,13 +500,14 @@ class QROMStatePreparation(ResourceOperator):
          Total wires: 21
             algorithmic wires: 4
             allocated wires: 17
-             zero state: 17
-             any state: 0
-         Total gates : 3.782E+3
+                 zero state: 17
+                 any state: 0
+         Total gates : 2.680E+3
           'QROM': 5,
-          'T': 2.524E+3,
-          'CNOT': 825,
-          'Hadamard': 428
+          'Adjoint(QROM)': 5,
+          'T': 1.832E+3,
+          'CNOT': 580,
+          'Hadamard': 258
 
         The ``precision`` argument is used to allocate the target wires in the underlying QROM
         operations. It corresponds to the precision with which the rotation angles of the
@@ -511,18 +523,24 @@ class QROMStatePreparation(ResourceOperator):
         is used as the ``select_swap_depth`` for all :code:`QROM` operations in the resource decomposition.
 
         >>> print(res.gate_breakdown())
+        Adjoint(QROM) total: 5
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
         QROM total: 5
-            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-        T total: 2.524E+3
-        CNOT total: 825
-        Hadamard total: 428
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+        T total: 1.832E+3
+        CNOT total: 580
+        Hadamard total: 258
 
         Alternatively, we can configure each value independently by specifying a list. Note the size
-        of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
+        of this list should be :code:`num_state_qubits + 1` (or :code:`num_state_qubits` if the state
         is positive and real).
 
         >>> qrom_prep = qre.QROMStatePreparation(
@@ -532,15 +550,21 @@ class QROMStatePreparation(ResourceOperator):
         ... )
         >>> res = qre.estimate(qrom_prep, gate_set)
         >>> print(res.gate_breakdown())
+        Adjoint(QROM) total: 5
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
         QROM total: 5
-            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'select_swap_depth': 1, 'size_bitstring': 9, 'zeroed': False}: 1
-            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'select_swap_depth': None, 'size_bitstring': 9, 'zeroed': False}: 1
-        T total: 2.524E+3
-        CNOT total: 825
-        Hadamard total: 428
+            QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 18, 'num_bitstrings': 4, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 36, 'num_bitstrings': 8, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
+            QROM {'num_bit_flips': 72, 'num_bitstrings': 16, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
+        T total: 1.832E+3
+        CNOT total: 580
+        Hadamard total: 258
     """
 
     resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
@@ -872,3 +896,385 @@ class QROMStatePreparation(ResourceOperator):
             precision=precision,
             selswap_depths=selswap_depths,
         )
+
+
+class PrepTHC(ResourceOperator):
+    r"""Resource class for preparing the state for tensor hypercontracted (THC) Hamiltonian.
+
+    This operator customizes the Prepare circuit based on the structure of THC Hamiltonian.
+
+    Args:
+        thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+            Hamiltonian for which the state is being prepared
+        coeff_precision (int | None): The number of bits used to represent the precision for loading
+            the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+            :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+        wires (WiresLike | None): the wires on which the operator acts
+
+    Resources:
+        The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.estimator as qre
+    >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 185
+        algorithmic wires: 12
+        allocated wires: 173
+             zero state: 28
+             any state: 145
+     Total gates : 1.485E+4
+      'Toffoli': 467,
+      'CNOT': 1.307E+4,
+      'X': 512,
+      'Hadamard': 797
+
+    """
+
+    resource_keys = {"thc_ham", "coeff_precision", "select_swap_depth"}
+
+    def __init__(
+        self,
+        thc_ham: THCHamiltonian,
+        coeff_precision: int | None = None,
+        select_swap_depth: int | None = None,
+        wires: WiresLike | None = None,
+    ):
+
+        if not isinstance(thc_ham, THCHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for PrepTHC."
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
+            )
+
+        if not isinstance(coeff_precision, int) and coeff_precision is not None:
+            raise TypeError(
+                f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
+            )
+
+        self.thc_ham = thc_ham
+        self.coeff_precision = coeff_precision
+        self.select_swap_depth = select_swap_depth
+        tensor_rank = thc_ham.tensor_rank
+        self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+                  Hamiltonian for which the state is being prepared
+                * coeff_precision (int | None): The number of bits used to represent the precision for loading
+                  the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+                  :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+        """
+        return {
+            "thc_ham": self.thc_ham,
+            "coeff_precision": self.coeff_precision,
+            "select_swap_depth": self.select_swap_depth,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls,
+        thc_ham: THCHamiltonian,
+        coeff_precision: int | None = None,
+        select_swap_depth: int | None = None,
+    ) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+                Hamiltonian for which the state is being prepared
+            coeff_precision (int | None): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        if not isinstance(thc_ham, THCHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for PrepTHC."
+                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
+            )
+
+        if not isinstance(coeff_precision, int) and coeff_precision is not None:
+            raise TypeError(
+                f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
+            )
+
+        tensor_rank = thc_ham.tensor_rank
+        num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+
+        params = {
+            "thc_ham": thc_ham,
+            "coeff_precision": coeff_precision,
+            "select_swap_depth": select_swap_depth,
+        }
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls,
+        thc_ham: THCHamiltonian,
+        coeff_precision: int | None = None,
+        select_swap_depth: int | None = None,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Args:
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+                Hamiltonian for which the walk operator is being created
+            coeff_precision (int | None): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
+                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+
+        Resources:
+            The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        """
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
+
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
+
+        gate_list = []
+
+        # 6 auxiliary account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        gate_list.append(Allocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
+
+        hadamard = resource_rep(qre.Hadamard)
+
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
+
+        # Figure - 3
+
+        # Inquality tests
+        toffoli = resource_rep(qre.Toffoli)
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Reflection on 5 registers
+        ccz = resource_rep(qre.CCZ)
+        gate_list.append(
+            qre.GateCount(
+                resource_rep(
+                    qre.Controlled,
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
+                ),
+                1,
+            )
+        )
+        gate_list.append(qre.GateCount(toffoli, 2))
+
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
+
+        # Rotate and invert the rotation of ancilla to obtain amplitude of success
+        gate_list.append(Allocate(coeff_precision))
+        gate_list.append(qre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(Deallocate(coeff_precision))
+
+        # Reflecting about the success amplitude
+        gate_list.append(qre.GateCount(ccz, 2 * m_register - 1))
+
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
+
+        # Inequality tests
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Checking that inequality is satisfied
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0})
+        gate_list.append(qre.GateCount(mcx, 1))
+        gate_list.append(qre.GateCount(toffoli, 2))
+
+        x = resource_rep(qre.X)
+        gate_list.append(qre.GateCount(x, 2))
+
+        # Figure- 4(Subprepare Circuit)
+        gate_list.append(qre.GateCount(hadamard, coeff_precision + 1))
+
+        # Contiguous register cost Eq.29 in arXiv:2011.03494
+        gate_list.append(qre.GateCount(toffoli, m_register**2 + m_register - 1))
+
+        # QROM for keep values Eq.31 in arXiv:2011.03494
+        qrom_coeff = resource_rep(
+            qre.QROM,
+            {
+                "num_bitstrings": num_coeff,
+                "size_bitstring": 2 * m_register + 2 + coeff_precision,
+                "restored": False,
+                "select_swap_depth": select_swap_depth,
+            },
+        )
+        gate_list.append(qre.GateCount(qrom_coeff, 1))
+
+        # Inequality test between alt and keep registers
+        comparator = resource_rep(
+            qre.RegisterComparator,
+            {
+                "first_register": coeff_precision,
+                "second_register": coeff_precision,
+                "geq": False,
+            },
+        )
+        gate_list.append(qre.GateCount(comparator))
+
+        cz = resource_rep(qre.CZ)
+        gate_list.append(qre.GateCount(cz, 2))
+        gate_list.append(qre.GateCount(x, 2))
+
+        # Swap \mu and \nu registers with alt registers
+        cswap = resource_rep(qre.CSWAP)
+        gate_list.append(qre.GateCount(cswap, 2 * m_register))
+
+        # Swap \mu and \nu registers controlled on |+> state and success of inequality
+        gate_list.append(qre.GateCount(cswap, m_register))
+        gate_list.append(qre.GateCount(toffoli, 1))
+
+        return gate_list
+
+    @classmethod
+    def adjoint_resource_decomp(
+        cls,
+        target_resource_params: dict,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Args:
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
+                Hamiltonian for which the walk operator is being created
+            target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
+
+        Resources:
+            The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        thc_ham = target_resource_params["thc_ham"]
+        coeff_precision = target_resource_params["coeff_precision"]
+        select_swap_depth = target_resource_params.get("select_swap_depth", None)
+        num_orb = thc_ham.num_orbitals
+        tensor_rank = thc_ham.tensor_rank
+
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
+        gate_list = []
+
+        hadamard = resource_rep(qre.Hadamard)
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
+
+        # Figure - 3
+
+        # Inquality tests from arXiv:2011.03494
+        toffoli = resource_rep(qre.Toffoli)
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Reflection on 5 registers
+        ccz = resource_rep(qre.CCZ)
+        gate_list.append(
+            qre.GateCount(
+                resource_rep(
+                    qre.Controlled,
+                    {"base_cmpr_op": ccz, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
+                ),
+                1,
+            )
+        )
+        gate_list.append(qre.GateCount(toffoli, 2))
+
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
+
+        # Rotate and invert the rotation of ancilla to obtain amplitude of success
+        gate_list.append(Allocate(coeff_precision))
+        gate_list.append(qre.GateCount(toffoli, 2 * (coeff_precision - 3)))
+        gate_list.append(Deallocate(coeff_precision))
+
+        # Reflecting about the success amplitude
+        gate_list.append(qre.GateCount(ccz, 2 * m_register - 1))
+
+        gate_list.append(qre.GateCount(hadamard, 2 * m_register))
+
+        # Inequality tests
+        gate_list.append(qre.GateCount(toffoli, 4 * m_register - 4))
+
+        # Checking that inequality is satisfied
+        mcx = resource_rep(qre.MultiControlledX, {"num_ctrl_wires": 3, "num_zero_ctrl": 0})
+        gate_list.append(qre.GateCount(mcx, 1))
+        gate_list.append(qre.GateCount(toffoli, 2))
+
+        x = resource_rep(qre.X)
+        gate_list.append(qre.GateCount(x, 2))
+
+        # Figure- 4 (Subprepare Circuit)
+        gate_list.append(qre.GateCount(hadamard, coeff_precision + 1))
+
+        # Contiguous register cost
+        gate_list.append(qre.GateCount(toffoli, m_register**2 + m_register - 1))
+
+        # Adjoint of QROM for keep values Eq.32 in arXiv:2011.03494
+        qrom_adj = resource_rep(
+            qre.Adjoint,
+            {
+                "base_cmpr_op": resource_rep(
+                    qre.QROM,
+                    {
+                        "num_bitstrings": num_coeff,
+                        "size_bitstring": 2 * m_register + 2 + coeff_precision,
+                        "restored": False,
+                        "select_swap_depth": select_swap_depth,
+                    },
+                )
+            },
+        )
+        gate_list.append(qre.GateCount(qrom_adj, 1))
+
+        cz = resource_rep(qre.CZ)
+        gate_list.append(qre.GateCount(cz, 2))
+        gate_list.append(qre.GateCount(x, 2))
+
+        # Swap \mu and \nu registers with alt registers
+        cswap = resource_rep(qre.CSWAP)
+        gate_list.append(qre.GateCount(cswap, 2 * m_register))
+
+        # Swap \mu and \nu registers controlled on |+> state and success of inequality
+        gate_list.append(qre.GateCount(cswap, m_register))
+        gate_list.append(qre.GateCount(toffoli, 1))
+
+        # Free Prepare Wires
+        # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        gate_list.append(Deallocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
+
+        return gate_list
