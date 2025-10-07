@@ -1,6 +1,7 @@
 name: Build nightly PennyLane RC releases for TestPyPI
 
 on:
+  push:
   schedule:
     # Run every weekday at 5:50 EDT (cron is in UTC)
     - cron: "50 9 * * 1-5"
