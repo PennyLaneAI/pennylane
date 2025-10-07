@@ -832,59 +832,38 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Update docstring in `perturbation_error` to use the correct positional argument name.
-  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+<h4>Labs Resource Estimation</h4>
 
-* Renamed several labs test file names to prevent conflict with names in PennyLane tests.
-  [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
+* Added state of the art resources to existing templates: `ResourceSelectPauliRot`,
+  `ResourceQubitUnitary`, `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
+  `ResourceIntegerComparator`, `ResourceRegisterComparator`, `ResourceUniformStatePrep`,
+  `ResourceAliasSampling`, `ResourceQFT`, `ResourceAQFT`, and `ResourceTrotterProduct`.
+  [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
+  [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
+  [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
+  [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
+  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
-* Added concurrency support for `effective_hamiltonian` in labs.
-  [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
-  [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
+* Added new templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
+  `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
+  [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
-* Fixed a queueing issue in `ResourceOperator` tests.
+* Renamed `estimate_resources` to `estimate`.
+  [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
+
+* Fixed a queueing issue in the `ResourceOperator` tests.
   [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
 
-* The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
-  submodule :mod:`.transforms.zx`. The same functions are available, but their signature
-  may have changed.
-  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
-  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
-  - Instead of `qml.labs.zxopt.todd`, use :func:`.transforms.zx.todd`
-  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`.transforms.zx.push_hadamards`
-  [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
-
-* Added state of the art resources for the `ResourceSelectPauliRot` template and the
-  `ResourceQubitUnitary` templates.
-  [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
-
-* Added state of the art resources for the `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
-  `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
-  [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
-
-* Added state of the art resources for the `ResourceUniformStatePrep`,
-  and `ResourceAliasSampling` templates.
-  [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
-
-* Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
-  [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
-
-* Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
+* Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom
+  decompositions for the resource estimation pipeline.
   [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
 
-* Renamed `estimate_resources` to `estimate` for concision.
-  [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
+* Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
+  [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
 * Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
-
-* New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
-  [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
-
-* Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
-  `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
-  [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
 * Added `__eq__` method to `ResourceOperator` to make comparison checks more intuitive.
   [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
@@ -893,14 +872,35 @@
   [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
   [(#8162)](https://github.com/PennyLaneAI/pennylane/pull/8162)
 
-* Added state of the art resources for the `ResourceTrotterProduct` template.
-  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
+* Renamed several labs test files to prevent conflict with names in PennyLane tests.
+  [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
 
-* Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
-  [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
+<h4>Labs Trotter Error Estimation</h4>
+
+* Added concurrency support for `effective_hamiltonian` in labs.
+  [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
+  [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
+
+* New `SparseFragment` and `SparseState` classes have been created that allow the use
+  of sparse matrices for Hamiltonian Fragments when estimating Trotter error.
+  [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
 
 * Perturbation error function now sums over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
+
+* Updated docstring in `perturbation_error` to use the correct positional argument name.
+  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+
+<h4>Labs Removals</h4>
+
+* The module `qml.labs.zxopt` was removed. Its functionalities are now available in the
+  submodule :mod:`.transforms.zx`. The same functions are available, but their signature
+  may have changed.
+  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
+  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
+  - Instead of `qml.labs.zxopt.todd`, use :func:`.transforms.zx.todd`
+  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`.transforms.zx.push_hadamards`
+  [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
 
 <h3>Breaking changes 💔</h3>
 
