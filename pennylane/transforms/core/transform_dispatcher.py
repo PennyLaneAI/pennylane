@@ -17,6 +17,7 @@ This module contains the transform dispatcher and the transform container.
 import functools
 import os
 import warnings
+from collections import namedtuple
 from collections.abc import Callable, Sequence
 from copy import copy
 
@@ -28,8 +29,10 @@ from pennylane.operation import Operator
 from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.tape import QuantumScript
-from pennylane.typing import ResultBatch
+from pennylane.typing import ResultBatch, BatchPostprocessingFn, PostprocessingFn, Result, ResultBatch
 
+
+BatchAndPostprocessing = namedtuple("BatchAndPostProcessing", ("batch", "postprocessing"))
 
 def _create_transform_primitive(name):
     try:
@@ -397,6 +400,86 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return qnode
 
 
+
+
+
+class PostprocessingStack:
+    """A last-in first out stack of postprocessing functions. The last functions in the list are the
+    first to be applied.  The order should correspond to the order in which the forward pass
+    was applied.
+
+    Args:
+        individual_fns (List[Callable]): postprocessing functions converting a batch of results into a single result
+            corresponding to only a single :class:`~.QuantumTape`.
+        slices (List[slice]): the indices for the results that correspond to each individual post processing function.
+
+
+    >>> results = (1.0, 2.0, 3.0, 4.0)
+    >>> def postprocessing1(results):
+    ...     return (results[0] + results[1], results[2] + results[3])
+    >>> def postprocessing2(results):
+    .... return (results[0] + 1, results[1] + 2)
+    >>> _apply_postprocessing_stack(results, [postprocessing1])
+    (3.0, 7.0)
+    >>> _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
+    (4.0, 9.0)
+    """
+
+    def __init__(self, postprocessing_fns: list[PostprocessingFn | BatchPostprocessingFn]):
+        self.stack = postprocessing_fns
+
+    def __call__(self, results: ResultBatch) -> ResultBatch | Result:
+        for postprocessing in reversed(self.stack):
+            results = postprocessing(results)
+        return results
+
+    def __add__(self, fn):
+        return PostprocessingStack(self.stack + [fn])
+
+    def __radd__(self, fn):
+        return PostprocessingStack([fn] + self.stack)
+
+
+class BroadcastPostprocessing:
+    """Broadcast the application of individual functions to apply on particular slices
+    of a ``ResultBatch``.
+
+    Args:
+        individual_fns (List[Callable]): postprocessing functions converting a batch of results into a single result
+            corresponding to only a single :class:`~.QuantumTape`.
+        slices (List[slice]): the indices for the results that correspond to each individual post processing function.
+
+    >>> results = (1.0, 2.0, 3.0, 4.0)
+    >>> def postprocessing1(results):
+    ...     return results[0] + results[1]
+    >>> def postprocessing2(results):
+    ...     return results[0]+0.5
+    >>> def postprocessing3(results):
+    ...     return results[0]*2
+    >>> slices = [slice(0,2), slice(2,3), slice(3,4)]
+    >>> individual_fns = [postprocessing1, postprocessing2, postprocessing3]
+    >>> BroadcastPostprocessing(individual_fns, slices)(results)
+    (3.0, 3.5, 8.0)
+
+
+    """
+
+    def __init__(
+        self, individual_fns: list[PostprocessingFn | BatchPostprocessingFn], slices: list[slice]
+    ):
+        self.individual_fns = individual_fns
+        self.slices = slices
+
+    def __call__(self, results: ResultBatch) -> ResultBatch:
+        return tuple(fn(results[sl]) for fn, sl in zip(self.individual_fns, self.slices))
+
+    def __add__(self, fn):
+        return PostprocessingStack([self, fn])
+
+    def __radd__(self, fn):
+        return PostprocessingStack([fn, self])
+
+
 class TransformContainer:  # pylint: disable=too-many-instance-attributes
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
     :func:`~.pennylane.transform`.
@@ -501,18 +584,18 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
-        processing_and_slices = []
+        processing_fns = []
+        slices = []
         start = 0
         for tape in expanded_tapes:
             intermediate_tapes, post_processing_fn = transform.transform(tape, *targs, **tkwargs)
             transformed_tapes.extend(intermediate_tapes)
             end = start + len(intermediate_tapes)
-            processing_and_slices.append(tuple([post_processing_fn, slice(start, end)]))
+            processing_fns.append(post_processing_fn)
+            slices.append(slice(start, end))
             start = end
 
-        def processing_fn(results):
-            processed_results = [fn(results[slice]) for fn, slice in processing_and_slices]
-            return expand_processing(processed_results)
+        processing_fn = expand_processing + BroadcastPostprocessing(processing_fns, slices)
 
     else:
         transformed_tapes, processing_fn = transform.transform(obj, *targs, **tkwargs)
@@ -520,7 +603,20 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.is_informative:
         return processing_fn(transformed_tapes)
 
-    return transformed_tapes, processing_fn
+    return BatchAndPostprocessing(transformed_tapes, processing_fn)
+
+
+@TransformDispatcher.generic_register
+def _apply_to_batch_and_postprocessing(obj: BatchAndPostprocessing, transform, *targs, **tkwargs):
+    batch, original_postprocessing = obj
+    new_batch, new_postprocessing = transform(batch, *targs, **tkwargs)
+
+    if isinstance(original_postprocessing, (PostprocessingStack, BroadcastPostprocessing)):
+        combined_postprocessing = original_postprocessing + new_postprocessing
+    else:
+        combined_postprocessing = PostprocessingStack([original_postprocessing, new_postprocessing])
+
+    return BatchAndPostprocessing(new_batch, combined_postprocessing)
 
 
 def _capture_apply(obj, transform, *targs, **tkwargs):
@@ -626,40 +722,20 @@ def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
         )
     execution_tapes = []
     batch_fns = []
-    tape_counts = []
+    slices = []
+    start = 0
+    end = 0
 
     for t in obj:
         # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
         new_tapes, fn = transform(t, *targs, **tkwargs)
+        end = start + len(new_tapes)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
-        tape_counts.append(len(new_tapes))
+        slices.append(slice(start, end))
+        start = end
 
-    def processing_fn(res: ResultBatch) -> ResultBatch:
-        """Applies a batch of post-processing functions to results.
-
-        Args:
-            res (ResultBatch): the results of executing a batch of circuits.
-
-        Returns:
-            ResultBatch: results that have undergone classical post processing.
-
-        Closure variables:
-            tape_counts: the number of tapes outputted from each application of the transform.
-            batch_fns: the post processing functions to apply to each sub-batch.
-
-        """
-        count = 0
-        final_results = []
-
-        for f, s in zip(batch_fns, tape_counts):
-            # apply any batch transform post-processing
-            new_res = f(res[count : count + s])
-            final_results.append(new_res)
-            count += s
-
-        return tuple(final_results)
-
-    return tuple(execution_tapes), processing_fn
+    processing_fn = BroadcastPostprocessing(batch_fns, slices)
+    return BatchAndPostprocessing(tuple(execution_tapes), processing_fn)
