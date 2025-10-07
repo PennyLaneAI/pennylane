@@ -45,16 +45,17 @@ class DoubleFactorization(Operation):
 
     >>> symbols  = ['O', 'H', 'H']
     >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
-    >>>                      [0.00000000,  1.45278171, -1.00662237],
-    >>>                      [0.00000000, -1.45278171, -1.00662237]])
+    ...                      [0.00000000,  1.45278171, -1.00662237],
+    ...                      [0.00000000, -1.45278171, -1.00662237]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> algo = qml.resource.DoubleFactorization(one, two)
-    >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
-    >>>       algo.gates, # estimated number of non-Clifford gates
-    >>>       algo.qubits # estimated number of logical qubits
-    >>>       )
-    53.62085493277858 103969925 290
+    >>> algo.lamb # the 1-Norm of the Hamiltonian
+    np.float64(53.6...)
+    >>> algo.gates # estimated number of non-Clifford gates
+    103969925
+    >>> algo.qubits # estimated number of logical qubits
+    290
 
     .. details::
         :title: Theory
@@ -251,7 +252,7 @@ class DoubleFactorization(Operation):
 
         >>> lamb = 72.49779513025341
         >>> error = 0.001
-        >>> estimation_cost(lamb, error)
+        >>> qml.resource.DoubleFactorization.estimation_cost(lamb, error)
         113880
         """
         if error <= 0.0:
@@ -296,8 +297,8 @@ class DoubleFactorization(Operation):
         **Example**
 
         >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
-        >>> _qrom_cost(constants)
-        168, 4
+        >>> qml.resource.DoubleFactorization._qrom_cost(constants)
+        (168, 4)
         """
         a, b, c, d, e = constants
         n = np.log2(((a + b + c) / d) ** 0.5)
@@ -328,14 +329,15 @@ class DoubleFactorization(Operation):
 
         **Example**
 
-        >>> n = 14
-        >>> rank_r = 26
-        >>> rank_m = 5.5
-        >>> rank_max = 7
-        >>> br = 7
-        >>> alpha = 10
-        >>> beta = 20
-        >>> unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
+        >>> kwargs = {'n': 14,
+        ...           'rank_r': 26,
+        ...           'rank_m': 5.5,
+        ...           'rank_max': 7,
+        ...           'br': 7,
+        ...           'alpha': 10,
+        ...           'beta': 20,
+        ...         }
+        >>> qml.resource.DoubleFactorization.unitary_cost(**kwargs)
         2007
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -412,16 +414,17 @@ class DoubleFactorization(Operation):
 
         **Example**
 
-        >>> n = 14
-        >>> lamb = 52.98761457453095
-        >>> error = 0.001
-        >>> rank_r = 26
-        >>> rank_m = 5.5
-        >>> rank_max = 7
-        >>> br = 7
-        >>> alpha = 10
-        >>> beta = 20
-        >>> gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
+        >>> kwargs = {'n': 14,
+        ...           'lamb': 52.98761457453095,
+        ...           'error': 0.001,
+        ...           'rank_r': 26,
+        ...           'rank_m': 5.5,
+        ...           'rank_max': 7,
+        ...           'br': 7,
+        ...           'alpha': 10,
+        ...           'beta': 20,
+        ...         }
+        >>> qml.resource.DoubleFactorization.gate_cost(**kwargs)
         167048631
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -481,16 +484,17 @@ class DoubleFactorization(Operation):
 
         **Example**
 
-        >>> n = 14
-        >>> lamb = 52.98761457453095
-        >>> error = 0.001
-        >>> rank_r = 26
-        >>> rank_m = 5.5
-        >>> rank_max = 7
-        >>> br = 7
-        >>> alpha = 10
-        >>> beta = 20
-        >>> qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
+        >>> kwargs = {'n': 14,
+        ...           'lamb': 52.98761457453095,
+        ...           'error': 0.001,
+        ...           'rank_r': 26,
+        ...           'rank_m': 5.5,
+        ...           'rank_max': 7,
+        ...           'br': 7,
+        ...           'alpha': 10,
+        ...           'beta': 20,
+        ...         }
+        >>> qml.resource.DoubleFactorization.qubit_cost(**kwargs)
         292
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -586,14 +590,14 @@ class DoubleFactorization(Operation):
 
         >>> symbols  = ['H', 'H', 'O']
         >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
-        >>>                      [0.00000000,  1.45278171, -1.00662237],
-        >>>                      [0.00000000, -1.45278171, -1.00662237]], requires_grad=False)
+        ...                      [0.00000000,  1.45278171, -1.00662237],
+        ...                      [0.00000000, -1.45278171, -1.00662237]])
         >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         >>> core, one, two = qml.qchem.electron_integrals(mol)()
         >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
         >>> _, eigvals, _ = qml.qchem.factorize(two, 1e-5)
-        >>> print(norm(one, two, eigvals))
-        52.98762043980203
+        >>> print(qml.resource.DoubleFactorization.norm(one, two, eigvals))
+        369.4...
         """
         t_matrix = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)
         t_eigvals, _ = np.linalg.eigh(t_matrix)

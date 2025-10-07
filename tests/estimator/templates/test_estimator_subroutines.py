@@ -516,7 +516,10 @@ class TestResourceQPE:
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
         op = qre.QPE(base=qre.X(), num_estimation_wires=3, adj_qft_op=qre.QFT(3))
-        assert op.tracking_name() == "QPE(X, 3, adj_qft=QFT)"
+        assert (
+            op.tracking_name(resource_rep(qre.X), 3, resource_rep(qre.QFT, {"num_wires": 3}))
+            == "QPE(X, 3, adj_qft=QFT(3))"
+        )
 
     @pytest.mark.parametrize(
         "base_op, num_est_wires, adj_qft_op",
@@ -857,7 +860,7 @@ class TestResourceQFT:
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        assert qre.QFT(1).tracking_name() == "QFT(1)"
+        assert qre.QFT(1).tracking_name(1) == "QFT(1)"
 
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4))
     def test_resource_params(self, num_wires):
@@ -960,7 +963,7 @@ class TestResourceAQFT:
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        assert qre.AQFT(3, 2).tracking_name() == "AQFT(3, 2)"
+        assert qre.AQFT(3, 2).tracking_name(3, 2) == "AQFT(3, 2)"
 
     @pytest.mark.parametrize(
         "num_wires, order",
@@ -1093,7 +1096,7 @@ class TestResourceBasisRotation:
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        assert qre.BasisRotation(1).tracking_name() == "BasisRotation(1)"
+        assert qre.BasisRotation(1).tracking_name(1) == "BasisRotation(1)"
 
     @pytest.mark.parametrize("dim", (1, 2, 3))
     def test_resource_params(self, dim):
@@ -1636,11 +1639,13 @@ class TestResourceQROM:
             qre.QROM.controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
                 num_zero_ctrl=num_zero_ctrl,
-                num_bitstrings=num_data_points,
-                size_bitstring=size_data_points,
-                num_bit_flips=num_bit_flips,
-                restored=restored,
-                select_swap_depth=depth,
+                target_resource_params={
+                    "num_bitstrings": num_data_points,
+                    "size_bitstring": size_data_points,
+                    "num_bit_flips": num_bit_flips,
+                    "restored": restored,
+                    "select_swap_depth": depth,
+                },
             )
             == expected_res
         )
