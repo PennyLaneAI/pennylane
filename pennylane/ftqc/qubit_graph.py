@@ -111,12 +111,12 @@ class QubitGraph:
         random UUID has been assigned to it:
 
         >>> q = QubitGraph()
-        >>> q
+        >>> q # doctest: +SKIP
         QubitGraph<id=7491161c, loc=[]>
 
         This ID is truncated for brevity; the full ID is a 32-digit hexadecimal number:
 
-        >>> q.id
+        >>> q.id # doctest: +SKIP
         '7491161c-ca7e-42cc-af3e-8ca6250a370e'
 
     .. details::
@@ -268,7 +268,7 @@ class QubitGraph:
         >>> print(f"{q_top}; {q_top.node_labels}")
         QubitGraph<id=top, loc=[]>; [0]
         >>> q_new = QubitGraph(graph, "new")
-        print(f"{q_new}; {q_new.node_labels}")
+        >>> print(f"{q_new}; {q_new.node_labels}")
         QubitGraph<id=new, loc=[]>; [0]
         >>> q_top[0] = q_new
         >>> print(f"{q_top[0]}; {q_top[0].node_labels}")
@@ -316,7 +316,7 @@ class QubitGraph:
         >>> # Without QubitGraph.__iter__() defined
         >>> q = QubitGraph(id=0)
         >>> q.init_graph_nd_grid((2,))
-        >>> tuple(q)
+        >>> tuple(q) # doctest: +SKIP
         (QubitGraph<id=0, loc=[0]>, QubitGraph<id=1, loc=[0]>)
 
         Making QubitGraph non-iterable is especially important when using it as input to the
@@ -788,9 +788,9 @@ class QubitGraph:
         **Examples**
 
         >>> id = uuid.uuid4()
-        >>> id
+        >>> id # doctest: +SKIP
         UUID('2b03b2f5-5d36-4dfe-997e-01d2b01556c8')
-        >>> QubitGraph._truncate_id_if_uuid(id)
+        >>> QubitGraph._truncate_id_if_uuid(id) # doctest: +SKIP
         '2b03b2f5'
 
         >>> QubitGraph._truncate_id_if_uuid("abcdefghijkl")
