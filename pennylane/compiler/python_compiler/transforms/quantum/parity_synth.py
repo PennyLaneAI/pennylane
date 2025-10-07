@@ -94,7 +94,7 @@ def _loop_body_parity_network_synth(
 
 def _parity_network_synth(
     P: np.ndarray,
-    connectivity: nx.Graph | None = None,
+    # connectivity: nx.Graph | None = None,
 ) -> list[int, list[tuple[int]]]:
     """Main subroutine for the ``ParitySynth`` pass, mostly a ``for``-loop wrapper around
     ``_loop_body_parity_network_synth``. It synthesizes the parity network, as described
@@ -102,8 +102,8 @@ def _parity_network_synth(
 
     Args:
         P (np.ndarray): Parity table to be synthesized.
-        connectivity (nx.Graph): Connectivity to be taken into account during synthesis.
-            Currently not supported yet.
+        #connectivity (nx.Graph): Connectivity to be taken into account during synthesis.
+            #Currently not supported yet.
 
     Returns:
         tuple[list[int, list[tuple[int]]], np.ndarray]: Synthesized parity network, as a
@@ -111,8 +111,8 @@ def _parity_network_synth(
         inverse of the parity matrix implemented by the synthesized circuit.
 
     """
-    if connectivity is not None:
-        raise NotImplementedError
+    # if connectivity is not None:
+    # raise NotImplementedError
 
     if len(P) == 0:
         return [], None
@@ -190,9 +190,9 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
     """Rewrite pattern that applies ``ParitySynth`` to subcircuits that constitute
     phase polynomials."""
 
-    def __init__(self, *args, connectivity: nx.Graph | None = None, **kwargs):
+    def __init__(self, *args, **kwargs):  # connectivity: nx.Graph | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.connectivity = connectivity
+        # self.connectivity = connectivity
         # self.global_phase = 0.
         self._reset_vars()
 
@@ -225,13 +225,17 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
                 continue
 
             if len(self.phase_polynomial_ops) > 1:
-                self.rewrite_phase_polynomial(rewriter, InsertPoint.before(op))
+                self.rewrite_phase_polynomial(
+                    rewriter, InsertPoint.after(self.phase_polynomial_ops[-1])
+                )
                 self._reset_vars()
 
         if len(self.phase_polynomial_ops) > 1:
             # Note that `op` must be defined if there are any phase polynomial ops.
             # pylint: disable=undefined-loop-variable
-            self.rewrite_phase_polynomial(rewriter, InsertPoint.before(op))
+            self.rewrite_phase_polynomial(
+                rewriter, InsertPoint.after(self.phase_polynomial_ops[-1])
+            )
             self._reset_vars()
 
         # Mock the rewriter to think it reached a steady state already, because re-applying
@@ -277,11 +281,11 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         # M, P, angles, phi = make_phase_polynomial(self.phase_polynomial_ops, self.init_wire_map)
         # self.global_phase += phi
         # todo: call parity table reduction function once it exists
-        subcircuits, inv_network_parity_matrix = _parity_network_synth(P, self.connectivity)
+        subcircuits, inv_network_parity_matrix = _parity_network_synth(P)  # , self.connectivity)
         # inv_network_parity_matrix might be None if the parity table was empty
         if inv_network_parity_matrix is not None:
             M = (M @ inv_network_parity_matrix) % 2
-        rowcol_circuit = _rowcol_parity_matrix(M, self.connectivity)
+        rowcol_circuit = _rowcol_parity_matrix(M)  # , self.connectivity)
 
         # Apply the new circuit
         for idx, phase_wire, subcircuit in subcircuits:
