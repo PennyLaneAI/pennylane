@@ -212,7 +212,9 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
 
     def _reset_vars(self):
         """Initialize/reset variables that are used in ``match_and_rewrite`` as well as
-        ``rewrite_phase_polynomial``."""
+        ``rewrite_phase_polynomial``. Note that only variables that are independent between
+        multiple calls to ``rewrite_phase_polynomial`` should be reset here. In particular
+        ``self.global_phase`` should _NOT_ be reset."""
         self.phase_polynomial_ops = []
         self.init_wire_map = {}
         self.phase_polynomial_qubits = set()
@@ -222,10 +224,16 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Implementation of rewriting FuncOps that may contain phase poynomials
         which can be rewritten with ``ParitySynth``."""
+        # pylint: disable=too-many-branches
+        insertion_point = None
         for op in funcOp.body.walk():
             if isinstance(op, GlobalPhaseOp):
-                # todo
-                # self.global_phase += op.operands[0]
+                if self.global_phase is None:
+                    self.global_phase = op.operands[0]
+                else:
+                    add_op = arith.AddfOp(self.global_phase, op.operands[0])
+                    rewriter.insert_op(add_op, InsertPoint.before(op))
+                    self.global_phase = add_op.result
                 rewriter.erase_op(op)
 
             if not isinstance(op, CustomOp):
@@ -243,19 +251,24 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
                 self.phase_polynomial_ops.append(op)
                 continue
 
-            if len(self.phase_polynomial_ops) > 1:
-                self.rewrite_phase_polynomial(
-                    rewriter, InsertPoint.after(self.phase_polynomial_ops[-1])
-                )
+            if self.phase_polynomial_ops:
+                insertion_point = InsertPoint.after(self.phase_polynomial_ops[-1])
+                self.rewrite_phase_polynomial(rewriter, insertion_point)
                 self._reset_vars()
 
-        if len(self.phase_polynomial_ops) > 1:
-            # Note that `op` must be defined if there are any phase polynomial ops.
-            # pylint: disable=undefined-loop-variable
+        if self.phase_polynomial_ops:
             insertion_point = InsertPoint.after(self.phase_polynomial_ops[-1])
-            self.rewrite_phase_polynomial(rewriter, insertion_point, last_call=True)
+            self.rewrite_phase_polynomial(rewriter, insertion_point)
             self._reset_vars()
 
+        if self.global_phase is not None:
+            if insertion_point is None:
+                raise NotImplementedError(
+                    "Can't optimize a circuit that only consists of a global phase "
+                    "and non-phase-polynomial operations."
+                )
+            rewriter.insert_op(GlobalPhaseOp(params=(self.global_phase,)), insertion_point)
+            self.global_phase = None
         # Mock the rewriter to think it reached a steady state already, because re-applying
         # ParitySynth is not useful
         # todo: to this properly by using a different rewriter or so
@@ -286,10 +299,11 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         inv_wire_map[wire] = rz_op.out_qubits[0]
         return rz_op
 
-    def rewrite_phase_polynomial(
-        self, rewriter: pattern_rewriter.PatternRewriter, insertion_point, last_call=False
-    ):
+    def rewrite_phase_polynomial(self, rewriter: pattern_rewriter.PatternRewriter, insertion_point):
         """Rewrite a single region of a circuit that represents a phase polynomial."""
+
+        if len(self.phase_polynomial_ops) == 1:
+            return
 
         inv_wire_map = {val: key for key, val in self.init_wire_map.items()}
         # Calculate the new circuit by going to phase polynomial IR and back, including synthesis
@@ -327,11 +341,6 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
 
         for old_qubit, int_wire in self.init_wire_map.items():
             rewriter.replace_all_uses_with(old_qubit, inv_wire_map[int_wire])
-
-        if last_call:
-            if self.global_phase is not None:
-                rewriter.insert_op(GlobalPhaseOp(params=(self.global_phase,)), insertion_point)
-            self.global_phase = None
 
         for op in self.phase_polynomial_ops[::-1]:
             rewriter.erase_op(op)

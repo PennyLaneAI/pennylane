@@ -338,6 +338,42 @@ class TestAdditionalOps:
         _program = translate_program_to_xdsl(program)
         run_filecheck(_program, self.pipeline)
 
+    def test_global_phase(self, run_filecheck):
+        """Test that ``GlobalPhase`` together with a phase poly op is handled correctly."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                // CHECK: quantum.custom "CNOT"() [[q1]], [[q0]] : !quantum.bit, !quantum.bit
+                // CHECK: quantum.gphase(%arg0) :
+                quantum.gphase(%arg0) :
+                %2, %3 = _CNOT %1, %0
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }
+        """
+
+        _program = translate_program_to_xdsl(program)
+        run_filecheck(_program, self.pipeline)
+
+    def test_global_phase_alone_raises(self, run_filecheck):
+        """Test that ``GlobalPhase`` together with a phase poly op is handled correctly."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                // CHECK: quantum.gphase(%arg0) :
+                quantum.gphase(%arg0) :
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }
+        """
+        _program = translate_program_to_xdsl(program)
+        with pytest.raises(NotImplementedError, match="Can't optimize a circuit that only"):
+            run_filecheck(_program, self.pipeline)
+
 
 # pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
