@@ -523,7 +523,20 @@
   with quantum just-in-time compilation via the ``@qml.qjit`` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
 
-  CODE EXAMPLE NEEDED
+  ```python
+  @qml.qjit
+  @partial(qml.transforms.clifford_t_decomposition, method="gridsynth")
+  @qml.qnode(qml.device("lightning.qubit", wires=1))
+  def circuit():
+      qml.RX(np.pi/3, wires=0)
+      qml.RY(np.pi/4, wires=0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  Array([0.80011651+0.19132132j, 0.33140586-0.4619306j ], dtype=complex128)
+  ```
 
 * The :func:`~.clifford_t_decomposition` transform can now decompose circuits with mid-circuit
   measurements, including Catalyst's measurement operations. It also now handles ``RZ`` and 
@@ -537,8 +550,8 @@
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
 
 * Users can now specify a relative threshold value for the permissible operator norm error 
-  (``epsilon``) that triggers rebuilding of the cache in the :func:`~.clifford_t_transform`, via new 
-  ``cache_eps_rtol`` keyword argument.
+  (``epsilon``) that triggers rebuilding of the cache in the :func:`~.clifford_t_decomposition`, via 
+  new ``cache_eps_rtol`` keyword argument.
   [(#8056)](https://github.com/PennyLaneAI/pennylane/pull/8056)
 
 <h4>Transforms</h4>
@@ -548,7 +561,25 @@
   efficient Clifford+T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
 
-  CODE EXAMPLE NEEDED
+  ```python
+  @qml.qnode(qml.device("default.qubit", wires=4))
+  def circuit():
+    qml.CCZ(wires=[0, 1, 3])
+    qml.ctrl(qml.S(wires=[1]), control=[0])
+    qml.ctrl(qml.S(wires=[2]), control=[0, 1])
+    qml.MultiControlledX(wires=[0, 1, 2, 3])
+
+    return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> new_circuit = qml.transforms.match_relative_phase_toffoli(circuit)
+  >>> print(qml.draw(new_circuit, level=1)())
+  0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
+  1: ─────────────────│─────╭●─────│─────╭●─────────────────────┤
+  2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
+  3: ──H──T─╰X──T†──H─╰X──T─╰X──T†─╰X──T─╰X──T†──H──T─╰X──T†──H─┤
+  ```
 
 * New intermediate representations (IRs) called :func:`~transforms.parity_matrix` and 
   :func:`~transforms.phase_polynomial` are available in PennyLane. These IRs are used in compilation 
@@ -557,7 +588,66 @@
   routing under constraint connectivity.
   [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
 
-  CODE EXAMPLE NEEDED
+  The example below showcases the use of ``parity_matrix``, which acts on circuits containing only 
+  ``CNOT`` gates. 
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.CNOT((3, 2))
+      qml.CNOT((0, 2))
+      qml.CNOT((2, 1))
+      qml.CNOT((3, 2))
+      qml.CNOT((3, 0))
+      qml.CNOT((0, 2))
+      return qml.state()
+  ```
+
+  Upon transforming the above circuit with ``parity_matrix``, the output is the parity matrix.
+
+  ```pycon
+  >>> P = qml.transforms.parity_matrix(circuit, wire_order=range(4))()
+  >>> print(P)
+  array([[1, 0, 0, 1],
+         [1, 1, 1, 1],
+         [0, 0, 1, 1],
+         [0, 0, 0, 1]])
+  ```
+
+  The ``phase_polynomial`` transform functions similarly, operating on circuits containining only 
+  ``CNOT`` and ``RZ`` gates and returning the parity matrix, the parity table, and corresponding 
+  angles for each parity.
+
+  ```python
+  @qml.qnode(dev)
+  def circuit():
+      qml.CNOT((1, 0))
+      qml.RZ(1, 0)
+      qml.CNOT((2, 0))
+      qml.RZ(2, 0)
+      qml.CNOT((0, 1))
+      qml.CNOT((3, 1))
+      qml.RZ(3, 1)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> pmat, ptab, angles = qml.transforms.phase_polynomial(circuit, wire_order=range(4))()
+  >>> pmat
+  [[1 1 1 0]
+   [1 0 1 1]
+   [0 0 1 0]
+   [0 0 0 1]]
+  >>> ptab
+  [[1 1 1]
+   [1 1 0]
+   [0 1 1]
+   [0 0 1]]
+  >>> angles
+  [1 2 3]
+  ```
 
 * A new transform called :func:`~.transforms.rz_phase_gradient` has been added, which lets you 
   realize arbitrary angle :class:`~.RZ` rotations with a phase gradient resource state and 
@@ -565,8 +655,6 @@
   sufficient auxiliary wires are available, as it saves on ``T`` gates compared to other
   discretization schemes.
   [(#8213)](https://github.com/PennyLaneAI/pennylane/pull/8213)
-
-  CODE EXAMPLE NEEDED
 
 * A new keyword argument called ``shot_dist`` has been added to the 
   :func:`~.transforms.split_non_commuting` transform. This allows for more customization and 
@@ -652,7 +740,26 @@
   ``mcm_method="tree-traversal"``.
   [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
 
-  CODE EXAMPLE NEEDED
+  This improvement is particularly useful for extracting the state in finite-shot workflows:
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), mcm_method="one-shot", shots=1)
+  def circuit():
+      qml.RY(1.23, 0)
+
+      m0 = qml.measure(0)
+      qml.cond(m0 == 0, qml.H)(0)
+      qml.Snapshot("state", measurement=qml.state())
+
+      return qml.expval(qml.X(0))
+  ```
+
+  ```pycon
+  >>> qml.snapshots(circuit)()
+  {'state': array([0.+0.j, 1.+0.j]), 'execution_results': np.float64(-1.0)}
+  ```
+
+  Here, the state is projected onto the corresponding state resulting from the MCM.
 
 * The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
   have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
