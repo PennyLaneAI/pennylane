@@ -63,6 +63,8 @@ class TestParitySynthPass:
                 // CHECK: quantum.custom "RX"(%arg0) [[q1]] : !quantum.bit
                 %1 = quantum.custom "Hadamard"() %0 : !quantum.bit
                 %2 = quantum.custom "RX"(%arg0) %1 : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
                 return
             }
         """
@@ -80,6 +82,7 @@ class TestParitySynthPass:
                 %4, %5 = _CNOT %2, %3
                 %6, %7 = _CNOT %4, %5
                 // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
                 return
             }
         """
@@ -102,6 +105,7 @@ class TestParitySynthPass:
                 // CHECK: quantum.custom "CNOT"() [[q2]], [[q4]] : !quantum.bit, !quantum.bit
                 %5, %6 = _CNOT %2, %4
                 // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
                 return
             }
         """
@@ -120,6 +124,7 @@ class TestParitySynthPass:
                 %4 = quantum.custom "RZ"(%arg0) %2 : !quantum.bit
                 %5, %6 = _CNOT %4, %3
                 // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
                 return
             }
         """
@@ -150,6 +155,7 @@ class TestParitySynthPass:
                 // CHECK: quantum.custom "CNOT"() [[q5]], [[q7]] : !quantum.bit, !quantum.bit
                 %12, %13 = _CNOT %9, %11
                 // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
                 return
             }
         """
@@ -179,6 +185,7 @@ class TestParitySynthPass:
                 %11 = quantum.custom "RZ"(%arg2) %9 : !quantum.bit
                 %12, %13 = _CNOT %11, %10
                 // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
                 return
             }
         """
@@ -229,10 +236,107 @@ class TestParitySynthPass:
                 // CHECK: [[q21:%.+]], [[q22:%.+]] = quantum.custom "CNOT"() [[q20]], [[q18]] : !quantum.bit, !quantum.bit
                 // CHECK: [[q23:%.+]], [[q24:%.+]] = quantum.custom "CNOT"() [[q22]], [[q21]] : !quantum.bit, !quantum.bit
                 // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
                 return
             }
         """
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
+
+
+class TestAdditionalOps:
+
+    pipeline = (ParitySynthPass(),)
+
+    def test_phase_shift(self, run_filecheck):
+        """Test that ``PhaseShift`` is handled correctly."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                // CHECK: [[half:%.+]] = arith.constant -5.000000e-01 : f64
+                // CHECK: [[gphase:%.+]] = arith.mulf %arg0, [[half]] : f64
+                // CHECK: [[q2:%.+]] = quantum.custom "RZ"(%arg0) [[q0]] : !quantum.bit
+                %2 = quantum.custom "PhaseShift"(%arg0) %0 : !quantum.bit
+                // CHECK: [[q3:%.+]], [[q4:%.+]] = quantum.custom "CNOT"() [[q2]], [[q1]] : !quantum.bit, !quantum.bit
+                %3, %4 = _CNOT %2, %1
+                // CHECK: quantum.gphase([[gphase]]) :
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }
+        """
+
+        _program = translate_program_to_xdsl(program)
+        run_filecheck(_program, self.pipeline)
+
+    def test_z_gate(self, run_filecheck):
+        """Test that ``Z`` is handled correctly."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                %2, %3 = _CNOT %0, %1
+                // CHECK: [[pi:%.+]] = arith.constant 3.1415926535897931 : f64
+                // CHECK: [[half:%.+]] = arith.constant -5.000000e-01 : f64
+                // CHECK: [[gphase:%.+]] = arith.mulf [[pi]], [[half]] : f64
+                // CHECK: [[q2:%.+]] = quantum.custom "RZ"([[pi]]) [[q0]] : !quantum.bit
+                %4 = quantum.custom "PauliZ"() %2 : !quantum.bit
+                %5, %6 = _CNOT %4, %3
+                // CHECK: quantum.gphase([[gphase]]) :
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }
+        """
+
+        _program = translate_program_to_xdsl(program)
+        run_filecheck(_program, self.pipeline)
+
+    def test_s_gate(self, run_filecheck):
+        """Test that ``S`` is handled correctly."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                %2, %3 = _CNOT %0, %1
+                // CHECK: [[pi_2:%.+]] = arith.constant 1.5707963267948966 : f64
+                // CHECK: [[half:%.+]] = arith.constant -5.000000e-01 : f64
+                // CHECK: [[gphase:%.+]] = arith.mulf [[pi_2]], [[half]] : f64
+                // CHECK: [[q2:%.+]] = quantum.custom "RZ"([[pi_2]]) [[q0]] : !quantum.bit
+                %4 = quantum.custom "S"() %2 : !quantum.bit
+                %5, %6 = _CNOT %4, %3
+                // CHECK: quantum.gphase([[gphase]]) :
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }
+        """
+
+        _program = translate_program_to_xdsl(program)
+        run_filecheck(_program, self.pipeline)
+
+    def test_t_gate(self, run_filecheck):
+        """Test that ``T`` is handled correctly."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                %2, %3 = _CNOT %0, %1
+                // CHECK: [[pi_4:%.+]] = arith.constant 0.78539816339744828 : f64
+                // CHECK: [[half:%.+]] = arith.constant -5.000000e-01 : f64
+                // CHECK: [[gphase:%.+]] = arith.mulf [[pi_4]], [[half]] : f64
+                // CHECK: [[q2:%.+]] = quantum.custom "RZ"([[pi_4]]) [[q0]] : !quantum.bit
+                %4 = quantum.custom "T"() %2 : !quantum.bit
+                %5, %6 = _CNOT %4, %3
+                // CHECK: quantum.gphase([[gphase]]) :
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }
+        """
+
+        _program = translate_program_to_xdsl(program)
+        run_filecheck(_program, self.pipeline)
 
 
 # pylint: disable=too-few-public-methods
@@ -264,6 +368,40 @@ class TestParitySynthIntegration:
             qml.CNOT((1, 0))
             qml.RZ(z, 1)
             qml.CNOT((1, 0))
+            return qml.state()
+
+        run_filecheck_qjit(circuit)
+
+    def test_qjit_with_additional_ops(self, run_filecheck_qjit):
+        """Test that the ParitySynthPass works correctly with qjit when
+        additional operation types causing global phases are present."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @parity_synth_pass
+        @qml.qnode(dev)
+        def circuit(x: float, y: float, z: float):
+            # CHECK: [[phi:%.+]] = tensor.extract %arg0
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: quantum.custom "RZ"([[phi]])
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: [[omega:%.+]] = tensor.extract %arg1
+            # CHECK: quantum.custom "RX"([[omega]])
+            # CHECK: [[theta:%.+]] = tensor.extract %arg2
+            # CHECK: quantum.custom "RZ"([[theta]])
+            # CHECK: quantum.custom "RZ"
+            # CHECK: quantum.custom "RZ"
+            # CHECK: quantum.gphase
+            # CHECK-NOT: quantum.custom
+            qml.CNOT((0, 1))
+            qml.PhaseShift(x, 1)
+            qml.CNOT((0, 1))
+            qml.RX(y, 1)
+            qml.CNOT((1, 0))
+            qml.RZ(z, 1)
+            qml.CNOT((1, 0))
+            qml.Z(0)
+            qml.S(1)
             return qml.state()
 
         run_filecheck_qjit(circuit)
