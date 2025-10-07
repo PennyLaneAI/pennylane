@@ -249,7 +249,7 @@ def _transpile_qnode(self, qnode, targs, tkwargs):
     """Custom qnode transform for ``transpile``."""
     if tkwargs.get("device", None):
         raise ValueError(
-            "Cannot provide a 'device' value directly to the transpile decorator "
+            "Cannot provide a 'device' value directly to the defer_measurements decorator "
             "when transforming a QNode."
         )
 
