@@ -40,8 +40,7 @@ from pennylane import numpy as pnp
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
-from pennylane.tape import QuantumScript
-from pennylane.tape.tape import expand_tape
+from pennylane.tape import QuantumScript, expand_tape
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods
@@ -816,6 +815,14 @@ class TestMatrix:
 
 
 special_non_par_op_decomps = [
+    (
+        qml.Identity,
+        [],
+        [3],
+        [0, 1, 2],
+        (lambda wires: qml.ctrl(qml.Identity(wires[-1]), control=wires[:-1])),
+        [qml.Identity([0, 1, 2, 3])],
+    ),
     (qml.PauliY, [], [0], [1], qml.CY, [qml.CRY(np.pi, wires=[1, 0]), qml.S(1)]),
     (qml.PauliZ, [], [1], [0], qml.CZ, [qml.ControlledPhaseShift(np.pi, wires=[0, 1])]),
     (
@@ -1118,7 +1125,7 @@ class TestDecomposition:
         assert custom_ctrl_op.decomposition() == expected
         # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
         # to test, just the controlled decompositions logic.
-        if base_cls != qml.GlobalPhase:
+        if base_cls not in (qml.GlobalPhase, qml.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
         mat = qml.matrix(ctrl_op.decomposition, wire_order=active_wires)()

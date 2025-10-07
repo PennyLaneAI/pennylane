@@ -92,7 +92,9 @@ class TestMapWiresOperators:
 
     def test_map_wires_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to map the wires of an unsupported object."""
-        with pytest.raises(qml.transforms.core.TransformError, match="Decorating a QNode with"):
+        with pytest.raises(
+            qml.transforms.core.TransformError, match="only apply to sequences of QuantumScript"
+        ):
             qml.map_wires("unsupported type", wire_map=wire_map)
 
 

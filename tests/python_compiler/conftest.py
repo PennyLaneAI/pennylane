@@ -30,11 +30,8 @@ try:
     from xdsl.passes import PassPipeline
     from xdsl.printer import Printer
 
-    from pennylane.compiler.python_compiler import Compiler
-    from pennylane.compiler.python_compiler.jax_utils import (
-        QuantumParser,
-        parse_generic_to_xdsl_module,
-    )
+    from pennylane.compiler.python_compiler import Compiler, QuantumParser
+    from pennylane.compiler.python_compiler.conversion import parse_generic_to_xdsl_module
 except (ImportError, ModuleNotFoundError):
     deps_available = False
 
@@ -45,7 +42,7 @@ def _run_filecheck_impl(program_str, pipeline=(), verify=False, roundtrip=False)
     if not deps_available:
         return
 
-    ctx = Context(allow_unregistered=True)
+    ctx = Context()
     xdsl_module = QuantumParser(ctx, program_str, extra_dialects=(test.Test,)).parse_module()
 
     if roundtrip:

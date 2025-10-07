@@ -72,6 +72,7 @@ class TestDynamicWire:
 
 class TestAllocateOp:
 
+    @pytest.mark.jax
     def test_valid_operation(self):
         """Test that Allocate is a valid Operator."""
         op = Allocate.from_num_wires(3)
@@ -302,6 +303,19 @@ class TestCaptureIntegration:
 
         with pytest.raises(NotImplementedError):
             deallocate(2)
+
+    def test_no_dynamic_allocation_size(self):
+        """Test that allocation size must be static with capture."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def c(n: int):
+            allocate(n)
+
+        with pytest.raises(
+            NotImplementedError,
+            match="Number of allocated wires must be static when capture is enabled.",
+        ):
+            c(1)
 
 
 @pytest.mark.integration

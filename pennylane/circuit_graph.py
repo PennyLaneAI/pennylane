@@ -588,13 +588,13 @@ class CircuitGraph:
         ...     return qml.expval(qml.X(0))
         >>> qnode = qml.QNode(circuit_measure_max_once, dev)
         >>> tape = qml.workflow.construct_tape(qnode)()
-        >>> tape.graph.max_simultaneous_measurements
+        >>> print(tape.graph.max_simultaneous_measurements)
         1
         >>> def circuit_measure_max_twice():
         ...     return qml.expval(qml.X(0)), qml.probs(wires=0)
         >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
         >>> tape = qml.workflow.construct_tape(qnode)()
-        >>> tape.graph.max_simultaneous_measurements
+        >>> print(tape.graph.max_simultaneous_measurements)
         2
 
         Returns:
