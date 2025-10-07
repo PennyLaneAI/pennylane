@@ -55,6 +55,7 @@ jobs:
     - name: Bump rc version
       if: ${{ env.branch_exists == 'true' }}
       run: |
+        echo "rc_branch is ${{ env.rc_branch }}"
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
         git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
         git config --global user.name "ringo-but-quantum"
