@@ -9,8 +9,8 @@
   The functionality therein is designed to rapidly estimate the quantum resources required to execute a program,
   and it can flexibly analyze programs written at different levels of abstraction.
 
-  * The `qml.estimator.ResourceOperator`, `qml.estimator.CompressedResourceOp`, and `qml.estimator.GateCount` classes
-    were added as base classes to represent quantum operators.
+  * The `qml.estimator.ResourceOperator`, `qml.estimator.CompressedResourceOp`,
+    and `qml.estimator.GateCount` classes were added as base classes to represent quantum operators.
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
   * The :class:`~.estimator.Resources` class was added as a container class for resources.
@@ -20,7 +20,8 @@
     classes were added to track auxiliary wires for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
 
-  * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
+  * Added a new `ResourceConfig` class to store the configuration used for resource estimation,
+    including operator precisions and custom decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
 
   * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
