@@ -73,11 +73,12 @@ class NoiseModel:
     >>> noise_model
     NoiseModel({
         OpEq(PauliX) | OpEq(PauliY): n0
-        OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(0.4, wires),
+        OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(gamma=0.4)
     },
     meas_map = {
-        MeasEq(expval) & WiresIn([0, 1]): PhaseFlip(p=0.2)
-    }, t1=0.04)
+        MeasEq('ExpectationMP') & WiresIn([0, 1]): PhaseFlip(p=0.2)
+    }, t1 = 0.04)
+
     """
 
     def __init__(self, model_map, meas_map=None, **kwargs):

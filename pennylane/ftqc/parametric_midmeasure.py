@@ -117,9 +117,8 @@ def measure_arbitrary_basis(
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         from pennylane.ftqc import diagonalize_mcms, measure_arbitrary_basis
 
         dev = qml.device("default.qubit", wires=3)
@@ -624,7 +623,7 @@ def diagonalize_mcms(tape):
     This transform allows us to transform mid-circuit measurements into the measurement basis by adding
     the relevant diagonalizing gates to the tape just before the measurement is performed.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from functools import partial
 
@@ -665,7 +664,7 @@ def diagonalize_mcms(tape):
         measurements for the true and false condition with conditional diagonalizing gates,
         and a single measurement in the computational basis:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x
 
@@ -693,8 +692,7 @@ def diagonalize_mcms(tape):
         >>> print(qml.draw(circuit)([np.pi, np.pi/4]))
         0: ──RY(3.14)──┤↗├───────────────────┤
         1: ──RX(0.79)───║───H──S†──H──┤↗├──X─┤  <Z>
-                        ╚═══╩══╩═══╝   ║   ║
-                                       ╚═══╝
+                        ╚═══╩══╩═══╝   ╚═══╝
 
         where the initial Hadamard gate on wire 1 has the same condition as the original X-basis
         measurement, and the adjoint S gate and second Hadamard share a condition with the Y-basis
