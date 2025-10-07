@@ -377,51 +377,147 @@ def perturbation_error(
         return expectations, convergence_info
 
     if parallel_mode == "mvp":
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Starting perturbation_error with backend={backend}, parallel_mode={parallel_mode}, num_workers={num_workers}, max_order={max_order}, topk={topk}")
+        logger.info(f"Processing {len(states)} state(s) across {len(sorted_commutators_by_order)} order(s)")
+        logger.info("Using MVP (matrix-vector product) parallelization - maximum parallelization per order")
+        
         executor = concurrency.backends.get_executor(backend)
         expectations = []
         convergence_info = {}
-
+        
+        logger.info(f"Initializing executor backend: {backend}")
+        logger.info("✅ Executor initialized successfully")
+        
+        # ============================================================
+        # PHASE 1: COLLECT ALL TASKS FOR ALL STATES/ORDERS GLOBALLY
+        # ============================================================
+        logger.info(f"Collecting all tasks for {len(states)} state(s)...")
+        
+        global_task_list = []
+        global_metadata = []  # Store (state_idx, order, importance_idx, timestep_factor)
+        
         for state_idx, state in enumerate(states):
-            state_convergence = {}
-            state_expectations = {}
-
+            logger.info(f"[State {state_idx+1}/{len(states)}] Preparing tasks...")
+            
             for order, commutators_dict in sorted_commutators_by_order.items():
                 if len(commutators_dict) == 0:
                     continue
-
-                # Expand all commutators for this order into individual terms
-                all_term_tasks, metadata_map = _expand_all_terms_mvp_per_order(
-                    commutators_dict, fragments, timestep, order
-                )
-
-                # Update all tasks with the current state
-                state_tasks = [
-                    (term, coeff, state, fragments) for term, coeff, fragments in all_term_tasks
-                ]
-
-                # Parallel evaluation of ALL terms from ALL commutators in this order
-                with executor(max_workers=num_workers) as ex:
-                    all_results = ex.starmap(_apply_single_term, state_tasks)
-
-                # Regroup results by commutator
-                commutator_expectations = _regroup_by_commutator_mvp_per_order(
-                    all_results, metadata_map
-                )
-
-                # Compute convergence statistics using regrouped expectations
-                order_expectation, order_convergence = _compute_convergence_mvp_per_order(
-                    commutator_expectations, len(commutators_dict)
-                )
-
-                state_expectations[order] = order_expectation
-                state_convergence[order] = order_convergence
-
-            expectations.append(state_expectations)
-            convergence_info[state_idx] = state_convergence
-
+                
+                timestep_factor = (1j * timestep) ** order
+                
+                for importance_idx, commutator in enumerate(commutators_dict.keys()):
+                    op_terms = _op_list(commutator)
+                    
+                    for term, coeff in op_terms.items():
+                        # Add task: (term, coeff, state, fragments)
+                        global_task_list.append((term, coeff, state, fragments))
+                        
+                        # Track metadata for regrouping results
+                        global_metadata.append({
+                            'state_idx': state_idx,
+                            'order': order,
+                            'importance_idx': importance_idx,
+                            'timestep_factor': timestep_factor,
+                            'term_coeff': coeff,
+                        })
+        
+        logger.info(f"Collected {len(sorted_commutators_by_order)} state-order combinations")
+        logger.info(f"Total tasks across all states/orders: {len(global_task_list)}")
+        
+        # ============================================================
+        # PHASE 2: ONE SINGLE EXECUTOR CONTEXT WITH ONE STARMAP CALL
+        # ============================================================
+        logger.info("Creating single executor context for ONE massive starmap call...")
+        
+        with executor(max_workers=num_workers) as ex:
+            logger.info(f"✅ Executor entered, calling starmap with {len(global_task_list)} tasks...")
+            import time
+            start_time = time.time()
+            
+            global_results = ex.starmap(_apply_single_term, global_task_list)
+            
+            elapsed = time.time() - start_time
+            logger.info(f"✅ Starmap returned {len(global_results)} results in {elapsed:.2f}s")
+        
+        logger.info("Exiting executor context")
+        
+        # ============================================================
+        # PHASE 3: POST-PROCESS RESULTS - REGROUP BY STATE/ORDER
+        # ============================================================
+        logger.info("Processing results...")
+        
+        # Initialize storage for all states
+        for state_idx in range(len(states)):
+            expectations.append({})
+            convergence_info[state_idx] = {}
+        
+        # Group results by (state_idx, order, importance_idx)
+        grouped_results = {}
+        
+        for task_idx, result in enumerate(global_results):
+            meta = global_metadata[task_idx]
+            state_idx = meta['state_idx']
+            order = meta['order']
+            importance_idx = meta['importance_idx']
+            timestep_factor = meta['timestep_factor']
+            
+            key = (state_idx, order, importance_idx)
+            
+            if key not in grouped_results:
+                grouped_results[key] = 0.0
+            
+            # Apply timestep factor and accumulate
+            grouped_results[key] += result * timestep_factor
+        
+        # Process each state
+        for state_idx in range(len(states)):
+            logger.info(f"[State {state_idx+1}/{len(states)}] Results processed")
+            
+            for order in sorted_commutators_by_order.keys():
+                commutators_dict = sorted_commutators_by_order[order]
+                
+                if len(commutators_dict) == 0:
+                    continue
+                
+                # Collect commutator expectations in importance order
+                order_expectations = []
+                for importance_idx in range(len(commutators_dict)):
+                    key = (state_idx, order, importance_idx)
+                    if key in grouped_results:
+                        order_expectations.append(grouped_results[key])
+                
+                if not order_expectations:
+                    continue
+                
+                # Compute convergence statistics
+                current_expectation = 0.0
+                partial_sums = []
+                mean_history = []
+                median_history = []
+                std_history = []
+                
+                for expectation_value in order_expectations:
+                    current_expectation += expectation_value
+                    partial_sums.append(current_expectation)
+                    
+                    mean_history, median_history, std_history = _update_convergence_histories(
+                        partial_sums, mean_history, median_history, std_history
+                    )
+                
+                expectations[state_idx][order] = current_expectation
+                convergence_info[state_idx][order] = {
+                    "mean_history": mean_history,
+                    "median_history": median_history,
+                    "std_history": std_history,
+                }
+        
+        logger.info(f"All states processed successfully. Total execution time: {elapsed:.4f}s")
         return expectations, convergence_info
 
-    raise ValueError(
+        raise ValueError(
         "Invalid parallel mode. Choose 'state', 'commutator', 'nested_commutator', or 'mvp'."
     )
 
