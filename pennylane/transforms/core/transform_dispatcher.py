@@ -465,7 +465,7 @@ class BroadcastPostprocessing:
     """
 
     def __init__(
-        self, individual_fns: list[PostprocessingFn | BatchPostprocessingFn], slices: list[slice]
+        self, individual_fns: list[PostprocessingFn | BatchPostprocessingFn], slices: list[slice | int]
     ):
         self.individual_fns = individual_fns
         self.slices = slices
@@ -515,8 +515,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
     def __repr__(self):
         return f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
 
-    def __call__(self, obj):
-        return self._transform_dispatcher(obj, *self.args, **self.kwargs)
+    def __call__(self, obj, **extra_kwargs):
+        return self._transform_dispatcher(obj, *self.args, **extra_kwargs, **self.kwargs)
 
     def __iter__(self):
         return iter(
@@ -580,7 +580,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
 
 @TransformDispatcher.generic_register
-def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
+def _apply_to_tape(obj: QuantumScript, transform, *targs, cotransform_cache=None, **tkwargs):
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
@@ -607,9 +607,9 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
 
 
 @TransformDispatcher.generic_register
-def _apply_to_batch_and_postprocessing(obj: BatchAndPostprocessing, transform, *targs, **tkwargs):
+def _apply_to_batch_and_postprocessing(obj: BatchAndPostprocessing, transform, *targs, cotransform_cache=None, **tkwargs):
     batch, original_postprocessing = obj
-    new_batch, new_postprocessing = transform(batch, *targs, **tkwargs)
+    new_batch, new_postprocessing = _apply_to_sequence(batch, transform, *targs, cotransform_cache=cotransform_cache, **tkwargs)
 
     if isinstance(original_postprocessing, (PostprocessingStack, BroadcastPostprocessing)):
         combined_postprocessing = original_postprocessing + new_postprocessing
@@ -652,7 +652,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
 
 
 @TransformDispatcher.generic_register
-def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
+def apply_to_callable(obj: Callable, transform, *targs, cotransform_cache=None, **tkwargs):
     """Apply a transform to a Callable object."""
     if obj.__class__.__name__ == "QJIT":
         raise TransformError(
@@ -715,27 +715,63 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
 
 
 @TransformDispatcher.generic_register
-def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
+def _apply_to_sequence(obj: Sequence, transform, *targs, cotransform_cache=None, **tkwargs):
     if not all(isinstance(t, QuantumScript) for t in obj):
         raise TransformError(
             f"Transforms can only apply to sequences of QuantumScript, not {type(obj[0])}"
         )
+    bound_transform = TransformContainer(transform, targs, tkwargs)
+    argnums = (
+        cotransform_cache.get_argnums(bound_transform)
+        if cotransform_cache
+        else None
+    )
+
+    tkwargs = {
+        key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
+    }
+
     execution_tapes = []
     batch_fns = []
     slices = []
     start = 0
     end = 0
+    classical_jacobians = []
+    classical_fns = []
 
-    for t in obj:
+    for tape_idx, t in enumerate(obj):
+        if argnums is not None:
+            t.trainable_params = argnums[tape_idx]
         # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
-        new_tapes, fn = transform(t, *targs, **tkwargs)
+        if transform.is_informative:
+            new_tapes, fn = transform.transform(t, *targs, **tkwargs)
+        else:
+            new_tapes, fn = transform(t, *targs, **tkwargs)
         end = start + len(new_tapes)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
         slices.append(slice(start, end))
         start = end
 
+        jac = (
+            cotransform_cache.get_classical_jacobian(bound_transform, tape_idx)
+            if cotransform_cache
+            else None
+        )
+        classical_jacobians.append(jac)
+        if transform.classical_cotransform and classical_jacobians[-1] is not None:
+            classical_fns.append(
+                functools.partial(transform.classical_cotransform, cjac=classical_jacobians[-1], tape=t)
+            )
+
     processing_fn = BroadcastPostprocessing(batch_fns, slices)
+
+    if transform.classical_cotransform and classical_fns:
+        slices_classical = list(range(len(obj)))
+        batch_postprocessing_classical = BroadcastPostprocessing(classical_fns, slices_classical)
+        processing_fn = batch_postprocessing_classical + processing_fn
+
+    
     return BatchAndPostprocessing(tuple(execution_tapes), processing_fn)

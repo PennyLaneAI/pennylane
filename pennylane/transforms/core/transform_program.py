@@ -407,69 +407,10 @@ class TransformProgram:
         if not self:
             return tapes, null_postprocessing
 
-        processing_fns_stack = []
-
-        for transform_container in self:
-            transform, targs, tkwargs, cotransform, _, _, _ = transform_container
-            tkwargs = {
-                key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
-            }
-            execution_tapes, fns, slices, classical_fns = [], [], [], []
-
-            start = 0
-            argnums = (
-                self.cotransform_cache.get_argnums(transform_container)
-                if self.cotransform_cache
-                else None
-            )
-
-            classical_jacobians = []
-            for tape_idx, tape in enumerate(tapes):
-                if argnums is not None:
-                    tape.trainable_params = argnums[tape_idx]
-                new_tapes, fn = transform(tape, *targs, **tkwargs)
-                execution_tapes.extend(new_tapes)
-
-                fns.append(fn)
-                end = start + len(new_tapes)
-                slices.append(slice(start, end))
-                start = end
-
-                jac = (
-                    self.cotransform_cache.get_classical_jacobian(transform_container, tape_idx)
-                    if self.cotransform_cache
-                    else None
-                )
-                classical_jacobians.append(jac)
-                if cotransform and classical_jacobians[-1] is not None:
-                    classical_fns.append(
-                        partial(cotransform, cjac=classical_jacobians[-1], tape=tape)
-                    )
-
-            if cotransform and classical_fns:
-                slices_classical = list(range(len(tapes)))
-                batch_postprocessing_classical = partial(
-                    _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
-                )
-                batch_postprocessing_classical.__doc__ = _batch_postprocessing.__doc__
-                processing_fns_stack.append(batch_postprocessing_classical)
-
-            batch_postprocessing = partial(_batch_postprocessing, individual_fns=fns, slices=slices)
-            batch_postprocessing.__doc__ = _batch_postprocessing.__doc__
-            processing_fns_stack.append(batch_postprocessing)
-
-            # set input tapes for next iteration.
-            tapes = execution_tapes
-
-        postprocessing_fn = partial(
-            _apply_postprocessing_stack,
-            postprocessing_stack=processing_fns_stack,
-        )
-
-        postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
-
-        # Reset classical jacobians
-        return tuple(tapes), postprocessing_fn
+        extra_kwargs = {"cotransform_cache": self.cotransform_cache} if self.cotransform_cache else {}
+        for t in self:
+            tapes = t(tapes, **extra_kwargs)
+        return tapes
 
     def __call_jaxpr(
         self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
