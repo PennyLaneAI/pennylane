@@ -912,10 +912,10 @@
 * `autoray`  has been pinned to version 0.8.0 for PennyLane v0.43.0 to prevent potential bugs due to breaking changes in autoray releases.
   [(#8412)](https://github.com/PennyLaneAI/pennylane/pull/8412)
 
-* ``qml.workflow.construct_batch.expand_fn_transform`` is deleted as it was local and no longer getting used.
+* ``qml.workflow.construct_batch.expand_fn_transform`` has been deleted as it was local and no longer getting used.
   [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
 
-* Removed ``get_canonical_interface_name`` in favour of overriding ``Enum._missing_`` in ``Interface``.
+* ``get_canonical_interface_name`` has been removed in favour of overriding ``Enum._missing_`` in ``Interface``.
   [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
 
   If you would like to get the canonical interface you can simply use the ``Enum`` like,
@@ -1020,7 +1020,7 @@
   HilbertSchmidt(0.1, wires=[0, 1])
   ```
 
-* Removed support for Python 3.10 and added support for 3.13.
+* Support for python 3.10 has been removed and support for python 3.13 has been added.
   [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
 * To make the codebase more organized and easier to maintain, custom exceptions were moved into ``exceptions.py``,
@@ -1055,7 +1055,7 @@
   the correct number of wires is passed.
   [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
 
-* The :func:`qml.QNode.get_gradient_fn` method is now removed. Instead, use :func:`qml.workflow.get_best_diff_method`
+* The :func:`qml.QNode.get_gradient_fn` has been removed. Instead, use :func:`qml.workflow.get_best_diff_method`
   to obtain the differentiation method.
   [(#7907)](https://github.com/PennyLaneAI/pennylane/pull/7907)
 
@@ -1154,7 +1154,7 @@
   This improves the code design by removing an unused method with undesired dependencies (i.e. circular dependency).
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
-* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` have been deprecated and will be removed in version v0.44.
   Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
   [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
 
@@ -1165,7 +1165,7 @@
     - ``observables_in_order`` in favor of ``observables``
     - ``operations_in_order`` in favor of ``operations``
     - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order`` in favore of ``descendants(obj, sort=True)``
+    - ``descendants_in_order`` in favor of ``descendants(obj, sort=True)``
 
 * The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
