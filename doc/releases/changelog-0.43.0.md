@@ -849,8 +849,7 @@
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
-* Added new templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
-  `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
+* Users can now do resource estimation on QPE and iterative QPE with `ResourceQPE` and `ResourceIterativeQPE`, respectively. Additionally, a `ResourceControlledSequence` template has been added that allows for estimating resources on controlled sequences of resource  operators.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
 * Renamed `estimate_resources` to `estimate`.
