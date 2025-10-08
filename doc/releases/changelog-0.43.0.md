@@ -187,7 +187,7 @@
   ```
 
   ```pycon
-  print(circ_specs["resources"])
+  >>> print(circ_specs["resources"])
   Resources(num_wires=2,
             num_gates=2,
             gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}),
