@@ -40,10 +40,10 @@ class WireResourceManager:
 
     >>> import pennylane.estimator as qre
     >>> q = qre.WireResourceManager(
-    ...             zeroed=2,
-    ...             any_state=2,
-    ...             tight_budget=False,
-    ...     )
+    ...     zeroed=2,
+    ...     any_state=2,
+    ...     tight_budget=False,
+    ... )
     >>> print(q)
     WireResourceManager(zeroed wires=2, any_state wires=2, algorithmic wires=0, tight budget=False)
 
@@ -187,7 +187,7 @@ class Allocate(_WireAction):
         >>> config = qre.ResourceConfig()
         >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
         >>> res = qre.estimate(qre.MultiControlledX(3, 0), config=config)
-        >>> print(res.algo_wires, res.zeroed, res.any_state)
+        >>> print(res.algo_wires, res.zeroed_wires, res.any_state_wires)
         4 0 0
 
         This decomposition uses a total of ``4`` wires and doesn't track the work wires.
@@ -208,7 +208,7 @@ class Allocate(_WireAction):
         >>> config = qre.ResourceConfig()
         >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
         >>> res = qre.estimate(qre.MultiControlledX(3, 0), config=config)
-        >>> print(res.algo_wires, res.zeroed, res.any_state)
+        >>> print(res.algo_wires, res.zeroed_wires, res.any_state_wires)
         4 1 0
 
         Now, the one extra auxiliary wire is being tracked.
