@@ -9,7 +9,8 @@
   The functionality therein is designed to rapidly estimate the quantum resources required to execute a program,
   and it can flexibly analyze programs written at different levels of abstraction.
 
-  * The following base classes for resource estimation were added:
+  * Fast resource estimation requires lightweight representations of quantum operators and their resources.
+    Users can now access the following base classes designed for this purpose:
     * :class:`~.estimator.resources_base.Resources`:
       A container for counts and other metadata of quantum resources.
     * :class:`~.estimator.resource_operator.ResourceOperator`:
@@ -22,16 +23,18 @@
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * Added a new :func:`~.estimator.estimate.estimate` function as the entry point to estimate the quantum resources
+  * A new :func:`~.estimator.estimate.estimate` function allows users to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
-  * The :class:`~.estimator.wires_manager.WireResourceManager`,
+  * To manage and track wire usage during resource estimation
+    and within :class:`~.estimator.resource_operator.ResourceOperator` definitions,
+    the :class:`~.estimator.wires_manager.WireResourceManager`,
     :class:`~.estimator.wires_manager.Allocate`, and :class:`~.estimator.wires_manager.Allocate`
-    classes were added to manage and track wire usage for resource estimation.
+    classes were added.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
 
-    The :func:`~.estimator.estimate.estimate` function is the entrypoint for resource estimation.
+    The :func:`~.estimator.estimate.estimate` function is the entry point for resource estimation.
     Here, the :class:`~.estimator.resource_operator.ResourceOperator` for ``QFT`` is analyzed:
 
     ```python
@@ -86,45 +89,56 @@
       'Hadamard': 5
     ```
 
-  * Added a new :class:`~.estimator.resource_config.ResourceConfig` class
-    to store the configuration used for resource estimation,
-    including operator precisions and custom decompositions.
+  * Users can define customized configurations to be used during resource estimation,
+    using the new :class:`~.estimator.resource_config.ResourceConfig` class.
+    The :class:`~.estimator.resource_config.ResourceConfig` includes a variety of customizable settings,
+    including operator precisions and the option to set custom resource decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
 
-  * Added functionality to map PennyLane operations
-    to their associated resource operators for resource estimation.
+  * Users can now estimate the resources of standard PennyLane circuits
+    using the :func:`~.estimator.estimate.estimate` function.
+    :func:`~.estimator.estimate.estimate` has been upgraded to automatically
+    map PennyLane operations to their associated resource operators for resource estimation.
     [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
     [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
 
-  * Added the ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
-    classes to store metadata of the Hamiltonian of a quantum system,
-    and added the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
-    ``TrotterVibronic`` related to the Suzuki-Trotter method.
+  * Hamiltonians are often both expensive to compute and to analyze,
+    but the amount of information required to estimate the resources of Hamiltonian simulation
+    can be surprisingly small in comparison.
+    The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
+    classes were added to store the metadata of the Hamiltonian of a quantum system
+    pertaining to resource estimation.
+    Likewise, the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
+    ``TrotterVibronic`` related to the Suzuki-Trotter method were added.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
 
-  * The resource operators for ``Identity``, ``GlobalPhase``, non-parametric operators and single-qubit
-    parametric operators have been added to `qml.estimator.ops`.
-    [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
-    [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
-    [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
-  * The resource operators for various controlled single and multi qubit operators have been added to `qml.estimator.ops.op_math`.
-    [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
-  * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
-    [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
-    [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
-  * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
-    `qml.estimator.ops`.
-    [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
-  * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
-    ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
-    ``IterativeQPE`` were added to `qml.estimator.templates`.
-    [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
-  * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
-    ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
-    ``RegisterComparator`` were added.
-    [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
-  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added.
-    [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
+  * To make writing workflows using :mod:`~.estimator` straightforward,
+    several resource operators (:class:`~.estimator.resource_operator.ResourceOperator`) were added.
+    These resource operators have been designed to require the least possible amount of data while
+    still providing a robust resource estimate.
+    * The resource operators for ``Identity``, ``GlobalPhase``, non-parametric operators and single-qubit
+      parametric operators have been added to `qml.estimator.ops`.
+      [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
+      [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
+      [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
+    * The resource operators for various controlled single and multi qubit operators have been added to `qml.estimator.ops.op_math`.
+      [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
+    * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
+      [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
+      [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
+    * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
+      `qml.estimator.ops`.
+      [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
+    * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
+      ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
+      ``IterativeQPE`` were added to `qml.estimator.templates`.
+      [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
+    * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
+      ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
+      ``RegisterComparator`` were added.
+      [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
+    * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added.
+      [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
   * The test files were renamed to avoid dual definition error with the labs module.
     [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
   * Fixed some issues and updated docs for the :mod:`~.estimator` module.
