@@ -203,7 +203,7 @@
 * A new set of transforms enable ZX calculus-based circuit optimization.
   These transforms make it easy to implement advanced compilation techniques that use the
   [ZX calculus graphical language](https://pennylane.ai/qml/demos/tutorial_zx_calculus) to
-  reduce T-gate counts of [Clifford + T gates](https://pennylane.ai/compilation/clifford-t-gate-set),
+  reduce T-gate counts of [Clifford + T circuits](https://pennylane.ai/compilation/clifford-t-gate-set),
   optimize [phase polynomials](https://pennylane.ai/compilation/phase-polynomial-intermediate-representation),
   and reduce the number of gates in non-Clifford circuits.
   [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
