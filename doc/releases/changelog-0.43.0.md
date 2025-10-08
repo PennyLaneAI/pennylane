@@ -841,7 +841,7 @@
 
 * State-of-the-art resource estimates have been added to existing templates:
   :class:`~pennylane.labs.resource_estimation.ResourceSelectPauliRot`,
-  :class:`~pennylane.labs.resource_estimation.ResourceQubitUnitary`, :class:`~pennylane.labs.resource_estimation.ResourceSingleQubitCompare`, :class:`~pennylane.labs.resource_estimation.ResourceTwoQubitCompare`,
+  :class:`~pennylane.labs.resource_estimation.ResourceQubitUnitary`, :class:`~pennylane.labs.resource_estimation.ResourceSingleQubitComparator`, :class:`~pennylane.labs.resource_estimation.ResourceTwoQubitComparator`,
   :class:`~pennylane.labs.resource_estimation.ResourceIntegerComparator`, :class:`~pennylane.labs.resource_estimation.ResourceRegisterComparator`, :class:`~pennylane.labs.resource_estimation.ResourceUniformStatePrep`,
   :class:`~pennylane.labs.resource_estimation.ResourceAliasSampling`, :class:`~pennylane.labs.resource_estimation.ResourceQFT`, :class:`~pennylane.labs.resource_estimation.ResourceAQFT`, and :class:`~pennylane.labs.resource_estimation.ResourceTrotterProduct`.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
