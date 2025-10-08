@@ -1071,6 +1071,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* PennyLane and Lightning will no longer ship wheels for Intel MacOS platforms for v0.44 and newer.
+  Additionally, MacOS ARM wheels will require a minimum OS version of 14.0 for continued use with v0.44
+  and newer. This change is needed to account for MacOS officially deprecating support for Intel CPUs
+  in the OS (see their [blog post](https://github.blog/changelog/2025-09-19-github-actions-macos-13-runner-image-is-closing-down/#notice-of-macos-x86_64-intel-architecture-deprecation) for more details)
+
 * Setting shots on a device through the ``shots`` keyword argument (e.g., ``qml.device("default.qubit", wires=2, shots=1000)``)
   and in QNode calls (e.g., ``qml.QNode(circuit, dev)(shots=1000)``) has been deprecated.
   Please use the :func:`~.set_shots` transform to set the number of shots for a QNode instead. 
