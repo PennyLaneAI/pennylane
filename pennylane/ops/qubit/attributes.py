@@ -96,8 +96,16 @@ composable_rotations = Attribute(
         "ControlledPhaseShift",
         "IsingXX",
         "IsingYY",
+        "IsingXY",
         "IsingZZ",
         "Rot",
+        "SingleExcitation",
+        "DoubleExcitation",
+        "SingleExcitationMinus",
+        "SingleExcitationPlus",
+        "DoubleExcitationMinus",
+        "DoubleExcitationPlus",
+        "OrbitalRotation",
     ]
 )
 """Attribute: Operations for which composing multiple copies of the operation results in an

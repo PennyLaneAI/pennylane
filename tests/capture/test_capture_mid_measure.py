@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for capturing mid-circuit measurements."""
+
 # pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position, too-many-positional-arguments
 import pytest
 
@@ -304,14 +305,6 @@ def test_capture_mcm_method(mcm_method):
     assert config.mcm_config.mcm_method == mcm_method
 
 
-@pytest.fixture(scope="function")
-def get_device():
-    def get_qubit_device(*args, **kwargs):
-        return qml.device("default.qubit", *args, **kwargs)
-
-    yield get_qubit_device
-
-
 # pylint: disable=too-many-arguments, redefined-outer-name
 @pytest.mark.system
 @pytest.mark.parametrize("shots", [None, 100])
@@ -326,14 +319,15 @@ class TestMidMeasureExecute:
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
-    def test_simple_circuit_execution(self, phi, reset, postselect, get_device, shots, mp_fn, seed):
+    def test_simple_circuit_execution(self, phi, reset, postselect, shots, mp_fn, seed):
         """Test that circuits with mid-circuit measurements can be executed in a QNode."""
+
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, postselect_mode="fill-shots", shots=shots)
+        @qml.qnode(dev, mcm_method="deferred", postselect_mode="fill-shots", shots=shots)
         def f(x):
             qml.RX(x, 0)
             qml.measure(0, reset=reset, postselect=postselect)
@@ -371,9 +365,7 @@ class TestMidMeasureExecute:
     @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
     @pytest.mark.parametrize("multi_mcm", [True, False])
-    def test_circuit_with_terminal_measurement_execution(
-        self, phi, get_device, shots, mp_fn, multi_mcm, seed
-    ):
+    def test_circuit_with_terminal_measurement_execution(self, phi, shots, mp_fn, multi_mcm, seed):
         """Test that circuits with mid-circuit measurements that also collect statistics
         on the mid-circuit measurements can be executed in a QNode."""
         if shots is None and mp_fn is qml.sample:
@@ -382,7 +374,7 @@ class TestMidMeasureExecute:
         if multi_mcm and mp_fn in (qml.expval, qml.var):
             pytest.skip("Cannot measure sequences of MCMs with expval or var")
 
-        dev = get_device(wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x, y):
@@ -414,13 +406,13 @@ class TestMidMeasureExecute:
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
-    def test_circuit_with_boolean_arithmetic_execution(self, phi, get_device, shots, mp_fn, seed):
+    def test_circuit_with_boolean_arithmetic_execution(self, phi, shots, mp_fn, seed):
         """Test that circuits that apply boolean logic to mid-circuit measurement values
         can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x, y):
@@ -454,13 +446,13 @@ class TestMidMeasureExecute:
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
-    def test_circuit_with_classical_processing_execution(self, phi, get_device, shots, mp_fn, seed):
+    def test_circuit_with_classical_processing_execution(self, phi, shots, mp_fn, seed):
         """Test that circuits that apply non-boolean operations to mid-circuit measurement
         values can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x, y):
@@ -476,15 +468,13 @@ class TestMidMeasureExecute:
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.sqrt, jnp.log, jnp.exp])
-    def mid_measure_processed_with_jax_numpy_execution(
-        self, phi, fn, get_device, shots, mp_fn, seed
-    ):
+    def mid_measure_processed_with_jax_numpy_execution(self, phi, fn, shots, mp_fn, seed):
         """Test that a circuit containing mid-circuit measurements processed using jax.numpy
         can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x):
@@ -496,13 +486,13 @@ class TestMidMeasureExecute:
         assert f(phi)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
-    def test_mid_measure_as_gate_parameter_execution(self, phi, get_device, shots, mp_fn, seed):
+    def test_mid_measure_as_gate_parameter_execution(self, phi, shots, mp_fn, seed):
         """Test that mid-circuit measurements (simple or classical processed) used as gate
         parameters can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x):
