@@ -1071,11 +1071,13 @@
 
 <h3>Deprecations 👋</h3>
 
-* Setting shots on a device through the ``shots`` kwarg, e.g., ``qml.device("default.qubit", wires=2, shots=1000)``, is deprecated.
-  Please use the :func:`~.set_shots` transform on the QNode instead. 
+* Setting shots on a device through the ``shots`` keyword argument (e.g., ``qml.device("default.qubit", wires=2, shots=1000)``)
+  and in QNode calls (e.g., ``qml.QNode(circuit, dev)(shots=1000)``) has been deprecated.
+  Please use the :func:`~.set_shots` transform to set the number of shots for a QNode instead. 
   This is done to reduce confusion and code complexity by having a centralized way to set shots.
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
+  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
   
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -1151,11 +1153,6 @@
   ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
   This improves the code design by removing an unused method with undesired dependencies (i.e. circular dependency).
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
-
-* The `shots` kwarg in the QNode calls (e.g., ``qml.QNode(circuit, dev)(shots=10)``) has been deprecated and will be removed in v0.44.
-  Instead, please use the :func:`~.set_shots` transform to set the number of shots for a QNode.
-  This is done to reduce confusion and code complexity by having a single, clear way to set shots.
-  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
 
 * ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
   Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
