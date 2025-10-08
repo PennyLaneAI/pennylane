@@ -222,9 +222,8 @@ Completed deprecation cycles
   - Deprecated in v0.40
   - Removed in v0.43
 
-* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
-  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
-  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
+* ``qml.operation.Observable`` has been removed. To indicate that an operator is an observable, operator developers should manually set
+  ``is_hermitian = True`` and update the ``queue`` function to stop it from being
   processed into the circuit.
 
   .. code-block:: python
@@ -237,7 +236,7 @@ Completed deprecation cycles
 
   To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
 
-  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+  Instead of ``Observable.compare``, ``qml.equal`` and ``op1 == op2`` should be used to compare instances.
 
   - Deprecated in v0.42
   - Removed in v0.43
