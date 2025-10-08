@@ -909,7 +909,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `autoray == 0.8.0` is proactively pinned for PennyLane v0.43.0 to prevent potential bug fix releases.
+* `autoray`  has been pinned to version 0.8.0 for PennyLane v0.43.0 to prevent potential bugs due to breaking changes in autoray releases.
   [(#8412)](https://github.com/PennyLaneAI/pennylane/pull/8412)
 
 * ``qml.workflow.construct_batch.expand_fn_transform`` is deleted as it was local and no longer getting used.
