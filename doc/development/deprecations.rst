@@ -248,7 +248,7 @@ Completed deprecation cycles
   - Deprecated in v0.42
   - Removed in v0.43
 
-* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+* The ``qml.QNode.get_gradient_fn`` method has been removed. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
 
   - Deprecated in v0.42
   - Removed in v0.43
