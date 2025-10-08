@@ -22,11 +22,12 @@ from itertools import product
 import networkx as nx
 import numpy as np
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import builtin, func  # arith
+from xdsl.dialects import arith, builtin, func
+from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
 from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
-from ...dialects.quantum import CustomOp, QubitType  # , GlobalPhaseOp
+from ...dialects.quantum import CustomOp, QubitType
 from ...pass_api import compiler_transform
 
 ### xDSL-agnostic part
@@ -92,18 +93,13 @@ def _loop_body_parity_network_synth(
     return P, inv_synth_matrix, circuit
 
 
-def _parity_network_synth(
-    P: np.ndarray,
-    # connectivity: nx.Graph | None = None,
-) -> list[int, list[tuple[int]]]:
+def _parity_network_synth(P: np.ndarray) -> list[int, list[tuple[int]]]:
     """Main subroutine for the ``ParitySynth`` pass, mostly a ``for``-loop wrapper around
     ``_loop_body_parity_network_synth``. It synthesizes the parity network, as described
     in Algorithm 1 in https://arxiv.org/abs/2104.00934.
 
     Args:
         P (np.ndarray): Parity table to be synthesized.
-        #connectivity (nx.Graph): Connectivity to be taken into account during synthesis.
-            #Currently not supported yet.
 
     Returns:
         tuple[list[int, list[tuple[int]]], np.ndarray]: Synthesized parity network, as a
@@ -111,9 +107,6 @@ def _parity_network_synth(
         inverse of the parity matrix implemented by the synthesized circuit.
 
     """
-    # if connectivity is not None:
-    # raise NotImplementedError
-
     if len(P) == 0:
         return [], None
 
@@ -126,10 +119,9 @@ def _parity_network_synth(
     return circuit, inv_synth_matrix % 2
 
 
-### No xDSL above this point
+### end of xDSL-agnostic part
 
-# todo: support other phase polynomial ops below as well, and add adjoints
-valid_phase_polynomial_ops = {"CNOT", "RZ"}  # , "PhaseShift", "Z", "S", "T"}
+valid_phase_polynomial_ops = {"CNOT", "RZ"}
 
 
 def make_phase_polynomial(
@@ -144,7 +136,7 @@ def make_phase_polynomial(
     parity_matrix = np.eye(len(wire_map), dtype=int)
     parity_table = []
     angles = []
-    # global_phase = 0.
+    arith_ops = []
     for op in ops:
         name = op.gate_name.data
         if name == "CNOT":
@@ -153,34 +145,18 @@ def make_phase_polynomial(
             wire_map[op.out_qubits[0]] = control
             wire_map[op.out_qubits[1]] = target
             continue
-        angles.append(op.operands[0])  # RZ
-        # pylint: disable=pointless-string-statement
-        """
-        if name == "RZ":
-            angles.append(op.operands[0])
-        else:
-            if name == "PhaseShift":
-                # PhaseShift(ϕ) = RZ(ϕ) . GlobalPhase(-ϕ/2)
-                angle = op.operands[0]
-            elif name == "Z":
-                # Z = RZ(π) . GlobalPhase(-π/2)
-                angle = np.pi
-            elif name == "S":
-                # S = RZ(π/2) . GlobalPhase(-π/4)
-                angle = np.pi / 2
-            else:
-                # T = RZ(π/4) . GlobalPhase(-π/8)
-                angle = np.pi / 4
-
-            angles.append(angle)
-            global_phase -= angle / 2
-        """
-
+        # RZ
+        angle = op.operands[0]
+        if getattr(op, "adjoint", False):
+            neg_op = arith.NegfOp(angle)
+            arith_ops.append(neg_op)
+            angle = neg_op.result
+        angles.append(angle)
         wire = wire_map[op.in_qubits[0]]
         parity_table.append(parity_matrix[wire].copy())  # append _current_ parity (hence the copy)
         wire_map[op.out_qubits[0]] = wire
 
-    return parity_matrix % 2, np.array(parity_table).T % 2, np.array(angles)  # , global_phase
+    return parity_matrix % 2, np.array(parity_table).T % 2, np.array(angles), arith_ops
 
 
 # todo: parity table reduction function (for repeated parities)
@@ -188,66 +164,83 @@ def make_phase_polynomial(
 
 class ParitySynthPattern(pattern_rewriter.RewritePattern):
     """Rewrite pattern that applies ``ParitySynth`` to subcircuits that constitute
-    phase polynomials."""
+    phase polynomials.
+    """
 
-    def __init__(self, *args, **kwargs):  # connectivity: nx.Graph | None = None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.connectivity = connectivity
-        # self.global_phase = 0.
         self._reset_vars()
 
     def _reset_vars(self):
         """Initialize/reset variables that are used in ``match_and_rewrite`` as well as
         ``rewrite_phase_polynomial``."""
-        self.phase_polynomial_ops = []
-        self.init_wire_map = {}
-        self.phase_polynomial_qubits = set()
-        self.num_phase_polynomial_qubits = 0
+        self.phase_polynomial_ops: list[CustomOp] = []
+        self.init_wire_map: dict[QubitType, int] = {}
+        self.phase_polynomial_qubits: set[QubitType] = set()
+        self.num_phase_polynomial_qubits: int = 0
+
+    def _record_phase_poly_op(self, op: CustomOp):
+        """Add a ``CustomOp`` to the phase polynomial ops, remove its input qubits
+        from ``self.phase_polynomial_qubits`` if present or add them to ``self.init_wire_map``
+        if not, and insert its output qubits in ``self.phase_polynomial_qubits``."""
+        for i, q in enumerate(op.in_qubits):
+            if q in self.phase_polynomial_qubits:
+                self.phase_polynomial_qubits.remove(q)
+            else:
+                self.init_wire_map[q] = self.num_phase_polynomial_qubits
+                self.num_phase_polynomial_qubits += 1
+            self.phase_polynomial_qubits.add(op.out_qubits[i])
+        self.phase_polynomial_ops.append(op)
 
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
-        """Implementation of rewriting FuncOps that may contain phase poynomials
-        which can be rewritten with ``ParitySynth``."""
+        r"""Implementation of rewriting ``FuncOps`` that may contain phase poynomials
+        with ``ParitySynth``.
+
+        Args:
+            funcOp (func.FuncOp): function containing the operations to rewrite.
+            rewriter (pattern_rewriter.PatternRewriter): Rewriter that executed operation erasure
+                and insertion.
+
+        The logic of this implementation is centered around :attr:`~.rewrite_phase_polynomial`,
+        which is able to rewrite a collection of ``CustomOp``\ s that forms a phase polynomial
+        (see ``valid_phase_polynomial_ops`` for the supported types) into a new collection of
+        ``CustomOp``\ s that is equivalent. In addition to the operators, which are stored in
+        ``self.phase_polynomial_ops``, the ``rewrite_phase_polynomial`` subroutine requires
+        the initial mapping from input qubits to integer-valued wire positions, which is computed
+        in ``self.init_wire_map`` using temporary variables ``self.phase_polynomial_qubits``
+        and ``self.num_phase_polynomial_qubits``.
+
+        Iterating over all operations, the collected phase polynomial ops are rewritten as soon
+        as a non-phase-polynomial operation is encountered. Note that this makes the (size of the)
+        rewritten phase polynomials dependent on the order in which we walk over the operations.
+        """
         for op in funcOp.body.walk():
             if not isinstance(op, CustomOp):
+                # Non-quantum operation. Global phases are ignored as well.
                 continue
 
             gate_name = op.gate_name.data
             if gate_name in valid_phase_polynomial_ops:
-                for i, q in enumerate(op.in_qubits):
-                    if q in self.phase_polynomial_qubits:
-                        self.phase_polynomial_qubits.remove(q)
-                    else:
-                        self.init_wire_map[q] = self.num_phase_polynomial_qubits
-                        self.num_phase_polynomial_qubits += 1
-                    self.phase_polynomial_qubits.add(op.out_qubits[i])
-                self.phase_polynomial_ops.append(op)
+                # Include op in phase polynomial ops and track its qubits
+                self._record_phase_poly_op(op)
                 continue
 
-            if len(self.phase_polynomial_ops) > 1:
-                self.rewrite_phase_polynomial(
-                    rewriter, InsertPoint.after(self.phase_polynomial_ops[-1])
-                )
-                self._reset_vars()
-
-        if len(self.phase_polynomial_ops) > 1:
-            # Note that `op` must be defined if there are any phase polynomial ops.
-            # pylint: disable=undefined-loop-variable
+            # not a phase polynomial op, so we activate rewriting of the phase polynomial
             self.rewrite_phase_polynomial(
                 rewriter, InsertPoint.after(self.phase_polynomial_ops[-1])
             )
-            self._reset_vars()
+
+        # end of operations; rewrite terminal phase polynomial
+        self.rewrite_phase_polynomial(rewriter, InsertPoint.after(self.phase_polynomial_ops[-1]))
 
         # Mock the rewriter to think it reached a steady state already, because re-applying
         # ParitySynth is not useful
         # todo: to this properly by using a different rewriter or so
         rewriter.has_done_action = False
 
-        # rewriter.insert_op(GlobalPhaseOp(params=(self.global_phase,)), InsertPoint.before(op))
-        # self.global_phase = 0.
-
     @staticmethod
-    def _cnot(i, j, inv_wire_map):
+    def _cnot(i: int, j: int, inv_wire_map: dict[int, QubitType]):
         """Create a CNOT operator acting on the qubits that map to wires ``i`` and ``j``
         and update the wire map so that ``i`` and ``j`` point to the output qubits afterwards."""
         cnot_op = CustomOp(
@@ -260,34 +253,43 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         return cnot_op
 
     @staticmethod
-    def _rz(wire, angle, inv_wire_map):
+    def _rz(wire: int, angle: SSAValue[builtin.Float64Type], inv_wire_map: dict[int, QubitType]):
         """Create a CNOT operator acting on the qubit that maps to ``wire``
         and update the wire map so that ``wire`` points to the output qubit afterwards."""
-        rz_op = CustomOp(
-            in_qubits=[inv_wire_map[wire]],
-            gate_name="RZ",
-            params=(angle,),
-        )
+        rz_op = CustomOp(in_qubits=[inv_wire_map[wire]], gate_name="RZ", params=(angle,))
         inv_wire_map[wire] = rz_op.out_qubits[0]
         return rz_op
 
-    def rewrite_phase_polynomial(self, rewriter: pattern_rewriter.PatternRewriter, insertion_point):
+    def rewrite_phase_polynomial(
+        self, rewriter: pattern_rewriter.PatternRewriter, insertion_point: InsertPoint
+    ):
         """Rewrite a single region of a circuit that represents a phase polynomial."""
+        if not self.phase_polynomial_ops:
+            # Nothing to do
+            return
 
-        inv_wire_map = {val: key for key, val in self.init_wire_map.items()}
+        if len(self.phase_polynomial_ops) == 1:
+            # Phase polynomials of length 1 are left untouched. Reset internal state
+            self._reset_vars()
+            return
+
+        # Mapping from integer-valued wire positions to qubits, corresponding to state before
+        # phase polynomial
+        inv_wire_map: dict[int, QubitType] = {val: key for key, val in self.init_wire_map.items()}
+
         # Calculate the new circuit by going to phase polynomial IR and back, including synthesis
         # of trailing CNOTs via rowcol
-        M, P, angles = make_phase_polynomial(self.phase_polynomial_ops, self.init_wire_map)
-        # M, P, angles, phi = make_phase_polynomial(self.phase_polynomial_ops, self.init_wire_map)
-        # self.global_phase += phi
+        M, P, angles, arith_ops = make_phase_polynomial(
+            self.phase_polynomial_ops, self.init_wire_map
+        )
         # todo: call parity table reduction function once it exists
-        subcircuits, inv_network_parity_matrix = _parity_network_synth(P)  # , self.connectivity)
-        # inv_network_parity_matrix might be None if the parity table was empty
+        subcircuits, inv_network_parity_matrix = _parity_network_synth(P)
+        # `inv_network_parity_matrix` might be None if the parity table was empty
         if inv_network_parity_matrix is not None:
             M = (M @ inv_network_parity_matrix) % 2
-        rowcol_circuit = _rowcol_parity_matrix(M)  # , self.connectivity)
+        rowcol_circuit: list[tuple[int]] = _rowcol_parity_matrix(M)
 
-        # Apply the new circuit
+        # Apply the parity network part of the new circuit
         for idx, phase_wire, subcircuit in subcircuits:
             for i, j in subcircuit:
                 rewriter.insert_op(self._cnot(i, j, inv_wire_map), insertion_point)
@@ -295,14 +297,21 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             rewriter.insert_op(self._rz(phase_wire, angles[idx], inv_wire_map), insertion_point)
             angles = np.concatenate([angles[:idx], angles[idx + 1 :]])
 
+        # Apply the remaining parity matrix part of the new circuit
         for i, j in rowcol_circuit:
             rewriter.insert_op(self._cnot(i, j, inv_wire_map), insertion_point)
 
+        # Replace the output qubits of the old phase polynomial operations by the output qubits of
+        # the new circuit
         for old_qubit, int_wire in self.init_wire_map.items():
             rewriter.replace_all_uses_with(old_qubit, inv_wire_map[int_wire])
 
+        # Erase the old phase polynomial operations.
         for op in self.phase_polynomial_ops[::-1]:
             rewriter.erase_op(op)
+
+        # Reset internal state
+        self._reset_vars()
 
 
 @dataclass(frozen=True)
