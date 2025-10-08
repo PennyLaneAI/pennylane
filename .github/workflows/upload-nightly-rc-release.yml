@@ -50,12 +50,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
-        ref: ${{ env.rc_branch }}
+        ref: ${{ steps.check_rc.outputs.rc_branch }}
 
     - name: Bump rc version
       if: ${{ steps.check_rc.outputs.branch_exists == 'true' }}
       run: |
-        echo "rc_branch is ${{ env.rc_branch }}"
+        echo "rc_branch is ${{ steps.check_rc.outputs.rc_branch }}"
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
         git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
         git config --global user.name "ringo-but-quantum"
