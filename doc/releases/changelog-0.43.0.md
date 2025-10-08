@@ -801,10 +801,12 @@
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
   [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
+  [(#8406)](https://github.com/PennyLaneAI/pennylane/pull/8406)
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
+  [(#8376)](https://github.com/PennyLaneAI/pennylane/pull/8376)
 
   ```python
   @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
@@ -1177,6 +1179,9 @@
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
 <h3>Internal changes ⚙️</h3>
+
+* Removes excess copies in `QuantumScript.copy`, and some other performance improvements to `resolve_dynamic_wires`.
+  [(#8406)](https://github.com/PennyLaneAI/pennylane/pull/8406)
 
 * GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
   use `ubuntu-24.04` runners. 
