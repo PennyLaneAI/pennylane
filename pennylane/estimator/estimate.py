@@ -44,15 +44,15 @@ def estimate(
     r"""Estimate the quantum resources required to implement a circuit or operator in terms of a given gateset.
 
     Args:
-        workflow (Callable, ResourceOperator, Resources, QNode): The quantum circuit or operator for which to estimate resources.
+        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | QNode): The quantum circuit or operator for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count throughout the quantum workflow.
         zeroed_wires (int): Number of work wires pre-allocated in the zeroed state. Default is ``0``.
         any_state_wires (int): Number of work wires pre-allocated in an unknown state. Default is ``0``.
         tight_wires_budget (bool): If True, extra work wires may not be allocated in addition to the pre-allocated ones. The default is ``False``.
-        config (ResourceConfig | None): Configurations for the resource estimation pipeline.
+        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig` | None): Configurations for the resource estimation pipeline.
 
     Returns:
-        Resources | Callable[..., Resources]:
+        :class:`~.pennylane.estimator.resources_base.Resources` | Callable[..., :class:`~.pennylane.estimator.resources_base.Resources`]:
             The estimated quantum resources required to execute the circuit.
 
     Raises:
