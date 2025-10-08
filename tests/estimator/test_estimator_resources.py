@@ -14,6 +14,7 @@
 """
 This module contains tests for the Resources container class.
 """
+
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -86,40 +87,40 @@ class TestResources:
         (
             "--- Resources: ---\n"
             + " Total wires: 5\n"
-            + "    algorithmic wires: 0\n"
-            + "    allocated wires: 5\n"
-            + "\t zero state: 5\n"
-            + "\t any state: 0\n"
+            + "   algorithmic wires: 0\n"
+            + "   allocated wires: 5\n"
+            + "     zero state: 5\n"
+            + "     any state: 0\n"
             + " Total gates : 4\n"
-            + "  'X': 1,\n"
-            + "  'Z': 1,\n"
-            + "  'Hadamard': 2"
+            + "   'X': 1,\n"
+            + "   'Z': 1,\n"
+            + "   'Hadamard': 2"
         ),
         (
             "--- Resources: ---\n"
             + " Total wires: 1.112E+4\n"
-            + "    algorithmic wires: 22\n"
-            + "    allocated wires: 11100\n"
-            + "\t zero state: 8753\n"
-            + "\t any state: 2347\n"
+            + "   algorithmic wires: 22\n"
+            + "   allocated wires: 11100\n"
+            + "     zero state: 8753\n"
+            + "     any state: 2347\n"
             + " Total gates : 1.260E+3\n"
-            + "  'PhaseShift': 2,\n"
-            + "  'CNOT': 791,\n"
-            + "  'Hadamard': 467"
+            + "   'PhaseShift': 2,\n"
+            + "   'CNOT': 791,\n"
+            + "   'Hadamard': 467"
         ),
         (
             "--- Resources: ---\n"
             + " Total wires: 730\n"
-            + "    algorithmic wires: 108\n"
-            + "    allocated wires: 622\n"
-            + "\t zero state: 400\n"
-            + "\t any state: 222\n"
+            + "   algorithmic wires: 108\n"
+            + "   allocated wires: 622\n"
+            + "     zero state: 400\n"
+            + "     any state: 222\n"
             + " Total gates : 5.746E+3\n"
-            + "  'RX': 3,\n"
-            + "  'CNOT': 4.523E+3,\n"
-            + "  'X': 100,\n"
-            + "  'Y': 120,\n"
-            + "  'Z': 1.000E+3"
+            + "   'RX': 3,\n"
+            + "   'CNOT': 4.523E+3,\n"
+            + "   'X': 100,\n"
+            + "   'Y': 120,\n"
+            + "   'Z': 1.000E+3"
         ),
     )
 

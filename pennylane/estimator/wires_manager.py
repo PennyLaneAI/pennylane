@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module contains the base class for wire management."""
 
-
 from pennylane.queuing import QueuingManager
 
 
@@ -53,7 +52,6 @@ class WireResourceManager:
     def __init__(
         self, zeroed: int, any_state: int = 0, algo_wires: int = 0, tight_budget: bool = False
     ) -> None:
-
         self.tight_budget = tight_budget
         self._algo_wires = algo_wires
         self.zeroed = zeroed
@@ -111,7 +109,7 @@ class WireResourceManager:
         if num_wires > available_zeroed:
             if self.tight_budget:
                 raise ValueError(
-                    f"Grabbing more wires than available zeroed wires."
+                    f"Grabbing more wires than available zeroed wires. "
                     f"Number of zeroed wires available is {available_zeroed}, while {num_wires} are being grabbed."
                 )
             self.zeroed = 0
@@ -131,7 +129,7 @@ class WireResourceManager:
 
         if num_wires > self.any_state:
             raise ValueError(
-                f"Freeing more wires than available any_state wires."
+                f"Freeing more wires than available any_state wires. "
                 f"Number of any_state wires available is {self.any_state}, while {num_wires} wires are being released."
             )
 

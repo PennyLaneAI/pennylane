@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Base class for storing resources."""
+
 from __future__ import annotations
 
 from collections import Counter, defaultdict
@@ -326,10 +327,15 @@ class Resources:
         items = "--- Resources: ---\n"
         items += f" Total wires: {total_wires_str}\n"
 
-        qubit_breakdown_str = f"    algorithmic wires: {self.algo_wires}\n    allocated wires: {self.zeroed+self.any_state}\n\t zero state: {self.zeroed}\n\t any state: {self.any_state}\n"
+        qubit_breakdown_str = (
+            f"   algorithmic wires: {self.algo_wires}\n"
+            f"   allocated wires: {self.zeroed + self.any_state}\n"
+            f"     zero state: {self.zeroed}\n"
+            f"     any state: {self.any_state}\n"
+        )
         items += qubit_breakdown_str
 
-        items += f" Total gates : {total_gates_str}\n  "
+        items += f" Total gates : {total_gates_str}\n"
 
         gate_counts = self.gate_counts
         custom_gates = []
@@ -346,9 +352,13 @@ class Resources:
         default_gates.sort(key=lambda x: gate_order_map.get(x[0], len(res_order)))
 
         ordered_gates = custom_gates + default_gates
-        gate_type_str = ",\n  ".join(
+        gate_type_str = ",\n".join(
             [
-                f"'{gate_name}': {Decimal(count):.3E}" if count > 999 else f"'{gate_name}': {count}"
+                (
+                    f"   '{gate_name}': {Decimal(count):.3E}"
+                    if count > 999
+                    else f"   '{gate_name}': {count}"
+                )
                 for gate_name, count in ordered_gates
             ]
         )
