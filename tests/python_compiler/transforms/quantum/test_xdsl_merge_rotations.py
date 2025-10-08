@@ -196,6 +196,36 @@ class TestMergeRotationsPass:
         pipeline = (MergeRotationsPass(),)
         run_filecheck(program, pipeline)
 
+    @pytest.mark.parametrize(
+        "first_adj, second_adj, sign",
+        [
+            (False, False, "+"),
+            (False, True, "-"),
+            (True, False, "-"),
+            (True, True, "+"),
+        ],
+    )
+    def test_adjoint_property(self, first_adj, second_adj, sign, run_filecheck):
+        """Test that composable ops with and without adjoint property are merged correctly."""
+        adj_string_0 = "adj" if first_adj else ""
+        adj_string_1 = "adj" if second_adj else ""
+        arith_op_str = "arith.addf" if sign == "+" else "arith.subf"
+        program = f"""
+            func.func @test_func(%arg0: f64, %arg1: f64) {{
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+                // CHECK: [[new_angle:%.+]] = {arith_op_str} %arg0, %arg1 : f64
+                // CHECK: [[q1:%.+]] = quantum.custom "RX"([[new_angle]]) [[q0]] {adj_string_0} : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                %1 = quantum.custom "RX"(%arg0) %0 {adj_string_0}: !quantum.bit
+                %2 = quantum.custom "RX"(%arg1) %1 {adj_string_1}: !quantum.bit
+                return
+            }}
+        """
+
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
+
 
 # pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
