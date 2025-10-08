@@ -520,8 +520,8 @@
   np.float64(-0.004)
   ```
 
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~.set_shots`. 
-  However, decorating with :func:`~.set_shots` overrides QNode ``shots``:
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~pennylane.set_shots`. 
+  However, decorating with :func:`~pennylane.set_shots` overrides QNode ``shots``:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
@@ -529,7 +529,7 @@
   Shots(total=123)
   ```
 
-* The :func:`~.set_shots` transform can now be directly applied to a QNode without the need for 
+* The :func:`~pennylane.set_shots` transform can now be directly applied to a QNode without the need for 
   `functools.partial`, providing a more user-friendly syntax and negating having to import the 
   `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -1020,75 +1020,82 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Update docstring in `perturbation_error` to use the correct positional argument name.
-  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+<h4>Labs Resource Estimation</h4>
 
-* Renamed several labs test file names to prevent conflict with names in PennyLane tests.
-  [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
-
-* Added concurrency support for `effective_hamiltonian` in labs.
-  [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
-  [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
-
-* Fixed a queueing issue in `ResourceOperator` tests.
-  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
-
-* The module `qml.labs.zxopt` has been removed as its functionalities are now available in the
-  submodule :mod:`.transforms.zx`. The same functions are available, but their signature
-  may have changed.
-  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
-  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
-  - Instead of `qml.labs.zxopt.todd`, use :func:`.transforms.zx.todd`
-  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`.transforms.zx.push_hadamards`
-  [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
-
-* Added state of the art resources for the `ResourceSelectPauliRot` template and the
-  `ResourceQubitUnitary` templates.
+* State-of-the-art resource estimates have been added to existing templates:
+  :class:`~pennylane.labs.resource_estimation.ResourceSelectPauliRot`,
+  :class:`~pennylane.labs.resource_estimation.ResourceQubitUnitary`, :class:`~pennylane.labs.resource_estimation.ResourceSingleQubitComparator`, :class:`~pennylane.labs.resource_estimation.ResourceTwoQubitComparator`,
+  :class:`~pennylane.labs.resource_estimation.ResourceIntegerComparator`, :class:`~pennylane.labs.resource_estimation.ResourceRegisterComparator`, :class:`~pennylane.labs.resource_estimation.ResourceUniformStatePrep`,
+  :class:`~pennylane.labs.resource_estimation.ResourceAliasSampling`, :class:`~pennylane.labs.resource_estimation.ResourceQFT`, :class:`~pennylane.labs.resource_estimation.ResourceAQFT`, and :class:`~pennylane.labs.resource_estimation.ResourceTrotterProduct`.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
-
-* Added state of the art resources for the `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
-  `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
   [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
-
-* Added state of the art resources for the `ResourceUniformStatePrep`,
-  and `ResourceAliasSampling` templates.
   [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
-
-* Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
+  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
-* Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom decompositions for the resource estimation pipeline.
-  [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
+* Users can now do resource estimation on QPE and iterative QPE with
+  :class:`~pennylane.labs.resource_estimation.ResourceQPE` and
+  :class:`~pennylane.labs.resource_estimation.ResourceIterativeQPE`, respectively. Additionally,
+  a :class:`~pennylane.labs.resource_estimation.ResourceControlledSequence` template has been added
+  that allows estimating resources on controlled sequences of resource operators.
+  [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
-* Renamed `estimate_resources` to `estimate` for concision.
+* `estimate_resources` has been renamed to `estimate` to make the function name concise and clearer than
+  `labs.resource_estimation.estimate_resources`.
   [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
 
-* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the
+* A new `ResourceConfig` class has been added to help track the configuration for errors, precisions and custom
+  decompositions for the resource estimation pipeline.
+  [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
+
+* The symbolic `ResourceOperators` have been updated to use hyperparameters from the `config` dictionary.
+  [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
+
+* An internal `dequeue()` method has been added to the `ResourceOperator` class to simplify the
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
-* New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
-  [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
-
-* Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
-  `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
-  [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
-
-* Added `__eq__` method to `ResourceOperator` to make comparison checks more intuitive.
+* ``ResourceOperator`` instances can now be compared with ``==``.
   [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
 
-* Added a mapper function `map_to_resource_ops` that maps PennyLane operators to ResourceOperator equivalents.
+* A mapper function called :func:`~pennylane.labs.resource_estimation.map_to_resource_op`
+  has been added to map PennyLane operators to `ResourceOperator` equivalents.
   [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
   [(#8162)](https://github.com/PennyLaneAI/pennylane/pull/8162)
 
-* Added state of the art resources for the `ResourceTrotterProduct` template.
-  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
+* Several Labs test files have been renamed to prevent conflict with names in mainline PennyLane tests.
+  [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
 
-* Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
-  [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
+* A queueing issue in the `ResourceOperator` tests has been fixed.
+  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
 
-* Perturbation error function now sums over expectation values instead of states.
+<h4>Labs Trotter Error Estimation</h4>
+
+* Parallelization support for `effective_hamiltonian` has been added to improve performance.
+  [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
+  [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
+
+* New `SparseFragment` and `SparseState` classes have been created to allow the use
+  of sparse matrices for Hamiltonian Fragments when estimating Trotter error.
+  [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
+
+* The :func:`~pennylane.labs.trotter_error.perturbation_error` function has
+  been updated to sum over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
+
+* The docstring in `perturbation_error` has been updated to use the correct positional argument name.
+  [(#8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+
+<h4>Labs Removals</h4>
+
+* The module `qml.labs.zxopt` has been removed. Its functionalities are now available in the
+  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
+  may have changed.
+  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`~.transforms.zx.optimize_t_count`
+  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`~.transforms.zx.reduce_non_clifford`
+  - Instead of `qml.labs.zxopt.todd`, use :func:`~.transforms.zx.todd`
+  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`~.transforms.zx.push_hadamards`
+  [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
 
 <h3>Breaking changes 💔</h3>
 
@@ -1571,27 +1578,30 @@
 
 <h3>Documentation 📝</h3>
 
-* The :doc:`installation page </development/guide/installation>` was updated to include currently supported Python versions and installation instructions.
+* The :doc:`installation page </development/guide/installation>` has been updated to include
+  currently supported Python versions and installation instructions.
   [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
 
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
-  to guard users from an incompatibility that currently exists between the two.
+  to avoid using them together as the output might be different than expected.
   Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
-* Remove `>>>` and `...` from `.. code-block::` directives in docstrings.
+* "`>>>`" and "`...`" have been removed from "`.. code-block::`" directives in docstrings to facilitate docstring
+  testing and fit best practices.
   [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
-* Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
+* Three more examples of the deprecated usage of `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
-* The documentation of `qml.device` has been updated.
+* The documentation of `qml.device` has been updated to reflect the usage of :func:`~pennylane.set_shots`.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
-* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>` page was pushed further down the page to show more relevant sections first.
+* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>`
+  page has been pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
-* Rename `ancilla` to `auxiliary` in internal documentation.
+* `ancilla` has been renamed to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
 * Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
@@ -1602,36 +1612,44 @@
   performed operations on the target qubits.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
-* Updated the code examples in the documentation of :func:`~.specs`.
+* The code examples in the documentation of :func:`~.specs` have been updated to replace keyword arguments
+  with `gradient_kwargs` in the QNode definition.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
-* Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
+* The documentation for `Operator.pow` and `Operator.adjoint` have been updated to clarify optional
+  developer-facing use cases.
   [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
 
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
   [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
-* Improved the docstrings of all optimizers for consistency and legibility.
+* The docstrings of all optimizers have been improved for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
-* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
+* The code example in the documentation for :func:`~.transforms.split_non_commuting` has been updated to
+  give the correct output.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
-* Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
+* The :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize` has been corrected.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
-* Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
-  Trimmed the outdated part of discussion regarding different choices of `alpha`.
+* The docstring of `ClassicalShadow.entropy` has been updated to trim out the outdated part
+  of an explanation about the different choices of
+  the `alpha` parameter.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
-* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted
+* A warning has been added to the :doc:`interfaces documentation </introduction/interfaces>`
+  under the Pytorch section to explain that all Pytorch floating-point inputs are promoted
   to `torch.float64`.
   [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
 
-* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
+* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to
+  include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
-* Fixed a syntax rendering issue in the :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` for the `max_workers` parameter.
+* A syntax rendering issue in the
+  :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has been
+  fixed to correctly display the `max_workers` parameter.
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
 
 <h3>Bug fixes 🐛</h3>
