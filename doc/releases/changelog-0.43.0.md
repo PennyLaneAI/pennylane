@@ -839,7 +839,7 @@
 
 <h4>Labs Resource Estimation</h4>
 
-* Added state of the art resources to existing templates: `ResourceSelectPauliRot`,
+* State-of-the-art resource estimates have been added to existing templates: `ResourceSelectPauliRot`,
   `ResourceQubitUnitary`, `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
   `ResourceIntegerComparator`, `ResourceRegisterComparator`, `ResourceUniformStatePrep`,
   `ResourceAliasSampling`, `ResourceQFT`, `ResourceAQFT`, and `ResourceTrotterProduct`.
