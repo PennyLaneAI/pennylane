@@ -861,11 +861,11 @@
   `labs.resource_estimation.estimate_resources`.
   [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
 
-* A new `ResourceConfig` class has been added to helps track the configuration for errors, precisions and custom
+* A new `ResourceConfig` class has been added to help track the configuration for errors, precisions and custom
   decompositions for the resource estimation pipeline.
   [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
 
-* The symbolic `ResourceOperators` have been updated to use hyperparameters from `config` dictionary.
+* The symbolic `ResourceOperators` have been updated to use hyperparameters from the `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
 * An internal `dequeue()` method has been added to the `ResourceOperator` class to simplify the
@@ -875,11 +875,11 @@
 * The `__eq__` method has been added to `ResourceOperator` to make comparison checks more intuitive.
   [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
 
-* A mapper function `map_to_resource_ops` has been addded to map PennyLane operators to `ResourceOperator` equivalents.
+* A mapper function `map_to_resource_ops` has been added to map PennyLane operators to `ResourceOperator` equivalents.
   [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
   [(#8162)](https://github.com/PennyLaneAI/pennylane/pull/8162)
 
-* Several labs test files have been renamed to prevent conflict with names in PennyLane tests.
+* Several Labs test files have been renamed to prevent conflict with names in mainline PennyLane tests.
   [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
 
 * A queueing issue in the `ResourceOperator` tests has been fixed.
@@ -887,23 +887,23 @@
 
 <h4>Labs Trotter Error Estimation</h4>
 
-* Added concurrency support for `effective_hamiltonian` in labs.
+* Concurrency support for `effective_hamiltonian` has been added to improve performance.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
   [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
 
-* New `SparseFragment` and `SparseState` classes have been created that allow the use
+* New `SparseFragment` and `SparseState` classes have been created to allow the use
   of sparse matrices for Hamiltonian Fragments when estimating Trotter error.
   [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
 
-* Perturbation error function now sums over expectation values instead of states.
+* The perturbation error function has been updated to sum over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
-* Updated docstring in `perturbation_error` to use the correct positional argument name.
+* The docstring in `perturbation_error` has been updated to use the correct positional argument name.
   [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
 
 <h4>Labs Removals</h4>
 
-* The module `qml.labs.zxopt` was removed. Its functionalities are now available in the
+* The module `qml.labs.zxopt` hsa been removed. Its functionalities are now available in the
   submodule :mod:`.transforms.zx`. The same functions are available, but their signature
   may have changed.
   - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
@@ -1408,7 +1408,7 @@
   Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
-* `>>>` and `...` have been removed from `.. code-block::` directives in docstrings to facilitate docstring
+* "`>>>`" and "`...`" have been removed from "`.. code-block::`" directives in docstrings to facilitate docstring
   testing and fit best practices.
   [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
@@ -1419,7 +1419,7 @@
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>`
-  page hsa been pushed further down the page to show more relevant sections first.
+  page has been pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
 * `ancilla` has been renamed to `auxiliary` in internal documentation.
