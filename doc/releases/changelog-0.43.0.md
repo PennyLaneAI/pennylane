@@ -997,7 +997,7 @@
 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
-* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified.
+* The :class:`~.HilbertSchmidt` and :class:`~.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified.
   They now accept an operation or a list of operations as quantum unitaries.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
@@ -1014,7 +1014,7 @@
   HilbertSchmidt(0.1, wires=[0, 1])
   ```
 
-* Remove support for Python 3.10 and adds support for 3.13.
+* Remove support for Python 3.10 and add support for 3.13.
   [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
