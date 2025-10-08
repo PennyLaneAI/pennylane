@@ -435,7 +435,7 @@ def simulate_tree_mcm(
     # `mcm_samples` is a register of MCMs. It is necessary to correctly keep track of
     # correlated MCM values which may be requested by terminal measurements.
     mcm_samples = {
-        k + 1: qml.math.empty((circuit.shots.total_shots,), dtype=bool) if finite_shots else None
+        k + 1: qml.math.empty((circuit.shots.total_shots,), dtype=int) if finite_shots else None
         for k in measured_mcms_indices
     }
 
