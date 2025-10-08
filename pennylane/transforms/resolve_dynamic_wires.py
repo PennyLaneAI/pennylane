@@ -130,7 +130,7 @@ def resolve_dynamic_wires(
 
     For a dynamic wire with ``state="any"``, we try:
 
-      #. If wires exist in the ``any_state``, we take one from that register
+      #. If wires exist in the ``any_state`` register, we take one from there
       #. If no wires exist in ``any_state``, we pull one from ``zeroed``
       #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
          we increment ``min_int`` and add a new wire
