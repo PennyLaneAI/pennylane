@@ -837,6 +837,10 @@
   Python compiler.
   [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
 
+* The `num_wires` argument for various `ResourceOperator` classes was made optional for users. 
+  It is automatically resolved using the `wires` argument instead.
+  [(#8431)](https://github.com/PennyLaneAI/pennylane/pull/8431)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Update docstring in `perturbation_error` to use the correct positional argument name.
