@@ -133,14 +133,10 @@ class AddPauliTrackerPattern(
 
             wires_ssa.append(target_wire_index)
 
-            target_x_record = tensor.ExtractOp(
-                x_record, target_wire_index, builtin.i1
-            )
+            target_x_record = tensor.ExtractOp(x_record, target_wire_index, builtin.i1)
             rewriter.insert_op(target_x_record, InsertPoint.before(op))
             xz.append(target_x_record.result)
-            target_z_record = tensor.ExtractOp(
-                z_record, target_wire_index, builtin.i1
-            )
+            target_z_record = tensor.ExtractOp(z_record, target_wire_index, builtin.i1)
             rewriter.insert_op(target_z_record, InsertPoint.before(op))
             xz.append(target_z_record.result)
         return xz, wires_ssa
@@ -154,7 +150,6 @@ class AddPauliTrackerPattern(
             prev_op = update_x_record
             update_z_record = tensor.InsertOp(z, z_record, wire)
             rewriter.insert_op(update_z_record, InsertPoint.before(prev_op))
-
 
     def _commute_h(self, xz, op, rewriter):
         x, z = xz
@@ -198,19 +193,14 @@ class AddPauliTrackerPattern(
                     qreg = op.results
                     num_qubits = op.nqubits_attr.value.data
                     x_record, z_record = self._insert_xz_record_tensors(num_qubits, op, rewriter)
-                elif (
-                    isinstance(op, CustomOp) and op.gate_name.data in _MBQC_CLIFFORD_GATES
-                ):
+                elif isinstance(op, CustomOp) and op.gate_name.data in _MBQC_CLIFFORD_GATES:
                     wires_int = ssa_to_qml_wires(op)
                     # Extract xz record information
-                    xz, wires_ssa = self._extract_xz_records(wires_int, x_record, z_record, op, rewriter)
+                    xz, wires_ssa = self._extract_xz_records(
+                        wires_int, x_record, z_record, op, rewriter
+                    )
                     # Apply commute rules
                     new_xz = self._apply_clifford_commute_rule(xz, op, rewriter)
                     # Insert new_xz to x_record and z_record
                     self._insert_xz_records(wires_ssa, new_xz, x_record, z_record, op, rewriter)
-                elif (isinstance(op, CustomOp) and op.gate_name.data in _MBQC_NON_CLIFFORD_GATES):
-                    
-
-
-
-                    
+                # elif (isinstance(op, CustomOp) and op.gate_name.data in _MBQC_NON_CLIFFORD_GATES):
