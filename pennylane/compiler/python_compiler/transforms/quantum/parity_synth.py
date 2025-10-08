@@ -34,8 +34,8 @@ from ...pass_api import compiler_transform
 
 
 def _loop_body_parity_network_synth(
-    P: np.ndarray[np.int64],
-    inv_synth_matrix: np.ndarray[np.int64],
+    P: np.ndarray,
+    inv_synth_matrix: np.ndarray,
     circuit: list[int, list[tuple[int]]],
 ) -> tuple[np.ndarray, list]:
     """Loop body function for ``_parity_network_synth``, the main subroutine of ``parity_synth``.
