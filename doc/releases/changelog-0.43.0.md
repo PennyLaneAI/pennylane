@@ -530,15 +530,15 @@
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
 
-* New intermediate representations (IRs) :func:`~transforms.parity_matrix` and
-  :func:`~transforms.phase_polynomial` are available in PennyLane. These IRs are
-  used in compilation passes to optimize CNOT and phase polynomial circuits, respectively.
+* New intermediate representations (IRs) :func:`~transforms.parity_matrix` and 
+  :func:`~transforms.phase_polynomial` are available in PennyLane. These IRs are 
+  used in compilation passes to optimize CNOT and phase polynomial circuits, respectively. 
   Also added :func:`~transforms.rowcol`, which uses the parity matrix as its IR for CNOT
   routing under constraint connectivity.
   [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
 
 * A new transform :func:`~.transforms.rz_phase_gradient` lets you realize arbitrary angle :class:`~.RZ` rotations
-  with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial
+  with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial 
   subroutine in FTQC when sufficient auxiliary wires are available, as it saves on T gates compared to other
   discretization schemes.
   [(#8213)](https://github.com/PennyLaneAI/pennylane/pull/8213)
@@ -643,7 +643,7 @@
 
 * :func:`pennylane.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
   [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
-
+  
 * An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
 
@@ -1183,8 +1183,8 @@
 * Removes excess copies in `QuantumScript.copy`, and some other performance improvements to `resolve_dynamic_wires`.
   [(#8406)](https://github.com/PennyLaneAI/pennylane/pull/8406)
 
-* GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to
-  use `ubuntu-24.04` runners.
+* GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
+  use `ubuntu-24.04` runners. 
   [(#8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
 
 * Issues with imports and circular dependencies in files were addressed in the ``ops/``and ``templates/`` directories.
@@ -1196,7 +1196,7 @@
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
 
-* Add CI workflow to test documentation using `sybil`.
+* Add CI workflow to test documentation using `sybil`. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
   [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
   [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
@@ -1464,10 +1464,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.compiler.python_compiler.transforms.MergeRotationsPass` now takes the `adjoint` property of
-  merged operations correctly into account.
-  [(#8429)](https://github.com/PennyLaneAI/pennylane/pull/8429)
-  
 * Stops promoting numpy data to autograd in `qml.qchem.molecular_hamiltonian`.
   [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
 
