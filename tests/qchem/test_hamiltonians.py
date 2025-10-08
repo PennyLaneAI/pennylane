@@ -14,10 +14,10 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-
-import numpy as np
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
@@ -26,13 +26,20 @@ from pennylane import qchem
 from pennylane.fermi import from_string
 
 
-def test_molecular_hamiltonian_numpy_data():
+@pytest.mark.parametrize(
+    "coordinates",
+    [
+        np.array([[0.0, 0.0, -0.6614], [0.0, 0.0, 0.6614]]),
+        np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614]),
+    ],
+)
+def test_molecular_hamiltonian_numpy_data(coordinates):
     """Test that if numpy data is used with molecular hamiltonian, that numpy data is outputted."""
     symbols = ["H", "H"]
-    coordinates = np.array([[0.0, 0.0, -0.6614], [0.0, 0.0, 0.6614]])
 
     H, _ = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     assert all(qml.math.get_interface(d) == "numpy" for d in H.data)
+
 
 @pytest.mark.torch
 def test_error_torch_data_molecular_hamiltonian():
