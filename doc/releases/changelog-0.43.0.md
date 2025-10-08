@@ -806,6 +806,7 @@
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
+  [(#8376)](https://github.com/PennyLaneAI/pennylane/pull/8376)
 
   ```python
   @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
@@ -1466,6 +1467,9 @@
 * `qml.compiler.python_compiler.transforms.MergeRotationsPass` now takes the `adjoint` property of
   merged operations correctly into account.
   [(#8429)](https://github.com/PennyLaneAI/pennylane/pull/8429)
+  
+* Stops promoting numpy data to autograd in `qml.qchem.molecular_hamiltonian`.
+  [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
 
 * `default.qubit` now properly validates the `mcm_method`.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
