@@ -63,7 +63,8 @@
 
 <h4>Dynamic wire allocation 🎁</h4>
 
-* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+* A :class:`~pennylane.allocation.DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
   :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
@@ -72,7 +73,6 @@
   wire management.
 
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
-  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
   [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
   [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
   [(#8198)](https://github.com/PennyLaneAI/pennylane/pull/8198)
@@ -139,7 +139,7 @@
               with qml.allocate(1, state="any", restored=False) as new_qubit2:
                   m0 = qml.measure(new_qubit1[0], reset=True)
                   qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
-                  qml.CNOT((0, new_qubit2))
+                  qml.CNOT((0, new_qubit2[0]))
 
       return qml.expval(qml.Z(0))
   ```
@@ -185,16 +185,18 @@
   print(qml.specs(circuit, level="device")()["resources"])
   ```
   ```
-  Resources(num_wires=2,
-            num_gates=2,
-            gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 1}),
-            depth=2,
-            shots=Shots(total_shots=None, shot_vector=()))
+  num_wires: 2
+  num_gates: 2
+  depth: 2
+  shots: Shots(total=None)
+  gate_types:
+  {'CNOT': 1, 'Hadamard': 1}
+  gate_sizes:
+  {2: 1, 1: 1}
   ```
 
-* The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
-  This makes the depth computation performed by `qml.specs` optional.
+* The :func:`~.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
+  This makes the depth computation performed by :func:`~.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
   [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
@@ -365,9 +367,6 @@
   no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
-* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
-  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
-
 * The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
@@ -404,7 +403,7 @@
   ```
 
 
-* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
+* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` can now take operator instances as arguments.
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
@@ -417,10 +416,10 @@
   [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
   [(#8236)](https://github.com/PennyLaneAI/pennylane/pull/8236)
 
-  * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
+  * Decomposition rules added for the :class:`~.MultiControlledX` dynamically allocate work wires if none were explicitly specified via the `work_wires` argument of the operator.
   [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
 
-* A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
+* A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
 
 * With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a decomposition cannot be found for an operator in the circuit, it no longer
@@ -460,47 +459,19 @@
 
   ```pycon
   >>> circuit.shots
-  Shots(total=1000)
+  Shots(total_shots=1000, shot_vector=(ShotCopies(1000 shots x 1),))
   >>> circuit()
   np.float64(-0.004)
   ```
 
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~.set_shots`. Note, however, that
+  decorating with :func:`~.set_shots` overrides QNode `shots`:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
   >>> new_circ.shots
-  Shots(total=123)
+  Shots(total_shots=123, shot_vector=(ShotCopies(123 shots x 1),))
   ```
-
-* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`.
-  Users can now use this when designing quantum circuits with experimental program capture enabled.
-
-  ```python
-  import pennylane as qml
-  import jax.numpy as jnp
-
-  qml.capture.enable()
-
-  @qml.qnode(qml.device("default.qubit", wires=3))
-  def circuit(val):
-    angles = jnp.zeros(3)
-    angles[0:3] += val
-
-    for i, angle in enumerate(angles):
-        qml.RX(angle, i)
-
-    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
-  ```
-
-  ```pycon
-  >>> circuit(jnp.pi)
-  (Array(-1, dtype=float32),
-   Array(-1, dtype=float32),
-   Array(-1, dtype=float32))
-  ```
-
-  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
 
 <h4>Clifford+T decomposition</h4>
 
@@ -617,6 +588,35 @@
   ```
 
 <h4>Other improvements</h4>
+
+* PennyLane `autograph` supports standard Python syntax for updating arrays like `array[i] += x` instead of JAX's `arr.at[i].add(x)`.
+  Users can now use this when designing quantum circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[0:3] += val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(-1, dtype=float32),
+   Array(-1, dtype=float32),
+   Array(-1, dtype=float32))
+  ```
+
+  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
 
 * Make the user warning of :class:`~.decomposition.decomposition_graph.DecompositionGraph` more generic.
   [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)
@@ -797,16 +797,14 @@
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
   [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
 
-* A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
+* A new :func:`pennylane.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
   [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
-  [(#8406)](https://github.com/PennyLaneAI/pennylane/pull/8406)
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
-  [(#8376)](https://github.com/PennyLaneAI/pennylane/pull/8376)
 
   ```python
   @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
@@ -920,30 +918,30 @@
   ```pycon
   >>> from pennylane.math.interface_utils import Interface
   >>> Interface("torch")
-  Interface.TORCH
+  <Interface.TORCH: 'torch'>
   >>> Interface("jax-jit")
-  Interface.JAX_JIT
+  <Interface.JAX_JIT: 'jax-jit'>
   ```
 
   [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
 
 * :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing
-  them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
+  them independently. In addition, it is now more consistent with other PennyLane operators, dequeuing its
   input ``lcu``.
   [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
 
 * `MidMeasureMP` now inherits from `Operator` instead of `MeasurementProcess`.
   [(#8166)](https://github.com/PennyLaneAI/pennylane/pull/8166)
 
-* `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
-  and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
+* `DefaultQubit.eval_jaxpr` does not use `self.shots` from the device anymore; instead, it takes `shots` as a keyword argument,
+  and the qnode primitive processes the `shots` and calls `eval_jaxpr` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
   no longer queue any operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
-* :func:`~.sample` no longer squeezes singleton dimensions for single shots or single wires. This cuts
+* `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
@@ -1180,8 +1178,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Removes excess copies in `QuantumScript.copy`, and some other performance improvements to `resolve_dynamic_wires`.
-  [(#8406)](https://github.com/PennyLaneAI/pennylane/pull/8406)
+* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal implementation.
+  [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
 
 * GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
   use `ubuntu-24.04` runners. 
@@ -1463,9 +1461,6 @@
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
 
 <h3>Bug fixes 🐛</h3>
-
-* Stops promoting numpy data to autograd in `qml.qchem.molecular_hamiltonian`.
-  [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
 
 * `default.qubit` now properly validates the `mcm_method`.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
