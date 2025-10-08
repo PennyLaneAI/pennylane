@@ -1399,7 +1399,7 @@
 
 <h3>Documentation 📝</h3>
 
-* The :doc:`installation page </development/guide/installation>` was updated to include
+* The :doc:`installation page </development/guide/installation>` has been updated to include
   currently supported Python versions and installation instructions.
   [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
 
@@ -1408,7 +1408,8 @@
   Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
-* Remove `>>>` and `...` from `.. code-block::` directives in docstrings.
+* `>>>` and `...` have been removed from `.. code-block::` directives in docstrings to facilitate docstring
+  testing and fit best practices.
   [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
 * Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
@@ -1418,10 +1419,10 @@
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>`
-  page was pushed further down the page to show more relevant sections first.
+  page hsa been pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
-* Renamed `ancilla` to `auxiliary` in internal documentation.
+* `ancilla` has been renamed to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
 * Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
@@ -1432,38 +1433,44 @@
   performed operations on the target qubits.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
-* Updated the code examples in the documentation of :func:`~.specs` to replace keyword arguments
+* The code examples in the documentation of :func:`~.specs` have been updated to replace keyword arguments
   with `gradient_kwargs` in the QNode definition.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
-* Clarified the optional developer-facing use case for `Operator.pow` and `Operator.adjoint`.
+* The `Operator.pow` and `Operator.adjoint` documentation have been updated to clarify optional
+  developer-facing use cases.
   [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
 
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
   [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
-* Improved the docstrings of all optimizers for consistency and legibility.
+* The docstrings of all optimizers have been improved for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
-* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting` to
+* The code example in the documentation for :func:`~.transforms.split_non_commuting` has been updated to
   give the correct output.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
-* Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
+* The :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize` has been corrected.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
-* Trimmed out the outdated part of an explanation about the different choices of
-  the `alpha` parameter in `ClassicalShadow.entropy`.
+* The docstring of `ClassicalShadow.entropy` has been updated to trim out the outdated part
+  of an explanation about the different choices of
+  the `alpha` parameter.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
-* A warning was added to the :doc:`interfaces documentation </introduction/interfaces>` under the Pytorch section saying that all Pytorch floating-point inputs are promoted
+* A warning has been added to the :doc:`interfaces documentation </introduction/interfaces>`
+  under the Pytorch section to explain that all Pytorch floating-point inputs are promoted
   to `torch.float64`.
   [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
 
-* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
+* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to
+  include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
-* Fixed a syntax rendering issue in the :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` for the `max_workers` parameter.
+* A syntax rendering issue in the
+  :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has been
+  fixed to correctly display the `max_workers` parameter.
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
 
 <h3>Bug fixes 🐛</h3>
