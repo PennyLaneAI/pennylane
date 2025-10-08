@@ -269,6 +269,61 @@ class TestAdditionalOps:
         _program = translate_program_to_xdsl(program)
         run_filecheck(_program, self.pipeline)
 
+    @pytest.mark.parametrize("name", ["IsingZZ", "MultiRZ"])
+    def test_isingzz_multirz_two_qubits(self, name, run_filecheck):
+        """Test that ``MultiRZ`` and ``IsingZZ`` are handled correctly."""
+        program = f"""
+            func.func @test_func(%arg0: f64, %arg1: f64) {{
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                %2 = INIT_QUBIT
+                // CHECK: [[q3:%.+]], [[q4:%.+]] = quantum.custom "CNOT"() [[q0]], [[q1]] : !quantum.bit
+                // CHECK: [[q5:%.+]] = quantum.custom "RZ"(%arg0) [[q4]] : !quantum.bit
+                %3, %4 = quantum.custom "{name}"(%arg0) %0, %1 : !quantum.bit, !quantum.bit
+                %5, %6 = _CNOT %2, %4
+                %7, %8 = quantum.custom "{name}"(%arg1) %3, %5 : !quantum.bit, !quantum.bit
+                // CHECK: [[q6:%.+]], [[q7:%.+]] = quantum.custom "CNOT"() [[q2]], [[q3]] : !quantum.bit
+                // CHECK: [[q8:%.+]] = quantum.custom "RZ"(%arg1) [[q7]] : !quantum.bit
+                // CHECK: [[q9:%.+]], [[q10:%.+]] = quantum.custom "CNOT"() [[q6]], [[q5]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q11:%.+]], [[q12:%.+]] = quantum.custom "CNOT"() [[q9]], [[q8]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q13:%.+]], [[q14:%.+]] = quantum.custom "CNOT"() [[q12]], [[q10]] : !quantum.bit, !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }}
+        """
+
+        _program = translate_program_to_xdsl(program)
+        run_filecheck(_program, self.pipeline)
+
+    def test_multirz_with_cnot_ladder(self, run_filecheck):
+        """Test that ``MultiRZ`` is handled correctly on more qubits."""
+        program = """
+            func.func @test_func(%arg0: f64, %arg1: f64) {{
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                %2 = INIT_QUBIT
+                %3 = INIT_QUBIT
+                // CHECK: [[q4:%.+]] = quantum.custom "RZ"(%arg1) [[q1]] : !quantum.bit
+                // CHECK: [[q5:%.+]], [[q6:%.+]] = quantum.custom "CNOT"() [[q4]], [[q3]] : !quantum.bit
+                // CHECK: [[q7:%.+]], [[q8:%.+]] = quantum.custom "CNOT"() [[q6]], [[q2]] : !quantum.bit
+                // CHECK: [[q9:%.+]], [[q10:%.+]] = quantum.custom "CNOT"() [[q8]], [[q0]] : !quantum.bit
+                // CHECK: [[q11:%.+]] = quantum.custom "RZ"(%arg0) [[q10]] : !quantum.bit
+                // CHECK: [[q12:%.+]], [[q13:%.+]] = quantum.custom "CNOT"() [[q7]], [[q9]] : !quantum.bit
+                // CHECK: [[q14:%.+]], [[q15:%.+]] = quantum.custom "CNOT"() [[q5]], [[q12]] : !quantum.bit
+                // CHECK: [[q16:%.+]], [[q17:%.+]] = quantum.custom "CNOT"() [[q15]], [[q11]] : !quantum.bit
+                // CHECK: [[q18:%.+]], [[q19:%.+]] = quantum.custom "CNOT"() [[q13]], [[q17]] : !quantum.bit
+                // CHECK: [[q20:%.+]], [[q21:%.+]] = quantum.custom "CNOT"() [[q14]], [[q19]] : !quantum.bit
+                %4, %5, %6, %7 = quantum.custom "MultiRZ"(%arg0) %0, %1, %2, %3 : !quantum.bit, !quantum.bit, !quantum.bit, !quantum.bit
+                %10 = quantum.custom "RZ"(%arg1) %5 : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                // CHECK-NOT: "quantum.gphase"
+                return
+            }}
+        """
+        _program = translate_program_to_xdsl(program)
+        run_filecheck(_program, self.pipeline)
+
     def test_z_gate(self, run_filecheck):
         """Test that ``Z`` is handled correctly."""
         program = """

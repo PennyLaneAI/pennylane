@@ -122,7 +122,16 @@ def _parity_network_synth(P: np.ndarray) -> list[int, list[tuple[int]]]:
 ### No xDSL above this point
 
 # todo: support other phase polynomial ops below as well, and add adjoints
-valid_phase_polynomial_ops = {"CNOT", "RZ", "PhaseShift", "PauliZ", "S", "T"}
+valid_phase_polynomial_ops = {"CNOT", "RZ", "PhaseShift", "MultiRZ", "IsingZZ", "PauliZ", "S", "T"}
+
+
+def _replace_qubits(op, wire_map):
+    """Replace the in_qubits of an op by its out_qubits in a given wire map,
+    and return the associated integers that the qubits map to before&after."""
+    wires = [wire_map.pop(q) for q in op.in_qubits]
+    for w, q in zip(wires, op.out_qubits):
+        wire_map[q] = w
+    return wires
 
 
 def make_phase_polynomial(
@@ -139,6 +148,8 @@ def make_phase_polynomial(
     angles = []
     global_phase = None
     arith_ops = []
+    print(wire_map)
+    print(f"{parity_matrix=}")
 
     @lru_cache
     def make_and_record_constant_op(value):
@@ -151,14 +162,20 @@ def make_phase_polynomial(
 
     for op in ops:
         name = op.gate_name.data
+        wires = _replace_qubits(op, wire_map)
+        print(f"{wires=} for op with name {name}")
+        print(f"before applying: {parity_matrix=}")
         if name == "CNOT":
-            control, target = wire_map.pop(op.in_qubits[0]), wire_map.pop(op.in_qubits[1])
+            control, target = wires
             parity_matrix[target] += parity_matrix[control]
-            wire_map[op.out_qubits[0]] = control
-            wire_map[op.out_qubits[1]] = target
             continue
-        if name == "RZ":
+        if name in ("IsingZZ", "MultiRZ"):
             angles.append(op.operands[0])
+            parity_table.append(np.sum(parity_matrix[np.array(wires)], axis=0))
+            continue
+
+        if name == "RZ":
+            angle = op.operands[0]
         else:
             if name == "PhaseShift":
                 # PhaseShift(ϕ) = RZ(ϕ) . GlobalPhase(-ϕ/2)
@@ -173,8 +190,7 @@ def make_phase_polynomial(
                 # T = RZ(π/4) . GlobalPhase(-π/8)
                 angle = make_and_record_constant_op(np.pi / 4).result
 
-            angles.append(angle)
-
+            # Handle global phase contribution
             neg_one_half = make_and_record_constant_op(-0.5).result
             mul_op = arith.MulfOp(angle, neg_one_half)
             arith_ops.append(mul_op)
@@ -185,9 +201,9 @@ def make_phase_polynomial(
                 arith_ops.append(add_op)
                 global_phase = add_op.result
 
-        wire = wire_map.pop(op.in_qubits[0])
-        parity_table.append(parity_matrix[wire].copy())  # append _current_ parity (hence the copy)
-        wire_map[op.out_qubits[0]] = wire
+        angles.append(angle)
+        # append _current_ parity (hence the copy)
+        parity_table.append(parity_matrix[wires[0]].copy())
 
     return (
         parity_matrix % 2,
@@ -241,6 +257,8 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
 
             gate_name = op.gate_name.data
             if gate_name in valid_phase_polynomial_ops:
+                print(gate_name)
+                print(self.init_wire_map)
                 for i, q in enumerate(op.in_qubits):
                     if q in self.phase_polynomial_qubits:
                         self.phase_polynomial_qubits.remove(q)
@@ -249,12 +267,14 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
                         self.num_phase_polynomial_qubits += 1
                     self.phase_polynomial_qubits.add(op.out_qubits[i])
                 self.phase_polynomial_ops.append(op)
+                print(self.init_wire_map)
                 continue
 
             if self.phase_polynomial_ops:
                 insertion_point = InsertPoint.after(self.phase_polynomial_ops[-1])
                 self.rewrite_phase_polynomial(rewriter, insertion_point)
                 self._reset_vars()
+        print()
 
         if self.phase_polynomial_ops:
             insertion_point = InsertPoint.after(self.phase_polynomial_ops[-1])
@@ -311,6 +331,8 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         M, P, angles, phi, arith_ops = make_phase_polynomial(
             self.phase_polynomial_ops, self.init_wire_map
         )
+        print(P)
+        print(M)
         for op in arith_ops:
             rewriter.insert_op(op, insertion_point)
 
