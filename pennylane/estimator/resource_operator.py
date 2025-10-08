@@ -326,14 +326,14 @@ class ResourceOperator(ABC):
             raise TypeError(f"Cannot multiply resource operator {self} with type {type(scalar)}.")
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo_wires=self.num_wires, gate_types=gate_types)
+        return Resources(zeroed_wires=0, algo_wires=self.num_wires, gate_types=gate_types)
 
     def __matmul__(self, scalar: int):
         if not isinstance(scalar, int):
             raise TypeError(f"Cannot multiply resource operator {self} with type {type(scalar)}.")
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
+        return Resources(zeroed_wires=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 
     def add_series(self, other):
         """Adds a :class:`~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in series.

@@ -92,15 +92,15 @@ class Resources:
 
     def __init__(
         self,
-        zeroed: int,
-        any_state: int = 0,
+        zeroed_wires: int,
+        any_state_wires: int = 0,
         algo_wires: int = 0,
         gate_types: dict | None = None,
     ):
         """Initialize the Resources class."""
         gate_types = gate_types or {}
-        self.zeroed = zeroed
-        self.any_state = any_state
+        self.zeroed_wires = zeroed_wires
+        self.any_state_wires = any_state_wires
         self.algo_wires = algo_wires
         self.gate_types = defaultdict(int, gate_types)
 
@@ -147,14 +147,14 @@ class Resources:
         if not isinstance(other, self.__class__):
             raise TypeError(f"Cannot add {self.__class__.__name__} object to {type(other)}.")
 
-        new_zeroed = max(self.zeroed, other.zeroed)
-        new_any = self.any_state + other.any_state
+        new_zeroed = max(self.zeroed_wires, other.zeroed_wires)
+        new_any = self.any_state_wires + other.any_state_wires
         new_logic = max(self.algo_wires, other.algo_wires)
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed=new_zeroed,
-            any_state=new_any,
+            zeroed_wires=new_zeroed,
+            any_state_wires=new_any,
             algo_wires=new_logic,
             gate_types=new_gate_types,
         )
@@ -203,14 +203,14 @@ class Resources:
         if not isinstance(other, self.__class__):
             raise TypeError(f"Cannot add {self.__class__.__name__} object to {type(other)}.")
 
-        new_zeroed = max(self.zeroed, other.zeroed)
-        new_any = self.any_state + other.any_state
+        new_zeroed = max(self.zeroed_wires, other.zeroed_wires)
+        new_any = self.any_state_wires + other.any_state_wires
         new_logic = self.algo_wires + other.algo_wires
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed=new_zeroed,
-            any_state=new_any,
+            zeroed_wires=new_zeroed,
+            any_state_wires=new_any,
             algo_wires=new_logic,
             gate_types=new_gate_types,
         )
@@ -223,8 +223,8 @@ class Resources:
             )
         return (
             (self.gate_types == other.gate_types)
-            and (self.zeroed == other.zeroed)
-            and (self.any_state == other.any_state)
+            and (self.zeroed_wires == other.zeroed_wires)
+            and (self.any_state_wires == other.any_state_wires)
             and (self.algo_wires == other.algo_wires)
         )
 
@@ -266,8 +266,8 @@ class Resources:
         new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
 
         return Resources(
-            zeroed=self.zeroed,
-            any_state=self.any_state * scalar,
+            zeroed_wires=self.zeroed_wires,
+            any_state_wires=self.any_state_wires * scalar,
             algo_wires=self.algo_wires,
             gate_types=new_gate_types,
         )
@@ -310,8 +310,8 @@ class Resources:
         new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
 
         return Resources(
-            zeroed=self.zeroed,
-            any_state=self.any_state * scalar,
+            zeroed_wires=self.zeroed_wires,
+            any_state_wires=self.any_state_wires * scalar,
             algo_wires=self.algo_wires * scalar,
             gate_types=new_gate_types,
         )
@@ -335,7 +335,7 @@ class Resources:
     def __str__(self):
         """Generates a string representation of the Resources object."""
 
-        total_wires = self.algo_wires + self.zeroed + self.any_state
+        total_wires = self.algo_wires + self.zeroed_wires + self.any_state_wires
         total_gates = sum(self.gate_counts.values())
 
         total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
@@ -346,9 +346,9 @@ class Resources:
 
         qubit_breakdown_str = (
             f"   algorithmic wires: {self.algo_wires}\n"
-            f"   allocated wires: {self.zeroed + self.any_state}\n"
-            f"     zero state: {self.zeroed}\n"
-            f"     any state: {self.any_state}\n"
+            f"   allocated wires: {self.zeroed_wires + self.any_state_wires}\n"
+            f"     zero state: {self.zeroed_wires}\n"
+            f"     any state: {self.any_state_wires}\n"
         )
         items += qubit_breakdown_str
 
@@ -463,4 +463,4 @@ class Resources:
 
     def __repr__(self):
         """Compact string representation of the Resources object"""
-        return f"Resources(zeroed={self.zeroed}, any_state={self.any_state}, algo_wires={self.algo_wires}, gate_types={self.gate_types})"
+        return f"Resources(zeroed={self.zeroed_wires}, any_state={self.any_state_wires}, algo_wires={self.algo_wires}, gate_types={self.gate_types})"

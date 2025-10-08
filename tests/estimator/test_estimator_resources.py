@@ -78,8 +78,8 @@ class TestResources:
 
         expected_gate_types = defaultdict(int, {}) if gate_types is None else gate_types
 
-        assert resources.zeroed == zeroed
-        assert resources.any_state == any_state
+        assert resources.zeroed_wires == zeroed
+        assert resources.any_state_wires == any_state
         assert resources.algo_wires == algo
         assert resources.gate_types == expected_gate_types
 
@@ -166,7 +166,7 @@ class TestResources:
     @pytest.mark.parametrize("gate_types, gate_set, expected_str", test_data)
     def test_gate_breakdown(self, gate_types, gate_set, expected_str):
         """Test that the gate_breakdown method correctly displays the information."""
-        resources = Resources(zeroed=4, gate_types=gate_types)
+        resources = Resources(zeroed_wires=4, gate_types=gate_types)
         assert resources.gate_breakdown(gate_set=gate_set) == expected_str
 
     @pytest.mark.parametrize("gate_types", gate_types_data + (None,))

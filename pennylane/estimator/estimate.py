@@ -315,8 +315,8 @@ def _resources_from_qfunc(
                 cmp_rep_op, gate_counts, wire_manager=wire_manager, gate_set=gate_set, config=config
             )
         return Resources(
-            zeroed=wire_manager.zeroed,
-            any_state=wire_manager.any_state,
+            zeroed_wires=wire_manager.zeroed,
+            any_state_wires=wire_manager.any_state,
             algo_wires=wire_manager.algo_wires,
             gate_types=gate_counts,
         )
@@ -349,8 +349,8 @@ def _resources_from_resource(
         )
 
     return Resources(
-        zeroed=wire_manager.zeroed,
-        any_state=wire_manager.any_state,
+        zeroed_wires=wire_manager.zeroed,
+        any_state_wires=wire_manager.any_state,
         algo_wires=wire_manager.algo_wires,
         gate_types=gate_counts,
     )
