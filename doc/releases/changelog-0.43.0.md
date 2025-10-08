@@ -1459,6 +1459,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Stops promoting numpy data to autograd in `qml.qchem.molecular_hamiltonian`.
+  [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
+
 * `default.qubit` now properly validates the `mcm_method`.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 

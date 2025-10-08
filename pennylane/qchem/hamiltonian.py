@@ -429,20 +429,24 @@ def _(
         convert_tol,
     )
 
-def _dhf_molecular_hamiltonian(symbols, coordinates, *,
-        geometry_dhf,
-        charge,
-        mult,
-        basis,
-        active_electrons,
-        active_orbitals,
-        mapping="jordan_wigner",
-        wires=None,
-        alpha=None,
-        coeff=None,
-        args=None,
-        load_data=False
-        ):
+
+def _dhf_molecular_hamiltonian(
+    symbols,
+    coordinates,
+    *,
+    geometry_dhf,
+    charge,
+    mult,
+    basis,
+    active_electrons,
+    active_orbitals,
+    mapping="jordan_wigner",
+    wires=None,
+    alpha=None,
+    coeff=None,
+    args=None,
+    load_data=False,
+):
 
     if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
         geometry_dhf.requires_grad = False
@@ -571,7 +575,7 @@ def _molecular_hamiltonian(
         )
 
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf =coordinates.reshape(len(symbols), 3)
+        geometry_dhf = coordinates.reshape(len(symbols), 3)
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
         geometry_dhf = qml.math.array(coordinates, like=qml.math.get_deep_interface(coordinates))
@@ -593,10 +597,22 @@ def _molecular_hamiltonian(
             )
 
     if method == "dhf":
-        return _dhf_molecular_hamiltonian(symbols, coordinates,
-                geometry_dhf=geometry_dhf, charge=charge, mult=mult, basis=basis,
-                active_electrons=active_electrons, active_orbitals=active_orbitals,
-                mapping=mapping, wires=wires, alpha=alpha, coeff=coeff, args=args, load_data=load_data)
+        return _dhf_molecular_hamiltonian(
+            symbols,
+            coordinates,
+            geometry_dhf=geometry_dhf,
+            charge=charge,
+            mult=mult,
+            basis=basis,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+            mapping=mapping,
+            wires=wires,
+            alpha=alpha,
+            coeff=coeff,
+            args=args,
+            load_data=load_data,
+        )
     if method == "pyscf":
         core_constant, one_mo, two_mo = qml.qchem.openfermion_pyscf._pyscf_integrals(
             symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
