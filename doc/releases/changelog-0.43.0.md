@@ -589,7 +589,7 @@
 
 <h4>Other improvements</h4>
 
-* PennyLane `autograph` supports standard Python syntax for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`.
+* PennyLane `autograph` supports standard Python syntax for updating arrays like `array[i] += x` instead of JAX's `arr.at[i].add(x)`.
   Users can now use this when designing quantum circuits with experimental program capture enabled.
 
   ```python
@@ -918,23 +918,23 @@
   ```pycon
   >>> from pennylane.math.interface_utils import Interface
   >>> Interface("torch")
-  Interface.TORCH
+  <Interface.TORCH: 'torch'>
   >>> Interface("jax-jit")
-  Interface.JAX_JIT
+  <Interface.JAX_JIT: 'jax-jit'>
   ```
 
   [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
 
 * :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing
-  them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
+  them independently. In addition, it is now more consistent with other PennyLane operators, dequeuing its
   input ``lcu``.
   [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
 
 * `MidMeasureMP` now inherits from `Operator` instead of `MeasurementProcess`.
   [(#8166)](https://github.com/PennyLaneAI/pennylane/pull/8166)
 
-* `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
-  and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
+* `DefaultQubit.eval_jaxpr` does not use `self.shots` from the device anymore; instead, it takes `shots` as a keyword argument,
+  and the qnode primitive processes the `shots` and calls `eval_jaxpr` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
