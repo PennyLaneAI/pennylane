@@ -1038,7 +1038,7 @@
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
-* The `__eq__` method has been added to `ResourceOperator` to make comparison checks more intuitive.
+* ``ResourceOperator`` instances can now be compared with ``==``.
   [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
 
 * A mapper function `map_to_resource_ops` has been added to map PennyLane operators to `ResourceOperator` equivalents.
@@ -1065,17 +1065,17 @@
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
 * The docstring in `perturbation_error` has been updated to use the correct positional argument name.
-  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+  [(#8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
 
 <h4>Labs Removals</h4>
 
 * The module `qml.labs.zxopt` has been removed. Its functionalities are now available in the
-  submodule :mod:`.transforms.zx`. The same functions are available, but their signature
+  submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
   may have changed.
-  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
-  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`.transforms.zx.reduce_non_clifford`
-  - Instead of `qml.labs.zxopt.todd`, use :func:`.transforms.zx.todd`
-  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`.transforms.zx.push_hadamards`
+  - Instead of `qml.labs.zxopt.full_optimize`, use :func:`~.transforms.zx.optimize_t_count`
+  - Instead of `qml.labs.zxopt.full_reduce`, use :func:`~.transforms.zx.reduce_non_clifford`
+  - Instead of `qml.labs.zxopt.todd`, use :func:`~.transforms.zx.todd`
+  - Instead of `qml.labs.zxopt.basic_optimization`, use :func:`~.transforms.zx.push_hadamards`
   [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
 
 <h3>Breaking changes 💔</h3>
@@ -1572,7 +1572,7 @@
   testing and fit best practices.
   [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
-* Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
+* Three more examples of the deprecated usage of `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
 * The documentation of `qml.device` has been updated to reflect the usage of :func:`~pennylane.set_shots`.
@@ -1597,7 +1597,7 @@
   with `gradient_kwargs` in the QNode definition.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
-* The `Operator.pow` and `Operator.adjoint` documentation have been updated to clarify optional
+* The documentation for `Operator.pow` and `Operator.adjoint` have been updated to clarify optional
   developer-facing use cases.
   [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
 
