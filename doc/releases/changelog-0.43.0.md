@@ -1575,6 +1575,14 @@
   :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
+* When using the ``mcm_method="tree-traversal"`` with ``qml.samples``, the data type of the returned values is now int.
+  This change ensures consistency with the output of other MCM methods.
+  [(#8274)](https://github.com/PennyLaneAI/pennylane/pull/8274)
+
+* The labels for operators that have multiple matrix-valued parameters (e.g. those from :class:`~.operation.Operator`)
+  can now also be drawn correctly (e.g. with `qml.draw`).     
+  [(#8432)](https://github.com/PennyLaneAI/pennylane/pull/8432)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
