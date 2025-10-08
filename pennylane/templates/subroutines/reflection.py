@@ -56,10 +56,10 @@ class Reflection(Operation):
 
     This example shows how to apply the reflection :math:`-I + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
-    .. code-block::
+    .. code-block:: python
 
         U = qml.Hadamard(wires=0)
-        dev = qml.device(‘default.qubit’)
+        dev = qml.device('default.qubit')
 
         @qml.qnode(dev)
         def circuit():
@@ -68,13 +68,13 @@ class Reflection(Operation):
             return qml.state()
 
     >>> circuit()
-    tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+    array([1.+6.123234e-17j, 0.-6.123234e-17j])
 
     For cases when :math:`U` comprises many operations, you can create a quantum
     function containing each operation, one per line, then decorate the quantum
     function with ``@qml.prod``:
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.prod
         def U(wires):
@@ -87,8 +87,8 @@ class Reflection(Operation):
             return qml.state()
 
     >>> circuit()
-    tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
-         0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
+    array([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
+            0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j])
 
     .. details::
         :title: Theory

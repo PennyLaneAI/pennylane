@@ -66,7 +66,7 @@ class SelectPauliRot(Operation):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
 
         angles = np.array([1.0, 2.0, 3.0, 4.0])
 
@@ -83,11 +83,9 @@ class SelectPauliRot(Operation):
             )
             return qml.state()
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
-         0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+    >>> print(circuit())
+    [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
+        0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
     """
 
     grad_method = None

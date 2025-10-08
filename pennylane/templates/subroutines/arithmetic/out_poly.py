@@ -432,7 +432,13 @@ class OutPoly(Operation):
 
         list_ops.append(QFT(wires=output_adder_mod))
 
-        coeffs_dic = dict(kwargs["coeffs_list"])
+        wires_vars = [len(w) for w in registers_wires[:-1]]
+
+        coeffs_list = kwargs.get("coeffs_list")
+        if coeffs_list is None:
+            coeffs_dic = _get_polynomial(polynomial_function, mod, *wires_vars)
+        else:
+            coeffs_dic = dict(kwargs["coeffs_list"])
 
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 
