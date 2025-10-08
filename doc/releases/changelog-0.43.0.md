@@ -382,7 +382,7 @@
 * The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
   have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
   [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
-  [(#8___)](https://github.com/PennyLaneAI/pennylane/pull/8___)
+  [(#8432)](https://github.com/PennyLaneAI/pennylane/pull/8432)
 
   ```python
   import pennylane as qml
@@ -1464,6 +1464,10 @@
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
 
 <h3>Bug fixes 🐛</h3>
+
+* :class:`~.operation.Operator` labels can now also be printed correctly for operator types with
+  multiple matrix-valued parameters.
+  [(#8432)](https://github.com/PennyLaneAI/pennylane/pull/8432)
 
 * Stops promoting numpy data to autograd in `qml.qchem.molecular_hamiltonian`.
   [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
