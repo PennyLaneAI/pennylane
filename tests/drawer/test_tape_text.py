@@ -296,6 +296,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
             (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰─"]),
             (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰─"]),
+            (qml.ctrl(qml.TemporaryAND([0, 1, 2]), control=[3]), ["╭●", "├●", "├─", "╰●"]),
         ],
     )
     def test_add_obj(self, op, out):
