@@ -937,7 +937,7 @@
   and the qnode primitive processes the `shots` and calls `eval_jaxpr` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
-* The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
+* The methods :meth:`.pauli.PauliWord.operation` and :meth:`.pauli.PauliSentence.operation`
   no longer queue any operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
