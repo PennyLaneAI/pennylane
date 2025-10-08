@@ -416,7 +416,7 @@
   [(#8103)](https://github.com/PennyLaneAI/pennylane/pull/8103)
   [(#8236)](https://github.com/PennyLaneAI/pennylane/pull/8236)
 
-  * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
+  * Decomposition rules added for the :class:`~.MultiControlledX` dynamically allocate work wires if none were explicitly specified via the `work_wires` argument of the operator.
   [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
 
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
