@@ -42,7 +42,6 @@ from ...dialects.quantum import (
 )
 from ...pass_api import compiler_transform
 from ...visualization.xdsl_conversion import ssa_to_qml_wires
-from .graph_state_utils import generate_adj_matrix, get_num_aux_wires
 
 _PAULIS = {
     "PauliX",
@@ -203,4 +202,33 @@ class AddPauliTrackerPattern(
                     new_xz = self._apply_clifford_commute_rule(xz, op, rewriter)
                     # Insert new_xz to x_record and z_record
                     self._insert_xz_records(wires_ssa, new_xz, x_record, z_record, op, rewriter)
-                # elif (isinstance(op, CustomOp) and op.gate_name.data in _MBQC_NON_CLIFFORD_GATES):
+                elif isinstance(op, CustomOp) and op.gate_name.data in _PAULIS:
+                    if op.gate_name.data != "Identity":
+                        wires_int = ssa_to_qml_wires(op)
+                        # Extract xz record information
+                        xz, wires_ssa = self._extract_xz_records(
+                            wires_int, x_record, z_record, op, rewriter
+                        )
+
+                        cst_one = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+                        rewriter.insert_op(cst_one, InsertPoint.before(op))
+
+                        x, z = xz
+                        new_xz = []
+                        if op.gate_name.data == "PauliX":
+                            new_x = arith.XOrIOp(x, cst_one)
+                            rewriter.insert_op(new_x, InsertPoint.before(op))
+                            new_xz = [new_x, z]
+                        elif op.gate_name.data == "PauliY":
+                            new_x = arith.XOrIOp(x, cst_one)
+                            rewriter.insert_op(new_x, InsertPoint.before(op))
+                            new_z = arith.XOrIOp(z, cst_one)
+                            rewriter.insert_op(new_z, InsertPoint.before(op))
+                            new_xz = [new_x, new_z]
+                        else:
+                            new_z = arith.XOrIOp(z, cst_one)
+                            rewriter.insert_op(new_z, InsertPoint.before(op))
+                            new_xz = [x, new_z]
+
+                    rewriter.replace_all_uses_with(op.results[0], op.operands[0])
+                    rewriter.erase_op(op)
