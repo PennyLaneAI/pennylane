@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource estimation logic."""
+
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
@@ -35,26 +36,24 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 def estimate(
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
-    zeroed: int = 0,
-    any_state: int = 0,
-    tight_budget: bool = False,
+    zeroed_wires: int = 0,
+    any_state_wires: int = 0,
+    tight_wires_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
-    r"""Estimate the quantum resources required by a circuit or operator
-    with respect to a given gateset.
+    r"""Estimate the quantum resources required to implement a circuit or operator in terms of a given gateset.
 
     Args:
-        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | QNode): The quantum circuit or operator
-            for which to estimate resources.
+        workflow (Callable, ResourceOperator, Resources, QNode): The quantum circuit or operator for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count throughout the quantum workflow.
-        zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
-        any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
-        tight_budget (bool | None): Determines whether extra zeroed state wires may be allocated when they
-            exceed the available amount. The default is ``False``.
-        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
+        zeroed_wires (int): Number of work wires pre-allocated in the zeroed state. Default is ``0``.
+        any_state_wires (int): Number of work wires pre-allocated in an unknown state. Default is ``0``.
+        tight_wires_budget (bool): If True, extra work wires may not be allocated in addition to the pre-allocated ones. The default is ``False``.
+        config (ResourceConfig | None): Configurations for the resource estimation pipeline.
 
     Returns:
-        :class:`~.pennylane.estimator.resources_base.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
+        Resources | Callable[..., Resources]:
+            The estimated quantum resources required to execute the circuit.
 
     Raises:
         TypeError: could not obtain resources for workflow of type :code:`type(workflow)`
@@ -132,7 +131,9 @@ def estimate(
               'Hadamard': 5
 
     """
-    return _estimate_resources_dispatch(workflow, gate_set, zeroed, any_state, tight_budget, config)
+    return _estimate_resources_dispatch(
+        workflow, gate_set, zeroed_wires, any_state_wires, tight_wires_budget, config
+    )
 
 
 @singledispatch
