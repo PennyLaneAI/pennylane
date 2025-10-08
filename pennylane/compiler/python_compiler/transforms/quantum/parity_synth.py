@@ -227,12 +227,10 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
                 continue
 
             # not a phase polynomial op, so we activate rewriting of the phase polynomial
-            self.rewrite_phase_polynomial(
-                rewriter, InsertPoint.after(self.phase_polynomial_ops[-1])
-            )
+            self.rewrite_phase_polynomial(rewriter)
 
         # end of operations; rewrite terminal phase polynomial
-        self.rewrite_phase_polynomial(rewriter, InsertPoint.after(self.phase_polynomial_ops[-1]))
+        self.rewrite_phase_polynomial(rewriter)
 
         # Mock the rewriter to think it reached a steady state already, because re-applying
         # ParitySynth is not useful
@@ -260,9 +258,7 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         inv_wire_map[wire] = rz_op.out_qubits[0]
         return rz_op
 
-    def rewrite_phase_polynomial(
-        self, rewriter: pattern_rewriter.PatternRewriter, insertion_point: InsertPoint
-    ):
+    def rewrite_phase_polynomial(self, rewriter: pattern_rewriter.PatternRewriter):
         """Rewrite a single region of a circuit that represents a phase polynomial."""
         if not self.phase_polynomial_ops:
             # Nothing to do
@@ -273,6 +269,8 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             self._reset_vars()
             return
 
+        insertion_point: InsertPoint = InsertPoint.after(self.phase_polynomial_ops[-1])
+
         # Mapping from integer-valued wire positions to qubits, corresponding to state before
         # phase polynomial
         inv_wire_map: dict[int, QubitType] = {val: key for key, val in self.init_wire_map.items()}
@@ -282,6 +280,11 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         M, P, angles, arith_ops = make_phase_polynomial(
             self.phase_polynomial_ops, self.init_wire_map
         )
+
+        # Insert arithmetic operations produced within `make_phase_polynomial`
+        for op in arith_ops:
+            rewriter.insert_op(op, insertion_point)
+
         # todo: call parity table reduction function once it exists
         subcircuits, inv_network_parity_matrix = _parity_network_synth(P)
         # `inv_network_parity_matrix` might be None if the parity table was empty

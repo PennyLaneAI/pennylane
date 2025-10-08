@@ -242,9 +242,9 @@ class TestParitySynthPass:
                 %1 = INIT_QUBIT
                 %2 = INIT_QUBIT
 
+                // CHECK: [[new_angle:%.+]] = arith.negf %arg0
                 // CHECK: [[q3:%.+]], [[q4:%.+]] = quantum.custom "CNOT"() [[q1]], [[q0]] : !quantum.bit, !quantum.bit
                 %3, %4 = _CNOT %0, %1
-                // CHECK: [[new_angle:%.+]] = arith.negf %arg0
                 // CHECK: [[q5:%.+]] = quantum.custom "RZ"([[new_angle]]) [[q4]] : !quantum.bit
                 %5 = quantum.custom "RZ"(%arg0) %4 adj : !quantum.bit
                 // CHECK: [[q6:%.+]], [[q7:%.+]] = quantum.custom "CNOT"() [[q3]], [[q5]] : !quantum.bit, !quantum.bit
