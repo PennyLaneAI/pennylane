@@ -1415,7 +1415,7 @@
   page was pushed further down the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
-* Rename `ancilla` to `auxiliary` in internal documentation.
+* Renamed `ancilla` to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
 * Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
