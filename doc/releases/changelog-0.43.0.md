@@ -21,7 +21,7 @@
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
+  * Added a new :func:`~.estimator.estimate.estimate` function as the entry point to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
@@ -29,6 +29,61 @@
     :class:`~.estimator.wires_manager.Allocate`, and :class:`~.estimator.wires_manager.Allocate`
     classes were added to manage and track wire usage for resource estimation.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+
+    The :func:`~.estimator.estimate.estimate` function is the entrypoint for resource estimation.
+    Here, the :class:`~.estimator.resource_operator.ResourceOperator` for ``QFT`` is analyzed:
+
+    ```python
+    import pennylane as qml
+    import pennylane.estimator as qre
+
+    out_mul = qre.QFT(num_wires=3)
+    res = qre.estimate(out_mul)
+    ```
+
+    ```pycon
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+      	 zero state: 0
+      	 any state: 0
+     Total gates : 408
+      'T': 396,
+      'CNOT': 9,
+      'Hadamard': 3
+    ```
+
+    Similarly, the :func:`~.estimator.estimate.estimate` function is used
+    to estimate the quantum resources of an entire workflow:
+
+    ```python
+    def my_circuit():
+      for w in range(2):
+          qre.Hadamard(wires=w)
+      qre.CNOT(wires=[0,1])
+      qre.RX(wires=0)
+      qre.RY(wires=1)
+      qre.QFT(num_wires=3, wires=[0, 1, 2])
+      return
+
+    res = qre.estimate(my_circuit)()
+    ```
+
+    ```pycon
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+      	 zero state: 0
+      	 any state: 0
+     Total gates : 499
+      'T': 484,
+      'CNOT': 10,
+      'Hadamard': 5
+    ```
 
   * Added a new :class:`~.estimator.resource_config.ResourceConfig` class
     to store the configuration used for resource estimation,
