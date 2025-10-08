@@ -97,7 +97,7 @@ class MergeRotationsPattern(
                 for cq1, cq2 in zip(op.in_ctrl_qubits, op.out_ctrl_qubits, strict=True):
                     rewriter.replace_all_uses_with(cq2, cq1)
 
-                # Wheter op is adjoint will determine adjoint of new_op, and how to combine angles
+                # Whether op is adjoint will determine adjoint of new_op, and how to combine angles
                 is_adjoint = getattr(op, "adjoint", False)
                 rewriter.erase_op(op)
 
