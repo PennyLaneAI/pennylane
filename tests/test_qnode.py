@@ -243,6 +243,7 @@ class TestInitialization:
         def f2():
             return qml.state()
 
+        assert f2._shots_override_device  # pylint: disable=protected-access
         assert f2.shots == qml.measurements.Shots(10)
 
         # Shots from device should be set correctly
@@ -1484,10 +1485,11 @@ class TestShots:
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
-    def test_shots_update_with_device(self):
+    def test_shots_not_updated_with_device(self):
         """Test that _shots is not updated when updating the QNode with a new device."""
-        dev1 = qml.device("default.qubit", wires=1)
-        qn = qml.set_shots(qml.QNode(dummyfunc, dev1), shots=100)
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+            dev1 = qml.device("default.qubit", wires=1, shots=100)
+        qn = qml.QNode(dummyfunc, dev1)
         assert qn._shots == qml.measurements.Shots(100)
 
         # _shots should take precedence over device shots
