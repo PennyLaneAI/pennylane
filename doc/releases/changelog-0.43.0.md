@@ -1041,7 +1041,8 @@
 * ``ResourceOperator`` instances can now be compared with ``==``.
   [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
 
-* A mapper function `map_to_resource_ops` has been added to map PennyLane operators to `ResourceOperator` equivalents.
+* A mapper function called :func:`~pennylane.labs.resource_estimation.map_to_resource_op`
+  has been added to map PennyLane operators to `ResourceOperator` equivalents.
   [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
   [(#8162)](https://github.com/PennyLaneAI/pennylane/pull/8162)
 
@@ -1053,7 +1054,7 @@
 
 <h4>Labs Trotter Error Estimation</h4>
 
-* Concurrency support for `effective_hamiltonian` has been added to improve performance.
+* Parallelization support for `effective_hamiltonian` has been added to improve performance.
   [(#8081)](https://github.com/PennyLaneAI/pennylane/pull/8081)
   [(#8257)](https://github.com/PennyLaneAI/pennylane/pull/8257)
 
@@ -1061,7 +1062,8 @@
   of sparse matrices for Hamiltonian Fragments when estimating Trotter error.
   [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
 
-* The perturbation error function has been updated to sum over expectation values instead of states.
+* The :func:`~pennylane.labs.trotter_error.perturbation_error` function has
+  been updated to sum over expectation values instead of states.
   [(#8226)](https://github.com/PennyLaneAI/pennylane/pull/8226)
 
 * The docstring in `perturbation_error` has been updated to use the correct positional argument name.
