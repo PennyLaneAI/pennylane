@@ -391,7 +391,10 @@ def _dequeue(
 
 
 class GateCount:
-    r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
+    r"""Stores a lightweight representation of a gate and its number of occurrences in a decomposition.
+
+    Decomposition of resource operators using their ``resource_decomp()`` method returns a list
+    of ``GateCount`` objects.
 
     Args:
         gate (CompressedResourceOp): The compressed resource representation of the gate being counted.
@@ -403,15 +406,14 @@ class GateCount:
 
     **Example**
 
-    This example creates an object to count ``5`` instances of :code:`qre.QFT` acting
-    on three wires:
+    This example shows the decomposition of the quantum Fourier transform (QFT) operation into a
+    list of ``GateCount`` objects. The decomposition contains 3 ``Hadamard`` gates, 1 ``SWAP`` gate
+    and 3 ``ControlledPhaseShift`` gates.
 
     >>> import pennylane.estimator as qre
-    >>> qft = qre.resource_rep(qre.QFT, {"num_wires": 3})
-    >>> counts = qre.GateCount(qft, 5)
-    >>> counts
-    (5 x QFT(3))
-
+    >>> gate_counts = qre.QFT.resource_decomp(num_wires=3)
+    >>> gate_counts
+    [(3 x Hadamard), (1 x SWAP), (3 x ControlledPhaseShift)]
     """
 
     def __init__(self, gate: CompressedResourceOp, count: int | None = 1) -> None:
