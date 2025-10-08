@@ -903,7 +903,7 @@
 
 <h4>Labs Removals</h4>
 
-* The module `qml.labs.zxopt` hsa been removed. Its functionalities are now available in the
+* The module `qml.labs.zxopt` has been removed. Its functionalities are now available in the
   submodule :mod:`.transforms.zx`. The same functions are available, but their signature
   may have changed.
   - Instead of `qml.labs.zxopt.full_optimize`, use :func:`.transforms.zx.optimize_t_count`
