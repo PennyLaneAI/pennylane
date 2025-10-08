@@ -103,7 +103,7 @@ def resolve_dynamic_wires(
 
     Args:
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
-        zeroed (Sequence[Hashable]): a register of wires known to be the zero state
+        zeroed (Sequence[Hashable]): a register of wires known to be in the :math:`|0\rangle` state
         any_state (Sequence[Hashable]): a register of wires with any state
         min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
@@ -121,7 +121,7 @@ def resolve_dynamic_wires(
 
         This approach also means we pop wires from the *end* of the stack first.
 
-    For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before erroring:
+    For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before raising an error:
 
       #. If wires exist in the ``zeroed`` register, we take one from that register
       #. If no ``zeroed`` wires exist and we are allowed to use resets, we pull one from ``any_state`` and apply a reset operation
