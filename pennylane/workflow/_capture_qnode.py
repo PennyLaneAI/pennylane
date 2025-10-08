@@ -553,6 +553,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
 
     """
+    # apply transform to a callable so will be captured when called
     qnode_func = partial(_bind_qnode, qnode)
     for t in qnode.transform_program:
         qnode_func = t(qnode_func)
