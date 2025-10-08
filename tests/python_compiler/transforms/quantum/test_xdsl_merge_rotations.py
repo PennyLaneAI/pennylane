@@ -29,6 +29,8 @@ from pennylane.compiler.python_compiler.transforms import MergeRotationsPass, me
 class TestMergeRotationsPass:
     """Unit tests for MergeRotationsPass."""
 
+    pipeline = (MergeRotationsPass(),)
+
     def test_no_composable_ops(self, run_filecheck):
         """Test that nothing changes when there are no composable gates."""
         program = """
@@ -43,8 +45,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_composable_ops(self, run_filecheck):
         """Test that composable gates are merged."""
@@ -61,8 +62,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_many_composable_ops(self, run_filecheck):
         """Test that more than 2 composable ops are merged correctly."""
@@ -83,8 +83,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_non_consecutive_composable_ops(self, run_filecheck):
         """Test that non-consecutive composable gates are not merged."""
@@ -102,8 +101,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_composable_ops_different_qubits(self, run_filecheck):
         """Test that composable gates on different qubits are not merged."""
@@ -121,8 +119,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_controlled_composable_ops(self, run_filecheck):
         """Test that controlled composable ops can be merged."""
@@ -144,8 +141,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_controlled_composable_ops_same_control_values(self, run_filecheck):
         """Test that controlled composable ops with the same control values
@@ -169,8 +165,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_controlled_composable_ops_different_control_values(self, run_filecheck):
         """Test that controlled composable ops with different control values
@@ -193,8 +188,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     @pytest.mark.parametrize(
         "first_adj, second_adj, sign",
@@ -223,8 +217,7 @@ class TestMergeRotationsPass:
             }}
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
 
 # pylint: disable=too-few-public-methods
@@ -234,7 +227,7 @@ class TestMergeRotationsIntegration:
 
     def test_qjit(self, run_filecheck_qjit):
         """Test that the MergeRotationsPass works correctly with qjit."""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
         @merge_rotations_pass
