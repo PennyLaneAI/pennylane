@@ -1065,8 +1065,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* Setting shots on a device through the `shots` kwarg, e.g., ``qml.device("default.qubit", wires=2, shots=1000)``, is deprecated.
-  Please use the :func:`qml.workflow.set_shots` transform on the QNode instead. 
+* Setting shots on a device through the ``shots`` kwarg, e.g., ``qml.device("default.qubit", wires=2, shots=1000)``, is deprecated.
+  Please use the :func:`~.set_shots` transform on the QNode instead. 
   This is done to reduce confusion and code complexity by having a centralized way to set shots.
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
@@ -1083,7 +1083,7 @@
 
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
-  Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
+  Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interfaces for
   machine learning applications to benefit from enhanced support and features. Please consult the following demos for
   more usage information:
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
@@ -1091,24 +1091,24 @@
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
   [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
-* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
+* ``pennylane.devices.DefaultExecutionConfig`` has been deprecated and will be removed in v0.44.
   Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration. 
   This helps prevent unintended changes in a workflow's behaviour that could be caused by using a global, mutable object.
   [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
 
 * Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
-  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  ``"dirty"`` has been deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are restored to their original state upon completing the decomposition. This is done to standardize how
   work wires are called in PennyLane.
   [(#7993)](https://github.com/PennyLaneAI/pennylane/pull/7993)
 
 * Providing the Trotter number kwarg ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
-  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
+  and :class:`pennylane.ops.Exp` has been deprecated and will be removed in a future release. Instead, use
   :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
   product approximation of a Hamiltonian with the specified number of Trotter steps. 
   This change resolves the ambiguity that arises when using ``num_steps`` on devices that support analytic
-  evolution (e.g., default.qubit).
+  evolution (e.g., ``default.qubit``).
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
   [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
@@ -1141,13 +1141,13 @@
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
 
-* ``MeasurementProcess.expand`` is deprecated. The relevant method can be replaced with
+* ``MeasurementProcess.expand`` has been deprecated. The relevant method can be replaced with
   ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
   This improves the code design by removing an unused method with undesired dependencies (i.e. circular dependency).
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
-* The `shots` kwarg in the QNode calls (e.g., ``qml.QNode(circuit, dev)(shots=10)``) is deprecated and will be removed in v0.44.
-  Instead, please use the :func:`qml.workflow.set_shots` transform to set the number of shots for a QNode.
+* The `shots` kwarg in the QNode calls (e.g., ``qml.QNode(circuit, dev)(shots=10)``) has been deprecated and will be removed in v0.44.
+  Instead, please use the :func:`~.set_shots` transform to set the number of shots for a QNode.
   This is done to reduce confusion and code complexity by having a single, clear way to set shots.
   [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
 
@@ -1155,36 +1155,36 @@
   Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
   [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
 
-* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
-    - `print_contents` in favor of `print(obj)`
-    - `observables_in_order` in favor of `observables`
-    - `operations_in_order` in favor of `operations`
-    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
-    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order`` in favore of ``descendants(obj, sort=True)``
 
-* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
+* The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
   This change makes the code cleaner by separating out methods that interface with external libraries from
   PennyLane's internal functionality.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
 
-* The ``level=None`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms is deprecated and will be removed in v0.44.
+* The ``level=None`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms has been deprecated and will be removed in v0.44.
   Please use ``level='device'`` instead to apply the noise model at the device level.
-  This reduces ambiguity by making it clear that the default is to apply all transforms to the qnode.
+  This reduces ambiguity by making it clear that the default is to apply all transforms to the QNode.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
   [(#8364)](https://github.com/PennyLaneAI/pennylane/pull/8364)
 
-* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
+* ``qml.qnn.cost.SquaredErrorLoss`` has been deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
 
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
-  Instead, these functions should be imported from the ``pennylane.noise`` module, which is a more appropriate location for them.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``transforms`` module has been deprecated.
+  Instead, these functions should be imported from the ``noise`` module, which is a more appropriate location for them.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
+* The ``qml.QNode.add_transform`` method has been deprecated and will be removed in v0.44.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
