@@ -90,7 +90,7 @@ def estimate(
 
     The resource estimation can be performed with respect to an alternative gate set:
 
-    >>> res = qre.estimate(circuit, gate_set={"RX", "RZ", "Hadamard", "CNOT"})
+    >>> res = qre.estimate(circuit, gate_set={"RX", "RZ", "Hadamard", "CNOT"})()
     >>> print(res)
     --- Resources: ---
      Total wires: 4
@@ -239,7 +239,7 @@ def estimate(
                 qml.CNOT(wires=[0, 1])
                 qml.QFT(wires=[0, 1, 2, 3])
 
-        >>> res = qre.estimate(circuit)
+        >>> res = qre.estimate(circuit)()
         >>> print(res)
         --- Resources: ---
          Total wires: 4
