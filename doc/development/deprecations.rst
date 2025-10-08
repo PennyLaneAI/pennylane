@@ -241,8 +241,8 @@ Completed deprecation cycles
   - Deprecated in v0.42
   - Removed in v0.43
 
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
-  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
+* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` have been removed. If an operation can act
+  on any number of wires, ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
   to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
   
   - Deprecated in v0.42
