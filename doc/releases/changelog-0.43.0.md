@@ -261,18 +261,46 @@
   The documentation was updated to include its own section on ZX calculus-based passes.
   [(#8201)](https://github.com/PennyLaneAI/pennylane/pull/8201)
 
-<h4>Change op basis 🍴</h4>
+<h4>Change operator basis 🍴</h4>
 
-* A new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
-  which allow a compute-uncompute pattern (``U V U†``) to be represented by a single operator.
-  A corresponding decomposition rule has been added to support efficiently controlling the pattern,
-  in which only the central (target) operator is controlled, and not ``U`` or ``U†``.
-  [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
-  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
+* Users can now benefit from an optimization of the controlled compute-uncompute pattern.
+  Operators arranged in a compute-uncompute pattern (``U V U†``,
+  which is equivalent to changing the basis in which ``V`` is executed, then restoring it)
+  can be efficiently controlled,
+  as the only the central (target) operator ``V`` needs to be controlled, and not ``U`` or ``U†``.
 
-* The decompositions for several templates have been updated to use ``ChangeOpBasis``, including:
-  :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
-  [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
+  * A new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
+    which allow a compute-uncompute pattern to be represented by a single operator.
+    A corresponding decomposition rule has been added to support efficiently controlling the pattern.
+    [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+    [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
+
+  * The decompositions for several templates have been updated to use ``ChangeOpBasis``, including:
+    :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
+    [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
+  
+  Here, the optimization is demonstrated when :class:`~.Adder` is controlled:
+
+  ```python
+  qml.decomposition.enable_graph()
+
+  dev = qml.device("default.qubit")
+
+  @partial(qml.transforms.decompose, max_expansion=2)
+  @qml.qnode(dev)
+  def circuit():
+      qml.ctrl(qml.Adder(10, x_wires=[1,2,3,4]), control=0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──────╭●────────────────┤  State
+  1: ─╭QFT─├PhaseAdder─╭QFT†─┤  State
+  2: ─├QFT─├PhaseAdder─├QFT†─┤  State
+  3: ─├QFT─├PhaseAdder─├QFT†─┤  State
+  4: ─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+  ```
 
 <h4>Quantum optimizers compatible with QJIT 🫖</h4>
 
