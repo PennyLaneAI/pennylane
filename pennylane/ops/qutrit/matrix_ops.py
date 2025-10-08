@@ -169,6 +169,9 @@ class ControlledQutritUnitary(QutritUnitary):
 
     >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
     >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1], wires=2)
+    ControlledQutritUnitary(array([[ 0.70710678,  0.70710678,  0.        ],
+           [ 0.70710678, -0.70710678,  0.        ],
+           [ 0.        ,  0.        ,  1.        ]]), wires=[0, 1, 2])
 
     By default, controlled operations apply the desired gate if the control qutrit(s)
     are all in the state :math:`\vert 2\rangle`. However, there are some situations where
@@ -181,6 +184,9 @@ class ControlledQutritUnitary(QutritUnitary):
     second is in state ``1``, and the third in state ``2``, we can write:
 
     >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='012')
+    ControlledQutritUnitary(array([[ 0.70710678,  0.70710678,  0.        ],
+           [ 0.70710678, -0.70710678,  0.        ],
+           [ 0.        ,  0.        ,  1.        ]]), wires=[0, 1, 2, 3])
     """
 
     num_params = 1
