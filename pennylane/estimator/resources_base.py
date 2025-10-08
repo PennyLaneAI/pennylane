@@ -92,15 +92,15 @@ class Resources:
 
     def __init__(
         self,
-        zeroed_wires: int,
-        any_state_wires: int = 0,
+        zeroed: int,
+        any_state: int = 0,
         algo_wires: int = 0,
         gate_types: dict | None = None,
     ):
         """Initialize the Resources class."""
         gate_types = gate_types or {}
-        self.zeroed = zeroed_wires
-        self.any_state = any_state_wires
+        self.zeroed = zeroed
+        self.any_state = any_state
         self.algo_wires = algo_wires
         self.gate_types = defaultdict(int, gate_types)
 
@@ -153,8 +153,8 @@ class Resources:
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed_wires=new_zeroed,
-            any_state_wires=new_any,
+            zeroed=new_zeroed,
+            any_state=new_any,
             algo_wires=new_logic,
             gate_types=new_gate_types,
         )
@@ -209,8 +209,8 @@ class Resources:
 
         new_gate_types = defaultdict(int, Counter(self.gate_types) + Counter(other.gate_types))
         return Resources(
-            zeroed_wires=new_zeroed,
-            any_state_wires=new_any,
+            zeroed=new_zeroed,
+            any_state=new_any,
             algo_wires=new_logic,
             gate_types=new_gate_types,
         )
@@ -266,8 +266,8 @@ class Resources:
         new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
 
         return Resources(
-            zeroed_wires=self.zeroed,
-            any_state_wires=self.any_state * scalar,
+            zeroed=self.zeroed,
+            any_state=self.any_state * scalar,
             algo_wires=self.algo_wires,
             gate_types=new_gate_types,
         )
@@ -310,8 +310,8 @@ class Resources:
         new_gate_types = defaultdict(int, {k: v * scalar for k, v in self.gate_types.items()})
 
         return Resources(
-            zeroed_wires=self.zeroed,
-            any_state_wires=self.any_state * scalar,
+            zeroed=self.zeroed,
+            any_state=self.any_state * scalar,
             algo_wires=self.algo_wires * scalar,
             gate_types=new_gate_types,
         )
