@@ -186,3 +186,52 @@ class TestOutlineStateEvolutionPass:
 
         res = circuit()
         assert res == 1.0
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_gates_in_mbqc_gate_set_e2e_loop(self):
+        """Test that the outline_state_evolution_pass end to end on null.qubit."""
+        dev = qml.device("lightning.qubit", wires=10)
+
+        @qml.for_loop(0, 10, 1)
+        def for_fn(i):
+            qml.H(i)
+            qml.S(i)
+            qml.RZ(phi=0.1, wires=[i])
+
+        @qml.while_loop(lambda i: i > 10)
+        def while_fn(i):
+            qml.H(i)
+            qml.S(i)
+            qml.RZ(phi=0.1, wires=[i])
+            i = i + 1
+            return i
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            pipelines=mbqc_pipeline(),
+            autograph=True,
+        )
+        @outline_state_evolution_pass
+        @qml.qnode(dev)
+        def circuit():
+            for_fn()
+            while_fn(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.prod(qml.X(0), qml.Z(1)))
+
+        res = circuit()
+
+        @qml.qjit(
+            target="mlir",
+            autograph=True,
+        )
+        @qml.qnode(dev)
+        def circuit_ref():
+            for_fn()
+            while_fn(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.prod(qml.X(0), qml.Z(1)))
+
+        res_ref = circuit_ref()
+        assert res == res_ref
