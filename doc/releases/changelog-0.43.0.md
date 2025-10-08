@@ -1575,7 +1575,7 @@
 * Three more examples of the deprecated usage `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
-* The documentation of `qml.device` has been updated to reflect the usage of :func:`~pennylane.set_shots`.
+* The documentation of `qml.device` has been updated to reflect the usage of :func:`~.set_shots`.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>`
