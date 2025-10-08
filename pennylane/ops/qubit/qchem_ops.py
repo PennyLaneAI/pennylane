@@ -567,17 +567,10 @@ class SingleExcitationPlus(Operation):
 
         **Example:**
 
-        >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
-        [H(1),
-         CNOT(wires=[1, 0]),
-         RY(0.615, wires=[0]),
-         RY(0.615, wires=[1]),
-         CY(wires=[1, 0]),
-         S(1),
-         H(1),
-         RZ(0.615, wires=[1]),
-         CNOT(wires=[0, 1]),
-         GlobalPhase(-0.3075, wires=[])]
+        >>> from pprint import pprint
+        >>> decomp = qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
+        >>> pprint(decomp)
+        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075, wires=[])]
 
         """
         decomp_ops = [
@@ -1267,8 +1260,7 @@ class OrbitalRotation(Operation):
         **Example:**
 
         >>> qml.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
-        [qml.FermionicSWAP(np.pi, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 2]),
-         SingleExcitation(1.2, wires=[1, 3]), qml.FermionicSWAP(np.pi, wires=[1, 2])]
+        [FermionicSWAP(3.141592653589793, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 1]), SingleExcitation(1.2, wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[1, 2])]
 
         """
 
@@ -1353,7 +1345,8 @@ class FermionicSWAP(Operation):
         ...     qml.FermionicSWAP(phi, wires=[0, 1])
         ...     return qml.state()
         >>> circuit(0.1)
-        array([0.+0.j, 0.9975+0.04992j, 0.0025-0.04992j, 0.+0.j])
+        array([0.        +0.j        , 0.99750208+0.04991671j,
+               0.00249792-0.04991671j, 0.        +0.j        ])
     """
 
     num_wires = 2
@@ -1412,10 +1405,11 @@ class FermionicSWAP(Operation):
         **Example**
 
         >>> qml.FermionicSWAP.compute_matrix(torch.tensor(0.5))
-        tensor([1.   +0.j, 0.   +0.j  , 0.   +0.j  , 0.   +0.j   ],
-               [0.   +0.j, 0.939+0.24j, 0.061-0.24j, 0.   +0.j   ],
-               [0.   +0.j, 0.061-0.24j, 0.939+0.24j, 0.   +0.j   ],
-               [0.   +0.j, 0.   +0.j  , 0.   +0.j  , 0.878+0.479j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9388+0.2397j, 0.0612-0.2397j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0612-0.2397j, 0.9388+0.2397j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]],
+               dtype=torch.complex128)
         """
 
         if (
