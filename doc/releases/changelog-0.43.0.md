@@ -943,7 +943,7 @@
   no longer queue any operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
-* `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
+* :func:`~.sample` no longer squeezes singleton dimensions for single shots or single wires. This cuts
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
