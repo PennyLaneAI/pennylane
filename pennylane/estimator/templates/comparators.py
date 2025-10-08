@@ -350,7 +350,7 @@ class IntegerComparator(ResourceOperator):
     ):
         if register_size is None:
             if wires is None:
-                raise ValueError(f"Must provide atleast one of `register_size` and `wires`.")
+                raise ValueError("Must provide atleast one of `register_size` and `wires`.")
             register_size = len(wires) - 1
 
         self.value = value
@@ -456,7 +456,6 @@ class IntegerComparator(ResourceOperator):
 
         binary_str = format(value, f"0{register_size}b")
         if geq:
-
             first_zero = binary_str.find("0")
 
             if first_zero == -1:
@@ -653,7 +652,6 @@ class RegisterComparator(ResourceOperator):
         two_qubit_compare = qre.TwoQubitComparator.TemporaryAND_based_decomp()
 
         if first_register == second_register:
-
             for op in two_qubit_compare:
                 gate_list.append(op * (first_register - 1))
             gate_list.append(GateCount(one_qubit_compare, 1))
