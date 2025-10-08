@@ -403,7 +403,7 @@
   ```
 
 
-* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` now take operator instances as arguments.
+* :func:`~.decomposition.has_decomp` and :func:`~.decomposition.list_decomps` can now take operator instances as arguments.
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
