@@ -170,8 +170,9 @@
 
 <h4>Resource tracking with Catalyst 👓</h4>
 
-* The :func:`~.specs` function now supports programs compiled with :func:`~.qjit`.
-  This new feature is only supported using `level="device"`.
+* Users can now use the :func:`~.specs` function to
+  track the resources of programs compiled with :func:`~.qjit`!
+  This new feature is currently only supported when using `level="device"`.
   [(#8202)](https://github.com/PennyLaneAI/pennylane/pull/8202)
 
   ```python
@@ -182,9 +183,11 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.Z(0) @ qml.Z(1))
 
-  print(qml.specs(circuit, level="device")()["resources"])
+  circ_specs = qml.specs(circuit, level="device")()
   ```
-  ```
+
+  ```pycon
+  print(circ_specs["resources"])
   Resources(num_wires=2,
             num_gates=2,
             gate_types=defaultdict(<class 'int'>, {'CNOT': 1, 'Hadamard': 1}),
