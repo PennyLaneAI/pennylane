@@ -56,6 +56,7 @@ def _run_filecheck_impl(program_str, pipeline=(), verify=False, roundtrip=False)
 
     pipeline = PassPipeline(pipeline)
     pipeline.apply(ctx, xdsl_module)
+    print(xdsl_module)
 
     if verify:
         xdsl_module.verify()
