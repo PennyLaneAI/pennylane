@@ -1020,7 +1020,7 @@
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
-* The boolean functions provided in `qml.operation` are deprecated. See the
+* The boolean functions provided in `qml.operation` have been removed. See the
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These
   include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`,
   `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
