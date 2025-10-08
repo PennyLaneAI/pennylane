@@ -839,45 +839,51 @@
 
 <h4>Labs Resource Estimation</h4>
 
-* State-of-the-art resource estimates have been added to existing templates: `ResourceSelectPauliRot`,
-  `ResourceQubitUnitary`, `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
-  `ResourceIntegerComparator`, `ResourceRegisterComparator`, `ResourceUniformStatePrep`,
-  `ResourceAliasSampling`, `ResourceQFT`, `ResourceAQFT`, and `ResourceTrotterProduct`.
+* State-of-the-art resource estimates have been added to existing templates:
+  :class:`~pennylane.labs.resource_estimation.ResourceSelectPauliRot`,
+  :class:`~pennylane.labs.resource_estimation.ResourceQubitUnitary`, :class:`~pennylane.labs.resource_estimation.ResourceSingleQubitCompare`, :class:`~pennylane.labs.resource_estimation.ResourceTwoQubitCompare`,
+  :class:`~pennylane.labs.resource_estimation.ResourceIntegerComparator`, :class:`~pennylane.labs.resource_estimation.ResourceRegisterComparator`, :class:`~pennylane.labs.resource_estimation.ResourceUniformStatePrep`,
+  :class:`~pennylane.labs.resource_estimation.ResourceAliasSampling`, :class:`~pennylane.labs.resource_estimation.ResourceQFT`, :class:`~pennylane.labs.resource_estimation.ResourceAQFT`, and :class:`~pennylane.labs.resource_estimation.ResourceTrotterProduct`.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
   [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
   [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
-* Users can now do resource estimation on QPE and iterative QPE with `ResourceQPE` and `ResourceIterativeQPE`, respectively. Additionally, a `ResourceControlledSequence` template has been added that allows for estimating resources on controlled sequences of resource  operators.
+* Users can now do resource estimation on QPE and iterative QPE with
+  :class:`~pennylane.labs.resource_estimation.ResourceQPE` and
+  :class:`~pennylane.labs.resource_estimation.ResourceIterativeQPE`, respectively. Additionally,
+  a :class:`~pennylane.labs.resource_estimation.ResourceControlledSequence` template has been added
+  that allows estimating resources on controlled sequences of resource operators.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
-* Renamed `estimate_resources` to `estimate`.
+* `estimate_resources` has been renamed to `estimate` to make the function name concise and clearer than
+  `labs.resource_estimation.estimate_resources`.
   [(#8232)](https://github.com/PennyLaneAI/pennylane/pull/8232)
 
-* Fixed a queueing issue in the `ResourceOperator` tests.
-  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
-
-* Added a new `ResourceConfig` class that helps track the configuration for errors, precisions and custom
+* A new `ResourceConfig` class has been added to helps track the configuration for errors, precisions and custom
   decompositions for the resource estimation pipeline.
   [(#8195)](https://github.com/PennyLaneAI/pennylane/pull/8195)
 
-* Updated the symbolic `ResourceOperators` to use hyperparameters from `config` dictionary.
+* The symbolic `ResourceOperators` have been updated to use hyperparameters from `config` dictionary.
   [(#8181)](https://github.com/PennyLaneAI/pennylane/pull/8181)
 
-* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the
+* An internal `dequeue()` method has been added to the `ResourceOperator` class to simplify the
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
-* Added `__eq__` method to `ResourceOperator` to make comparison checks more intuitive.
+* The `__eq__` method has been added to `ResourceOperator` to make comparison checks more intuitive.
   [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
 
-* Added a mapper function `map_to_resource_ops` that maps PennyLane operators to ResourceOperator equivalents.
+* A mapper function `map_to_resource_ops` has been addded to map PennyLane operators to `ResourceOperator` equivalents.
   [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
   [(#8162)](https://github.com/PennyLaneAI/pennylane/pull/8162)
 
-* Renamed several labs test files to prevent conflict with names in PennyLane tests.
+* Several labs test files have been renamed to prevent conflict with names in PennyLane tests.
   [(#8264)](https://github.com/PennyLaneAI/pennylane/pull/8264)
+
+* A queueing issue in the `ResourceOperator` tests has been fixed.
+  [(#8204)](https://github.com/PennyLaneAI/pennylane/pull/8204)
 
 <h4>Labs Trotter Error Estimation</h4>
 
