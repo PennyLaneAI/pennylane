@@ -166,13 +166,20 @@ class TestMapToResourceOp:
             ),
             (
                 qml.TrotterProduct(
-                    qml.dot([0.25, 0.75], [qml.X(0), qml.Z(0)]),
+                    qml.dot(
+                        [0.25, 0.75, -1],
+                        [qml.X(0), qml.Z(1), qml.prod(qml.Y(0), qml.Y(2), qml.Y(1))],
+                    ),
                     time=1.0,
                     n=10,
                     order=2,
                 ),
                 re_temps.TrotterProduct(
-                    first_order_expansion=[re_ops.RX(wires=[0]), re_ops.RZ(wires=[0])],
+                    first_order_expansion=[
+                        re_ops.RX(wires=[0]),
+                        re_ops.RZ(wires=[1]),
+                        re_ops.PauliRot("YYY", wires=[0, 2, 1]),
+                    ],
                     num_steps=10,
                     order=2,
                 ),
