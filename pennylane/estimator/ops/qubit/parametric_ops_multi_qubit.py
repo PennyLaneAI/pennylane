@@ -24,7 +24,7 @@ class MultiRZ(ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Args:
-        num_wires (int): the number of wires the operation acts upon
+        num_wires (int | None): the number of wires the operation acts upon
         precision (float | None): error threshold for Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wires the operation acts on
 
@@ -62,8 +62,13 @@ class MultiRZ(ResourceOperator):
     resource_keys = {"num_wires", "precision"}
 
     def __init__(
-        self, num_wires: int, precision: float | None = None, wires: WiresLike = None
+        self, num_wires: int | None = None, precision: float | None = None, wires: WiresLike = None
     ) -> None:
+        if num_wires is None:
+            if wires is None:
+                raise ValueError(f"Must provide atleast one of `num_wires` and `wires`.")
+            num_wires = len(wires)
+
         self.num_wires = num_wires
         self.precision = precision
         if wires is not None and len(Wires(wires)) != self.num_wires:

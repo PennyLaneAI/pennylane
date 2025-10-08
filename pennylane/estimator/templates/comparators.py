@@ -284,7 +284,7 @@ class IntegerComparator(ResourceOperator):
 
     Args:
         value (int): The value :math:`L` that the state’s decimal representation is compared against.
-        register_size (int): size of the register for basis state
+        register_size (int | None): size of the register for basis state
         geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
             ``False``, the comparison made will be :math:`n \lt L`.
         wires (WiresLike | None): the wires the operation acts on
@@ -341,7 +341,18 @@ class IntegerComparator(ResourceOperator):
 
     resource_keys = {"value", "register_size", "geq"}
 
-    def __init__(self, value: int, register_size: int, geq: bool = False, wires: WiresLike = None):
+    def __init__(
+        self,
+        value: int,
+        register_size: int | None = None,
+        geq: bool = False,
+        wires: WiresLike = None,
+    ):
+        if register_size is None:
+            if wires is None:
+                raise ValueError(f"Must provide atleast one of `register_size` and `wires`.")
+            register_size = len(wires) - 1
+
         self.value = value
         self.register_size = register_size
         self.geq = geq
