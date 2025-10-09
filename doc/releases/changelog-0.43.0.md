@@ -263,7 +263,7 @@
 
 <h4>Change operator basis 🍴</h4>
 
-* Users can now benefit from an optimization of the controlled compute-uncompute pattern.
+* Users can now benefit from an optimization of the controlled compute-uncompute pattern with the new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class.
   Operators arranged in a compute-uncompute pattern (``U V U†``,
   which is equivalent to changing the basis in which ``V`` is expressed)
   can be efficiently controlled,
