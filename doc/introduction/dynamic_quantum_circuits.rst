@@ -460,8 +460,8 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
           m_0 = qml.measure(0, postselect=1)
           return qml.sample(qml.PauliZ(0))
 
-      fill_shots = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="fill-shots")
-      hw_like = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="hw-like")
+      fill_shots = qml.QNode(circ, dev, mcm_method="deferred", postselect_mode="fill-shots")
+      hw_like = qml.QNode(circ, dev, mcm_method="deferred", postselect_mode="hw-like")
       fill_shots = qml.set_shots(fill_shots, shots=10)
       hw_like = qml.set_shots(hw_like, shots=10)
 
