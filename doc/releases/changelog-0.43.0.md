@@ -281,18 +281,76 @@
   2: ──────────╰X─┤  State
   ```
 
-<h4>Change op basis 🍴</h4>
+<h4>Change operator bases 🍴</h4>
 
-* A new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
-  which allow a compute-uncompute pattern (``U V U†``) to be represented by a single operator.
-  A corresponding decomposition rule has been added to support efficiently controlling the pattern,
-  in which only the central (target) operator is controlled, and not ``U`` or ``U†``.
+* Users can now benefit from an optimization of the controlled compute-uncompute pattern with
+  the new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class.
+  Operators arranged in a compute-uncompute pattern (``U V U†``,
+  which is equivalent to changing the basis in which ``V`` is expressed)
+  can be efficiently controlled,
+  as the only the central (target) operator ``V`` needs to be controlled, and not ``U`` or ``U†``.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
+  
+  These new features leverage the graph-based decomposition system, enabled with :func:`~.decompostion.enable_graph()`.
+  To illustrate their use, consider the following example. The compute-uncompute pattern is composed of a ``QFT``,
+  followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
 
-* The decompositions for several templates have been updated to use ``ChangeOpBasis``, including:
-  :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
-  [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
+  ```python
+  from functools import partial
+
+  qml.decomposition.enable_graph()
+
+  dev = qml.device("default.qubit")
+
+  @partial(qml.transforms.decompose, max_expansion=1)
+  @qml.qnode(dev)
+  def circuit():
+      qml.H(0)
+      qml.CNOT([1,2])
+      qml.ctrl(
+          qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
+          control=0
+      )
+      return qml.state()
+  ```
+
+  When this circuit is decomposed, the ``QFT`` and ``Adjoint(QFT)`` are not controlled,
+  resulting in a much more resource-efficient decomposition:
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H──────╭●────────────────┤  State
+  1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
+  2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+  ```
+
+  * The decompositions for several templates have been updated to use ``ChangeOpBasis``, including:
+    :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
+    [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
+  
+    Here, the optimization is demonstrated when :class:`~.Adder` is controlled:
+
+    ```python
+    qml.decomposition.enable_graph()
+
+    dev = qml.device("default.qubit")
+
+    @partial(qml.transforms.decompose, max_expansion=2)
+    @qml.qnode(dev)
+    def circuit():
+        qml.ctrl(qml.Adder(10, x_wires=[1,2,3,4]), control=0)
+        return qml.state()
+    ```
+
+    ```pycon
+    >>> print(qml.draw(circuit)())
+    0: ──────╭●────────────────┤  State
+    1: ─╭QFT─├PhaseAdder─╭QFT†─┤  State
+    2: ─├QFT─├PhaseAdder─├QFT†─┤  State
+    3: ─├QFT─├PhaseAdder─├QFT†─┤  State
+    4: ─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    ```
 
 <h4>Quantum optimizers compatible with QJIT 🫖</h4>
 
