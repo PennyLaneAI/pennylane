@@ -279,28 +279,28 @@
     :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
     [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
   
-  Here, the optimization is demonstrated when :class:`~.Adder` is controlled:
+    Here, the optimization is demonstrated when :class:`~.Adder` is controlled:
 
-  ```python
-  qml.decomposition.enable_graph()
+    ```python
+    qml.decomposition.enable_graph()
 
-  dev = qml.device("default.qubit")
+    dev = qml.device("default.qubit")
 
-  @partial(qml.transforms.decompose, max_expansion=2)
-  @qml.qnode(dev)
-  def circuit():
-      qml.ctrl(qml.Adder(10, x_wires=[1,2,3,4]), control=0)
-      return qml.state()
-  ```
+    @partial(qml.transforms.decompose, max_expansion=2)
+    @qml.qnode(dev)
+    def circuit():
+        qml.ctrl(qml.Adder(10, x_wires=[1,2,3,4]), control=0)
+        return qml.state()
+    ```
 
-  ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ──────╭●────────────────┤  State
-  1: ─╭QFT─├PhaseAdder─╭QFT†─┤  State
-  2: ─├QFT─├PhaseAdder─├QFT†─┤  State
-  3: ─├QFT─├PhaseAdder─├QFT†─┤  State
-  4: ─╰QFT─╰PhaseAdder─╰QFT†─┤  State
-  ```
+    ```pycon
+    >>> print(qml.draw(circuit)())
+    0: ──────╭●────────────────┤  State
+    1: ─╭QFT─├PhaseAdder─╭QFT†─┤  State
+    2: ─├QFT─├PhaseAdder─├QFT†─┤  State
+    3: ─├QFT─├PhaseAdder─├QFT†─┤  State
+    4: ─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    ```
 
 <h4>Quantum optimizers compatible with QJIT 🫖</h4>
 
