@@ -104,7 +104,7 @@
 
     ```python
     def my_circuit():
-        qre.QROMStatePreparation(50)
+        qre.QROMStatePreparation(num_state_qubits=50)
         for w in range(2):
             qre.Hadamard(wires=w)
         qre.QROM(num_bitstrings=32, size_bitstring=8, restored=False)
