@@ -1017,11 +1017,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         'my_label'
         >>> op = qml.RX(1.23456, wires=0, id="test_data")
         >>> op.label()
-        'RX("test_data")'
+        'RX\n("test_data")'
         >>> op.label(decimals=2)
         'RX\n(1.23,"test_data")'
         >>> op.label(base_label="my_label")
-        'my_label("test_data")'
+        'my_label\n("test_data")'
         >>> op.label(decimals=2, base_label="my_label")
         'my_label\n(1.23,"test_data")'
 
@@ -1032,13 +1032,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> op2 = qml.QubitUnitary(np.eye(2), wires=0)
         >>> cache = {'matrices': []}
         >>> op2.label(cache=cache)
-        'U(M0)'
+        'U\n(M0)'
         >>> cache['matrices']
         [tensor([[1., 0.],
          [0., 1.]], requires_grad=True)]
         >>> op3 = qml.QubitUnitary(np.eye(4), wires=(0,1))
         >>> op3.label(cache=cache)
-        'U(M1)'
+        'U\n(M1)'
         >>> cache['matrices']
         [tensor([[1., 0.],
                 [0., 1.]], requires_grad=True),
