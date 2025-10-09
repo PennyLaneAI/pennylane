@@ -40,7 +40,6 @@ Resource Operators
     ~resource_operator.ResourceOperator
     ~resource_operator.CompressedResourceOp
     ~resource_operator.GateCount
-    ~resource_operator.resource_rep
 
 
 Qubit Management
