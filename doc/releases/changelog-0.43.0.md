@@ -1015,7 +1015,7 @@
   [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
 
 * Program capture can now handle dynamic shots, shot vectors, and shots set with 
-  :func:`~.set_shots`.
+  :func:`~pennylane.set_shots`.
   [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
 
 * The error message raised when using unified-compiler transforms with :func:`~.qjit` has been 
@@ -1356,7 +1356,7 @@
 
 * Setting shots on a device through the ``shots`` keyword argument (e.g., 
   ``qml.device("default.qubit", wires=2, shots=1000)``) and in QNode calls (e.g., 
-  ``qml.QNode(circuit, dev)(shots=1000)``) has been deprecated. Please use the :func:`~.set_shots` transform to set the number of shots for a QNode instead.  This is done to reduce confusion and 
+  ``qml.QNode(circuit, dev)(shots=1000)``) has been deprecated. Please use the :func:`~pennylane.set_shots` transform to set the number of shots for a QNode instead.  This is done to reduce confusion and 
   code complexity by having a centralized way to set shots.
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
@@ -1858,7 +1858,7 @@
   module attribution of wrapper functions.
   [(#7889)](https://github.com/PennyLaneAI/pennylane/pull/7889)
 
-* Calling `QNode.update` no longer acts as if `set_shots` has been applied.
+* Calling `QNode.update` no longer acts as if :func:`~pennylane.set_shots` has been applied.
   [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
 * Fixes attributes and types in the quantum dialect.
