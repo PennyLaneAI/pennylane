@@ -88,8 +88,8 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``shots=`` kwarg in ``QNode`` calls is deprecated and will be removed in v0.44.
-  Instead, please use the ``qml.workflow.set_shots`` transform to set the number of shots for a ``QNode``.
+* Specifying ``shots`` as a keyword argument when calling a :class:`~.QNode` is deprecated and will be removed in v0.44.
+  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.set_shots` transform to set the number of shots.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
