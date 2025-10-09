@@ -19,6 +19,8 @@ pytestmark = pytest.mark.external
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
+import networkx as nx
+
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
@@ -27,7 +29,30 @@ from pennylane.compiler.python_compiler.transforms import ParitySynthPass, parit
 
 
 def translate_program_to_xdsl(program):
+    """Translate an almost-xDSL program into a valid xDSL program, removing some
+    shorthand expressions.
 
+    Currently supported:
+
+    qubit initialization:
+
+        %{i} = INIT_QUBIT
+
+        is translated to
+
+        // CHECK: [[q{i}:%.+]] = "test.op"() : () -> !quantum.bit
+        %{i} = "test.op"() : () -> !quantum.bit
+
+    cnots (excl. file check):
+
+        %{i}, %{j} = _CNOT %{a}, %{b}
+
+        is translated to
+
+        %{i}, %{j} = quantum.custom "CNOT"() %{a}, %{b} : !quantum.bit, !quantum.bit
+
+    Everything else is left untouched
+    """
     new_lines = []
     for line in program.split("\n"):
         if "INIT_QUBIT" in line:
@@ -49,10 +74,14 @@ def translate_program_to_xdsl(program):
     return "\n".join(new_lines)
 
 
+path_graph_4 = nx.path_graph(4)
+
+
 class TestParitySynthPass:
     """Unit tests for ParitySynthPass."""
 
     pipeline = (ParitySynthPass(),)
+    pipeline_path_graph_4 = (ParitySynthPass(connectivity=path_graph_4),)
 
     def test_no_phase_polynomial_ops(self, run_filecheck):
         """Test that nothing changes when there are no phase polynomial gates."""
@@ -66,7 +95,6 @@ class TestParitySynthPass:
                 return
             }
         """
-
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
 
     def test_composable_cnots(self, run_filecheck):
@@ -83,8 +111,23 @@ class TestParitySynthPass:
                 return
             }
         """
-
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
+
+    def test_composable_cnots_connectivity(self, run_filecheck):
+        """Test that two out of three CNOT gates are merged."""
+        program = """
+            func.func @test_func() {
+                %0 = INIT_QUBIT
+                %1 = INIT_QUBIT
+                // CHECK: quantum.custom "CNOT"() [[q0]], [[q1]] : !quantum.bit, !quantum.bit
+                %2, %3 = _CNOT %0, %1
+                %4, %5 = _CNOT %2, %3
+                %6, %7 = _CNOT %4, %5
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_4)
 
     def test_two_cnots_single_rotation_no_merge(self, run_filecheck):
         """Test that a phase polynomial of two CNOTs separated by a rotation on the target

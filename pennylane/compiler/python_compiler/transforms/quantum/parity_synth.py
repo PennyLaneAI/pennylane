@@ -437,12 +437,19 @@ class ParitySynthPass(passes.ModulePass):
     """Pass for applying ParitySynth to phase polynomials in a circuit."""
 
     name = "xdsl-parity-synth"
+    connectivity: nx.Graph | None
+
+    def __init__(self, *args, connectivity=None, **kwargs):
+        self.connectivity = connectivity
+        super().__init__(*args, **kwargs)
 
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the ParitySynth pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([ParitySynthPattern()])
+            pattern_rewriter.GreedyRewritePatternApplier(
+                [ParitySynthPattern(connectivity=self.connectivity)]
+            )
         ).rewrite_module(module)
 
 
