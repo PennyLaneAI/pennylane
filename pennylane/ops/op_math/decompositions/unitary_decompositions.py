@@ -58,16 +58,16 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
     >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
     >>> pprint(decomp)
-    [RZ(np.float64(3.1415926535897927), wires=[0]),
-     RY(np.float64(1.5707963267948963), wires=[0]),
+    [RZ(np.float64(3.14159...), wires=[0]),
+     RY(np.float64(1.57079...), wires=[0]),
      RZ(np.float64(0.0), wires=[0]),
-     GlobalPhase(np.float64(-1.5707963267948966), wires=[])]
+     GlobalPhase(np.float64(-1.57079...), wires=[])]
     >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
-    [RX(np.float64(1.5707963267948966), wires=[0]),
-     RZ(np.float64(1.5707963267948968), wires=[0]),
-     RX(np.float64(1.5707963267948966), wires=[0]),
-     GlobalPhase(np.float64(-1.5707963267948966), wires=[])]
+    [RX(np.float64(1.57079...), wires=[0]),
+     RZ(np.float64(1.57079...), wires=[0]),
+     RX(np.float64(1.57079...), wires=[0]),
+     GlobalPhase(np.float64(-1.57079...), wires=[])]
     """
 
     supported_rotations = {
