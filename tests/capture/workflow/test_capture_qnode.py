@@ -418,16 +418,12 @@ class TestShots:
         assert eqn.outvars[1].aval.shape == (2, 1)
 
 
-@pytest.mark.parametrize("disable_around_qnode", (True, False))
 class TestUserTransforms:
     """Integration tests for applying user transforms to a qnode with program capture."""
 
     @pytest.mark.unit
-    def test_captured_program_qnode_transform(self, disable_around_qnode):
+    def test_captured_program_qnode_transform(self):
         """Test that a transformed qnode is captured correctly."""
-
-        if disable_around_qnode:
-            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -438,12 +434,6 @@ class TestUserTransforms:
             qml.X(0)
             qml.X(0)
             return qml.expval(qml.Z(0))
-
-        assert isinstance(circuit, qml.QNode)
-        assert qml.transforms.cancel_inverses in circuit.transform_program
-
-        if disable_around_qnode:
-            qml.capture.enable()
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
@@ -458,11 +448,8 @@ class TestUserTransforms:
         assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
 
     @pytest.mark.unit
-    def test_captured_program_qfunc_transform(self, disable_around_qnode):
+    def test_captured_program_qfunc_transform(self):
         """Test that a qnode with a transformed qfunc is captured correctly."""
-
-        if disable_around_qnode:
-            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -473,9 +460,6 @@ class TestUserTransforms:
             qml.X(0)
             qml.X(0)
             return qml.expval(qml.Z(0))
-
-        if disable_around_qnode:
-            qml.capture.enable()
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         assert jaxpr.eqns[0].primitive == qnode_prim
@@ -490,11 +474,8 @@ class TestUserTransforms:
         assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
 
     @pytest.mark.unit
-    def test_captured_program_qnode_qfunc_transform(self, disable_around_qnode):
+    def test_captured_program_qnode_qfunc_transform(self):
         """Test that a transformed qnode with a transformed qfunc is captured correctly."""
-
-        if disable_around_qnode:
-            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -506,11 +487,6 @@ class TestUserTransforms:
             qml.X(0)
             qml.X(0)
             return qml.expval(qml.Z(0))
-
-        assert isinstance(circuit, qml.QNode)
-
-        if disable_around_qnode:
-            qml.capture.enable()
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
@@ -528,7 +504,7 @@ class TestUserTransforms:
         assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
 
     @pytest.mark.unit
-    def test_device_jaxpr(self, monkeypatch, disable_around_qnode):
+    def test_device_jaxpr(self, monkeypatch):
         """Test that jaxpr recieved by a device when executing a transformed qnode has been
         transformed appropriately."""
 
@@ -540,9 +516,6 @@ class TestUserTransforms:
             nonlocal device_jaxpr
             device_jaxpr = jaxpr
             return [1.0]
-
-        if disable_around_qnode:
-            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
         monkeypatch.setattr(dev, "eval_jaxpr", dummy_eval_jaxpr)
@@ -556,11 +529,6 @@ class TestUserTransforms:
             qml.X(0)
             return qml.expval(qml.Z(0))
 
-        assert isinstance(circuit, qml.QNode)
-
-        if disable_around_qnode:
-            qml.capture.enable()
-
         _ = circuit(1.5, 2.5, 3.5)
         assert all(
             getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
@@ -572,11 +540,8 @@ class TestUserTransforms:
         assert device_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.integration
-    def test_execution(self, disable_around_qnode):
+    def test_execution(self):
         """Test that a transformed qnode is executed correctly."""
-
-        if disable_around_qnode:
-            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -589,9 +554,6 @@ class TestUserTransforms:
             qml.X(0)
             qml.X(0)
             return qml.expval(qml.Z(0))
-
-        if disable_around_qnode:
-            qml.capture.enable()
 
         res = circuit(1.5)
         expected = jnp.cos(5 * 1.5)
@@ -1510,59 +1472,6 @@ class TestQNodeVmapIntegration:
 
 class TestQNodeAutographIntegration:
     """Tests for Autograph integration with QNodes."""
-
-    def test_autograph_with_qnode_transforms(self):
-        """Test that autograph can be used when transforms are applied to the qnode."""
-
-        dev = qml.device("default.qubit", wires=[0, 1, 2])
-
-        @qml.capture.run_autograph
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
-        def c(n):
-            for i in range(n):
-                qml.H(i)
-            return qml.state()
-
-        jaxpr = jax.make_jaxpr(c)(3)
-        assert jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
-        j2 = jaxpr.eqns[0].params["inner_jaxpr"]
-        assert j2.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
-        j3 = j2.eqns[0].params["inner_jaxpr"]
-        assert j3.eqns[0].primitive == qnode_prim
-        j4 = j3.eqns[0].params["qfunc_jaxpr"]
-        assert j4.eqns[0].primitive == qml.capture.primitives.for_loop_prim
-        assert j4.eqns[0].invars[1] is j4.invars[0]
-
-    def test_autograph_on_workflow(self):
-        """Test autograph can be called on a workflow."""
-
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit", wires=[0, 1, 2]))
-        def c(n):
-            for i in range(n):
-                qml.H(i)
-            return qml.expval(qml.Z(0))
-
-        @qml.capture.run_autograph
-        def w(n):
-            return c(n + 1) + c(n + 3)
-
-        jaxpr = jax.make_jaxpr(w)(3)
-
-        for i in [1, 3]:
-
-            assert jaxpr.eqns[i].primitive == qml.transforms.merge_rotations._primitive
-            j2 = jaxpr.eqns[i].params["inner_jaxpr"]
-            assert j2.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
-            j3 = j2.eqns[0].params["inner_jaxpr"]
-            assert j3.eqns[0].primitive == qnode_prim
-            j4 = j3.eqns[0].params["qfunc_jaxpr"]
-            assert j4.eqns[0].primitive == qml.capture.primitives.for_loop_prim
-            # somehow promoted to closure var?
-            assert j4.eqns[0].invars[1] is j4.constvars[0]
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_python_for_loop(self, autograph):

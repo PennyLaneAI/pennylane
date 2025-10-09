@@ -26,16 +26,6 @@ from pennylane.estimator.resource_config import ResourceConfig
 class TestResourceQubitUnitary:
     """Test the ResourceQubitUnitary template"""
 
-    def test_init_no_num_wires(self):
-        """Test that we can instantiate the operator without providing num_wires"""
-        op = qre.QubitUnitary(wires=range(3))
-        assert op.resource_params == {"num_wires": 3, "precision": None}
-
-    def test_init_raises_error(self):
-        """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
-            qre.QubitUnitary()
-
     @pytest.mark.parametrize("precision", (None, 1e-3, 1e-5))
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5, 6))
     def test_resource_params(self, num_wires, precision):

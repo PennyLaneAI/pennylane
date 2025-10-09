@@ -14,41 +14,14 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
-import numpy as np
-
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane import numpy as pnp
+from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-
-
-@pytest.mark.parametrize(
-    "coordinates",
-    [
-        np.array([[0.0, 0.0, -0.6614], [0.0, 0.0, 0.6614]]),
-        np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614]),
-    ],
-)
-def test_molecular_hamiltonian_numpy_data(coordinates):
-    """Test that if numpy data is used with molecular hamiltonian, that numpy data is outputted."""
-    symbols = ["H", "H"]
-
-    H, _ = qml.qchem.molecular_hamiltonian(symbols, coordinates)
-    assert all(qml.math.get_interface(d) == "numpy" for d in H.data)
-
-
-@pytest.mark.torch
-def test_error_torch_data_molecular_hamiltonian():
-    """Test that an error is raised if torch data is used with molecular hamiltonian."""
-    import torch
-
-    x = torch.tensor([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
-    with pytest.raises(ValueError, match="unsupported interface torch"):
-        qml.qchem.molecular_hamiltonian(["H", "H"], x)
 
 
 @pytest.mark.parametrize(
@@ -56,14 +29,14 @@ def test_error_torch_data_molecular_hamiltonian():
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             None,
             None,
-            pnp.array([1.0000000000321256]),
+            np.array([1.0000000000321256]),
             # computed with OpenFermion using molecule.one_body_integrals
-            pnp.array([[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]]),
+            np.array([[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]]),
             # computed with OpenFermion using molecule.two_body_integrals
-            pnp.array(
+            np.array(
                 [
                     [
                         [[7.14439079e-01, 6.62555256e-17], [2.45552260e-16, 1.70241444e-01]],
@@ -78,14 +51,14 @@ def test_error_torch_data_molecular_hamiltonian():
         ),
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             [],
             [0, 1],
-            pnp.array([1.0000000000321256]),
+            np.array([1.0000000000321256]),
             # computed with OpenFermion using molecule.one_body_integrals
-            pnp.array([[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]]),
+            np.array([[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]]),
             # computed with OpenFermion using molecule.two_body_integrals
-            pnp.array(
+            np.array(
                 [
                     [
                         [[7.14439079e-01, 6.62555256e-17], [2.45552260e-16, 1.70241444e-01]],
@@ -100,13 +73,13 @@ def test_error_torch_data_molecular_hamiltonian():
         ),
         (
             ["Li", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             [0, 1, 2, 3],
             [4, 5],
             # reference values of e_core, one and two are computed with our initial prototype code
-            pnp.array([-5.141222763432437]),
-            pnp.array([[1.17563204e00, -5.75186616e-18], [-5.75186616e-18, 1.78830226e00]]),
-            pnp.array(
+            np.array([-5.141222763432437]),
+            np.array([[1.17563204e00, -5.75186616e-18], [-5.75186616e-18, 1.78830226e00]]),
+            np.array(
                 [
                     [
                         [[3.12945511e-01, 4.79898448e-19], [4.79898448e-19, 9.78191587e-03]],
@@ -139,9 +112,9 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 
     e, one, two = qchem.electron_integrals(mol, core=core, active=active)(*args)
 
-    assert pnp.allclose(e, e_core)
-    assert pnp.allclose(one, one_ref)
-    assert pnp.allclose(two, two_ref)
+    assert np.allclose(e, e_core)
+    assert np.allclose(one, one_ref)
+    assert np.allclose(two, two_ref)
 
 
 @pytest.mark.parametrize(
@@ -156,8 +129,8 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
@@ -218,7 +191,7 @@ def test_fermionic_hamiltonian(use_jax, symbols, geometry, alpha, h_ref):
 
     h.simplify(tol=1e-7)
 
-    assert pnp.allclose(list(h.values()), list(h_ref.values()))
+    assert np.allclose(list(h.values()), list(h_ref.values()))
     assert h.keys() == h_ref.keys()
 
 
@@ -234,14 +207,14 @@ def test_fermionic_hamiltonian(use_jax, symbols, geometry, alpha, h_ref):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             # computed with qchem.convert_observable and an OpenFermion Hamiltonian; data reordered
             # h_mol = molecule.get_molecular_hamiltonian()
             # h_f = openfermion.transforms.get_fermion_operator(h_mol)
             # h_q = openfermion.transforms.jordan_wigner(h_f)
             # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
             (
-                pnp.array(
+                np.array(
                     [
                         0.2981788017,
                         0.2081336485,
@@ -294,15 +267,15 @@ def test_diff_hamiltonian(use_jax, symbols, geometry, h_ref_data):
     ops = list(map(qml.simplify, h_ref_data[1]))
     h_ref_data = qml.Hamiltonian(h_ref_data[0], ops)
 
-    assert pnp.allclose(pnp.sort(h.terms()[0]), pnp.sort(h_ref_data.terms()[0]))
-    assert qml.Hamiltonian(pnp.ones(len(h.terms()[0])), h.terms()[1]) == (
-        qml.Hamiltonian(pnp.ones(len(h_ref_data.terms()[0])), h_ref_data.terms()[1])
+    assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref_data.terms()[0]))
+    assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]) == (
+        qml.Hamiltonian(np.ones(len(h_ref_data.terms()[0])), h_ref_data.terms()[1])
     )
 
     assert isinstance(h, qml.ops.Sum)
 
     wire_order = h_ref_data.wires
-    assert pnp.allclose(
+    assert np.allclose(
         qml.matrix(h, wire_order=wire_order),
         qml.matrix(h_ref_data, wire_order=wire_order),
     )
@@ -319,7 +292,7 @@ def test_diff_hamiltonian_active_space(use_jax):
     r"""Test that diff_hamiltonian works when an active space is defined."""
 
     symbols = ["H", "H", "H"]
-    geometry = pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+    geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
     if use_jax:
         geometry = qml.math.array(geometry, like="jax")
 
@@ -336,14 +309,14 @@ def test_diff_hamiltonian_active_space(use_jax):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             None,
             None,
             0,
         ),
         (
             ["H", "H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]]),
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]]),
             [0],
             [1, 2],
             1,
@@ -375,10 +348,10 @@ def test_gradient_expvalH():
     obtained with the finite difference method."""
     symbols = ["H", "H"]
     geometry = (
-        pnp.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
+        np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
         / 0.529177210903
     )
-    alpha = pnp.array(
+    alpha = np.array(
         [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
         requires_grad=True,
     )
@@ -400,12 +373,12 @@ def test_gradient_expvalH():
 
     grad_qml = qml.grad(energy(mol), argnum=0)(*args)
 
-    alpha_1 = pnp.array(
+    alpha_1 = np.array(
         [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
         requires_grad=False,
     )  # alpha[0][0] -= 0.0001
 
-    alpha_2 = pnp.array(
+    alpha_2 = np.array(
         [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
         requires_grad=False,
     )  # alpha[0][0] += 0.0001
@@ -415,7 +388,7 @@ def test_gradient_expvalH():
 
     grad_finitediff = (e_2 - e_1) / 0.0002
 
-    assert pnp.allclose(grad_qml[0][0], grad_finitediff)
+    assert np.allclose(grad_qml[0][0], grad_finitediff)
 
 
 @pytest.mark.jax

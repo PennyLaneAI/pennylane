@@ -259,6 +259,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             return transformed_tapes, processing_fn
 
         if isinstance(obj, qml.workflow.QNode):
+            if capture.enabled():
+                new_qnode = self.default_qnode_transform(obj, targs, tkwargs)
+                return self._capture_callable_transform(new_qnode, targs, tkwargs)
             return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
@@ -272,6 +275,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
         if callable(obj):
+            if capture.enabled():
+                return self._capture_callable_transform(obj, targs, tkwargs)
             return self._qfunc_transform(obj, targs, tkwargs)
 
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
@@ -419,8 +424,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         @wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
 
-            if qml.capture.enabled():
-                return self._capture_callable_transform(qfunc, targs, tkwargs)(*args, **kwargs)
             # removes the argument to the qfuncs from the active queuing context.
             leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
             for l in leaves:

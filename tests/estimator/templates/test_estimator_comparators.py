@@ -89,16 +89,6 @@ class TestIntegerComparator:
         with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
             qre.IntegerComparator(10, 3, wires=[0, 1, 2])
 
-    def test_init_no_register_size(self):
-        """Test that we can instantiate the operator without providing register_size"""
-        op = qre.IntegerComparator(value=10, geq=True, wires=range(3))
-        assert op.resource_params == {"value": 10, "register_size": 2, "geq": True}
-
-    def test_init_raises_error(self):
-        """Test that an error is raised when wires and register_size are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
-            qre.IntegerComparator(value=3)
-
     @pytest.mark.parametrize(
         "value, register_size, geq",
         (

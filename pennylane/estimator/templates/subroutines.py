@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
-
 import math
 from collections import defaultdict
 
@@ -129,7 +128,7 @@ class PhaseGradient(ResourceOperator):
     `C. Gidney, Quantum 2, 74, (2018) <https://quantum-journal.org/papers/q-2018-06-18-74/>`_.
 
     Args:
-        num_wires (int | None): the number of wires to prepare in the phase gradient state
+        num_wires (int): the number of wires to prepare in the phase gradient state
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -162,11 +161,7 @@ class PhaseGradient(ResourceOperator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_wires: int | None = None, wires: WiresLike = None):
-        if num_wires is None:
-            if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
-            num_wires = len(wires)
+    def __init__(self, num_wires: int, wires: WiresLike = None):
         self.num_wires = num_wires
         super().__init__(wires=wires)
 
@@ -975,7 +970,7 @@ class QFT(ResourceOperator):
     r"""Resource class for QFT.
 
     Args:
-        num_wires (int | None): the number of qubits the operation acts upon
+        num_wires (int): the number of qubits the operation acts upon
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -1031,11 +1026,7 @@ class QFT(ResourceOperator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_wires: int | None = None, wires: WiresLike = None) -> None:
-        if num_wires is None:
-            if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
-            num_wires = len(wires)
+    def __init__(self, num_wires: int, wires: WiresLike = None) -> None:
         self.num_wires = num_wires
         super().__init__(wires=wires)
 
@@ -1158,7 +1149,7 @@ class AQFT(ResourceOperator):
 
     Args:
         order (int): the maximum number of controlled phase shifts per qubit to which the operation is truncated
-        num_wires (int | None): the number of qubits the operation acts upon
+        num_wires (int): the number of qubits the operation acts upon
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -1192,11 +1183,7 @@ class AQFT(ResourceOperator):
 
     resource_keys = {"order, num_wires"}
 
-    def __init__(self, order: int, num_wires: int | None = None, wires: WiresLike = None) -> None:
-        if num_wires is None:
-            if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
-            num_wires = len(wires)
+    def __init__(self, order: int, num_wires: int, wires: WiresLike = None) -> None:
         self.order = order
         self.num_wires = num_wires
 
@@ -1317,9 +1304,9 @@ class BasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        dim (int | None): The dimensions of the input matrix specifying the basis transformation.
+        dim (int): The dimensions of the input matrix specifying the basis transformation.
             This is equivalent to the number of rows or columns of the matrix.
-        wires (Sequence[int], None): the wires the operation acts on, should be equal to the dimension
+        wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
@@ -1353,11 +1340,7 @@ class BasisRotation(ResourceOperator):
 
     resource_keys = {"dim"}
 
-    def __init__(self, dim: int | None = None, wires: WiresLike = None):
-        if dim is None:
-            if wires is None:
-                raise ValueError("Must provide atleast one of `dim` and `wires`.")
-            dim = len(wires)
+    def __init__(self, dim: int, wires: WiresLike = None):
         self.num_wires = dim
         super().__init__(wires=wires)
 

@@ -878,12 +878,8 @@ class QuantumScript:
             # Perform a shallow copy of all operations in the operation and measurement
             # queues. The operations will continue to share data with the original script operations
             # unless modified.
-            _ops = update.get("operations")
-            _measurements = update.get("measurements")
-            if _ops is None:
-                _ops = (copy.copy(op) for op in self.operations)
-            if _measurements is None:
-                _measurements = (copy.copy(mp) for mp in self.measurements)
+            _ops = update.get("operations", [copy.copy(op) for op in self.operations])
+            _measurements = update.get("measurements", [copy.copy(op) for op in self.measurements])
         else:
             # Perform a shallow copy of the operation and measurement queues. The
             # operations within the queues will be references to the original script operations;
@@ -895,7 +891,7 @@ class QuantumScript:
 
         update_trainable_params = "operations" in update or "measurements" in update
         # passing trainable_params=None will re-calculate trainable_params
-        default_trainable_params = None if update_trainable_params else self._trainable_params
+        default_trainable_params = None if update_trainable_params else self.trainable_params
 
         new_qscript = self.__class__(
             ops=_ops,

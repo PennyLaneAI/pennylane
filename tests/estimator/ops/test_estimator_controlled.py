@@ -690,17 +690,6 @@ class TestMultiControlledX:
         with pytest.raises(ValueError, match="Expected 4 wires, got 2"):
             MultiControlledX(num_ctrl_wires=3, num_zero_ctrl=0, wires=[0, 1])
 
-    def test_init_no_num_ctrl_wires(self):
-        """Test that we can instantiate the operator without providing num_ctrl_wires"""
-        op = qre.MultiControlledX(num_zero_ctrl=1, wires=[0, 1, 2, 3, 4])
-        assert op.num_wires == 5
-        assert op.resource_params == {"num_ctrl_wires": 4, "num_zero_ctrl": 1}
-
-    def test_init_raises_error(self):
-        """Test that an error is raised when wires and num_ctrl_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
-            qre.MultiControlledX(num_zero_ctrl=1)
-
     @staticmethod
     def _prep_params(num_control, num_zero_ctrl):
         return {
