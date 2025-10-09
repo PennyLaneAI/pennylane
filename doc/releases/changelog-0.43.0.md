@@ -303,7 +303,7 @@
 
   dev = qml.device("default.qubit")
 
-  @partial(qml.transforms.decompose, max_expansion=2)
+  @partial(qml.transforms.decompose, max_expansion=1)
   @qml.qnode(dev)
   def circuit():
       qml.H(0)
