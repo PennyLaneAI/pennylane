@@ -9,17 +9,20 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Setting shots on a device through the `shots=` kwarg is deprecated.
-  Please use the :func:`pennylane.set_shots` transform on the :class:`~.QNode` instead.
+* Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
+  please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
+  :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
 
   .. code-block:: python
   
     dev = qml.device("default.qubit", wires=2)
-    @qml.set_shots(1000)
-    @qml.qnode(dev)
+
+    @qml.qnode(dev, shots=1000)
     def circuit(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.Z(0))
+
+    circuit_analytic = qml.set_shots(circuit, None)
 
   - Deprecated in v0.43
   - Will be removed in a future version
