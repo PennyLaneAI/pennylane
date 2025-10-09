@@ -31,15 +31,12 @@ from .resources_base import Resources
 
 
 class CompressedResourceOp:
-    r"""This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`, 
+    r"""This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`,
     containing only the operator type and the necessary parameters to estimate its resources.
-    
+
     .. note::
 
-        The average user will NOT need to instantiate this class directly.
-    
-    It is designed for efficient hashing and comparison, allowing it to be used effectively in 
-    collections where uniqueness and quick lookups are important.
+        Only advanced use cases will require instantiating this class directly.
 
     Args:
         op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:`~.pennylane.estimator.ResourceOperator`
@@ -52,47 +49,23 @@ class CompressedResourceOp:
             with the given parameters.
 
     This class is a minimal representation of an operator used for the purpose of tracking resources.
-    It appears as the output of the :func:`~.pennylane.estimator.resource_operator.resource_rep`
-    function, :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep`, and
+    It appears as the output of the
+    :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep`, and
     :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep_from_op` methods.
 
     .. code-block:: pycon
 
-        >>> op = qre.PauliRot(pauli_string="XYZ")
-        >>> cmpr_op = op.resource_rep_from_op()
+        >>> cmpr_op = qre.PauliRot.resource_rep(pauli_string="XYZ")
         >>> print(cmpr_op)
         CompressedResourceOp(PauliRot, num_wires=3, params={'pauli_string':'XYZ', 'precision':None})
 
-    It is typically used to define the resource decomposition of an operator in combination with the 
-    :class:`~.pennylane.estimator.resource_operator.GateCount` class and the 
-    :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_decomp` method.
-    
     .. details::
 
-        Advanced users that wish to define custom 
-        :class:`~.pennylane.estimator.resource_operator.ResourceOperator` instances will need to 
-        directly instantiate this class when implementing the
+        Advanced users that wish to define custom
+        :class:`~.pennylane.estimator.resource_operator.ResourceOperator` instances, e.g., a custom
+        quantum phase estimation resource operator, will need to directly instantiate the
+        ``CompressedResourceOp`` class when implementing the
         :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep` method.
-
-        **Example**
-
-            .. code-block:: python
-
-                import pennylane.estimator as qre
-
-                class MyCustomOp(qre.ResourceOperator):
-                
-                    resource_keys = {"param1", "param2"}
-
-                    # ... implement __init__, resource_params, resource_decomp
-
-                    @classmethod
-                    def resource_rep(cls, param1, param2): 
-                        # Takes the same input as `resource_keys`
-                        
-                        num_wires = ...  # number of wires the operator acts on
-                        params = {"param1": param1, "param2": param2}
-                        return qre.CompressedResourceOp(cls, num_wires, params)
 
     """
 
@@ -429,7 +402,7 @@ def _dequeue(
 class GateCount:
     r"""Stores a lightweight representation of a gate and its number of occurrences in a decomposition.
 
-    The decomposition of a resource operator is tracked as a sequence of gates and the corresponding 
+    The decomposition of a resource operator is tracked as a sequence of gates and the corresponding
     number of times those gates occur in the decomposition. For a given entry in the sequence,
     these two pieces of information (gate and counts) are grouped into one object ``GateCount``.
     For example, the decomposition of the Quantum Fourier Transform (QFT)
@@ -449,59 +422,6 @@ class GateCount:
 
     Returns:
         GateCount: The container object holding both pieces of information.
-
-    This class is used to define any type of resource decomposition. The 
-    :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_decomp`,
-    :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.adjoint_resource_decomp`,
-    :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.controlled_resource_decomp`, and
-    :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.pow_resource_decomp` methods all
-    return a list which contains instances of ``GateCount``. Furthermore, this class is used when
-    defining custom resource decompositions to be overridden using the 
-    :class:`~.pennylane.estimator.resource_config.ResourceConfig` class.
-
-    **Example**
-
-    In this example we create a custom resource decomposition function which returns the decomposition
-    using the ``GateCount`` class.
-
-    .. code-block:: python
-
-        import pennylane.estimator as qre
-
-        def custom_RX_decomp():  # RX = H @ RZ @ H
-            h = qre.resource_rep(qre.Hadamard)
-            rz = qre.resource_rep(qre.RZ, resource_params={"precision": None})
-            return [qre.GateCount(h, 2), qre.GateCount(rz, 1)]
-
-    .. code-block:: pycon
-
-        >>> print(qre.estimate(qre.RX(), gate_set={"Hadamard", "RZ", "T"}))
-        --- Resources: ---
-         Total wires: 1
-           algorithmic wires: 1
-           allocated wires: 0
-             zero state: 0
-             any state: 0
-         Total gates : 44
-           'T': 44
-
-    We override the default decomposition using the 
-    :class:`~.pennylane.estimator.resource_config.ResourceConfig` class.
-
-    .. code-block:: pycon
-
-        >>> config = qre.ResourceConfig()
-        >>> config.set_decomp(qre.RX, custom_RX_decomp)
-        >>> print(qre.estimate(qre.RX(), gate_set={"Hadamard", "RZ", "T"}, config=config))
-        --- Resources: ---
-         Total wires: 1
-           algorithmic wires: 1
-           allocated wires: 0
-             zero state: 0
-             any state: 0
-         Total gates : 3
-           'RZ': 1,
-           'Hadamard': 2
 
     """
 
@@ -538,16 +458,16 @@ def resource_rep(
     tracking resources.
 
     This function produces the expected compressed representation of a resource operator class.
-    The compressed representation 
-    (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`) is used instead of 
+    The compressed representation
+    (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`) is used instead of
     the resource operator to enable faster performance of the resource estimation functionality.
 
     This function is used when defining the resource decompositions of a resource operator.
-    Specifically, all resource decompositions are represented as a list of operators 
+    Specifically, all resource decompositions are represented as a list of operators
     (``CompressedResourceOp``) and the number of times they occur in the decomposition (``int``).
-    Those two pieces of information are tracked inside the 
+    Those two pieces of information are tracked inside the
     :class:`~.pennylane.estimator.resource_operator.GateCount` class.
-    
+
     .. note::
 
         The :code:`resource_params` dictionary should specify the required resource
@@ -580,7 +500,7 @@ def resource_rep(
     .. details::
         :title: Usage Details
 
-        In this example we create a custom resource decomposition function which returns the 
+        In this example we create a custom resource decomposition function which returns the
         decomposition using the ``GateCount`` class. We use the ``resource_rep`` function to
         obtain the compressed representations of each gate in the decomposition.
 
@@ -605,7 +525,7 @@ def resource_rep(
              Total gates : 44
                'T': 44
 
-        We override the default decomposition using the 
+        We override the default decomposition using the
         :class:`~.pennylane.estimator.resource_config.ResourceConfig` class.
 
         .. code-block:: pycon

@@ -46,62 +46,24 @@ class DecompositionType(StrEnum):
 
 
 class ResourceConfig:
-    """Sets the values of configurable parameters when estimating resources for a quantum workflow.
-    This is used to easily analyze the same workflow with multiple different configurations.
-
-    A custom :code:`ResourceConfig` can be used when estimating the resources for a workflow by 
-    passing it directly into the :func:`~.pennylane.estimator.estimate` function 
-    (:code:`qre.estimate(workflow, config=my_custom_config)`). If no configuration is passed then 
-    the default configuration is used. The default configuration is shown here:
-
-    >>> import pennylane.estimator as qre
-    >>> config = qre.ResourceConfig()
-    >>> print(config)
-    ResourceConfig(
-        precisions = {
-            RX: {'precision': 1e-09},
-            RY: {'precision': 1e-09},
-            RZ: {'precision': 1e-09},
-            CRX: {'precision': 1e-09},
-            CRY: {'precision': 1e-09},
-            CRZ: {'precision': 1e-09},
-            SelectPauliRot: {'precision': 1e-09},
-            QubitUnitary: {'precision': 1e-09},
-            AliasSampling: {'precision': 1e-09},
-            MPSPrep: {'precision': 1e-09},
-            QROMStatePreparation: {'precision': 1e-09},
-            SelectTHC: {'rotation_precision': 15},
-            PrepTHC: {'coeff_precision': 15},
-            QubitizeTHC: {'coeff_precision': 15, 'rotation_precision': 15},
-            TrotterVibronic: {'phase_grad_precision': 1e-06, 'coeff_precision': 0.001},
-            TrotterVibrational: {'phase_grad_precision': 1e-06, 'coeff_precision': 0.001}
-            },
-        custom decomps = []
-    )
+    """Sets the values of precisions and custom decompositions when estimating resources for a
+    quantum workflow. This is used to easily analyze the same workflow with multiple different
+    configurations by passing them directly into the :func:`~.pennylane.estimator.estimate` function
+    (:code:`qre.estimate(workflow, config=my_custom_config)`).
 
     The :code:`ResourceConfig` stores precisions and custom decompositions. These quantities can be
     modified using the :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_precision`
-    and :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_decomp` functions (see the 
-    associated docstrings for more information).
+    and :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_decomp` functions.
 
     **Example**
 
-    The :code:`ResourceConfig` object can be used to set the default precision values to decompose an
-    operator when the values are not specified.
+    This example shows the :code:`ResourceConfig` object can be used to set the custom precision
+    values to decompose an operator when the values are not specified. First we provide
 
-    .. code-block:: python
-
-        import pennylane.estimator as qre
-
-        def my_workflow(eps):
-            qre.RX(precision=eps)
-        
-        my_config = qre.ResourceConfig()
-        my_config.set_precision(qre.RX, precision=1e-5)
-    
     .. code-block:: pycon
 
-        >>> res = qre.estimate(my_workflow, gate_set={"T", "X"})(eps=1e-2)
+        >>> import pennylane.estimator as qre
+        >>> res = qre.estimate(qre.RX(precision=1e-5))
         >>> print(res)
         --- Resources: ---
          Total wires: 1
@@ -109,16 +71,19 @@ class ResourceConfig:
            allocated wires: 0
              zero state: 0
              any state: 0
-         Total gates : 17
-           'T': 17
-    
-    The :code:`RX`-gate was approximately decomposed to 17 :code:`T`-gates. Here we explicitly set 
-    the precision of the approximation to :code:`1e-2`. If we instead pass :code:`None`, the default 
-    precision will be used (:code:`1e-9`).
+         Total gates : 28
+           'T': 28
+
+    When the precision is not specified, its value is set according to the value set in
+    the default resource config.
 
     .. code-block:: pycon
 
-        >>> res = qre.estimate(my_workflow, gate_set={"T", "X"})(eps=None)
+        >>> import pennylane.estimator as qre
+        >>> res = qre.estimate(
+        ...     qre.RX(precision=None),
+        ...     gate_set={"RZ", "T", "Hadamard"},
+        ... )
         >>> print(res)
         --- Resources: ---
          Total wires: 1
@@ -129,12 +94,18 @@ class ResourceConfig:
          Total gates : 44
            'T': 44
 
-    We can change the default precision for every instance of the :code:`RX` gate where it is not 
+    We can change the default precision for every instance of the :code:`RX` gate where it is not
     specified by passing our custom configuration:
 
     .. code-block:: pycon
 
-        >>> res = qre.estimate(my_workflow, gate_set={"T", "X"}, config=my_config)(eps=None)
+        >>> my_config = qre.ResourceConfig()
+        >>> my_config.set_precision(qre.RX, precision=1e-5)
+        >>> res = qre.estimate(
+        ...     qre.RX(precision=None),
+        ...     gate_set={"RZ", "T", "Hadamard"},
+        ...     config=my_config,
+        ... )
         >>> print(res)
         --- Resources: ---
          Total wires: 1
@@ -144,6 +115,33 @@ class ResourceConfig:
              any state: 0
          Total gates : 28
            'T': 28
+
+    The :code:`ResourceConfig` can also be used to set custom decompositions.
+
+    .. code-block:: pycon
+
+        >>> def custom_RX_decomp(precision):  # RX = H @ RZ @ H
+        ...     h = qre.Hadamard.resource_rep()
+        ...     rz = qre.RZ.resource_rep(precision)
+        ...     return [qre.GateCount(h, 2), qre.GateCount(rz, 1)]
+        >>>
+        >>> my_config = qre.ResourceConfig()
+        >>> my_config.set_decomp(qre.RX, custom_RX_decomp)
+        >>> res = qre.estimate(
+        ...     qre.RX(precision=None),
+        ...     gate_set={"RZ", "T", "Hadamard"},
+        ...     config=my_config,
+        ... )
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 1
+           algorithmic wires: 1
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 3
+           'RZ': 1,
+           'Hadamard': 2
 
     """
 
