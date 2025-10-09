@@ -81,7 +81,7 @@
 
     ```python
     qft = qre.QFT(num_wires=3)
-    res = qre.estimate(out_mul)
+    res = qre.estimate(qft)
     ```
 
     ```pycon
