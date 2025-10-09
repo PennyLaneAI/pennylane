@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """CNOT routing algorithm RowCol as described in https://arxiv.org/abs/1910.14478."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -306,8 +307,7 @@ def rowcol(
 
     Args:
         tape (QNode or QuantumScript or Callable): Input circuit containing only :class:`~.CNOT` gates. Will internally be translated to the :func:`~.parity_matrix` IR.
-        connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default),
-            full connectivity is assumed.
+        connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default), full connectivity is assumed.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -343,13 +343,14 @@ def rowcol(
 
     Further we define the following circuit:
 
-    >>> import pennylane as qml
-    >>> def qfunc():
-    ...     for i in range(4):
-    ...         qml.CNOT((i, i+1))
-    ...
-    ...     for (i, j) in [(0, 4), (3, 0), (0, 2), (3, 1), (2, 4)]:
-    ...         qml.CNOT((i, j))
+    .. code-block: python
+
+        import pennylane as qml
+        def qfunc():
+            for i in range(4):
+                qml.CNOT((i, i+1))
+            for (i, j) in [(0, 4), (3, 0), (0, 2), (3, 1), (2, 4)]:
+                qml.CNOT((i, j))
 
     >>> print(qml.draw(qfunc, wire_order=range(5))())
     0: ─╭●──────────╭●─╭X─╭●───────┤
@@ -358,11 +359,9 @@ def rowcol(
     3: ───────╰X─╭●─│──╰●────╰●─│──┤
     4: ──────────╰X─╰X──────────╰X─┤
 
+    We now run the algorithm:
 
-    We import ``rowcol`` and then run the algorithm:
-
-    >>> from pennylane.transforms import rowcol
-    >>> new_qfunc = rowcol(qfunc)
+    >>> new_qfunc = qml.transforms.rowcol(qfunc)
     >>> print(qml.draw(new_qfunc, wire_order=range(5))())
     0: ───────────────────╭●───────╭X─┤
     1: ─╭X────╭X─╭●────╭X─│────────│──┤
@@ -372,7 +371,6 @@ def rowcol(
 
     We can confirm that this circuit indeed implements the original circuit:
 
-    >>> from pennylane.transforms import parity_matrix
     >>> import numpy as np
     >>> U1 = qml.matrix(new_qfunc, wire_order=range(5))()
     >>> U2 = qml.matrix(qfunc, wire_order=range(5))()
