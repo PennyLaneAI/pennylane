@@ -565,11 +565,11 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
             f" For the desired affect, ensure that qjit is applied after {transform}."
         )
 
-    if capture.enabled():
-        return _capture_apply(obj, transform, *targs, **tkwargs)
-
     @functools.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
+        if capture.enabled():
+            return _capture_apply(obj, transform, *targs, **tkwargs)(*args, **kwargs)
+
         # removes the argument to the qfuncs from the active queuing context.
         leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         for l in leaves:
