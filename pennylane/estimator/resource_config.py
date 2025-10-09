@@ -47,62 +47,23 @@ class DecompositionType(StrEnum):
 
 class ResourceConfig:
     """Sets the values of precisions and custom decompositions when estimating resources for a
-    quantum workflow. This is used to easily analyze the same workflow with multiple different
-    configurations by passing them directly into the :func:`~.pennylane.estimator.estimate` function
-    (:code:`qre.estimate(workflow, config=my_custom_config)`).
+    quantum workflow.
 
-    The :code:`ResourceConfig` stores precisions and custom decompositions. These quantities can be
+    The precisions and custom decompositions of resource operators can be
     modified using the :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_precision`
-    and :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_decomp` functions.
+    and :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_decomp` functions of the
+    :code:`ResourceConfig` class.
 
     **Example**
 
-    This example shows the :code:`ResourceConfig` object can be used to set the custom precision
-    values to decompose an operator when the values are not specified. First we provide
-
-    .. code-block:: pycon
-
-        >>> import pennylane.estimator as qre
-        >>> res = qre.estimate(qre.RX(precision=1e-5))
-        >>> print(res)
-        --- Resources: ---
-         Total wires: 1
-           algorithmic wires: 1
-           allocated wires: 0
-             zero state: 0
-             any state: 0
-         Total gates : 28
-           'T': 28
-
-    When the precision is not specified, its value is set according to the value set in
-    the default resource config.
-
-    .. code-block:: pycon
-
-        >>> import pennylane.estimator as qre
-        >>> res = qre.estimate(
-        ...     qre.RX(precision=None),
-        ...     gate_set={"RZ", "T", "Hadamard"},
-        ... )
-        >>> print(res)
-        --- Resources: ---
-         Total wires: 1
-           algorithmic wires: 1
-           allocated wires: 0
-             zero state: 0
-             any state: 0
-         Total gates : 44
-           'T': 44
-
-    We can change the default precision for every instance of the :code:`RX` gate where it is not
-    specified by passing our custom configuration:
+    This example shows how to set a custom precision value for every instance of the :code:`RX` gate.
 
     .. code-block:: pycon
 
         >>> my_config = qre.ResourceConfig()
         >>> my_config.set_precision(qre.RX, precision=1e-5)
         >>> res = qre.estimate(
-        ...     qre.RX(precision=None),
+        ...     qre.RX(),
         ...     gate_set={"RZ", "T", "Hadamard"},
         ...     config=my_config,
         ... )
@@ -116,7 +77,8 @@ class ResourceConfig:
          Total gates : 28
            'T': 28
 
-    The :code:`ResourceConfig` can also be used to set custom decompositions.
+    The :code:`ResourceConfig` can also be used to set custom decompositions. The following example
+    shows how to define a custom decomposition for the ``RX`` gate.
 
     .. code-block:: pycon
 
