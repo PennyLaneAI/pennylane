@@ -16,6 +16,7 @@ This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
 from collections import defaultdict
+from collections.abc import Callable
 from importlib import metadata
 from sys import version_info
 
@@ -713,7 +714,7 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, wire_map: dict | None = None) -> callable:
+def from_qasm3(quantum_circuit: str, wire_map: dict | None = None) -> Callable:
     """
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
