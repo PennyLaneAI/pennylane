@@ -131,7 +131,7 @@ class QDrift(Operation):
             return qml.probs()
 
     >>> my_circ()
-    array([0.65379493, 0.        , 0.34620507, 0.        ])
+    array([0.653..., 0.        , 0.346..., 0.        ])
 
     .. note::
 

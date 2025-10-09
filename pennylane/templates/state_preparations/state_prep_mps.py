@@ -289,7 +289,7 @@ class MPSPrep(Operation):
             qml.MPSPrep(mps, wires = [1,2,3], work_wires = [0])
             return qml.state()
 
-    >>> print(circuit()[:8])
+    >>> print(circuit()[:8]) # doctest: +SKIP
     [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
       0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
 

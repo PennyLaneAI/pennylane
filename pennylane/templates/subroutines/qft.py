@@ -67,9 +67,9 @@ class QFT(Operation):
             qml.QFT(wires=range(wires))
             return qml.state()
 
-    >>> circuit_qft(np.array([1.0, 0.0, 0.0]))
-    array([ 0.35355339+0.j, -0.35355339+0.j,  0.35355339+0.j, -0.35355339+0.j,
-            0.35355339+0.j, -0.35355339+0.j,  0.35355339+0.j, -0.35355339+0.j])
+    >>> circuit_qft(np.array([1.0, 0.0, 0.0])) # doctest: +SKIP
+    array([ 0.3536+0.j, -0.3536+0.j,  0.3536+0.j, -0.3536+0.j,  0.3536+0.j,
+           -0.3536+0.j,  0.3536+0.j, -0.3536+0.j])
 
     .. details::
         :title: Semiclassical Quantum Fourier transform

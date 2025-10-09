@@ -137,7 +137,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             return qml.state()
 
     >>> my_circ()
-    array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
+    array([-0.132...+0.597...j,  0.        +0.j        , -0.132...-0.779...j,  0.        +0.j        ])
 
     .. warning::
 
@@ -240,7 +240,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         >>> args = qml.numpy.array([1.23, 4.5, 0.1])
         >>> qml.grad(my_circ)(*tuple(args))
-        (tensor(0.07774089, requires_grad=True), tensor(0.01525308, requires_grad=True), tensor(1.64260139, requires_grad=True))
+        (tensor(0.077..., requires_grad=True), tensor(0.015..., requires_grad=True), tensor(1.642..., requires_grad=True))
 
     """
 

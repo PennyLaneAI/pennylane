@@ -71,8 +71,8 @@ class ControlledSequence(SymbolicOp, Operation):
 
             return qml.probs(wires = range(3))
 
-    >>> print(circuit())
-    [0.92059345 0.02637178 0.00729619 0.00423258 0.00360545 0.00423258 0.00729619 0.02637178]
+    >>> print(circuit()) # doctest: +SKIP
+    [0.9206 0.0264 0.0073 0.0042 0.0036 0.0042 0.0073 0.0264]
 
     """
 

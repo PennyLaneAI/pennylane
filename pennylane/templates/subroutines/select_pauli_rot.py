@@ -83,9 +83,9 @@ class SelectPauliRot(Operation):
             )
             return qml.state()
 
-    >>> print(circuit())
-    [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
-        0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+    >>> print(circuit()) # doctest: +SKIP
+    [0.8776+0.j 0.4794+0.j 0.    +0.j 0.    +0.j 0.    +0.j 0.    +0.j
+     0.    +0.j 0.    +0.j]
     """
 
     grad_method = None

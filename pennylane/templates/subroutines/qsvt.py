@@ -227,7 +227,7 @@ def qsvt(
 
             matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3])()
 
-        >>> print(np.round(matrix[:4, :4], 4).real)
+        >>> print(np.round(matrix[:4, :4], 4).real) # doctest: +SKIP
         [[-0.7158  0.     -0.      0.    ]
          [ 0.     -0.975   0.     -0.    ]
          [ 0.      0.     -0.7158  0.    ]
@@ -255,7 +255,7 @@ def qsvt(
 
             matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3, 4])()
 
-        >>> print(np.round(matrix[:4, :4], 4).real)
+        >>> print(np.round(matrix[:4, :4], 4).real) # doctest: +SKIP
         [[-0.0954  0.     -0.0056 -0.0054]
          [-0.     -0.0912  0.      0.    ]
          [-0.0056  0.     -0.0788  0.0164]
@@ -414,9 +414,8 @@ class QSVT(Operation):
                 qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-        >>> circuit()
-        array([-0.194205  +0.66654551j, -0.097905  +0.35831418j,
-                0.3319832 -0.51047262j, -0.09551437+0.01043668j])
+        >>> circuit() # doctest: +SKIP
+        array([-0.1942+0.6665j, -0.0979+0.3583j,  0.332 -0.5105j, -0.0955+0.0104j])
 
         If we want to transform the singular values of a linear
         combination of unitaries, e.g., a Hamiltonian, it can be block-encoded with operations
@@ -1060,7 +1059,7 @@ def transform_angles(angles, routine1, routine2):
         >>> qsp_angles = np.array([0.2, 0.3, 0.5])
         >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
         >>> print(qsvt_angles)
-        [-6.86858347  1.87079633 -0.28539816]
+        [-6.868...  1.8707... -0.285...]
 
 
     .. details::
@@ -1163,7 +1162,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         >>> poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
         >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
         >>> print(qsvt_angles)
-        [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
+        [-5.497...  1.570...  1.5707...  0.583...   1.610...  0.747...]
 
 
     .. details::

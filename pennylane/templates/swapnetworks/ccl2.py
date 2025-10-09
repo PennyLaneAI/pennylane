@@ -67,9 +67,8 @@ class TwoLocalSwapNetwork(Operation):
         >>> dev = qml.device('default.qubit', wires=5)
         >>> rng = np.random.default_rng(12345)
         >>> weights = rng.random(size=qml.TwoLocalSwapNetwork.shape(len(dev.wires)))
-        >>> print(weights)
-        [0.22733602 0.31675834 0.79736546 0.67625467 0.39110955 0.33281393
-         0.59830875 0.18673419 0.67275604 0.94180287]
+        >>> print(weights) # doctest: +SKIP
+        [0.2273 0.3168 0.7974 0.6763 0.3911 0.3328 0.5983 0.1867 0.6728 0.9418]
         >>> acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
         ...                                  if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
         >>> @qml.qnode(dev)

@@ -183,9 +183,8 @@ class Superposition(Operation):
             qml.Superposition(coeffs, bases, wires, work_wire)
             return qml.probs(wires)
 
-    >>> print(circuit())
-    [0.33333333 0.         0.33333333 0.         0.         0.
-    0.         0.33333333]
+    >>> print(circuit()) # doctest: +SKIP
+    [0.3333 0.     0.3333 0.     0.     0.     0.     0.3333]
 
 
     .. details::
@@ -318,13 +317,13 @@ class Superposition(Operation):
 
         **Example**
 
-        .. code-block:: pycon
-
-            >>> qml.Superposition(np.sqrt([1/2, 1/2]), [[1, 1], [0, 0]], [0, 1], 2).decomposition()
-            [StatePrep(array([0.70710678, 0.70710678]), wires=[1]),
-            MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
-            CNOT(wires=[2, 0]),
-            Toffoli(wires=[0, 1, 2])]
+        >>> ops = qml.Superposition(np.sqrt([1/2, 1/2]), [[1, 1], [0, 0]], [0, 1], 2).decomposition()
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [StatePrep(array([0.70710678, 0.70710678]), wires=[1]),
+        MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
+        CNOT(wires=[2, 0]),
+        Toffoli(wires=[0, 1, 2])]
 
         """
 

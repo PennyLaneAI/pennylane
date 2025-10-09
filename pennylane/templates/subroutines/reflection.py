@@ -67,7 +67,7 @@ class Reflection(Operation):
             qml.Reflection(U)
             return qml.state()
 
-    >>> circuit()
+    >>> circuit() # doctest: +SKIP
     array([1.+6.123234e-17j, 0.-6.123234e-17j])
 
     For cases when :math:`U` comprises many operations, you can create a quantum
@@ -86,9 +86,9 @@ class Reflection(Operation):
             qml.Reflection(U([0, 1]))
             return qml.state()
 
-    >>> circuit()
-    array([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
-            0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j])
+    >>> circuit() # doctest: +SKIP
+    array([-0.0025-6.1385e-17j,  0.0499+3.0565e-18j,  0.9975+6.1079e-17j,
+            0.0499+3.0565e-18j])
 
     .. details::
         :title: Theory
