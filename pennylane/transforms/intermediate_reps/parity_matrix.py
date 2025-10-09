@@ -32,7 +32,7 @@ def parity_matrix(
 
     Args:
         circ (QNode or QuantumScript or Callable): Quantum circuit containing only ``CNOT`` gates.
-        wire_order (Sequence): Indicates how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
+        wire_order (Sequence): Indicates how rows and columns should be ordered. If ``None`` is provided, uses the wires of the input circuit (``tape.wires``).
 
     Returns:
         TensorLike:

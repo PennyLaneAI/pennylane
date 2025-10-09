@@ -37,7 +37,7 @@ def phase_polynomial(
 
     Args:
         circ (QNode or QuantumScript or Callable): Quantum circuit containing only ``CNOT`` and ``RZ`` gates.
-        wire_order (Iterable): Indicates how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
+        wire_order (Iterable): Indicates how rows and columns should be ordered. If ``None`` is provided, uses the wires of the input circuit (``tape.wires``).
 
     Returns:
         tuple(TensorLike, TensorLike, TensorLike): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.

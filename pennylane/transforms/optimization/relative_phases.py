@@ -39,7 +39,7 @@ def match_relative_phase_toffoli(
 
     The equivalence is given in Maslov, Dmitri. "On the Advantages of Using Relative Phase Toffolis
     with an Application to Multiple Control Toffoli Optimization", arXiv:1508.03273, arXiv, 2016.
-    `doi:10.48550/arXiv.1508.03273 <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.93.022311>`_.
+    `doi:10.48550/arXiv.1508.03273 <https://doi.org/10.48550/arXiv.1508.03273>`_.
 
     .. note::
 
@@ -78,12 +78,6 @@ def match_relative_phase_toffoli(
             qml.Hadamard(wires=1)
             qml.X(0)
             return qml.expval(qml.Z(0))
-                def qfunc():
-                    qml.CCZ(wires=[0, 1, 3])
-                    qml.ctrl(qml.S(wires=[1]), control=[0])
-                    qml.ctrl(qml.S(wires=[2]), control=[0, 1])
-                    qml.MultiControlledX(wires=[0, 1, 2, 3])
-                    return qml.expval(qml.Z(0))
 
     The circuit (containing a 4-qubit relative phase Toffoli) before decomposition:
 
@@ -137,9 +131,9 @@ def match_controlled_iX_gate(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace controlled iX gates with their equivalent circuit.
 
-    An iX gate is a controlled-S and a Toffoli. The equivalency used is given in Giles, Brett,
+    A controlled-iX gate is a controlled-S and a Toffoli. The equivalence used is given in Giles, Brett,
     and Peter Selinger. "Exact Synthesis of Multiqubit Clifford+T Circuits", arXiv:1212.0506,
-    arXiv, 2013. `doi:10.48550/arXiv.1212.0506 <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.87.032332>`_.
+    arXiv, 2013. `doi:10.48550/arXiv.1212.0506 <https://doi.org/10.48550/arXiv.1212.0506>`_.
 
     .. note::
 
