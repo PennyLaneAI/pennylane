@@ -1878,6 +1878,7 @@
 * Fixed a bug in ``SemiAdder`` that was causing failures when inputs were defined with a single 
   wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+  [(#8437)](https://github.com/PennyLaneAI/pennylane/pull/8437)
 
 * Fixed a bug where ``qml.prod``, ``qml.matrix``, and ``qml.cond`` applied on a quantum function 
   was not dequeueing operators passed as arguments to the function.
