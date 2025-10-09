@@ -74,6 +74,8 @@
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+    [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
+
 
     The :func:`~.estimator.estimate.estimate` function is the entry point for resource estimation.
     Here, the :class:`~.estimator.resource_operator.ResourceOperator` for ``QFT`` is analyzed.
@@ -1657,15 +1659,16 @@
 <h3>Internal changes ⚙️</h3>
 
 * GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
-  use `ubuntu-24.04` runners. [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
+  use `ubuntu-24.04` runners. 
+  [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
 
-* Adds `measurements` as a "core" module in the tach specification.
+* ``measurements`` is now a "core" module in the ``tach`` specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
-* Enforce various modules to follow modular architecture via `tach`.
+* Enforce various modules to follow modular architecture via ``tach``.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
 
-* Add CI workflow to test documentation using `sybil`. 
+* CI workflows to test documentation using ``sybil`` have been added. 
   [(#8324)](https://github.com/PennyLaneAI/pennylane/pull/8324)
   [(#8328)](https://github.com/PennyLaneAI/pennylane/pull/8328)
   [(#8329)](https://github.com/PennyLaneAI/pennylane/pull/8329)
@@ -1673,55 +1676,52 @@
   [(#8331)](https://github.com/PennyLaneAI/pennylane/pull/8331)
   [(#8386)](https://github.com/PennyLaneAI/pennylane/pull/8386)
 
-* The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
+* The ``templates/subroutines`` now has ``arithmetic``, ``qchem``, and ``time_evolution`` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
 
-* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
+* ``test_horizontal_cartan_subalgebra.py`` now uses our fixture ``seed`` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
-* Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
+* The `qml.compiler.python_compiler` submodule has been restructured to be more cohesive.
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
-* `default.tensor` now supports graph decomposition mode during preprocessing.
+* ``default.tensor`` now supports graph decomposition (``qml.decomposition.enable_graph()``) during preprocessing.
   [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
 
-* Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
+* Legacy interface names from tests have been removed (e.g., ``interface="jax-python"`` or ``interface="pytorch"``)
   [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
 
-* `qml.devices.preprocess.decompose` now works in graph decomposition mode
-  when a gateset is provided. `default.qubit` and `null.qubit` can now use
+* ``qml.devices.preprocess.decompose`` now works in graph decomposition mode
+  when a gateset is provided. ``default.qubit`` and ``null.qubit`` can now use
   graph decomposition mode.
   [(#8225)](https://github.com/PennyLaneAI/pennylane/pull/8225)
   [(#8265)](https://github.com/PennyLaneAI/pennylane/pull/8265)
   [(#8260)](https://github.com/PennyLaneAI/pennylane/pull/8260)
 
-* Remove usage of the `pytest.mark.capture` marker from tests in the `tests/python_compiler` directory.
+* Usage of the ``pytest.mark.capture`` marker from tests in the ``tests/python_compiler`` directory has been removed.
   [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
 
-* Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
+* ``pylint`` has been updated to v3.3.8 in our CI and ``requirements-dev.txt``
   [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
 
-* Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
-  [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
-
-* Update links in `README.md`.
+* Links in the ``README.md`` have been updated.
   [(#8165)](https://github.com/PennyLaneAI/pennylane/pull/8165)
 
-* Update `autograph` guide to reflect new capabilities.
+* The `autograph` guide to now reflects new capabilities.
   [(#8132)](https://github.com/PennyLaneAI/pennylane/pull/8132)
 
-* Start using `strict=True` to `zip` usage in source code.
+* ``strict=True`` is now used to ``zip`` usage in source code.
   [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
   [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
   [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
 
-* Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
+* Unpinned the ``autoray`` package in ``pyproject.toml`` by fixing source code that was broken by the release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
-* The `autograph` keyword argument has been removed from the `QNode` constructor.
-  To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
+* The ``autograph`` keyword argument has been removed from the ``QNode`` constructor.
+  To enable autograph conversion, use the ``qjit`` decorator together with the ``qml.capture.disable_autograph`` context manager.
   [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
 
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
@@ -1730,15 +1730,15 @@
 * Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
   [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
-* Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
-`run_filecheck_qjit` fixtures.
+* Roundtrip testing and module verification to the Python compiler is now done in ``run_filecheck`` and
+``run_filecheck_qjit`` fixtures.
   [(#8049)](https://github.com/PennyLaneAI/pennylane/pull/8049)
 
-* Improve type hinting internally.
+* Various type hints have been improved internally.
   [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
   [(#8284)](https://github.com/PennyLaneAI/pennylane/pull/8284)
 
-* The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
+* The ``cond`` primitive with program capture no longer stores missing false branches as ``None``, instead storing them
   as jaxprs with no output.
   [(#8080)](https://github.com/PennyLaneAI/pennylane/pull/8080)
 
