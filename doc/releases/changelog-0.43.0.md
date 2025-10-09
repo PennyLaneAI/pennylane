@@ -1583,10 +1583,7 @@
 
 * Fixes a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, :func:`~.transforms.single_qubit_fusion`,
   :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
-  [(#8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
-
-* Fixes a bug with `~.pennylane.estimator.resource_mapping._map_to_resource_op()` where it was incorrectly mapping the `~.TrotterProduct` template.
-  [(#8425)](https://github.com/PennyLaneAI/pennylane/pull/8425)
+  [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
 <h3>Contributors ✍️</h3>
 
