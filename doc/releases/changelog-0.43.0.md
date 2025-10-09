@@ -3,7 +3,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>A brand new resource estimation module 🧮</h4>
+<h4>A brand new resource estimation module 📖 </h4>
 
 * A new toolkit dedicated to resource estimation is now available in the :mod:`~.estimator` module!
   The functionality therein is designed to rapidly estimate the quantum resources required to execute a program,
