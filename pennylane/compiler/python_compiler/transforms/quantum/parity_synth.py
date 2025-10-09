@@ -34,6 +34,76 @@ from ...pass_api import compiler_transform
 ### xDSL-agnostic part
 
 
+def _apply_dfs_po_circuit(tree, source, P, inv_synth_matrix=None):
+    dfs_po = list(nx.dfs_postorder_nodes(tree, source=source))
+    sub_circuit = []
+    if inv_synth_matrix is None:
+        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+            sub_circuit.append((i, j))
+            P[i] += P[j]
+    else:
+        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+            sub_circuit.append((i, j))
+            P[i] += P[j]
+            inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
+    P %= 2
+    return sub_circuit
+
+
+def _compute_cost(terminal_nodes: list[int], connectivity: nx.Graph) -> tuple[nx.Graph, int]:
+    """Compute the cost for a given set :math:`S` of terminal nodes within a connectivity graph.
+    The cost is defined as :math:`2|V_T| - |S| - 1` where `V_T` are the vertices of a Steiner
+    tree of `S` within the provided connectivity graph.
+
+    Args:
+        terminal_nodes (list[int]): Terminal nodes for to compute the cost
+        connectivity (nx.Graph): Connectivity graph
+
+    Returns:
+        tuple[nx.Graph, int]: Steiner tree constructed from ``terminal_nodes`` within
+        the ``connectivity`` graph, and cost computed according to the above formula.
+
+    Note that the function also returns the constructed Steiner tree.
+    """
+    if len(terminal_nodes) == 1:
+        return nx.path_graph(terminal_nodes), 0
+    t = steiner_tree(connectivity, terminal_nodes)
+    cost = 2 * len(t) - len(terminal_nodes) - 1
+    return t, cost
+
+
+def _find_parity(P, connectivity):
+    terminals = [list(np.where(y)[0]) for y in P.T]
+    trees, cost = zip(*[_compute_cost(terminal, connectivity) for terminal in terminals])
+    min_idx = np.argmin(cost)
+    return min_idx, trees[min_idx], list(map(int, terminals[min_idx]))
+
+
+def _fill_in(t, terminal_nodes, P, inv_synth_matrix):
+    cnots = []
+    f = t.copy()
+    f.remove_nodes_from(terminal_nodes)
+    terminal_set = set(terminal_nodes)
+    while len(f):
+        for u in f:
+            if f.degree(u) <= 1:
+                break
+        else:
+            raise ValueError(f"Should have found a leaf. {f=}")
+        for v in t[u]:
+            if v in terminal_set:
+                break
+        else:
+            raise ValueError(f"Should have found a neighbour. {f=}, {u=}")
+
+        cnots.append((u, v))
+        P[u] += P[v]
+        inv_synth_matrix[:, u] += inv_synth_matrix[:, v]
+        terminal_set.add(u)
+        f.remove_node(u)
+    return cnots, P, inv_synth_matrix
+
+
 def _loop_body_parity_network_synth(
     P: np.ndarray,
     inv_synth_matrix: np.ndarray,
@@ -81,72 +151,11 @@ def _loop_body_parity_network_synth(
         ]
     )
     arbor = nx.minimum_spanning_arborescence(parity_graph)
-    roots = [node for node, degree in arbor.in_degree() if degree == 0]
-    assert len(roots) == 1
-    dfs_po = list(nx.dfs_postorder_nodes(arbor, source=roots[0]))
+    root = next(iter(node for node, degree in arbor.in_degree() if degree == 0))
     P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
-    sub_circuit = []
-    for i, j in zip(dfs_po[:-1], dfs_po[1:]):
-        sub_circuit.append((i, j))
-        P[i] = np.mod(P[i] + P[j], 2)
-        inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
-    circuit.append((parity_idx, roots[0], sub_circuit))
-    return P, inv_synth_matrix, circuit
-
-
-def _compute_cost(terminal_nodes: list[int], connectivity: nx.Graph) -> tuple[nx.Graph, int]:
-    """Compute the cost for a given set :math:`S` of terminal nodes within a connectivity graph.
-    The cost is defined as :math:`2|V_T| - |S| - 1` where `V_T` are the vertices of a Steiner
-    tree of `S` within the provided connectivity graph.
-
-    Args:
-        terminal_nodes (list[int]): Terminal nodes for to compute the cost
-        connectivity (nx.Graph): Connectivity graph
-
-    Returns:
-        tuple[nx.Graph, int]: Steiner tree constructed from ``terminal_nodes`` within
-        the ``connectivity`` graph, and cost computed according to the above formula.
-
-    Note that the function also returns the constructed Steiner tree.
-    """
-    if len(terminal_nodes) == 1:
-        return nx.path_graph(terminal_nodes), 0
-    t = steiner_tree(connectivity, terminal_nodes)
-    cost = 2 * len(t) - len(terminal_nodes) - 1
-    return t, cost
-
-
-def _find_parity(P, connectivity):
-    terminals = [list(np.where(y)[0]) for y in P.T]
-    trees, cost = zip(*[_compute_cost(terminal, connectivity) for terminal in terminals])
-    min_idx = np.argmin(cost)
-    return min_idx, trees[min_idx], list(map(int, terminals[min_idx]))
-
-
-def _fill_in(t, terminal_nodes, P, inv_synth_matrix):
-    cnots = []
-    f = t.copy()
-    f.remove_nodes_from(terminal_nodes)
-    terminal_set = set(terminal_nodes)
-    while len(f):
-        for u in f:
-            # print(u, f.degree(u))
-            if f.degree(u) <= 1:
-                break
-        else:
-            raise ValueError(f"Should have found a leaf. {f=}")
-        for v in t[u]:
-            if v in terminal_set:
-                break
-        else:
-            raise ValueError(f"Should have found a neighbour. {f=}, {u=}")
-
-        cnots.append((u, v))
-        P[u] += P[v]
-        inv_synth_matrix[:, u] += inv_synth_matrix[:, v]
-        terminal_set.add(u)
-        f.remove_node(u)
-    return cnots, P, inv_synth_matrix
+    sub_circuit = _apply_dfs_po_circuit(arbor, root, P, inv_synth_matrix)
+    circuit.append((parity_idx, root, sub_circuit))
+    return P % 2, inv_synth_matrix, circuit
 
 
 def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivity):
@@ -156,12 +165,7 @@ def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivi
     m = P.shape[1]
     if m == 0:
         root = next(iter(t))
-        dfs_po = list(nx.dfs_postorder_nodes(t, source=root))
-        sub_circuit = []
-        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
-            sub_circuit.append((i, j))
-            P[i] += P[j]
-            inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
+        sub_circuit = _apply_dfs_po_circuit(t, root, P, inv_synth_matrix)
         circuit.append((parity_idx, root, fill_in_cnots + sub_circuit))
         return P % 2, inv_synth_matrix, circuit
 
@@ -169,12 +173,9 @@ def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivi
     cheapest_sub_circuit, cheapest_root, cheapest_P = None, None, None  # Will never be returned
     for root in t:
         P_X = P.copy()
-        dfs_po = list(nx.dfs_postorder_nodes(t, source=root))
-        sub_circuit = []
-        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
-            sub_circuit.append((i, j))
-            P_X[i] += P_X[j]
-        P_X %= 2
+
+        sub_circuit = _apply_dfs_po_circuit(t, root, P_X, inv_synth_matrix)
+
         new_cost_vector = sorted(
             _compute_cost(list(np.where(y)[0]), connectivity)[1] for y in P_X.T
         )
