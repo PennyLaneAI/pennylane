@@ -19,6 +19,16 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
 
+class _AdditiveIdentity:
+    """Only used to initialize accumulators for summing Fragments"""
+
+    def __add__(self, other):
+        return other
+
+    def __radd__(self, other):
+        return other
+
+
 class Fragment(ABC):
     """Abstract class used to define a fragment object for product formula error estimation.
 

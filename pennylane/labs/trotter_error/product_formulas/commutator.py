@@ -17,16 +17,26 @@ from __future__ import annotations
 
 import copy
 import math
+from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Hashable
 from itertools import chain, product
-from typing import Dict, Generator, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
 
 import numpy as np
+
+from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
+
+if TYPE_CHECKING:
+    from pennylane.labs.trotter_error import Fragment
 
 
 class Node:
     """Abstract base class for all nodes in the commutator tree."""
+
+    @abstractmethod
+    def eval(self, fragments: Dict[Hashable, Fragment]) -> Fragment:
+        """Evaluate the commutator on a set of concrete fragments."""
 
 
 class SymbolNode(Node):
@@ -44,6 +54,8 @@ class SymbolNode(Node):
             symbols = (symbols,)
         if not isinstance(coeffs, Sequence):
             coeffs = (coeffs,)
+        if isinstance(symbols, str):
+            symbols = (symbols,)
 
         if len(symbols) != len(coeffs):
             raise ValueError("Number of symbols must match number of coefficients")
@@ -84,6 +96,16 @@ class SymbolNode(Node):
     @property
     def order(self) -> int:
         return 1
+
+    def eval(self, fragments: Dict[Hashable, Fragment]) -> Fragment:
+        ret = _AdditiveIdentity()
+        for symbol, coeff in self.symbols:
+            try:
+                ret += coeff * fragments[symbol]
+            except KeyError as exc:
+                raise RuntimeError(f"No fragment given for symbol '{symbol}'.") from exc
+
+        return ret
 
     def expand(self) -> Dict[Tuple[SymbolNode], int]:
         """
@@ -140,6 +162,12 @@ class CommutatorNode(Node):
     @property
     def order(self) -> int:
         return self.left.order + self.right.order
+
+    def eval(self, fragments: Dict[Hashable, Fragment]) -> Fragment:
+        left = self.left.eval(fragments)
+        right = self.right.eval(fragments)
+
+        return left @ right - right @ left
 
     def expand(self) -> Dict[Tuple[SymbolNode], int]:
         """

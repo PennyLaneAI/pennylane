@@ -14,26 +14,19 @@
 """Functions for retreiving effective error from fragments"""
 
 import copy
-from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
-from pennylane.labs.trotter_error.abstract import nested_commutator
+from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
+from pennylane.labs.trotter_error.product_formulas.commutator import (
+    SymbolNode,
+    merge,
+)
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
-
-
-class _AdditiveIdentity:
-    """Only used to initialize accumulators for summing Fragments"""
-
-    def __add__(self, other):
-        return other
-
-    def __radd__(self, other):
-        return other
 
 
 def effective_hamiltonian(
@@ -120,20 +113,8 @@ def _eval_commutator(commutator, coeff, fragments):
     Returns:
         ndarray: the evaluated form of the commutator
     """
-    return coeff * nested_commutator(_insert_fragments(commutator, fragments))
 
-
-def _insert_fragments(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment]
-) -> tuple[Fragment]:
-    """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
-    The function recurses through the nested structure of the tuple replacing each hashable `label` with
-    the concrete value `fragments[label]`."""
-
-    return tuple(
-        _insert_fragments(term, fragments) if isinstance(term, tuple) else fragments[term]
-        for term in commutator
-    )
+    return coeff * commutator.eval(fragments)
 
 
 def perturbation_error(
@@ -216,7 +197,7 @@ def perturbation_error(
                 if len(commutators) == 0:
                     continue
 
-                order = len(commutators[0])
+                order = commutators[0].order
                 for commutator in commutators:
                     expectation += _compute_expectation(commutator, fragments, state)
 
@@ -269,7 +250,7 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
         if len(commutators) == 0:
             continue
 
-        order = len(commutators[0])
+        order = commutators[0].order
         expectation = sum(
             _compute_expectation(commutator, fragments, state) for commutator in commutators
         )
@@ -285,15 +266,13 @@ def _compute_expectation(
 
     new_state = _AdditiveIdentity()
 
-    for term, coeff in _op_list(commutator).items():
+    for term, coeff in commutator.expand().items():
         tmp_state = copy.copy(state)
-        for frag in reversed(term):
-            if isinstance(frag, frozenset):
-                frag = sum(
-                    (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
-                )
-            else:
-                frag = fragments[frag]
+        for symbol_node in reversed(term):
+            frag = sum(
+                (coeff * fragments[symbol] for symbol, coeff in symbol_node.symbols),
+                _AdditiveIdentity(),
+            )
 
             tmp_state = frag.apply(tmp_state)
 
@@ -309,52 +288,44 @@ def _compute_expectation_track_order(
 
     new_state = _AdditiveIdentity()
 
-    for term, coeff in _op_list(commutator).items():
+    for term, coeff in commutator.expand().items():
         tmp_state = copy.copy(state)
-        for frag in reversed(term):
-            if isinstance(frag, frozenset):
-                frag = sum(
-                    (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
-                )
-            else:
-                frag = fragments[frag]
+        for symbol_node in reversed(term):
+            frag = sum(
+                (coeff * fragments[symbol] for symbol, coeff in symbol_node.symbols),
+                _AdditiveIdentity(),
+            )
 
             tmp_state = frag.apply(tmp_state)
 
         new_state += coeff * tmp_state
 
-    return state.dot(new_state), len(commutator)
-
-
-def _op_list(commutator) -> dict[tuple[Hashable], complex]:
-    """Returns the operations needed to apply the commutator to a state."""
-
-    if not commutator:
-        return Counter()
-
-    head, *tail = commutator
-
-    if not tail:
-        return Counter({(head,): 1})
-
-    tail_ops_coeffs = _op_list(tuple(tail))
-
-    ops1 = Counter({(head, *ops): coeff for ops, coeff in tail_ops_coeffs.items()})
-    ops2 = Counter({(*ops, head): -coeff for ops, coeff in tail_ops_coeffs.items()})
-
-    ops1.update(ops2)
-
-    return ops1
+    return state.dot(new_state), commutator.order
 
 
 def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
     """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
-    two commutators a*[X, A, B] and b*Y[A, B] will be merged into one commutator [a*X + b*Y, A, B].
+    two commutators a*[X, A, B] and b*[Y, A, B] will be merged into one commutator [a*X + b*Y, A, B].
     """
-    grouped_comms = defaultdict(set)
+    grouped_comms = {}
     for commutator, coeff in term_dict.items():
-        head, *tail = commutator
-        tail = tuple(tail)
-        grouped_comms[tail].add((head, coeff))
+        symbols, coeffs = zip(*commutator[0])
+        coeffs = tuple(coeff * sym_coeff for sym_coeff in coeffs)
+        commutator[0] = frozenset(zip(symbols, coeffs))
+        tail = _ast_to_seq(commutator)[1:]
 
-    return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
+        try:
+            new_comm = merge(grouped_comms[tail], commutator, 0)
+            print("try", new_comm)
+            grouped_comms[tail] = new_comm
+        except KeyError:
+            grouped_comms[tail] = commutator
+
+    return list(grouped_comms.values())
+
+
+def _ast_to_seq(comm):
+    if isinstance(comm, SymbolNode):
+        return (comm,)
+
+    return _ast_to_seq(comm.left) + _ast_to_seq(comm.right)

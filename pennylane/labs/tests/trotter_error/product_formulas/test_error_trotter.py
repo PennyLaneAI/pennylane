@@ -22,6 +22,7 @@ from pennylane.labs.trotter_error import (
     perturbation_error,
     vibrational_fragments,
 )
+from pennylane.labs.trotter_error.product_formulas.commutator import CommutatorNode, SymbolNode
 from pennylane.labs.trotter_error.product_formulas.error import _group_sums
 
 
@@ -102,12 +103,37 @@ def test_perturbation_error_invalid_parallel_mode():
     "term_dict, expected",
     [
         (
-            {("X", "A", "B"): 4, ("Y", "A", "B"): 3},
-            [(frozenset({("X", 4), ("Y", 3)}), "A", "B")],
+            {
+                CommutatorNode(
+                    SymbolNode("X"), CommutatorNode(SymbolNode("A"), SymbolNode("B"))
+                ): 4,
+                CommutatorNode(
+                    SymbolNode("Y"), CommutatorNode(SymbolNode("A"), SymbolNode("B"))
+                ): 3,
+            },
+            [
+                CommutatorNode(
+                    SymbolNode(("X", "Y"), (4, 3)), CommutatorNode(SymbolNode("A"), SymbolNode("B"))
+                )
+            ],
         ),
         (
-            {("X", "A", "B"): 4, ("Y", "A", "C"): 3},
-            [(frozenset({("X", 4)}), "A", "B"), (frozenset({("Y", 3)}), "A", "C")],
+            {
+                CommutatorNode(
+                    SymbolNode("X"), CommutatorNode(SymbolNode("A"), SymbolNode("B"))
+                ): 4,
+                CommutatorNode(
+                    SymbolNode("Y"), CommutatorNode(SymbolNode("A"), SymbolNode("C"))
+                ): 3,
+            },
+            [
+                CommutatorNode(
+                    SymbolNode("X", 4), CommutatorNode(SymbolNode("A"), SymbolNode("B"))
+                ),
+                CommutatorNode(
+                    SymbolNode("Y", 3), CommutatorNode(SymbolNode("A"), SymbolNode("C"))
+                ),
+            ],
         ),
     ],
 )

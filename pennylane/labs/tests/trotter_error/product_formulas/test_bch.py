@@ -22,7 +22,11 @@ from scipy.linalg import logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
-from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
+from pennylane.labs.trotter_error.product_formulas.bch import (
+    _to_ast,
+    bch_expansion,
+)
+from pennylane.labs.trotter_error.product_formulas.commutator import CommutatorNode, SymbolNode
 
 deltas = [0.5, 0.1, 0.01]
 
@@ -108,14 +112,17 @@ def test_fourth_order(fragments, delta):
     ham = 1j * delta * (sum(fragments.values(), np.zeros_like(fragments[0])))
     expected = copy.copy(ham)
 
+    fragments = copy.deepcopy(fragments)
+    fragments["ham"] = ham
+
     bch = bch_expansion(second_order, order=5)
     for commutator, coeff in bch[2].items():
-        commutator = tuple(1j * delta * fragments[x] for x in commutator)
-        commutator = (ham, commutator, ham)
-        expected += y3 * coeff * nested_commutator(commutator)
+        commutator = CommutatorNode(
+            SymbolNode("ham"), CommutatorNode(commutator, SymbolNode("ham"))
+        )
+        expected += y3 * coeff * (1j * delta) ** commutator.order * commutator.eval(fragments)
     for commutator, coeff in bch[4].items():
-        commutator = tuple(1j * delta * fragments[x] for x in commutator)
-        expected += y5 * coeff * nested_commutator(commutator)
+        expected += y5 * coeff * (1j * delta) ** commutator.order * commutator.eval(fragments)
 
     actual = effective_hamiltonian(fourth_order, fragments, order=5)
 
@@ -146,23 +153,39 @@ def test_sixth_order(fragments, delta):
     ham = 1j * delta * (sum(fragments.values(), np.zeros_like(fragments[0])))
     expected = copy.copy(ham)
 
+    fragments = copy.deepcopy(fragments)
+    fragments["ham"] = ham
+
     bch = bch_expansion(second_order, order=7)
     for commutator, coeff in bch[2].items():
-        commutator = tuple(1j * delta * fragments[x] for x in commutator)
-        new_commutator = (ham, commutator, commutator)
-        expected += h_y3_y3 * coeff * nested_commutator(new_commutator)
+        new_commutator = CommutatorNode(SymbolNode("ham"), CommutatorNode(commutator, commutator))
+        expected += (
+            h_y3_y3 * coeff * (1j * delta) ** commutator.order * new_commutator.eval(fragments)
+        )
 
-        new_commutator = (ham, commutator, ham, ham, ham)
-        expected += h_y3_hhh * coeff * nested_commutator(new_commutator)
+        new_commutator = CommutatorNode(
+            SymbolNode("ham"),
+            CommutatorNode(
+                commutator,
+                CommutatorNode(
+                    SymbolNode("ham"), CommutatorNode(SymbolNode("ham"), SymbolNode("ham"))
+                ),
+            ),
+        )
+        expected += (
+            h_y3_hhh * coeff * (1j * delta) ** commutator.order * new_commutator.eval(fragments)
+        )
 
     for commutator, coeff in bch[4].items():
-        commutator = tuple(1j * delta * fragments[x] for x in commutator)
-        new_commutator = (ham, commutator, ham)
-        expected += h_y5_h * coeff * nested_commutator(new_commutator)
+        new_commutator = CommutatorNode(
+            SymbolNode("ham"), CommutatorNode(commutator, SymbolNode("ham"))
+        )
+        expected += (
+            h_y5_h * coeff * (1j * delta) ** commutator.order * new_commutator.eval(fragments)
+        )
 
     for commutator, coeff in bch[6].items():
-        commutator = tuple(1j * delta * fragments[x] for x in commutator)
-        expected += y7 * coeff * nested_commutator(commutator)
+        expected += y7 * coeff * (1j * delta) ** commutator.order * commutator.eval(fragments)
 
     actual = effective_hamiltonian(sixth_order, fragments, order=7)
 
@@ -187,36 +210,40 @@ Z = "Z"
             [X, Y],
             [1, 1],
             5,
-            [
-                {(X,): 1, (Y,): 1},
-                {(X, Y): 1 / 2},
-                {(X, X, Y): 1 / 12, (Y, X, Y): -1 / 12},
-                {(X, Y, X, Y): -1 / 24},
-                {
-                    (X, X, X, X, Y): -1 / 720,
-                    (X, X, Y, X, Y): -1 / 120,
-                    (X, Y, Y, X, Y): -1 / 360,
-                    (Y, X, X, X, Y): 1 / 360,
-                    (Y, X, Y, X, Y): 1 / 120,
-                    (Y, Y, Y, X, Y): 1 / 720,
-                },
-            ],
+            _to_ast(
+                [
+                    {(X,): 1, (Y,): 1},
+                    {(X, Y): 1 / 2},
+                    {(X, X, Y): 1 / 12, (Y, X, Y): -1 / 12},
+                    {(X, Y, X, Y): -1 / 24},
+                    {
+                        (X, X, X, X, Y): -1 / 720,
+                        (X, X, Y, X, Y): -1 / 120,
+                        (X, Y, Y, X, Y): -1 / 360,
+                        (Y, X, X, X, Y): 1 / 360,
+                        (Y, X, Y, X, Y): 1 / 120,
+                        (Y, Y, Y, X, Y): 1 / 720,
+                    },
+                ]
+            ),
         ),
         (
             [X, Y, X],
             [1, 1, 1],
             3,
-            [
-                {(X,): 2, (Y,): 1},
-                {},
-                {(X, X, Y): -1 / 6, (Y, X, Y): -1 / 6},
-            ],
+            _to_ast(
+                [
+                    {(X,): 2, (Y,): 1},
+                    {},
+                    {(X, X, Y): -1 / 6, (Y, X, Y): -1 / 6},
+                ]
+            ),
         ),
         (
             [X, Y, X],
             [1 / 2, 1, 1 / 2],
             3,
-            [{(X,): 1, (Y,): 1}, {}, {(X, X, Y): -1 / 24, (Y, X, Y): -1 / 12}],
+            _to_ast([{(X,): 1, (Y,): 1}, {}, {(X, X, Y): -1 / 24, (Y, X, Y): -1 / 12}]),
         ),
     ],
 )
