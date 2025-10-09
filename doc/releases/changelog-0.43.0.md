@@ -1886,6 +1886,10 @@
   :class:`~.operation.Operator`) can now also be drawn correctly (e.g. with ``qml.draw``).     
   [(#8432)](https://github.com/PennyLaneAI/pennylane/pull/8432)
 
+* Fixed a bug with ``~.estimator.resource_mapping._map_to_resource_op()`` where it was incorrectly
+  mapping the ``~.TrotterProduct`` template.
+  [(#8425)](https://github.com/PennyLaneAI/pennylane/pull/8425)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
