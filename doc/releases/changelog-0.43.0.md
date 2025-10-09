@@ -80,7 +80,7 @@
     This can be done while only providing the number of wires acted upon, and not the specific wire labels:
 
     ```python
-    out_mul = qre.QFT(num_wires=3)
+    qft = qre.QFT(num_wires=3)
     res = qre.estimate(out_mul)
     ```
 
