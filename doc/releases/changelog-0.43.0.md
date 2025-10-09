@@ -6,9 +6,9 @@
 <h4>A brand new resource estimation module 📖 </h4>
 
 * A new toolkit dedicated to resource estimation is now available in the :mod:`~.estimator` module!
-  The functionality therein is designed to rapidly and flexibly estimate the quantum resources
-  required to execute programs written at different levels of abstraction.  
-  This new module includes the following features:
+  The functionality therein is designed to rapidly and flexibly estimate the quantum resources 
+  required to execute programs written at different levels of abstraction. This new module includes 
+  the following features:
 
   * A new :func:`~.estimator.estimate.estimate` function allows users to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
@@ -1245,46 +1245,52 @@
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
   [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
-* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with
-  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+* ``MeasurementProcess.expand`` has been deprecated. The relevant method can be replaced with
+  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
-* `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
-  Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
+* Specifying ``shots`` in the QNode call signature has been deprecated and will be removed in v0.44.
+  Instead, please use the :func:`~.set_shots` transform to set the number of shots for a QNode.
   [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
 
-* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
-  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` have been deprecated and will be 
+  removed in version v0.44. Instead, the corresponding ``.shape`` or ``.numeric_type`` of the 
+  ``MeasurementProcess`` class should be used.
   [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
 
-* Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be 
+  removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
-    - `print_contents` in favor of `print(obj)`
-    - `observables_in_order` in favor of `observables`
-    - `operations_in_order` in favor of `operations`
-    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
-    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order`` in favore of ``descendants(obj, sort=True)``
 
-* The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
-  Instead, the `qml.to_openqasm` function should be used.
+* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
+  Instead, the ``qml.to_openqasm`` function should be used.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
 
-* The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
-  Please use `level='device'` instead to apply the noise model at the device level.
+* The ``level=None`` argument in the :func:`pennylane.workflow.get_transform_program`, 
+  :func:`pennylane.workflow.construct_batch`, ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` 
+  transforms has been deprecated and will be removed in v0.43. Please use ``level='device'`` instead 
+  to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
   [(#8364)](https://github.com/PennyLaneAI/pennylane/pull/8364)
 
-* `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
-  with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
+* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, 
+  this hybrid workflow can be accomplished with a function like 
+  ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
 
-* Access to `add_noise`, `insert` and noise mitigation transforms from the `pennylane.transforms` module is deprecated.
-  Instead, these functions should be imported from the `pennylane.noise` module.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~.transforms` 
+  module have been deprecated. Instead, these functions should be imported from the :mod:`~.noise` 
+  module.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
-* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44.
-  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+* The ``qml.QNode.add_transform`` method has been deprecated and will be removed in v0.44.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
