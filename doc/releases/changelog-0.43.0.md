@@ -146,9 +146,9 @@
 
     ```python
     def my_circuit():
-    qre.RX(wires=0)
-    qre.RY(wires=1)
-    qre.RZ(wires=2)
+      qre.RX(wires=0)
+      qre.RY(wires=1)
+      qre.RZ(wires=2)
     return
 
     my_rc = qre.ResourceConfig()
