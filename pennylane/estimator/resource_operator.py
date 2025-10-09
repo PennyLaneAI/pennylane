@@ -34,9 +34,14 @@ class CompressedResourceOp:
     r"""This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`,
     containing only the operator type and the necessary parameters to estimate its resources.
 
-    .. note::
+    The ``CompressedResourceO`` object is returned by the ``.resource_rep()`` method of resource
+    operators. The objet is used by resource operators to efficiently compute the resource counts.
 
-        Only advanced use cases will require instantiating this class directly.
+    .. code-block:: pycon
+
+        >>> cmpr_op = qre.PauliRot.resource_rep(pauli_string="XYZ")
+        >>> print(cmpr_op)
+        CompressedResourceOp(PauliRot, num_wires=3, params={'pauli_string':'XYZ', 'precision':None})
 
     Args:
         op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:`~.pennylane.estimator.ResourceOperator`
@@ -47,27 +52,6 @@ class CompressedResourceOp:
         name (str | None): A custom name for the compressed operator. If not
             provided, a name will be generated using ``op_type.make_tracking_name``
             with the given parameters.
-
-    **Examples**
-
-    This class is a minimal representation of an operator used for the purpose of tracking resources.
-    It appears as the output of the
-    :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep`, and
-    :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep_from_op` methods.
-
-    .. code-block:: pycon
-
-        >>> cmpr_op = qre.PauliRot.resource_rep(pauli_string="XYZ")
-        >>> print(cmpr_op)
-        CompressedResourceOp(PauliRot, num_wires=3, params={'pauli_string':'XYZ', 'precision':None})
-
-    .. details::
-
-        Advanced users that wish to define custom
-        :class:`~.pennylane.estimator.resource_operator.ResourceOperator` instances, e.g., a custom
-        quantum phase estimation resource operator, will need to directly instantiate the
-        ``CompressedResourceOp`` class when implementing the
-        :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep` method.
 
     """
 
