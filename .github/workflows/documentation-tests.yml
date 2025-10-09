@@ -76,7 +76,6 @@ jobs:
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
-          --ignore=pennylane/templates
           "
           IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/io
