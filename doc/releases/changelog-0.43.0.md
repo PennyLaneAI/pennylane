@@ -268,12 +268,8 @@
   which is equivalent to changing the basis in which ``V`` is executed, then restoring it)
   can be efficiently controlled,
   as the only the central (target) operator ``V`` needs to be controlled, and not ``U`` or ``U†``.
-
-  * A new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
-    which allow a compute-uncompute pattern to be represented by a single operator.
-    A corresponding decomposition rule has been added to support efficiently controlling the pattern.
-    [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
-    [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
+  [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
   These new features leverage the graph-based decomposition system, enabled with :func:`~.decompostion.enable_graph()`. To illustrate their use, consider the following example. The compute-uncompute pattern is composed of a ``QFT``, followed by a 
   ``PhaseAdder``, and finally an inverse ``QFT``.
 
