@@ -583,19 +583,19 @@
 
   ```pycon
   >>> circuit.shots
-  Shots(total=1000)
+  Shots(total_shots=1000, shot_vector=(ShotCopies(1000 shots x 1),))  
   >>> circuit()
   np.float64(-0.004)
   ```
 
   Setting the ``shots`` value in a QNode is equivalent to decorating with 
-  :func:`~pennylane.set_shots`. However, decorating with :func:`~pennylane.set_shots` overrides 
+  :func:`~.workflow.set_shots`. However, decorating with :func:`~.workflow.set_shots` overrides 
   QNode ``shots``:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
   >>> new_circ.shots
-  Shots(total=123)
+  Shots(total_shots=123, shot_vector=(ShotCopies(123 shots x 1),))
   ```
 
 * The :func:`~pennylane.set_shots` transform can now be directly applied to a QNode without the need 
@@ -1197,9 +1197,9 @@
   ```pycon
   >>> from pennylane.math.interface_utils import Interface
   >>> Interface("torch")
-  Interface.TORCH
+  <Interface.TORCH: 'torch'>  
   >>> Interface("jax-jit")
-  Interface.JAX_JIT
+  <Interface.JAX_JIT: 'jax-jit'>
   ```
 
 * :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and `
@@ -1448,11 +1448,11 @@
 * Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
-    - ``print_contents`` in favor of ``print(obj)``
-    - ``observables_in_order`` in favor of ``observables``
-    - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order`` in favor of ``descendants(obj, sort=True)``
+    - ``print(obj)`` in favor of ``print_contents``
+    - ``observables`` in favor of ``observables_in_order``
+    - ``operations`` in favor of ``operations_in_order``
+    - ``ancestors(obj, sort=True)`` in favor of ``ancestors_in_order``
+    - ``descendants(obj, sort=True)`` in favor of ``descendants_in_order``
 
 * The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
