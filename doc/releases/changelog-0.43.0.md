@@ -10,6 +10,10 @@
   required to execute programs written at different levels of abstraction.  
   This new module includes the following features:
 
+  * A new :func:`~.estimator.estimate.estimate` function allows users to estimate the quantum resources
+    required to execute a circuit or operation with respect to a given gate set and configuration.
+    [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
+    [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
   * Fast resource estimation requires lightweight representations of quantum operators and their resources.
     Users can now access the following base classes designed for this purpose:
     * :class:`~.estimator.resources_base.Resources`:
@@ -24,10 +28,6 @@
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * A new :func:`~.estimator.estimate.estimate` function allows users to estimate the quantum resources
-    required to execute a circuit or operation with respect to a given gate set and configuration.
-    [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
-    [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
   * To manage and track wire usage during resource estimation
     and within :class:`~.estimator.resource_operator.ResourceOperator` definitions,
     the :class:`~.estimator.wires_manager.WireResourceManager`,
