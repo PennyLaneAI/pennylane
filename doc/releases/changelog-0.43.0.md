@@ -1654,7 +1654,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug in ``default.qubit`` where it wasn't properly validating the ``mcm_method`` keyword argument.
+* Fixed a bug in ``default.qubit`` where the device wasn't properly validating the ``mcm_method`` keyword argument.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
 * Fixed compatibility with JAX and PyTorch input parameters in :class:`~.SpecialUnitary` when large
