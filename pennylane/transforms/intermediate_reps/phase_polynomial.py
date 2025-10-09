@@ -40,11 +40,9 @@ def phase_polynomial(
         wire_order (Iterable): Indicates how rows and columns should be ordered. If ``None`` is provided, uses the wires of the input circuit (``tape.wires``).
 
     Returns:
-        tuple(TensorLike, TensorLike, TensorLike): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
+        tuple(TensorLike, TensorLike, TensorLike):
+            A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
             In the case of inputting a callable function, a new callable with the same call signature is returned (see :func:`pennylane.transform`).
-       tuple(TensorLike, TensorLike, TensorLike):
-           A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
-           In the case of inputting a callable function, a new callable with the same call signature is returned (see :func:`pennylane.transform`).
 
     **Example**
 
