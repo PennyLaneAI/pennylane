@@ -318,15 +318,14 @@ def _controlled_semi_adder_resource(
     return {
         TemporaryAND: num_y_wires - 1,
         adjoint_resource_rep(TemporaryAND, {}): num_y_wires - 1,
-        CNOT: 6 * (num_y_wires - 2),
+        CNOT: 6 * (num_y_wires - 2) + 1,
         controlled_resource_rep(
             CNOT,
             {},
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             work_wire_type="zeroed",
-        ): num_y_wires
-        + 1,
+        ): num_y_wires,
     }
 
 
@@ -364,11 +363,7 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
     )
 
     if num_x_wires >= num_y_wires:
-        ctrl(
-            CNOT([x_wires_pl[-1], y_wires_pl[-1]]),
-            control=control_wires,
-            control_values=control_values,
-        )
+        CNOT([x_wires_pl[-1], y_wires_pl[-1]])
 
     for i in range(len(y_wires_pl) - 2, 0, -1):
         if i < num_x_wires:
