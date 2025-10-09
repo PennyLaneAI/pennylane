@@ -270,8 +270,10 @@
   as the only the central (target) operator ``V`` needs to be controlled, and not ``U`` or ``U†``.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
-  These new features leverage the graph-based decomposition system, enabled with :func:`~.decompostion.enable_graph()`. To illustrate their use, consider the following example. The compute-uncompute pattern is composed of a ``QFT``, followed by a 
-  ``PhaseAdder``, and finally an inverse ``QFT``.
+  
+  These new features leverage the graph-based decomposition system, enabled with :func:`~.decompostion.enable_graph()`.
+  To illustrate their use, consider the following example. The compute-uncompute pattern is composed of a ``QFT``,
+  followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
 
   ```python
    from functools import partial
