@@ -733,7 +733,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict | None = None) -> Callable:
         wire_map (Optional[dict]):  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
 
     Returns:
-        function: A quantum function that will execute the program.
+        Callable: A quantum function that will execute the program.
 
 
     **Examples**
