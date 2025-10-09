@@ -6,8 +6,9 @@
 <h4>A brand new resource estimation module 📖 </h4>
 
 * A new toolkit dedicated to resource estimation is now available in the :mod:`~.estimator` module!
-  The functionality therein is designed to rapidly estimate the quantum resources required to execute a program,
-  and it can flexibly analyze programs written at different levels of abstraction.
+  The functionality therein is designed to rapidly and flexibly estimate the quantum resources
+  required to execute programs written at different levels of abstraction.  
+  This new module includes the following features:
 
   * Fast resource estimation requires lightweight representations of quantum operators and their resources.
     Users can now access the following base classes designed for this purpose:
