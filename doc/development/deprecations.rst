@@ -102,11 +102,11 @@ Pending deprecations
 
 * Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
 
-    - ``print_contents`` in favor of ``print(obj)``
-    - ``observables_in_order`` in favor of ``observables``
-    - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order`` in favore of ``.descendants(obj, sort=True)``
+    - ``print(obj)`` in favor of ``print_contents``
+    - ``observables`` in favor of ``observables_in_order``
+    - ``operations`` in favor of ``operations_in_order``
+    - ``ancestors(obj, sort=True)`` in favor of ``ancestors_in_order(obj)``
+    - ``descendants(obj, sort=True)`` in favor of ``descendants_in_order(obj)``
 
   - Deprecated in v0.43
   - Will be removed in v0.44
