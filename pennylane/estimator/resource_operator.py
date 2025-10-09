@@ -405,8 +405,11 @@ class GateCount:
     r"""Stores a lightweight representation of a gate and its number of occurrences in a decomposition.
 
     The decomposition of a resource operator is tracked as a sequence of gates and the corresponding
-    number of times those gates occur in the decomposition. For a given entry in the sequence,
-    these two pieces of information (gate and counts) are grouped into one object ``GateCount``.
+    number of times those gates occur in the decomposition. For a given resource operator, this
+    decomposition can be accessed with the operator's ``.resource_decomp()`` method. The method
+    returns a sequence of ``GateCount`` objects where each object groups the two pieces of
+    information, gate and counts, for the decomposition.
+
     For example, the decomposition of the Quantum Fourier Transform (QFT)
     contains 3 ``Hadamard`` gates, 1 ``SWAP`` gate and 3 ``ControlledPhaseShift`` gates.
 
