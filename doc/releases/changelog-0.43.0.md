@@ -265,7 +265,7 @@
 
 * Users can now benefit from an optimization of the controlled compute-uncompute pattern.
   Operators arranged in a compute-uncompute pattern (``U V U†``,
-  which is equivalent to changing the basis in which ``V`` is executed, then restoring it)
+  which is equivalent to changing the basis in which ``V`` is expressed)
   can be efficiently controlled,
   as the only the central (target) operator ``V`` needs to be controlled, and not ``U`` or ``U†``.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
