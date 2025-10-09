@@ -35,6 +35,7 @@ from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core.transform_dispatcher import apply_to_callable
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -902,3 +903,16 @@ def qnode(device, **kwargs) -> Callable[[Callable], QNode]:
 
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+# pylint: disable=protected-access
+@TransformDispatcher.generic_register
+def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
+    """The default behavior for applying a transform to a QNode."""
+    if transform._custom_qnode_transform:
+        return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
+    new_qnode = copy.copy(obj)
+    new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
+    if qml.capture.enabled():
+        return apply_to_callable(new_qnode, transform, *targs, **tkwargs)
+    return new_qnode
