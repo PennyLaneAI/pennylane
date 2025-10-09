@@ -145,29 +145,28 @@
   * To make writing workflows using :mod:`~.estimator` straightforward,
     several resource operators (:class:`~.estimator.resource_operator.ResourceOperator`) were added.
     These resource operators have been designed to require the least possible amount of data while
-    still providing a robust resource estimate.
-    * The resource operators for ``Identity``, ``GlobalPhase``, non-parametric operators and single-qubit
-      parametric operators have been added to `qml.estimator.ops`.
+    still providing a robust resource estimate:
+    * ``Identity``, ``GlobalPhase``, various non-parametric operators and single-qubit
+      parametric operators.
       [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
       [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
       [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
-    * The resource operators for various controlled single and multi qubit operators have been added to `qml.estimator.ops.op_math`.
+    * Various controlled single and multi qubit operators.
       [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
-    * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
+    * ``Controlled``, and ``Adjoint`` as symbolic operators.
       [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
       [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
-    * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
-      `qml.estimator.ops`.
+    * ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators.
       [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
     * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
       ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
-      ``IterativeQPE`` were added to `qml.estimator.templates`.
+      ``IterativeQPE``.
       [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
     * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
       ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
-      ``RegisterComparator`` were added.
+      ``RegisterComparator``.
       [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
-    * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added.
+    * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC``.
       [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
 
   The resource estimation tools in the :mod:`~.estimator` module
