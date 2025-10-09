@@ -98,7 +98,7 @@
       'Hadamard': 3
     ```
 
-    A complete list of available ``ResourceOperator``s can be found in the :mod:`estimator module documentation <~.estimator>`.
+    A complete list of available ``ResourceOperator``s can be found in the :mod:`~.estimator` module documentation.
     A more complex example of using :func:`~.estimator.estimate.estimate`
     to estimate the quantum resources of an entire workflow is given below:
 
