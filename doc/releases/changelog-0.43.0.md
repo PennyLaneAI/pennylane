@@ -113,10 +113,11 @@
     to store the metadata of the Hamiltonian of a quantum system
     pertaining to resource estimation.
     Likewise, the resource templates
-    ``TrotterProduct``,
-    ``TrotterTHC``,
-    ``TrotterVibrational``,
-    and ``TrotterVibronic``
+    :class:`~.estimator.templates.TrotterProduct`,
+    :class:`~.estimator.templates.TrotterCDF`,
+    :class:`~.estimator.templates.TrotterTHC`,
+    :class:`~.estimator.templates.TrotterVibronic`,
+    and :class:`~.estimator.templates.TrotterVibrational`
     related to the Suzuki-Trotter method were added.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
 
