@@ -270,7 +270,7 @@ def qsvt(
         where :math:`d` is the maximum dimension of :math:`A` and :math:`\|A\|` is the 2-norm of :math:`A`.
         In the previous example this is satisfied since :math:`d = 4` and :math:`\|A\|^2 = 0.2`:
 
-        >>> print(4* np.linalg.norm(A, ord='fro')**2)
+        >>> print(4 * np.linalg.norm(A, ord='fro')**2)
         0.80...
 
 
