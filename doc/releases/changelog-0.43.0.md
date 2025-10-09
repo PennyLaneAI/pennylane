@@ -141,6 +141,31 @@
     including operator precisions and the option to set custom resource decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
 
+    In the following example, a :class:`~.estimator.resource_config.ResourceConfig` is used to modify the
+    default precision of single qubit rotations, and ``T`` counts are compared between different configurations.
+
+    ```python
+    def my_circuit():
+    qre.RX(wires=0)
+    qre.RY(wires=1)
+    qre.RZ(wires=2)
+    return
+
+    my_rc = qre.ResourceConfig()
+    res1 = qre.estimate(my_circuit, config=my_rc)()
+
+    my_rc.set_single_qubit_rot_precision(1e-2)
+    res2 = qre.estimate(my_circuit, config=my_rc)()
+
+    t1 = res1.gate_counts['T']
+    t2 = res2.gate_counts['T']
+    ```
+
+    ```pycon
+    >>> print(t1, t2)
+    132 51
+    ```
+
   * Hamiltonians are often both expensive to compute and to analyze,
     but the amount of information required to estimate the resources of Hamiltonian simulation
     can be surprisingly small in comparison.
