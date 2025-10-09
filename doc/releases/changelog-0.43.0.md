@@ -169,11 +169,10 @@
   Additionally, :func:`~.allocate` and :func:`~.deallocate` work with :func:`~.qjit` with 
   [some restrictions](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/sharp_bits.html#functionality-differences-from-pennylane).
 
-<h4>Resource tracking with Catalyst 👓</h4>
+<h4>Resource tracking with Catalyst 🧾</h4>
 
-* Users can now use the :func:`~.specs` function to
-  track the resources of programs compiled with :func:`~.qjit`!
-  This new feature is currently only supported when using `level="device"`.
+* Users can now use the :func:`~.specs` function to track the exact resources of programs compiled 
+  with :func:`~.qjit`! This new feature is currently only supported when using ``level="device"``.
   [(#8202)](https://github.com/PennyLaneAI/pennylane/pull/8202)
 
   ```python
@@ -210,8 +209,10 @@
   {2: 55313, 1: 82821}
   ```
 
-* The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
-  This makes the depth computation performed by `qml.specs` optional.
+* The :func:`~.specs` function now accepts a ``compute_depth`` keyword argument, which is set to 
+  ``True`` by default. Since depth computation is usually the most expensive resource to calculate, 
+  making it optional can increase the performance of :func:`~.specs` when depth is not a desired
+  resource to calculate.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
   [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
