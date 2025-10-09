@@ -424,7 +424,9 @@
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
   [(#8228)](https://github.com/PennyLaneAI/pennylane/pull/8228)
 
-  * The :func:`~.transforms.decompose` transform now accepts a `max_work_wires` argument that allows 
+  Support for :func:`~.allocate` unlocks the following features:
+
+  * The :func:`~.transforms.decompose` transform now accepts a ``max_work_wires`` argument that allows 
     the user to specify the number of work wires available for dynamic allocation during 
     decomposition.
     [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
@@ -433,7 +435,7 @@
     [(#8236)](https://github.com/PennyLaneAI/pennylane/pull/8236)
 
   * Decomposition rules were added for the :class:`~.MultiControlledX` that dynamically allocate 
-    work wires if none were explicitly specified via the `work_wires` argument.
+    work wires if none were explicitly specified via the ``work_wires`` argument.
     [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
 
 * Several templates now have decompositions that can be accessed within the graph-based
@@ -457,7 +459,7 @@
   :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, 
   :class:`~.FABLE`, :class:`~.Qubitization`, and :class:`~.Superposition`.
 
-* Two additions were made to :class:`~.Select` that affect how it gets decomposed:
+* Two additions were made to :class:`~.Select` that positively affect how it gets decomposed:
 
   * A new keyword argument ``partial`` has been added, which allows for simplifications in the 
     decomposition of ``Select`` under the assumption that the state of the control wires has no 
@@ -478,8 +480,8 @@
   equal to :math:`\pm 1`.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
-* The :func:`~.transforms.decompose` transform is now able to decompose 
-  classically controlled operations, i.e., operations nested inside ``cond``.
+* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled 
+  operations (i.e., operations nested inside ``cond``).
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
   ```python
@@ -586,8 +588,9 @@
   np.float64(-0.004)
   ```
 
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~pennylane.set_shots`. 
-  However, decorating with :func:`~pennylane.set_shots` overrides QNode ``shots``:
+  Setting the ``shots`` value in a QNode is equivalent to decorating with 
+  :func:`~pennylane.set_shots`. However, decorating with :func:`~pennylane.set_shots` overrides 
+  QNode ``shots``:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
@@ -595,9 +598,9 @@
   Shots(total=123)
   ```
 
-* The :func:`~pennylane.set_shots` transform can now be directly applied to a QNode without the need for 
-  `functools.partial`, providing a more user-friendly syntax and negating having to import the 
-  `functools` package.
+* The :func:`~pennylane.set_shots` transform can now be directly applied to a QNode without the need 
+  for ``functools.partial``, providing a more user-friendly syntax and negating having to import the 
+  ``functools`` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
@@ -614,10 +617,10 @@
   0.002
   ```
 
-<h4>Clifford+T decomposition</h4>
+<h4>Clifford + T decomposition</h4>
 
 * The :func:`~.clifford_t_decomposition` transform with ``method="gridsynth"`` is now compatible
-  with quantum just-in-time compilation via the ``@qml.qjit`` decorator.
+  with quantum just-in-time compilation via the :func:`~.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
 
   ```python
@@ -637,8 +640,8 @@
 
 * The :func:`~.clifford_t_decomposition` transform can now decompose circuits with mid-circuit
   measurements, including Catalyst's measurement operations. It also now handles ``RZ`` and 
-  ``PhaseShift`` operations where angles are odd multiples of ``±pi/4`` more efficiently when using 
-  ``method="gridsynth"``.
+  ``PhaseShift`` operations where angles are odd multiples of :math:`\pm \tfrac{\pi}{4}` more 
+  efficiently when using ``method="gridsynth"``.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
   [(#7942)](https://github.com/PennyLaneAI/pennylane/pull/7942)
 
@@ -655,7 +658,7 @@
 
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and
   :func:`~.transforms.match_controlled_iX_gate` have been added, which compile certain patterns to 
-  efficient Clifford+T equivalents.
+  efficient Clifford + T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
 
   ```python
