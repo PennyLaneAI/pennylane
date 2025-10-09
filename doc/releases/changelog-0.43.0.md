@@ -1744,8 +1744,8 @@
   gates conversion into their ZX-graph representation.
   [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
 
-* ``get_best_diff_method`` now correctly aligns with ``execute`` and ``construct_batch`` logic in    
-  workflows for internal consistency.
+* Fixed ``qml.workflow.get_best_diff_method`` to correctly align with ``execute`` and ``construct_batch`` logic in    
+  the workflow module for internal consistency.
   [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
 
 * Issues were resolved with AutoGraph transforming internal PennyLane library code in addition to 
