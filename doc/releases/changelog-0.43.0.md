@@ -1590,7 +1590,7 @@
 
 * Fixes a bug where :func:`~.ops.rs_decomposition` logic to streamline queuing conditions are 
   applied incorrectly.
-  [(#8440)](https://github.com/PennyLaneAI/pennylane/pull/8440)
+  [(#8441)](https://github.com/PennyLaneAI/pennylane/pull/8441)
 
 <h3>Contributors ✍️</h3>
 
