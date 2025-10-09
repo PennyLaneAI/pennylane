@@ -46,15 +46,13 @@ class DecompositionType(StrEnum):
 
 
 class ResourceConfig:
-    """A container to track the configuration for precisions and custom decompositions for the
-    resource estimation pipeline.
+    """Sets the values of configurable parameters when estimating resources for a quantum workflow.
+    This is used to easily analyze the same workflow with multiple different configurations.
 
-    Multiple configurations can be used to easily analyze the same workflows with different settings.
-    Customize configurations using methods such as the :meth:`~.estimator.resource_config.ResourceConfig.set_single_qubit_rot_precision`
-    method for single qubit rotation precisions, the :meth:`~.estimator.resource_config.ResourceConfig.set_precision` method to set various
-    operator precisions, and the :meth:`~.estimator.resource_config.ResourceConfig.set_decomp` method to set custom resource decompositions.
-
-    The default configuration is shown here:
+    A custom :code:`ResourceConfig` can be used when estimating the resources for a workflow by 
+    passing it directly into the :func:`~.pennylane.estimator.estimate` function 
+    (:code:`qre.estimate(workflow, config=my_custom_config)`). If no configuration is passed then 
+    the default configuration is used. The default configuration is shown here:
 
     >>> import pennylane.estimator as qre
     >>> config = qre.ResourceConfig()
@@ -80,6 +78,72 @@ class ResourceConfig:
             },
         custom decomps = []
     )
+
+    The :code:`ResourceConfig` stores precisions and custom decompositions. These quantities can be
+    modified using the :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_precision`
+    and :meth:`~.pennylane.estimator.resource_config.ResourceConfig.set_decomp` functions (see the 
+    associated docstrings for more information).
+
+    **Example**
+
+    The :code:`ResourceConfig` object can be used to set the default precision values to decompose an
+    operator when the values are not specified.
+
+    .. code-block:: python
+
+        import pennylane.estimator as qre
+
+        def my_workflow(eps):
+            qre.RX(precision=eps)
+        
+        my_config = qre.ResourceConfig()
+        my_config.set_precision(qre.RX, precision=1e-5)
+    
+    .. code-block:: pycon
+
+        >>> res = qre.estimate(my_workflow, gate_set={"T", "X"})(eps=1e-2)
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 1
+           algorithmic wires: 1
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 17
+           'T': 17
+    
+    The :code:`RX`-gate was approximately decomposed to 17 :code:`T`-gates. Here we explicitly set 
+    the precision of the approximation to :code:`1e-2`. If we instead pass :code:`None`, the default 
+    precision will be used (:code:`1e-9`).
+
+    .. code-block:: pycon
+
+        >>> res = qre.estimate(my_workflow, gate_set={"T", "X"})(eps=None)
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 1
+           algorithmic wires: 1
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 44
+           'T': 44
+
+    We can change the default precision for every instance of the :code:`RX` gate where it is not 
+    specified by passing our custom configuration:
+
+    .. code-block:: pycon
+
+        >>> res = qre.estimate(my_workflow, gate_set={"T", "X"}, config=my_config)(eps=None)
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 1
+           algorithmic wires: 1
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 28
+           'T': 28
 
     """
 
@@ -283,8 +347,7 @@ class ResourceConfig:
             op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class whose decomposition is being overriden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
-                ``"adj"``, ``"pow"``, ``"ctrl"``,
-                and ``"base"``. Default is ``"base"``.
+                ``"adj"``, ``"pow"``, ``"ctrl"``, and ``"base"``. Default is ``"base"``.
 
         Raises:
             ValueError: If ``decomp_type`` is not a valid decomposition type.
