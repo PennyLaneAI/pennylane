@@ -14,6 +14,13 @@
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
+    * Users can also estimate the resources of standard PennyLane circuits
+      using the :func:`~.estimator.estimate.estimate` function,
+      which has been upgraded to automatically map PennyLane operations (:class:`~.Operation`)
+      to their associated resource operators (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`)
+      for resource estimation.
+      [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
+      [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
   * Fast resource estimation requires lightweight representations of quantum operators and their resources.
     This is made possible by the addition of several classes:
     * :class:`~.estimator.resources_base.Resources`:
@@ -95,13 +102,6 @@
     The :class:`~.estimator.resource_config.ResourceConfig` includes a variety of customizable settings,
     including operator precisions and the option to set custom resource decompositions.
     [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
-
-  * Users can now estimate the resources of standard PennyLane circuits
-    using the :func:`~.estimator.estimate.estimate` function.
-    :func:`~.estimator.estimate.estimate` has been upgraded to automatically
-    map PennyLane operations to their associated resource operators for resource estimation.
-    [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
-    [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
 
   * Hamiltonians are often both expensive to compute and to analyze,
     but the amount of information required to estimate the resources of Hamiltonian simulation
