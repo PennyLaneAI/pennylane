@@ -90,8 +90,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     retrieve from the ``nx.Graph`` itself. In addition, the last entry, which is always the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
-    >>> from pennylane.transforms.intermediate_reps import postorder_traverse
-    >>> traversal = postorder_traverse(G, 0)
+    >>> traversal = qml.transforms.postorder_traverse(G, 0)
     >>> print(traversal)
     [(8, 3), (3, 1), (4, 1), (5, 1), (1, 0), (6, 2), (7, 2), (2, 0)]
     >>> expected = [8, 3, 4, 5, 1, 6, 7, 2] # Skipping trailing root
@@ -176,8 +175,7 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     retrieve from the ``nx.Graph`` itself. In addition, the first entry, which always is the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
-    >>> from pennylane.labs.intermediate_reps import preorder_traverse
-    >>> traversal = preorder_traverse(G, 0)
+    >>> traversal = qml.transforms.preorder_traverse(G, 0)
     >>> print(traversal)
     [(1, 0), (3, 1), (8, 3), (4, 1), (5, 1), (2, 0), (6, 2), (7, 2)]
     >>> expected = [1, 3, 8, 4, 5, 2, 6, 7] # Skipping leading root
