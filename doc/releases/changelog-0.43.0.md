@@ -121,6 +121,27 @@
     related to the Suzuki-Trotter method were added.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
 
+    Here's a simple example of resource estimation for the simulation of a
+    :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`:
+
+    ```pycon
+    >>> cdf_ham = qre.CDFHamiltonian(num_orbitals=4, num_fragments=4)
+    >>> res = qre.estimate(qre.TrotterCDF(cdf_ham, num_steps=1, order=2))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 8
+        algorithmic wires: 8
+        allocated wires: 0
+      	 zero state: 0
+    	 any state: 0
+     Total gates : 2.238E+4
+      'T': 2.075E+4,
+      'CNOT': 448,
+      'Z': 336,
+      'S': 504,
+      'Hadamard': 336
+    ```
+
   * To make writing workflows using :mod:`~.estimator` straightforward,
     several resource operators (:class:`~.estimator.resource_operator.ResourceOperator`) were added.
     These resource operators have been designed to require the least possible amount of data while
