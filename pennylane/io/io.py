@@ -713,7 +713,7 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, wire_map: dict | None = None):
+def from_qasm3(quantum_circuit: str, wire_map: dict | None = None) -> callable:
     """
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
