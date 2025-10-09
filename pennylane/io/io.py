@@ -736,6 +736,9 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     **Examples**
 
+    First, we define a QASM 3.0 circuit as a string. In this example, we define three qubits,
+    a few parameterized gates, a subroutine with a measurement, and a control flow statement.
+
     .. code-block:: python
 
         qasm_string = '''
@@ -770,18 +773,19 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
                 }
         '''
 
+    We can convert this circuit into a PennyLane quantum function using:
+
     .. code-block:: python
 
-        import pennylane as qml
-
-        dev = qml.device("default.qubit", wires=[0, 1, 2])
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit", wires=[0, 1, 2]))
         def my_circuit():
             qml.from_qasm3(
                 qasm_string,
                 {'q0': 0, 'q1': 1, 'q2': 2}
             )()
             return qml.expval(qml.Z(0))
+
+    Inspecting the circuit, we can see that the operations and measurements have been correctly interpreted.
 
     >>> print(qml.draw(my_circuit)())
     0: ──RY(0.10)──X²────────────┤  <Z>
