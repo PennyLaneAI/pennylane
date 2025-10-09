@@ -283,7 +283,8 @@
 
 <h4>Change operator bases 🍴</h4>
 
-* Users can now benefit from an optimization of the controlled compute-uncompute pattern with the new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class.
+* Users can now benefit from an optimization of the controlled compute-uncompute pattern with
+  the new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class.
   Operators arranged in a compute-uncompute pattern (``U V U†``,
   which is equivalent to changing the basis in which ``V`` is expressed)
   can be efficiently controlled,
@@ -296,32 +297,34 @@
   followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
 
   ```python
-   from functools import partial
+  from functools import partial
 
-    qml.decomposition.enable_graph()
+  qml.decomposition.enable_graph()
 
-    dev = qml.device("default.qubit")
-    @qml.qnode(dev)
-    def circuit():
-        qml.H(0)
-        qml.CNOT([1,2])
-        qml.ctrl(
-            qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
-            control=0
-        )
-        return qml.state()
-    ```
+  dev = qml.device("default.qubit")
 
-    When this circuit is decomposed, the ``QFT`` and ``Adjoint(QFT)`` are not controlled,
-    resulting in a much more resource-efficient decomposition:
+  @partial(qml.transforms.decompose, max_expansion=2)
+  @qml.qnode(dev)
+  def circuit():
+      qml.H(0)
+      qml.CNOT([1,2])
+      qml.ctrl(
+          qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
+          control=0
+      )
+      return qml.state()
+  ```
 
-    ```pycon
-    >>> circuit2 = qml.transforms.decompose(circuit, max_expansion=1)
-    >>> print(qml.draw(circuit2)())
-    0: ──H──────╭●────────────────┤  State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
-    ```
+  When this circuit is decomposed, the ``QFT`` and ``Adjoint(QFT)`` are not controlled,
+  resulting in a much more resource-efficient decomposition:
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H──────╭●────────────────┤  State
+  1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
+  2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+  ```
+
   * The decompositions for several templates have been updated to use ``ChangeOpBasis``, including:
     :class:`~.Adder`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
     [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
