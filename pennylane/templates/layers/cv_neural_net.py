@@ -177,7 +177,7 @@ class CVNeuralNetLayers(Operation):
 
         >>> theta_1 = torch.tensor([[0.4]])
         >>> phi_1 = torch.tensor([[-0.3]])
-        >>> varphi_1 = = torch.tensor([[1.7, 0.1]])
+        >>> varphi_1 = torch.tensor([[1.7, 0.1]])
         >>> r = torch.tensor([[-1., -0.2]])
         >>> phi_r = torch.tensor([[0.2, -0.2]])
         >>> theta_2 = torch.tensor([[1.4]])
