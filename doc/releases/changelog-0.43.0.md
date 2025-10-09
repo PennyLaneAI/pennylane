@@ -533,14 +533,14 @@
 
 * With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a 
   decomposition cannot be found for an operator in the circuit in terms of the target gates, it no 
-  longer raises an error. Instead, a warning is raised, and `op.decomposition()` (the current 
+  longer raises an error. Instead, a warning is raised, and ``op.decomposition()`` (the current 
   default method for decomposing gates) is used as a fallback, while the rest of the circuit is 
   still decomposed with the new graph-based system. Additionally, a special warning message is
   raised if the circuit contains a ``GlobalPhase``, reminding the user that ``GlobalPhase`` is not 
   assumed to have a decomposition under the new system.
   [(#8156)](https://github.com/PennyLaneAI/pennylane/pull/8156)
 
-* :func:`.transforms.decompose` and :func:`.preprocess.decompose` now have a unified internal 
+* :func:`~.transforms.decompose` and :func:`~.preprocess.decompose` now have a unified internal 
   implementation to promote feature parity in preparation for the graph-based decomposition system 
   to be the default decomposition method in PennyLane.
   [(#8193)](https://github.com/PennyLaneAI/pennylane/pull/8193)
