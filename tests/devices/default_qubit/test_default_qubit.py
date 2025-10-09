@@ -2149,8 +2149,11 @@ class TestPostselection:
             mcm_method="deferred",
             postselect_mode=postselect_mode,
         )
-        def circuit():
-            # State is |0>, so postselection probability is zero
+        def circuit(x):
+            # Applying a parametrized gate to make the state abstract with jax.jit
+            qml.RZ(x, 0)
+            # State is g * |0> for some global phase g (because we applied an RZ gate),
+            # so postselection probability is zero
             qml.measure(0, postselect=1)
             return qml.expval(qml.Z(0))
 
@@ -2180,11 +2183,11 @@ class TestPostselection:
 
         if error:
             with pytest.raises(expected_error, match=err_message):
-                circuit()
+                circuit(0.0)
 
         else:
             # no error
-            circuit()
+            circuit(0.0)
 
 
 class TestIntegration:
