@@ -56,7 +56,7 @@ class TemporaryAND(Operation):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.set_shots(1)
         @qml.qnode(qml.device("default.qubit"))
@@ -72,15 +72,13 @@ class TemporaryAND(Operation):
             qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
             return qml.sample(wires=[0,1,2,3])
 
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)())
-        0: ──X─╭●─────●╮─┤ ╭Sample
-        1: ──X─├●─────●┤─┤ ├Sample
-        2: ────╰──╭●───╯─┤ ├Sample
-        3: ───────╰X─────┤ ╰Sample
-        >>> print(circuit())
-        [[1 1 0 1]]
+    >>> print(qml.draw(circuit)())
+    0: ──X─╭●─────●╮─┤ ╭Sample
+    1: ──X─├●─────●┤─┤ ├Sample
+    2: ────╰──╭●───╯─┤ ├Sample
+    3: ───────╰X─────┤ ╰Sample
+    >>> print(circuit())
+    [[1 1 0 1]]
     """
 
     num_wires = 3

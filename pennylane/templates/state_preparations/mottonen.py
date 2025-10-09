@@ -419,11 +419,14 @@ class MottonenStatePreparation(Operation):
         **Example**
 
         >>> state_vector = torch.tensor([0.5, 0.5, 0.5, 0.5])
-        >>> qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
-        [RY(array(1.57079633), wires=['a']),
-        RY(array(1.57079633), wires=['b']),
+        >>> ops = qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
+        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
         CNOT(wires=['a', 'b']),
         CNOT(wires=['a', 'b'])]
+
         """
         if len(qml.math.shape(state_vector)) > 1:
             raise ValueError(
@@ -472,9 +475,8 @@ def _mottonen_resources(num_wires):
     return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
 
 
-# Not exact because it might over-estimate the resources
 mottonen_decomp = qml.register_resources(
-    _mottonen_resources, MottonenStatePreparation.compute_decomposition, exact=False
+    _mottonen_resources, MottonenStatePreparation.compute_decomposition
 )
 
 qml.add_decomps(MottonenStatePreparation, mottonen_decomp)
