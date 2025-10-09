@@ -1865,10 +1865,6 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * The test files for :mod:`~.estimator` were renamed to avoid a dual definition error with the :mod:`~.labs` module.
   [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
 
-* Fixed some issues and updated docs for the :mod:`~.estimator` module.
-  [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
-  [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
-
 <h3>Documentation 📝</h3>
 
 * The :doc:`installation page </development/guide/installation>` has been updated to include
@@ -1944,6 +1940,9 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has been
   fixed to correctly display the `max_workers` parameter.
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
+
+* Updated documentation in the :mod:`~.estimator` module.
+  [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -2056,6 +2055,11 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * Fixes a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, :func:`~.transforms.single_qubit_fusion`,
   :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
+
+* Fixed bugs in the :mod:`~.estimator` module pertaining to tracking resource operator names,
+  as well as the handling of decompositions and measurement operators by the mapper
+  used by the :func:`~.estimator.estimate.estimate` function.
+  [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
 
 <h3>Contributors ✍️</h3>
 
