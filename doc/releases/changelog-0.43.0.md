@@ -261,7 +261,7 @@
   The documentation was updated to include its own section on ZX calculus-based passes.
   [(#8201)](https://github.com/PennyLaneAI/pennylane/pull/8201)
 
-<h4>Change operator basis 🍴</h4>
+<h4>Change operator bases 🍴</h4>
 
 * Users can now benefit from an optimization of the controlled compute-uncompute pattern with the new :func:`~.change_op_basis` function and :class:`~.ops.op_math.ChangeOpBasis` class.
   Operators arranged in a compute-uncompute pattern (``U V U†``,
