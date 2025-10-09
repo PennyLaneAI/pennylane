@@ -140,11 +140,6 @@
       [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
     * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added.
       [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
-  * The test files were renamed to avoid dual definition error with the labs module.
-    [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
-  * Fixed some issues and updated docs for the :mod:`~.estimator` module.
-    [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
-    [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
   The resource estimation tools in the :mod:`~.estimator` module
   were originally prototyped in the :mod:`~.labs` module.
@@ -1480,6 +1475,13 @@
 
 * Add nightly RC builds script to `.github/workflows`.
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
+
+* The test files for :mod:`~.estimator` were renamed to avoid a dual definition error with the :mod:`~.labs` module.
+  [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
+
+* Fixed some issues and updated docs for the :mod:`~.estimator` module.
+  [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
+  [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h3>Documentation 📝</h3>
 
