@@ -15,15 +15,15 @@
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
   * Fast resource estimation requires lightweight representations of quantum operators and their resources.
-    Users can now access the following base classes designed for this purpose:
+    This is made possible by the addition of several classes:
     * :class:`~.estimator.resources_base.Resources`:
       A container for counts and other metadata of quantum resources.
+    * :class:`~.estimator.resource_operator.GateCount`:
+      A class to represent a gate and its number of occurrences in a circuit or decomposition.
     * :class:`~.estimator.resource_operator.ResourceOperator`:
       A base class to represent quantum operators for the purpose of resource estimation.
     * :class:`~.estimator.resource_operator.CompressedResourceOp`:
       A lightweight class corresponding to an operator type alongside its parameters.
-    * :class:`~.estimator.resource_operator.GateCount`:
-      A class to represent a gate and its number of occurrences in a circuit or decomposition.
 
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
