@@ -35,7 +35,7 @@ DefaultGateSet = frozenset(
 class Resources:
     r"""Stores the estimated resource requirements of a quantum circuit.
 
-    The :func:`~qexpy.estimator.estimate` function returns an object of this class. It contains
+    The :func:`~pennylane.estimator.estimate` function returns an object of this class. It contains
     estimates of all resource types tracked by the resource estimation pipeline, including the
     number of gates and the number of wires.
 
