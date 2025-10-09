@@ -298,6 +298,8 @@ State preparation
 
 :html:`</div>`
 
+For specific state preparation techniques or algorithms see
+our :ref:`state preparation templates <intro_ref_temp_stateprep>`.
 
 .. _intro_ref_ops_channels:
 
