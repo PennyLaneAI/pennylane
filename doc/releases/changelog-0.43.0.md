@@ -1752,7 +1752,8 @@
   user-level code, which was causing downstream errors in Catalyst.
   [(#7889)](https://github.com/PennyLaneAI/pennylane/pull/7889)
 
-* Calling ``QNode.update`` no longer acts as if ``set_shots`` has been applied.
+* Fixed a bug that caused calls to ``QNode.update`` (e.g., ``circuit.update(...)(shots=10)``) to
+  update the shots value as if ``set_shots`` had been applied, causing unnecessary warnings to appear.
   [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
 * Fixed attributes and types in the quantum dialect in the unified compiler framework that now 
