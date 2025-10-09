@@ -1059,7 +1059,7 @@ def transform_angles(angles, routine1, routine2):
         >>> qsp_angles = np.array([0.2, 0.3, 0.5])
         >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
         >>> print(qsvt_angles)
-        [-6.868...  1.8707... -0.285...]
+        [-6.868...  1.870... -0.285...]
 
 
     .. details::
@@ -1162,7 +1162,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         >>> poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
         >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
         >>> print(qsvt_angles)
-        [-5.497...  1.570...  1.5707...  0.583...   1.610...  0.747...]
+        [-5.497...  1.570...  1.570...  0.583...   1.61...  0.747...]
 
 
     .. details::
