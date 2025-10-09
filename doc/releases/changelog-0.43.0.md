@@ -1157,11 +1157,19 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `qml.workflow.construct_batch.expand_fn_transform` is deleted as it was local and no longer getting used.
+* ``autoray``  has been pinned to v0.8.0 for PennyLane v0.43.0 to prevent potential bugs due to 
+  breaking changes in autoray releases.
+  [(#8412)](https://github.com/PennyLaneAI/pennylane/pull/8412)
+
+* ``qml.workflow.construct_batch.expand_fn_transform`` has been deleted as it was no longer getting 
+  used.
   [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
 
-* Remove `get_canonical_interface_name` in favour of overriding `Enum._missing_` in `Interface`.
-  If you would like to get the canonical interface you can simply use the `Enum` like,
+* ``get_canonical_interface_name`` has been removed in favour of overriding ``Enum._missing_`` in   
+  ``Interface``.
+  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
+
+  If you would like to get the canonical interface you can simply use the ``Enum``:
 
   ```pycon
   >>> from pennylane.math.interface_utils import Interface
@@ -1171,147 +1179,166 @@
   Interface.JAX_JIT
   ```
 
-  [(#8223)](https://github.com/PennyLaneAI/pennylane/pull/8223)
-
-* :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and ``ops`` from the property ``lcu`` instead of storing
-  them independently. In addition, it is now is more consistent with other PennyLane operators, dequeuing its
-  input ``lcu``.
+* :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and `
+  ``ops`` from the property ``lcu`` instead of storing them independently. In addition, it is now 
+  more consistent with other PennyLane operators, dequeuing its input ``lcu``.
   [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
 
-* `MidMeasureMP` now inherits from `Operator` instead of `MeasurementProcess`.
+* ``MidMeasureMP`` now inherits from ``Operator`` instead of ``MeasurementProcess``, which resolves 
+  problems caused by it always acting like an operator.
   [(#8166)](https://github.com/PennyLaneAI/pennylane/pull/8166)
 
-* `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
-  and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
+* With the deprecation of the ``shots`` kwarg in ``qml.device``, ``DefaultQubit.eval_jaxpr`` does 
+  not use ``self.shots`` from the device anymore; instead, it takes ``shots`` as a keyword argument, and the QNode primitive should process the ``shots`` and call ``eval_jaxpr`` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
-  no longer queue any operators.
+  no longer queue any operators. This improves the consistency of the queuing behaviour for the operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
-* `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
-  down on the complexity of post-processing due to having to handle single shot and single wire cases
-  separately. The return shape will now *always* be `(shots, num_wires)`.
+* ``qml.sample`` no longer has singleton dimensions squeezed out for single shots or single wires. 
+  This cuts down on the complexity of post-processing due to having to handle single shot and single 
+  wire cases separately. The return shape will now *always* be ``(shots, num_wires)``.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
   [(#8118)](https://github.com/PennyLaneAI/pennylane/pull/8118)
 
   For a simple qnode:
 
-  ```pycon
-  >>> @qml.qnode(qml.device('default.qubit'))
-  ... def c():
-  ...   return qml.sample(wires=0)
+  ```python
+  @qml.qnode(qml.device('default.qubit'))
+  def circuit():
+      return qml.sample(wires=0)
   ```
 
   Before the change, we had:
 
   ```pycon
-  >>> qml.set_shots(c, shots=1)()
+  >>> qml.set_shots(circuit, shots=1)()
   0
   ```
 
   and now we have:
 
   ```pycon
-  >>> qml.set_shots(c, shots=1)()
+  >>> qml.set_shots(circuit, shots=1)()
   array([[0]])
   ```
 
   Previous behavior can be recovered by squeezing the output:
 
   ```pycon
-  >>> qml.math.squeeze(qml.set_shots(c, shots=1)())
-  0
+  >>> qml.math.squeeze(qml.set_shots(circuit, shots=1)())
+  array(0)
   ```
 
-* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly.
-  This prevents the potential mutation of a global object.
-
-  This means that functions like,
-  ```python
-  ...
-    def some_func(..., execution_config = DefaultExecutionConfig):
-      ...
-  ...
-  ```
-  should be written as follows,
-  ```python
-  ...
-    def some_func(..., execution_config: ExecutionConfig | None = None):
-      if execution_config is None:
-          execution_config = ExecutionConfig()
-  ...
-  ```
-
+* Functions involving an execution configuration will now default to ``None`` instead of 
+  ``pennylane.devices.DefaultExecutionConfig`` and have to be handled accordingly. This prevents the 
+  potential mutation of a global object.
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
-* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified.
-  They now accept an operation or a list of operations as quantum unitaries.
-  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
-
-  In past versions of PennyLane, these templates required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
-  respectively, along with separate parameters and wires.
-
-  With this release, each template has been improved to accept one or more operators as  unitaries.
-  The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
+  This means that functions like,
 
   ```python
+  def some_func(..., execution_config = DefaultExecutionConfig):
+      ...
+  ```
+
+  should be written as follows,
+
+  ```python
+  def some_func(..., execution_config: ExecutionConfig | None = None):
+      if execution_config is None:
+          execution_config = ExecutionConfig()
+  ```
+
+* The ``qml.HilbertSchmidt`` and ``qml.LocalHilbertSchmidt`` templates have been updated and their 
+  UI has been remarkably simplified. They now accept an operation or a list of operations as  
+  unitaries.
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
+  In past versions of PennyLane, these templates required providing the ``U`` and ``V`` unitaries as 
+  a ``qml.tape.QuantumTape`` and a quantum function, respectively, along with separate parameters 
+  and wires.
+
+  With this release, each template has been improved to accept one or more operators as unitaries.
+  The wires and parameters of the approximate unitary ``V`` are inferred from the inputs, according to the order provided.
+
+  ```pycon
   >>> U = qml.Hadamard(0)
   >>> V = qml.RZ(0.1, wires=1)
   >>> qml.HilbertSchmidt(V, U)
   HilbertSchmidt(0.1, wires=[0, 1])
   ```
 
-* Remove support for Python 3.10 and adds support for 3.13.
+* Support for Python 3.10 has been removed and support for Python 3.13 has been added.
   [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
-* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
+* To make the codebase more organized and easier to maintain, custom exceptions were moved into 
+  ``exceptions.py``, and a documentation page for them was added in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
-* The boolean functions provided in `qml.operation` are deprecated. See the
+* The boolean functions provided in ``qml.operation`` have been deprecated. See the
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These
-  include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`,
-  `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+  include ``not_tape``, ``has_gen``, ``has_grad_method``, ``has_multipar``, ``has_nopar``, 
+  ``has_unitary_gen``, ``is_measurement``, ``defines_diagonalizing_gates``, and 
+  ``gen_is_multi_term_hamiltonian``.
   [(#7924)](https://github.com/PennyLaneAI/pennylane/pull/7924)
 
-* Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
-  Top level import and usage is advised. The functions now live in the `liealg` module.
+* To prevent code duplication, access to ``lie_closure``, ``structure_constants`` and ``center`` via 
+  ``qml.pauli`` has been removed. The functions now live in the ``liealg`` module and top level 
+  import and usage is advised. 
+  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+  [(#7994)](https://github.com/PennyLaneAI/pennylane/pull/7994)
 
   ```python
   import pennylane.liealg
   from pennylane.liealg import lie_closure, structure_constants, center
   ```
 
-  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
-  [(#7994)](https://github.com/PennyLaneAI/pennylane/pull/7994)
-
-* `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
-  PennyLane now depends on the more general `Operator` interface instead. The
-  `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
+* ``qml.operation.Observable`` and the corresponding ``Observable.compare`` have been removed, as
+  PennyLane now depends on the more general ``Operator`` interface instead. The
+  ``Operator.is_hermitian`` property can instead be used to check whether or not it is highly likely
   that the operator instance is Hermitian.
   [(#7927)](https://github.com/PennyLaneAI/pennylane/pull/7927)
 
-* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
-  should instead indicate that the `Operator` does not need wire validation.
+* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` have been 
+  removed. To indicate that an operator can act on any number of wires, 
+  ``Operator.num_wires = None`` should be used instead. This is the default and does not need to be 
+  overwritten unless the operator developer wants to validate that the correct number of wires is 
+  passed.
   [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
 
-* Removed `QNode.get_gradient_fn` method. Instead, use `qml.workflow.get_best_diff_method` to obtain the differentiation method.
+* The :func:`qml.QNode.get_gradient_fn` function has been removed. Instead, use 
+  :func:`qml.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7907)](https://github.com/PennyLaneAI/pennylane/pull/7907)
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been removed. Please import these objects from the new ``pennylane.exceptions`` module.
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and 
+  ``ExperimentalWarning`` has been removed. Please import these objects from the new 
+  ``pennylane.exceptions`` module.
   [(#7874)](https://github.com/PennyLaneAI/pennylane/pull/7874)
 
-* `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
-  be set on the tape itself.
+* To improve code reliability, ``qml.cut_circuit_mc`` no longer accepts a ``shots`` keyword  
+  argument. The shots should instead be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
-* :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at `qml.tape`.
+* :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at ``qml.tape``.
   [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
 
 <h3>Deprecations 👋</h3>
 
-* Setting shots on a device through the `shots=` kwarg, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use the `set_shots` transform on the `QNode` instead.
+* PennyLane and Lightning will no longer ship wheels for Intel MacOS platforms for v0.44 and newer.
+  Additionally, MacOS ARM wheels will require a minimum OS version of 14.0 for continued use with 
+  v0.44 and newer. This change is needed to account for MacOS officially deprecating support for 
+  Intel CPUs in the OS (see their [blog post](https://github.blog/changelog/2025-09-19-github-actions-macos-13-runner-image-is-closing-down/#notice-of-macos-x86_64-intel-architecture-deprecation) for more details).
 
+* Setting shots on a device through the ``shots`` keyword argument (e.g., 
+  ``qml.device("default.qubit", wires=2, shots=1000)``) and in QNode calls (e.g., 
+  ``qml.QNode(circuit, dev)(shots=1000)``) has been deprecated. Please use the :func:`~.set_shots` transform to set the number of shots for a QNode instead.  This is done to reduce confusion and 
+  code complexity by having a centralized way to set shots.
+  [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
+  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
+  
   ```python
   dev = qml.device("default.qubit", wires=2)
 
@@ -1322,33 +1349,40 @@
       return qml.expval(qml.Z(0))
   ```
 
-  [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
-  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
-
-* Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
-  Future versions of PennyLane are not guaranteed to work with TensorFlow.
-  Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
-  machine learning applications to benefit from enhanced support and features. Please consult the following demos for
-  more usage information:
-  [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
+* Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane
+  v0.44. Future versions of PennyLane are not guaranteed to work with TensorFlow. Instead, we 
+  recommend using the :doc:`JAX </introduction/interfaces/jax>` or 
+  :doc:`PyTorch </introduction/interfaces/torch>` interfaces for machine learning applications to 
+  benefit from enhanced support and features. Please consult the following demos for more usage 
+  information:
+  [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) 
+  and 
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
   [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
-* `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
-  Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
+* ``pennylane.devices.DefaultExecutionConfig`` has been deprecated and will be removed in v0.44.
+  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration. 
+  This helps prevent unintended changes in a workflow's behaviour that could be caused by using a 
+  global, mutable object.
   [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
-  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
-  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
-  work wires are restored to their original state upon completing the decomposition.
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as 
+  ``"clean"`` or ``"dirty"`` has been deprecated. Use ``"zeroed"`` to indicate that the work wires 
+  are initially in the :math:`|0\rangle` state, and ``"borrowed"`` to indicate that the work wires 
+  can be in any arbitrary state instead. In both cases, the work wires are restored to their 
+  original state upon completing the decomposition. This is done to standardize how work wires are 
+  called in PennyLane.
   [(#7993)](https://github.com/PennyLaneAI/pennylane/pull/7993)
 
-* Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
-  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
-  :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the Suzuki-Trotter
-  product approximation of a Hamiltonian with the specified number of Trotter steps.
+* Providing the Trotter number kwarg ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
+  and :class:`pennylane.ops.Exp` has been deprecated and will be removed in a future release. Instead, use
+  :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
+  product approximation of a Hamiltonian with the specified number of Trotter steps. 
+  This change resolves the ambiguity that arises when using ``num_steps`` on devices that support analytic
+  evolution (e.g., ``default.qubit``).
+  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+  [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
   As a concrete example, consider the following case:
 
@@ -1378,49 +1412,47 @@
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
-  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
-  [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
-* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with
-  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+* ``MeasurementProcess.expand`` has been deprecated. The relevant method can be replaced with
+  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
+  This improves the code design by removing an unused method with undesired dependencies (i.e. circular dependency).
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
-* `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
-  Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
-  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
-
-* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` have been deprecated and will be removed in version v0.44.
   Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
   [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
 
-* Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
-    - `print_contents` in favor of `print(obj)`
-    - `observables_in_order` in favor of `observables`
-    - `operations_in_order` in favor of `operations`
-    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
-    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order`` in favor of ``descendants(obj, sort=True)``
 
-* The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
-  Instead, the `qml.to_openqasm` function should be used.
+* The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
+  Instead, the ``qml.to_openqasm`` function should be used.
+  This change makes the code cleaner by separating out methods that interface with external libraries from
+  PennyLane's internal functionality.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
 
-* The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
-  Please use `level='device'` instead to apply the noise model at the device level.
+* The ``level=None`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms has been deprecated and will be removed in v0.44.
+  Please use ``level='device'`` instead to apply the noise model at the device level.
+  This reduces ambiguity by making it clear that the default is to apply all transforms to the QNode.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
   [(#8364)](https://github.com/PennyLaneAI/pennylane/pull/8364)
 
-* `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
-  with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
+* ``qml.qnn.cost.SquaredErrorLoss`` has been deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
 
-* Access to `add_noise`, `insert` and noise mitigation transforms from the `pennylane.transforms` module is deprecated.
-  Instead, these functions should be imported from the `pennylane.noise` module.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``transforms`` module has been deprecated.
+  Instead, these functions should be imported from the ``noise`` module, which is a more appropriate location for them.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
-* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44.
-  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+* The ``qml.QNode.add_transform`` method has been deprecated and will be removed in v0.44.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
