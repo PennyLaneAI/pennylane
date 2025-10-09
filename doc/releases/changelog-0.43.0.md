@@ -586,8 +586,8 @@
   np.float64(-0.004)
   ```
 
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~pennylane.set_shots`. 
-  However, decorating with :func:`~pennylane.set_shots` overrides QNode ``shots``:
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~.set_shots`. 
+  However, decorating with :func:`~.set_shots` overrides QNode ``shots``:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
@@ -595,7 +595,7 @@
   Shots(total=123)
   ```
 
-* The :func:`~pennylane.set_shots` transform can now be directly applied to a QNode without the need for 
+* The :func:`~.set_shots` transform can now be directly applied to a QNode without the need for 
   `functools.partial`, providing a more user-friendly syntax and negating having to import the 
   `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -1692,7 +1692,7 @@
 * Three more examples of the deprecated usage of `qml.device(..., shots=...)` have been updated in the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
-* The documentation of `qml.device` has been updated to reflect the usage of :func:`~pennylane.set_shots`.
+* The documentation of `qml.device` has been updated to reflect the usage of :func:`~.set_shots`.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
 * The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>`
