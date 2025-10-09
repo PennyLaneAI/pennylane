@@ -713,11 +713,12 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, wire_map: dict = None):
+def from_qasm3(quantum_circuit: str, wire_map: dict | None = None):
     """
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
+
         The standard library gates, qubit registers, built-in mathematical functions and constants, subroutines,
         variables, control flow, measurements, inputs, outputs, custom gates and ``end`` statements are all supported.
         Pulses are not yet supported.
@@ -728,7 +729,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     Args:
         quantum_circuit (str): a QASM 3.0 string containing a simple quantum circuit.
-        qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
+        qubit_mapping (Optional[dict]):  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
 
     Returns:
         function: A quantum function that will execute the program.
