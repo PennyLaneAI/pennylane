@@ -3,63 +3,238 @@
 
 <h3>New features since last release</h3>
 
-<h4>A brand new resource estimation module 🧮</h4>
+<h4>A brand new resource estimation module 📖 </h4>
 
-* The Resource estimation toolkit was upgraded and has migrated from
-  :mod:`~.labs` to PennyLane as the :mod:`~.estimator` module.
+* A new toolkit dedicated to resource estimation is now available in the :mod:`~.estimator` module!
+  The functionality therein is designed to rapidly and flexibly estimate the quantum resources
+  required to execute programs written at different levels of abstraction.  
+  This new module includes the following features:
 
-  * Added functionality to map PennyLane operations
-    to their associated resource operators for resource estimation.
-    [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
-    [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
-  * The `qml.estimator.WireResourceManager`, `qml.estimator.Allocate`, and `qml.estimator.Deallocate`
-    classes were added to track auxiliary wires for resource estimation.
-    [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
-  * The `qml.estimator.ResourceOperator`, `qml.estimator.CompressedResourceOp`, and `qml.estimator.GateCount` classes
-    were added as base classes to represent quantum operators.
-    [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
-    [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
-  * The :class:`~.estimator.Resources` class was added as a container class for resources.
-    [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * The resource operators for ``Identity``, ``GlobalPhase``, non-parametric operators and single-qubit
-    parametric operators have been added to `qml.estimator.ops`.
-    [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
-    [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
-    [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
-  * The test files were renamed to avoid the dual definition error with labs module.
-    [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
-  * Added a new `ResourceConfig` class to store the configuration used for resource estimation, including operator precisions and custom decompositions.
-    [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
-  * The resource operators for controlled operators have been added to `qml.estimator.ops.op_math`.
-    [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
-  * The resource operators for ``Controlled``, and ``Adjoint`` were added to `qml.estimator.ops.op_math` for symbolic operators.
-    [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
-    [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
-  * The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
-    classes were added to store metadata of the Hamiltonian of a quantum system,
-    and the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
-    ``TrotterVibronic`` related to the Suzuki-Trotter method were added to `qml.estimator.templates`.
-    [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
-  * Added a new :func:`~.estimator.estimate` function as the entry point to estimate the quantum resources
+  * A new :func:`~.estimator.estimate.estimate` function allows users to estimate the quantum resources
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
-  * The resource operators for ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators have been added to
-    `qml.estimator.ops`.
-    [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
-  * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
-    ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
-    ``IterativeQPE`` were added to `qml.estimator.templates`.
-    [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
-  * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
-    ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
-    ``RegisterComparator`` were added to `qml.estimator.templates`.
-    [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
-  * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC`` were added to `qml.estimator.templates`.
-    [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
-  * Fixed some issues and updated docs for the :mod:`~.estimator` module.
-    [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
-    [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
+    * Users can even estimate the resources of standard PennyLane circuits
+      using the :func:`~.estimator.estimate.estimate` function,
+      which has been designed to automatically map PennyLane operations (:class:`~.Operation`)
+      to their associated resource operators (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`)
+      for resource estimation.
+      [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
+      [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
+
+      ```python
+      import pennylane as qml
+      import pennylane.estimator as qre
+
+      dev = qml.device("null.qubit")
+
+      @qml.qnode(dev)
+      def circ():
+          for w in range(2):
+              qml.Hadamard(wires=w)
+          qml.CNOT(wires=[0,1])
+          qml.RX(1.23*np.pi, wires=0)
+          qml.RY(1.23*np.pi, wires=1)
+          qml.QFT(wires=[0, 1, 2])
+          return qml.state()
+      res = qre.estimate(circ)()
+      ```
+
+      ```pycon
+      >>> print(res)
+      --- Resources: ---
+       Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+      	 zero state: 0
+      	 any state: 0
+       Total gates : 408
+        'T': 396,
+        'CNOT': 9,
+        'Hadamard': 3
+      ```
+
+  * Such fast resource estimation requires lightweight representations of quantum operators and their resources.
+    This is made possible by the addition of several classes:
+    * :class:`~.estimator.resources_base.Resources`:
+      A container for counts and other metadata of quantum resources.
+    * :class:`~.estimator.resource_operator.GateCount`:
+      A class to represent a gate and its number of occurrences in a circuit or decomposition.
+    * :class:`~.estimator.resource_operator.ResourceOperator`:
+      A base class to represent quantum operators for the purpose of resource estimation.
+    * :class:`~.estimator.resource_operator.CompressedResourceOp`:
+      A lightweight class corresponding to an operator type alongside its parameters.
+    * To manage and track wire usage during resource estimation
+      and within :class:`~.estimator.resource_operator.ResourceOperator` definitions,
+      the :class:`~.estimator.wires_manager.WireResourceManager`,
+      :class:`~.estimator.wires_manager.Allocate`, and :class:`~.estimator.wires_manager.Allocate`
+      classes were added.
+
+    [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
+    [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
+    [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
+    [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
+
+    The :func:`~.estimator.estimate.estimate` function is the entry point for resource estimation.
+    Here, the :class:`~.estimator.resource_operator.ResourceOperator` for ``QFT`` is analyzed.
+    This can be done while only providing the number of wires acted upon, and not the specific wire labels:
+
+    ```python
+    qft = qre.QFT(num_wires=3)
+    res = qre.estimate(qft)
+    ```
+
+    ```pycon
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+      	 zero state: 0
+      	 any state: 0
+     Total gates : 408
+      'T': 396,
+      'CNOT': 9,
+      'Hadamard': 3
+    ```
+
+    A complete list of available ``ResourceOperator``s can be found in the :mod:`~.estimator` module documentation.
+    A more complex example of using :func:`~.estimator.estimate.estimate`
+    to estimate the quantum resources of an entire workflow is given below:
+
+    ```python
+    def my_circuit():
+        qre.QROMStatePreparation(num_state_qubits=50)
+        for w in range(2):
+            qre.Hadamard(wires=w)
+        qre.QROM(num_bitstrings=32, size_bitstring=8, restored=False)
+        qre.CNOT(wires=[0,1])
+        qre.RX(wires=0)
+        qre.RY(wires=1)
+        qre.QFT(num_wires=30)
+        return
+
+    res = qre.estimate(my_circuit)()
+    ```
+
+    ```pycon
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 133
+      algorithmic wires: 52
+      allocated wires: 81
+    	 zero state: 73
+    	 any state: 8
+     Total gates : 1.081E+17
+      'Toffoli': 4.504E+15,
+      'T': 5.751E+4,
+      'CNOT': 8.106E+16,
+      'X': 9.007E+15,
+      'Z': 32,
+      'S': 64,
+      'Hadamard': 1.351E+16
+    ```
+
+  * Users can define customized configurations to be used during resource estimation,
+    using the new :class:`~.estimator.resource_config.ResourceConfig` class.
+    The :class:`~.estimator.resource_config.ResourceConfig` includes a variety of customizable settings,
+    including operator precisions and the option to set custom resource decompositions.
+    [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
+
+    In the following example, a :class:`~.estimator.resource_config.ResourceConfig` is used to modify the
+    default precision of single qubit rotations, and ``T`` counts are compared between different configurations.
+
+    ```python
+    def my_circuit():
+      qre.RX(wires=0)
+      qre.RY(wires=1)
+      qre.RZ(wires=2)
+    return
+
+    my_rc = qre.ResourceConfig()
+    res1 = qre.estimate(my_circuit, config=my_rc)()
+
+    my_rc.set_single_qubit_rot_precision(1e-2)
+    res2 = qre.estimate(my_circuit, config=my_rc)()
+
+    t1 = res1.gate_counts['T']
+    t2 = res2.gate_counts['T']
+    ```
+
+    ```pycon
+    >>> print(t1, t2)
+    132 51
+    ```
+
+  * Hamiltonians are often both expensive to compute and to analyze,
+    but the amount of information required to estimate the resources of Hamiltonian simulation
+    can be surprisingly small in comparison.
+    The :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`,
+    :class:`~.estimator.compact_hamiltonian.THCHamiltonian`,
+    :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian,`
+    and :class:`~.estimator.compact_hamiltonian.VibrationalHamiltonian` classes were added
+    to store the metadata of the Hamiltonian of a quantum system
+    pertaining to resource estimation.
+    Likewise, the resource templates
+    :class:`~.estimator.templates.TrotterProduct`,
+    :class:`~.estimator.templates.TrotterCDF`,
+    :class:`~.estimator.templates.TrotterTHC`,
+    :class:`~.estimator.templates.TrotterVibronic`,
+    and :class:`~.estimator.templates.TrotterVibrational`
+    related to the Suzuki-Trotter method were added.
+    [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
+
+    Here's a simple example of resource estimation for the simulation of a
+    :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`:
+
+    ```pycon
+    >>> cdf_ham = qre.CDFHamiltonian(num_orbitals=4, num_fragments=4)
+    >>> res = qre.estimate(qre.TrotterCDF(cdf_ham, num_steps=1, order=2))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 8
+        algorithmic wires: 8
+        allocated wires: 0
+      	 zero state: 0
+    	 any state: 0
+     Total gates : 2.238E+4
+      'T': 2.075E+4,
+      'CNOT': 448,
+      'Z': 336,
+      'S': 504,
+      'Hadamard': 336
+    ```
+
+  * To make writing workflows using :mod:`~.estimator` straightforward,
+    several resource operators (:class:`~.estimator.resource_operator.ResourceOperator`) were added.
+    These resource operators have been designed to require the least possible amount of data while
+    still providing a robust resource estimate:
+    * ``Identity``, ``GlobalPhase``, various non-parametric operators and single-qubit
+      parametric operators.
+      [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
+      [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
+      [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
+    * Various controlled single and multi qubit operators.
+      [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
+    * ``Controlled``, and ``Adjoint`` as symbolic operators.
+      [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
+      [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
+    * ``Pow``, ``Prod``, ``ChangeOpBasis``, and parametric multi-qubit operators.
+      [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
+    * The resource templates ``SemiAdder``, ``QFT``, ``AQFT``, ``BasisRotation``, ``Select``,
+      ``QROM``, ``SelectPauliRot``, ``QubitUnitary``, ``ControlledSequence``, ``QPE`` and
+      ``IterativeQPE``.
+      [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
+    * The resource templates ``MPSPrep``, ``QROMStatePreparation``, ``UniformStatePrep``,
+      ``AliasSampling``, ``IntegerComparator``, ``SingleQubitComparator``, ``TwoQubitComparator``, and
+      ``RegisterComparator``.
+      [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
+    * The resource templates ``SelectTHC``, ``PrepTHC``, and ``QubitizeTHC``.
+      [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
+
+  The resource estimation tools in the :mod:`~.estimator` module
+  were originally prototyped in the :mod:`~.labs` module.
+  Check it out too for the latest cutting-edge research functionality!
 
 <h4>Dynamic wire allocation 🎁</h4>
 
@@ -583,19 +758,19 @@
 
   ```pycon
   >>> circuit.shots
-  Shots(total=1000)
+  Shots(total_shots=1000, shot_vector=(ShotCopies(1000 shots x 1),))  
   >>> circuit()
   np.float64(-0.004)
   ```
 
   Setting the ``shots`` value in a QNode is equivalent to decorating with 
-  :func:`~pennylane.set_shots`. However, decorating with :func:`~pennylane.set_shots` overrides 
+  :func:`~.workflow.set_shots`. However, decorating with :func:`~.workflow.set_shots` overrides 
   QNode ``shots``:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
   >>> new_circ.shots
-  Shots(total=123)
+  Shots(total_shots=123, shot_vector=(ShotCopies(123 shots x 1),))
   ```
 
 * The :func:`~pennylane.set_shots` transform can now be directly applied to a QNode without the need 
@@ -1197,9 +1372,9 @@
   ```pycon
   >>> from pennylane.math.interface_utils import Interface
   >>> Interface("torch")
-  Interface.TORCH
+  <Interface.TORCH: 'torch'>  
   >>> Interface("jax-jit")
-  Interface.JAX_JIT
+  <Interface.JAX_JIT: 'jax-jit'>
   ```
 
 * :class:`~.PrepSelPrep` has been made more reliable by deriving the attributes ``coeffs`` and `
@@ -1448,11 +1623,11 @@
 * Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
-    - ``print_contents`` in favor of ``print(obj)``
-    - ``observables_in_order`` in favor of ``observables``
-    - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order`` in favor of ``descendants(obj, sort=True)``
+    - ``print(obj)`` in favor of ``print_contents``
+    - ``observables`` in favor of ``observables_in_order``
+    - ``operations`` in favor of ``operations_in_order``
+    - ``ancestors(obj, sort=True)`` in favor of ``ancestors_in_order``
+    - ``descendants(obj, sort=True)`` in favor of ``descendants_in_order``
 
 * The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
@@ -1692,6 +1867,9 @@
 * Add nightly RC builds script to `.github/workflows`.
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
+* The test files for :mod:`~.estimator` were renamed to avoid a dual definition error with the :mod:`~.labs` module.
+  [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
+
 <h3>Documentation 📝</h3>
 
 * The :doc:`installation page </development/guide/installation>` has been updated to include
@@ -1767,6 +1945,9 @@
   :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has been
   fixed to correctly display the `max_workers` parameter.
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
+
+* Updated documentation in the :mod:`~.estimator` module.
+  [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -1908,6 +2089,11 @@
 * Fixed a bug with ``~.estimator.resource_mapping._map_to_resource_op()`` where it was incorrectly
   mapping the ``~.TrotterProduct`` template.
   [(#8425)](https://github.com/PennyLaneAI/pennylane/pull/8425)
+  
+* Fixed bugs in the :mod:`~.estimator` module pertaining to tracking resource operator names,
+  as well as the handling of decompositions and measurement operators by the mapper
+  used by the :func:`~.estimator.estimate.estimate` function.
+  [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
 
 <h3>Contributors ✍️</h3>
 
