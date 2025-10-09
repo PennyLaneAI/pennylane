@@ -48,6 +48,8 @@ class CompressedResourceOp:
             provided, a name will be generated using ``op_type.make_tracking_name``
             with the given parameters.
 
+    **Examples**
+
     This class is a minimal representation of an operator used for the purpose of tracking resources.
     It appears as the output of the
     :meth:`~.pennylane.estimator.resource_operator.ResourceOperator.resource_rep`, and
