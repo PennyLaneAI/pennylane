@@ -1661,7 +1661,7 @@
   numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
 
-* With ``qml.capture.enable()``, autograph will now be correctly applied to functions containing 
+* With ``qml.capture.enable()``, AutoGraph will now be correctly applied to functions containing 
   control flow that are then wrapped in :func:`~pennylane.adjoint` or :func:`~pennylane.ctrl`.
   [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
 
