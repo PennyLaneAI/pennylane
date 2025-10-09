@@ -93,6 +93,7 @@ def test_ross_selinger(op, epsilon):
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
 def test_ross_selinger_qjit(op, epsilon, wires):
     """Test Ross-Selinger decomposition method with specified max-depth"""
+    pytest.importorskip("catalyst")
     dev = qml.device("lightning.qubit", wires=wires)
 
     @qml.qjit(static_argnums=0)
