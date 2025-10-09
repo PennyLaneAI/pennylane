@@ -106,11 +106,18 @@
   * Hamiltonians are often both expensive to compute and to analyze,
     but the amount of information required to estimate the resources of Hamiltonian simulation
     can be surprisingly small in comparison.
-    The ``CDFHamiltonian``, ``THCHamiltonian``, ``VibronicHamiltonian`` and ``VibrationalHamiltonian``
-    classes were added to store the metadata of the Hamiltonian of a quantum system
+    The :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`,
+    :class:`~.estimator.compact_hamiltonian.THCHamiltonian`,
+    :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian,`
+    and :class:`~.estimator.compact_hamiltonian.VibrationalHamiltonian` classes were added
+    to store the metadata of the Hamiltonian of a quantum system
     pertaining to resource estimation.
-    Likewise, the resource templates ``TrotterProduct``, ``TrotterTHC``, ``TrotterVibrational`` and
-    ``TrotterVibronic`` related to the Suzuki-Trotter method were added.
+    Likewise, the resource templates
+    ``TrotterProduct``,
+    ``TrotterTHC``,
+    ``TrotterVibrational``,
+    and ``TrotterVibronic``
+    related to the Suzuki-Trotter method were added.
     [(#8303)](https://github.com/PennyLaneAI/pennylane/pull/8303)
 
   * To make writing workflows using :mod:`~.estimator` straightforward,
