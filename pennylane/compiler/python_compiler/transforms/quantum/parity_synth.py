@@ -437,11 +437,7 @@ class ParitySynthPass(passes.ModulePass):
     """Pass for applying ParitySynth to phase polynomials in a circuit."""
 
     name = "xdsl-parity-synth"
-    connectivity: nx.Graph | None
-
-    def __init__(self, *args, connectivity=None, **kwargs):
-        self.connectivity = connectivity
-        super().__init__(*args, **kwargs)
+    connectivity: nx.Graph | None = None
 
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
