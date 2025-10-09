@@ -396,146 +396,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         )
         return qnode
 
-    def _capture_callable_transform(self, qfunc, targs, tkwargs):
-        """Apply the transform on a quantum function when program capture is enabled"""
-
-        @wraps(qfunc)
-        def qfunc_transformed(*args, **kwargs):
-            import jax  # pylint: disable=import-outside-toplevel
-
-            flat_qfunc = capture.flatfn.FlatFn(qfunc)
-            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
-            flat_args = jax.tree_util.tree_leaves(args)
-
-            n_args = len(flat_args)
-            n_consts = len(jaxpr.consts)
-            args_slice = slice(0, n_args)
-            consts_slice = slice(n_args, n_args + n_consts)
-            targs_slice = slice(n_args + n_consts, None)
-
-            results = self._primitive.bind(
-                *flat_args,
-                *jaxpr.consts,
-                *targs,
-                inner_jaxpr=jaxpr.jaxpr,
-                args_slice=args_slice,
-                consts_slice=consts_slice,
-                targs_slice=targs_slice,
-                tkwargs=tkwargs,
-            )
-
-            assert flat_qfunc.out_tree is not None
-            return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
-
-        return qfunc_transformed
-
-    def _qfunc_transform(self, qfunc, targs, tkwargs):
-        """Apply the transform on a quantum function."""
-
-        @wraps(qfunc)
-        def qfunc_transformed(*args, **kwargs):
-
-            if qml.capture.enabled():
-                return self._capture_callable_transform(qfunc, targs, tkwargs)(*args, **kwargs)
-            # removes the argument to the qfuncs from the active queuing context.
-            leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
-            for l in leaves:
-                if isinstance(l, Operator):
-                    qml.QueuingManager.remove(l)
-
-            with AnnotatedQueue() as q:
-                qfunc_output = qfunc(*args, **kwargs)
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            with QueuingManager.stop_recording():
-                transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
-
-            if len(transformed_tapes) != 1:
-                raise TransformError(
-                    "Impossible to dispatch your transform on quantum function, because more than "
-                    "one tape is returned"
-                )
-
-            transformed_tape = transformed_tapes[0]
-
-            if self.is_informative:
-                return processing_fn(transformed_tapes)
-
-            for op in transformed_tape.operations:
-                apply(op)
-
-            mps = [qml.apply(mp) for mp in transformed_tape.measurements]
-
-            if not mps:
-                return qfunc_output
-
-            if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
-                return tuple(mps) if len(mps) > 1 else mps[0]
-
-            if isinstance(qfunc_output, (tuple, list)):
-                return type(qfunc_output)(mps)
-
-            interface = math.get_interface(qfunc_output)
-            return math.asarray(mps, like=interface)
-
-        return qfunc_transformed
-
-    def _device_transform(self, original_device, targs, tkwargs):
-        """Apply the transform on a device"""
-        if self._expand_transform:
-            raise TransformError("Device transform does not support expand transforms.")
-        if self._is_informative:
-            raise TransformError("Device transform does not support informative transforms.")
-        if self._final_transform:
-            raise TransformError("Device transform does not support final transforms.")
-
-        if type(original_device).preprocess != qml.devices.Device.preprocess:
-            return _preprocess_device(original_device, self, targs, tkwargs)
-
-        return _preprocess_transforms_device(original_device, self, targs, tkwargs)
-
-    def _batch_transform(self, original_batch, targs, tkwargs):
-        """Apply the transform on a batch of tapes."""
-        execution_tapes = []
-        batch_fns = []
-        tape_counts = []
-
-        for t in original_batch:
-            # Preprocess the tapes by applying transforms
-            # to each tape, and storing corresponding tapes
-            # for execution, processing functions, and list of tape lengths.
-            new_tapes, fn = self(t, *targs, **tkwargs)
-            execution_tapes.extend(new_tapes)
-            batch_fns.append(fn)
-            tape_counts.append(len(new_tapes))
-
-        def processing_fn(res: ResultBatch) -> ResultBatch:
-            """Applies a batch of post-processing functions to results.
-
-            Args:
-                res (ResultBatch): the results of executing a batch of circuits.
-
-            Returns:
-                ResultBatch: results that have undergone classical post processing.
-
-            Closure variables:
-                tape_counts: the number of tapes outputted from each application of the transform.
-                batch_fns: the post processing functions to apply to each sub-batch.
-
-            """
-            count = 0
-            final_results = []
-
-            for f, s in zip(batch_fns, tape_counts, strict=True):
-                # apply any batch transform post-processing
-                new_res = f(res[count : count + s])
-                final_results.append(new_res)
-                count += s
-
-            return tuple(final_results)
-
-        return tuple(execution_tapes), processing_fn
-
 
 class TransformContainer:  # pylint: disable=too-many-instance-attributes
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
@@ -705,11 +565,11 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
             f" For the desired affect, ensure that qjit is applied after {transform}."
         )
 
-    if capture.enabled():
-        return _capture_apply(obj, transform, *targs, **tkwargs)
-
     @functools.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
+        if capture.enabled():
+            return _capture_apply(obj, transform, *targs, **tkwargs)(*args, **kwargs)
+
         # removes the argument to the qfuncs from the active queuing context.
         leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         for l in leaves:
