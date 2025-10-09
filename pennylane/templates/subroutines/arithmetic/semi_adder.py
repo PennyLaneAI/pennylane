@@ -20,7 +20,7 @@ from pennylane.decomposition import (
     controlled_resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, adjoint, ctrl, PauliX
+from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 

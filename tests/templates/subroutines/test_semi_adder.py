@@ -223,7 +223,6 @@ class TestSemiAdder:
 
         op = qml.SemiAdder(x_wires, y_wires, work_wires)
 
-        print(control_wire)
 
         @qml.set_shots(1)
         @qml.qnode(dev)
