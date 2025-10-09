@@ -14,14 +14,47 @@
     required to execute a circuit or operation with respect to a given gate set and configuration.
     [(#8275)](https://github.com/PennyLaneAI/pennylane/pull/8275)
     [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
-    * Users can also estimate the resources of standard PennyLane circuits
+    * Users can even estimate the resources of standard PennyLane circuits
       using the :func:`~.estimator.estimate.estimate` function,
-      which has been upgraded to automatically map PennyLane operations (:class:`~.Operation`)
+      which has been designed to automatically map PennyLane operations (:class:`~.Operation`)
       to their associated resource operators (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`)
       for resource estimation.
       [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
       [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
-  * Fast resource estimation requires lightweight representations of quantum operators and their resources.
+
+      ```python
+      import pennylane as qml
+      import pennylane.estimator as qre
+
+      dev = qml.device("null.qubit")
+
+      @qml.qnode(dev)
+      def circ():
+          for w in range(2):
+              qml.Hadamard(wires=w)
+          qml.CNOT(wires=[0,1])
+          qml.RX(1.23*np.pi, wires=0)
+          qml.RY(1.23*np.pi, wires=1)
+          qml.QFT(wires=[0, 1, 2])
+          return qml.state()
+      res = qre.estimate(circ)()
+      ```
+
+      ```pycon
+      >>> print(res)
+      --- Resources: ---
+       Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+      	 zero state: 0
+      	 any state: 0
+       Total gates : 408
+        'T': 396,
+        'CNOT': 9,
+        'Hadamard': 3
+      ```
+
+  * Such fast resource estimation requires lightweight representations of quantum operators and their resources.
     This is made possible by the addition of several classes:
     * :class:`~.estimator.resources_base.Resources`:
       A container for counts and other metadata of quantum resources.
@@ -31,24 +64,22 @@
       A base class to represent quantum operators for the purpose of resource estimation.
     * :class:`~.estimator.resource_operator.CompressedResourceOp`:
       A lightweight class corresponding to an operator type alongside its parameters.
+    * To manage and track wire usage during resource estimation
+      and within :class:`~.estimator.resource_operator.ResourceOperator` definitions,
+      the :class:`~.estimator.wires_manager.WireResourceManager`,
+      :class:`~.estimator.wires_manager.Allocate`, and :class:`~.estimator.wires_manager.Allocate`
+      classes were added.
 
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
     [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
     [(#8205)](https://github.com/PennyLaneAI/pennylane/pull/8205)
-  * To manage and track wire usage during resource estimation
-    and within :class:`~.estimator.resource_operator.ResourceOperator` definitions,
-    the :class:`~.estimator.wires_manager.WireResourceManager`,
-    :class:`~.estimator.wires_manager.Allocate`, and :class:`~.estimator.wires_manager.Allocate`
-    classes were added.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
 
     The :func:`~.estimator.estimate.estimate` function is the entry point for resource estimation.
-    Here, the :class:`~.estimator.resource_operator.ResourceOperator` for ``QFT`` is analyzed:
+    Here, the :class:`~.estimator.resource_operator.ResourceOperator` for ``QFT`` is analyzed.
+    This can be done while only providing the number of wires acted upon, and not the specific wire labels:
 
     ```python
-    import pennylane as qml
-    import pennylane.estimator as qre
-
     out_mul = qre.QFT(num_wires=3)
     res = qre.estimate(out_mul)
     ```
@@ -67,18 +98,21 @@
       'Hadamard': 3
     ```
 
-    Similarly, the :func:`~.estimator.estimate.estimate` function is used
-    to estimate the quantum resources of an entire workflow:
+    A complete list of available ``ResourceOperator``s can be found in the :mod:`estimator module documentation <~.estimator>`.
+    A more complex example of using :func:`~.estimator.estimate.estimate`
+    to estimate the quantum resources of an entire workflow is given below:
 
     ```python
     def my_circuit():
-      for w in range(2):
-          qre.Hadamard(wires=w)
-      qre.CNOT(wires=[0,1])
-      qre.RX(wires=0)
-      qre.RY(wires=1)
-      qre.QFT(num_wires=3, wires=[0, 1, 2])
-      return
+        qre.QROMStatePreparation(50)
+        for w in range(2):
+            qre.Hadamard(wires=w)
+        qre.QROM(num_bitstrings=32, size_bitstring=8, restored=False)
+        qre.CNOT(wires=[0,1])
+        qre.RX(wires=0)
+        qre.RY(wires=1)
+        qre.QFT(num_wires=30)
+        return
 
     res = qre.estimate(my_circuit)()
     ```
@@ -86,15 +120,19 @@
     ```pycon
     >>> print(res)
     --- Resources: ---
-     Total wires: 3
-        algorithmic wires: 3
-        allocated wires: 0
-      	 zero state: 0
-      	 any state: 0
-     Total gates : 499
-      'T': 484,
-      'CNOT': 10,
-      'Hadamard': 5
+     Total wires: 133
+      algorithmic wires: 52
+      allocated wires: 81
+    	 zero state: 73
+    	 any state: 8
+     Total gates : 1.081E+17
+      'Toffoli': 4.504E+15,
+      'T': 5.751E+4,
+      'CNOT': 8.106E+16,
+      'X': 9.007E+15,
+      'Z': 32,
+      'S': 64,
+      'Hadamard': 1.351E+16
     ```
 
   * Users can define customized configurations to be used during resource estimation,
