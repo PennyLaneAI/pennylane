@@ -1468,6 +1468,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Applying a transform to a `QNode` with capture enabled now returns a `QNode`. This allows autograph
+  to transform the user function when transforms are applied to the `QNode`.
+  [(#8307)](https://github.com/PennyLaneAI/pennylane/pull/8307)
 * `qml.compiler.python_compiler.transforms.MergeRotationsPass` now takes the `adjoint` property of
   merged operations correctly into account.
   [(#8429)](https://github.com/PennyLaneAI/pennylane/pull/8429)
