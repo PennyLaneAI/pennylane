@@ -1777,7 +1777,7 @@
 * Fixed a bug where :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`, 
   :func:`~.transforms.single_qubit_fusion`, :func:`~.transforms.commute_controlled`, and 
   :func:`~.transforms.clifford_t_decomposition` were giving incorrect results when acting on 
-  circuits containing operators that act on abstract wires.
+  [(#8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
 * When using ``mcm_method="tree-traversal"`` with ``qml.samples``, the data type of the returned
