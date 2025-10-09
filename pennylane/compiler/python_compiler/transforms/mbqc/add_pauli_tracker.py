@@ -229,6 +229,6 @@ class AddPauliTrackerPattern(
                             new_z = arith.XOrIOp(z, cst_one)
                             rewriter.insert_op(new_z, InsertPoint.before(op))
                             new_xz = [x, new_z]
-
+                        self._insert_xz_records(wires_ssa, new_xz, x_record, z_record, op, rewriter)
                     rewriter.replace_all_uses_with(op.results[0], op.operands[0])
                     rewriter.erase_op(op)
