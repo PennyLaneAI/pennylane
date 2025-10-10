@@ -35,8 +35,21 @@ class Node:
     """Abstract base class for all nodes in the commutator tree."""
 
     @abstractmethod
+    def is_zero(self) -> bool:
+        """Determine if the expression evaluates to zero."""
+
+    @abstractmethod
     def eval(self, fragments: Dict[Hashable, Fragment]) -> Fragment:
         """Evaluate the commutator on a set of concrete fragments."""
+
+    @abstractmethod
+    def expand(self) -> Dict[SymbolNode, int]:
+        """Expand into symbol nodes using the identity [A, B] = AB - BA"""
+
+    @property
+    @abstractmethod
+    def order(self) -> int:
+        """The number of leaves in the AST"""
 
 
 class SymbolNode(Node):
@@ -96,6 +109,9 @@ class SymbolNode(Node):
     @property
     def order(self) -> int:
         return 1
+
+    def is_zero(self) -> bool:
+        return False
 
     def eval(self, fragments: Dict[Hashable, Fragment]) -> Fragment:
         ret = _AdditiveIdentity()
@@ -163,6 +179,18 @@ class CommutatorNode(Node):
     def order(self) -> int:
         return self.left.order + self.right.order
 
+    def is_zero(self) -> bool:
+        if isinstance(self.left, SymbolNode) and isinstance(self.right, SymbolNode):
+            if len(self.left.symbols) == len(self.right.symbols) == 1:
+                return list(self.left.symbols)[0][0] == list(self.right.symbols)[0][0]
+
+            return self.left.symbols == self.right.symbols
+
+        if isinstance(self.left, CommutatorNode) and isinstance(self.right, CommutatorNode):
+            return self.left == self.right
+
+        return self.left.is_zero() or self.right.is_zero()
+
     def eval(self, fragments: Dict[Hashable, Fragment]) -> Fragment:
         left = self.left.eval(fragments)
         right = self.right.eval(fragments)
@@ -195,10 +223,6 @@ class CommutatorNode(Node):
                 result[prod] -= coeff
 
         return {prod: coeff for prod, coeff in result.items() if coeff != 0}
-
-    def is_zero(self) -> bool:
-        if isinstance(self.left, SymbolNode) and isinstance(self.right, SymbolNode):
-            return self.left
 
 
 def find_leaves(node: Node) -> List[SymbolNode]:

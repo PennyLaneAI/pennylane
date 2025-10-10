@@ -316,3 +316,32 @@ def test_is_tree_isomorphic():
     assert is_tree_isomorphic(comm_abc_left, B) is False
 
     assert is_tree_isomorphic(comm_ab, comm_ab) is True
+
+
+@pytest.mark.parametrize(
+    "comm, expected",
+    [
+        (SymbolNode("A"), False),
+        (SymbolNode("A", 2), False),
+        (SymbolNode(("A", "B", "C"), (1, 2, 3)), False),
+        (CommutatorNode(SymbolNode("A"), SymbolNode("A")), True),
+        (CommutatorNode(SymbolNode("A", 2), SymbolNode("A", 3)), True),
+        (CommutatorNode(SymbolNode("A"), SymbolNode("B")), False),
+        (CommutatorNode(SymbolNode("A"), CommutatorNode(SymbolNode("A"), SymbolNode("B"))), False),
+        (
+            CommutatorNode(
+                CommutatorNode(SymbolNode("A"), SymbolNode("B")),
+                CommutatorNode(SymbolNode("A"), SymbolNode("B")),
+            ),
+            True,
+        ),
+        (
+            CommutatorNode(
+                SymbolNode(("A", "B", "C"), (1, 2, 3)), SymbolNode(("C", "B", "A"), (3, 2, 1))
+            ),
+            True,
+        ),
+    ],
+)
+def test_is_zero(comm, expected):
+    assert comm.is_zero() is expected
