@@ -1695,9 +1695,12 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 <h3>Internal changes ⚙️</h3>
 
-* GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to 
-  use `ubuntu-24.04` runners. 
-  [(8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
+* Removes excess copies in `QuantumScript.copy`, and some other performance improvements to `resolve_dynamic_wires`.
+  [(#8406)](https://github.com/PennyLaneAI/pennylane/pull/8406)
+
+* GitHub actions and workflows (`interface-unit-tests.yml`, `tests-labs.yml`, `unit-test.yml`, `upload-nightly-release.yml` and `upload.yml`) have been updated to
+  use `ubuntu-24.04` runners.
+  [(#8371)](https://github.com/PennyLaneAI/pennylane/pull/8371)
 
 * ``measurements`` is now a "core" module in the ``tach`` specification.
   [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
@@ -2001,6 +2004,22 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * Fixed a bug in ``default.qubit`` where the device wasn't properly validating the ``mcm_method`` keyword argument.
   [(#8343)](https://github.com/PennyLaneAI/pennylane/pull/8343)
 
+* An error is now raised if postselection is requested for a zero-probability mid-circuit measurement outcome with finite
+  shots and :class:`~pennylane.devices.DefaultQubit` when `mcm_method="deferred"` and `postselect_mode="fill-shots"`, as
+  this previously led to invalid results.
+  [(#8389)](https://github.com/PennyLaneAI/pennylane/pull/8389)
+
+* Applying a transform to a `QNode` with capture enabled now returns a `QNode`. This allows autograph
+  to transform the user function when transforms are applied to the `QNode`.
+  [(#8307)](https://github.com/PennyLaneAI/pennylane/pull/8307)
+  
+* `qml.compiler.python_compiler.transforms.MergeRotationsPass` now takes the `adjoint` property of
+  merged operations correctly into account.
+  [(#8429)](https://github.com/PennyLaneAI/pennylane/pull/8429)
+  
+* Stops promoting numpy data to autograd in `qml.qchem.molecular_hamiltonian`.
+  [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
+
 * Fixed compatibility with JAX and PyTorch input parameters in :class:`~.SpecialUnitary` when large
   numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
@@ -2143,6 +2162,10 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   as well as the handling of decompositions and measurement operators by the mapper
   used by the :func:`~.estimator.estimate.estimate` function.
   [(#8384)](https://github.com/PennyLaneAI/pennylane/pull/8384)
+  
+* Fixes a bug where :func:`~.ops.rs_decomposition` logic to streamline queuing conditions are 
+  applied incorrectly.
+  [(#8441)](https://github.com/PennyLaneAI/pennylane/pull/8441)
 
 <h3>Contributors ✍️</h3>
 
@@ -2163,6 +2186,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
 Diego Guala,
+Sengthai Heng
 Austin Huang,
 David Ittah,
 Soran Jahangiri,

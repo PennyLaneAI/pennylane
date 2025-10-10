@@ -469,14 +469,14 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
+        expected_resources = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
     def test_add_series_resources(self):
         """Test addition dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        res2 = Resources(zeroed=0, algo_wires=2, gate_types=gt2)
+        res2 = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_series(res2)
 
         gt = defaultdict(
@@ -486,7 +486,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo_wires=2, gate_types=gt)
+        expected_resources = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
     def test_add_series_error(self):
@@ -508,14 +508,14 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
+        expected_resources = Resources(zeroed_wires=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
     def test_add_parallel_resources(self):
         """Test and dunder method between a ResourceOperator and a Resources object"""
         op1 = RX(1.23)
         gt2 = defaultdict(int, {DummyCmprsRep("CNOT", None): 1})
-        res2 = Resources(zeroed=0, any_state=0, algo_wires=2, gate_types=gt2)
+        res2 = Resources(zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_parallel(res2)
 
         gt = defaultdict(
@@ -525,7 +525,7 @@ class TestResourceOperator:
                 DummyCmprsRep("CNOT", None): 1,
             },
         )
-        expected_resources = Resources(zeroed=0, algo_wires=3, gate_types=gt)
+        expected_resources = Resources(zeroed_wires=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
     def test_parallel_add_error(self):

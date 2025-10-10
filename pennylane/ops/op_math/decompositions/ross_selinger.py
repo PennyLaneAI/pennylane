@@ -320,12 +320,11 @@ def rs_decomposition(
     if queuing := QueuingManager.recording():
         QueuingManager.remove(op)
 
-    if not is_qjit:
-        if (op_wire := op.wires[0]) != 0:
-            [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
-        else:
-            if queuing:
-                _ = [qml.apply(op) for op in new_tape.operations]
+    if not is_qjit and (op_wire := op.wires[0]) != 0:
+        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
+    else:
+        if queuing:
+            _ = [qml.apply(op) for op in new_tape.operations]
 
     interface = qml.math.get_interface(angle)
     phase += qml.math.mod(g_phase, 2) * math.pi
