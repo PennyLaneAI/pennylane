@@ -606,8 +606,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
   Support for :func:`~.allocate` unlocks the following features:
 
-  * The :func:`~.transforms.decompose` transform now accepts a ``max_work_wires`` argument that allows 
-    the user to specify the number of work wires available for dynamic allocation during 
+  * The :func:`~.transforms.decompose` transform now accepts a ``max_work_wires`` argument that 
+    allows the user to specify the number of work wires available for dynamic allocation during 
     decomposition.
     [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
     [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
@@ -642,8 +642,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * Two additions were made to :class:`~.Select` that positively affect how it gets decomposed:
 
   * A new keyword argument ``partial`` has been added, which allows for simplifications in the 
-    decomposition of ``Select`` under the assumption that the state of the control wires has no 
-    overlap with computational basis states that are not used by ``Select``.
+    decomposition of :class:`~.Select` under the assumption that the state of the control wires has 
+    no overlap with computational basis states that are not used by :class:`~.Select`.
 
   * A new decomposition rule has been added to :class:`~.Select`. It achieves cost reductions by 
     adding one ``work_wire``. This decomposition is useful to perform efficient :class:`~.QROM` 
@@ -1454,8 +1454,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
           execution_config = ExecutionConfig()
   ```
 
-* The ``qml.HilbertSchmidt`` and ``qml.LocalHilbertSchmidt`` templates have been updated and their 
-  UI has been remarkably simplified. They now accept an operation or a list of operations as  
+* The :class:`~.HilbertSchmidt` and :class:`~.LocalHilbertSchmidt` templates have been updated and
+  their UI has been remarkably simplified. They now accept an operation or a list of operations as  
   unitaries.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
@@ -1464,7 +1464,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   and wires.
 
   With this release, each template has been improved to accept one or more operators as unitaries.
-  The wires and parameters of the approximate unitary ``V`` are inferred from the inputs, according to the order provided.
+  The wires and parameters of the approximate unitary ``V`` are inferred from the inputs, according 
+  to the order provided.
 
   ```pycon
   >>> U = qml.Hadamard(0)
@@ -1524,7 +1525,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   argument. The shots should instead be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
-* :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at ``qml.tape``.
+* :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at 
+  ``qml.tape``.
   [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
 
 <h3>Deprecations 👋</h3>
@@ -1578,12 +1580,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   called in PennyLane.
   [(#7993)](https://github.com/PennyLaneAI/pennylane/pull/7993)
 
-* Providing the Trotter number kwarg ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
-  and :class:`pennylane.ops.Exp` has been deprecated and will be removed in a future release. Instead, use
-  :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
-  product approximation of a Hamiltonian with the specified number of Trotter steps. 
-  This change resolves the ambiguity that arises when using ``num_steps`` on devices that support analytic
-  evolution (e.g., ``default.qubit``).
+* Providing the Trotter number kwarg ``num_steps`` to :func:`pennylane.evolve`, 
+  :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`, and :class:`pennylane.ops.Exp` has been 
+  deprecated and will be removed in a future release. Instead, use :class:`~.TrotterProduct` for 
+  approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter product
+  approximation of a Hamiltonian with the specified number of Trotter steps. This change resolves 
+  the ambiguity that arises when using ``num_steps`` on devices that support analytic evolution 
+  (e.g., ``default.qubit``).
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
   [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
@@ -1618,14 +1621,17 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 * ``MeasurementProcess.expand`` has been deprecated. The relevant method can be replaced with
   ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
-  This improves the code design by removing an unused method with undesired dependencies (i.e. circular dependency).
+  This improves the code design by removing an unused method with undesired dependencies (i.e. 
+  circular dependency).
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
-* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` have been deprecated and will be removed in version v0.44.
-  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` have been deprecated and will be 
+  removed in version v0.44. Instead, the corresponding ``.shape`` or ``.numeric_type`` of the 
+  ``MeasurementProcess`` class should be used.
   [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
 
-* Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be removed in version v0.44:
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be 
+  removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
     - ``print(obj)`` in favor of ``print_contents``
@@ -1635,19 +1641,22 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
     - ``descendants(obj, sort=True)`` in favor of ``descendants_in_order``
 
 * The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
-  Instead, the ``qml.to_openqasm`` function should be used.
-  This change makes the code cleaner by separating out methods that interface with external libraries from
-  PennyLane's internal functionality.
+  Instead, the ``qml.to_openqasm`` function should be used. This change makes the code cleaner by 
+  separating out methods that interface with external libraries from PennyLane's internal 
+  functionality.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
 
-* The ``level=None`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms has been deprecated and will be removed in v0.44.
-  Please use ``level='device'`` instead to apply the noise model at the device level.
-  This reduces ambiguity by making it clear that the default is to apply all transforms to the QNode.
+* The ``level=None`` argument in the :func:`pennylane.workflow.get_transform_program`, 
+  :func:`pennylane.workflow.construct_batch`, ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` 
+  transforms has been deprecated and will be removed in v0.44. Please use ``level='device'`` instead 
+  to apply the noise model at the device level. This reduces ambiguity by making it clear that the 
+  default is to apply all transforms to the QNode.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
   [(#8364)](https://github.com/PennyLaneAI/pennylane/pull/8364)
 
-* ``qml.qnn.cost.SquaredErrorLoss`` has been deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
-  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+* ``qml.qnn.cost.SquaredErrorLoss`` has been deprecated and will be removed in version v0.44. 
+  Instead, this hybrid workflow can be accomplished with a function like 
+  ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
 
 * Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``transforms`` module has been deprecated.
@@ -1655,7 +1664,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
 * The ``qml.QNode.add_transform`` method has been deprecated and will be removed in v0.44.
-  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+  Instead, please use 
+  ``QNode.transform_program.push_back(transform_container=transform_container)``.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
   [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
 
@@ -1679,7 +1689,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8331)](https://github.com/PennyLaneAI/pennylane/pull/8331)
   [(#8386)](https://github.com/PennyLaneAI/pennylane/pull/8386)
 
-* The ``templates/subroutines`` now has ``arithmetic``, ``qchem``, and ``time_evolution`` submodules.
+* The ``templates/subroutines`` now has ``arithmetic``, ``qchem``, and ``time_evolution`` 
+  submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
 
 * ``test_horizontal_cartan_subalgebra.py`` now uses our fixture ``seed`` for reproducibility and CI stability.
@@ -1701,7 +1712,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8265)](https://github.com/PennyLaneAI/pennylane/pull/8265)
   [(#8260)](https://github.com/PennyLaneAI/pennylane/pull/8260)
 
-* Usage of the ``pytest.mark.capture`` marker from tests in the ``tests/python_compiler`` directory has been removed.
+* Usage of the ``pytest.mark.capture`` marker from tests in the ``tests/python_compiler`` directory 
+  has been removed.
   [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
 
 * ``pylint`` has been updated to v3.3.8 in our CI and ``requirements-dev.txt``
@@ -1893,9 +1905,9 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   currently supported Python versions and installation instructions.
   [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
 
-* The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
+* The documentation of ``qml.probs`` and ``qml.Hermitian`` has been updated with a warning
   to avoid using them together as the output might be different than expected.
-  Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian 
+  Furthermore, a warning is raised if a user attempts to use ``qml.probs`` with a Hermitian 
   observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
@@ -1903,11 +1915,11 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   facilitate docstring testing and fit best practices.
   [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
-* Three more examples of the deprecated usage of `qml.device(..., shots=...)` have been updated in 
+* Three more examples of the deprecated usage of ``qml.device(..., shots=...)`` have been updated in 
   the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
-* The documentation of `qml.device` has been updated to reflect the usage of 
+* The documentation of ``qml.device`` has been updated to reflect the usage of 
   :func:`~pennylane.set_shots`.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
@@ -1916,7 +1928,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
-* `ancilla` has been renamed to `auxiliary` in internal documentation.
+* ``ancilla`` has been renamed to ``auxiliary`` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
 * Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
@@ -1931,8 +1943,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   with `gradient_kwargs` in the QNode definition.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
-* The documentation for `Operator.pow` and `Operator.adjoint` have been updated to clarify optional
-  developer-facing use cases.
+* The documentation for ``Operator.pow`` and ``Operator.adjoint`` have been updated to clarify 
+  optional developer-facing use cases.
   [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
 
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
@@ -1941,30 +1953,30 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * The docstrings of all optimizers have been improved for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
-* The code example in the documentation for :func:`~.transforms.split_non_commuting` has been updated to
-  give the correct output.
+* The code example in the documentation for :func:`~.transforms.split_non_commuting` has been 
+  updated to give the correct output.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
-* The :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize` has been corrected.
+* The :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize` 
+  has been corrected.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
-* The docstring of `ClassicalShadow.entropy` has been updated to trim out the outdated part
-  of an explanation about the different choices of
-  the `alpha` parameter.
+* The docstring of ``ClassicalShadow.entropy`` has been updated to trim out the outdated part of an 
+  explanation about the different choices of the ``alpha`` parameter.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 * A warning has been added to the :doc:`interfaces documentation </introduction/interfaces>`
-  under the Pytorch section to explain that all Pytorch floating-point inputs are promoted
-  to `torch.float64`.
+  under the Pytorch section to explain that all Pytorch floating-point inputs are promoted to 
+  ``torch.float64``.
   [(#8124)](https://github.com/PennyLaneAI/pennylane/pull/8124)
 
-* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to
-  include the latest device-dependent mid-circuit measurement method defaults.
+* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated 
+  to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 * A syntax rendering issue in the
-  :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has been
-  fixed to correctly display the `max_workers` parameter.
+  :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has 
+  been fixed to correctly display the ``max_workers`` parameter.
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
 
 <h3>Bug fixes 🐛</h3>
@@ -1984,8 +1996,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   the computational basis to raise an error.
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
 
-* ``qml.ctrl(qml.Barrier(), control_wires)`` now just returns the original ``Barrier`` operation, but placed
-  in the circuit where the ``ctrl`` happens.
+* ``qml.ctrl(qml.Barrier(), control_wires)`` now just returns the original ``Barrier`` operation, 
+  but placed in the circuit where the ``ctrl`` happens.
   [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
 * JIT compilation of :class:`~pennylane.MottonenStatePrep` can now accept statically defined state-vector arrays.
@@ -1999,20 +2011,21 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   (e.g., :func:`pennylane.adjoint`).
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
-* Fixed a bug in the decomposition rules of :class:`~.Select` with the graph-based decomposition system
-  that broke the decompositions if the target ``ops`` of the ``Select`` operator were parametrized.
-  This enables the graph-based decomposition system with ``Select`` being provided parametrized target 
-  ``ops``.
+* Fixed a bug in the decomposition rules of :class:`~.Select` with the graph-based decomposition 
+  system that broke the decompositions if the target ``ops`` of the ``Select`` operator were 
+  parametrized. This enables the graph-based decomposition system with ``Select`` being provided 
+  parametrized target ``ops``.
   [(#8186)](https://github.com/PennyLaneAI/pennylane/pull/8186)
 
-* ``Exp`` and ``Evolution`` now have improved decompositions, allowing them to handle more situations
-  more robustly. In particular, the generator is simplified prior to decomposition. Now, more
-  time evolution operators can be supported on devices that do not natively support them.
+* ``Exp`` and ``Evolution`` now have improved decompositions, allowing them to handle more 
+  situations more robustly. In particular, the generator is simplified prior to decomposition. Now, 
+  more time evolution operators can be supported on devices that do not natively support them.
   [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
-* A scalar product of a norm one scalar and an operator now decomposes into a ``GlobalPhase`` and the operator.
-  For example, ``-1 * qml.X(0)`` now decomposes into ``[qml.GlobalPhase(-np.pi), qml.X(0)]``. This improves
-  the decomposition of ``Select`` when there are complicated target ``ops``.
+* A scalar product of a norm one scalar and an operator now decomposes into a ``GlobalPhase`` and 
+  the operator. For example, ``-1 * qml.X(0)`` now decomposes into 
+  ``[qml.GlobalPhase(-np.pi), qml.X(0)]``. This improves the decomposition of ``Select`` when there 
+  are complicated target ``ops``.
   [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
 * Fixed a bug that made the queueing behaviour of 
@@ -2068,7 +2081,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7889)](https://github.com/PennyLaneAI/pennylane/pull/7889)
 
 * Fixed a bug that caused calls to ``QNode.update`` (e.g., ``circuit.update(...)(shots=10)``) to
-  update the shots value as if ``set_shots`` had been applied, causing unnecessary warnings to appear.
+  update the shots value as if ``set_shots`` had been applied, causing unnecessary warnings to
+  appear.
   [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
 * Fixed attributes and types in the quantum dialect in the unified compiler framework that now 
