@@ -329,7 +329,7 @@ def _controlled_semi_adder_resource(
     }
 
 
-@register_resources(_controlled_semi_adder_resource)
+@register_resources(_controlled_semi_adder_resource, exact=False)
 def _controlled_semi_adder(base, control_wires, control_values, **__):
     # Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     # using building block described in Figure 4.
