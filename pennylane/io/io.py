@@ -476,6 +476,24 @@ def from_qasm(quantum_circuit: str, measurements=None):
     Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
+    .. warning::
+
+        ``from_qasm`` returns a **quantum function** that must be called.
+
+        .. code-block:: python
+
+            # INCORRECT: no operations will end up in the circuit
+            @qml.qnode(dev)
+            def circuit_from_qasm():
+                qml.from_qasm(qasm_string)
+                return qml.probs()
+
+            # CORRECT: from_qasm is called
+            @qml.qnode(dev)
+            def circuit_from_qasm():
+                qml.from_qasm(qasm_string)()
+                return qml.probs()
+
     Args:
         quantum_circuit (str): a QASM string containing a valid quantum circuit
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
@@ -484,8 +502,13 @@ def from_qasm(quantum_circuit: str, measurements=None):
             in the input circuit are returned. See *Removing terminal measurements* for details.
 
     Returns:
-        function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
+        function: the PennyLane quantum function created based on the QASM string. This function itself returns the
+        mid-circuit measurements plus the terminal measurements by default (``measurements=None``),
+        and returns **only** the measurements from the ``measurements`` argument otherwise.
 
+    .. seealso:: :func:`~.from_qasm3`, which relies on the ``openqasm3`` and ``openqasm3[parser]`` packages
+        instead of ``pennylane-qiskit``, and supports newer syntax features.
+        
     **Example:**
 
     .. code-block:: python
@@ -513,7 +536,8 @@ def from_qasm(quantum_circuit: str, measurements=None):
     MeasurementValue(wires=[0]),
     MeasurementValue(wires=[1]))
 
-    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with :class:`qml.QNode <pennylane.QNode>`.
+    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making
+    it possible to create a PennyLane circuit with :class:`qml.QNode <pennylane.QNode>`.
 
     .. code-block:: python
 
@@ -528,7 +552,8 @@ def from_qasm(quantum_circuit: str, measurements=None):
     .. details::
         :title: Removing terminal measurements
 
-        To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal measurements and keeps the mid-circuit measurements.
+        To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal
+        measurements and keeps the mid-circuit measurements.
 
         .. code-block:: python
 
@@ -543,7 +568,9 @@ def from_qasm(quantum_circuit: str, measurements=None):
         >>> loaded_circuit()
         []
 
-        Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``. This can be exemplified by using the ``loaded_circuit`` without the terminal measurements within a ``QNode``.
+        Note that mid-circuit measurements are always applied, but are only returned when
+        ``measurements=None``. This can be exemplified by using the ``loaded_circuit``
+        without the terminal measurements within a ``QNode``.
 
         .. code-block:: python
 
@@ -562,7 +589,8 @@ def from_qasm(quantum_circuit: str, measurements=None):
     .. details::
         :title: Using conditional operations
 
-        We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function within a :class:`qml.QNode <pennylane.QNode>`.
+        We can take advantage of the mid-circuit measurements inside the QASM code by
+        calling the returned function within a :class:`qml.QNode <pennylane.QNode>`.
 
         .. code-block:: python
 
@@ -597,7 +625,8 @@ def from_qasm(quantum_circuit: str, measurements=None):
             with open("circuit.qasm", "r") as f:
                 loaded_circuit = qml.from_qasm(f.read())
 
-        The ``loaded_circuit`` function can now be used within a :class:`qml.QNode <pennylane.QNode>` as a two-wire quantum template.
+        The ``loaded_circuit`` function can now be used within a
+        :class:`qml.QNode <pennylane.QNode>` as a two-wire quantum template.
 
         .. code-block:: python
 
