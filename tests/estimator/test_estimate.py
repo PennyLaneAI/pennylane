@@ -263,8 +263,8 @@ class TestEstimateResources:
 
         res = estimate(my_circuit, gate_set={"TestAlg2"})()
         expected = Resources(
-            zeroed=0,
-            any_state=0,
+            zeroed_wires=0,
+            any_state_wires=0,
             algo_wires=4,
             gate_types={resource_rep(TestAlg2, {"num_wires": 4}): 1},
         )
@@ -275,8 +275,8 @@ class TestEstimateResources:
         op = X()
         res = estimate(op, gate_set=None)
         expected = Resources(
-            zeroed=0,
-            any_state=0,
+            zeroed_wires=0,
+            any_state_wires=0,
             algo_wires=1,
             gate_types={resource_rep(X): 1},
         )
@@ -306,7 +306,7 @@ class TestEstimateResources:
             },
         )
         expected_resources = Resources(
-            zeroed=4, any_state=1, algo_wires=7, gate_types=expected_gates
+            zeroed_wires=4, any_state_wires=1, algo_wires=7, gate_types=expected_gates
         )
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
@@ -327,7 +327,7 @@ class TestEstimateResources:
                 resource_rep(TestAlg1, {"num_iter": 3}): 2,
             },
         )
-        expected_resources = Resources(zeroed=4, algo_wires=4, gate_types=expected_gates)
+        expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
 
     def test_estimate_resources_from_scaled_resource_operator(self):
@@ -342,7 +342,7 @@ class TestEstimateResources:
                 resource_rep(TestAlg1, {"num_iter": 3}): 4,
             },
         )
-        expected_resources = Resources(zeroed=4, algo_wires=4, gate_types=expected_gates)
+        expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
         assert actual_resources == expected_resources
 
     def test_estimate_resources_from_resources_obj(self):
@@ -354,7 +354,7 @@ class TestEstimateResources:
                 resource_rep(TestAlg1, {"num_iter": 3}): 2,
             },
         )
-        resources = Resources(zeroed=0, algo_wires=4, gate_types=gates)
+        resources = Resources(zeroed_wires=0, algo_wires=4, gate_types=gates)
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         actual_resources = estimate(resources, gate_set=gate_set)
@@ -369,7 +369,7 @@ class TestEstimateResources:
         )
         # TODO: optimize allocation
         expected_resources = Resources(
-            zeroed=4, any_state=2, algo_wires=4, gate_types=expected_gates
+            zeroed_wires=4, any_state_wires=2, algo_wires=4, gate_types=expected_gates
         )
 
         assert actual_resources == expected_resources
@@ -404,7 +404,7 @@ class TestEstimateResources:
             },
         )
         expected_resources = Resources(
-            zeroed=0, any_state=0, algo_wires=2, gate_types=expected_gates
+            zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=expected_gates
         )
         assert actual_resources == expected_resources
 
@@ -417,7 +417,7 @@ class TestEstimateResources:
 
         expected_gates = defaultdict(int, {resource_rep(X): 1})
         expected_resources = Resources(
-            zeroed=0, any_state=0, algo_wires=1, gate_types=expected_gates
+            zeroed_wires=0, any_state_wires=0, algo_wires=1, gate_types=expected_gates
         )
 
         assert actual_resources == expected_resources
@@ -428,7 +428,7 @@ class TestEstimateResources:
             (
                 {"TestRZ", "TestAlg1", "TestZ"},
                 Resources(
-                    zeroed=4,
+                    zeroed_wires=4,
                     algo_wires=4,
                     gate_types=defaultdict(
                         int,
@@ -443,8 +443,8 @@ class TestEstimateResources:
             (
                 {"TestCNOT", "TestT", "TestHadamard"},
                 Resources(
-                    zeroed=8,
-                    any_state=2,
+                    zeroed_wires=8,
+                    any_state_wires=2,
                     algo_wires=4,
                     gate_types=defaultdict(
                         int,
@@ -479,7 +479,7 @@ class TestEstimateResources:
         computed_resources = estimate(op, gate_set={"TestT"}, config=custom_config)
 
         expected_resources = Resources(
-            zeroed=0,
+            zeroed_wires=0,
             algo_wires=1,
             gate_types=defaultdict(int, {resource_rep(TestT): round(1 / error_val)}),
         )
