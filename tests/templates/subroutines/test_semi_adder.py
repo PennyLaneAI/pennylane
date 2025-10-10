@@ -107,6 +107,12 @@ class TestSemiAdder:
                 "None of the wires in work_wires should be included in y_wires.",
             ),
             (
+                [1],
+                [0],
+                [0],
+                "None of the wires in work_wires should be included in y_wires.",
+            ),
+            (
                 [0, 1, 2],
                 [2, 3, 4, 5],
                 [6, 7, 8],
