@@ -20,6 +20,7 @@ This new module includes the following features:
   [(#8279)](https://github.com/PennyLaneAI/pennylane/pull/8279)
   [(#8288)](https://github.com/PennyLaneAI/pennylane/pull/8288)
   [(#8311)](https://github.com/PennyLaneAI/pennylane/pull/8311)
+  [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
   [(#8360)](https://github.com/PennyLaneAI/pennylane/pull/8360)
 
   The :func:`~.estimator.estimate.estimate` function can be used on circuits written at different
@@ -1717,159 +1718,173 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
   [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
 
-* Unpinned the ``autoray`` package in ``pyproject.toml`` by fixing source code that was broken by the release.
+* The ``autoray`` package was upper-bounded in ``pyproject.toml`` to unblock CI failures due to
+  breaking changes in `v0.8.0`. Subsequently, it was unpinned by fixing source code that was broken 
+  by the release.
+  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
 * The ``autograph`` keyword argument has been removed from the ``QNode`` constructor.
-  To enable autograph conversion, use the ``qjit`` decorator together with the ``qml.capture.disable_autograph`` context manager.
+  To enable autograph conversion, use the ``qjit`` decorator together with the 
+  ``qml.capture.disable_autograph`` context manager.
+
+* The ability to disable ``autograph`` conversion has been added by using the new 
+  ``qml.capture.disable_autograph`` decorator or context manager. Additionally, the 
+  ``autograph`` keyword argument has been removed from the ``QNode`` constructor. To enable 
+  autograph conversion, use the ``qjit`` decorator together with the 
+  ``qml.capture.disable_autograph`` context manager.
+  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
   [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
 
-* Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
-  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
-
-* Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
-  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
-
-* Roundtrip testing and module verification to the Python compiler is now done in ``run_filecheck`` and
-``run_filecheck_qjit`` fixtures.
+* Roundtrip testing and module verification to the Python compiler is now done in ``run_filecheck`` 
+  and ``run_filecheck_qjit`` fixtures.
   [(#8049)](https://github.com/PennyLaneAI/pennylane/pull/8049)
 
 * Various type hints have been improved internally.
   [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
   [(#8284)](https://github.com/PennyLaneAI/pennylane/pull/8284)
 
-* The ``cond`` primitive with program capture no longer stores missing false branches as ``None``, instead storing them
-  as jaxprs with no output.
+* The ``cond`` primitive with program capture no longer stores missing false branches as ``None``, 
+  instead storing them as jaxprs with no output.
   [(#8080)](https://github.com/PennyLaneAI/pennylane/pull/8080)
 
-* Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
+* Unnecessary execution tests along with accuracy validation in 
+  ``tests/ops/functions/test_map_wires.py`` were removed due to stochastic failures.
   [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
-* Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
-  jobs complete successfully before triggering downstream actions. This reduces the need to
+* A new ``all-tests-passed`` gatekeeper job has been added to ``interface-unit-tests.yml`` to ensure 
+  all test jobs complete successfully before triggering downstream actions. This reduces the need to
   maintain a long list of required checks in GitHub settings. Also added the previously missing
-  `capture-jax-tests` job to the list of required test jobs, ensuring this test suite is properly
+  ``capture-jax-tests`` job to the list of required test jobs, ensuring this test suite is properly
   enforced in CI.
   [(#7996)](https://github.com/PennyLaneAI/pennylane/pull/7996)
 
-* Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
-  This allows for reproducible sampling results of legacy classical shadow across CI.
+* ``DefaultQubitLegacy`` (test suite only) has been equipped with seeded sampling. This allows for 
+  reproducible sampling results of legacy classical shadow across CI.
   [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
 
-* Capture does not block `wires=0` anymore. This allows Catalyst to work with zero-wire devices.
-  Note that `wires=None` is still illegal.
+* ``DefaultQubitLegacy`` (test suite only) no longer provides a customized classical shadow
+  implementation.
+  [(#7895)](https://github.com/PennyLaneAI/pennylane/pull/7895)
+
+* Capture does not block ``wires=0`` anymore. This allows Catalyst to work with zero-wire devices.
+  Note that ``wires=None`` is still not allowed.
   [(#7978)](https://github.com/PennyLaneAI/pennylane/pull/7978)
 
-* Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
+* The readability of ``dynamic_one_shot`` postprocessing has been improved to allow for further 
+  modification.
   [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
   [(#8041)](https://github.com/PennyLaneAI/pennylane/pull/8041)
 
-* Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
-  PennyLane submodules.
+* PennyLane's top-level ``__init__.py`` file has been updated with imports to improve Python 
+  language server support for finding PennyLane submodules.
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
 
-* Improves type hints in the `measurements` module.
+* Type hints in the ``measurements`` module have been improved.
   [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
 
-* Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
+* The codebase has been refactored to adopt modern type hint syntax for Python 3.11+.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
   [(#7982)](https://github.com/PennyLaneAI/pennylane/pull/7982)
 
-* Improve the pre-commit hook to add gitleaks.
+* Pre-commit hooks have been updated to add gitleaks for security purposes.
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
-* Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
-  `qml.compiler.python_compiler` submodule.
+* A new fixture called ``run_filecheck_qjit`` has been added, which can be used to run ``FileCheck`` 
+  on integration tests for the ``qml.compiler.python_compiler`` submodule.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
 
-* Update minimum supported `pytest` version to `8.4.1`.
+* The minimum supported ``pytest`` version has been updated to ``8.4.1``.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
-* `DefaultQubitLegacy` (test suite only) no longer provides a customized classical shadow
-  implementation
-  [(#7895)](https://github.com/PennyLaneAI/pennylane/pull/7895)
-
-* Make `pennylane.io` a tertiary module.
+* The ``pennylane.io`` module is now a tertiary module.
   [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
 
-* Seeded tests for the `split_to_single_terms` transformation.
+* Tests for the ``split_to_single_terms`` transformation are now seeded.
   [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
 
-* Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
+* The ``rc_sync.yml`` file has been updated to work with the latest ``pyproject.toml`` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
 
-* `LinearCombination` instances can be created with `_primitive.impl` when
-  capture is enabled and tracing is active.
+* ``LinearCombination`` instances can now be created with ``_primitive.impl`` when capture is 
+  enabled and tracing is active.
   [(#7893)](https://github.com/PennyLaneAI/pennylane/pull/7893)
 
-* The `TensorLike` type is now compatible with static type checkers.
+* The ``TensorLike`` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
-* Update xDSL supported version to `0.49`.
+* The supported version of xDSL has been updated to ``0.49``.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
   [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
-* Update JAX version used in tests to `0.6.2`
+* The JAX version used in tests to has been updated to ``0.6.2``
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
 
-* An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
-  functionality not available upstream in xDSL.
+* An ``xdsl_extras`` module has been added to the unified compiler framework to house additional 
+  utilities and functionality not available upstream in xDSL.
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
-* Moved `allocation.DynamicWire` from the `allocation` to the `wires` module to avoid circular dependencies.
-  [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
-
-* Two new xDSL passes have been added to the Python compiler: `decompose-graph-state`, which
-  decomposes `mbqc.graph_state_prep` operations to their corresponding set of quantum operations for
-  execution on state simulators, and `null-decompose-graph-state`, which replaces
-  `mbqc.graph_state_prep` operations with single quantum-register allocation operations for
+* Two new xDSL passes have been added to the unified compiler framework: ``decompose-graph-state``, 
+  which decomposes ``mbqc.graph_state_prep`` operations into their corresponding set of quantum 
+  operations for execution on state simulators, and ``null-decompose-graph-state``, which replaces
+  ``mbqc.graph_state_prep`` operations with single quantum-register allocation operations for
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
-* The `mbqc` xDSL dialect has been added to the Python compiler, which is used to represent
-  measurement-based quantum-computing instructions in the xDSL framework.
+* The ``mbqc`` xDSL dialect has been added to the unified compiler framework, which is used to 
+  represent measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
   [(#8059)](https://github.com/PennyLaneAI/pennylane/pull/8059)
 
-* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass` has been added for the experimental xDSL Python compiler integration. This pass converts all gates in the MBQC gate set (`Hadamard`, `S`, `RZ`, `RotXZX` and `CNOT`) to the textbook MBQC formalism.
+* A compilation pass written with xDSL called 
+  ``qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass`` has been added for the 
+  experimental unified compiler framework. This pass converts all gates in the MBQC gate set
+  (``Hadamard``, ``S``, ``RZ``, ``RotXZX`` and ``CNOT``) to the textbook MBQC formalism.
   [(#7870)](https://github.com/PennyLaneAI/pennylane/pull/7870)
   [(#8254)](https://github.com/PennyLaneAI/pennylane/pull/8254)
 
-* Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
-  Additionally, the `MBQCDialect` and `QuantumDialect` dialects have been renamed to `MBQC` and `Quantum`.
+* A ``dialects`` submodule has been added to ``qml.compiler.python_compiler`` which now houses all 
+  the xDSL dialects we create. Additionally, the ``MBQCDialect`` and ``QuantumDialect`` dialects 
+  have been renamed to ``MBQC`` and ``Quantum``.
   [(#7897)](https://github.com/PennyLaneAI/pennylane/pull/7897)
 
-* The measurement-plane attribute of the Python compiler `mbqc` dialect now uses the "opaque syntax"
-  format when printing in the generic IR format. This enables usage of this attribute when IR needs
-  to be passed from the python compiler to Catalyst.
+* The measurement-plane attribute of the unified compiler ``mbqc`` dialect now uses the "opaque 
+  syntax" format when printing in the generic IR format. This enables usage of this attribute when 
+  IR needs to be passed from xDSL to Catalyst.
   [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
 
-* A `diagonalize_mcms` option has been added to the `ftqc.decomposition.convert_to_mbqc_formalism` tape transform that, when set, arbitrary-basis mid-circuit measurements are mapped into corresponding diagonalizing gates and Z-basis mid-circuit measurements.
+* A ``diagonalize_mcms`` option has been added to the 
+  ``ftqc.decomposition.convert_to_mbqc_formalism`` tape transform that, when set, maps 
+  arbitrary-basis mid-circuit measurements into corresponding diagonalizing gates and Z-basis 
+  mid-circuit measurements.
   [(#8105)](https://github.com/PennyLaneAI/pennylane/pull/8105)
 
-* The `mbqc.graph_state_prep` operation is integrated into the `convert_to_mbqc_formalism` pass.
+* The ``mbqc.graph_state_prep`` operation is now integrated into the ``convert_to_mbqc_formalism`` 
+  pass.
   [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
   [(#8301)](https://github.com/PennyLaneAI/pennylane/pull/8301)
   [(#8314)](https://github.com/PennyLaneAI/pennylane/pull/8314)
   [(#8362)](https://github.com/PennyLaneAI/pennylane/pull/8362)
 
-* Added a `graph_state_utils` submodule to `python_compiler.transforms.mbqc` for common utilities
-  for MBQC workflows.
+* A ``graph_state_utils`` submodule has been added to ``python_compiler.transforms.mbqc`` for common 
+  utilities for MBQC workflows.
   [(#8219)](https://github.com/PennyLaneAI/pennylane/pull/8219)
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
-* Updated support for `pubchempy` used in the unit tests for `qml.qchem.mol_data` to `1.0.5`.
+* Support for ``pubchempy`` has been updated to ``1.0.5`` in the unit tests for 
+  ``qml.qchem.mol_data``.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
-* Add nightly RC builds script to `.github/workflows`.
+* A nightly RC builds script has been added to ``.github/workflows``.
   [(#8148)](https://github.com/PennyLaneAI/pennylane/pull/8148)
 
-* The test files for :mod:`~.estimator` were renamed to avoid a dual definition error with the :mod:`~.labs` module.
+* The test files for :mod:`~.estimator` were renamed to avoid a dual definition error with the 
+  :mod:`~.labs` module.
   [(#8261)](https://github.com/PennyLaneAI/pennylane/pull/8261)
 
 <h3>Documentation 📝</h3>
@@ -1880,21 +1895,25 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 * The documentation of `qml.probs` and `qml.Hermitian` has been updated with a warning
   to avoid using them together as the output might be different than expected.
-  Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian observable.
+  Furthermore, a warning is raised if a user attempts to use `qml.probs` with a Hermitian 
+  observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
-* "`>>>`" and "`...`" have been removed from "`.. code-block::`" directives in docstrings to facilitate docstring
-  testing and fit best practices.
+* "`>>>`" and "`...`" have been removed from "`.. code-block::`" directives in docstrings to 
+  facilitate docstring testing and fit best practices.
   [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
-* Three more examples of the deprecated usage of `qml.device(..., shots=...)` have been updated in the documentation.
+* Three more examples of the deprecated usage of `qml.device(..., shots=...)` have been updated in 
+  the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
-* The documentation of `qml.device` has been updated to reflect the usage of :func:`~pennylane.set_shots`.
+* The documentation of `qml.device` has been updated to reflect the usage of 
+  :func:`~pennylane.set_shots`.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
-* The "Simplifying Operators" section in the :doc:`Compiling circuits </introduction/compiling_circuits>`
-  page has been pushed further down the page to show more relevant sections first.
+* The "Simplifying Operators" section in the 
+  :doc:`Compiling circuits </introduction/compiling_circuits>` page has been pushed further down 
+  the page to show more relevant sections first.
   [(#8233)](https://github.com/PennyLaneAI/pennylane/pull/8233)
 
 * `ancilla` has been renamed to `auxiliary` in internal documentation.
@@ -1947,9 +1966,6 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has been
   fixed to correctly display the `max_workers` parameter.
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
-
-* Updated documentation in the :mod:`~.estimator` module.
-  [(#8313)](https://github.com/PennyLaneAI/pennylane/pull/8313)
 
 <h3>Bug fixes 🐛</h3>
 
