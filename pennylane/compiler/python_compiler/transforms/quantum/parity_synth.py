@@ -38,6 +38,7 @@ from ...dialects.quantum import (
     QubitUnitaryOp,
 )
 from ...pass_api import compiler_transform
+from ...visualization.xdsl_conversion import resolve_constant_wire
 
 ### xDSL-agnostic part
 
@@ -390,14 +391,13 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             if isinstance(op, AllocQubitOp):
                 raise ValueError("ParitySynth currently can not handle single qubit allocation.")
             if isinstance(op, ExtractOp):
-                idx = int.from_bytes(
-                    op.operands[1].op.operands[0].op.properties["value"].data.data, "little"
-                )
+                qubit = op.results[0]
+                idx = resolve_constant_wire(qubit)
                 print(f"Is extraction, will add {idx=} to global_wire_map")
 
                 if idx is None:
                     raise ValueError("Is this a dynamic wire?")
-                self.global_wire_map[op.results[0]] = idx
+                self.global_wire_map[qubit] = idx
                 print(
                     f"Updated global_wire_map: { {id(k): v for k, v in self.global_wire_map.items()}}"
                 )
