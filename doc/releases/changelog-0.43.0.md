@@ -1989,6 +1989,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated 
   to include the latest device-dependent mid-circuit measurement method defaults.
   [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
+  [(#8444)](https://github.com/PennyLaneAI/pennylane/pull/8444)
 
 * A syntax rendering issue in the
   :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has 
