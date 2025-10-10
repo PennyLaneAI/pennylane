@@ -71,6 +71,55 @@ def _get_grad_prim():
     return grad_prim
 
 
+@lru_cache
+def _get_vjp_prim():
+    """Create a primitive for gradient computations.
+    This primitive is used when capturing ``qml.vjp``.
+    """
+    if not has_jax:  # pragma: no cover
+        return None
+
+    vjp_prim = capture.QmlPrimitive("vjp")
+    vjp_prim.multiple_results = True
+    vjp_prim.prim_type = "higher_order"
+
+    @vjp_prim.def_impl
+    def _(*args, argnum, jaxpr, n_consts, method, fn, h):
+        raise NotImplementedError
+
+    # pylint: disable=unused-argument
+    @vjp_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts, method, h, fn):
+        return [v.aval for v in jaxpr.outvars] + [args[i + n_consts] for i in argnum]
+
+    return vjp_prim
+
+
+@lru_cache
+def _get_jvp_prim():
+    """Create a primitive for gradient computations.
+    This primitive is used when capturing ``qml.jvp``.
+    """
+    if not has_jax:  # pragma: no cover
+        return None
+
+    jvp_prim = capture.QmlPrimitive("vjp")
+    jvp_prim.multiple_results = True
+    jvp_prim.prim_type = "higher_order"
+
+    @jvp_prim.def_impl
+    def _(*args, argnum, jaxpr, n_consts, method, fn, h):
+        raise NotImplementedError
+
+    # pylint: disable=unused-argument
+    @jvp_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts, method, h):
+        avals = [v.aval for v in jaxpr.outvars]
+        return avals + avals
+
+    return jvp_prim
+
+
 def _shape(shape, dtype):
     if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
         return jax.core.DShapedArray(shape, dtype)
@@ -115,10 +164,37 @@ def _get_jacobian_prim():
     return jacobian_prim
 
 
-def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
+def _jac_unflattening(out_flat, out_tree, trainable_in_tree):
+    from jax.tree_util import tree_unflatten
+
+    # The derivative output tree is the composition of output tree and trainable input trees
+    combined_tree = out_tree.compose(trainable_in_tree)
+    return tree_unflatten(combined_tree, out_flat)
+
+
+def _vjp_unflattening(out_flat, out_tree, trainable_in_tree):
+    from jax.tree_util import tree_unflatten
+
+    out_res = out_flat[: out_tree.num_leaves]
+    in_res = out_flat[out_tree.num_leaves :]
+    return (tree_unflatten(out_tree, out_res), tree_unflatten(trainable_in_tree, in_res))
+
+
+# pylint: disable=unused-argument
+def _jvp_unflattening(out_flat, out_tree, trainable_in_tree):
+    from jax.tree_util import tree_unflatten
+
+    res = out_flat[: out_tree.num_leaves]
+    dres = out_flat[out_tree.num_leaves]
+    return (tree_unflatten(out_tree, res), tree_unflatten(out_tree, dres))
+
+
+def _capture_diff(
+    func, argnum=None, diff_prim=None, method=None, h=None, _unflatten_fn=_jac_unflattening
+):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
+    from jax.tree_util import tree_flatten, treedef_tuple
 
     if argnum is None:
         argnum = 0
@@ -168,13 +244,8 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
         out_flat = diff_prim.bind(
             *jaxpr.consts, *abstract_shapes, *flat_args, **prim_kwargs, method=method, h=h
         )
-
-        # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
-        out_flat = tree_leaves(out_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-        # The derivative output tree is the composition of output tree and trainable input trees
-        combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
-        return tree_unflatten(combined_tree, out_flat)
+        return _unflatten_fn(out_flat, flat_fn.out_tree, trainable_in_tree)
 
     return new_func
 
