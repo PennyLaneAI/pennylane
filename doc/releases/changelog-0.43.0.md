@@ -68,7 +68,7 @@ This new module includes the following features:
   which can be found in the :mod:`~.estimator` module.
 
   For example, the lightweight representation of ``QFT`` is 
-  :class:`qre.QFT <~estimator.templates.QFT>`. By simply specifying the number of wires it acts on, 
+  :class:`qre.QFT <~.estimator.templates.QFT>`. By simply specifying the number of wires it acts on, 
   we can obtain resource estimates:
 
   ```pycon
@@ -129,32 +129,32 @@ This new module includes the following features:
 
   Here is a summary of the lightweight operations made available in this release. A complete list
   can be found in the :mod:`~.estimator` module.
-  * :class:`~estimator.ops.Identity`, :class:`~estimator.ops.GlobalPhase`, and various non-parametric 
+  * :class:`~.estimator.ops.Identity`, :class:`~.estimator.ops.GlobalPhase`, and various non-parametric 
     operators and single-qubit parametric operators.
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
     [(#8242)](https://github.com/PennyLaneAI/pennylane/pull/8242)
     [(#8302)](https://github.com/PennyLaneAI/pennylane/pull/8302)
   * Various controlled single and multi qubit operators.
     [(#8243)](https://github.com/PennyLaneAI/pennylane/pull/8243)
-  * :class:`~estimator.ops.Controlled`, and :class:`~estimator.ops.Adjoint` as symbolic operators.
+  * :class:`~.estimator.ops.Controlled`, and :class:`~.estimator.ops.Adjoint` as symbolic operators.
     [(#8252)](https://github.com/PennyLaneAI/pennylane/pull/8252)
     [(#8349)](https://github.com/PennyLaneAI/pennylane/pull/8349)
-  * :class:`~estimator.ops.Pow`, :class:`~estimator.ops.Prod`, 
-    :class:`~estimator.ops.ChangeOpBasis`, and parametric multi-qubit operators.
+  * :class:`~.estimator.ops.Pow`, :class:`~.estimator.ops.Prod`, 
+    :class:`~.estimator.ops.ChangeOpBasis`, and parametric multi-qubit operators.
     [(#8255)](https://github.com/PennyLaneAI/pennylane/pull/8255)
-  * Templates including :class:`~estimator.templates.SemiAdder`, :class:`~estimator.templates.QFT`, 
-    :class:`~estimator.templates.AQFT`, :class:`~estimator.templates.BasisRotation`, 
-    :class:`~estimator.templates.Select`, :class:`~estimator.templates.QROM`, 
-    :class:`~estimator.templates.SelectPauliRot`, :class:`~estimator.templates.QubitUnitary`, 
-    :class:`~estimator.templates.ControlledSequence`, :class:`~estimator.templates.QPE`,
-    :class:`~estimator.templates.IterativeQPE`, :class:`~estimator.templates.MPSPrep`, 
-    :class:`~estimator.templates.QROMStatePreparation`, 
-    :class:`~estimator.templates.UniformStatePrep`, :class:`~estimator.templates.AliasSampling`, 
-    :class:`~estimator.templates.IntegerComparator`, 
-    :class:`~estimator.templates.SingleQubitComparator`, 
-    :class:`~estimator.templates.TwoQubitComparator`,
-    :class:`~estimator.templates.RegisterComparator`, :class:`~estimator.templates.SelectTHC`, 
-    :class:`~estimator.templates.PrepTHC`, and :class:`~estimator.templates.QubitizeTHC`.
+  * Templates including :class:`~.estimator.templates.SemiAdder`, :class:`~.estimator.templates.QFT`, 
+    :class:`~.estimator.templates.AQFT`, :class:`~.estimator.templates.BasisRotation`, 
+    :class:`~.estimator.templates.Select`, :class:`~.estimator.templates.QROM`, 
+    :class:`~.estimator.templates.SelectPauliRot`, :class:`~.estimator.templates.QubitUnitary`, 
+    :class:`~.estimator.templates.ControlledSequence`, :class:`~.estimator.templates.QPE`,
+    :class:`~.estimator.templates.IterativeQPE`, :class:`~.estimator.templates.MPSPrep`, 
+    :class:`~.estimator.templates.QROMStatePreparation`, 
+    :class:`~.estimator.templates.UniformStatePrep`, :class:`~.estimator.templates.AliasSampling`, 
+    :class:`~.estimator.templates.IntegerComparator`, 
+    :class:`~.estimator.templates.SingleQubitComparator`, 
+    :class:`~.estimator.templates.TwoQubitComparator`,
+    :class:`~.estimator.templates.RegisterComparator`, :class:`~.estimator.templates.SelectTHC`, 
+    :class:`~.estimator.templates.PrepTHC`, and :class:`~.estimator.templates.QubitizeTHC`.
     [(#8300)](https://github.com/PennyLaneAI/pennylane/pull/8300)
     [(#8305)](https://github.com/PennyLaneAI/pennylane/pull/8305)
     [(#8309)](https://github.com/PennyLaneAI/pennylane/pull/8309)
