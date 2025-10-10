@@ -39,6 +39,7 @@ class CompressedResourceOp:
 
     .. code-block:: pycon
 
+        >>> import pennylane.estimator as qre
         >>> cmpr_op = qre.PauliRot.resource_rep(pauli_string="XYZ")
         >>> print(cmpr_op)
         CompressedResourceOp(PauliRot, num_wires=3, params={'pauli_string':'XYZ', 'precision':None})
@@ -497,7 +498,7 @@ def resource_rep(
 
             import pennylane.estimator as qre
 
-            def custom_RX_decomp():  # RX = H @ RZ @ H
+            def custom_RX_decomp(precision):  # RX = H @ RZ @ H
                 h = qre.resource_rep(qre.Hadamard)
                 rz = qre.resource_rep(qre.RZ, resource_params={"precision": None})
                 return [qre.GateCount(h, 2), qre.GateCount(rz, 1)]

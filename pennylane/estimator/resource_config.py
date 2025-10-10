@@ -60,6 +60,7 @@ class ResourceConfig:
 
     .. code-block:: pycon
 
+        >>> import pennylane.estimator as qre
         >>> my_config = qre.ResourceConfig()
         >>> my_config.set_precision(qre.RX, precision=1e-5)
         >>> res = qre.estimate(
