@@ -63,7 +63,7 @@ def layer(template, depth, *args, **kwargs):
 
         For example, we can define the following subroutine:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             import pennylane as qml
             import numpy as np
@@ -75,7 +75,7 @@ def layer(template, depth, *args, **kwargs):
 
         and then pass it into the ``qml.layer`` function. In this instance, we repeat ``subroutine`` three times:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device('default.qubit', wires=3)
 
@@ -97,7 +97,7 @@ def layer(template, depth, *args, **kwargs):
         repetition. Static parameters are always passed as keyword arguments into ``qml.layer``.
         For example, consider the following subroutine:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def subroutine(wires):
                 qml.Hadamard(wires=wires[0])
@@ -108,7 +108,7 @@ def layer(template, depth, *args, **kwargs):
         don't change with each repetition, the ``wires`` parameter is passed as a keyword argument.
         Therefore, we define a circuit as:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             @qml.qnode(dev)
             def circuit():
@@ -131,7 +131,7 @@ def layer(template, depth, *args, **kwargs):
 
         For example, let us define the following variational ansatz:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def ansatz(params):
                 qml.RX(params[0], wires=[0])
@@ -140,7 +140,7 @@ def layer(template, depth, *args, **kwargs):
 
         We wish to repeat this ansatz two times, with each layer having different ``params``:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             @qml.qnode(dev)
             def circuit(params):
@@ -152,7 +152,7 @@ def layer(template, depth, *args, **kwargs):
         supplies three different parameters to three different gates. We therefore supply an array of size
         (2, 3) as an argument to ``qml.layer``:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             params = np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.4]])
 
@@ -170,7 +170,7 @@ def layer(template, depth, *args, **kwargs):
 
         Consider the following ansatz:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def ansatz(param1, param2, wires, var):
                 qml.RX(param1, wires=wires[0])
@@ -181,7 +181,7 @@ def layer(template, depth, *args, **kwargs):
 
         This circuit can be repeated as:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             @qml.qnode(dev)
             def circuit(param1, param2):
@@ -192,7 +192,7 @@ def layer(template, depth, *args, **kwargs):
         of size (2, 1), as the circuit is repeated twice, and for each repetition, both ``param1`` and
         ``param2`` are simply real numbers):
 
-        .. code-block:: python3
+        .. code-block:: python
 
             param1 = np.array([0.1, 0.2])
             param2 = np.array([0.3, 0.4])
