@@ -16,6 +16,7 @@ This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
 from collections import defaultdict
+from collections.abc import Callable
 from importlib import metadata
 from sys import version_info
 
@@ -713,11 +714,12 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, wire_map: dict = None):
+def from_qasm3(quantum_circuit: str, wire_map: dict | None = None) -> Callable:
     """
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
+
         The standard library gates, qubit registers, built-in mathematical functions and constants, subroutines,
         variables, control flow, measurements, inputs, outputs, custom gates and ``end`` statements are all supported.
         Pulses are not yet supported.
@@ -728,13 +730,16 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     Args:
         quantum_circuit (str): a QASM 3.0 string containing a simple quantum circuit.
-        qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
+        wire_map (Optional[dict]):  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
 
     Returns:
-        function: A quantum function that will execute the program.
+        Callable: A quantum function that will execute the program.
 
 
     **Examples**
+
+    First, we define a QASM 3.0 circuit as a string. In this example, we define three qubits,
+    a few parameterized gates, a subroutine with a measurement, and a control flow statement.
 
     .. code-block:: python
 
@@ -770,18 +775,19 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
                 }
         '''
 
+    We can convert this circuit into a PennyLane quantum function using:
+
     .. code-block:: python
 
-        import pennylane as qml
-
-        dev = qml.device("default.qubit", wires=[0, 1, 2])
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit", wires=[0, 1, 2]))
         def my_circuit():
             qml.from_qasm3(
                 qasm_string,
                 {'q0': 0, 'q1': 1, 'q2': 2}
             )()
             return qml.expval(qml.Z(0))
+
+    Inspecting the circuit, we can see that the operations and measurements have been correctly interpreted.
 
     >>> print(qml.draw(my_circuit)())
     0: ──RY(0.10)──X²────────────┤  <Z>
