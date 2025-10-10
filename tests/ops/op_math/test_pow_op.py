@@ -555,7 +555,7 @@ class TestMiscMethods:
         op = Pow(base, -1.2)
 
         cache = {"matrices": []}
-        assert op.label(decimals=2, cache=cache) == "U(M0)⁻¹⋅²"
+        assert op.label(decimals=2, cache=cache) == "U\n(M0)⁻¹⋅²"
         assert len(cache["matrices"]) == 1
 
     def test_eigvals(self):

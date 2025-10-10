@@ -322,7 +322,7 @@ class TestMscMethods:
         U = np.array([[1, 0], [0, -1]])
         cache = {"matrices": []}
         op = ValidOp(qml.PauliX(0), ValidOp(qml.PauliY(1), qml.QubitUnitary(U, wires=0)))
-        assert op.label(cache=cache) == "X#(Y#U(M0))"
+        assert op.label(cache=cache) == "X#(Y#U\n(M0))"
         assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)
