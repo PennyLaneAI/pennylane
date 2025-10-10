@@ -28,6 +28,8 @@ from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 from pennylane.workflow._capture_qnode import qnode_prim
 
+from .subroutine import quantum_subroutine_p
+
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
 adjoint_transform_prim = _get_adjoint_qfunc_prim()
@@ -51,4 +53,5 @@ __all__ = [
     "for_loop_prim",
     "while_loop_prim",
     "measure_prim",
+    "quantum_subroutine_p",
 ]
