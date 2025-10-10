@@ -506,7 +506,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         mid-circuit measurements plus the terminal measurements by default (``measurements=None``),
         and returns **only** the measurements from the ``measurements`` argument otherwise.
 
-    .. see-also:: :func:`~.from_qasm3`, which relies on the ``openqasm3`` and ``openqasm3[parser]`` packages
+    .. seealso:: :func:`~.from_qasm3`, which relies on the ``openqasm3`` and ``openqasm3[parser]`` packages
         instead of ``pennylane-qiskit``, and supports newer syntax features.
         
     **Example:**
