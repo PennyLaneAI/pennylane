@@ -102,7 +102,11 @@ class Conditional(SymbolicOp, Operation):
     def __init__(self, expr, then_op: Operation, id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
-        super().__init__(then_op, id=id)
+        self.hyperparameters["base"] = then_op
+        self._id = id
+        self._pauli_rep = None
+        self.queue()
+
         if self.grad_recipe is None:
             self.grad_recipe = [None] * self.num_params
 
