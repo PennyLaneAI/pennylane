@@ -34,8 +34,8 @@ class CompressedResourceOp:
     r"""This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`,
     containing only the operator type and the necessary parameters to estimate its resources.
 
-    The ``CompressedResourceO`` object is returned by the ``.resource_rep()`` method of resource
-    operators. The objet is used by resource operators to efficiently compute the resource counts.
+    The ``CompressedResourceOp`` object is returned by the ``.resource_rep()`` method of resource
+    operators. The object is used by resource operators to efficiently compute the resource counts.
 
     .. code-block:: pycon
 
