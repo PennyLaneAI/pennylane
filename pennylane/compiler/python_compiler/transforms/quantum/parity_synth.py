@@ -21,16 +21,95 @@ from itertools import product
 
 import networkx as nx
 import numpy as np
+from networkx.algorithms.approximation import steiner_tree
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
 from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
-from ...dialects.quantum import CustomOp, QubitType
+from ...dialects.quantum import (
+    AllocOp,
+    AllocQubitOp,
+    CustomOp,
+    ExtractOp,
+    MultiRZOp,
+    QubitType,
+    QubitUnitaryOp,
+)
 from ...pass_api import compiler_transform
 
 ### xDSL-agnostic part
+
+
+def _apply_dfs_po_circuit(tree, source, P, inv_synth_matrix=None):
+    dfs_po = list(nx.dfs_postorder_nodes(tree, source=source))
+    sub_circuit = []
+    if inv_synth_matrix is None:
+        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+            sub_circuit.append((i, j))
+            P[i] += P[j]
+    else:
+        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+            sub_circuit.append((i, j))
+            P[i] += P[j]
+            inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
+    P %= 2
+    return sub_circuit
+
+
+def _compute_cost(terminal_nodes: list[int], connectivity: nx.Graph) -> tuple[nx.Graph, int]:
+    """Compute the cost for a given set :math:`S` of terminal nodes within a connectivity graph.
+    The cost is defined as :math:`2|V_T| - |S| - 1` where `V_T` are the vertices of a Steiner
+    tree of `S` within the provided connectivity graph.
+
+    Args:
+        terminal_nodes (list[int]): Terminal nodes for to compute the cost
+        connectivity (nx.Graph): Connectivity graph
+
+    Returns:
+        tuple[nx.Graph, int]: Steiner tree constructed from ``terminal_nodes`` within
+        the ``connectivity`` graph, and cost computed according to the above formula.
+
+    Note that the function also returns the constructed Steiner tree.
+    """
+    if len(terminal_nodes) == 1:
+        return nx.path_graph(terminal_nodes), 0
+    t = steiner_tree(connectivity, terminal_nodes)
+    cost = 2 * len(t) - len(terminal_nodes) - 1
+    return t, cost
+
+
+def _find_parity(P, connectivity):
+    terminals = [list(np.where(y)[0]) for y in P.T]
+    trees, cost = zip(*[_compute_cost(terminal, connectivity) for terminal in terminals])
+    min_idx = np.argmin(cost)
+    return min_idx, trees[min_idx], list(map(int, terminals[min_idx]))
+
+
+def _fill_in(t, terminal_nodes, P, inv_synth_matrix):
+    cnots = []
+    f = t.copy()
+    f.remove_nodes_from(terminal_nodes)
+    terminal_set = set(terminal_nodes)
+    while len(f):
+        for u in f:
+            if f.degree(u) <= 1:
+                break
+        else:
+            raise ValueError(f"Should have found a leaf. {f=}")
+        for v in t[u]:
+            if v in terminal_set:
+                break
+        else:
+            raise ValueError(f"Should have found a neighbour. {f=}, {u=}")
+
+        cnots.append((u, v))
+        P[u] += P[v]
+        inv_synth_matrix[:, u] += inv_synth_matrix[:, v]
+        terminal_set.add(u)
+        f.remove_node(u)
+    return cnots, P, inv_synth_matrix
 
 
 def _loop_body_parity_network_synth(
@@ -80,26 +159,61 @@ def _loop_body_parity_network_synth(
         ]
     )
     arbor = nx.minimum_spanning_arborescence(parity_graph)
-    roots = [node for node, degree in arbor.in_degree() if degree == 0]
-    assert len(roots) == 1
-    dfs_po = list(nx.dfs_postorder_nodes(arbor, source=roots[0]))
+    root = next(iter(node for node, degree in arbor.in_degree() if degree == 0))
     P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
-    sub_circuit = []
-    for i, j in zip(dfs_po[:-1], dfs_po[1:]):
-        sub_circuit.append((i, j))
-        P[i] = np.mod(P[i] + P[j], 2)
+    sub_circuit = _apply_dfs_po_circuit(arbor, root, P, inv_synth_matrix)
+    circuit.append((parity_idx, root, sub_circuit))
+    return P % 2, inv_synth_matrix, circuit
+
+
+def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivity):
+    parity_idx, t, terminal_nodes = _find_parity(P, connectivity)
+    fill_in_cnots, P, inv_synth_matrix = _fill_in(t, terminal_nodes, P, inv_synth_matrix)
+    P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
+    m = P.shape[1]
+    if m == 0:
+        root = next(iter(t))
+        sub_circuit = _apply_dfs_po_circuit(t, root, P, inv_synth_matrix)
+        circuit.append((parity_idx, root, fill_in_cnots + sub_circuit))
+        return P % 2, inv_synth_matrix, circuit
+
+    cheapest_cost_vector = np.ones(m, dtype=int) * int(1e16)
+    cheapest_sub_circuit, cheapest_root, cheapest_P = None, None, None  # Will never be returned
+    for root in t:
+        P_X = P.copy()
+
+        sub_circuit = _apply_dfs_po_circuit(t, root, P_X, inv_synth_matrix)
+
+        new_cost_vector = sorted(
+            _compute_cost(list(np.where(y)[0]), connectivity)[1] for y in P_X.T
+        )
+        for new_c, cheapest_c in zip(new_cost_vector, cheapest_cost_vector, strict=True):
+            if new_c == cheapest_c:
+                continue
+            if new_c < cheapest_c:
+                cheapest_cost_vector = new_cost_vector
+                cheapest_sub_circuit = sub_circuit
+                cheapest_root = root
+                cheapest_P = P_X
+            break
+
+    for i, j in cheapest_sub_circuit:
         inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
-    circuit.append((parity_idx, roots[0], sub_circuit))
-    return P, inv_synth_matrix, circuit
+    circuit.append((parity_idx, cheapest_root, fill_in_cnots + cheapest_sub_circuit))
+    return cheapest_P, inv_synth_matrix, circuit
 
 
-def _parity_network_synth(P: np.ndarray) -> list[int, list[tuple[int]]]:
+def _parity_network_synth(
+    P: np.ndarray,
+    connectivity: nx.Graph | None = None,
+) -> list[int, list[tuple[int]]]:
     """Main subroutine for the ``ParitySynth`` pass, mostly a ``for``-loop wrapper around
     ``_loop_body_parity_network_synth``. It synthesizes the parity network, as described
     in Algorithm 1 in https://arxiv.org/abs/2104.00934.
 
     Args:
         P (np.ndarray): Parity table to be synthesized.
+        connectivity (nx.Graph): Connectivity to be taken into account during the synthesis.
 
     Returns:
         tuple[list[int, list[tuple[int]]], np.ndarray]: Synthesized parity network, as a
@@ -113,8 +227,16 @@ def _parity_network_synth(P: np.ndarray) -> list[int, list[tuple[int]]]:
     circuit = []
     num_wires, num_parities = P.shape
     inv_synth_matrix = np.eye(num_wires, dtype=int)
-    for _ in range(num_parities):
-        P, inv_synth_matrix, circuit = _loop_body_parity_network_synth(P, inv_synth_matrix, circuit)
+    if connectivity is None:
+        for _ in range(num_parities):
+            P, inv_synth_matrix, circuit = _loop_body_parity_network_synth(
+                P, inv_synth_matrix, circuit
+            )
+    else:
+        for _ in range(num_parities):
+            P, inv_synth_matrix, circuit = _loop_body_parity_network_synth_con(
+                P, inv_synth_matrix, circuit, connectivity
+            )
 
     return circuit, inv_synth_matrix % 2
 
@@ -167,17 +289,25 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
     phase polynomials.
     """
 
-    def __init__(self, *args, **kwargs):
+    connectivity: nx.Graph
+    phase_polynomial_ops: list[CustomOp]
+    init_wire_map: [QubitType, int]
+    global_wire_map: [QubitType, int]
+    phase_polynomial_ops: set[QubitType]
+    num_phase_polynomial_qubits: int
+
+    def __init__(self, *args, connectivity: nx.Graph | None = None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.connectivity = connectivity
         self._reset_vars()
 
     def _reset_vars(self):
         """Initialize/reset variables that are used in ``match_and_rewrite`` as well as
         ``rewrite_phase_polynomial``."""
-        self.phase_polynomial_ops: list[CustomOp] = []
-        self.init_wire_map: dict[QubitType, int] = {}
-        self.phase_polynomial_qubits: set[QubitType] = set()
-        self.num_phase_polynomial_qubits: int = 0
+        self.phase_polynomial_ops = []
+        self.init_wire_map = {}
+        self.phase_polynomial_qubits = set()
+        self.num_phase_polynomial_qubits = 0
 
     def _record_phase_poly_op(self, op: CustomOp):
         """Add a ``CustomOp`` to the phase polynomial ops, remove its input qubits
@@ -215,13 +345,20 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         as a non-phase-polynomial operation is encountered. Note that this makes the (size of the)
         rewritten phase polynomials dependent on the order in which we walk over the operations.
         """
+        # The effort spent on qubit tracking and additional parities when connectivity is present
+        # can be significant, so we separate the implementations with and without connectivity.
+        if self.connectivity is None:
+            self._match_and_rewrite_without_connectivity(funcOp, rewriter)
+        else:
+            self._match_and_rewrite_with_connectivity(funcOp, rewriter)
+
+    def _match_and_rewrite_without_connectivity(self, funcOp, rewriter):
         for op in funcOp.body.walk():
             if not isinstance(op, CustomOp):
-                # Non-quantum operation. Global phases are ignored as well.
+                # Non-quantum operation. Global phases, QubitUnitary, and MultiRZ are ignored.
                 continue
 
-            gate_name = op.gate_name.data
-            if gate_name in valid_phase_polynomial_ops:
+            if op.gate_name.data in valid_phase_polynomial_ops:
                 # Include op in phase polynomial ops and track its qubits
                 self._record_phase_poly_op(op)
                 continue
@@ -231,6 +368,83 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
 
         # end of operations; rewrite terminal phase polynomial
         self.rewrite_phase_polynomial(rewriter)
+
+        # Mock the rewriter to think it reached a steady state already, because re-applying
+        # ParitySynth is not useful
+        # todo: to this properly by using a different rewriter or so
+        rewriter.has_done_action = False
+
+    def _match_and_rewrite_with_connectivity(self, funcOp, rewriter):
+        self.global_wire_map = {}
+        allocated_first_register = False
+        for op in funcOp.body.walk():
+            print(type(op))
+            if isinstance(op, AllocOp):
+                print(f"Is allocation, {allocated_first_register=}")
+                if allocated_first_register:
+                    raise ValueError(
+                        "ParitySynth currently can only handle a single register allocation."
+                    )
+                allocated_first_register = True
+                continue
+            if isinstance(op, AllocQubitOp):
+                raise ValueError("ParitySynth currently can not handle single qubit allocation.")
+            if isinstance(op, ExtractOp):
+                idx = int.from_bytes(
+                    op.operands[1].op.operands[0].op.properties["value"].data.data, "little"
+                )
+                print(f"Is extraction, will add {idx=} to global_wire_map")
+
+                if idx is None:
+                    raise ValueError("Is this a dynamic wire?")
+                self.global_wire_map[op.results[0]] = idx
+                print(
+                    f"Updated global_wire_map: { {id(k): v for k, v in self.global_wire_map.items()}}"
+                )
+                continue
+            if not isinstance(op, (CustomOp, MultiRZOp, QubitUnitaryOp)):
+                print("Non-quantum op. continue.")
+                # Non-quantum operation. Global phases are ignored as well.
+                continue
+
+            if op.gate_name.data in valid_phase_polynomial_ops:
+                print("Phase polynomial op")
+                self.phase_polynomial_ops.append(op)
+                if not self.init_wire_map:
+                    print(
+                        f"Freezing global_wire_map into init_wire_map, because {self.init_wire_map=}"
+                    )
+                    self.init_wire_map = self.global_wire_map.copy()
+                    print(
+                        f"Created init_wire_map: { {id(k): v for k, v in self.init_wire_map.items()}}"
+                    )
+
+                # for in_q, out_q in zip(op.in_qubits+op.in_ctrl_qubits, op.out_qubits+op.out_ctrl_qubits, strict=True):
+                # self.global_wire_map[out_q] = self.global_wire_map.pop(in_q)
+                continue
+
+            # not a phase polynomial op, so we activate rewriting of the phase polynomial
+            print("Non-phase-poly-op. Start rewriting")
+            print(f"Before:\n   init_wire_map:{ {id(k): v for k, v in self.init_wire_map.items()}}")
+            print(f"   global_wire_map:{ {id(k): v for k, v in self.global_wire_map.items()}}")
+            self.rewrite_phase_polynomial(rewriter)
+            print(f"After:\n   init_wire_map:{ {id(k): v for k, v in self.init_wire_map.items()}}")
+            print(f"   global_wire_map:{ {id(k): v for k, v in self.global_wire_map.items()}}")
+
+            print("Replace in qubits by out qubits:")
+            for in_q, out_q in zip(
+                op.in_qubits + op.in_ctrl_qubits, op.out_qubits + op.out_ctrl_qubits, strict=True
+            ):
+                print(f"{id(in_q)} ==> {id(out_q)}")
+                self.global_wire_map[out_q] = self.global_wire_map.pop(in_q)
+
+        # end of operations; rewrite terminal phase polynomial
+        print("End of loop")
+        print(f"Before:\n   init_wire_map:{ {id(k): v for k, v in self.init_wire_map.items()}}")
+        print(f"   global_wire_map:{ {id(k): v for k, v in self.global_wire_map.items()}}")
+        self.rewrite_phase_polynomial(rewriter)
+        print(f"After:\n   init_wire_map:{ {id(k): v for k, v in self.init_wire_map.items()}}")
+        print(f"   global_wire_map:{ {id(k): v for k, v in self.global_wire_map.items()}}")
 
         # Mock the rewriter to think it reached a steady state already, because re-applying
         # ParitySynth is not useful
@@ -269,14 +483,23 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             self._reset_vars()
             return
 
+        if self.connectivity is not None:
+            if (num_extracted := len(self.init_wire_map)) != (num_graph := len(self.connectivity)):
+                raise ValueError(
+                    f"There were {num_extracted} qubits extracted but {num_graph} qubits in the connectivity graph."
+                )
+
         insertion_point: InsertPoint = InsertPoint.after(self.phase_polynomial_ops[-1])
 
         # Mapping from integer-valued wire positions to qubits, corresponding to state before
         # phase polynomial
         inv_wire_map: dict[int, QubitType] = {val: key for key, val in self.init_wire_map.items()}
+        inv_wire_map_before: dict[int, QubitType] = inv_wire_map.copy()
 
-        # Calculate the new circuit by going to phase polynomial IR and back, including synthesis
-        # of trailing CNOTs via rowcol
+        ## Calculate the new circuit by going to phase polynomial IR and back, including synthesis
+        ## of trailing CNOTs via rowcol
+
+        # Compute the IR
         M, P, angles, arith_ops = make_phase_polynomial(
             self.phase_polynomial_ops, self.init_wire_map
         )
@@ -286,11 +509,11 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             rewriter.insert_op(op, insertion_point)
 
         # todo: call parity table reduction function once it exists
-        subcircuits, inv_network_parity_matrix = _parity_network_synth(P)
+        subcircuits, inv_network_parity_matrix = _parity_network_synth(P, self.connectivity)
         # `inv_network_parity_matrix` might be None if the parity table was empty
         if inv_network_parity_matrix is not None:
             M = (M @ inv_network_parity_matrix) % 2
-        rowcol_circuit: list[tuple[int]] = _rowcol_parity_matrix(M)
+        rowcol_circuit: list[tuple[int]] = _rowcol_parity_matrix(M, self.connectivity)
 
         # Apply the parity network part of the new circuit
         for idx, phase_wire, subcircuit in subcircuits:
@@ -306,11 +529,27 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
 
         # Replace the output qubits of the old phase polynomial operations by the output qubits of
         # the new circuit
+        print("After tracing through the new phase polynomial:")
+        print(
+            f"    init_wire_map: init_wire_map:{ {id(k): v for k, v in self.init_wire_map.items()}}"
+        )
+        print(f"    inv_wire_map: init_wire_map:{ {k: id(v) for k, v in inv_wire_map.items()}}")
         for old_qubit, int_wire in self.init_wire_map.items():
-            rewriter.replace_all_uses_with(old_qubit, inv_wire_map[int_wire])
+            # print(f"replacing  {old_qubit} by {inv_wire_map[int_wire]}")
+            print(int_wire)
+            print(f"{id(old_qubit)=}")
+            new_qubit = inv_wire_map[int_wire]
+            print(f"{id(new_qubit)=}")
+            print(f"replacing  {id(old_qubit)} by {id(new_qubit)} in program")
+            rewriter.replace_all_uses_with(old_qubit, new_qubit)
+            if self.connectivity is not None:
+                prev_old_qubit = inv_wire_map_before[int_wire]
+                print(f"replacing  {id(prev_old_qubit)} by {id(new_qubit)} in global_wire_map")
+                self.global_wire_map[new_qubit] = self.global_wire_map.pop(prev_old_qubit)
 
         # Erase the old phase polynomial operations.
         for op in self.phase_polynomial_ops[::-1]:
+            print(op.results)
             rewriter.erase_op(op)
 
         # Reset internal state
@@ -322,12 +561,15 @@ class ParitySynthPass(passes.ModulePass):
     """Pass for applying ParitySynth to phase polynomials in a circuit."""
 
     name = "xdsl-parity-synth"
+    connectivity: nx.Graph | None = None
 
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the ParitySynth pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([ParitySynthPattern()])
+            pattern_rewriter.GreedyRewritePatternApplier(
+                [ParitySynthPattern(connectivity=self.connectivity)]
+            )
         ).rewrite_module(module)
 
 
