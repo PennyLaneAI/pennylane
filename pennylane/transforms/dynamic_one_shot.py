@@ -388,7 +388,12 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
         if isinstance(measurement, ProbabilityMP):
             counts = qml.math.array([sum_valid - count_1, count_1], like=interface)
             return counts / sum_valid
-    return gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
+    result = gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
+    if isinstance(measurement, SampleMP):
+        results = qml.math.squeeze(results)
+        if results.ndim == 1:
+            results = qml.math.expand_dims(results, axis=1)
+    return result
 
 
 @singledispatch
@@ -546,4 +551,6 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
     results = gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
     if isinstance(measurement, SampleMP):
         results = qml.math.squeeze(results)
+        if results.ndim == 1:
+            results = qml.math.expand_dims(results, axis=1)
     return results
