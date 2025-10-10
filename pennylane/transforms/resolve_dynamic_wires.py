@@ -99,7 +99,7 @@ def resolve_dynamic_wires(
     min_int: int | None = None,
     allow_resets: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
+    r"""Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
 
     Args:
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
