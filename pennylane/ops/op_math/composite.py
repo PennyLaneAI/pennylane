@@ -79,7 +79,8 @@ class CompositeOp(Operator):
     ):  # pylint: disable=super-init-not-called
         self._id = id
         self._name = self.__class__.__name__
-
+        if any(isinstance(op, qml.measurements.MidMeasureMP) for op in operands):
+            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
