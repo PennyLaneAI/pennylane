@@ -136,7 +136,7 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
+* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
 
   - Deprecated in v0.43
