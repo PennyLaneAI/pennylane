@@ -104,7 +104,7 @@ def resolve_dynamic_wires(
     Args:
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
         zeroed (Sequence[Hashable]): a register of wires known to be in the :math:`|0\rangle` state
-            any_state (Sequence[Hashable]): a register of wires with any state
+        any_state (Sequence[Hashable]): a register of wires with any state
         min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
         allow_resets (boo): Whether or not mid circuit measurements with ``reset=True`` can be added
