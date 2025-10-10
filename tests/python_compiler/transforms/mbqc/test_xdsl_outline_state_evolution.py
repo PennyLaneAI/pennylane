@@ -64,7 +64,6 @@ class TestOutlineStateEvolutionPass:
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
-            autograph=False,
         )
         @outline_state_evolution_pass
         @qml.set_shots(1000)
@@ -104,7 +103,6 @@ class TestOutlineStateEvolutionPass:
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
-            autograph=True,
         )
         @decompose_graph_state_pass
         @convert_to_mbqc_formalism_pass
@@ -127,6 +125,7 @@ class TestOutlineStateEvolutionPass:
             # CHECK-NOT: quantum.custom "RZ"
             # CHECK-NOT: quantum.custom "CNOT"()
             # CHECK-NOT: quantum.namedobs
+            # CHECK: scf.while
             # CHECK: quantum.custom "Hadamard"()
             # CHECK: quantum.custom "CZ"()
             # CHECK: mbqc.measure_in_basis
@@ -134,6 +133,7 @@ class TestOutlineStateEvolutionPass:
             # CHECK: quantum.custom "PauliX"()
             # CHECK: quantum.custom "PauliZ"()
             # CHECK: quantum.dealloc_qb
+            _while_for(0)
             qml.H(0)
             qml.S(1)
             RotXZX(0.1, 0.2, 0.3, wires=[2])
@@ -152,7 +152,6 @@ class TestOutlineStateEvolutionPass:
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
-            autograph=True,
         )
         @decompose_graph_state_pass
         @convert_to_mbqc_formalism_pass
@@ -175,6 +174,7 @@ class TestOutlineStateEvolutionPass:
             # CHECK-NOT: quantum.custom "RZ"
             # CHECK-NOT: quantum.custom "CNOT"()
             # CHECK-NOT: quantum.namedobs
+            # CHECK: scf.while
             # CHECK: quantum.custom "Hadamard"()
             # CHECK: quantum.custom "CZ"()
             # CHECK: mbqc.measure_in_basis
@@ -182,6 +182,7 @@ class TestOutlineStateEvolutionPass:
             # CHECK: quantum.custom "PauliX"()
             # CHECK: quantum.custom "PauliZ"()
             # CHECK: quantum.dealloc_qb
+            _while_for(0)
             qml.H(0)
             qml.S(1)
             RotXZX(0.1, 0.2, 0.3, wires=[2])
@@ -200,7 +201,6 @@ class TestOutlineStateEvolutionPass:
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
-            autograph=True,
         )
         @decompose_graph_state_pass
         @convert_to_mbqc_formalism_pass
@@ -210,15 +210,16 @@ class TestOutlineStateEvolutionPass:
         @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
+            _while_for(0)
             qml.H(0)
             qml.S(1)
             RotXZX(0.1, 0.2, 0.3, wires=[2])
             qml.RZ(phi=0.1, wires=[3])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(wires=0))
+            return qml.expval(qml.X(wires=0))
 
         res = circuit()
-        assert res == 0.0
+        assert res == 1.0
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_lightning_execution_with_structure(self):
