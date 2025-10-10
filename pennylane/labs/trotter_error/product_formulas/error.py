@@ -14,6 +14,7 @@
 """Functions for retreiving effective error from fragments"""
 
 import copy
+from collections import defaultdict
 from collections.abc import Hashable, Sequence
 
 from pennylane import concurrency

@@ -101,9 +101,9 @@ def test_mergeability():
         CommutatorNode(CommutatorNode(A, B), C), CommutatorNode(CommutatorNode(A, D), D)
     )
 
-    assert is_mergeable(comm1, comm2, 0) == False
-    assert is_mergeable(comm1, comm2, 4) == True
-    assert is_mergeable(comm1, comm3, 0) == False
+    assert is_mergeable(comm1, comm2, 0) is False
+    assert is_mergeable(comm1, comm2, 4) is True
+    assert is_mergeable(comm1, comm3, 0) is False
 
 
 @pytest.mark.parametrize(
