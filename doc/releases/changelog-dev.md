@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* A new decomposition has been added to Controlled :class:`~.SemiAdder`. It is an efficient method
+  to control this operator instead of control all gates in the decomposition.
+  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
+
 <h3>Improvements 🛠</h3>
 
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
@@ -28,4 +32,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso
 Lillian Frederiksen
