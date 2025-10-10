@@ -4,6 +4,12 @@
 Program capture sharp bits
 ==========================
 
+.. warning:: 
+
+    This is an experimental feature that is still under active development.
+    As such, there may be bugs and unexpected behaviour as it is subject to 
+    breaking changes in future releases.
+
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
 structured control flow, and dynamicism.
