@@ -1746,7 +1746,7 @@ class TestPrepTHC:
             qre.PrepTHC(thc_ham, coeff_precision=coeff_prec, select_swap_depth=selswap_depth)
         )
         assert prep_cost.algo_wires == expected_res["algo_wires"]
-        assert prep_cost.zeroed + prep_cost.any_state == expected_res["auxiliary_wires"]
+        assert prep_cost.zeroed_wires + prep_cost.any_state_wires == expected_res["auxiliary_wires"]
         assert prep_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
