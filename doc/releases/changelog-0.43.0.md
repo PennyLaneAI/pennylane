@@ -67,8 +67,9 @@ This new module includes the following features:
   that inherits from a new class called :class:`~.estimator.resource_operator.ResourceOperator`,
   which can be found in the :mod:`~.estimator` module.
 
-  For example, the lightweight representation of ``QFT`` is :class:`qre.QFT <~estimator.templates.QFT>`.
-  By simply specifying the number of wires it acts on, we can obtain resource estimates:
+  For example, the lightweight representation of ``QFT`` is 
+  :class:`qre.QFT <~estimator.templates.QFT>`. By simply specifying the number of wires it acts on, 
+  we can obtain resource estimates:
 
   ```pycon
   >>> qft = qre.QFT(num_wires=3)
@@ -86,13 +87,13 @@ This new module includes the following features:
     'Hadamard': 3
   ```
   
-  One can create a circuit comprising these operations with similar syntax as defining a QNode, but with far less detail.
-  Here is an example of a circuit with 50 (logical) algorithmic qubits,
-  which includes a :class:`~.estimator.templates.QROMStatePreparation` acting on 48 qubits.
-  Defining this state preparation for execution would require a state vector of length :math:`2^{48}`
-  (see :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>`),
-  but we are able to estimate the required resources with only metadata, bypassing this computational barrier.
-  Even at this scale, the resource estimate is computed in a fraction of a second!
+  One can create a circuit comprising these operations with similar syntax as defining a QNode, but 
+  with far less detail. Here is an example of a circuit with 50 (logical) algorithmic qubits, which 
+  includes a :class:`~.estimator.templates.QROMStatePreparation` acting on 48 qubits. Defining this 
+  state preparation for execution would require a state vector of length :math:`2^{48}` (see 
+  :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>`), but we are able to estimate 
+  the required resources with only metadata, bypassing this computational barrier. Even at this 
+  scale, the resource estimate is computed in a fraction of a second!
 
   ```python
   def my_circuit():
