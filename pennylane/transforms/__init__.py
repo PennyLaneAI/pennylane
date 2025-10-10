@@ -90,8 +90,6 @@ for example when writing custom ZX compilation passes.
 
     ~transforms.to_zx
     ~transforms.from_zx
-    ~transforms.postorder_traverse
-    ~transforms.preorder_traverse
     ~transforms.parity_matrix
     ~transforms.phase_polynomial
 
@@ -375,8 +373,6 @@ from .intermediate_reps import (
     parity_matrix,
     phase_polynomial,
     rowcol,
-    postorder_traverse,
-    preorder_traverse,
 )
 from .rz_phase_gradient import rz_phase_gradient
 
