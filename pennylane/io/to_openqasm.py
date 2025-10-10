@@ -237,7 +237,8 @@ def to_openqasm(
             qml.RZ(phi, wires=1)
             return qml.sample()
 
-    >>> print(qml.to_openqasm(circuit)(1.2, 0.9))
+    >>> output = qml.to_openqasm(circuit)(1.2, 0.9)
+    >>> print(output)
     OPENQASM 2.0;
     include "qelib1.inc";
     qreg q[2];
@@ -248,12 +249,21 @@ def to_openqasm(
     measure q[0] -> c[0];
     measure q[1] -> c[1];
 
+    Note that the terminal measurements will be re-imported as mid-circuit measurements
+    when re-imported with ``from_qasm`` or ``from_qasm3``.
+
+    >>> print(qml.draw(qml.from_qasm(output))())
+    0: ──RX(1.20)─╭●──┤↗├───────────┤
+    1: ───────────╰X──RZ(0.90)──┤↗├─┤
+
     .. details::
         :title: Usage Details
 
-        By default, the resulting OpenQASM code will have terminal measurements on all qubits, where all the measurements are performed in the computational basis.
-        However, if terminal measurements in the circuit act only on a subset of the qubits and ``measure_all=False``,
-        the OpenQASM code will include measurements on those specific qubits only.
+        By default, the resulting OpenQASM code will have terminal measurements on all qubits,
+        where all the measurements are performed in the computational basis.
+        However, if terminal measurements in the circuit act only on a subset of the qubits
+        and ``measure_all=False``, the OpenQASM code will include measurements on those
+        specific qubits only.
 
         .. code-block:: python
 
@@ -274,8 +284,9 @@ def to_openqasm(
         cx q[0],q[1];
         measure q[1] -> c[1];
 
-        If the circuit returns an expectation value of a given observable and ``rotations=True``, the OpenQASM 2.0 program will also
-        include the gates that rotate the quantum state into the eigenbasis of the measured observable.
+        If the circuit returns an expectation value of a given observable and ``rotations=True``,
+        the OpenQASM 2.0 program will also include the gates that rotate the quantum state into
+        the eigenbasis of the measured observable.
 
         .. code-block:: python
 
