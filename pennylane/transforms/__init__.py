@@ -82,7 +82,8 @@ There is a set of transforms that use ZX calculus to optimize circuits.
     zx.todd
 
 The following utility functions assist when working explicitly with ZX diagrams,
-for example when writing custom ZX compilation passes.
+for example when writing custom ZX compilation passes. Also see the section
+on intermediate representations below.
 
 .. currentmodule:: pennylane
 .. autosummary::
@@ -90,8 +91,6 @@ for example when writing custom ZX compilation passes.
 
     ~transforms.to_zx
     ~transforms.from_zx
-    ~transforms.parity_matrix
-    ~transforms.phase_polynomial
 
 Other compilation utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -146,6 +145,30 @@ preprocessing, getting information from a circuit, and more.
     ~apply_controlled_Q
     ~quantum_monte_carlo
     ~transforms.resolve_dynamic_wires
+
+Transforms for intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically
+offering a more efficient classical description for special classes of circuits.
+The following functions produce intermediate representations of quantum circuits:
+
+.. currentmodule:: pennylane.transforms.intermediate_reps
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomial
+    ~transforms.rowcol
+
+In addition, there are the following utility functions to traverse a graph:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.intermediate_reps.postorder_traverse
+    ~transforms.intermediate_reps.preorder_traverse
 
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
