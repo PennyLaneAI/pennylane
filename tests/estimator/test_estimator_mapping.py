@@ -97,24 +97,24 @@ class TestMapToResourceOp:
         [
             (
                 qtemps.OutMultiplier(x_wires=[0, 1], y_wires=[2], output_wires=[3, 4]),
-                re_temps.OutMultiplier(a_num_wires=2, b_num_wires=1),
+                re_temps.OutMultiplier(a_num_wires=2, b_num_wires=1, wires=[0, 1, 2, 3, 4]),
             ),
             (
                 qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
-                re_temps.SemiAdder(max_register_size=3),
+                re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4, 5]),
             ),
-            (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3)),
+            (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
             (
                 qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4]),
-                re_temps.AQFT(order=3, num_wires=5),
+                re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
                 qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
-                re_temps.BasisRotation(dim=4),
+                re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (
                 qtemps.Select([qml.PauliX(2), qml.PauliY(2)], control=[0, 1]),
-                re_temps.Select(ops=[re_ops.X(), re_ops.Y()]),
+                re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
             ),
             (
                 qtemps.QROM(
@@ -124,7 +124,9 @@ class TestMapToResourceOp:
                     work_wires=[4],
                     clean=False,
                 ),
-                re_temps.QROM(num_bitstrings=3, size_bitstring=2, restored=False),
+                re_temps.QROM(
+                    num_bitstrings=3, size_bitstring=2, restored=False, wires=[0, 1, 2, 3, 4]
+                ),
             ),
             (
                 qtemps.SelectPauliRot(
@@ -133,15 +135,19 @@ class TestMapToResourceOp:
                     target_wire=[2],
                     rot_axis="Y",
                 ),
-                re_temps.SelectPauliRot(rot_axis="Y", num_ctrl_wires=2, precision=None),
+                re_temps.SelectPauliRot(
+                    rot_axis="Y", num_ctrl_wires=2, precision=None, wires=[0, 1, 2]
+                ),
             ),
             (
                 qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2]),
-                re_temps.ControlledSequence(base=re_ops.RX(), num_control_wires=3),
+                re_temps.ControlledSequence(
+                    base=re_ops.RX(wires=3), num_control_wires=3, wires=[0, 1, 2]
+                ),
             ),
             (
                 qml.QubitUnitary(np.eye(2), wires=0),
-                re_ops.QubitUnitary(num_wires=1, precision=None),
+                re_ops.QubitUnitary(num_wires=1, precision=None, wires=[0]),
             ),
             (
                 qtemps.SelectPauliRot(
@@ -150,34 +156,45 @@ class TestMapToResourceOp:
                     target_wire=[2],
                     rot_axis="Y",
                 ),
-                re_temps.SelectPauliRot(rot_axis="Y", num_ctrl_wires=2, precision=None),
+                re_temps.SelectPauliRot(
+                    rot_axis="Y", num_ctrl_wires=2, precision=None, wires=[0, 1, 2]
+                ),
             ),
             (
                 qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
-                re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2),
+                re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2, wires=[2, 0, 1]),
             ),
             (
                 qml.TrotterProduct(
-                    qml.dot([0.25, 0.75], [qml.X(0), qml.Z(0)]),
+                    qml.dot(
+                        [0.25, 0.75, -1],
+                        [qml.X(0), qml.Z(1), qml.prod(qml.Y(0), qml.Y(2), qml.Y(1))],
+                    ),
                     time=1.0,
                     n=10,
                     order=2,
                 ),
                 re_temps.TrotterProduct(
-                    first_order_expansion=[re_ops.X(), re_ops.Z()],
+                    first_order_expansion=[
+                        re_ops.RX(wires=[0]),
+                        re_ops.RZ(wires=[1]),
+                        re_ops.PauliRot("YYY", wires=[0, 2, 1]),
+                    ],
                     num_steps=10,
                     order=2,
                 ),
             ),
             (
                 qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
-                re_temps.IntegerComparator(value=5, register_size=3, geq=False),
+                re_temps.IntegerComparator(value=5, register_size=3, geq=False, wires=[0, 1, 2, 3]),
             ),
             (
                 qtemps.MPSPrep(
                     [np.ones((2, 4)), np.ones((4, 2, 2)), np.ones((2, 2))], wires=[0, 1, 2]
                 ),
-                re_temps.MPSPrep(num_mps_matrices=3, max_bond_dim=4, precision=None),
+                re_temps.MPSPrep(
+                    num_mps_matrices=3, max_bond_dim=4, precision=None, wires=[0, 1, 2]
+                ),
             ),
             (
                 qtemps.QROMStatePreparation(
@@ -188,13 +205,16 @@ class TestMapToResourceOp:
                     precision=np.pi / 4,
                     positive_and_real=False,
                     select_swap_depths=1,
+                    wires=[0, 1, 2, 3, 4, 5],
                 ),
             ),
         ],
     )
     def test_map_to_resource_op_templates(self, operator, expected_res_op):
         """Test that _map_to_resource_op maps templates to the appropriate resource operator"""
-        assert _map_to_resource_op(operator) == expected_res_op
+        mapped_op = _map_to_resource_op(operator)
+        assert mapped_op == expected_res_op
+        assert mapped_op.wires == expected_res_op.wires
 
     def test_map_from_decomposition(self):
         """Test that the decomposition is used when a resource equivalent is not defined"""
