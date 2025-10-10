@@ -110,7 +110,7 @@ def estimate(
         module. The resource operator is a lightweight representation of an operator that contains the
         minimum information required to perform resource estimation. For most basic operators, it is simply
         the type of the operator. For more complex operators and templates, you may be required to provide
-        more information as specified in the operator's resource params, such as the number of wires.
+        more information as specified in the operator's ``resource_params``, such as the number of wires.
 
         .. code-block:: python
 
