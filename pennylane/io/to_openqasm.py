@@ -250,7 +250,7 @@ def to_openqasm(
     measure q[1] -> c[1];
 
     Note that the terminal measurements will be re-imported as mid-circuit measurements
-    when re-imported with ``from_qasm`` or ``from_qasm3``.
+    when used with ``from_qasm`` or ``from_qasm3``.
 
     >>> print(qml.draw(qml.from_qasm(output))())
     0: ──RX(1.20)─╭●──┤↗├───────────┤
