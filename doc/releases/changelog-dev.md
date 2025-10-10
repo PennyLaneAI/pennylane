@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Add a `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+  quantum gate operations to a private callable.
+  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
+
 <h3>Improvements 🛠</h3>
 
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
@@ -28,4 +32,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Lillian Frederiksen
+Lillian Frederiksen,
+Shuli Shu,
+Hongsheng Zheng,
