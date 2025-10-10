@@ -162,11 +162,12 @@ The following functions produce intermediate representations of quantum circuits
 
 In addition, there are the following utility functions to traverse a graph:
 
+.. currentmodule:: pennylane.transforms
 .. autosummary::
     :toctree: api
 
-    ~transforms.intermediate_reps.postorder_traverse
-    ~transforms.intermediate_reps.preorder_traverse
+    intermediate_reps.postorder_traverse
+    intermediate_reps.preorder_traverse
 
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -174,6 +175,7 @@ Transforms that act only on QNodes
 These transforms only accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
