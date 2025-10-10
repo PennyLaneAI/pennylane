@@ -89,8 +89,8 @@ This new module includes the following features:
   One can create a circuit comprising these operations with similar syntax as defining a QNode, but with far less detail.
   Here is an example of a circuit with 50 (logical) algorithmic qubits,
   which includes a :class:`~.estimator.templates.QROMStatePreparation` acting on 48 qubits.
-  Defining this state preparation for execution would require a state vector of length :math:`2^48`
-  (see :class:`qml.QROMStatePreparation <~.QROMStatePreparation>`),
+  Defining this state preparation for execution would require a state vector of length :math:`2^{48}`
+  (see :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>`),
   but we are able to estimate the required resources with only metadata, bypassing this computational barrier.
   Even at this scale, the resource estimate is computed in a fraction of a second!
 
@@ -127,7 +127,7 @@ This new module includes the following features:
   ```
 
   Here is a summary of the lightweight operations made available in this release. A complete list
-  can be found in the :mod:`<~.estimator>` module.
+  can be found in the :mod:`~.estimator` module.
   * :class:`~estimator.Identity`, :class:`~estimator.GlobalPhase`, and various non-parametric 
     operators and single-qubit parametric operators.
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
