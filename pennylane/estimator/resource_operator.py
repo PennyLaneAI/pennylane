@@ -407,7 +407,7 @@ class GateCount:
 
     **Example**
 
-    This example creates an object to count ``5`` instances of :code:`qre.QFT` acting
+    This example creates an object to count ``5`` instances of :code:`QFT` acting
     on three wires:
 
     >>> import pennylane.estimator as qre
