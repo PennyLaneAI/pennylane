@@ -2015,7 +2015,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   merged operations correctly into account.
   [(#8429)](https://github.com/PennyLaneAI/pennylane/pull/8429)
   
-* Promoting NumPy data to autograd in no longer occurs in ``qml.qchem.molecular_hamiltonian``.
+* Promoting NumPy data to autograd no longer occurs in ``qml.qchem.molecular_hamiltonian``.
   [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
 
 * Fixed compatibility with JAX and PyTorch input parameters in :class:`~.SpecialUnitary` when large
