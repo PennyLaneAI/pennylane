@@ -1468,6 +1468,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if postselection is requested for a zero-probability mid-circuit measurement outcome with finite
+  shots and :class:`~pennylane.devices.DefaultQubit` when `mcm_method="deferred"` and `postselect_mode="fill-shots"`, as
+  this previously led to invalid results.
+  [(#8389)](https://github.com/PennyLaneAI/pennylane/pull/8389)
+
 * Applying a transform to a `QNode` with capture enabled now returns a `QNode`. This allows autograph
   to transform the user function when transforms are applied to the `QNode`.
   [(#8307)](https://github.com/PennyLaneAI/pennylane/pull/8307)
