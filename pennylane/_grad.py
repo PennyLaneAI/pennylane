@@ -85,7 +85,16 @@ def _get_vjp_prim():
 
     @vjp_prim.def_impl
     def _(*args, argnum, jaxpr, n_consts, method, fn, h):
-        raise NotImplementedError
+        if method or h:  # pragma: no cover
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+        consts = args[:n_consts]
+        args = args[n_consts:]
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+
+        res, vjp_fn = jax.vjp(func, *args)
+        dx = vjp_fn(*args)
 
     # pylint: disable=unused-argument
     @vjp_prim.def_abstract_eval
@@ -164,37 +173,30 @@ def _get_jacobian_prim():
     return jacobian_prim
 
 
-def _jac_unflattening(out_flat, out_tree, trainable_in_tree):
-    from jax.tree_util import tree_unflatten
+def _capture_vjp(func, params, cotangents, argnum=None, method=None, h=None):
+    from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
 
-    # The derivative output tree is the composition of output tree and trainable input trees
-    combined_tree = out_tree.compose(trainable_in_tree)
-    return tree_unflatten(combined_tree, out_flat)
+    if argnum is None:
+        argnum = 0
+    if argnum_is_int := isinstance(argnum, int):
+        argnum = [argnum]
 
+    flat_params, in_trees = zip(*(tree_flatten(arg) for arg in params))
+    flat_cotangents, _ = tree_flatten(cotangents)
 
-def _vjp_unflattening(out_flat, out_tree, trainable_in_tree):
-    from jax.tree_util import tree_unflatten
-
-    out_res = out_flat[: out_tree.num_leaves]
-    in_res = out_flat[out_tree.num_leaves :]
-    return (tree_unflatten(out_tree, out_res), tree_unflatten(trainable_in_tree, in_res))
-
-
-# pylint: disable=unused-argument
-def _jvp_unflattening(out_flat, out_tree, trainable_in_tree):
-    from jax.tree_util import tree_unflatten
-
-    res = out_flat[: out_tree.num_leaves]
-    dres = out_flat[out_tree.num_leaves]
-    return (tree_unflatten(out_tree, res), tree_unflatten(out_tree, dres))
+    # Create a new input tree that only takes inputs marked by argnum into account
+    trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
+    # If an integer was provided as argnum, unpack the arguments axis of the derivatives
+    if argnum_is_int:
+        trainable_in_tree = list(trainable_in_trees)[0]
+    else:
+        trainable_in_tree = treedef_tuple(trainable_in_trees)
 
 
-def _capture_diff(
-    func, argnum=None, diff_prim=None, method=None, h=None, _unflatten_fn=_jac_unflattening
-):
+def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, treedef_tuple
+    from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
 
     if argnum is None:
         argnum = 0
@@ -245,7 +247,9 @@ def _capture_diff(
             *jaxpr.consts, *abstract_shapes, *flat_args, **prim_kwargs, method=method, h=h
         )
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-        return _unflatten_fn(out_flat, flat_fn.out_tree, trainable_in_tree)
+        # The derivative output tree is the composition of output tree and trainable input trees
+        combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
+        return tree_unflatten(combined_tree, out_flat)
 
     return new_func
 
