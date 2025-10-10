@@ -24,6 +24,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from pennylane.labs.trotter_error.product_formulas.commutator import CommutatorNode, SymbolNode
+
 if TYPE_CHECKING:
     from pennylane.labs.trotter_error import ProductFormula
 
@@ -65,7 +67,7 @@ def bch_expansion(
                   ('C', 'A', 'C'): (-0.08333333333333333+0j),
                   ('C', 'B', 'C'): (-0.08333333333333333+0j)})]
     """
-    return _drop_zeros(_bch_expansion(product_formula, order, {}))
+    return _to_ast(_drop_zeros(_bch_expansion(product_formula, order, {})))
 
 
 def _bch_expansion(
@@ -491,3 +493,24 @@ def _drop_zeros(
             del terms[commutator]
 
     return term_dicts
+
+
+def _to_ast(term_dicts):
+    ret = []
+    for ith_order in term_dicts:
+        ast_dict = {}
+        for comm, coeff in ith_order.items():
+            ast_dict[_right_nested_commutator(comm)] = coeff
+        ret.append(ast_dict)
+
+    return ret
+
+
+def _right_nested_commutator(comm):
+    if len(comm) == 0:
+        return comm
+
+    if len(comm) == 1:
+        return SymbolNode(comm[0])
+
+    return CommutatorNode(SymbolNode(comm[0]), _right_nested_commutator(comm[1:]))
