@@ -1593,6 +1593,10 @@
   :func:`~.transforms.commute_controlled`, and :func:`~.transforms.clifford_t_decomposition` are incorrect when the circuit contains operators on abstract wires.
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
+* Fixes a bug where :func:`~.ops.rs_decomposition` logic to streamline queuing conditions are 
+  applied incorrectly.
+  [(#8441)](https://github.com/PennyLaneAI/pennylane/pull/8441)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1610,6 +1614,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Sengthai Heng
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
