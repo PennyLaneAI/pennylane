@@ -436,13 +436,9 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
   ``"one-shot"``, and ``"tree-traversal"``. When using :func:`~pennylane.qjit`,
   there is the additional option ``"single-branch-statistics"``, which
   explores a single branch of the execution tree at random. If not provided,
-  the method is selected by the device. For devices without native support
-  for mid-circuit measurements, ``"one-shot"`` is the default for finite-shots
-  execution, and ``"deferred"`` is the default for analytic mode, i.e., when
-  ``shots=None``. For devices with native mid-circuit measurement support,
-  ``"device"`` may be used to request the device-native method for applying
-  mid-circuit measurements. This is true for ``default.qubit`` and ``lightning.qubit``,
-  but this is not guranteed for other devices.
+  the method is selected by the device. For ``default.qubit`` and ``lightning.qubit``,
+  the ``"one-shot"`` method is the default for finite-shots execution, and 
+  ``"deferred"`` is the default for analytic execution, i.e., when ``shots=None``.
 
 * ``postselect_mode``: Configures how invalid shots are handled when postselecting
   mid-circuit measurements with finite-shot circuits. Use ``"hw-like"`` to discard invalid samples.
