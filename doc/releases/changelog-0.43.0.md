@@ -1364,6 +1364,19 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   breaking changes in autoray releases.
   [(#8412)](https://github.com/PennyLaneAI/pennylane/pull/8412)
 
+  Previous to this change, the ``autoray`` package was upper-bounded in ``pyproject.toml`` to 
+  unblock CI failures due to breaking changes in `v0.8.0`. Then, it was unpinned by fixing source 
+  code that was broken by the release.
+  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
+  [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
+  [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
+  [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
+
+* Using ``postselect_mode="fill-shots"`` with ``mcm_method="one-shot"`` or ``"tree-traversal"`` has 
+  been disallowed with ``default.qubit``, as it produces incorrect results where the correlation 
+  between measurements is not preserved.
+  [(#8411)](https://github.com/PennyLaneAI/pennylane/pull/8411)
+
 * ``qml.workflow.construct_batch.expand_fn_transform`` has been deleted as it was no longer getting 
   used.
   [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
@@ -1729,14 +1742,6 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
   [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
   [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
-
-* The ``autoray`` package was upper-bounded in ``pyproject.toml`` to unblock CI failures due to
-  breaking changes in `v0.8.0`. Subsequently, it was unpinned by fixing source code that was broken 
-  by the release.
-  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
-  [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
-  [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
-  [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
 * The ``autograph`` keyword argument has been removed from the ``QNode`` constructor.
   To enable autograph conversion, use the ``qjit`` decorator together with the 
