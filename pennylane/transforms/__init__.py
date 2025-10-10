@@ -398,9 +398,9 @@ def __getattr__(name):
         from pennylane import noise
 
         warnings.warn(
-            f"pennylane.{name} is no longer accessible from the transforms module \
-                and must be imported as pennylane.noise.{name}. \
-                    Support for access through this module will be removed in v0.44.",
+            f"pennylane.{name} is no longer accessible from the transforms module and must "
+            "be imported as pennylane.noise.{name}. Support for access through this module "
+            "will be removed in v0.44.",
             exceptions.PennyLaneDeprecationWarning,
         )
 
