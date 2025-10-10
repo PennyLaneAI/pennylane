@@ -405,6 +405,17 @@ class GateCount:
         >>> lst_of_gate_counts
         [(3 x Hadamard), (1 x SWAP), (3 x ControlledPhaseShift)]
 
+    **Example**
+
+    This example creates an object to count ``5`` instances of :code:`qre.QFT` acting
+    on three wires:
+
+    >>> import pennylane.estimator as qre
+    >>> qft = qre.resource_rep(qre.QFT, {"num_wires": 3})
+    >>> counts = qre.GateCount(qft, 5)
+    >>> counts
+    (5 x QFT(3))
+
     Args:
         gate (CompressedResourceOp): The compressed resource representation of the gate being counted.
         counts (int | None): The number of occurrences of the quantum gate in the circuit or
