@@ -87,7 +87,7 @@ class AmplitudeAmplification(Operation):
     Amplification of state :math:`|2\rangle` using Grover's algorithm with 3 qubits.
     The state :math:`|\Psi\rangle` is constructed as a uniform superposition of basis states.
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.prod
         def generator(wires):
@@ -107,10 +107,8 @@ class AmplitudeAmplification(Operation):
 
             return qml.probs(wires=range(3))
 
-    .. code-block:: pycon
-
-        >>> print(np.round(circuit(),3))
-        [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
+    >>> print(np.round(circuit(),3))
+    [0.013 0.013 0.91  0.013 0.013 0.013 0.013 0.013]
     """
 
     grad_method = None
