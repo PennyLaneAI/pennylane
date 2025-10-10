@@ -170,7 +170,7 @@ def _add_elbow_core(obj, layer_str, config):
     mapped_wires = [config.wire_map[w] for w in obj.wires]
     layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
     layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
-    layer_str[mapped_wires[2]] += "─"
+    layer_str[mapped_wires[2]] += "⊕"
     return layer_str, mapped_wires
 
 
