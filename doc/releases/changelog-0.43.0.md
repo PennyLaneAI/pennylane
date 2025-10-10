@@ -220,7 +220,7 @@ This new module includes the following features:
       algorithmic wires: 8
       allocated wires: 0
         zero state: 0
-      any state: 0
+        any state: 0
     Total gates : 2.238E+4
     'T': 2.075E+4,
     'CNOT': 448,
@@ -229,8 +229,8 @@ This new module includes the following features:
     'Hadamard': 336
   ```
 
-* In addition to the :class:`~.estimator.resource_operator.ResourceOperator` class as mentioned in
-  the above bullet points, the scalability of the resource estimation functionality in this release 
+* In addition to the :class:`~.estimator.resource_operator.ResourceOperator` class mentioned above,
+  the scalability of the resource estimation functionality in this release 
   is owed to the following new internal classes:    
 
   * :class:`~.estimator.resources_base.Resources`: A container for counts and other metadata of 
@@ -241,11 +241,10 @@ This new module includes the following features:
   * :class:`~.estimator.resource_operator.CompressedResourceOp`: A lightweight class corresponding 
     to an operator type alongside its parameters.
     [(#8227)](https://github.com/PennyLaneAI/pennylane/pull/8227)
-  * To manage and track wire usage during resource estimation and within 
-    :class:`~.estimator.resource_operator.ResourceOperator` definitions, the 
-    :class:`~.estimator.wires_manager.WireResourceManager`,
+  * The :class:`~.estimator.wires_manager.WireResourceManager`,
     :class:`~.estimator.wires_manager.Allocate`, and :class:`~.estimator.wires_manager.Deallocate`
-    classes were added.
+    classes, which were added to manage and track wire usage during resource estimation and within 
+    :class:`~.estimator.resource_operator.ResourceOperator` definitions.
     [(#8203)](https://github.com/PennyLaneAI/pennylane/pull/8203)
 
 The resource estimation tools in the :mod:`~.estimator` module were originally prototyped in the 
@@ -254,7 +253,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 <h4>Dynamic wire allocation 🎁</h4>
 
 * Wires can now be dynamically allocated and deallocated in quantum functions with
-  :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications
+  the :func:`~.allocate` and :func:`~.deallocate` functions. These features unlock many important applications
   that rely on smart and efficient handling of wires, such as decompositions of gates that require
   auxiliary wires and logical patterns in subroutines that benefit from having dynamic wire 
   management.
@@ -362,7 +361,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 <h4>Resource tracking with Catalyst 🧾</h4>
 
 * Users can now use the :func:`~.specs` function to track the exact resources of programs compiled 
-  with :func:`~.qjit`! This new feature is currently only supported when using ``level="device"``.
+  with :func:`~.qjit`!  
+  This new feature is currently only supported when using ``level="device"``.
   [(#8202)](https://github.com/PennyLaneAI/pennylane/pull/8202)
 
   ```python
@@ -488,7 +488,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
   
   These new features leverage the graph-based decomposition system, enabled with 
-  :func:`~.decompostion.enable_graph()`. To illustrate their use, consider the following example. 
+  :func:`~.decomposition.enable_graph()`. To illustrate their use, consider the following example. 
   The compute-uncompute pattern is composed of a ``QFT``, followed by a ``PhaseAdder``, and finally 
   an inverse ``QFT``.
 
@@ -523,7 +523,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 * The decompositions for several templates have been updated to use 
   :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient by
-  eliminating unecessary controlled operations. The templates include :class:`~.Adder`, 
+  eliminating unnecessary controlled operations. The templates include :class:`~.Adder`, 
   :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.PrepSelPrep`.
   [(#8207)](https://github.com/PennyLaneAI/pennylane/pull/8207)
 
@@ -649,7 +649,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, 
   :class:`~.FABLE`, :class:`~.Qubitization`, and :class:`~.Superposition`.
 
-* Two additions were made to :class:`~.Select` that positively affect how it gets decomposed:
+* Two additions were made to :class:`~.Select`, significantly improving its decomposition:
 
   * A new keyword argument ``partial`` has been added, which allows for simplifications in the 
     decomposition of :class:`~.Select` under the assumption that the state of the control wires has 
@@ -666,7 +666,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 * The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift 
   gates with angle :math:`\pm \pi` for real-valued (orthogonal) rotation matrices. This uses the 
-  fact that no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant 
+  fact that either one or zero :class:`~.PhaseShift` gates are required in case the matrix has a determinant 
   equal to :math:`\pm 1`.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
@@ -877,6 +877,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   :func:`~transforms.rowcol` has been added, which uses the parity matrix as its IR for ``CNOT``
   routing under constraint connectivity.
   [(#8171)](https://github.com/PennyLaneAI/pennylane/pull/8171)
+  [(#8443)](https://github.com/PennyLaneAI/pennylane/pull/8443)
 
   The example below showcases the use of :func:`~transforms.parity_matrix`, which acts on circuits 
   containing only ``CNOT`` gates. 
@@ -1657,11 +1658,11 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
-    - ``print(obj)`` in favor of ``print_contents``
-    - ``observables`` in favor of ``observables_in_order``
-    - ``operations`` in favor of ``operations_in_order``
-    - ``ancestors(obj, sort=True)`` in favor of ``ancestors_in_order``
-    - ``descendants(obj, sort=True)`` in favor of ``descendants_in_order``
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order`` in favor of ``descendants(obj, sort=True)``
 
 * The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used. This change makes the code cleaner by 
@@ -2133,8 +2134,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   :class:`~.operation.Operator`) can now also be drawn correctly (e.g. with ``qml.draw``).     
   [(#8432)](https://github.com/PennyLaneAI/pennylane/pull/8432)
 
-* Fixed a bug with ``~.estimator.resource_mapping._map_to_resource_op()`` where it was incorrectly
-  mapping the ``~.TrotterProduct`` template.
+* Fixed a bug with `~.estimator.resource_mapping._map_to_resource_op()` where it was incorrectly
+  mapping the `~.TrotterProduct` template.
   [(#8425)](https://github.com/PennyLaneAI/pennylane/pull/8425)
   
 * Fixed bugs in the :mod:`~.estimator` module pertaining to tracking resource operator names,
