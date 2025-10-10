@@ -190,6 +190,12 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.pauli_rep is None
 
+    def test_raise_error_with_mcm_input(self):
+        """Test that symbolic ops of mid-circuit measurements are not supported."""
+        mcm = qml.measurements.MidMeasureMP(0)
+        with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
+            _ = SymbolicOp(mcm)
+
 
 class TestQueuing:
     """Test that Symbolic Operators queue and update base metadata."""
