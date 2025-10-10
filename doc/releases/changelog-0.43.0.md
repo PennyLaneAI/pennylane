@@ -201,7 +201,7 @@ This new module includes the following features:
   and :class:`~.estimator.compact_hamiltonian.VibrationalHamiltonian` classes were added
   to store the metadata of the Hamiltonian of a quantum system pertaining to resource estimation.
   In addition, several resource templates were added that are related to the Suzuki-Trotter method
-  for Hamiltonian simulation: :class:`~.estimator.templates.TrotterProduct`, 
+  for Hamiltonian simulation, including :class:`~.estimator.templates.TrotterProduct`, 
   :class:`~.estimator.templates.TrotterCDF`, :class:`~.estimator.templates.TrotterTHC`,
   :class:`~.estimator.templates.TrotterVibronic`, and 
   :class:`~.estimator.templates.TrotterVibrational`.
