@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the ParitySynth transform"""
+import networkx as nx
 import pytest
 
 pytestmark = pytest.mark.external
@@ -19,7 +20,6 @@ pytestmark = pytest.mark.external
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
-import networkx as nx
 
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
@@ -74,14 +74,12 @@ def translate_program_to_xdsl(program):
     return "\n".join(new_lines)
 
 
-path_graph_4 = nx.path_graph(4)
-
-
 class TestParitySynthPass:
     """Unit tests for ParitySynthPass."""
 
     pipeline = (ParitySynthPass(),)
-    pipeline_path_graph_4 = (ParitySynthPass(connectivity=path_graph_4),)
+    pipeline_path_graph_2 = (ParitySynthPass(connectivity=nx.path_graph(2)),)
+    pipeline_path_graph_4 = (ParitySynthPass(connectivity=nx.path_graph(4)),)
 
     def test_no_phase_polynomial_ops(self, run_filecheck):
         """Test that nothing changes when there are no phase polynomial gates."""
@@ -117,17 +115,27 @@ class TestParitySynthPass:
         """Test that two out of three CNOT gates are merged."""
         program = """
             func.func @test_func() {
-                %0 = INIT_QUBIT
-                %1 = INIT_QUBIT
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
                 // CHECK: quantum.custom "CNOT"() [[q0]], [[q1]] : !quantum.bit, !quantum.bit
-                %2, %3 = _CNOT %0, %1
-                %4, %5 = _CNOT %2, %3
-                %6, %7 = _CNOT %4, %5
+                %7, %8 = _CNOT %3, %6
+                %9, %10 = _CNOT %7, %8
+                %11, %12 = _CNOT %9, %10
                 // CHECK-NOT: "quantum.custom"
                 return
             }
         """
-        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_4)
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_2)
 
     def test_two_cnots_single_rotation_no_merge(self, run_filecheck):
         """Test that a phase polynomial of two CNOTs separated by a rotation on the target
