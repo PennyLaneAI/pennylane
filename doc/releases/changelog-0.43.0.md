@@ -86,12 +86,12 @@ This new module includes the following features:
   ```
   
   One can create a circuit comprising these operations with the same syntax as defining a QNode,
-  but with far less detail. Here is an example of a 50-qubit circuit, where resource estimates 
-  are available in just *seconds*!
+  but with far less detail. Here is an example of a circuit with 50 (logical) algorithmic qubits,
+  where resource estimates are available in a fraction of a second!
 
   ```python
   def my_circuit():
-      qre.QROMStatePreparation(num_state_qubits=50)
+      qre.QROMStatePreparation(num_state_qubits=48)
       for w in range(2):
           qre.Hadamard(wires=w)
       qre.QROM(num_bitstrings=32, size_bitstring=8, restored=False)
@@ -106,19 +106,19 @@ This new module includes the following features:
   >>> res = qre.estimate(my_circuit)()
   >>> print(res)
   --- Resources: ---
-    Total wires: 133
-    algorithmic wires: 52
-    allocated wires: 81
-      zero state: 73
+   Total wires: 129
+    algorithmic wires: 50
+    allocated wires: 79
+      zero state: 71
       any state: 8
-    Total gates : 1.081E+17
-    'Toffoli': 4.504E+15,
+    Total gates : 2.702E+16
+    'Toffoli': 1.126E+15,
     'T': 5.751E+4,
-    'CNOT': 8.106E+16,
-    'X': 9.007E+15,
+    'CNOT': 2.027E+16,
+    'X': 2.252E+15,
     'Z': 32,
     'S': 64,
-    'Hadamard': 1.351E+16
+    'Hadamard': 3.378E+15
   ```
 
   Here is a summary of the lightweight operations made available in this release. A complete list
@@ -170,13 +170,13 @@ This new module includes the following features:
       qre.RY(wires=1)
       qre.RZ(wires=2)
       return
+  my_rc = qre.ResourceConfig()
+  res1 = qre.estimate(my_circuit, config=my_rc)()
+  my_rc.set_single_qubit_rot_precision(1e-2)
+  res2 = qre.estimate(my_circuit, config=my_rc)()
   ```
 
   ```pycon
-  >>> my_rc = qre.ResourceConfig()
-  >>> res1 = qre.estimate(my_circuit, config=my_rc)()
-  >>> my_rc.set_single_qubit_rot_precision(1e-2)
-  >>> res2 = qre.estimate(my_circuit, config=my_rc)()
   >>> t1 = res1.gate_counts['T']
   >>> t2 = res2.gate_counts['T']
   >>> print(t1, t2)
