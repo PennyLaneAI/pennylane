@@ -313,6 +313,10 @@ class TestMscMethods:
         assert op.label(cache=cache) == "X#(Y#U(M0))"
         assert cache["matrices"] == [U]
 
+        cache2 = {"matrices": [], "large_ops": []}
+        assert op.label(cache=cache2) == "H0"
+        assert cache2["large_ops"] == [(op, "X#(Y#U(M0))")]
+
     @pytest.mark.parametrize("ops_lst", ops)
     def test_copy(self, ops_lst):
         """Test __copy__ method."""
