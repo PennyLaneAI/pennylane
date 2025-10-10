@@ -837,7 +837,7 @@ class TestProperties:
         op = s_prod(-1.2, base)
 
         cache = {"matrices": []}
-        assert op.label(decimals=2, cache=cache) == "-1.20*U(M0)"
+        assert op.label(decimals=2, cache=cache) == "-1.20*U\n(M0)"
         assert len(cache["matrices"]) == 1
 
     op_pauli_reps = (
