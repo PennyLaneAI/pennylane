@@ -64,7 +64,8 @@ This new module includes the following features:
   :func:`~.estimator.estimate.estimate` can also be used on new lightweight representations of 
   PennyLane operations that require minimal information to obtain high-level estimates. As part of 
   this release, many operations in PennyLane now have a corresponding lightweight version
-  that inherits from a new class called :class:`~.estimator.resource_operator.ResourceOperator`. 
+  that inherits from a new class called :class:`~.estimator.resource_operator.ResourceOperator`,
+  which can be found in the :mod:`~.estimator` module.
 
   For example, the lightweight representation of ``QFT`` is :class:`qre.QFT <~estimator.templates.QFT>`.
   By simply specifying the number of wires it acts on, we can obtain resource estimates:
@@ -85,7 +86,7 @@ This new module includes the following features:
     'Hadamard': 3
   ```
   
-  One can create a circuit comprising these operations with the same syntax as defining a QNode, but with far less detail.
+  One can create a circuit comprising these operations with similar syntax as defining a QNode, but with far less detail.
   Here is an example of a circuit with 50 (logical) algorithmic qubits,
   which includes a :class:`~.estimator.templates.QROMStatePreparation` acting on 48 qubits.
   Defining this state preparation for execution would require a state vector of length :math:`2^48`
@@ -126,7 +127,7 @@ This new module includes the following features:
   ```
 
   Here is a summary of the lightweight operations made available in this release. A complete list
-  can be found in the :mod:`estimator module <~.estimator>`.
+  can be found in the :mod:`<~.estimator>` module.
   * :class:`~estimator.Identity`, :class:`~estimator.GlobalPhase`, and various non-parametric 
     operators and single-qubit parametric operators.
     [(#8240)](https://github.com/PennyLaneAI/pennylane/pull/8240)
@@ -164,7 +165,7 @@ This new module includes the following features:
   gate decompositions. 
   [(#8259)](https://github.com/PennyLaneAI/pennylane/pull/8259)
 
-  In the following example, :class:`~.estimator.resource_config.ResourceConfig` is used to modify 
+  In the following example, a :class:`~.estimator.resource_config.ResourceConfig` is used to modify 
   the default precision of single qubit rotations, and ``T`` counts are compared between different 
   configurations.
 
@@ -174,6 +175,7 @@ This new module includes the following features:
       qre.RY(wires=1)
       qre.RZ(wires=2)
       return
+
   my_rc = qre.ResourceConfig()
   res1 = qre.estimate(my_circuit, config=my_rc)()
   my_rc.set_single_qubit_rot_precision(1e-2)
@@ -191,10 +193,10 @@ This new module includes the following features:
   required to estimate the resources of Hamiltonian simulation can be surprisingly small in 
   comparison. The :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`,
   :class:`~.estimator.compact_hamiltonian.THCHamiltonian`,
-  :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian,`
+  :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian`,
   and :class:`~.estimator.compact_hamiltonian.VibrationalHamiltonian` classes were added
   to store the metadata of the Hamiltonian of a quantum system pertaining to resource estimation.
-  Additionally, several resource templates were added that are related to the Suzuki-Trotter method
+  In addition, several resource templates were added that are related to the Suzuki-Trotter method
   for Hamiltonian simulation: :class:`~.estimator.templates.TrotterProduct`, 
   :class:`~.estimator.templates.TrotterCDF`, :class:`~.estimator.templates.TrotterTHC`,
   :class:`~.estimator.templates.TrotterVibronic`, and 
