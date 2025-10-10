@@ -794,7 +794,7 @@ class QuantumScript:
 
         .. warning::
 
-            The ``QuantumScript.numeric_type`` method is deprecated and will be removed in v0.44.
+            ``QuantumScript.numeric_type`` is deprecated and will be removed in v0.44.
             Instead, please use ``MeasurementProcess.numeric_type``.
 
         **Example:**
