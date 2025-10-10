@@ -106,7 +106,7 @@ def estimate(
     .. details::
         :title: Usage Details
 
-        Most PennyLane operators have a corresponding resource operator defined in the ``pennylane.estimaor``
+        Most PennyLane operators have a corresponding resource operator defined in the ``pennylane.estimator``
         module. The resource operator is a lightweight representation of an operator that contains the
         minimum information required to perform resource estimation. For most basic operators, it is simply
         the type of the operator. For more complex operators and templates, you may be required to provide
