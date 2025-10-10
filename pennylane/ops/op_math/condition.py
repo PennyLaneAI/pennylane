@@ -100,6 +100,7 @@ class Conditional(SymbolicOp, Operation):
     """
 
     def __init__(self, expr, then_op: Operation, id=None):
+        # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op
