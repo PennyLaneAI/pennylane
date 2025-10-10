@@ -153,8 +153,6 @@ Intermediate representations (IRs) are alternative representations of quantum ci
 offering a more efficient classical description for special classes of circuits.
 The following functions produce intermediate representations of quantum circuits:
 
-.. currentmodule:: pennylane.transforms.intermediate_reps
-
 .. autosummary::
     :toctree: api
 
