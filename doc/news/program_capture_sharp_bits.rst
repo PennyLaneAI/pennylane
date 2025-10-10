@@ -8,6 +8,7 @@ Program capture sharp bits
 
     Program capture is an experimental feature under active development.
     Bugs and unexpected behaviour may occur, and breaking changes are possible in future releases.
+    Execution without catalyst is no longer being developed or maintained.
 
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
