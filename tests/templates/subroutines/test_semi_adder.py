@@ -223,7 +223,7 @@ class TestSemiAdder:
         y_value,
         control_value,
         expected_output,
-    ):
+    ):  # pylint: disable=too-many-arguments
         """Test correctness of C(SemiAdder) decomposition"""
 
         dev = qml.device("default.qubit")
