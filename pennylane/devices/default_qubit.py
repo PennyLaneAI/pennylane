@@ -14,6 +14,7 @@
 """
 The default.qubit device is PennyLane's standard qubit-based device.
 """
+
 from __future__ import annotations
 
 import logging
@@ -43,9 +44,15 @@ from pennylane.measurements import (
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
-from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
+from pennylane.transforms import (
+    broadcast_expand,
+    convert_to_numpy_parameters,
+)
 from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import defer_measurements, dynamic_one_shot
+from pennylane.transforms import (
+    defer_measurements,
+    dynamic_one_shot,
+)
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -743,7 +750,6 @@ class DefaultQubit(Device):
         return replace(config, **updated_values)
 
     def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
-
         if capture.enabled():
             return self._capture_setup_mcm_config(mcm_config)
 
@@ -759,6 +765,12 @@ class DefaultQubit(Device):
                 f"mcm_method {final_mcm_method} not supported on default.qubit. "
                 f"Supported methods are {supported_methods}"
             )
+
+        if mcm_config.postselect_mode == "fill-shots" and final_mcm_method != "deferred":
+            raise DeviceError(
+                "Using postselect_mode='fill-shots' is only supported with mcm_method='deferred'."
+            )
+
         return replace(mcm_config, mcm_method=final_mcm_method)
 
     def _capture_setup_mcm_config(self, mcm_config):
@@ -808,7 +820,6 @@ class DefaultQubit(Device):
             )
 
         if max_workers is None:
-
             return tuple(
                 _simulate_wrapper(
                     c,

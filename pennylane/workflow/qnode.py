@@ -35,7 +35,6 @@ from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-from pennylane.transforms.core.transform_dispatcher import apply_to_callable
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -526,7 +525,7 @@ class QNode:
         interface: str | Interface = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
-        shots: ShotsLike = "unset",
+        shots: ShotsLike | Literal["unset"] = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
@@ -580,7 +579,7 @@ class QNode:
 
         # input arguments
         self.func = func
-        self.device = device
+        self.device: Device = device
         self._interface = Interface(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
@@ -612,7 +611,7 @@ class QNode:
         self.gradient_kwargs = gradient_kwargs
 
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
-        self._shots_override_device: bool = False
+        self._shots_override_device: bool = shots != "unset"
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
@@ -755,13 +754,16 @@ class QNode:
 
         old_shots = self.shots
         # set shots issue
-        if "device" in kwargs:
-            if old_shots != kwargs["device"].shots:
-                warnings.warn(
-                    "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
-                    UserWarning,
-                )
+        if (
+            not self._shots_override_device
+            and "device" in kwargs
+            and old_shots != kwargs["device"].shots
+        ):
+            warnings.warn(
+                "The device's shots value does not match the QNode's shots value. "
+                "This may lead to unexpected behaviour. Use `set_shots` to update the QNode's shots.",
+                UserWarning,
+            )
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
@@ -910,6 +912,4 @@ def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
     new_qnode = copy.copy(obj)
     new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
-    if qml.capture.enabled():
-        return apply_to_callable(new_qnode, transform, *targs, **tkwargs)
     return new_qnode
