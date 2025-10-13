@@ -155,7 +155,7 @@ def make_phase_polynomial(
         parity_table.append(parity_matrix[wire].copy())  # append _current_ parity (hence the copy)
         wire_map[op.out_qubits[0]] = wire
 
-    return parity_matrix % 2, np.array(parity_table).T % 2, np.array(angles), arith_ops
+    return parity_matrix % 2, np.array(parity_table).T % 2, angles, arith_ops
 
 
 class ParitySynthPattern(pattern_rewriter.RewritePattern):
@@ -292,8 +292,7 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             for i, j in subcircuit:
                 rewriter.insert_op(self._cnot(i, j, inv_wire_map), insertion_point)
 
-            rewriter.insert_op(self._rz(phase_wire, angles[idx], inv_wire_map), insertion_point)
-            angles = np.concatenate([angles[:idx], angles[idx + 1 :]])
+            rewriter.insert_op(self._rz(phase_wire, angles.pop(idx), inv_wire_map), insertion_point)
 
         # Apply the remaining parity matrix part of the new circuit
         for i, j in rowcol_circuit:
