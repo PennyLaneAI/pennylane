@@ -19,6 +19,7 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import contextlib
 import io
 import re
+import importlib
 
 import pytest
 
@@ -45,3 +46,14 @@ def test_about():
     assert "Scipy version" in out
     assert "default.qubit" in out
     assert "default.gaussian" in out
+
+def test_about_handles_missing_pip(monkeypatch, capsys):
+    about = importlib.import_module("pennylane.about")
+    # Pretend pip isn't available so the fallback path is taken
+    monkeypatch.setattr(about, "find_spec", lambda name: None)
+    about.about()
+    cap = capsys.readouterr()
+    assert cap.err == ""  # no stderr noise
+    assert re.search(r"Name:\s*PennyLane", cap.out, re.I)
+    assert "Platform info:" in cap.out
+    assert "Location: ." not in cap.out

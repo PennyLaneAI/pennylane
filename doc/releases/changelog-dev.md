@@ -24,6 +24,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `qml.about()` crash in pip-less environments (e.g., `uv`); use `importlib.metadata` fallback. ([#8192](https://github.com/PennyLaneAI/pennylane/pull/8192))
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

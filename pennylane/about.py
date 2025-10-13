@@ -33,13 +33,14 @@ else:
     jax_version = None
 
 def _pkg_location():
+    """Return absolute path to the installed PennyLane package"""
     mod = sys.modules.get("pennylane")
     if mod and hasattr(mod, "__file__"):
         return os.path.abspath(os.path.dirname(mod.__file__))
     try:
         dist = metadata.distribution("pennylane")
         return os.path.abspath(str(dist.locate_file("")))
-    except Exception:
+    except Exception: # pylint: disable=broad-exception-caught
         return "(unknown)"
 
 def about():
@@ -84,7 +85,7 @@ def about():
                 lines.append(f"Editable project location: {editable}")
             lines.append("(Installer metadata unavailable)")
             info = "\n".join(lines)
-        except Exception:
+        except Exception: # pylint: disable=broad-exception-caught
             info = "PennyLane version info unavailable (no pip or metadata)"
     print(info)
     print(f"Platform info:           {platform.platform(aliased=True)}")
