@@ -26,7 +26,7 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
-from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
+from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix, postorder_traverse
 from ...dialects.quantum import CustomOp, QubitType
 from ...pass_api import compiler_transform
 
@@ -82,10 +82,9 @@ def _loop_body_parity_network_synth(
     arbor = nx.minimum_spanning_arborescence(parity_graph)
     roots = [node for node, degree in arbor.in_degree() if degree == 0]
     assert len(roots) == 1
-    dfs_po = list(nx.dfs_postorder_nodes(arbor, source=roots[0]))
     P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
     sub_circuit = []
-    for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+    for i, j in postorder_traverse(arbor, source=roots[0]):
         sub_circuit.append((i, j))
         P[i] = np.mod(P[i] + P[j], 2)
         inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
