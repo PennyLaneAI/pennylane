@@ -106,7 +106,7 @@ def _parity_network_synth(P: np.ndarray) -> list[int, list[tuple[int]]]:
         inverse of the parity matrix implemented by the synthesized circuit.
 
     """
-    if len(P) == 0:
+    if P.shape[-1] == 0:
         return [], None
 
     circuit = []
@@ -156,9 +156,6 @@ def make_phase_polynomial(
         wire_map[op.out_qubits[0]] = wire
 
     return parity_matrix % 2, np.array(parity_table).T % 2, np.array(angles), arith_ops
-
-
-# todo: parity table reduction function (for repeated parities)
 
 
 class ParitySynthPattern(pattern_rewriter.RewritePattern):
@@ -284,7 +281,6 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         for op in arith_ops:
             rewriter.insert_op(op, insertion_point)
 
-        # todo: call parity table reduction function once it exists
         subcircuits, inv_network_parity_matrix = _parity_network_synth(P)
         # `inv_network_parity_matrix` might be None if the parity table was empty
         if inv_network_parity_matrix is not None:
