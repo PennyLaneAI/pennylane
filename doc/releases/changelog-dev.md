@@ -20,6 +20,12 @@
 
 <h3>Deprecations 👋</h3>
 
+<h3>Internal changes ⚙️</h3>
+
+* The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
+  that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
+  [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -27,4 +33,6 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Lillian Frederiksen,
 David Wierichs,

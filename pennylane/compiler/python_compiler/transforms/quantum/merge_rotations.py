@@ -37,7 +37,16 @@ composable_rotations = [
     "ControlledPhaseShift",
     "IsingXX",
     "IsingYY",
+    "IsingXY",
     "IsingZZ",
+    "MultiRZ",
+    "SingleExcitation",
+    "DoubleExcitation",
+    "SingleExcitationMinus",
+    "SingleExcitationPlus",
+    "DoubleExcitationMinus",
+    "DoubleExcitationPlus",
+    "OrbitalRotation",
 ]
 
 
@@ -74,14 +83,13 @@ class MergeRotationsPattern(
 
             param = op.operands[0]
             while True:
-                next_user = None
                 for use in op.results[0].uses:
                     user = use.operation
                     if _can_merge(op, user):
                         next_user = user
                         break
-
-                if next_user is None:
+                else:
+                    # No next_user was set because no user could be merged. Go to next op
                     break
 
                 for q1, q2 in zip(op.in_qubits, op.out_qubits, strict=True):
@@ -89,18 +97,28 @@ class MergeRotationsPattern(
                 for cq1, cq2 in zip(op.in_ctrl_qubits, op.out_ctrl_qubits, strict=True):
                     rewriter.replace_all_uses_with(cq2, cq1)
 
+                # Whether op is adjoint will determine adjoint of new_op, and how to combine angles
+                is_adjoint = getattr(op, "adjoint", False)
                 rewriter.erase_op(op)
+
                 next_param = next_user.operands[0]
-                addOp = arith.AddfOp(param, next_param)
-                rewriter.insert_op(addOp, InsertPoint.before(next_user))
-                param = addOp.result
+                next_is_adjoint = getattr(next_user, "adjoint", False)
+                if is_adjoint == next_is_adjoint:
+                    # If both op and next_user are adjoint, or neither is, we add angles
+                    combOp = arith.AddfOp(param, next_param)
+                else:
+                    # If one of op and next_user is adjoint, we subtract angles
+                    combOp = arith.SubfOp(param, next_param)
+                rewriter.insert_op(combOp, InsertPoint.before(next_user))
+                param = combOp.result
+
                 new_op = CustomOp(
                     in_qubits=next_user.in_qubits,
                     gate_name=next_user.gate_name,
                     params=(param,),
                     in_ctrl_qubits=next_user.in_ctrl_qubits,
                     in_ctrl_values=next_user.in_ctrl_values,
-                    adjoint=getattr(next_user, "adjoint", False),
+                    adjoint=is_adjoint,
                 )
                 rewriter.replace_op(next_user, new_op)
                 op = new_op
