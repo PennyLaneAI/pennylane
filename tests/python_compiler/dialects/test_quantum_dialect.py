@@ -180,7 +180,7 @@ def test_all_operations_names(op):
 def test_only_existing_operations_are_expected():
     """Test that the expected operations above only contain existing operations."""
     existing_ops_names = {op.__name__ for op in all_ops}
-    assert all(exp in existing_ops_names for exp in expected_ops_names)
+    assert existing_ops_names == set(expected_ops_names)
 
 
 @pytest.mark.parametrize("op", all_ops)
