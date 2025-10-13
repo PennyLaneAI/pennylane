@@ -24,8 +24,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
+  instance from being constructed.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Lillian Frederiksen
+Lillian Frederiksen,
+David Wierichs,
