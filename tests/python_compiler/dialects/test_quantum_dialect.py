@@ -198,6 +198,11 @@ def test_all_attributes_names(attr):
         expected_name is not None
     ), f"Unexpected attribute {attr_class_name} found in QuantumDialect"
     assert attr.name == expected_name
+    
+def test_only_existing_attributes_are_expected():
+    """Test that the expected attributes above only contain existing attributes."""
+    existing_attrs_names = {attr.__name__ for attr in all_attrs}
+    assert existing_attrs_names == set(expected_attrs_names)
 
 
 class TestAssemblyFormat:
