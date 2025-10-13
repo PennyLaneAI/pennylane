@@ -17,7 +17,8 @@
 <h3>Internal changes ⚙️</h3>
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
-  that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
+  that included the wrong SSA value for final qubit insertion and deallocation at the end of the
+  circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
 <h3>Documentation 📝</h3>
@@ -26,6 +27,7 @@
 
 * Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
   instance from being constructed.
+  [(#8456)](https://github.com/PennyLaneAI/pennylane/pull/8456)
 
 <h3>Contributors ✍️</h3>
 
