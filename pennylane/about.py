@@ -17,10 +17,11 @@ e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
 import platform
 import sys
+import os
 from importlib import metadata
 from importlib.metadata import version
 from importlib.util import find_spec
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError, DEVNULL
 from sys import version_info
 
 import numpy
@@ -31,6 +32,15 @@ if find_spec("jax"):
 else:
     jax_version = None
 
+def _pkg_location():
+    mod = sys.modules.get("pennylane")
+    if mod and hasattr(mod, "__file__"):
+        return os.path.abspath(os.path.dirname(mod.__file__))
+    try:
+        dist = metadata.distribution("pennylane")
+        return os.path.abspath(str(dist.locate_file("")))
+    except Exception:
+        return "(unknown)"
 
 def about():
     """
@@ -44,7 +54,39 @@ def about():
     else:  # pragma: no cover
         plugin_devices = metadata.entry_points(group="pennylane.plugins")
         dist_name = "name"
-    print(check_output([sys.executable, "-m", "pip", "show", "pennylane"]).decode())
+
+    info = None
+    if find_spec("pip") is not None:  # skip if pip is not available
+        try:
+            info = check_output(
+                [sys.executable, "-m", "pip", "show", "pennylane"],
+                text=True,
+                stderr=DEVNULL,  # suppress "no module named pip" error
+            )
+        except (CalledProcessError, FileNotFoundError):
+            info = None
+
+    if info is None:
+        try:
+            meta = metadata.metadata("pennylane")
+            location = _pkg_location()
+            editable = meta.get("Editable-Project-Location", "")
+            lines = [
+                f"Name: {meta.get('Name', 'PennyLane')}",
+                f"Version: {meta.get('Version', '')}",
+                f"Summary: {meta.get('Summary', '')}",
+                f"Home-page: {meta.get('Home-page', '')}",
+                f"Author: {meta.get('Author', '')}",
+                f"License: {meta.get('License', '')}",
+                f"Location: {location or '(unknown)'}",
+            ]
+            if editable:
+                lines.append(f"Editable project location: {editable}")
+            lines.append("(Installer metadata unavailable)")
+            info = "\n".join(lines)
+        except Exception:
+            info = "PennyLane version info unavailable (no pip or metadata)"
+    print(info)
     print(f"Platform info:           {platform.platform(aliased=True)}")
     print(
         f"Python version:          {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
