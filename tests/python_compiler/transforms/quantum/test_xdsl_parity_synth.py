@@ -34,6 +34,24 @@ from pennylane.compiler.python_compiler.transforms.quantum.parity_synth import (
 from pennylane.transforms.intermediate_reps import phase_polynomial
 
 
+def assert_binary_matrix(matrix: np.ndarray):
+    """Check that the input matrix is two-dimensional, ``np.int64``-dtyped and
+    only contains zeros and ones.
+    """
+    if matrix.ndim != 2:
+        raise ValueError(
+            f"Expected the matrix to be two-dimensional, but got {matrix.ndim} dimensions."
+        )
+    if matrix.dtype != np.int64:
+        raise ValueError(
+            f"Expected the data type of the matrix to be np.int64, but got {matrix.dtype}."
+        )
+    if not set(matrix.flat).issubset({0, 1}):
+        raise ValueError(
+            f"Expected the entries of the matrix to be from {{0, 1}} but got {set(matrix.flat)}."
+        )
+
+
 class TestParityNetworkSynth:
     """Tests for the synthesizing of a parity network with ``_parity_network_synth``."""
 
@@ -66,7 +84,8 @@ class TestParityNetworkSynth:
         circuit, inv_synth_matrix = _parity_network_synth(P)
         assert isinstance(circuit, list) and len(circuit) == 1
         self.validate_circuit_entry(circuit[0], exp_len=0)
-        assert_equal(I, inv_synth_matrix, strict=True)
+        assert_binary_matrix(inv_synth_matrix)
+        assert_equal(I, inv_synth_matrix)
 
     @pytest.mark.parametrize(
         "n, ids",
@@ -89,7 +108,8 @@ class TestParityNetworkSynth:
         assert isinstance(circuit, list) and len(circuit) == len(ids)
         for entry in circuit:
             self.validate_circuit_entry(entry, exp_len=0)
-        assert_equal(I, inv_synth_matrix, strict=True)
+        assert_binary_matrix(inv_synth_matrix)
+        assert_equal(I, inv_synth_matrix)
 
     @pytest.mark.parametrize(
         "parity",
@@ -110,7 +130,7 @@ class TestParityNetworkSynth:
         self.validate_circuit_entry(circuit[0], exp_len=np.sum(P) - 1)
         I = np.eye(len(parity), dtype=int)
         assert I.shape == inv_synth_matrix.shape
-        assert set(inv_synth_matrix.flat).issubset({np.int64(0), np.int64(1)})
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
         assert not np.allclose(I, inv_synth_matrix)
 
     @pytest.mark.parametrize(
@@ -136,7 +156,7 @@ class TestParityNetworkSynth:
             self.validate_circuit_entry(entry, exp_len=exp_len)
         I = np.eye(len(parities[0]), dtype=int)
         assert I.shape == inv_synth_matrix.shape
-        assert set(inv_synth_matrix.flat).issubset({np.int64(0), np.int64(1)})
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
         assert not np.allclose(I, inv_synth_matrix)
 
     @pytest.mark.parametrize("n, seed", [(2, 851), (3, 231), (4, 8241), (5, 214)])
@@ -182,8 +202,9 @@ class TestParityNetworkSynth:
             qml.tape.QuantumScript(new_circuit), wire_order=range(n)
         )
         # Compare phase parities and make sure that the inv_parity_matrix is valid
-        assert_allclose(new_P @ new_angles, P @ angles, strict=True)
-        assert_equal((new_parity_matrix @ inv_parity_matrix) % 2, np.eye(n, dtype=int), strict=True)
+        assert_allclose(new_P @ new_angles, P @ angles)
+        assert_binary_matrix(inv_parity_matrix)
+        assert_equal((new_parity_matrix @ inv_parity_matrix) % 2, np.eye(n, dtype=int))
 
 
 def translate_program_to_xdsl(program):
