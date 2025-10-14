@@ -4,6 +4,12 @@
 
 <h3>New features since last release</h3>
 
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ParitySynthPass`
+  has been added for the experimental xDSL Python compiler integration. This pass resynthesizes
+  subcircuits that form a phase polynomial (``CNOT`` and ``RZ`` gates), using ``ParitySynth`` by
+  [Vandaele et al.](https://arxiv.org/abs/2104.00934)
+  [(#8414)](https://github.com/PennyLaneAI/pennylane/pull/8414)
+
 <h3>Improvements 🛠</h3>
 
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
@@ -28,4 +34,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Lillian Frederiksen
+Lillian Frederiksen,
+David Wierichs,
