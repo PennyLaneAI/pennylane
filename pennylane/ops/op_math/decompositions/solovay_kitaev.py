@@ -309,10 +309,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
 
     Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
 
-    .. code-block:: python3
-
-        import numpy as np
-        import pennylane as qml
+    .. code-block:: python
 
         op  = qml.RZ(np.pi/3, wires=0)
 
