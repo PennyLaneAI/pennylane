@@ -1017,11 +1017,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         'my_label'
         >>> op = qml.RX(1.23456, wires=0, id="test_data")
         >>> op.label()
-        'RX("test_data")'
+        'RX\n("test_data")'
         >>> op.label(decimals=2)
         'RX\n(1.23,"test_data")'
         >>> op.label(base_label="my_label")
-        'my_label("test_data")'
+        'my_label\n("test_data")'
         >>> op.label(decimals=2, base_label="my_label")
         'my_label\n(1.23,"test_data")'
 
@@ -1032,13 +1032,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> op2 = qml.QubitUnitary(np.eye(2), wires=0)
         >>> cache = {'matrices': []}
         >>> op2.label(cache=cache)
-        'U(M0)'
+        'U\n(M0)'
         >>> cache['matrices']
         [tensor([[1., 0.],
          [0., 1.]], requires_grad=True)]
         >>> op3 = qml.QubitUnitary(np.eye(4), wires=(0,1))
         >>> op3.label(cache=cache)
-        'U(M1)'
+        'U\n(M1)'
         >>> cache['matrices']
         [tensor([[1., 0.],
                 [0., 1.]], requires_grad=True),
@@ -1053,48 +1053,43 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if self.num_params == 0:
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
-        params = self.parameters
-        shape0 = qml.math.shape(params[0])
-        if len(shape0) != 0:
-            # assume that if the first parameter is matrix-valued, there is only a single parameter
-            # this holds true for all current operations and templates unless parameter broadcasting
-            # is used
-            # TODO[dwierichs]: Implement a proper label for broadcasted operators
-            if (
-                cache is None
-                or not isinstance(cache.get("matrices", None), list)
-                or len(params) != 1
-            ):
-                return op_label if self._id is None else f'{op_label}("{self._id}")'
-
-            for i, mat in enumerate(cache["matrices"]):
-                if shape0 == qml.math.shape(mat) and qml.math.allclose(params[0], mat):
-                    str_wo_id = f"{op_label}(M{i})"
-                    break
-            else:
-                mat_num = len(cache["matrices"])
-                cache["matrices"].append(params[0])
-                str_wo_id = f"{op_label}(M{mat_num})"
-
-            return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
-
-        if decimals is None:
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
-
         def _format(x):
-            try:
-                return format(qml.math.toarray(x), f".{decimals}f")
-            except ValueError:
-                # If the parameter can't be displayed as a float
-                return format(x)
+            """Format a scalar parameter or retrieve/store a matrix-valued parameter
+            from/to cache, formatting its position in the cache as parameter string."""
+            if len(qml.math.shape(x)) == 0:
+                # Scalar case
+                if decimals is None:
+                    return ""
+                try:
+                    return format(qml.math.toarray(x), f".{decimals}f")
+                except ValueError:
+                    # If the parameter can't be displayed as a float
+                    return format(x)
 
-        param_string = ",\n".join(_format(p) for p in params)
+            if cache is None or not isinstance(mat_cache := cache.get("matrices", None), list):
+                # No caching; matrices are not printed out fully, so no printing of this parameter
+                return ""
 
-        return (
-            f"{op_label}\n({param_string})"
-            if self._id is None
-            else f'{op_label}\n({param_string},"{self._id}")'
-        )
+            # Retrieve matrix location in cache, or write the matrix to cache as new entry
+            for i, mat in enumerate(mat_cache):
+                if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                    return f"M{i}"
+            mat_num = len(mat_cache)
+            mat_cache.append(x)
+            return f"M{mat_num}"
+
+        # Format each parameter individually, excluding those that lead to empty strings
+        param_strings = [out for p in self.parameters if (out := _format(p)) != ""]
+        inner_string = ",\n".join(param_strings)
+        # Include operation's id in string
+        if self._id is not None:
+            if inner_string == "":
+                inner_string = f'"{self._id}"'
+            else:
+                inner_string = f'{inner_string},"{self._id}"'
+        if inner_string == "":
+            return f"{op_label}"
+        return f"{op_label}\n({inner_string})"
 
     def __init__(
         self,
@@ -2385,7 +2380,7 @@ if not isinstance(obj, Operator) or not obj.has_generator:
     return False
 try:
     generator = obj.generator()
-    _, ops = generator.terms() 
+    _, ops = generator.terms()
     return len(ops) > 1
 except TermsUndefinedError:
     return False

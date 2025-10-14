@@ -96,8 +96,8 @@ class OutOfPlaceSquare(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, register_size):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             register_size (int): the size of the input register
@@ -300,8 +300,8 @@ class OutMultiplier(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, a_num_wires, b_num_wires) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             a_num_wires (int): the size of the first input register
@@ -402,8 +402,8 @@ class SemiAdder(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, max_register_size: int):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             max_register_size (int): the size of the larger of the two registers being added together
@@ -815,8 +815,8 @@ class QPE(ResourceOperator):
         num_estimation_wires: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
@@ -1363,8 +1363,8 @@ class BasisRotation(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, dim) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             dim (int): The dimensions of the input :code:`unitary_matrix`. This is computed

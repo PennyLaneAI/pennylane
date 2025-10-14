@@ -74,6 +74,39 @@ def test_ross_selinger(op, epsilon):
     assert qml.prod(*gates, lazy=False).wires == op.wires
 
 
+@pytest.mark.catalyst
+@pytest.mark.jax
+@pytest.mark.external
+@pytest.mark.parametrize(
+    ("op", "epsilon", "wires"),
+    [
+        (qml.RZ(math.pi / 42, wires=[1]), 1e-4, 2),
+        (qml.RZ(5 * math.pi / 4, wires=[1]), 1e-2, 2),
+        (qml.RZ(math.pi / 3, wires=[1]), 1e-3, 2),
+        (qml.RZ(-math.pi / 3, wires=[1]), 1e-3, 2),
+        (qml.PhaseShift(-math.pi / 6, wires=[0]), 1e-3, 1),
+        (qml.RZ(-math.pi / 8, wires=[2]), 1e-2, 3),
+        (qml.RZ(9 * math.pi / 4, wires=[0]), 1e-3, 1),
+        (qml.RZ(4.434079721283546, wires=[3]), 1e-3, 4),
+    ],
+)
+@pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
+def test_ross_selinger_qjit(op, epsilon, wires):
+    """Test Ross-Selinger decomposition method with specified max-depth"""
+    pytest.importorskip("catalyst")
+    dev = qml.device("lightning.qubit", wires=wires)
+
+    @qml.qjit(static_argnums=0)
+    @qml.qnode(dev)
+    def circuit(is_qjit):
+        rs_decomposition(op, epsilon=epsilon, is_qjit=is_qjit)
+        return qml.state()
+
+    qjit_result = circuit(True)
+    non_qjit_result = circuit(False)
+    assert qml.math.allclose(qjit_result, non_qjit_result)
+
+
 def test_epsilon_value_effect():
     """Test that different epsilon values create different decompositions."""
     op = qml.RZ(math.pi / 5, 0)
