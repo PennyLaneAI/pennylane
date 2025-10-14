@@ -35,12 +35,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
   
-* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
-  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 * Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
@@ -169,6 +163,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
+  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
 
 * The boolean functions provided by ``pennylane.operation`` have been removed. See below for an example of alternative code to use.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,

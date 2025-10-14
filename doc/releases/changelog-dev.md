@@ -16,6 +16,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
+  ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
@@ -32,5 +35,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
