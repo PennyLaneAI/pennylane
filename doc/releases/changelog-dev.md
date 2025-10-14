@@ -19,6 +19,11 @@
 * ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
   ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are assumed to be restored to their original state upon completing the decomposition.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>

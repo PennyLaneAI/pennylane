@@ -35,14 +35,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
   
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
-  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
-  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
-  work wires are restored to their original state upon completing the decomposition.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
   :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
@@ -164,8 +156,16 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
-  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* ``pennylane.devices.DefaultExecutionConfig`` is removed. Instead, use ``qml.devices.ExecutionConfig()``
+  to create a default execution configuration.
 
   - Deprecated in v0.43
   - Removed in v0.44
