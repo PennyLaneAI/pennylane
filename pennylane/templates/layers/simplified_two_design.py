@@ -15,8 +15,6 @@ r"""
 Contains the SimplifiedTwoDesign template.
 """
 from pennylane import math
-
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops import CZ, RY
 
@@ -85,8 +83,8 @@ class SimplifiedTwoDesign(Operation):
                               [pi, 0.]]
             weights = [weights_layer1, weights_layer2]
 
-            >>> circuit(init_weights, weights)
-            [1., -1., 1.]
+        >>> circuit(init_weights, weights)
+        [np.float64(1.0), np.float64(-1.0), np.float64(1.0)]
 
         **Parameter shapes**
 
@@ -153,16 +151,32 @@ class SimplifiedTwoDesign(Operation):
 
         **Example**
 
-        >>> qml.SimplifiedTwoDesign.compute_decomposition(initial_layer_weights, weights, wires=["a", "b", "c"])
-        [RY(tensor(3.1416), wires=['a']), RY(tensor(3.1416), wires=['b']), RY(tensor(3.1416), wires=['c']),
+        >>> from math import pi
+        >>> init_weights = [pi, pi, pi]
+        >>> weights_layer1 = [[0., pi],
+        ...                   [0., pi]]
+        >>> weights_layer2 = [[pi, 0.],
+        ...                   [pi, 0.]]
+        >>> weights = np.array([weights_layer1, weights_layer2])
+        >>> ops = qml.SimplifiedTwoDesign.compute_decomposition(init_weights, weights, wires=["a", "b", "c"])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [RY(3.141592653589793, wires=['a']),
+        RY(3.141592653589793, wires=['b']),
+        RY(3.141592653589793, wires=['c']),
         CZ(wires=['a', 'b']),
-        RY(tensor(0.), wires=['a']), RY(tensor(3.1416), wires=['b']),
+        RY(np.float64(0.0), wires=['a']),
+        RY(np.float64(3.141592653589793), wires=['b']),
         CZ(wires=['b', 'c']),
-        RY(tensor(0.), wires=['b']), RY(tensor(3.1416), wires=['c']),
+        RY(np.float64(0.0), wires=['b']),
+        RY(np.float64(3.141592653589793), wires=['c']),
         CZ(wires=['a', 'b']),
-        RY(tensor(3.1416), wires=['a']), RY(tensor(0.), wires=['b']),
+        RY(np.float64(3.141592653589793), wires=['a']),
+        RY(np.float64(0.0), wires=['b']),
         CZ(wires=['b', 'c']),
-        RY(tensor(3.1416), wires=['b']), RY(tensor(0.), wires=['c'])]
+        RY(np.float64(3.141592653589793), wires=['b']),
+        RY(np.float64(0.0), wires=['c'])]
+
         """
 
         n_layers = math.shape(weights)[0]

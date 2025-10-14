@@ -69,6 +69,8 @@ def pow(base, z=1, lazy=True, id=None):
         But it doesn't support batching of operators:
 
         >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
+        Traceback (most recent call last):
+            ...
         AttributeError: 'list' object has no attribute 'name'
 
     .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
@@ -120,13 +122,13 @@ class Pow(ScalarSymbolicOp):
     [SX(0)]
     >>> qml.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
-                [0.5-0.5j, 0.5+0.5j]])
+           [0.5-0.5j, 0.5+0.5j]])
     >>> qml.matrix(qml.SX(0))
     array([[0.5+0.5j, 0.5-0.5j],
-       [0.5-0.5j, 0.5+0.5j]])
+           [0.5-0.5j, 0.5+0.5j]])
     >>> qml.matrix(Pow(qml.T(0), 1.234))
     array([[1.        +0.j        , 0.        +0.j        ],
-       [0.        +0.j        , 0.56597465+0.82442265j]])
+           [0.        +0.j        , 0.56...+0.8244...j]])
 
     """
 
@@ -139,8 +141,6 @@ class Pow(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return pow(data[0], z=data[1])
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
 
@@ -148,15 +148,14 @@ class Pow(ScalarSymbolicOp):
         different based on ``base``'s inheritance.  We cache the different types in private class
         variables so that:
 
+        >>> z = 2
         >>> Pow(op, z).__class__ is Pow(op, z).__class__
         True
         >>> type(Pow(op, z)) == type(Pow(op, z))
         True
         >>> isinstance(Pow(op, z), type(Pow(op, z)))
         True
-        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
-        True
-        >>> Pow(qml.X(0), 1.2).__class__ is Pow._operation_observable_type
+        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is PowOperation
         True
 
         """
@@ -275,7 +274,7 @@ class Pow(ScalarSymbolicOp):
             self.base.pow(self.z)
         except PowUndefinedError:
             return False
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             # some pow methods cant handle a batched z
             if qml.math.ndim(self.z) != 0:
                 return False
@@ -293,7 +292,7 @@ class Pow(ScalarSymbolicOp):
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             raise DecompositionUndefinedError from e
 
     @property

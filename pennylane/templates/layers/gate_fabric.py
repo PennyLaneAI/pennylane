@@ -14,14 +14,13 @@
 r"""
 Contains the quantum-number-preserving GateFabric template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 import numpy as np
 
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import DoubleExcitation, OrbitalRotation
-
-from ..embeddings import BasisEmbedding
+from pennylane.templates.embeddings import BasisEmbedding
 
 
 class GateFabric(Operation):
@@ -243,9 +242,8 @@ class GateFabric(Operation):
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
         >>> qml.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisEmbedding(wires=['a', 'b', 'c', 'd']),
-        DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']),
-        OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        [BasisEmbedding(array([0, 1, 0, 1]), wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+
         """
         op_list = []
         n_layers = math.shape(weights)[0]

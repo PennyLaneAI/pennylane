@@ -89,12 +89,10 @@ class GroverOperator(Operation):
                 qml.templates.GroverOperator(wires=wires)
             return qml.probs(wires)
 
-    >>> GroverSearch(num_iterations=1)
-    tensor([0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125,
-            0.78125], requires_grad=True)
-    >>> GroverSearch(num_iterations=2)
-    tensor([0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125,
-        0.0078125, 0.9453125], requires_grad=True)
+    >>> GroverSearch(num_iterations=1) # doctest: +SKIP
+    array([0.0312, 0.0312, 0.0312, 0.0312, 0.0312, 0.0312, 0.0312, 0.7812])
+    >>> GroverSearch(num_iterations=2) # doctest: +SKIP
+    array([0.0078, 0.0078, 0.0078, 0.0078, 0.0078, 0.0078, 0.0078, 0.9453])
 
     We can see that the marked :math:`|111\rangle` state has the greatest probability amplitude.
 
@@ -256,7 +254,7 @@ def _grover_operator_resources(num_wires, num_work_wires):
 
 
 @register_resources(_grover_operator_resources)
-def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
+def _grover_decomposition(wires, work_wires, n_wires):
     ctrl_values = [0] * (n_wires - 1)
 
     if capture.enabled():

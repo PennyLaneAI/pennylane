@@ -116,8 +116,8 @@ def dynamic_one_shot(
         dev = qml.device("default.qubit")
         params = np.pi / 4 * np.ones(2)
 
-        @partial(qml.set_shots, shots=100)
-        @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
+        @qml.set_shots(100)
+        @qml.qnode(dev, mcm_method="one-shot")
         def func(x, y):
             qml.RX(x, wires=0)
             m0 = qml.measure(0)
@@ -251,7 +251,6 @@ def _get_is_valid_has_valid(mcm_samples, all_mcms, interface):
     return is_valid, has_valid
 
 
-# pylint: disable=unused-argument
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
     _removed_arg=None,  # need to not break catalyst
@@ -347,7 +346,6 @@ def _handle_measurement(
     postselect_mode,
     is_valid,
 ):
-
     if interface != "jax" and not has_valid:
         return _measurement_with_no_shots(m), m_count + int(m.mv is None)
 
@@ -392,7 +390,6 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
     return gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
 
 
-# pylint: disable=unused-argument
 @singledispatch
 def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None) -> TensorLike:
     """Combines, gathers and normalizes several measurements with trivial measurement values.
@@ -412,7 +409,6 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None) -> Tens
     )
 
 
-# pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_counts(measurement: CountsMP, samples, is_valid, postselect_mode=None):
     tmp = Counter()
@@ -435,7 +431,6 @@ def _gather_counts(measurement: CountsMP, samples, is_valid, postselect_mode=Non
     return dict(sorted(tmp.items()))
 
 
-# pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=None):
     samples = qml.math.concatenate(samples) if isinstance(samples, (list, tuple)) else samples
@@ -476,7 +471,6 @@ def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselec
     )
 
 
-# pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode=None):
     samples = qml.math.stack(samples)

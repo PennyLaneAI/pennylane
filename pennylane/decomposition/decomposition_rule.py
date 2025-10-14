@@ -26,7 +26,7 @@ from typing import overload
 import pennylane as qml
 from pennylane.operation import Operator
 
-from .resources import CompressedResourceOp, Resources, resource_rep
+from .resources import Resources, auto_wrap
 from .utils import translate_op_alias
 
 
@@ -125,17 +125,22 @@ def register_condition(
 
 @overload
 def register_resources(
-    ops: Callable | dict, *, work_wires: Callable | dict | None = None
+    ops: Callable | dict, *, work_wires: Callable | dict | None = None, exact: bool = True
 ) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_resources(
-    ops: Callable | dict, qfunc: Callable, *, work_wires: Callable | dict | None = None
+    ops: Callable | dict,
+    qfunc: Callable,
+    *,
+    work_wires: Callable | dict | None = None,
+    exact: bool = True,
 ) -> DecompositionRule: ...
 def register_resources(
     ops: Callable | dict,
     qfunc: Callable | None = None,
     *,
     work_wires: Callable | dict | None = None,
+    exact: bool = True,
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Binds a quantum function to its required resources.
 
@@ -153,12 +158,17 @@ def register_resources(
             to their number of occurrences therein. If a function is provided instead of a static
             dictionary, a dictionary must be returned from the function. For more information,
             consult the "Quantum Functions as Decomposition Rules" section below.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
+
+    Keyword Args:
         work_wires (dict or Callable): a dictionary declaring the number of work wires of each type
             required to perform this decomposition. Accepted work wire types include ``"zeroed"``,
             ``"borrowed"``, ``"burnable"``, and ``"garbage"``. For more information, consult the
             "Dynamic Allocation of Work Wires" section below.
-        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
-            returns a decorator for acting on a function.
+        exact (bool): whether the resources are computed exactly (``True``, default) or
+            estimated heuristically (``False``). This information is only relevant for testing
+            and validation purposes.
 
     Returns:
         DecompositionRule:
@@ -345,11 +355,13 @@ def register_resources(
 
     def _decorator(_qfunc) -> DecompositionRule:
         if isinstance(_qfunc, DecompositionRule):
-            _qfunc.set_resources(ops)
+            _qfunc.set_resources(ops, exact_resources=exact)
             if work_wires:
                 _qfunc.set_work_wire_spec(work_wires)
             return _qfunc
-        return DecompositionRule(_qfunc, resources=ops, work_wires=work_wires)
+        return DecompositionRule(
+            _qfunc, resources=ops, work_wires=work_wires, exact_resources=exact
+        )
 
     return _decorator(qfunc) if qfunc else _decorator
 
@@ -362,6 +374,7 @@ class DecompositionRule:
         func: Callable,
         resources: Callable | dict | None = None,
         work_wires: Callable | dict | None = None,
+        exact_resources: bool = True,
     ):
 
         self._impl = func
@@ -383,6 +396,7 @@ class DecompositionRule:
 
         self._conditions = []
         self._work_wire_spec = work_wires or {}
+        self.exact_resources = exact_resources
 
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
@@ -399,7 +413,7 @@ class DecompositionRule:
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if count > 0:
-                gate_counter.update({_auto_wrap(op): count})
+                gate_counter.update({auto_wrap(op): count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
@@ -416,7 +430,7 @@ class DecompositionRule:
         """Adds a condition for this decomposition rule."""
         self._conditions.append(condition)
 
-    def set_resources(self, resources: Callable | dict) -> None:
+    def set_resources(self, resources: Callable | dict, exact_resources: bool = True) -> None:
         """Sets the resources for this decomposition rule."""
 
         if isinstance(resources, dict):
@@ -427,30 +441,11 @@ class DecompositionRule:
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
+        self.exact_resources = exact_resources
 
     def set_work_wire_spec(self, work_wires: Callable | dict) -> None:
         """Sets the work wire usage of this decomposition rule."""
         self._work_wire_spec = work_wires
-
-
-def _auto_wrap(op_type):
-    """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
-        return op_type
-    if op_type == "measure":
-        return CompressedResourceOp(qml.measurements.MidMeasureMP, {})
-    if not issubclass(op_type, Operator):
-        raise TypeError(
-            "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qml.resource_rep"
-        )
-    try:
-        return resource_rep(op_type)
-    except TypeError as e:
-        raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
-            f"representation must be explicitly constructed using qml.resource_rep"
-        ) from e
 
 
 _decompositions = defaultdict(list)
@@ -535,7 +530,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions[translate_op_alias(op_type)].extend(decomps)
 
 
-def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
+def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -546,8 +541,9 @@ def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
         decomposition rules for an operator.
 
     Args:
-        op_type (type or str): the operator class to retrieve decomposition rules for. For symbolic
-            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to retrieve decomposition
+            rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
+            ``"C(RX)"``, etc.
 
     Returns:
         list[DecompositionRule]: a list of decomposition rules registered for the given operator.
@@ -574,12 +570,14 @@ def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    return _decompositions[translate_op_alias(op_type)][:]
+    if isinstance(op, Operator):
+        return _decompositions[op.name][:]
+    if isinstance(op, type):
+        op = op.__name__
+    return _decompositions[translate_op_alias(op)][:]
 
 
-def has_decomp(op_type: type[Operator] | str) -> bool:
+def has_decomp(op: type[Operator] | Operator | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
 
     .. note::
@@ -590,17 +588,20 @@ def has_decomp(op_type: type[Operator] | str) -> bool:
         decomposition rules for an operator.
 
     Args:
-        op_type (type or str): the operator class to check for decomposition rules. For symbolic
-            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to check for
+            decomposition rules. For symbolic operators, use strings like ``"Adjoint(RY)"``,
+            ``"Pow(H)"``, ``"C(RX)"``, etc.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    op_type = translate_op_alias(op_type)
-    return op_type in _decompositions and len(_decompositions[op_type]) > 0
+    if isinstance(op, Operator):
+        return op.name in _decompositions and len(_decompositions[op.name]) > 0
+    if isinstance(op, type):
+        op = op.__name__
+    op = translate_op_alias(op)
+    return op in _decompositions and len(_decompositions[op]) > 0
 
 
 @register_resources({})

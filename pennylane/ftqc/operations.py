@@ -88,7 +88,8 @@ class RotXZX(Operation):
 
         **Example:**
 
-        >>> qml.RotXZX.compute_decomposition(1.2, 2.3, 3.4, wires=0)
+        >>> from pennylane.ftqc import RotXZX
+        >>> RotXZX.compute_decomposition(1.2, 2.3, 3.4, wires=0)
         [RX(1.2, wires=[0]), RZ(2.3, wires=[0]), RX(3.4, wires=[0])]
 
         """

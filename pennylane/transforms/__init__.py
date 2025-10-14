@@ -64,21 +64,45 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
-    ~transforms.zx.optimize_t_count
-    ~transforms.zx.push_hadamards
-    ~transforms.zx.reduce_non_clifford
-    ~transforms.zx.todd
+    ~transforms.rz_phase_gradient
+    ~transforms.rowcol
 
-There are also utility functions and decompositions available that assist with
-both transforms, and decompositions within the larger PennyLane codebase.
+Compilation transforms using ZX calculus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There is a set of transforms that use ZX calculus to optimize circuits.
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    zx.optimize_t_count
+    zx.push_hadamards
+    zx.reduce_non_clifford
+    zx.todd
+
+The following utility functions assist when working explicitly with ZX diagrams,
+for example when writing custom ZX compilation passes. Also see the section
+on intermediate representations below.
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    ~transforms.to_zx
+    ~transforms.from_zx
+
+Other compilation utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are additional utility functions and decompositions available that assist with
+both transforms and decompositions within the larger PennyLane codebase.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.set_decomposition
     ~transforms.pattern_matching
-    ~transforms.to_zx
-    ~transforms.from_zx
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -122,12 +146,36 @@ preprocessing, getting information from a circuit, and more.
     ~quantum_monte_carlo
     ~transforms.resolve_dynamic_wires
 
+Transforms for intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically
+offering a more efficient classical description for special classes of circuits.
+The following functions produce intermediate representations of quantum circuits:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomial
+    ~transforms.rowcol
+
+In addition, there are the following utility functions to traverse a graph:
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    intermediate_reps.postorder_traverse
+    intermediate_reps.preorder_traverse
+
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These transforms only accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -341,13 +389,15 @@ from .transpile import transpile
 from .zx import (
     to_zx,
     from_zx,
-    optimize_t_count,
-    push_hadamards,
-    reduce_non_clifford,
-    todd,
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
+from .intermediate_reps import (
+    parity_matrix,
+    phase_polynomial,
+    rowcol,
+)
+from .rz_phase_gradient import rz_phase_gradient
 
 
 def __getattr__(name):
@@ -367,9 +417,9 @@ def __getattr__(name):
         from pennylane import noise
 
         warnings.warn(
-            f"pennylane.{name} is no longer accessible from the transforms module \
-                and must be imported as pennylane.noise.{name}. \
-                    Support for access through this module will be removed in v0.44.",
+            f"pennylane.{name} is no longer accessible from the transforms module and must "
+            "be imported as pennylane.noise.{name}. Support for access through this module "
+            "will be removed in v0.44.",
             exceptions.PennyLaneDeprecationWarning,
         )
 

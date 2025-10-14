@@ -69,11 +69,13 @@ class QubitCarry(Operation):
     The ``QubitCarry`` operation maps the state :math:`|0110\rangle` to :math:`|0101\rangle`, where
     the last qubit denotes the carry value:
 
-    .. code-block::
+    .. code-block:: python
+
+        import itertools
 
         input_bitstring = (0, 1, 1, 0)
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(basis_state):
             qml.BasisState(basis_state, wires=[0, 1, 2, 3])
             qml.QubitCarry(wires=[0, 1, 2, 3])
@@ -237,11 +239,13 @@ class QubitSum(Operation):
     The ``QubitSum`` operation maps the state :math:`|010\rangle` to :math:`|011\rangle`, with the
     final wire holding the modulo-two sum of the first two wires:
 
-    .. code-block::
+    .. code-block:: python
+
+        import itertools
 
         input_bitstring = (0, 1, 0)
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(basis_state):
             qml.BasisState(basis_state, wires = [0, 1, 2])
             qml.QubitSum(wires=[0, 1, 2])
@@ -260,8 +264,7 @@ class QubitSum(Operation):
     The action of ``QubitSum`` is to add wires ``0``, ``1``, and ``2``. The modulo-two result is
     output in wire ``2``. In this case, :math:`0 \oplus 1 \oplus 0 = 1`, so we have:
 
-    >>> abc_sum = output_bitstring[2]
-    >>> abc_sum
+    >>> output_bitstring[2]
     1
     """
 
@@ -403,9 +406,9 @@ class IntegerComparator(Operation):
     ...     qml.IntegerComparator(value, geq=geq, wires=range(3))
     ...     return qml.state()
     >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
-    tensor(1.+0.j, requires_grad=True)
+    np.complex128(1+0j)
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
-    tensor(1.+0.j, requires_grad=True)
+    np.complex128(1+0j)
     """
 
     is_self_inverse: bool = True
@@ -493,8 +496,8 @@ class IntegerComparator(Operation):
         .. seealso:: :meth:`~.IntegerComparator.matrix`
 
         Args:
-            value (int): The value :math:`L` that the state's decimal representation is compared against.
             control_wires (Union[Wires, Sequence[int], or int]): wires to place controls on
+            value (int): The value :math:`L` that the state's decimal representation is compared against.
             geq (bool): If set to `True`, the comparison made will be :math:`n \geq L`. If `False`, the comparison
                 made will be :math:`n < L`.
 
@@ -503,7 +506,7 @@ class IntegerComparator(Operation):
 
         **Example**
 
-        >>> print(qml.IntegerComparator.compute_matrix(2, [0, 1]))
+        >>> print(qml.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2))
         [[1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 1. 0. 0. 0. 0. 0. 0.]
          [0. 0. 1. 0. 0. 0. 0. 0.]
@@ -512,7 +515,7 @@ class IntegerComparator(Operation):
          [0. 0. 0. 0. 1. 0. 0. 0.]
          [0. 0. 0. 0. 0. 0. 0. 1.]
          [0. 0. 0. 0. 0. 0. 1. 0.]]
-        >>> print(qml.IntegerComparator.compute_matrix(2, [0, 1], geq=False))
+        >>> print(qml.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2, geq=False))
         [[0. 1. 0. 0. 0. 0. 0. 0.]
          [1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 0. 0. 1. 0. 0. 0. 0.]

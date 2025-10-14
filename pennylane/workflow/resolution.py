@@ -25,6 +25,7 @@ from warnings import warn
 from packaging.version import Version
 
 import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_interface
@@ -46,18 +47,20 @@ SupportedDiffMethods = Literal[
 ]
 
 if TYPE_CHECKING:
-    from pennylane.tape import QuantumScriptBatch
+    from pennylane.devices.device_api import Device
+    from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
 
 
 def _get_jax_interface_name() -> Interface:
     """Check if we are in a jitting context by creating a dummy array and seeing if it's
     abstract.
     """
-    x = qml.math.asarray([0], like="jax")
-    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
+    x = math.asarray([0], like="jax")
+    return Interface.JAX_JIT if math.is_abstract(x) else Interface.JAX
 
 
-def _validate_jax_version():
+def _validate_jax_version() -> None:
     """Checks if the installed version of JAX is supported. If an unsupported version of
     JAX is installed, a ``RuntimeWarning`` is raised."""
     if not find_spec("jax"):
@@ -81,7 +84,8 @@ def _validate_jax_version():
 
 
 # pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+# TensorFlow tests were disabled during deprecation
+def _use_tensorflow_autograph() -> bool:  # pragma: no cover
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
         import tensorflow as tf
@@ -141,8 +145,8 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
 
 
 def _resolve_mcm_config(
-    mcm_config: qml.devices.MCMConfig, interface: Interface, finite_shots: bool
-) -> qml.devices.MCMConfig:
+    mcm_config: MCMConfig, interface: Interface, finite_shots: bool
+) -> MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
     updated_values: dict[str, Any] = {}
@@ -180,9 +184,7 @@ def _resolve_mcm_config(
     return replace(mcm_config, **updated_values)
 
 
-def _resolve_hadamard(
-    initial_config: qml.devices.ExecutionConfig, device: qml.devices.Device
-) -> qml.devices.ExecutionConfig:
+def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> ExecutionConfig:
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
@@ -209,20 +211,20 @@ def _resolve_hadamard(
 
 @debug_logger
 def _resolve_diff_method(
-    initial_config: qml.devices.ExecutionConfig,
-    device: qml.devices.Device,
-    tape: qml.tape.QuantumScript | None = None,
-) -> qml.devices.ExecutionConfig:
+    initial_config: ExecutionConfig,
+    device: Device,
+    tape: QuantumScript | None = None,
+) -> ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
 
     Args:
-        initial_config (qml.devices.ExecutionConfig): The initial execution configuration.
-        device (qml.devices.Device): A PennyLane device.
+        initial_config (ExecutionConfig): The initial execution configuration.
+        device (Device): A PennyLane device.
         tape (Optional[qml.tape.QuantumTape]): The circuit that will be differentiated. Should include shots information.
 
     Returns:
-        qml.devices.ExecutionConfig: Updated execution configuration with the resolved differentiation method.
+        ExecutionConfig: Updated execution configuration with the resolved differentiation method.
     """
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
@@ -272,19 +274,19 @@ def _resolve_diff_method(
 
 
 def _resolve_execution_config(
-    execution_config: qml.devices.ExecutionConfig,
-    device: qml.devices.Device,
+    execution_config: ExecutionConfig,
+    device: Device,
     tapes: QuantumScriptBatch,
-) -> qml.devices.ExecutionConfig:
+) -> ExecutionConfig:
     """Resolves the execution configuration for non-device specific properties.
 
     Args:
-        execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
-        device (qml.devices.Device): a Pennylane device
+        execution_config (ExecutionConfig): an execution config to be executed on the device
+        device (Device): a Pennylane device
         tapes (QuantumScriptBatch): a batch of tapes
 
     Returns:
-        qml.devices.ExecutionConfig: resolved execution configuration
+        ExecutionConfig: resolved execution configuration
     """
     updated_values: dict[str, Any] = {}
 

@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
 
-def _convert_to_interface(result, interface: Interface):
+def _convert_to_interface(result: Result, interface: Interface) -> Result:
     """
     Recursively convert a result to the given interface.
     """
@@ -73,7 +73,9 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: QNode | None, diff_method=None, mcm_config=None
+    circuit: QNode | None,
+    diff_method: str | None = None,
+    mcm_config: qml.devices.MCMConfig | None = None,
 ) -> qml.devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
@@ -94,7 +96,7 @@ def _make_execution_config(
     )
 
 
-def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) -> Result:
+def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: bool) -> Result:
 
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
@@ -203,7 +205,7 @@ class QNode:
     the quantum circuit.
 
     Args:
-        func (callable): a quantum function
+        func (Callable): a quantum function
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
@@ -523,7 +525,7 @@ class QNode:
         interface: str | Interface = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
-        shots: ShotsLike = "unset",
+        shots: ShotsLike | Literal["unset"] = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
@@ -534,7 +536,7 @@ class QNode:
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,
-    ):
+    ) -> None:
         self._init_args = locals()
         del self._init_args["self"]
 
@@ -577,7 +579,7 @@ class QNode:
 
         # input arguments
         self.func = func
-        self.device = device
+        self.device: Device = device
         self._interface = Interface(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
@@ -609,7 +611,7 @@ class QNode:
         self.gradient_kwargs = gradient_kwargs
 
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
-        self._shots_override_device: bool = False
+        self._shots_override_device: bool = shots != "unset"
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
@@ -752,13 +754,16 @@ class QNode:
 
         old_shots = self.shots
         # set shots issue
-        if "device" in kwargs:
-            if old_shots != kwargs["device"].shots:
-                warnings.warn(
-                    "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
-                    UserWarning,
-                )
+        if (
+            not self._shots_override_device
+            and "device" in kwargs
+            and old_shots != kwargs["device"].shots
+        ):
+            warnings.warn(
+                "The device's shots value does not match the QNode's shots value. "
+                "This may lead to unexpected behaviour. Use `set_shots` to update the QNode's shots.",
+                UserWarning,
+            )
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
@@ -801,7 +806,7 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    def _get_shots(self, kwargs: dict):
+    def _get_shots(self, kwargs: dict) -> Shots:
         """
         Note that this mutates kwargs to remove shots from it.
         """
@@ -810,7 +815,8 @@ class QNode:
         if "shots" in kwargs:
             # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
-                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
+                "Specifying 'shots' when calling a QNode is deprecated and will be removed in "
+                "v0.44. Please set shots on QNode initialization, or use qml.set_shots instead.",
                 PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
@@ -890,10 +896,21 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-def qnode(device, **kwargs):
+def qnode(device, **kwargs) -> Callable[[Callable], QNode]:
     """Docstring will be updated below."""
     return functools.partial(QNode, device=device, **kwargs)
 
 
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+# pylint: disable=protected-access
+@TransformDispatcher.generic_register
+def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
+    """The default behavior for applying a transform to a QNode."""
+    if transform._custom_qnode_transform:
+        return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
+    new_qnode = copy.copy(obj)
+    new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
+    return new_qnode

@@ -163,6 +163,11 @@ qnode_prim.prim_type = "higher_order"
 @qnode_prim.def_impl
 def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
+    warn(
+        "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
+        UserWarning,
+    )
+
     execution_config = device.setup_execution_config(execution_config)
 
     if shots_len == 0:
@@ -548,7 +553,15 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
 
     """
+    # apply transform to a callable so will be captured when called
+    qnode_func = partial(_bind_qnode, qnode)
+    for t in qnode.transform_program:
+        qnode_func = t(qnode_func)
 
+    return qnode_func(*args, **kwargs)
+
+
+def _bind_qnode(qnode, *args, **kwargs):
     if qnode.device.wires is None:
         raise NotImplementedError(
             "devices must specify wires for integration with program capture."

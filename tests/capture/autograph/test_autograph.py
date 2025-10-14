@@ -17,6 +17,8 @@ source-to-source transformation feature."""
 
 # pylint: disable = wrong-import-position, wrong-import-order, ungrouped-imports
 
+from functools import partial
+
 import numpy as np
 import pytest
 from malt.core import converter
@@ -348,6 +350,39 @@ class TestIntegration:
             ValueError, match="First argument to adjoint must be callable or an Operation"
         ):
             _ = qml.capture.make_plxpr(circ, autograph=True)()
+
+    @pytest.mark.parametrize(
+        "func1, func2, prim1, prim2",
+        [
+            (qml.adjoint, partial(qml.ctrl, control=0), "adjoint_transform", "ctrl_transform"),
+            (partial(qml.ctrl, control=0), qml.adjoint, "ctrl_transform", "adjoint_transform"),
+            (qml.adjoint, qml.adjoint, "adjoint_transform", "adjoint_transform"),
+            (
+                partial(qml.ctrl, control=0),
+                partial(qml.ctrl, control=1),
+                "ctrl_transform",
+                "ctrl_transform",
+            ),
+        ],
+    )
+    def test_nested_adjoint_ctrl(self, func1, func2, prim1, prim2):
+        """Test that nested adjoint and ctrl successfully pass through autograph"""
+
+        # Build the nested operator
+        op = func2(qml.X)
+        final_op = func1(op)
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circ():
+            final_op(wires=2)
+            return qml.state()
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        qfunc_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        hop_outer = qfunc_jaxpr.eqns[0].primitive
+        hop_inner = qfunc_jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive
+        assert str(hop_outer) == prim1
+        assert str(hop_inner) == prim2
 
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""

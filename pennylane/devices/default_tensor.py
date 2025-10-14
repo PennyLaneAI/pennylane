@@ -45,7 +45,7 @@ from pennylane.measurements import (
 from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.templates.subroutines.trotter import _recursive_expression
+from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 
@@ -641,6 +641,8 @@ class DefaultTensor(Device):
             stopping_condition=stopping_condition,
             skip_initial_state_prep=True,
             name=self.name,
+            device_wires=self.wires,
+            target_gates=_operations,
         )
         program.add_transform(qml.transforms.broadcast_expand)
 

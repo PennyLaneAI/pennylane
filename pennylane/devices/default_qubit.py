@@ -14,6 +14,7 @@
 """
 The default.qubit device is PennyLane's standard qubit-based device.
 """
+
 from __future__ import annotations
 
 import logging
@@ -43,9 +44,15 @@ from pennylane.measurements import (
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
-from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
+from pennylane.transforms import (
+    broadcast_expand,
+    convert_to_numpy_parameters,
+)
 from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import defer_measurements, dynamic_one_shot
+from pennylane.transforms import (
+    defer_measurements,
+    dynamic_one_shot,
+)
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -70,7 +77,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
-    # pylint: disable=ungrouped-imports
     from numbers import Number
 
     from jax.extend.core import Jaxpr
@@ -367,7 +373,7 @@ class DefaultQubit(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        max_workers (int): A `:class:~.qml.concurrency.base.RemoteExec` executes tapes asynchronously
+        max_workers (int): A :class:`~pennylane.concurrency.executors.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
@@ -541,7 +547,6 @@ class DefaultQubit(Device):
     tuple of string names for all the device options.
     """
 
-    # pylint:disable = too-many-arguments
     @debug_logger_init
     def __init__(
         self,
@@ -679,7 +684,6 @@ class DefaultQubit(Device):
             )
         return transform_program
 
-    # pylint: disable = too-many-branches
     @debug_logger
     def setup_execution_config(
         self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
@@ -746,7 +750,6 @@ class DefaultQubit(Device):
         return replace(config, **updated_values)
 
     def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
-
         if capture.enabled():
             return self._capture_setup_mcm_config(mcm_config)
 
@@ -755,6 +758,19 @@ class DefaultQubit(Device):
             final_mcm_method = "one-shot" if getattr(tape, "shots", None) else "deferred"
         elif mcm_config.mcm_method == "device":
             final_mcm_method = "tree-traversal"
+
+        supported_methods = {"one-shot", "deferred", "tree-traversal"}
+        if final_mcm_method not in supported_methods:
+            raise DeviceError(
+                f"mcm_method {final_mcm_method} not supported on default.qubit. "
+                f"Supported methods are {supported_methods}"
+            )
+
+        if mcm_config.postselect_mode == "fill-shots" and final_mcm_method != "deferred":
+            raise DeviceError(
+                "Using postselect_mode='fill-shots' is only supported with mcm_method='deferred'."
+            )
+
         return replace(mcm_config, mcm_method=final_mcm_method)
 
     def _capture_setup_mcm_config(self, mcm_config):
@@ -804,7 +820,6 @@ class DefaultQubit(Device):
             )
 
         if max_workers is None:
-
             return tuple(
                 _simulate_wrapper(
                     c,

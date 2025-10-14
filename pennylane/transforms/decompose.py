@@ -43,7 +43,7 @@ def null_postprocessing(results):
 
 
 @lru_cache
-def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-statements
+def _get_plxpr_decompose():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         import jax
@@ -383,8 +383,8 @@ def decompose(
             which case the total cost will be minimized (only available when the new graph-based
             decomposition system is enabled), or (3) a function that returns ``True`` if the
             operator belongs to the target gate set (not supported with the new graph-based
-            decomposition system). If ``None``, the gate set is considered to be all available
-            :doc:`quantum operators </introduction/operations>`.
+            decomposition system). If ``None``, the gate set is considered to be all operations in
+            ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>` for this list.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -963,7 +963,7 @@ def _resolve_gate_set(
         def gate_set_contains(op: Operator) -> bool:
             return (op.name in gate_names) or isinstance(op, gate_types)
 
-    elif isinstance(gate_set, Callable):  # pylint:disable=isinstance-second-argument-not-valid-type
+    elif isinstance(gate_set, Callable):
 
         gate_set_contains = gate_set
 
