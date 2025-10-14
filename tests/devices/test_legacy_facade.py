@@ -14,6 +14,7 @@
 """
 Contains unit tests for the LegacyDeviceFacade class.
 """
+
 # pylint: disable=protected-access
 import copy
 
@@ -138,7 +139,6 @@ def test_shot_distribution(execution_config):
     """Test that different numbers of shots in a batch all get executed."""
 
     class DummyJacobianDevice(DummyDevice):
-
         _capabilities = {"provides_jacobian": True}
 
         def new_gradient(self, circuit):  # pylint: disable=unused-argument
@@ -229,8 +229,16 @@ def test_basic_properties():
 def test_preprocessing_program():
     """Test the population of the preprocessing program."""
 
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript(
+        [qml.X(0), qml.IsingXX(0.5, (0, 1)), *m0.measurements],
+        [qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.Y(0)]))],
+    )
+
     dev = DummyDevice(wires=(0, 1))
-    program = LegacyDeviceFacade(dev).preprocess_transforms()
+    facade = LegacyDeviceFacade(dev)
+    config = facade.setup_execution_config(circuit=tape)
+    program = facade.preprocess_transforms(config)
 
     assert (
         program[0].transform == legacy_device_batch_transform.transform
@@ -395,7 +403,6 @@ class TestGradientSupport:
         """Test that backpropagation is not supported with SparseHamiltonian."""
 
         class BackpropDevice(DummyDevice):
-
             _capabilities = {"passthru_interface": "autograd"}
 
         H = qml.SparseHamiltonian(qml.X.compute_sparse_matrix(), wires=0)
@@ -411,7 +418,6 @@ class TestGradientSupport:
         """Test that if the passthru interface is set, no substitution occurs."""
 
         class BackpropDevice(DummyDevice):
-
             _capabilities = {"passthru_interface": "autograd"}
 
         dev = LegacyDeviceFacade(BackpropDevice(wires=2, shots=None))
