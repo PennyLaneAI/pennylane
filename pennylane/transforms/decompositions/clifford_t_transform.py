@@ -425,7 +425,7 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
-# pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
+# pylint: disable=too-many-branches,too-many-statements
 @transform
 def clifford_t_decomposition(
     tape: QuantumScript,
@@ -607,9 +607,10 @@ def clifford_t_decomposition(
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    # TODO: Remove this branch after fix https://github.com/PennyLaneAI/pennylane/issues/7803, so
-    # then cancel_inverses can compute with QJIT
     if not is_qjit:
+        # This is skipped for qjit because when qjit is enabled, the circuit may contain
+        # higher-level operations such as Cond and ForLoop whose wires attribute does not
+        # reflect the wires of all operators within its scope.
         [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):

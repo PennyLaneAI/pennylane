@@ -107,7 +107,7 @@ def _generalized_pauli_decompose(
         >>> A = np.array([[-2, -2 + 1j]])
         >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, padding=True)
         >>> coeffs
-        ([-1. +0.j , -1. +0.5j, -0.5-1.j , -1. +0.j ])
+        array([-1. +0.j , -1. +0.5j, -0.5-1.j , -1. +0.j ])
         >>> obs
         [I(0), X(0), Y(0), Z(0)]
 
@@ -121,7 +121,7 @@ def _generalized_pauli_decompose(
         ...    qml.RX(qml.math.real(coeffs[2]), 0)
         ...    return qml.expval(qml.Z(0))
         >>> qml.grad(circuit)(A)
-        array([[0.+0.j        , 0.+0.23971277j]])
+        array([[0.+0.j        , 0.+0.2397...j]])
 
     """
     # Ensuring original matrix is not manipulated and we support builtin types.
@@ -244,17 +244,20 @@ def pauli_decompose(
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
     >>> H = qml.pauli_decompose(A)
-    >>> print(H)
-    (-1.5) [I0 X1]
-    + (-1.5) [X0 I1]
-    + (-1.0) [I0 I1]
-    + (-1.0) [I0 Z1]
-    + (-1.0) [X0 X1]
-    + (-0.5) [I0 Y1]
-    + (-0.5) [X0 Z1]
-    + (-0.5) [Z0 X1]
-    + (-0.5) [Z0 Y1]
-    + (1.0) [Y0 Y1]
+    >>> import pprint
+    >>> pprint.pprint(H)
+    (
+        -1.0 * (I(0) @ I(1))
+      + -1.5 * (I(0) @ X(1))
+      + -0.5 * (I(0) @ Y(1))
+      + -1.0 * (I(0) @ Z(1))
+      + -1.5 * (X(0) @ I(1))
+      + -1.0 * (X(0) @ X(1))
+      + -0.5 * (X(0) @ Z(1))
+      + 1.0 * (Y(0) @ Y(1))
+      + -0.5 * (Z(0) @ X(1))
+      + -0.5 * (Z(0) @ Y(1))
+    )
 
     We can return a :class:`~.PauliSentence` instance by using the keyword argument ``pauli=True``:
 
@@ -383,8 +386,6 @@ def _(op: PauliZ):
     return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 @_pauli_sentence.register
 def _(op: Identity):
     return PauliSentence({PauliWord({}): 1.0})

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The ``resource`` module provides classes and functionality to estimate the quantum resources
+The ``resource`` module provides classes and functionality to track the quantum resources
 (number of qubits, circuit depth, etc.) required to implement advanced quantum algorithms.
 
+.. seealso::
+    The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
 Expectation Value Functions
 ---------------------------
@@ -92,9 +94,10 @@ Tracking Resources for Custom Operations
 We can use the :code:`null.qubit` device with the :class:`pennylane.Tracker` to track the resources
 used in a quantum circuit with custom operations without execution.
 
-.. code-block:: python3
+.. code-block:: python
 
     from functools import partial
+    from pennylane import numpy as pnp
 
     class MyCustomAlgorithm(ResourcesOperation):
         num_wires = 2
@@ -118,7 +121,7 @@ used in a quantum circuit with custom operations without execution.
         MyCustomAlgorithm(wires=[1, 2])
         return qml.expval(qml.Z(1))
 
-    x = np.array(1.23, requires_grad=True)
+    x = pnp.array(1.23, requires_grad=True)
 
     with qml.Tracker(dev) as tracker:
         circuit(x)
@@ -130,9 +133,9 @@ We can examine the resources by accessing the :code:`resources` key:
 num_wires: 3
 num_gates: 7
 depth: 5
-shots: Shots(None)
+shots: Shots(total=100)
 gate_types:
-{"RZ": 1, "CNOT": 2, "Hadamard": 2, "PauliZ": 2}
+{'RZ': 1, 'CNOT': 2, 'Hadamard': 2, 'PauliZ': 2}
 gate_sizes:
 {1: 5, 2: 2}
 """

@@ -107,7 +107,7 @@ def config_path():
 
     **Example**
 
-    >>> config_path()
+    >>> config_path() # doctest: +SKIP
     /home/user/pyenv/lib/python3.10/site-packages/pennylane/logging/log_config.toml
     """
     path = os.path.join(_path, "log_config.toml")
@@ -142,7 +142,6 @@ def edit_system_config(wait_on_close=False):
         with subprocess.Popen((editor, config_path())) as p:
             if wait_on_close:  # Only valid when editor is known
                 p.wait()
-    # pylint:disable = superfluous-parens
     elif (s := platform.system()) in ["Linux", "Darwin"]:
         f_cmd = None
         if s == "Linux":

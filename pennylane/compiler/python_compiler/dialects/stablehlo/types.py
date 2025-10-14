@@ -48,8 +48,6 @@ from pennylane.compiler.python_compiler.xdsl_extras.constraints import (
     NestedTupleOfConstraint,
 )
 
-# pylint: disable=fixme
-
 
 def _create_param_constrained_type(
     base_attr: type, widths: list[int], signedness: Signedness | None = None
@@ -89,8 +87,10 @@ _HLO_INT_OR_PRED_WIDTHS = [1, 2, 4, 8, 16, 32, 64]
 HLO_IntOrPred = _create_param_constrained_type(IntegerType, _HLO_INT_OR_PRED_WIDTHS, None)
 
 
-HLO_AnyIntegerOrIndex: TypeAlias = HLO_Int | IndexType
+HLO_AnyIntegerOrIndex: TypeAlias = IntegerType | IndexType
 HLO_AnyIntegerOrIndexTensor: TypeAlias = TensorType.constr(HLO_AnyIntegerOrIndex)
+
+HLO_DimensionValue: TypeAlias = HLO_Int | IndexType
 
 # Constraint variants for use in unions with ParamAttrConstraint
 HLO_Float: TypeAlias = AnyFloatConstr
@@ -184,7 +184,7 @@ HLO_TensorOrPerAxisQuantizedTensorOrToken: TypeAlias = HLO_AnyTensor | TokenType
 # HLO_AnyTuple : NestedTupleOf<[HLO_AnyTensor, HLO_Token]>
 HLO_AnyTuple = NestedTupleOfConstraint([HLO_AnyTensor, TokenType])
 
-HLO_CustomCallValueType: TypeAlias = HLO_Tensor | TokenType | HLO_AnyTuple
+HLO_CustomCallValue: TypeAlias = HLO_Tensor | TokenType | HLO_AnyTuple
 
 # =============================================================================
 # HLO combined type definitions
@@ -213,6 +213,7 @@ __all__ = [
     "HLO_IntTensor",
     "HLO_AnyIntegerOrIndex",
     "HLO_AnyIntegerOrIndexTensor",
+    "HLO_DimensionValue",
     "HLO_Float",
     "HLO_Float32Or64",
     "HLO_FloatTensor",
@@ -237,7 +238,7 @@ __all__ = [
     "HLO_AnyTensor",
     "HLO_TensorOrToken",
     "HLO_TensorOrPerAxisQuantizedTensorOrToken",
-    "HLO_CustomCallValueType",
+    "HLO_CustomCallValue",
     # Combined types
     "HLO_PredOrIntTensor",
     "HLO_FpOrComplexTensor",
