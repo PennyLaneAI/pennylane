@@ -45,7 +45,7 @@ from pennylane.measurements import (
 from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.templates.subroutines.trotter import _recursive_expression
+from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 
@@ -188,6 +188,7 @@ def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
         warnings.warn("The keyword argument 'cutoff' is not used for the 'tn' method. ")
 
 
+# pylint: disable=unused-argument
 @simulator_tracking
 @single_tape_support
 class DefaultTensor(Device):

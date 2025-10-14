@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains tools for logical resource estimation."""
+
+r"""This module contains tools dedicated to logical resource estimation."""
+
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 from .resources_base import Resources
@@ -42,6 +44,10 @@ from .ops.qubit import (
     RY,
     RZ,
     Rot,
+    MultiRZ,
+    PauliRot,
+    SingleExcitation,
+    QubitUnitary,
 )
 
 from .ops.op_math import (
@@ -61,4 +67,46 @@ from .ops.op_math import (
     Toffoli,
     Adjoint,
     Controlled,
+    Pow,
+    Prod,
+    ChangeOpBasis,
+)
+
+from .templates import (
+    OutOfPlaceSquare,
+    PhaseGradient,
+    OutMultiplier,
+    SemiAdder,
+    QFT,
+    AQFT,
+    BasisRotation,
+    Select,
+    QROM,
+    SelectPauliRot,
+    ControlledSequence,
+    QPE,
+    IterativeQPE,
+    PrepTHC,
+    QubitizeTHC,
+    SelectTHC,
+    TrotterCDF,
+    TrotterProduct,
+    TrotterTHC,
+    TrotterVibrational,
+    TrotterVibronic,
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    IntegerComparator,
+    SingleQubitComparator,
+    TwoQubitComparator,
+    RegisterComparator,
+)
+
+from .compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibronicHamiltonian,
+    VibrationalHamiltonian,
 )

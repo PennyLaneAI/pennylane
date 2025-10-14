@@ -27,7 +27,7 @@ from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
-from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
@@ -42,14 +42,11 @@ _INSTANCES_TO_TEST = [
     (ChangeOpBasis(qml.PauliX(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
-    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True, "heuristic_resources": True}),
-    (
-        qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
-    ),
+    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
+    (qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), {"skip_differentiation": True}),
     (
         qml.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
+        {"skip_differentiation": True},
     ),
     (
         qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
@@ -59,17 +56,11 @@ _INSTANCES_TO_TEST = [
     (qml.Projector([1], 0), {"skip_differentiation": True}),
     (qml.Projector([1, 0], 0), {"skip_differentiation": True}),
     (qml.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
-    (
-        qml.QubitUnitary(np.eye(2), wires=[0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
-    ),
-    (
-        qml.QubitUnitary(np.eye(4), wires=[0, 1]),
-        {"skip_differentiation": True, "heuristic_resources": True},
-    ),
+    (qml.QubitUnitary(np.eye(2), wires=[0]), {"skip_differentiation": True}),
+    (qml.QubitUnitary(np.eye(4), wires=[0, 1]), {"skip_differentiation": True}),
     (
         qml.QubitUnitary(qml.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
+        {"skip_differentiation": True},
     ),
     (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
     (qml.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),

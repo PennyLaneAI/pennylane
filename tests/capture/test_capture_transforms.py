@@ -170,7 +170,7 @@ class TestCaptureTransforms:
             return qml.expval(qml.Z(0))
 
         args = (1.5,)
-        targs = [0, 1]
+        targs = (0, 1)
         tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
 
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)

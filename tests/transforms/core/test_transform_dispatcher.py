@@ -161,21 +161,19 @@ class TestTransformContainer:
     def test_repr(self):
         """Tests for the repr of a transform container."""
         t1 = qml.transforms.core.TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2}
+            qml.transforms.compile, kwargs={"num_passes": 2}
         )
-        assert repr(t1) == "<compile([], {'num_passes': 2})>"
+        assert repr(t1) == "<compile((), {'num_passes': 2})>"
 
     def test_equality(self):
         """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
 
-        t1 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
-        t2 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
-        t3 = TransformContainer(
-            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
-        )
+        t1 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
+        t2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
+        t3 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": [(0, 1), (1, 2)]})
 
-        t5 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
-        t6 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-7,))
+        t5 = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
+        t6 = TransformContainer(qml.transforms.merge_rotations, args=(1e-7,))
 
         # test for equality of identical transformers
         assert t1 == t2
@@ -188,13 +186,14 @@ class TestTransformContainer:
         assert t5 != t1
 
         # Test equality with the same args
-        t5_copy = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        t5_copy = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
         assert t5 == t5_copy
 
+    @pytest.mark.jax  # needs jax to have non-none plxpr transform
     def test_the_transform_container_attributes(self):
         """Test the transform container attributes."""
         container = qml.transforms.core.TransformContainer(
-            first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
+            qml.transform(first_valid_transform), args=[0], kwargs={}
         )
 
         q_transform, args, kwargs, cotransform, plxpr_transform, is_informative, final_transform = (
@@ -202,20 +201,64 @@ class TestTransformContainer:
         )
 
         assert q_transform is first_valid_transform
-        assert args == [0]
+        assert args == (0,)
         assert kwargs == {}
         assert cotransform is None
-        assert plxpr_transform is None
+        assert plxpr_transform is not None  # fallback
         assert not is_informative
         assert not final_transform
 
         assert container.transform is first_valid_transform
-        assert container.args == [0]
+        assert container.args == (0,)
         assert not container.kwargs
         assert container.classical_cotransform is None
-        assert container.plxpr_transform is None
+        assert container.plxpr_transform is not None  # tape fallback
         assert not container.is_informative
         assert not container.final_transform
+
+    def test_dispatch_container(self):
+        """Test that transform containers can be called on objects with their various stored args and kwargs."""
+
+        def postprocessing(results):
+            return results[0]
+
+        @qml.transform
+        def repeat_ops(tape, n, new_ops=()):
+            return (tape.copy(ops=tape.operations * n + list(new_ops)),), postprocessing
+
+        container = TransformContainer(repeat_ops, (3,), {"new_ops": [qml.X(0)]})
+
+        tape = qml.tape.QuantumScript([qml.X(0)])
+        expected = qml.tape.QuantumScript([qml.X(0), qml.X(0), qml.X(0), qml.X(0)])
+        [out], fn = container(tape)
+        assert fn is postprocessing
+        qml.assert_equal(expected, out)
+
+        @qml.qnode(qml.device("default.qubit"))
+        def c():
+            qml.Y(0)
+            return qml.state()
+
+        new_c = container(c)
+        assert container == new_c.transform_program[0]
+
+    def test_construction_fallback(self):
+        """Test that a TransformContainer can still be constructed in the old way."""
+
+        c = TransformContainer(first_valid_transform, is_informative=True)
+
+        # pylint: disable=protected-access
+        assert isinstance(c._transform_dispatcher, TransformDispatcher)
+        assert c.is_informative
+        assert c._transform_dispatcher.is_informative  # pylint: disable=protected-access
+
+    def test_error_if_extra_kwargs_when_dispatcher(self):
+        """Test that a ValueError is raised if extra kwargs are passed when a TransformDispatcher is provided."""
+
+        with pytest.raises(
+            ValueError, match="cannot be passed if a TransformDispatcher is provided"
+        ):
+            _ = TransformContainer(qml.transform(first_valid_transform), is_informative=True)
 
 
 class TestTransformDispatcherExtension:

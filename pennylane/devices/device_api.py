@@ -1091,7 +1091,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
             self._original_device = original_device
 
         def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+            return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
 
         def preprocess(
             self,
@@ -1112,7 +1112,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
 
 def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
     class TransformedDevice(type(original_device)):
-        """A transformed device with updated preprocess method."""
+        """A transformed device with updated preprocess_transforms method."""
 
         def __init__(self, original_device, transform, targs, tkwargs):
             for key, value in original_device.__dict__.items():
@@ -1123,7 +1123,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
             self._original_device = original_device
 
         def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+            return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
 
         def preprocess_transforms(
             self,

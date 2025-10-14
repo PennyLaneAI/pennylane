@@ -20,11 +20,12 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 
-import pennylane as qml
 from pennylane import capture, math
 from pennylane.capture.autograph import wraps
 from pennylane.exceptions import TransformError
+from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
+from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
@@ -60,13 +61,15 @@ def _create_plxpr_fallback_transform(tape_transform):
     # pylint: disable=import-outside-toplevel
     try:
         import jax
+
+        from pennylane.tape import plxpr_to_tape
     except ImportError:
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
 
         def wrapper(*inner_args):
-            tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
+            tape = plxpr_to_tape(jaxpr, consts, *inner_args)
             with capture.pause():
                 tapes, _ = tape_transform(tape, *targs, **tkwargs)
 
@@ -133,6 +136,8 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
     to allow is to be used by singledispatch.
     """
+    #  error out on transform(*targs, **tkwargs)(obj)
+    # in that care, no special dispatch would be found.
     raise TransformError(
         "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
         "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
@@ -251,8 +256,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         """
         return generic_apply_transform(obj, self, *targs, **tkwargs)
 
-    @classmethod
-    def generic_register(cls, arg=None):
+    @staticmethod
+    def generic_register(arg=None):
         """Returns a decorator for registering a default application behavior for a transform for a new class.
 
         Given a special new class, we can register how transforms should apply to them via:
@@ -376,7 +381,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         if self.expand_transform:
             qnode.transform_program.push_back(
                 TransformContainer(
-                    self._expand_transform,
+                    TransformDispatcher(self._expand_transform),
                     args=targs,
                     kwargs=tkwargs,
                     use_argnum=self._use_argnum_in_expand,
@@ -384,13 +389,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
         qnode.transform_program.push_back(
             TransformContainer(
-                self._transform,
+                self,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=self._classical_cotransform,
-                plxpr_transform=self._plxpr_transform,
-                is_informative=self._is_informative,
-                final_transform=self._final_transform,
             )
         )
         return qnode
@@ -411,37 +412,39 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        transform,
-        args=None,
-        kwargs=None,
-        classical_cotransform=None,
-        plxpr_transform=None,
-        is_informative=False,
-        final_transform=False,
-        use_argnum=False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self._transform = transform
-        self._args = args or []
+        transform: TransformDispatcher,
+        args: tuple | list = (),
+        kwargs: None | dict = None,
+        use_argnum: bool = False,
+        **transform_config,
+    ):
+        if not isinstance(transform, TransformDispatcher):
+            transform = TransformDispatcher(transform, **transform_config)
+        elif transform_config:
+            raise ValueError(
+                f"transform_config kwargs {transform_config} cannot be passed if a TransformDispatcher is provided."
+            )
+        self._transform_dispatcher = transform
+        self._args = tuple(args)
         self._kwargs = kwargs or {}
-        self._classical_cotransform = classical_cotransform
-        self._plxpr_transform = plxpr_transform
-        self._is_informative = is_informative
-        self._final_transform = is_informative or final_transform
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
+        return f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
+
+    def __call__(self, obj):
+        return self._transform_dispatcher(obj, *self.args, **self.kwargs)
 
     def __iter__(self):
         return iter(
             (
-                self._transform,
+                self._transform_dispatcher.transform,
                 self._args,
                 self._kwargs,
-                self._classical_cotransform,
-                self._plxpr_transform,
-                self._is_informative,
-                self.final_transform,
+                self._transform_dispatcher._classical_cotransform,
+                self._transform_dispatcher._plxpr_transform,
+                self._transform_dispatcher._is_informative,
+                self._transform_dispatcher.final_transform,
             )
         )
 
@@ -458,43 +461,43 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     @property
-    def transform(self):
+    def transform(self) -> Callable:
         """The stored quantum transform."""
-        return self._transform
+        return self._transform_dispatcher.transform
 
     @property
-    def args(self):
+    def args(self) -> tuple:
         """The stored quantum transform's ``args``."""
         return self._args
 
     @property
-    def kwargs(self):
+    def kwargs(self) -> dict:
         """The stored quantum transform's ``kwargs``."""
         return self._kwargs
 
     @property
-    def classical_cotransform(self):
+    def classical_cotransform(self) -> None | Callable:
         """The stored quantum transform's classical co-transform."""
-        return self._classical_cotransform
+        return self._transform_dispatcher.classical_cotransform
 
     @property
-    def plxpr_transform(self):
+    def plxpr_transform(self) -> None | Callable:
         """The stored quantum transform's PLxPR transform."""
-        return self._plxpr_transform
+        return self._transform_dispatcher.plxpr_transform
 
     @property
-    def is_informative(self):
+    def is_informative(self) -> bool:
         """``True`` if the transform is informative."""
-        return self._is_informative
+        return self._transform_dispatcher.is_informative
 
     @property
-    def final_transform(self):
+    def final_transform(self) -> bool:
         """``True`` if the transform needs to be executed"""
-        return self._final_transform
+        return self._transform_dispatcher.final_transform
 
 
 @TransformDispatcher.generic_register
-def _apply_to_tape(obj: qml.tape.QuantumScript, transform, *targs, **tkwargs):
+def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
@@ -562,21 +565,21 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
             f" For the desired affect, ensure that qjit is applied after {transform}."
         )
 
-    if capture.enabled():
-        return _capture_apply(obj, transform, *targs, **tkwargs)
-
     @functools.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
+        if capture.enabled():
+            return _capture_apply(obj, transform, *targs, **tkwargs)(*args, **kwargs)
+
         # removes the argument to the qfuncs from the active queuing context.
-        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         for l in leaves:
             if isinstance(l, Operator):
-                qml.QueuingManager.remove(l)
+                QueuingManager.remove(l)
 
         with AnnotatedQueue() as q:
             qfunc_output = obj(*args, **kwargs)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
 
         with QueuingManager.stop_recording():
             if transform.is_informative:
@@ -598,12 +601,12 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
         for op in transformed_tape.operations:
             apply(op)
 
-        mps = [qml.apply(mp) for mp in transformed_tape.measurements]
+        mps = [apply(mp) for mp in transformed_tape.measurements]
 
         if not mps:
             return qfunc_output
 
-        if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
+        if isinstance(qfunc_output, MeasurementProcess):
             return tuple(mps) if len(mps) > 1 else mps[0]
 
         if isinstance(qfunc_output, (tuple, list)):

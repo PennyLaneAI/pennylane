@@ -16,6 +16,7 @@ import copy
 import inspect
 import json
 import os
+import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
@@ -131,7 +132,11 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         compute_depth=compute_depth,
     )
 
-    new_qnode = qjit.original_function.update(device=spoofed_dev)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", category=UserWarning, message="The device's shots value does not match "
+        )
+        new_qnode = qjit.original_function.update(device=spoofed_dev)
     new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
@@ -142,7 +147,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         # Execute on null.qubit with resource tracking
         new_qjit(*args, **kwargs)
 
-        with open(_RESOURCE_TRACKING_FILEPATH, "r", encoding="utf-8") as f:
+        with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
         info["resources"] = Resources(
@@ -199,7 +204,7 @@ def specs(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from pennylane import numpy as pnp
 
@@ -218,20 +223,29 @@ def specs(
             qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=4)
             return qml.probs(wires=(0,1))
 
-    >>> qml.specs(circuit)(x, add_ry=False)
-    {'resources': Resources(num_wires=2, num_gates=98, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1, 'Exp': 96}), gate_sizes=defaultdict(<class 'int'>, {1: 97, 2: 1}), depth=98, shots=Shots(total_shots=None, shot_vector=())),
+    >>> from pprint import pprint
+    >>> pprint(qml.specs(circuit)(x, add_ry=False))
+    {'device_name': 'default.qubit',
+    'diff_method': 'parameter-shift',
     'errors': {'SpectralNormError': SpectralNormError(0.42998560822421455)},
-    'num_observables': 1,
-    'num_trainable_params': 1,
-    'num_device_wires': 2,
-    'num_tape_wires': 2,
-    'device_name': 'default.qubit',
-    'level': 'gradient',
+    'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
     'gradient_options': {'shifts': 0.7853981633974483},
     'interface': 'auto',
-    'diff_method': 'parameter-shift',
-    'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
-    'num_gradient_executions': 2}
+    'level': 'gradient',
+    'num_device_wires': 2,
+    'num_gradient_executions': 2,
+    'num_observables': 1,
+    'num_tape_wires': 2,
+    'num_trainable_params': 1,
+    'resources': Resources(num_wires=2,
+                            num_gates=98,
+                            gate_types=defaultdict(<class 'int'>,
+                                                {'CNOT': 1,
+                                                    'Evolution': 96,
+                                                    'RX': 1}),
+                            gate_sizes=defaultdict(<class 'int'>, {1: 97, 2: 1}),
+                            depth=98,
+                            shots=Shots(total_shots=None, shot_vector=()))}
 
     .. details::
         :title: Usage Details
@@ -239,7 +253,7 @@ def specs(
         Here you can see how the number of gates and their types change as we apply different amounts of transforms
         through the ``level`` argument:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
             gradient_kwargs = {"shifts": pnp.pi / 4}
@@ -307,7 +321,7 @@ def specs(
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
         is returned for each resulting tape:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
             H = qml.Hamiltonian([0.2, -0.543], [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)])

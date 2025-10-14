@@ -740,7 +740,7 @@ class TestSnapshotUnsupportedQNode:
         # Make sure shots are overridden correctly
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
+            match="Specifying 'shots' when calling a QNode is deprecated",
         ):
             result = circuit(shots=200)
         finite_shot_result = result[0]
