@@ -564,24 +564,30 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
     # The number of shots is passed as an SSA value operand to the DeviceInitOp
     shots_operand = device_op.shots
     shots_extract_op = shots_operand.owner
-    assert isinstance(shots_extract_op, tensor.ExtractOp), (
-        f"Expected owner of shots operand to be a tensor.ExtractOp but got "
+    assert isinstance(shots_extract_op, (tensor.ExtractOp, arith.ConstantOp)), (
+        f"Expected owner of shots operand to be a tensor.ExtractOp or arith.ConstantOp but got "
         f"{type(shots_extract_op).__name__}"
     )
 
-    # This should be a stablehlo.ConstantOp that stores the values of `shots`
-    shots_constant_op = shots_extract_op.operands[0].owner
-    shots_value_attribute: builtin.DenseIntOrFPElementsAttr = shots_constant_op.properties.get(
-        "value"
-    )
-    assert (
-        shots_value_attribute is not None
-    ), "Cannot get number of shots; the constant op has no 'value' attribute"
+    # This branch is for a stablehlo.ConstantOp that stores the values of `shots`
+    if isinstance(shots_extract_op, tensor.ExtractOp):
+        shots_constant_op = shots_extract_op.operands[0].owner
+        shots_value_attribute: builtin.DenseIntOrFPElementsAttr = shots_constant_op.properties.get(
+            "value"
+        )
+        assert (
+            shots_value_attribute is not None
+        ), "Cannot get number of shots; the constant op has no 'value' attribute"
 
-    shots_int_values = shots_value_attribute.get_values()
-    assert len(shots_int_values) == 1, f"Expected a single shots value, got {len(shots_int_values)}"
+        shots_int_values = shots_value_attribute.get_values()
+        assert (
+            len(shots_int_values) == 1
+        ), f"Expected a single shots value, got {len(shots_int_values)}"
 
-    return shots_int_values[0]
+        return shots_int_values[0]
+    # The following branch for the `shots` from a arith.ConstantOp
+    shots_value_attribute: builtin.IntAttr = shots_extract_op.properties.get("value")
+    return shots_value_attribute.value.data
 
 
 @xdsl_module
