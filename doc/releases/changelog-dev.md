@@ -20,6 +20,9 @@
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
+* The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
+  [(#8460)](https://github.com/PennyLaneAI/pennylane/pull/8460)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>

@@ -585,7 +585,7 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
         ), f"Expected a single shots value, got {len(shots_int_values)}"
 
         return shots_int_values[0]
-    # The following branch for the `shots` from a arith.ConstantOp
+    # The following branch for the `shots` from an arith.ConstantOp
     shots_value_attribute: builtin.IntAttr = shots_extract_op.properties.get("value")
     return shots_value_attribute.value.data
 
