@@ -19,7 +19,7 @@ import platform
 import sys
 import os
 from importlib import metadata
-from importlib.metadata import version
+from importlib.metadata import version, PackageNotFoundError
 from importlib.util import find_spec
 from subprocess import check_output, CalledProcessError, DEVNULL
 from sys import version_info
@@ -40,7 +40,9 @@ def _pkg_location():
     try:
         dist = metadata.distribution("pennylane")
         return os.path.abspath(str(dist.locate_file("")))
-    except Exception: # pylint: disable=broad-exception-caught
+    except PackageNotFoundError:
+        return "(unknown)"
+    except OSError:
         return "(unknown)"
 
 def about():
@@ -85,8 +87,10 @@ def about():
                 lines.append(f"Editable project location: {editable}")
             lines.append("(Installer metadata unavailable)")
             info = "\n".join(lines)
-        except Exception: # pylint: disable=broad-exception-caught
+        except PackageNotFoundError:
             info = "PennyLane version info unavailable (no pip or metadata)"
+        except OSError:
+            info = "PennyLane version info unavailable (metadata read error)"
     print(info)
     print(f"Platform info:           {platform.platform(aliased=True)}")
     print(
