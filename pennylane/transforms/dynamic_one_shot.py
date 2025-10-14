@@ -28,13 +28,12 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MeasurementProcess,
-    MeasurementValue,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     Shots,
     VarianceMP,
 )
+from pennylane.ops import MeasurementValue, MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 

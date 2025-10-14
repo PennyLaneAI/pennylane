@@ -1662,11 +1662,11 @@ class TestMeasurementsEqual:
     def test_mid_measure(self):
         """Test that `MidMeasureMP`s are equal only if their wires
         an id are equal and their `reset` attribute match."""
-        mp = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id")
+        mp = qml.ops.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id")
 
-        mp1 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1]), reset=True, id="test_id")
-        mp2 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=False, id="test_id")
-        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="foo")
+        mp1 = qml.ops.MidMeasureMP(wires=qml.wires.Wires([1]), reset=True, id="test_id")
+        mp2 = qml.ops.MidMeasureMP(wires=qml.wires.Wires([0]), reset=False, id="test_id")
+        mp3 = qml.ops.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="foo")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
@@ -1675,7 +1675,7 @@ class TestMeasurementsEqual:
         assert (
             qml.equal(
                 mp,
-                qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id"),
+                qml.ops.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id"),
             )
             is True
         )

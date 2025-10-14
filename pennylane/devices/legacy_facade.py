@@ -26,7 +26,8 @@ from dataclasses import replace
 import pennylane as qml
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.math import Interface, requires_grad
-from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.measurements import Shots
+from pennylane.ops import MidMeasureMP
 from pennylane.transforms.core.transform_program import TransformProgram
 
 from .device_api import Device

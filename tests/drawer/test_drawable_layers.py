@@ -25,7 +25,7 @@ from pennylane.drawer.drawable_layers import (
     _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
-from pennylane.measurements import MidMeasureMP
+from pennylane.ops import MidMeasureMP
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -185,8 +185,8 @@ class TestDrawableLayers:
         """Test that custom wires do not break the drawing of mid-circuit measurements."""
         mp0 = MidMeasureMP("A", id="foo")
         mp1 = MidMeasureMP("a", id="bar")
-        m0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
-        m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
+        m0 = qml.ops.MeasurementValue([mp0], lambda v: v)
+        m1 = qml.ops.MeasurementValue([mp1], lambda v: v)
 
         def teleport(state):
             qml.StatePrep(state, wires=["A"])

@@ -655,7 +655,7 @@ class TestMidCircuitMeasurements:
         """Test that the preprocessing transform adheres to the specified transform"""
         dev = qml.device("default.qubit")
         mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasureMP(0)], [], shots=shots)
         spy = mocker.spy(expected_transform, "_transform")
 
         _, _ = mid_circuit_measurements(tape, dev, mcm_config)
@@ -668,7 +668,7 @@ class TestMidCircuitMeasurements:
         mcm method is handled by the device"""
         dev = qml.device("default.qubit")
         mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasureMP(0)], [], shots=shots)
 
         (new_tape,), post_processing_fn = mid_circuit_measurements(tape, dev, mcm_config)
 
@@ -680,7 +680,7 @@ class TestMidCircuitMeasurements:
         dev = qml.device("default.qubit")
         shots = None
         mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasureMP(0)], [], shots=shots)
 
         with pytest.raises(
             QuantumFunctionError,

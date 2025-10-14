@@ -22,12 +22,10 @@ import pennylane as qml
 from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
-    MeasurementValue,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
-    get_mcm_predicates,
 )
+from pennylane.ops.mid_measure import MeasurementValue, MidMeasureMP, get_mcm_predicates
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch

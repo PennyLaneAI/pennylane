@@ -103,7 +103,7 @@ class Conditional(SymbolicOp, Operation):
     will apply the :func:`defer_measurements` transform.
 
     Args:
-        expr (qml.measurements.MeasurementValue): the measurement outcome value to consider
+        expr (qml.ops.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
@@ -345,7 +345,7 @@ class CondCallable:
 
 
 def cond(
-    condition: Union["qml.measurements.MeasurementValue", bool],
+    condition: Union["qml.ops.MeasurementValue", bool],
     true_fn: Callable | None = None,
     false_fn: Callable | None = None,
     elifs: Sequence = (),
@@ -386,7 +386,7 @@ def cond(
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[qml.measurements.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
+        condition (Union[qml.ops.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
@@ -641,7 +641,7 @@ def cond(
 
         return cond_func
 
-    if not isinstance(condition, qml.measurements.MeasurementValue):
+    if not isinstance(condition, qml.ops.MeasurementValue):
         # The condition is not a mid-circuit measurement. This will also work
         # when the condition is a mid-circuit measurement but qml.capture.enabled()
         if true_fn is None:
@@ -691,7 +691,7 @@ def cond(
                 raise ConditionalTransformError(with_meas_err)
 
             for op in qscript.operations:
-                if isinstance(op, qml.measurements.MidMeasureMP):
+                if isinstance(op, qml.ops.MidMeasureMP):
                     raise ConditionalTransformError(with_meas_err)
                 Conditional(condition, op)
 
@@ -705,7 +705,7 @@ def cond(
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
-                    if isinstance(op, qml.measurements.MidMeasureMP):
+                    if isinstance(op, qml.ops.MidMeasureMP):
                         raise ConditionalTransformError(with_meas_err)
                     Conditional(inverted_condition, op)
 
@@ -802,7 +802,7 @@ def _get_cond_qfunc_prim():
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.
         mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, qml.measurements.MeasurementValue)
+            pred for pred in conditions[:-1] if isinstance(pred, qml.ops.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions) - 1:
@@ -814,7 +814,7 @@ def _get_cond_qfunc_prim():
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]
-            if isinstance(pred, qml.measurements.MeasurementValue):
+            if isinstance(pred, qml.ops.MeasurementValue):
 
                 with qml.queuing.AnnotatedQueue() as q:
                     out = qml.capture.eval_jaxpr(jaxpr, consts, *args)

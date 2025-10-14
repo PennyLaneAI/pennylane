@@ -16,8 +16,8 @@ This module contains some useful utility functions for circuit drawing.
 """
 import numpy as np
 
-from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.ops import Conditional, Controlled
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasureMP
 
 
 def default_wire_map(tape):

@@ -27,8 +27,7 @@ import pennylane as qml
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.exceptions import DeviceError
-from pennylane.measurements import MeasurementValue, MidMeasureMP
-from pennylane.ops import Controlled
+from pennylane.ops import Controlled, MeasurementValue, MidMeasureMP
 
 
 def test_broadcasted_postselection(mocker):
@@ -1574,14 +1573,14 @@ class TestQubitReuseAndReset:
             # Set measurement_ids so that the order of wires in combined
             # measurement values is consistent
 
-            mp0 = qml.measurements.MidMeasureMP(0, reset=True, id=0)
-            m0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
+            mp0 = qml.ops.MidMeasureMP(0, reset=True, id=0)
+            m0 = qml.ops.MeasurementValue([mp0], lambda v: v)
             qml.cond(~m0, qml.RX)(x, 1)
-            mp1 = qml.measurements.MidMeasureMP(1, reset=True, id=1)
-            m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
+            mp1 = qml.ops.MidMeasureMP(1, reset=True, id=1)
+            m1 = qml.ops.MeasurementValue([mp1], lambda v: v)
             qml.cond(m0 & m1, qml.Hadamard)(0)
-            mp2 = qml.measurements.MidMeasureMP(0, id=2)
-            m2 = qml.measurements.MeasurementValue([mp2], lambda v: v)
+            mp2 = qml.ops.MidMeasureMP(0, id=2)
+            m2 = qml.ops.MeasurementValue([mp2], lambda v: v)
             qml.cond(m1 | m2, qml.RY)(y, 2)
             return qml.expval(qml.PauliZ(2))
 

@@ -22,9 +22,8 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import math, ops
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasureMP
 
 SQRT2INV = 1 / math.sqrt(2)
 

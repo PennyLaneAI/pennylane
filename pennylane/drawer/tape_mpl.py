@@ -27,7 +27,6 @@ from functools import singledispatch
 from typing import TYPE_CHECKING
 
 from pennylane import ops
-from pennylane.measurements import MidMeasureMP
 
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
@@ -156,7 +155,7 @@ def _(op: ops.WireCut, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: MidMeasureMP, drawer, layer, _):
+def _(op: ops.MidMeasureMP, drawer, layer, _):
     text = None if op.postselect is None else str(int(op.postselect))
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
 
@@ -298,7 +297,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
-        if any(isinstance(o, MidMeasureMP) and o.reset for o in layer):
+        if any(isinstance(o, ops.MidMeasureMP) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
     bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)

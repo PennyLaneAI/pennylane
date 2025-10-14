@@ -31,9 +31,8 @@ from pennylane.capture.primitives import (
     measure_prim,
     qnode_prim,
 )
-from pennylane.measurements import MeasurementValue, get_mcm_predicates, measure
-from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.operation import Operator
+from pennylane.ops.mid_measure import MeasurementValue, MidMeasureMP, get_mcm_predicates, measure
 from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript

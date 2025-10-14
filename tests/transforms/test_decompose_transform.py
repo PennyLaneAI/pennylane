@@ -21,9 +21,8 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasureMP
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
@@ -88,9 +87,9 @@ class TestDecompose:
         ),
         ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None),
         (
-            [qml.measurements.MidMeasureMP(0)],
+            [qml.ops.MidMeasureMP(0)],
             {},
-            [qml.measurements.MidMeasureMP(0)],
+            [qml.ops.MidMeasureMP(0)],
             {
                 "type": TypeError,
                 "msg": "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
@@ -99,9 +98,9 @@ class TestDecompose:
             },
         ),
         (
-            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
+            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasureMP(0)],
             {qml.Toffoli},
-            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
+            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasureMP(0)],
             {
                 "type": UserWarning,
                 "msg": "MidMeasureMP",

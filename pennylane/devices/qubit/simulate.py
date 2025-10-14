@@ -29,15 +29,14 @@ from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     ShotCopies,
     Shots,
     VarianceMP,
-    find_post_processed_mcms,
 )
 from pennylane.operation import StatePrepBase
+from pennylane.ops import MidMeasureMP
 from pennylane.tape import QuantumScript
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
@@ -49,6 +48,26 @@ from .sampling import jax_random_split, measure_with_samples
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+def _find_post_processed_mcms(circuit):
+    """Return the subset of mid-circuit measurements which are required for post-processing.
+
+    This includes any mid-circuit measurement that is post-selected or the object of a terminal
+    measurement.
+    """
+    post_processed_mcms = {
+        op
+        for op in circuit.operations
+        if isinstance(op, MidMeasureMP) and op.postselect is not None
+    }
+    for m in circuit.measurements:
+        if isinstance(m.mv, list):
+            for mv in m.mv:
+                post_processed_mcms = post_processed_mcms | set(mv.measurements)
+        elif m.mv is not None:
+            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
+    return post_processed_mcms
 
 
 class TreeTraversalStack:
@@ -440,7 +459,7 @@ def simulate_tree_mcm(
     n_mcms = len(mcms) - 1
     # We obtain `measured_mcms_indices`, the list of MCMs which require post-processing:
     # either as requested by terminal measurements or post-selection
-    measured_mcms = find_post_processed_mcms(circuit)
+    measured_mcms = _find_post_processed_mcms(circuit)
     measured_mcms_indices = [i for i, mcm in enumerate(mcms[1:]) if mcm in measured_mcms]
     # `mcm_samples` is a register of MCMs. It is necessary to correctly keep track of
     # correlated MCM values which may be requested by terminal measurements.

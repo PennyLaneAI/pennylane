@@ -34,7 +34,6 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MeasurementProcess,
-    MidMeasureMP,
     SampleMeasurement,
     ShadowExpvalMP,
     Shots,
@@ -42,6 +41,7 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.ops import MidMeasureMP
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import (

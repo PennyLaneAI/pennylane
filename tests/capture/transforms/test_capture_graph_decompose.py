@@ -489,7 +489,7 @@ class TestDecomposeInterpreterGraphEnabled:
 
         gate_counts = defaultdict(int)
         for op in result.operations:
-            if isinstance(op, qml.measurements.MidMeasureMP):
+            if isinstance(op, qml.ops.MidMeasureMP):
                 continue
             gate_counts[type(op)] += 1
         assert gate_counts == expected_gate_count

@@ -17,8 +17,8 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import MeasurementValue, MidMeasureMP, measure
 from pennylane.operation import Operator
+from pennylane.ops import MeasurementValue, MidMeasureMP, measure
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,

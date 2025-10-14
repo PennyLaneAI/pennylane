@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
+from pennylane.ops.mid_measure import MeasurementValue, MidMeasureMP
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp

@@ -817,7 +817,7 @@ class TestPytree:
             f({"x": 0.5, "wire": 0})
 
         assert len(q) == 2
-        assert isinstance(q.queue[0], qml.measurements.MidMeasureMP)
+        assert isinstance(q.queue[0], qml.ops.MidMeasureMP)
         assert isinstance(q.queue[1], qml.ops.Conditional)
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 

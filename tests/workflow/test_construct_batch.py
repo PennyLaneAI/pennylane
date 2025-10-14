@@ -464,7 +464,7 @@ class TestConstructBatch:
 
     @pytest.mark.parametrize(
         "mcm_method, expected_op",
-        [("deferred", qml.CNOT), ("tree-traversal", qml.measurements.MidMeasureMP)],
+        [("deferred", qml.CNOT), ("tree-traversal", qml.ops.MidMeasureMP)],
     )
     def test_mcm_method(self, mcm_method, expected_op):
         """Test that the tape is constructed using the mcm_method specified on the QNode"""

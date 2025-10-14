@@ -1199,7 +1199,7 @@ class TestNativeMidCircuitMeasurements:
     class MCMDevice(DefaultQubitLegacy):
         def apply(self, *args, **kwargs):
             for op in args[0]:
-                if isinstance(op, qml.measurements.MidMeasureMP):
+                if isinstance(op, qml.ops.MidMeasureMP):
                     kwargs["mid_measurements"][op] = 0
 
         @classmethod

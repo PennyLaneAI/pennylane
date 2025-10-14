@@ -24,7 +24,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.ops.mid_measure import MidMeasureMP
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
@@ -118,7 +118,7 @@ class TestCollectOpsandMeas:
         obj(f)()
 
         assert len(obj.state["ops"]) == 1
-        assert isinstance(obj.state["ops"][0], qml.measurements.MidMeasureMP)
+        assert isinstance(obj.state["ops"][0], qml.ops.MidMeasureMP)
         assert obj.state["ops"][0].wires == qml.wires.Wires(0)
 
         assert isinstance(obj.state["measurements"][0], qml.measurements.SampleMP)
@@ -141,7 +141,7 @@ class TestCollectOpsandMeas:
         mv = obj(f)(x)
 
         assert len(obj.state["ops"]) == 2
-        assert isinstance(obj.state["ops"][0], qml.measurements.MidMeasureMP)
+        assert isinstance(obj.state["ops"][0], qml.ops.MidMeasureMP)
         assert mv.measurements[0] is obj.state["ops"][0]
 
         qml.assert_equal(obj.state["ops"][1], qml.ops.Conditional(mv, qml.RX(x, 2)))
@@ -392,7 +392,7 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(tape.operations) == 1
-        assert isinstance(tape.operations[0], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[0], qml.ops.MidMeasureMP)
         assert tape.operations[0].wires == qml.wires.Wires(0)
 
         assert isinstance(tape.measurements[0], qml.measurements.SampleMP)
@@ -415,7 +415,7 @@ class TestPlxprToTape:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 2
-        assert isinstance(tape.operations[0], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[0], qml.ops.MidMeasureMP)
         assert isinstance(tape.measurements[0], qml.measurements.SampleMP)
         mp = tape.measurements[0]
         assert mp.mv.measurements[0] is tape.operations[0]

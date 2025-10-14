@@ -624,7 +624,7 @@ class TestIntegration:
         spy.assert_not_called()
         tape = qml.workflow.construct_tape(circuit)()
         assert len(tape.operations) == 2
-        assert isinstance(tape.operations[1], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[1], qml.ops.MidMeasureMP)
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):

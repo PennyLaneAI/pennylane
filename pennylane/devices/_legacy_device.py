@@ -29,7 +29,6 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     ShadowExpvalMP,
@@ -37,7 +36,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Operation, Operator, StatePrepBase
-from pennylane.ops import LinearCombination, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, MidMeasureMP, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
 from pennylane.wires import Wires

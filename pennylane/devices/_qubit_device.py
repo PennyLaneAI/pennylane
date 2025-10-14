@@ -38,8 +38,6 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
-    MeasurementValue,
-    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     SampleMeasurement,
@@ -52,6 +50,7 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.operation import Operation, operation_derivative
+from pennylane.ops import MeasurementValue, MidMeasureMP
 from pennylane.resource import Resources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires

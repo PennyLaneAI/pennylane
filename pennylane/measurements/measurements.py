@@ -33,6 +33,7 @@ from pennylane.exceptions import (
 )
 from pennylane.math.utils import is_abstract
 from pennylane.operation import Operator, _get_abstract_operator
+from pennylane.ops import MeasurementValue
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
@@ -43,7 +44,6 @@ from .capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-from .measurement_value import MeasurementValue
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):

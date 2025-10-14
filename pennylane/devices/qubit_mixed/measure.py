@@ -25,11 +25,10 @@ from pennylane.measurements import (
     DensityMatrixMP,
     ExpectationMP,
     MeasurementProcess,
-    MeasurementValue,
     StateMeasurement,
     StateMP,
 )
-from pennylane.ops import LinearCombination, Sum
+from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires

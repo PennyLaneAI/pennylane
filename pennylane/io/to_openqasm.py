@@ -19,9 +19,8 @@ from functools import singledispatch, wraps
 from typing import Any, overload
 
 from pennylane.devices.preprocess import decompose
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasureMP
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.wires import Wires, WiresLike

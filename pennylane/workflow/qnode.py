@@ -31,7 +31,8 @@ from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
-from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
+from pennylane.measurements import Shots, ShotsLike
+from pennylane.ops import MidMeasureMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram

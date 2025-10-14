@@ -272,14 +272,12 @@ from pennylane.exceptions import MeasurementShapeError
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval
-from .measurement_value import MeasurementValue
 from .measurements import (
     MeasurementProcess,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
 )
-from .mid_measure import MidMeasureMP, find_post_processed_mcms, get_mcm_predicates, measure
 from .mutual_info import MutualInfoMP, mutual_info
 from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
@@ -289,3 +287,25 @@ from .shots import ShotCopies, Shots, ShotsLike, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
+
+
+# pylint: disable=import-outside-toplevel
+def __getattr__(name):
+    import pennylane.ops.mid_measure as ops_measure
+    from pennylane.exceptions import PennyLaneDeprecationWarning
+    import warnings
+
+    if name in {"measure", "MidMeasureMP", "MeasurementValue"}:
+        warnings.warn(
+            f"{name} has been moved from the measurements module to pennylane.ops.",
+            PennyLaneDeprecationWarning,
+        )
+        return getattr(ops_measure, name)
+    if name in {"find_postprocessed_mcms", "get_mcm_predicates"}:
+        warnings.warn(
+            f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",
+            PennyLaneDeprecationWarning,
+        )
+        return getattr(ops_measure, name)
+
+    raise AttributeError(f"module 'pennylane.measurements' has no attribute '{name}'")
