@@ -16,16 +16,22 @@ from __future__ import annotations
 
 import math
 from functools import singledispatch
+from typing import Union
+
+import numpy as np
 
 import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.operation import Operation
+from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp
+from pennylane.ops.op_math.pow import Pow, PowOperation
+from pennylane.ops.op_math.prod import Prod
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from .ops.op_math.symbolic import Prod
 from .resource_operator import ResourceOperator
 
 
@@ -57,7 +63,7 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
             return _map_to_resource_op(decomp[0])
 
         decomp_wires = Wires.all_wires([d_op.wires for d_op in decomp])
-        return Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=decomp_wires)
+        return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=decomp_wires)
 
     raise NotImplementedError(
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."
@@ -237,12 +243,12 @@ def _(op: qtemps.OutMultiplier):
 
 @_map_to_resource_op.register
 def _(op: qtemps.SemiAdder):
+    x_wires = op.hyperparameters["x_wires"]
+    y_wires = op.hyperparameters["y_wires"]
+
     return re_temps.SemiAdder(
-        max_register_size=max(
-            len(op.hyperparameters["x_wires"]),
-            len(op.hyperparameters["y_wires"]),
-        ),
-        wires=op.wires,
+        max_register_size=max(len(x_wires), len(y_wires)),
+        wires=Wires.all_wires([x_wires, y_wires]),
     )
 
 
@@ -351,11 +357,18 @@ def _(op: qtemps.MPSPrep):
 
 @_map_to_resource_op.register
 def _(op: qtemps.QROMStatePreparation):
-    precision = math.pi / (2 ** len(op.hyperparameters["precision_wires"]))
+    op_wires = op.hyperparameters["input_wires"]
+    prec_wires = op.hyperparameters["precision_wires"]
+
+    precision = math.pi / (2 ** len(prec_wires))
+    phases = np.angle(op.state_vector) % (2 * math.pi)
+    positive_and_real = np.allclose(phases, 0.0)
+
     return re_temps.QROMStatePreparation(
-        num_state_qubits=len(op.wires),
+        num_state_qubits=len(op_wires),
         precision=precision,
-        wires=op.wires,
+        positive_and_real=positive_and_real,
+        wires=op_wires,
     )
 
 
@@ -366,4 +379,49 @@ def _(op: qops.IntegerComparator):
         register_size=len(op.wires) - 1,
         geq=op.hyperparameters["geq"],
         wires=op.wires,
+    )
+
+
+# Symbolic Ops:
+@_map_to_resource_op.register
+def _(op: qops.ChangeOpBasis):
+    uncompute, target, compute = op.operands
+    return re_ops.ChangeOpBasis(
+        _map_to_resource_op(compute),
+        _map_to_resource_op(target),
+        _map_to_resource_op(uncompute),
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: Prod):
+    return re_ops.Prod(
+        res_ops=[_map_to_resource_op(factor) for factor in op.operands],
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: Union[Adjoint, AdjointOperation]):
+    return re_ops.Adjoint(
+        base_op=_map_to_resource_op(op.base),
+    )
+
+
+@_map_to_resource_op.register
+def _(op: Union[Pow, PowOperation]):
+    return re_ops.Pow(_map_to_resource_op(op.base), pow_z=op.z)
+
+
+@_map_to_resource_op.register
+def _(op: Union[Controlled, ControlledOp]):
+    ctrl_wires = op.control_wires
+    num_zero_ctrl = sum(1 if val == False else 0 for val in op.control_values)
+
+    return re_ops.Controlled(
+        base_op=_map_to_resource_op(op.base),
+        num_ctrl_wires=len(ctrl_wires),
+        num_zero_ctrl=num_zero_ctrl,
+        wires=ctrl_wires,
     )
