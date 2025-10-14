@@ -417,7 +417,7 @@ def _(op: Union[Pow, PowOperation]):
 @_map_to_resource_op.register
 def _(op: Union[Controlled, ControlledOp]):
     ctrl_wires = op.control_wires
-    num_zero_ctrl = sum(1 if val == False else 0 for val in op.control_values)
+    num_zero_ctrl = sum(1 if bool(val) is False else 0 for val in op.control_values)
 
     return re_ops.Controlled(
         base_op=_map_to_resource_op(op.base),
