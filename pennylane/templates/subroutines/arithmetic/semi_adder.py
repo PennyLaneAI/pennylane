@@ -311,7 +311,7 @@ add_decomps(SemiAdder, _semiadder)
 
 def _controlled_semi_adder_resource(
     base_class, base_params, num_control_wires, num_zero_control_values, **kwargs
-):
+):  # pylint: disable=unused-argument
     # Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     # In the case where len(x_wires) < len(y_wires), this is an upper bound.
     num_y_wires = base_params["num_y_wires"]
