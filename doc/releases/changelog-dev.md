@@ -24,6 +24,11 @@
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
+* The :class:`~pennylane.devices.LegacyDeviceFacade` is slightly refactored to implement `setup_execution_config` and `preprocess_transforms`
+  separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
+  from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`.
+  [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -32,5 +37,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
