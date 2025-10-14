@@ -22,9 +22,9 @@ from itertools import repeat
 
 import tomlkit as toml
 
-import pennylane as qml
 from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.ops import CompositeOp, SymbolicOp
 
 ALL_SUPPORTED_SCHEMAS = [3]
 
@@ -407,7 +407,7 @@ def update_device_capabilities(
 
 def observable_stopping_condition_factory(
     capabilities: DeviceCapabilities,
-) -> Callable[[qml.operation.Operator], bool]:
+) -> Callable[[Operator], bool]:
     """Returns a default observable validation check from a capabilities object.
 
     The returned function checks if an observable is supported, for composite and nested
@@ -415,15 +415,15 @@ def observable_stopping_condition_factory(
 
     """
 
-    def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+    def observable_stopping_condition(obs: Operator) -> bool:
 
         if not capabilities.supports_observable(obs.name):
             return False
 
-        if isinstance(obs, qml.ops.CompositeOp):
+        if isinstance(obs, CompositeOp):
             return all(observable_stopping_condition(op) for op in obs.operands)
 
-        if isinstance(obs, qml.ops.SymbolicOp):
+        if isinstance(obs, SymbolicOp):
             return observable_stopping_condition(obs.base)
 
         return True

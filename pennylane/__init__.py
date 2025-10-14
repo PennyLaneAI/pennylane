@@ -75,7 +75,7 @@ from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.configuration import Configuration
+from pennylane.configuration import Configuration, default_config
 from pennylane.registers import registers
 from pennylane.measurements import (
     counts,
@@ -213,9 +213,6 @@ if _find_spec("jax") is not None:
             "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
             RuntimeWarning,
         )
-
-# Look for an existing configuration file
-default_config = Configuration("config.toml")
 
 
 def __getattr__(name):

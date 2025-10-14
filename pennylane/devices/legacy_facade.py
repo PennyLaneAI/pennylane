@@ -23,17 +23,27 @@ from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
 
-import pennylane as qml
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
-from pennylane.math import Interface, requires_grad
-from pennylane.measurements import MidMeasureMP, Shots
-from pennylane.transforms.core.transform_program import TransformProgram
+from pennylane.exceptions import (
+    DecompositionUndefinedError,
+    DeviceError,
+    PennyLaneDeprecationWarning,
+)
+from pennylane.math import Interface, get_interface, requires_grad
+from pennylane.measurements import ExpectationMP, MidMeasureMP, Shots
+from pennylane.operation import Operator
+from pennylane.ops import QubitUnitary, SparseHamiltonian
+from pennylane.tape import QuantumScript
+from pennylane.transforms import broadcast_expand, defer_measurements
+from pennylane.transforms.core import TransformProgram, transform
+from pennylane.wires import Wires
 
+from ._legacy_device import Device as LegacyDevice
 from .device_api import Device
 from .execution_config import ExecutionConfig
 from .modifiers import single_tape_support
 from .preprocess import (
     decompose,
+    mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
     validate_measurements,
@@ -67,7 +77,7 @@ def _set_shots(device, shots):
     >>> _set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
-    shots = qml.measurements.Shots(shots)
+    shots = Shots(shots)
     shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:
         yield
@@ -89,22 +99,22 @@ def null_postprocessing(results):
     return results[0]
 
 
-@qml.transform
+@transform
 def legacy_device_expand_fn(tape, device):
     """Turn the ``expand_fn`` from the legacy device interface into a transform."""
     new_tape = _set_shots(device, tape.shots)(device.expand_fn)(tape)
     return (new_tape,), null_postprocessing
 
 
-@qml.transform
+@transform
 def legacy_device_batch_transform(tape, device):
     """Turn the ``batch_transform`` from the legacy device interface into a transform."""
     return _set_shots(device, tape.shots)(device.batch_transform)(tape)
 
 
-def adjoint_ops(op: qml.operation.Operator) -> bool:
+def adjoint_ops(op: Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    if isinstance(op, qml.QubitUnitary) and not any(requires_grad(d) for d in op.data):
+    if isinstance(op, QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True
     return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0 or (op.num_params == 1 and op.has_generator)
@@ -121,14 +131,14 @@ def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
     )
 
     def accepted_adjoint_measurements(mp):
-        return isinstance(mp, qml.measurements.ExpectationMP)
+        return isinstance(mp, ExpectationMP)
 
     program.add_transform(
         validate_measurements,
         analytic_measurements=accepted_adjoint_measurements,
         name=name,
     )
-    program.add_transform(qml.transforms.broadcast_expand)
+    program.add_transform(broadcast_expand)
     program.add_transform(validate_adjoint_trainable_params)
 
 
@@ -161,16 +171,16 @@ class LegacyDeviceFacade(Device):
     """
 
     # pylint: disable=super-init-not-called
-    def __init__(self, device: "qml.devices.LegacyDevice"):
+    def __init__(self, device: LegacyDevice):
         if isinstance(device, type(self)):
             raise RuntimeError("An already-facaded device can not be wrapped in a facade again.")
 
-        if not isinstance(device, qml.devices.LegacyDevice):
+        if not isinstance(device, LegacyDevice):
             raise ValueError(
                 "The LegacyDeviceFacade only accepts a device of type qml.devices.LegacyDevice."
             )
 
-        self._device = device
+        self._device: LegacyDevice = device
         self.config_filepath = getattr(self._device, "config_filepath", None)
 
         if self._device.shots:
@@ -213,7 +223,7 @@ class LegacyDeviceFacade(Device):
         return self._device
 
     @property
-    def wires(self) -> qml.wires.Wires:
+    def wires(self) -> Wires:
         return self._device.wires
 
     # pylint: disable=protected-access
@@ -236,7 +246,7 @@ class LegacyDeviceFacade(Device):
             execution_config = ExecutionConfig()
 
         execution_config = self._setup_execution_config(execution_config)
-        program = qml.transforms.core.TransformProgram()
+        program = TransformProgram()
 
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
@@ -246,17 +256,17 @@ class LegacyDeviceFacade(Device):
 
         if self._device.capabilities().get("supports_mid_measure", False):
             program.add_transform(
-                qml.devices.preprocess.mid_circuit_measurements,
+                mid_circuit_measurements,
                 device=self,
                 mcm_config=execution_config.mcm_config,
             )
         else:
-            program.add_transform(qml.defer_measurements, allow_postselect=False)
+            program.add_transform(defer_measurements, allow_postselect=False)
 
         return program, execution_config
 
     def _setup_backprop_config(self, execution_config):
-        tape = qml.tape.QuantumScript()
+        tape = QuantumScript()
         if not self._validate_backprop_method(tape):
             raise DeviceError("device does not support backprop.")
         if execution_config.use_device_gradient is None:
@@ -264,7 +274,7 @@ class LegacyDeviceFacade(Device):
         return execution_config
 
     def _setup_adjoint_config(self, execution_config):
-        tape = qml.tape.QuantumScript([], [])
+        tape = QuantumScript([], [])
         if not self._validate_adjoint_method(tape):
             raise DeviceError("device does not support device derivatives")
         updated_values = {
@@ -278,7 +288,7 @@ class LegacyDeviceFacade(Device):
         return replace(execution_config, **updated_values)
 
     def _setup_device_config(self, execution_config):
-        tape = qml.tape.QuantumScript([], [])
+        tape = QuantumScript([], [])
 
         if not self._validate_device_method(tape):
             raise DeviceError("device does not support device derivatives")
@@ -292,7 +302,7 @@ class LegacyDeviceFacade(Device):
 
     def _setup_execution_config(self, execution_config):
         if execution_config.gradient_method == "best":
-            tape = qml.tape.QuantumScript([], [])
+            tape = QuantumScript([], [])
             if self._validate_device_method(tape):
                 config = replace(execution_config, gradient_method="device")
                 return self._setup_execution_config(config)
@@ -311,7 +321,7 @@ class LegacyDeviceFacade(Device):
         return execution_config
 
     def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
-        circuit = qml.tape.QuantumScript([], [], shots=self.shots) if circuit is None else circuit
+        circuit = QuantumScript([], [], shots=self.shots) if circuit is None else circuit
 
         if execution_config is None or execution_config.gradient_method == "best":
             validation_methods = (
@@ -333,10 +343,10 @@ class LegacyDeviceFacade(Device):
         if tape.shots:
             return False
         params = tape.get_parameters(trainable_only=False)
-        if (interface := qml.math.get_interface(*params)) != "numpy":
+        if (interface := get_interface(*params)) != "numpy":
             interface = Interface(interface).value
 
-        if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
+        if tape and any(isinstance(m.obs, SparseHamiltonian) for m in tape.measurements):
             return False
 
         # determine if the device supports backpropagation
@@ -369,7 +379,7 @@ class LegacyDeviceFacade(Device):
         try:
             program((tape,))
         except (
-            qml.operation.DecompositionUndefinedError,
+            DecompositionUndefinedError,
             DeviceError,
             AttributeError,
         ):
