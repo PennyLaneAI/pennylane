@@ -76,7 +76,7 @@ class TrotterProduct(ResourceOperator):
     For more details, see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators
+        first_order_expansion (list[~pennylane.estimator.ResourceOperator]): A list of operators
             constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
         num_steps (int): number of Trotter steps to perform
         order (int): order of the Suzuki-Trotter approximation; must be ``1`` or an even number

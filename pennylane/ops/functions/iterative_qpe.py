@@ -41,10 +41,9 @@ def iterative_qpe(base, aux_wire, iters):
 
     .. code-block:: python
 
-        from functools import partial
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=42)
 
-        @partial(qml.set_shots, shots=5)
+        @qml.set_shots(5)
         @qml.qnode(dev)
         def circuit():
 
@@ -56,26 +55,23 @@ def iterative_qpe(base, aux_wire, iters):
 
             return qml.sample(measurements)
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[0 0 1]
-         [0 0 1]
-         [0 0 1]
-         [1 1 1]
-         [0 0 1]]
+    >>> result = circuit()
+    >>> assert result.shape == (5, 3)
+    >>> print(result)
+    [[0 0 1]
+     [0 0 1]
+     [0 0 1]
+     [0 0 1]
+     [0 0 1]]
 
     The output is an array of size ``(number of shots, number of iterations)``.
 
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit, max_length=150)())
-
-        0: ──X─╭RZ(2.00)⁴─────────────────╭RZ(2.00)²────────────────────────────╭RZ(2.00)¹────────────────────────────────────┤
-        1: ──H─╰●──────────H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤
-                               ╚══════════════════════╩══════════════║══════════════════════║══════════╩══════════════║═══════╡ ╭Sample[MCM]
-                                                                     ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
-                                                                                                                      ╚═══════╡ ╰Sample[MCM]
+    >>> print(qml.draw(circuit, max_length=150)())
+    0: ──X─╭RZ(2.00)⁴─────────────────╭RZ(2.00)²────────────────────────────╭RZ(2.00)¹────────────────────────────────────┤
+    1: ──H─╰●──────────H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤
+                           ╚══════════════════════╩══════════════║══════════════════════║══════════╩══════════════║═══════╡ ╭Sample[MCM]
+                                                                 ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
+                                                                                                                  ╚═══════╡ ╰Sample[MCM]
     """
     if qml.capture.enabled():
         measurements = qml.math.zeros(iters, dtype=int, like="jax")

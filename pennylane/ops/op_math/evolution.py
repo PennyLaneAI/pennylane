@@ -55,19 +55,13 @@ class Evolution(Exp):
         Instead of computing the Suzuki-Trotter product approximation as:
 
         >>> qml.ops.op_math.Evolution(H_flat, num_steps=2).decomposition()
-        [RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1]),
-        RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1])]
+        [RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1]), RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1])]
 
         The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
         >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
         >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
-        [RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1]),
-        RX(0.5, wires=[0]),
-        PauliRot(-0.6, XY, wires=[0, 1])]
+        [RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1]), RX(np.float64(0.5), wires=[0]), PauliRot(-0.6, XY, wires=[0, 1])]
 
     **Usage Details**
 
@@ -166,8 +160,11 @@ class Evolution(Exp):
 
         we get the generator
 
+        >>> U = qml.ops.op_math.Evolution(0.5 * qml.Y(0) + qml.Z(0) @ qml.X(1), 1)
+        >>> print(U)
+        Evolution(-1j 0.5 * Y(0) + Z(0) @ X(1))
         >>> U.generator()
-          0.5 * Y(0) + Z(0) @ X(1)
+        -1 * (0.5 * Y(0) + Z(0) @ X(1))
 
         """
         if not self.base.is_hermitian:
