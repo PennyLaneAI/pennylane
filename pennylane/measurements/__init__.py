@@ -311,7 +311,7 @@ def __getattr__(name):
         #    PennyLaneDeprecationWarning,
         # )
         return getattr(ops_measure, name)
-    if name in {"find_postprocessed_mcms", "get_mcm_predicates"}:
+    if name in {"find_post_processed_mcms", "get_mcm_predicates"}:
         # warnings.warn(
         #    f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",
         #    PennyLaneDeprecationWarning,
