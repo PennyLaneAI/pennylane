@@ -54,7 +54,7 @@ class Adjoint(ResourceOperator):
 
     We can see how the resources differ by choosing a suitable gateset and estimating resources:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> gate_set = {
     ...     "SWAP",
     ...     "Adjoint(SWAP)",
@@ -151,14 +151,18 @@ class Adjoint(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
 
         try:
             return base_class.adjoint_resource_decomp(base_params)
         except ResourcesUndefinedError:
             gate_lst = []
-            decomp = base_class.resource_decomp(**base_params, **kwargs)
+            decomp = base_class.resource_decomp(**base_params)
 
             for gate in decomp[::-1]:  # reverse the order
                 gate_lst.append(_apply_adj(gate))
@@ -217,7 +221,7 @@ class Controlled(ResourceOperator):
 
     The controlled operation can be constructed like this:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> x = qre.X()
     >>> cx = qre.Controlled(x, num_ctrl_wires=1, num_zero_ctrl=0)
     >>> ccx = qre.Controlled(x, num_ctrl_wires=2, num_zero_ctrl=2)
@@ -355,8 +359,12 @@ class Controlled(ResourceOperator):
         """
 
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
+
         try:
             return base_class.controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
@@ -371,7 +379,7 @@ class Controlled(ResourceOperator):
             x = resource_rep(qre.X)
             gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
-        decomp = base_class.resource_decomp(**base_params, **kwargs)
+        decomp = base_class.resource_decomp(**base_params)
         for action in decomp:
             if isinstance(action, GateCount):
                 gate = action.gate
@@ -461,7 +469,7 @@ class Pow(ResourceOperator):
 
     The operation raised to a power :math:`z` can be constructed like this:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> z = qre.Z()
     >>> z_2 = qre.Pow(z, 2)
     >>> z_5 = qre.Pow(z, 5)
@@ -560,8 +568,11 @@ class Pow(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        base_params = {key: value for key, value in base_params.items() if value is not None}
-        kwargs = {key: value for key, value in kwargs.items() if key not in base_params}
+        base_params.update(
+            (key, value)
+            for key, value in kwargs.items()
+            if key in base_params and base_params[key] is None
+        )
 
         if pow_z == 0:
             return [GateCount(resource_rep(qre.Identity))]
@@ -628,7 +639,7 @@ class Prod(ResourceOperator):
 
     We can construct a product operator as follows:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> factors = [qre.X(), qre.Y(), qre.Z()]
     >>> prod_xyz = qre.Prod(factors)
     >>>
@@ -802,36 +813,36 @@ class ChangeOpBasis(ResourceOperator):
     The change of basis operation can be constructed as follows with each operation defining the
     compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
 
-    >>> from pennylane import estimator as qre
-    >>> compute_u = qre.H()
+    >>> import pennylane.estimator as qre
+    >>> compute_u = qre.Hadamard()
     >>> base_v = qre.Z()
     >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
-    >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
+    >>> print(qre.estimate(cb_op, gate_set={"Z", "Hadamard", "Adjoint(Hadamard)"}))
     --- Resources: ---
      Total wires: 1
         algorithmic wires: 1
         allocated wires: 0
-                 zero state: 0
-                 any state: 0
+             zero state: 0
+             any state: 0
      Total gates : 3
-      'Adjoint(H)': 1,
+      'Adjoint(Hadamard)': 1,
       'Z': 1,
-      'H': 1
+      'Hadamard': 1
 
     We can also set the :code:`uncompute_op` directly.
 
-    >>> uncompute_u = qre.H()
+    >>> uncompute_u = qre.Hadamard()
     >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
-    >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
+    >>> print(qre.estimate(cb_op, gate_set={"Z", "Hadamard", "Adjoint(Hadamard)"}))
     --- Resources: ---
      Total wires: 1
         algorithmic wires: 1
         allocated wires: 0
-         zero state: 0
-         any state: 0
-     Total gates : 4
+             zero state: 0
+             any state: 0
+     Total gates : 3
       'Z': 1,
-      'H': 2
+      'Hadamard': 2
 
     """
 
@@ -897,12 +908,14 @@ class ChangeOpBasis(ResourceOperator):
                   to the base operation.
                 * cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the uncompute operation.
+                * num_wires (int): the number of wires this operator acts upon
 
         """
         return {
             "cmpr_compute_op": self.cmpr_compute_op,
             "cmpr_target_op": self.cmpr_target_op,
             "cmpr_uncompute_op": self.cmpr_uncompute_op,
+            "num_wires": self.num_wires,
         }
 
     @classmethod
@@ -951,6 +964,7 @@ class ChangeOpBasis(ResourceOperator):
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
+        num_wires: int,  # pylint: disable=unused-argument
     ):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -974,36 +988,36 @@ class ChangeOpBasis(ResourceOperator):
         The change of basis operation can be constructed as follows with each operation defining the
         compute-uncompute pattern being a valid :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:
 
-        >>> from pennylane import estimator as qre
-        >>> compute_u = qre.H()
+        >>> import pennylane.estimator as qre
+        >>> compute_u = qre.Hadamard()
         >>> base_v = qre.Z()
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v)
-        >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
+        >>> print(qre.estimate(cb_op, gate_set={"Z", "Hadamard", "Adjoint(Hadamard)"}))
         --- Resources: ---
-        Total wires: 1
+         Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-                zero state: 0
-                any state: 0
-        Total gates : 3
-            'Adjoint(H)': 1,
-            'Z': 1,
-            'H': 1
+                     zero state: 0
+                     any state: 0
+         Total gates : 3
+          'Adjoint(Hadamard)': 1,
+          'Z': 1,
+          'Hadamard': 1
 
         We can also set the :code:`uncompute_op` directly.
 
-        >>> uncompute_u = qre.H()
+        >>> uncompute_u = qre.Hadamard()
         >>> cb_op = qre.ChangeOpBasis(compute_u, base_v, uncompute_u)
-        >>> print(qre.estimate(cb_op, gate_set={"Z", "H", "Adjoint(H)"}))
+        >>> print(qre.estimate(cb_op, gate_set={"Z", "Hadamard", "Adjoint(Hadamard)"}))
         --- Resources: ---
-        Total wires: 1
+         Total wires: 1
             algorithmic wires: 1
             allocated wires: 0
-                zero state: 0
-                any state: 0
-        Total gates : 4
-            'Z': 1,
-            'H': 2
+                 zero state: 0
+                 any state: 0
+         Total gates : 3
+          'Z': 1,
+          'Hadamard': 2
         """
         return [
             GateCount(cmpr_compute_op),

@@ -16,6 +16,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -43,10 +44,9 @@ def estimate(
     with respect to a given gateset.
 
     Args:
-        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources`): The quantum circuit or operator
+        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | QNode): The quantum circuit or operator
             for which to estimate resources.
-        gate_set (set[str] | None): A set of names (strings) of the fundamental operators to track
-            counts for throughout the quantum workflow.
+        gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count throughout the quantum workflow.
         zeroed (int | None): Number of zeroed state work wires. Default is ``0``.
         any_state (int | None): Number of work wires in an unknown state. Default is ``0``.
         tight_budget (bool | None): Determines whether extra zeroed state wires may be allocated when they
@@ -54,7 +54,7 @@ def estimate(
         config (:class:`~.pennylane.estimator.resource_config.ResourceConfig` | None): A ResourceConfig object which modifies default behaviour in the estimation pipeline.
 
     Returns:
-        :class:`~.pennylane.estimator.resource_operator.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
+        :class:`~.pennylane.estimator.resources_base.Resources` | Callable[..., Resources]: The estimated quantum resources required to execute the circuit.
 
     Raises:
         TypeError: could not obtain resources for workflow of type :code:`type(workflow)`
@@ -62,7 +62,7 @@ def estimate(
     **Example**
 
     The resources of a quantum workflow can be estimated by passing the quantum function describing the
-    workflow directly into this function.
+    workflow.
 
     .. code-block:: python
 
@@ -71,34 +71,65 @@ def estimate(
         def my_circuit():
             for w in range(2):
                 qre.Hadamard(wires=w)
-
             qre.CNOT(wires=[0,1])
             qre.RX(wires=0)
             qre.RY(wires=1)
-
             qre.QFT(num_wires=3, wires=[0, 1, 2])
             return
 
-    Note that a python function is passed here, not a :class:`~.QNode`. The resources for this
-    workflow are then obtained by:
+    The resources for this workflow are then obtained by:
 
     >>> import pennylane.estimator as qre
-    >>> config = qre.ResourceConfig()
-    >>> config.set_single_qubit_rot_precision(1e-4)
-    >>> res = qre.estimate(
-    ...     my_circuit,
-    ...     gate_set = qre.DefaultGateSet,
-    ...     config = config,
-    ... )()
-    ...
+    >>> res = qre.estimate(my_circuit)()
     >>> print(res)
     --- Resources: ---
-    Total qubits: 3
-    Total gates : 279
-    Qubit breakdown:
-     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-    Gate breakdown:
-     {'Hadamard': 5, 'CNOT': 10, 'T': 264}
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 499
+      'T': 484,
+      'CNOT': 10,
+      'Hadamard': 5
+
+    .. details::
+        :title: Usage Details
+
+        :func:`~.estimator.estimate.estimate` also offers mapping functionality, allowing resource estimation for
+        programs written with standard PennyLane operators (:class:`~.Operation`).
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import pennylane.estimator as qre
+
+            dev = qml.device("null.qubit")
+
+            @qml.qnode(dev)
+            def circ():
+                for w in range(2):
+                    qml.Hadamard(wires=w)
+                qml.CNOT(wires=[0,1])
+                qml.RX(1.23*np.pi, wires=0)
+                qml.RY(1.23*np.pi, wires=1)
+                qml.QFT(wires=[0, 1, 2])
+                return qml.state()
+
+        .. code-block:: pycon
+
+            >>> res = qre.estimate(circ)()
+            >>> print(res)
+            --- Resources: ---
+             Total wires: 3
+                algorithmic wires: 3
+                allocated wires: 0
+                 zero state: 0
+                 any state: 0
+             Total gates : 499
+              'T': 484,
+              'CNOT': 10,
+              'Hadamard': 5
 
     """
     return _estimate_resources_dispatch(workflow, gate_set, zeroed, any_state, tight_budget, config)
@@ -143,9 +174,9 @@ def _resources_from_qfunc(
         circuit_wires = []
         for op in q.queue:
             if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
-                if op.wires:
+                if hasattr(op, "wires") and op.wires:
                     circuit_wires.append(op.wires)
-                elif op.num_wires:
+                elif hasattr(op, "num_wires") and op.num_wires:
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
             else:
                 raise ValueError(
@@ -361,9 +392,22 @@ def _get_decomposition(
         A tuple containing the decomposition function and its associated kwargs.
     """
     op_type = comp_res_op.op_type
-    # TODO: Restore logic to handle symbolic operators when symboli operators are merged.
 
-    kwargs = config.resource_op_precisions.get(op_type, {})
-    decomp_func = config.custom_decomps.get(op_type, op_type.resource_decomp)
+    _SYMBOLIC_DECOMP_MAP = {
+        Adjoint: "_adj_custom_decomps",
+        Controlled: "_ctrl_custom_decomps",
+        Pow: "_pow_custom_decomps",
+    }
+
+    lookup_op_type = op_type
+    custom_decomp_dict = config.custom_decomps
+
+    if op_type in _SYMBOLIC_DECOMP_MAP:
+        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
+        custom_decomp_dict = getattr(config, decomp_attr_name)
+        lookup_op_type = comp_res_op.params["base_cmpr_op"].op_type
+
+    kwargs = config.resource_op_precisions.get(lookup_op_type, {})
+    decomp_func = custom_decomp_dict.get(lookup_op_type, op_type.resource_decomp)
 
     return decomp_func, kwargs

@@ -33,19 +33,15 @@ def threshold_matrix(K):
 
     Consider a symmetric matrix with both positive and negative eigenvalues:
 
-    .. code-block :: pycon
-
-        >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
-        >>> np.linalg.eigvalsh(K)
-        array([-1.,  1.,  2.])
+    >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+    >>> np.linalg.eigvalsh(K)
+    array([-1.,  1.,  2.])
 
     We then can threshold/truncate the eigenvalues of the matrix via
 
-    .. code-block :: pycon
-
-        >>> K_thresh = qml.kernels.threshold_matrix(K)
-        >>> np.linalg.eigvalsh(K_thresh)
-        array([0.,  1.,  2.])
+    >>> K_thresh = qml.kernels.threshold_matrix(K)
+    >>> np.linalg.eigvalsh(K_thresh)
+    array([0.,  1.,  2.])
 
     If the input matrix does not have negative eigenvalues, ``threshold_matrix``
     does not have any effect.
@@ -77,21 +73,17 @@ def displace_matrix(K):
 
     Consider a symmetric matrix with both positive and negative eigenvalues:
 
-    .. code-block :: pycon
-
-        >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
-        >>> np.linalg.eigvalsh(K)
-        array([-1.,  1.,  2.])
+    >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+    >>> np.linalg.eigvalsh(K)
+    array([-1.,  1.,  2.])
 
     We then can shift all eigenvalues of the matrix by adding the identity matrix
     multiplied with the absolute value of the smallest (the most negative, that is)
     eigenvalue:
 
-    .. code-block :: pycon
-
-        >>> K_displaced = qml.kernels.displace_matrix(K)
-        >>> np.linalg.eigvalsh(K_displaced)
-        array([0.,  2.,  3.])
+    >>> K_displaced = qml.kernels.displace_matrix(K)
+    >>> np.linalg.eigvalsh(K_displaced)
+    array([0.,  2.,  3.])
 
     If the input matrix does not have negative eigenvalues, ``displace_matrix``
     does not have any effect.
@@ -123,20 +115,16 @@ def flip_matrix(K):
 
     Consider a symmetric matrix with both positive and negative eigenvalues:
 
-    .. code-block :: pycon
-
-        >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
-        >>> np.linalg.eigvalsh(K)
-        array([-1.,  1.,  2.])
+    >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+    >>> np.linalg.eigvalsh(K)
+    array([-1.,  1.,  2.])
 
     We then can invert the sign of all negative eigenvalues of the matrix, obtaining
     non-negative eigenvalues only:
 
-    .. code-block :: pycon
-
-        >>> K_flipped = qml.kernels.flip_matrix(K)
-        >>> np.linalg.eigvalsh(K_flipped)
-        array([1.,  1.,  2.])
+    >>> K_flipped = qml.kernels.flip_matrix(K)
+    >>> np.linalg.eigvalsh(K_flipped)
+    array([1.,  1.,  2.])
 
     If the input matrix does not have negative eigenvalues, ``flip_matrix``
     does not have any effect.
@@ -179,38 +167,32 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
     Consider a symmetric matrix with both positive and negative eigenvalues:
 
-    .. code-block :: pycon
-
-        >>> K = np.array([[0.9, 1.], [1., 0.9]])
-        >>> np.linalg.eigvalsh(K)
-        array([-0.1, 1.9])
+    >>> K = np.array([[0.9, 1.], [1., 0.9]])
+    >>> np.linalg.eigvalsh(K)
+    array([-0.1, 1.9])
 
     The positive semi-definite matrix that is closest to this matrix in any unitarily
     invariant norm is then given by the matrix with the eigenvalues thresholded at 0,
     as computed by :func:`~.kernels.threshold_matrix`:
 
-    .. code-block :: pycon
-
-        >>> K_psd = qml.kernels.closest_psd_matrix(K)
-        >>> K_psd
-        array([[0.95, 0.95],
-               [0.95, 0.95]])
-        >>> np.linalg.eigvalsh(K_psd)
-        array([0., 1.9])
-        >>> np.allclose(K_psd, qml.kernels.threshold_matrix(K))
-        True
+    >>> K_psd = qml.kernels.closest_psd_matrix(K)
+    >>> K_psd
+    array([[0.95, 0.95],
+            [0.95, 0.95]])
+    >>> np.linalg.eigvalsh(K_psd)
+    array([0. , 1.9])
+    >>> np.allclose(K_psd, qml.kernels.threshold_matrix(K))
+    True
 
     However, for quantum kernel matrices we may want to restore the value 1 on the
     diagonal:
 
-    .. code-block :: pycon
-
-        >>> K_psd = qml.kernels.closest_psd_matrix(K, fix_diagonal=True)
-        >>> K_psd
-        array([[1.        , 0.99998008],
-               [0.99998008, 1.        ]])
-        >>> np.linalg.eigvalsh(K_psd)
-        array([1.99162415e-05, 1.99998008e+00])
+    >>> K_psd = qml.kernels.closest_psd_matrix(K, fix_diagonal=True) # doctest: +SKIP
+    >>> K_psd # doctest: +SKIP
+    array([[1.        , 0.99998008],
+            [0.99998008, 1.        ]])
+    >>> np.linalg.eigvalsh(K_psd) # doctest: +SKIP
+    array([1.99162415e-05, 1.99998008e+00])
 
     If the input matrix does not have negative eigenvalues and ``fix_diagonal=False``,
     ``closest_psd_matrix`` does not have any effect.

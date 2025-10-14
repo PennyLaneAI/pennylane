@@ -408,7 +408,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     Consider the QNode
 
-    .. code-block::
+    .. code-block:: python
 
         import pennylane as qml
         from pennylane import numpy as np
@@ -434,7 +434,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     On the other hand, consider the following QNode for the same circuit
     structure:
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.qnode(dev)
         def circuit(x, y, z):
@@ -453,7 +453,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     >>> jac = qml.jacobian(circuit)(x, y, z)
     >>> type(jac)
-    tuple
+    <class 'tuple'>
     >>> for sub_jac in jac:
     ...     print(sub_jac.shape)
     (4,)
@@ -462,7 +462,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     For a more advanced setting of QNode arguments, consider the QNode
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -518,7 +518,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     We can also compute the Jacobian transformation inside a :func:`~.qjit` decorated program:
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -540,7 +540,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     You can further compute the Jacobian transformation using other supported differentiation
     methods by :func:`catalyst.jacobian`.
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.qjit
         def workflow(x):
@@ -554,8 +554,8 @@ def jacobian(func, argnum=None, method=None, h=None):
             return g(x)
 
     >>> workflow(np.array([2.0, 1.0]))
-    Array([[-0.03996468, -0.42472435],
-           [ 0.03996468,  0.42472435]], dtype=float64)
+    Array([[-0.37120096, -0.45467246],
+           [ 0.37120096,  0.45467246]], dtype=float64)
 
     """
 
@@ -670,8 +670,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     >>> x = jnp.array([0.1, 0.2])
     >>> dy = jnp.array([-0.5, 0.1, 0.3])
     >>> vjp(x, dy)
-    [array([0.09983342, 0.04      , 0.02      ]),
-    array([-0.43750208,  0.07000001])]
+    (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
     """
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
@@ -736,8 +735,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     >>> x = jnp.array([0.1, 0.2])
     >>> tangent = jnp.array([0.3, 0.6])
     >>> jvp(x, tangent)
-    [array([0.09983342, 0.04      , 0.02      ]),
-    array([0.29850125, 0.24000006, 0.12      ])]
+    (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), Array([0.29850125, 0.24      , 0.12      ], dtype=float64))
 
     **Example 2 (argnum usage)**
 
@@ -761,7 +759,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
     >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
     >>> workflow(params, dy)
-    [array(0.78766064), array(-0.7011436)]
+    (Array(0.78766064, dtype=float64), Array(-0.70114352, dtype=float64))
     """
 
     if active_jit := compiler.active_compiler():

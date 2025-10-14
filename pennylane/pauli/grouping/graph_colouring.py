@@ -55,7 +55,7 @@ def largest_first(binary_observables, adj):
     ... [0., 0., 1.],
     ... [1., 1., 0.]])
     >>> largest_first(binary_observables, adj)
-    {1: [array([0., 0., 1.])], 2: [array([1., 0., 0.]), array([1., 1., 0.])]}
+    {np.int64(1): [array([0., 0., 1.])], np.int64(2): [array([1., 0., 0.]), array([1., 1., 0.])]}
     """
 
     n_terms = np.shape(adj)[0]
