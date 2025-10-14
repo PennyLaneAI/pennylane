@@ -179,13 +179,14 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
+
 # pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable
 from functools import lru_cache
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -680,6 +681,21 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     Optional[jax.extend.core.Primitive]
     """
 
+    resource_keys: ClassVar[set | frozenset] = set()
+    """The set of parameters that affects the resource requirement of the operator.
+
+    All decomposition rules for this operator class are expected to have a resource function
+    that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
+    function will also expect keyword arguments that match these keys when called with this
+    operator type.
+
+    The default implementation is an empty set, which is suitable for most operators.
+
+    .. seealso::
+        :meth:`~.Operator.resource_params`
+
+    """
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
@@ -1096,13 +1112,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             else f'{op_label}\n({param_string},"{self._id}")'
         )
 
-    def __init__(
-        self,
-        *params: TensorLike,
-        wires: WiresLike | None = None,
-        id: str | None = None,
-    ):
-
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
         self._id: str = id
         self._pauli_rep: qml.pauli.PauliSentence | None = (
@@ -1401,23 +1411,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
 
         raise DecompositionUndefinedError
-
-    @classproperty
-    def resource_keys(self) -> set | frozenset:  # pylint: disable=no-self-use
-        """The set of parameters that affects the resource requirement of the operator.
-
-        All decomposition rules for this operator class are expected to have a resource function
-        that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
-        function will also expect keyword arguments that match these keys when called with this
-        operator type.
-
-        The default implementation is an empty set, which is suitable for most operators.
-
-        .. seealso::
-            :meth:`~.Operator.resource_params`
-
-        """
-        return set()
 
     @property
     def resource_params(self) -> dict:
