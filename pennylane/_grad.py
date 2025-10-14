@@ -15,7 +15,7 @@
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
-from functools import lru_cache, partial, wraps
+from functools import lru_cache, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -152,10 +152,10 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
         flat_argnum = sum(flat_argnum_gen, start=[])
 
         # Create fully flattened function (flat inputs & outputs)
-        flat_fn = capture.FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
+        flat_fn = capture.FlatFn(func, full_in_tree)
         flat_args = sum(flat_args, start=[])
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
-        jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
+        jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
 
         num_abstract_shapes = len(abstract_shapes)
         shifted_argnum = [a + num_abstract_shapes for a in flat_argnum]
