@@ -43,17 +43,22 @@ def _rot_to_xzx(phi, theta, omega, wires, **__):
     RotXZX(lam, theta, phi, wires)
 
 
-@transform
-def convert_to_mbqc_gateset(tape):
+def convert_to_mbqc_gateset_pass(qnode):
     """Converts a circuit expressed in arbitrary gates to the limited gate set that we can
     convert to the textbook MBQC formalism"""
     if not enabled_graph():
         raise RuntimeError(
-            "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
+            "Converting to the MBQC gateset requires the graph-based decomposition"
             " method. This can be toggled by calling `qml.decomposition.enable_graph()`"
         )
-    tapes, fn = decompose(tape, gate_set=mbqc_gate_set, alt_decomps={Rot: [_rot_to_xzx]})
-    return tapes, fn
+    return decompose(
+        qnode,
+        gate_set={"X", "Y", "Z", "S", "H", "CNOT", "RZ", "RotXZX", "GlobalPhase"},
+        fixed_decomps={Rot: _rot_to_xzx},
+    )
+
+
+convert_to_mbqc_gateset = transform(convert_to_mbqc_gateset_pass)
 
 
 @transform
