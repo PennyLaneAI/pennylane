@@ -777,7 +777,7 @@ class DefaultClifford(Device):
             # following is faster than using np.eye(length=1, size, index)
             state = math.zeros(2 ** len(wires), dtype=complex)
             state[0] = 1.0 + 0.0j
-        return state * ops.matrix(global_phase)[0][0]
+        return state * global_phase.matrix()[0][0]
 
     def _measure_expectation(self, meas, tableau_simulator, **kwargs):
         """Measure the expectation value with respect to the state of simulator device."""
