@@ -118,7 +118,7 @@ class TestSnapshotTape:
         with pytest.raises(
             ValueError, match="Mid-circuit measurements can not be used in snapshots"
         ):
-            qml.Snapshot(measurement=qml.ops.MidMeasureMP(1))
+            qml.Snapshot(measurement=qml.ops.MidMeasure(1))
 
     def test_snapshot_fails_with_non_str_tags(self):
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):

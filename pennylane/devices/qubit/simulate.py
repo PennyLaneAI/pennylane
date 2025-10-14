@@ -36,7 +36,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import StatePrepBase
-from pennylane.ops import MidMeasureMP
+from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
@@ -57,9 +57,7 @@ def _find_post_processed_mcms(circuit):
     measurement.
     """
     post_processed_mcms = {
-        op
-        for op in circuit.operations
-        if isinstance(op, MidMeasureMP) and op.postselect is not None
+        op for op in circuit.operations if isinstance(op, MidMeasure) and op.postselect is not None
     }
     for m in circuit.measurements:
         if isinstance(m.mv, list):
@@ -215,7 +213,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     key = prng_key
 
     for op in circuit.operations[bool(prep) :]:
-        if isinstance(op, MidMeasureMP):
+        if isinstance(op, MidMeasure):
             prng_key, key = jax_random_split(prng_key)
         state = apply_operation(
             op,
@@ -355,7 +353,7 @@ def simulate(
     prng_key = execution_kwargs.pop("prng_key", None)
     circuit = circuit.map_to_standard_wires()
 
-    has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+    has_mcm = any(isinstance(op, MidMeasure) for op in circuit.operations)
     if has_mcm:
         if execution_kwargs.get("mcm_method", None) == "tree-traversal":
             return simulate_tree_mcm(
@@ -455,7 +453,7 @@ def simulate_tree_mcm(
     # mcms is the list of all mid-circuit measurement operations
     # mcms[d] is the parent MCM (node) of a circuit segment (edge) at depth `d`
     # The first element is None because there is no parent MCM at depth 0
-    mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
+    mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasure)])
     n_mcms = len(mcms) - 1
     # We obtain `measured_mcms_indices`, the list of MCMs which require post-processing:
     # either as requested by terminal measurements or post-selection
@@ -649,7 +647,7 @@ def split_circuit_at_mcms(circuit):
         Sequence[QuantumTape]: Circuit segments.
     """
 
-    mcm_gen = ((i, op) for i, op in enumerate(circuit) if isinstance(op, MidMeasureMP))
+    mcm_gen = ((i, op) for i, op in enumerate(circuit) if isinstance(op, MidMeasure))
     circuits = []
 
     first = 0
@@ -734,7 +732,7 @@ def branch_state(state, branch, mcm):
     Args:
         state (TensorLike): The initial state
         branch (int): The branch on which the state is collapsed
-        mcm (MidMeasureMP): Mid-circuit measurement object used to obtain the wires and ``reset``
+        mcm (MidMeasure): Mid-circuit measurement object used to obtain the wires and ``reset``
 
     Returns:
         TensorLike: The collapsed state

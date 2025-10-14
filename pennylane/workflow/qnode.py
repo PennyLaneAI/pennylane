@@ -32,7 +32,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionErr
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
-from pennylane.ops import MidMeasureMP
+from pennylane.ops import MidMeasure
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -158,7 +158,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
             "or a nonempty sequence of measurements."
         )
 
-    terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
+    terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasure)]
 
     if any(
         ret is not m for ret, m in zip(measurement_processes, terminal_measurements, strict=True)

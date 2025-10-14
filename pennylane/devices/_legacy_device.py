@@ -36,7 +36,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Operation, Operator, StatePrepBase
-from pennylane.ops import LinearCombination, MidMeasureMP, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, MidMeasure, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
 from pennylane.wires import Wires
@@ -982,7 +982,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         for o in queue:
             operation_name = o.name
 
-            if isinstance(o, MidMeasureMP) and not self.capabilities().get(
+            if isinstance(o, MidMeasure) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(

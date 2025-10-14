@@ -292,20 +292,30 @@ from .vn_entropy import VnEntropyMP, vn_entropy
 # pylint: disable=import-outside-toplevel
 def __getattr__(name):
     import pennylane.ops.mid_measure as ops_measure
-    from pennylane.exceptions import PennyLaneDeprecationWarning
-    import warnings
+
+    # from pennylane.exceptions import PennyLaneDeprecationWarning
+    # import warnings
+
+    if name == "MidMeasureMP":
+        # warnings to be readded after lightning and catalyst are updated to new locations.
+        # warnings.warn(
+        #    f"{name} has been renamed and moved to pennylane.ops.MidMeasure",
+        #    PennyLaneDeprecationWarning,
+        # )
+        return getattr(ops_measure, "MidMeasure")
 
     if name in {"measure", "MidMeasureMP", "MeasurementValue"}:
-        warnings.warn(
-            f"{name} has been moved from the measurements module to pennylane.ops.",
-            PennyLaneDeprecationWarning,
-        )
+        # warnings to be readded after lightning and catalyst are updated to new locations.
+        # warnings.warn(
+        #    f"{name} has been moved from the measurements module to pennylane.ops.",
+        #    PennyLaneDeprecationWarning,
+        # )
         return getattr(ops_measure, name)
     if name in {"find_postprocessed_mcms", "get_mcm_predicates"}:
-        warnings.warn(
-            f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",
-            PennyLaneDeprecationWarning,
-        )
+        # warnings.warn(
+        #    f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",
+        #    PennyLaneDeprecationWarning,
+        # )
         return getattr(ops_measure, name)
 
     raise AttributeError(f"module 'pennylane.measurements' has no attribute '{name}'")

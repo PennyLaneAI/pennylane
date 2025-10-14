@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     SampleMP,
 )
-from pennylane.ops.mid_measure import MeasurementValue, MidMeasureMP, get_mcm_predicates
+from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, get_mcm_predicates
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -68,7 +68,7 @@ def _check_tape_validity(tape: QuantumScript):
 
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
     postselect_present = any(
-        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasure)
     )
     if postselect_present and samples_present and tape.batch_size is not None:
         raise ValueError(
@@ -87,7 +87,7 @@ def _collect_mid_measure_info(tape: QuantumScript):
     is_postselecting = False
 
     for op in tape:
-        if isinstance(op, MidMeasureMP):
+        if isinstance(op, MidMeasure):
             if op.postselect is not None:
                 is_postselecting = True
             if op.reset:
@@ -370,9 +370,9 @@ def _get_plxpr_defer_measurements():
 
         # Using type.__call__ instead of normally constructing the class prevents
         # the primitive corresponding to the class to get binded. We do not want the
-        # MidMeasureMP's primitive to get recorded.
+        # MidMeasure's primitive to get recorded.
         meas = type.__call__(
-            MidMeasureMP, Wires(cur_target), reset=reset, postselect=postselect, id=str(cur_target)
+            MidMeasure, Wires(cur_target), reset=reset, postselect=postselect, id=str(cur_target)
         )
 
         cnot_wires = (wires, cur_target)
@@ -742,7 +742,7 @@ def defer_measurements(
         * :func:`~pennylane.measure` cannot be used inside the body of functions
           being transformed with :func:`~pennylane.adjoint` or :func:`~pennylane.ctrl`.
     """
-    if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
+    if not any(isinstance(o, MidMeasure) for o in tape.operations):
         return (tape,), null_postprocessing
 
     _check_tape_validity(tape)
@@ -775,7 +775,7 @@ def defer_measurements(
     )
 
     for op in tape.operations:
-        if isinstance(op, MidMeasureMP):
+        if isinstance(op, MidMeasure):
             _ = measured_wires.pop(0)
 
             if op.postselect is not None:
@@ -817,7 +817,7 @@ def defer_measurements(
             # Update measurement value wires. We can't use `qml.map_wires` because the same
             # wire can map to different control wires when multiple mid-circuit measurements
             # are made on the same wire. This mapping is determined by the id of the
-            # MidMeasureMPs. Thus, we need to manually map wires for each MidMeasureMP.
+            # MidMeasures. Thus, we need to manually map wires for each MidMeasure.
             if isinstance(mp.mv, MeasurementValue):
                 new_ms = [
                     qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements

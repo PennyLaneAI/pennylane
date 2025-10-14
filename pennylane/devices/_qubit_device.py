@@ -50,7 +50,7 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.operation import Operation, operation_derivative
-from pennylane.ops import MeasurementValue, MidMeasureMP
+from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.resource import Resources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -251,7 +251,7 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
-        has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+        has_mcm = any(isinstance(op, MidMeasure) for op in circuit.operations)
         if has_mcm and "mid_measurements" not in kwargs:
             results = []
             aux_circ = circuit.copy(shots=[1])

@@ -36,7 +36,7 @@ class MeasurementValue:
     Measurements on a single qubit in the computational basis are assumed.
 
     Args:
-        measurements (list[.MidMeasureMP]): The measurement(s) that this object depends on.
+        measurements (list[.MidMeasure]): The measurement(s) that this object depends on.
         processing_fn (callable | None): A lazy transformation applied to the measurement values.
     """
 
@@ -249,7 +249,7 @@ def _measure_impl(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
+    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp])
 
 
@@ -315,9 +315,7 @@ def find_post_processed_mcms(circuit):
     measurement.
     """
     post_processed_mcms = {
-        op
-        for op in circuit.operations
-        if isinstance(op, MidMeasureMP) and op.postselect is not None
+        op for op in circuit.operations if isinstance(op, MidMeasure) and op.postselect is not None
     }
     for m in circuit.measurements:
         if isinstance(m.mv, list):
@@ -328,7 +326,7 @@ def find_post_processed_mcms(circuit):
     return post_processed_mcms
 
 
-class MidMeasureMP(Operator):
+class MidMeasure(Operator):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
@@ -359,6 +357,7 @@ class MidMeasureMP(Operator):
     ):
         super().__init__(wires=Wires(wires), id=id)
         self._hyperparameters = {"reset": reset, "postselect": postselect, "id": id}
+        self._name = "MidMeasureMP"
 
     @property
     def reset(self) -> bool | None:
@@ -417,6 +416,20 @@ def measure(
 ) -> MeasurementValue:
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
+
+    Args:
+        wires (Wires): The wire to measure.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
+
+    Returns:
+        MeasurementValue: A reference to the future result of the mid circuit measurement
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
 
     Computational basis measurements are performed using the 0, 1 convention
     rather than the ±1 convention.
@@ -499,20 +512,6 @@ def measure(
 
     >>> circuit(1.0, 2.0, shots=1000)
     (array([0, 1, 1, ..., 1, 1, 1])), 0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702})
-
-    Args:
-        wires (Wires): The wire to measure.
-        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
-            state after measurement.
-        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
-            measurement. None by default. If postselection is requested, only the post-measurement
-            state that is used for postselection will be considered in the remaining circuit.
-
-    Returns:
-        MidMeasureMP: measurement process instance
-
-    Raises:
-        QuantumFunctionError: if multiple wires were specified
 
     .. details::
         :title: Postselection

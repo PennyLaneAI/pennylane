@@ -780,7 +780,7 @@ class TestSingleQubitFusionHigherOrderPrimitives:
 
         # I test the jaxpr like this because `qml.assert_equal`
         # has issues with mid-circuit measurements
-        # (Got <class 'pennylane.measurements.mid_measure.MidMeasureMP'>
+        # (Got <class 'pennylane.measurements.mid_measure.MidMeasure'>
         # and <class 'pennylane.measurements.mid_measure.MeasurementValue'>.)
         assert jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert jaxpr.eqns[1].primitive == measure_prim

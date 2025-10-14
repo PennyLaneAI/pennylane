@@ -41,7 +41,7 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops import MidMeasureMP
+from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import (
@@ -146,7 +146,7 @@ def stopping_condition(op: Operator, allow_mcms=True) -> bool:
         return constraint(op)
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
-    if isinstance(op, MidMeasureMP):
+    if isinstance(op, MidMeasure):
         return allow_mcms
     return op.has_matrix or op.has_sparse_matrix
 
@@ -289,7 +289,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return not isinstance(op, (Conditional, MidMeasureMP)) and (
+    return not isinstance(op, (Conditional, MidMeasure)) and (
         op.num_params == 0
         or not any(math.requires_grad(d) for d in op.data)
         or (op.num_params == 1 and op.has_generator)

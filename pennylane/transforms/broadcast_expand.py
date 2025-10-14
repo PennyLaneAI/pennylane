@@ -16,7 +16,7 @@ broadcasted tape into multiple tapes."""
 
 import pennylane as qml
 from pennylane.measurements import SampleMP
-from pennylane.ops import MidMeasureMP
+from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -136,7 +136,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
         return (tape,), null_postprocessing
 
     has_postselect = any(
-        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasure)
     )
     has_sample = any(isinstance(op, SampleMP) for op in tape.measurements)
     if has_postselect and has_sample:

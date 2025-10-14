@@ -158,7 +158,7 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False
 
-        circuit = qml.tape.QuantumScript([qml.ops.MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))])
+        circuit = qml.tape.QuantumScript([qml.ops.MidMeasure(0)], [qml.expval(qml.PauliZ(0))])
         assert dev.supports_derivatives(config, circuit=circuit) is False
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False

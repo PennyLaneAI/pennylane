@@ -20,7 +20,7 @@ from typing import Any, overload
 
 from pennylane.devices.preprocess import decompose
 from pennylane.operation import Operator
-from pennylane.ops import Conditional, MidMeasureMP
+from pennylane.ops import Conditional, MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.wires import Wires, WiresLike
@@ -89,7 +89,7 @@ def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int
 
 
 @_obj_string.register
-def _mid_measure_str(op: MidMeasureMP, wires: Wires, bit_map: dict, precision: None | int) -> str:
+def _mid_measure_str(op: MidMeasure, wires: Wires, bit_map: dict, precision: None | int) -> str:
     if op.reset:
         raise NotImplementedError(f"Unable to translate mid circuit measurements with reset {op}.")
     if op.postselect:
@@ -129,7 +129,7 @@ def _tape_openqasm(
     lines.append(f"qreg q[{len(wires)}];")
     lines.append(f"creg c[{len(wires)}];")
 
-    num_mcms = sum(isinstance(o, MidMeasureMP) for o in tape.operations)
+    num_mcms = sum(isinstance(o, MidMeasure) for o in tape.operations)
     if num_mcms:
         lines.append(f"creg mcms[{num_mcms}]")
     bit_map = {}
@@ -146,7 +146,7 @@ def _tape_openqasm(
     just_ops = QuantumScript(operations)
 
     def stopping_condition(op):
-        return op.name in OPENQASM_GATES or isinstance(op, (MidMeasureMP, Conditional))
+        return op.name in OPENQASM_GATES or isinstance(op, (MidMeasure, Conditional))
 
     [new_tape], _ = decompose(
         just_ops,

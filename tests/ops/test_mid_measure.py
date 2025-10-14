@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import MeasurementValue, MidMeasureMP
+from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
@@ -39,11 +39,11 @@ class TestMeasure:
             qml.measure(wires=[0, 1])
 
     def test_hash(self):
-        """Test that the hash for `MidMeasureMP` is defined correctly."""
-        m1 = MidMeasureMP(Wires(0), id="m1")
-        m2 = MidMeasureMP(Wires(0), id="m2")
-        m3 = MidMeasureMP(Wires(1), id="m1")
-        m4 = MidMeasureMP(Wires(0), id="m1")
+        """Test that the hash for `MidMeasure` is defined correctly."""
+        m1 = MidMeasure(Wires(0), id="m1")
+        m2 = MidMeasure(Wires(0), id="m2")
+        m3 = MidMeasure(Wires(1), id="m1")
+        m4 = MidMeasure(Wires(0), id="m1")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
@@ -61,16 +61,16 @@ class TestMeasure:
         ],
     )
     def test_label(self, postselect, reset, expected):
-        """Test that the label for a MidMeasureMP is correct"""
-        mp = MidMeasureMP(0, postselect=postselect, reset=reset)
+        """Test that the label for a MidMeasure is correct"""
+        mp = MidMeasure(0, postselect=postselect, reset=reset)
 
         label = mp.label()
         assert label == expected
 
 
-mp1 = MidMeasureMP(Wires(0), id="m0")
-mp2 = MidMeasureMP(Wires(1), id="m1")
-mp3 = MidMeasureMP(Wires(2), id="m2")
+mp1 = MidMeasure(Wires(0), id="m0")
+mp2 = MidMeasure(Wires(1), id="m1")
+mp3 = MidMeasure(Wires(2), id="m2")
 
 
 class TestMeasurementValueManipulation:
@@ -550,7 +550,7 @@ class TestMeasurementValueItems:
     def test_items_single_mp(self, func, expected, postselect):
         """Test the full items. Note that postselect should not affect the
         output at all."""
-        mp = MidMeasureMP(0, postselect=postselect)
+        mp = MidMeasure(0, postselect=postselect)
         mv = MeasurementValue([mp], func)
         items = list(mv.items())
         assert items == [((0,), expected[0]), ((1,), expected[1])]
@@ -563,9 +563,9 @@ class TestMeasurementValueItems:
     @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
     def test_items_multiple_mps(self, func, expected):
         """Test the full items."""
-        MP0 = MidMeasureMP(0)
-        MP1 = MidMeasureMP(1)
-        MP2 = MidMeasureMP(2)
+        MP0 = MidMeasure(0)
+        MP1 = MidMeasure(1)
+        MP2 = MidMeasure(2)
         branches3 = [
             (0, 0, 0),
             (0, 0, 1),
@@ -586,7 +586,7 @@ class TestMeasurementValueItems:
     @pytest.mark.parametrize("func, expected", funcs_and_expected_single)
     def test_postselected_items_single_mp(self, postselect, func, expected):
         """Test the full items."""
-        mp = MidMeasureMP(0, postselect=postselect)
+        mp = MidMeasure(0, postselect=postselect)
         mv = MeasurementValue([mp], func)
         items = list(mv.postselected_items())
         if postselect is None:
@@ -618,9 +618,9 @@ class TestMeasurementValueItems:
     @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
     def test_postselected_items_multiple_mps(self, func, expected, postselects, branches):
         """Test the full items."""
-        MP0 = MidMeasureMP(0, postselect=postselects[0])
-        MP1 = MidMeasureMP(1, postselect=postselects[1])
-        MP2 = MidMeasureMP(2, postselect=postselects[2])
+        MP0 = MidMeasure(0, postselect=postselects[0])
+        MP1 = MidMeasure(1, postselect=postselects[1])
+        MP2 = MidMeasure(2, postselect=postselects[2])
 
         mv = MeasurementValue([MP0, MP1, MP2], func)
         items = list(mv.postselected_items())

@@ -192,7 +192,7 @@ class TestProperties:
 
     def test_raise_error_with_mcm_input(self):
         """Test that symbolic ops of mid-circuit measurements are not supported."""
-        mcm = qml.ops.MidMeasureMP(0)
+        mcm = qml.ops.MidMeasure(0)
         with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
             _ = SymbolicOp(mcm)
 

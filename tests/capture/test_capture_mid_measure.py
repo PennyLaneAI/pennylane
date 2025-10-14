@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.ops.mid_measure import MeasurementValue, MidMeasureMP
+from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
@@ -40,7 +40,7 @@ class TestMidMeasureUnit:
 
         assert len(q) == 1
         mp = list(q.keys())[0].obj
-        assert isinstance(mp, MidMeasureMP)
+        assert isinstance(mp, MidMeasure)
         assert mp.reset == reset
         assert mp.postselect == postselect
         assert isinstance(m, MeasurementValue)

@@ -23,8 +23,6 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
-    MeasurementValue,
-    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
@@ -129,7 +127,6 @@ valid_meausurements = [
     ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
     ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
     ExpectationMP(obs=mv),
-    MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
     MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
     ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
     ProbabilityMP(obs=3.0 * qml.PauliX(0)),
@@ -325,8 +322,8 @@ class TestProperties:
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
 
-        m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
-        m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
+        m0 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(0), id="0")], lambda v: v)
+        m1 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(1), id="1")], lambda v: v)
         m = ProbabilityMP(obs=[m0, m1])
         expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
         assert repr(m) == expected

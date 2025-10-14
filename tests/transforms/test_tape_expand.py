@@ -901,9 +901,9 @@ class TestCreateCustomDecompExpandFn:
         assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
 
         if shots:
-            assert decomp_ops[2].name == "MidMeasureMP"
+            assert decomp_ops[2].name == "MidMeasure"
             assert decomp_ops[3].name == "CNOT"
-            assert decomp_ops[4].name == "MidMeasureMP"
+            assert decomp_ops[4].name == "MidMeasure"
         else:
             assert decomp_ops[2].name == "CNOT"
             assert decomp_ops[3].name == "CNOT"

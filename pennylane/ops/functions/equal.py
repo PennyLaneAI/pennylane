@@ -33,7 +33,7 @@ from pennylane.ops import (
     Controlled,
     Exp,
     MeasurementValue,
-    MidMeasureMP,
+    MidMeasure,
     Pow,
     SProd,
 )
@@ -700,7 +700,7 @@ def _equal_measurements(
 
 
 @_equal_dispatch.register
-def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
+def _equal_mid_measure(op1: MidMeasure, op2: MidMeasure, **_):
     return (
         op1.wires == op2.wires
         and op1.id == op2.id

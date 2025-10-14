@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.math import Interface, requires_grad
 from pennylane.measurements import Shots
-from pennylane.ops import MidMeasureMP
+from pennylane.ops import MidMeasure
 from pennylane.transforms.core.transform_program import TransformProgram
 
 from .device_api import Device
@@ -107,7 +107,7 @@ def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
     if isinstance(op, qml.QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True
-    return not isinstance(op, MidMeasureMP) and (
+    return not isinstance(op, MidMeasure) and (
         op.num_params == 0 or (op.num_params == 1 and op.has_generator)
     )
 

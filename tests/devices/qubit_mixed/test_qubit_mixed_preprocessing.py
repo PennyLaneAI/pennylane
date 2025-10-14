@@ -54,9 +54,7 @@ def test_mid_circuit_measurement_preprocessing():
     processed_tape = processed_tapes[0]
 
     # Check that mid-circuit measurements have been deferred
-    mid_measure_ops = [
-        op for op in processed_tape.operations if isinstance(op, qml.ops.MidMeasureMP)
-    ]
+    mid_measure_ops = [op for op in processed_tape.operations if isinstance(op, qml.ops.MidMeasure)]
     assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
     assert processed_tape.circuit == [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.expval(qml.Z(0))]
 

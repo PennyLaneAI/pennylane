@@ -29,7 +29,7 @@ from pennylane.ops import (
     Exp,
     LinearCombination,
     MeasurementValue,
-    MidMeasureMP,
+    MidMeasure,
     adjoint,
     ctrl,
     measure,
@@ -319,8 +319,8 @@ def _get_ops(val):
             op_names.append(getattr(qops, _val, None))
         elif isclass(_val) and not issubclass(_val, measurements.MeasurementProcess):
             op_names.append(_val)
-        elif isinstance(_val, (MeasurementValue, MidMeasureMP)):
-            mid_measure = _val if isinstance(_val, MidMeasureMP) else _val.measurements[0]
+        elif isinstance(_val, (MeasurementValue, MidMeasure)):
+            mid_measure = _val if isinstance(_val, MidMeasure) else _val.measurements[0]
             op_names.append(["MidMeasure", "Reset"][getattr(mid_measure, "reset", 0)])
         elif isinstance(_val, measurements.MeasurementProcess):
             obs_name = _get_ops(getattr(_val, "obs", None) or getattr(_val, "H", None))
@@ -588,7 +588,7 @@ _MEAS_FUNC_MAP = {
     measurements.purity: measurements.PurityMP,
     measurements.classical_shadow: measurements.ClassicalShadowMP,
     measurements.shadow_expval: measurements.ShadowExpvalMP,
-    measure: MidMeasureMP,
+    measure: MidMeasure,
 }
 
 

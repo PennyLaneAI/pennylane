@@ -33,7 +33,7 @@ from pennylane.measurements import (
     Shots,
     VarianceMP,
 )
-from pennylane.ops import MeasurementValue, MidMeasureMP
+from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -44,7 +44,7 @@ fill_in_value = np.iinfo(np.int32).min
 
 def is_mcm(operation):
     """Returns True if the operation is a mid-circuit measurement and False otherwise."""
-    mcm = isinstance(operation, MidMeasureMP)
+    mcm = isinstance(operation, MidMeasure)
     return mcm or "MidCircuitMeasure" in str(type(operation))
 
 
@@ -215,7 +215,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     for op in circuit.operations:
         if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
-        elif isinstance(op, MidMeasureMP):
+        elif isinstance(op, MidMeasure):
             new_measurements.append(qml.sample(MeasurementValue([op])))
     return qml.tape.QuantumScript(
         circuit.operations,

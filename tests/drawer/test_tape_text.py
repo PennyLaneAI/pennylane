@@ -38,9 +38,9 @@ from pennylane.tape import QuantumScript
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_bit_map = {}
 
-default_mid_measure_1 = qml.ops.MidMeasureMP(0, id="1")
-default_mid_measure_2 = qml.ops.MidMeasureMP(0, id="2")
-default_mid_measure_3 = qml.ops.MidMeasureMP(0, id="3")
+default_mid_measure_1 = qml.ops.MidMeasure(0, id="1")
+default_mid_measure_2 = qml.ops.MidMeasure(0, id="2")
+default_mid_measure_3 = qml.ops.MidMeasure(0, id="3")
 default_measurement_value_1 = qml.ops.MeasurementValue([default_mid_measure_1], lambda v: v)
 default_measurement_value_2 = qml.ops.MeasurementValue([default_mid_measure_2], lambda v: v)
 default_measurement_value_3 = qml.ops.MeasurementValue([default_mid_measure_3], lambda v: v)
@@ -117,7 +117,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         ],
     )
     def test_add_mid_measure_grouping_symbols(self, op, layer_str, bit_map, out):
-        """Test private _add_grouping_symbols function renders as expected for MidMeasureMPs."""
+        """Test private _add_grouping_symbols function renders as expected for MidMeasures."""
         config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=1)
         assert out == _add_mid_measure_grouping_symbols(op, layer_str, config)
 
@@ -319,7 +319,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         ],
     )
     def test_add_mid_measure_op(self, op, layer_str, bit_map, out):
-        """Test adding the first MidMeasureMP to array of strings"""
+        """Test adding the first MidMeasure to array of strings"""
         config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=0)
         assert out == _add_obj(op, layer_str, config)
 

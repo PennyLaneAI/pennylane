@@ -273,7 +273,7 @@ class TestConstruction:
         target_wire = qml.wires.Wires(1)
 
         assert len(tape.circuit) == 5
-        assert isinstance(tape.circuit[0], qml.ops.MidMeasureMP)
+        assert isinstance(tape.circuit[0], qml.ops.MidMeasure)
 
         assert isinstance(tape.circuit[1], qml.ops.Conditional)
         assert isinstance(tape.circuit[1].base, qml.PauliX)

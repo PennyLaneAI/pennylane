@@ -18,7 +18,7 @@ from openqasm3.visitor import QASMNode
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.operation import Operator
-from pennylane.ops import MeasurementValue, MidMeasureMP, measure
+from pennylane.ops import MeasurementValue, MidMeasure, measure
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -671,7 +671,7 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasureMP))))
+        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasure))))
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):

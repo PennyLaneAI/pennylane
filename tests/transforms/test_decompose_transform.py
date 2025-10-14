@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane.operation import Operation
-from pennylane.ops import Conditional, MidMeasureMP
+from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
@@ -87,9 +87,9 @@ class TestDecompose:
         ),
         ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None),
         (
-            [qml.ops.MidMeasureMP(0)],
+            [qml.ops.MidMeasure(0)],
             {},
-            [qml.ops.MidMeasureMP(0)],
+            [qml.ops.MidMeasure(0)],
             {
                 "type": TypeError,
                 "msg": "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
@@ -98,12 +98,12 @@ class TestDecompose:
             },
         ),
         (
-            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasureMP(0)],
+            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
             {qml.Toffoli},
-            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasureMP(0)],
+            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
             {
                 "type": UserWarning,
-                "msg": "MidMeasureMP",
+                "msg": "MidMeasure",
             },
         ),
     ]
@@ -220,7 +220,7 @@ class TestDecompose:
             ]
         )
         [decomposed_tape], _ = qml.transforms.decompose(
-            [tape], gate_set={qml.RX, qml.RZ, MidMeasureMP}
+            [tape], gate_set={qml.RX, qml.RZ, MidMeasure}
         )
         assert len(decomposed_tape.operations) == 10
 
@@ -249,8 +249,8 @@ class TestDecompose:
         qml.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
         qml.assert_equal(decomposed_tape.operations[8].base, q.queue[8].base)
         qml.assert_equal(decomposed_tape.operations[9].base, q.queue[9].base)
-        assert isinstance(decomposed_tape.operations[3], MidMeasureMP)
-        assert isinstance(decomposed_tape.operations[7], MidMeasureMP)
+        assert isinstance(decomposed_tape.operations[3], MidMeasure)
+        assert isinstance(decomposed_tape.operations[7], MidMeasure)
 
 
 def test_null_postprocessing():

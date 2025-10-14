@@ -691,7 +691,7 @@ def cond(
                 raise ConditionalTransformError(with_meas_err)
 
             for op in qscript.operations:
-                if isinstance(op, qml.ops.MidMeasureMP):
+                if isinstance(op, qml.ops.MidMeasure):
                     raise ConditionalTransformError(with_meas_err)
                 Conditional(condition, op)
 
@@ -705,7 +705,7 @@ def cond(
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
-                    if isinstance(op, qml.ops.MidMeasureMP):
+                    if isinstance(op, qml.ops.MidMeasure):
                         raise ConditionalTransformError(with_meas_err)
                     Conditional(inverted_condition, op)
 
