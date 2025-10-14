@@ -31,4 +31,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Lillian Frederiksen
+Lillian Frederiksen,
+Shuli Shu
