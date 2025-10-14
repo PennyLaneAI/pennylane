@@ -47,7 +47,7 @@ class Qubitization(Operation):
 
     This operator, when applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
 
-    .. code-block::
+    .. code-block:: python
 
         H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
 
@@ -68,10 +68,8 @@ class Qubitization(Operation):
         # post-processing
         lamb = sum([abs(c) for c in H.terms()[0]])
 
-    .. code-block:: pycon
-
-        >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
-        eigenvalue: 0.7
+    >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
+    eigenvalue: 0.7
     """
 
     grad_method = None
@@ -160,7 +158,7 @@ class Qubitization(Operation):
             from pennylane.wires import Wires
 
         >>> print(qml.Qubitization.compute_decomposition(hamiltonian=0.1 * qml.Z(0), control=Wires(1)))
-        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(coeffs=(0.1,), ops=(Z(0),), control=Wires([1]))]
+        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(lcu=0.1 * Z(0), control=Wires([1]))]
         """
 
         hamiltonian = kwargs["hamiltonian"]
