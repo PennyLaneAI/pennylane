@@ -402,22 +402,24 @@ class OutPoly(Operation):
 
         .. code-block:: python
 
-            print(
-            qml.OutPoly.compute_decomposition(
+            from pprint import pprint
+
+            ops = qml.OutPoly.compute_decomposition(
                 lambda x, y: x + y,
                 input_registers=[[0, 1],[2,3]],
                 output_wires=[4, 5],
                 mod=4,
                 )
-            )
+            pprint(ops)
 
-        .. code-block:: pycon
+        .. code-block::
 
-            [QFT(wires=[4]),
-             Controlled(PhaseAdder(wires=[4, None]),
-             control_wires=[3]),
-             Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]),
-             Adjoint(QFT(wires=[4]))]
+            [QFT(wires=[4, 5]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[3]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[2]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[1]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[0]),
+            Adjoint(QFT(wires=[4, 5]))]
         """
         registers_wires = [*input_registers, output_wires]
 

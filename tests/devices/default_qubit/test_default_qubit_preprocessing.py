@@ -61,7 +61,6 @@ class HasDiagonalizingGatesOp(qml.operation.Operator):
 
 # pylint: disable=too-few-public-methods
 class CustomizedSparseOp(qml.operation.Operator):
-
     def __init__(self, wires):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
@@ -226,6 +225,17 @@ class TestConfigSetup:
         dev = qml.device("default.qubit")
 
         with pytest.raises(DeviceError, match="not supported on default.qubit"):
+            dev.setup_execution_config(config)
+
+    @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+    def test_error_on_unsupported_postselect_mode(self, mcm_method):
+        """Tests that fill-shots is not supported on anything but deferred."""
+
+        config = ExecutionConfig(
+            mcm_config=MCMConfig(mcm_method=mcm_method, postselect_mode="fill-shots")
+        )
+        dev = qml.device("default.qubit")
+        with pytest.raises(DeviceError, match="Using postselect_mode='fill-shots'"):
             dev.setup_execution_config(config)
 
 
@@ -867,7 +877,6 @@ class TestPreprocessingIntegration:
         m0 = qml.measure(0)
 
         class MyOp(qml.operation.Operator):
-
             def decomposition(self):
                 return m0.measurements
 
