@@ -170,7 +170,7 @@ def _add_elbow_core(obj, layer_str, config):
     mapped_wires = [config.wire_map[w] for w in obj.wires]
     layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
     layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
-    layer_str[mapped_wires[2]] += "─"
+    layer_str[mapped_wires[2]] += "⊕"
     return layer_str, mapped_wires
 
 
@@ -180,7 +180,8 @@ def _add_left_elbow(
 ):
     """Updates ``layer_str`` with ``op`` operation of type ``TemporaryAND``,
     also known as left elbow."""
-    layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
     layer_str, _ = _add_elbow_core(obj, layer_str, config)
     return layer_str
 
