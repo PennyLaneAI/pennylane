@@ -476,7 +476,7 @@ def _mottonen_resources(num_wires):
 
 
 mottonen_decomp = qml.register_resources(
-    _mottonen_resources, MottonenStatePreparation.compute_decomposition
+    _mottonen_resources, MottonenStatePreparation.compute_decomposition, exact=False
 )
 
 qml.add_decomps(MottonenStatePreparation, mottonen_decomp)
