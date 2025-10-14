@@ -33,4 +33,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Lillian Frederiksen
