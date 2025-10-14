@@ -108,7 +108,7 @@ class SemiAdder(Operation):
 
     This example computes the sum of two integers :math:`x=3` and :math:`y=4`.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 3
         y = 4
@@ -134,7 +134,7 @@ class SemiAdder(Operation):
 
     Note that the result is computed modulo :math:`2^{\text{len(y_wires)}}` which makes the computed value dependent on the size of the ``y_wires`` register. This behavior is demonstrated in the following example.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 3
         y = 1
@@ -151,10 +151,8 @@ class SemiAdder(Operation):
             qml.SemiAdder(wires["x"], wires["y"], wires["work"])
             return qml.sample(wires=wires["y"])
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[0 0]]
+    >>> print(circuit())
+    [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
     """

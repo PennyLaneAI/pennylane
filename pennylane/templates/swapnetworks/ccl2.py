@@ -53,11 +53,11 @@ class TwoLocalSwapNetwork(Operation):
     ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
     ...    return qml.state()
     >>> print(qml.draw(swap_network_circuit, level='device')())
-    0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤  State
-    1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
-    2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤  State
-    3: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
-    4: ─────────────────╰X─╰fSWAP(3.14)─────────────────╰X─╰fSWAP(3.14)─────────────────┤  State
+    0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤ ╭State
+    1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤ ├State
+    2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤ ├State
+    3: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤ ├State
+    4: ─────────────────╰X─╰fSWAP(3.14)─────────────────╰X─╰fSWAP(3.14)─────────────────┤ ╰State
 
     .. details::
         :title: Usage Details
@@ -65,10 +65,10 @@ class TwoLocalSwapNetwork(Operation):
         More complex acquaintances can be utilized with the template. For example:
 
         >>> dev = qml.device('default.qubit', wires=5)
-        >>> weights = np.random.random(size=qml.TwoLocalSwapNetwork.shape(len(dev.wires)))
-        >>> print(weights)
-        tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
-                0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
+        >>> rng = np.random.default_rng(12345)
+        >>> weights = rng.random(size=qml.TwoLocalSwapNetwork.shape(len(dev.wires)))
+        >>> print(weights) # doctest: +SKIP
+        [0.2273 0.3168 0.7974 0.6763 0.3911 0.3328 0.5983 0.1867 0.6728 0.9418]
         >>> acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
         ...                                  if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
         >>> @qml.qnode(dev)
@@ -76,11 +76,11 @@ class TwoLocalSwapNetwork(Operation):
         ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
         ...    return qml.state()
         >>> print(qml.draw(swap_network_circuit, level='device')())
-        0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
-        1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
-        2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
-        3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
-        4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
+        0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤ ╭State
+        1: ─╰RY(0.23)─╰SWAP─╭●────────╭SWAP─╰RY(0.39)─╰SWAP─╭●────────╭SWAP─╰RY(0.67)─╰SWAP─┤ ├State
+        2: ─╭●────────╭SWAP─╰RY(0.80)─╰SWAP─╭●────────╭SWAP─╰RY(0.60)─╰SWAP─╭●────────╭SWAP─┤ ├State
+        3: ─╰RY(0.32)─╰SWAP─╭●────────╭SWAP─╰RY(0.33)─╰SWAP─╭●────────╭SWAP─╰RY(0.94)─╰SWAP─┤ ├State
+        4: ─────────────────╰RY(0.68)─╰SWAP─────────────────╰RY(0.19)─╰SWAP─────────────────┤ ╰State
 
     """
 
