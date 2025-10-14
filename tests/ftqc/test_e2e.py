@@ -14,7 +14,14 @@
 # pylint: disable=no-name-in-module, no-self-use, protected-access
 """Tests for E2E pipeline, to be updated as the final passes are implemented"""
 import pytest
-from catalyst.ftqc.pipelines import mbqc_pipeline
+
+pytestmark = pytest.mark.external
+
+xdsl = pytest.importorskip("xdsl")
+catalyst = pytest.importorskip("catalyst")
+
+# pylint: disable=wrong-import-position
+from catalyst.ftqc import mbqc_pipeline
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
