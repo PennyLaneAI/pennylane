@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for qml.grad
+"""
 
 import pytest
 
@@ -20,9 +23,10 @@ import pennylane as qml
 @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
 def test_kwarg_errors_without_qjit(grad_fn):
     """Test that errors are raised with method and h when qjit is not active."""
+
     def f(x):
         return x**2
-    
+
     x = qml.numpy.array(0.5)
 
     with pytest.raises(ValueError, match="method = 'fd' unsupported without QJIT."):
