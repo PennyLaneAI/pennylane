@@ -159,8 +159,7 @@ class TestBasicCircuits:
                 qml.Rot(0.12, 0.56, 0.78, 0)
                 qml.Rot(2.3, 0.34, 0.67, 1)
                 qml.Rot(1.2, 0.89, 1.9, 2)
-                qml.MultiRZ(0.345, wires=[1, 2])
-                # qml.ctrl(qml.MultiRZ(0.345, wires=[1, 2]), control=0)  # raises error currently
+                qml.ctrl(qml.MultiRZ(0.345, wires=[1, 2]), control=0)
                 qml.PhaseShift(-0.567, wires=0)
 
             return qml.expval(
