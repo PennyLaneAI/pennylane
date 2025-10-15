@@ -70,7 +70,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         self.terminal_boundary_op: Operation = None
 
         # Input and outputs of the state evolution func
-        self.missing_inputs: list[SSAValue] = None
+        self.required_inputs: list[SSAValue] = None
         self.required_outputs: list[SSAValue] = None
 
         # State evolution function region
@@ -247,13 +247,13 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         block = state_evolution_func.regions[0].block
         value_mapper = {}
-        for missing_val, block_arg in zip(ordered_inputs, block.args):
-            value_mapper[missing_val] = block_arg
+        for input, block_arg in zip(ordered_inputs, block.args):
+            value_mapper[input] = block_arg
 
         self._clone_operations_to_block(ops_to_clone, block, value_mapper)
         self._add_return_statement(block, ordered_outputs, value_mapper)
 
-        self.missing_inputs = ordered_inputs
+        self.required_inputs = ordered_inputs
         self.required_outputs = ordered_outputs
         self.alloc_op = alloc_op
         self.terminal_boundary_op = terminal_boundary_op
@@ -426,7 +426,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         pre_ops = ops_list[:begin_idx]
         post_ops = ops_list[end_idx:]
 
-        call_args = list(self.missing_inputs)
+        call_args = list(self.required_inputs)
         result_types = [val.type for val in self.required_outputs]
 
         call_op = func.CallOp(self.state_evolution_func.sym_name.data, call_args, result_types)
