@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumScript"""
+
 import copy
 from collections import defaultdict
 
@@ -25,16 +26,6 @@ from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
-
-
-def test_to_openqasm_deprecation():
-    """Test deprecation of the ``QuantumScript.to_openqasm`` method."""
-    circuit = qml.tape.QuantumScript()
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-    ):
-        circuit.to_openqasm()
 
 
 class TestInitialization:
@@ -1716,7 +1707,6 @@ class TestNumericType:
 
 
 class TestDiagonalizingGates:
-
     def test_diagonalizing_gates(self):
         """Test that diagonalizing gates works as expected"""
         qs = QuantumScript([], [qml.expval(qml.X(0)), qml.var(qml.Y(1))])

@@ -111,12 +111,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
-  Instead, the ``qml.to_openqasm`` function should be used.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 * ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
 
@@ -162,6 +156,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
 
 * The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
   :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,

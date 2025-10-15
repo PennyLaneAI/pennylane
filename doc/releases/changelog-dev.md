@@ -21,6 +21,8 @@
   :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
   Please use ``level='device'`` instead to apply the transform at the device level.
 
+* The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
