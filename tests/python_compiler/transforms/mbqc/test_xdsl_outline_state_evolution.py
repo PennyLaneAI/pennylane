@@ -25,6 +25,7 @@ from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
+    OutlineStateEvolutionPass,
     convert_to_mbqc_formalism_pass,
     decompose_graph_state_pass,
     diagonalize_final_measurements_pass,
@@ -46,6 +47,35 @@ def _while_for(i):
 
 class TestOutlineStateEvolutionPass:
     """Unit tests for OutlineStateEvolutionPass."""
+
+    def test_func_wo_qnode_circuit_raise_error(self, run_filecheck):
+        """Test if error would be raised for the module without a qnode func."""
+        program = """
+            module @circuit {
+                module @module_circuit {
+                    func.func public @circuit() -> tensor<f64> {
+                        %c0_i64 = arith.constant 0 : i64
+                        quantum.device shots(%c0_i64) ["", "", ""]
+                        %0 = quantum.alloc( 50) : !quantum.reg
+                        %1 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+                        %out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
+                        %2 = quantum.namedobs %out_qubits[ PauliX] : !quantum.obs
+                        %3 = quantum.expval %2 : f64
+                        %from_elements = tensor.from_elements %3 : tensor<f64>
+                        %4 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
+                        quantum.dealloc %4 : !quantum.reg
+                        quantum.device_release
+                        return %from_elements : tensor<f64>
+                    }
+                }
+            }
+        """
+
+        pipeline = (OutlineStateEvolutionPass(),)
+        with pytest.raises(
+            RuntimeError, match="There is no funcOp with qnode attribute in the module"
+        ):
+            run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_pass_only(self, run_filecheck_qjit):
@@ -163,7 +193,7 @@ class TestOutlineStateEvolutionPass:
         def circuit():
             # CHECK-LABEL: func.func public @circuit()
             # NOTE: There is scf.if, mbqc.measure_in_basis in the circuit()
-            # scope as X obs is decomposed into HZ and H is converted to MBQC formalism.
+            # scope as X obs is decomposed into H@Z and H is converted to MBQC formalism.
             # CHECK-NOT: quantum.custom "S"()
             # CHECK-NOT: quantum.custom "RotXZX"
             # CHECK-NOT: quantum.custom "RZ"
