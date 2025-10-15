@@ -312,7 +312,7 @@ class CondCallable:
             conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
-            f = FlatFn(fn)
+            f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
             if jax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
             jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
