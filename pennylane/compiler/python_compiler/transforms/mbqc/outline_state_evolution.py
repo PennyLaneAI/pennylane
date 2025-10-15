@@ -211,15 +211,15 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # collect operation from alloc_op to terminal_boundary_op
         ops_to_clone = self._collect_operations_in_range(alloc_op, terminal_boundary_op)
 
-        # analyze missing values for ops
-        missing_inputs = self._analyze_missing_values_for_ops(ops_to_clone)
+        # collect required inputs for the state evolution funcOp
+        required_inputs = self._collect_required_inputs_for_state_evolution_func(ops_to_clone)
 
-        # analyze required outputs for ops
-        required_outputs = self._analyze_required_outputs(ops_to_clone, terminal_boundary_op)
+        # colloect required outputs for the state evolution funcOp
+        required_outputs = self._collect_required_outputs(ops_to_clone, terminal_boundary_op)
 
         register_inputs = []
         other_inputs = []
-        for val in missing_inputs:
+        for val in required_inputs:
             if isinstance(val.type, quantum.QuregType):
                 register_inputs.append(val)
             else:
@@ -302,10 +302,10 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         return ops_to_clone
 
-    def _analyze_missing_values_for_ops(self, ops: list[Operation]) -> list[SSAValue]:
-        """Get missing values for ops. Given a list of operations, return the values
-        that are missing from the operations.
-        """
+    def _collect_required_inputs_for_state_evolution_func(
+        self, ops: list[Operation]
+    ) -> list[SSAValue]:
+        """Collect required inputs for the state evolution funcOp with a given list of operations."""
         ops_walk = list(chain(*[op.walk() for op in ops]))
 
         ops_defined_values = set()
@@ -321,14 +321,14 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         ops_defined_values.update(block.args)
 
         missing_values = list(all_operands - ops_defined_values)
-        missing_values = [v for v in missing_values if v is not None]
+        required_inputs = [v for v in missing_values if v is not None]
 
-        return missing_values
+        return required_inputs
 
-    def _analyze_required_outputs(
+    def _collect_required_outputs(
         self, ops: list[Operation], terminal_op: Operation
     ) -> list[SSAValue]:
-        """Get required outputs for ops.
+        """Get required outputs for the state evolution funcOp with a given list of operations.
         Given a list of operations and a terminal operation, return the values that are
         required by the operations after the terminal operation. Noted: It's only consdider
         the values that are defined in the operations and required by the operations after
@@ -413,7 +413,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             raise RuntimeError(
                 "A terminal_boundary_op operation is not found in original function."
             )
-        if begin_idx <= end_idx:
+        if begin_idx > end_idx:
             raise RuntimeError(
                 "A quantum.alloc operation should come before the terminal_boundary_op."
             )
