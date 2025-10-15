@@ -20,11 +20,14 @@
   :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
   :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
   Please use ``level='device'`` instead to apply the transform at the device level.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 <h3>Deprecations 👋</h3>
 
