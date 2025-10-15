@@ -23,6 +23,9 @@
 
 * The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
 
+* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>

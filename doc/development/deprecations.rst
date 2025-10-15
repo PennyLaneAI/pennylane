@@ -111,12 +111,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
-  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 * Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
   Instead, these functions should be imported from the ``pennylane.noise`` module.
 
@@ -156,6 +150,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
 
 * The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
 
