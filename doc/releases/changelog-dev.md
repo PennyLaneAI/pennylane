@@ -4,10 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Add a `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
-  quantum gate operations to a private callable.
-  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
-
 <h3>Improvements 🛠</h3>
 
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
@@ -23,6 +19,10 @@
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
+
+* Add a `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+  quantum gate operations to a private callable.
+  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
 
 <h3>Documentation 📝</h3>
 
