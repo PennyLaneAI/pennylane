@@ -40,9 +40,7 @@ def _pkg_location():
     try:
         dist = metadata.distribution("pennylane")
         return os.path.abspath(str(dist.locate_file("")))
-    except PackageNotFoundError:
-        return "(unknown)"
-    except OSError:
+    except (PackageNotFoundError, OSError):
         return "(unknown)"
 
 def about():
