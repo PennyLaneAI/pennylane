@@ -20,6 +20,11 @@
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
+* A compilation pass for `convert_to_mbqc_gateset_pass` has been added to the experimental `ftqc` module. It wraps the more general 
+  decomposition pass, with the MBQC target gateset and custom decomposition to reach `RotXZX`.
+  [(#8462)](https://github.com/PennyLaneAI/pennylane/pull/8462)
+
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
