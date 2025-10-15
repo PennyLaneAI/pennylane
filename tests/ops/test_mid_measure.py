@@ -68,6 +68,15 @@ class TestMeasure:
         assert label == expected
 
 
+class TestMidMeasure:
+
+    def test_repr(self):
+        """Test the repr for MidMeasure"""
+
+        op = MidMeasure(wires="a", postselect=1, reset=True)
+        assert repr(op) == "MidMeasure(wires=['a'], postselect=1, reset=True)"
+
+
 mp1 = MidMeasure(Wires(0), id="m0")
 mp2 = MidMeasure(Wires(1), id="m1")
 mp3 = MidMeasure(Wires(2), id="m2")

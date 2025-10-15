@@ -311,6 +311,16 @@ def __getattr__(name):
         #    PennyLaneDeprecationWarning,
         # )
         return getattr(ops_measure, name)
+    if name == "find_post_processed_mcms":
+        # warnings.warn(
+        #    "find_post_processed_mcms has been moved from the measurements module to"
+        #    "qml.devices.qubit.simulate._find_post_processed_mcms"
+        #    "if you need this logic, we recommend code duplication, as it is being made private."
+        #    PennyLaneDeprecationWarning,
+        # )
+        from pennylane.devices.qubit.simulate import _find_post_processed_mcms  # tach-ignore
+
+        return _find_post_processed_mcms
     if name in {"find_post_processed_mcms", "get_mcm_predicates"}:
         # warnings.warn(
         #    f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",

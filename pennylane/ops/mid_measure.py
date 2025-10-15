@@ -308,24 +308,6 @@ def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementV
     return new_conds
 
 
-def find_post_processed_mcms(circuit):
-    """Return the subset of mid-circuit measurements which are required for post-processing.
-
-    This includes any mid-circuit measurement that is post-selected or the object of a terminal
-    measurement.
-    """
-    post_processed_mcms = {
-        op for op in circuit.operations if isinstance(op, MidMeasure) and op.postselect is not None
-    }
-    for m in circuit.measurements:
-        if isinstance(m.mv, list):
-            for mv in m.mv:
-                post_processed_mcms = post_processed_mcms | set(mv.measurements)
-        elif m.mv is not None:
-            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
-    return post_processed_mcms
-
-
 class MidMeasure(Operator):
     """Mid-circuit measurement.
 
@@ -344,6 +326,9 @@ class MidMeasure(Operator):
         id (str): Custom label given to a measurement instance.
     """
 
+    def __repr__(self):
+        return f"MidMeasure(wires={list(self.wires)}, postselect={self.postselect}, reset={self.reset})"
+
     num_wires = 1
     num_params = 0
     batch_size = None
@@ -351,7 +336,7 @@ class MidMeasure(Operator):
     def __init__(
         self,
         wires: Wires | None = None,
-        reset: bool | None = False,
+        reset: bool = False,
         postselect: int | None = None,
         id: str | None = None,
     ):
@@ -360,7 +345,7 @@ class MidMeasure(Operator):
         self._name = "MidMeasureMP"
 
     @property
-    def reset(self) -> bool | None:
+    def reset(self) -> bool:
         """Whether to reset the wire into the zero state after the measurement."""
         return self.hyperparameters["reset"]
 

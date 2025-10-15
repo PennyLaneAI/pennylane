@@ -1212,7 +1212,7 @@ class TestNativeMidCircuitMeasurements:
         """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
 
         dev = self.MCMDevice(wires=1)
-        dev.operations.add("MidMeasure")
+        dev.operations.add("MidMeasureMP")
         spy = mocker.spy(qml.dynamic_one_shot, "_transform")
 
         @qml.qnode(dev, interface=None, diff_method=None, shots=100)
