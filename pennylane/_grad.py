@@ -86,7 +86,7 @@ def _shape(shape, dtype, weak_type=False):
     return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
 
-def _capture_diff(func, *, argnum, scalar_out: bool, method, h, fn):
+def _capture_diff(func, *, argnum, scalar_out: bool, method, h):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
@@ -143,7 +143,7 @@ def _capture_diff(func, *, argnum, scalar_out: bool, method, h, fn):
             "argnum": shifted_argnum,
             "jaxpr": jaxpr.jaxpr,
             "n_consts": len(jaxpr.consts),
-            "fn": fn,
+            "fn": func,
             "method": method,
             "h": h,
             "scalar_out": scalar_out,
@@ -283,7 +283,7 @@ class grad:
 
         if capture.enabled():
             return _capture_diff(
-                self._fun, argnum=argnum, self._argnum, scalar_out=True, method=self._method, h=self._h
+                self._fun, argnum=self._argnum, scalar_out=True, method=self._method, h=self._h
             )(*args, **kwargs)
 
         if self._method:
