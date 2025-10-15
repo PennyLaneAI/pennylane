@@ -564,11 +564,6 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
     # The number of shots is passed as an SSA value operand to the DeviceInitOp
     shots_operand = device_op.shots
     shots_extract_op = shots_operand.owner
-    if not isinstance(shots_extract_op, (tensor.ExtractOp, arith.ConstantOp)):
-        raise ValueError(
-            f"Expected owner of shots operand to be a tensor.ExtractOp or arith.ConstantOp but got "
-            f"{type(shots_extract_op).__name__}"
-        )
 
     # This branch is for a stablehlo.ConstantOp that stores the values of `shots`
     if isinstance(shots_extract_op, tensor.ExtractOp):
@@ -584,9 +579,13 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
             raise ValueError(f"Expected a single shots value, got {len(shots_int_values)}")
 
         return shots_int_values[0]
-    # The following branch for the `shots` from an arith.ConstantOp
-    shots_value_attribute: builtin.IntAttr = shots_extract_op.properties.get("value")
-    return shots_value_attribute.value.data
+
+    if isinstance(shots_extract_op, arith.ConstantOp):
+        shots_value_attribute: builtin.IntAttr = shots_extract_op.properties.get("value")
+        return shots_value_attribute.value.data
+    
+    raise ValueError(f"Expected owner of shots operand to be a tensor.ExtractOp or arith.ConstantOp but got "
+                     f"{type(shots_extract_op).__name__}")
 
 
 @xdsl_module
