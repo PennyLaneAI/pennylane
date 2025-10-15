@@ -539,6 +539,18 @@ class TestCatalystControlFlow:
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
+    @pytest.mark.parametrize("argnum", (None, 0))
+    @pytest.mark.parametrize("g_fn", (qml.grad, qml.jacobian))
+    def test_lazy_dispatch_grad(self, g_fn, argnum):
+        """Test that grad is lazily dispatched to the catalyst version at runtime."""
+
+        def f(x):
+            return x**2
+
+        g = qml.qjit(g_fn(f, argnum=argnum))(0.5)
+        assert qml.math.allclose(g, 1.0)
+        assert qml.math.get_interface(g) == "jax"
+
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
@@ -608,7 +620,7 @@ class TestCatalystGrad:
 
         @qml.qjit
         def dsquare(x: float):
-            return catalyst.grad(square)(x)
+            return qml.grad(square)(x)
 
         assert jnp.allclose(dsquare(2.3), 4.6)
 
@@ -666,12 +678,6 @@ class TestCatalystGrad:
         result = qml.qjit(workflow)(np.array([2.0, 1.0]))
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
         assert jnp.allclose(result, reference)
-
-        with pytest.raises(
-            ValueError,
-            match="Invalid values 'method='fd'' and 'h=0.3' without QJIT",
-        ):
-            workflow(np.array([2.0, 1.0]))
 
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
