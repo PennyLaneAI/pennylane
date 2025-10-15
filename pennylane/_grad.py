@@ -71,6 +71,7 @@ def _get_grad_prim():
     return grad_prim
 
 
+# pylint: disable=too-many-arguments, unused-argument
 @lru_cache
 def _get_vjp_prim():
     """Create a primitive for gradient computations.
@@ -88,13 +89,19 @@ def _get_vjp_prim():
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
         consts = args[:n_consts]
-        args = args[n_consts:]
+        params = args[n_consts : -len(jaxpr.outvars)]
+        dy = args[-len(jaxpr.outvars) :]
+
+        if len(argnum) != len(params):
+            # jax.vjp does not yet support argnums
+            raise NotImplementedError("vjp implementation argnum must match all args.")
 
         def func(*inner_args):
             return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
 
-        res, vjp_fn = jax.vjp(func, *args)
-        dx = vjp_fn(*args)
+        res, vjp_fn = jax.vjp(func, *params)
+        dx = vjp_fn(list(dy))
+        return list(res) + list(dx)
 
     # pylint: disable=unused-argument
     @vjp_prim.def_abstract_eval
@@ -104,35 +111,41 @@ def _get_vjp_prim():
     return vjp_prim
 
 
-@lru_cache
-def _get_jvp_prim():
-    """Create a primitive for gradient computations.
-    This primitive is used when capturing ``qml.jvp``.
-    """
-    if not has_jax:  # pragma: no cover
-        return None
-
-    jvp_prim = capture.QmlPrimitive("vjp")
-    jvp_prim.multiple_results = True
-    jvp_prim.prim_type = "higher_order"
-
-    @jvp_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, fn, h):
-        raise NotImplementedError
-
-    # pylint: disable=unused-argument
-    @jvp_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts, method, h):
-        avals = [v.aval for v in jaxpr.outvars]
-        return avals + avals
-
-    return jvp_prim
-
-
 def _shape(shape, dtype):
     if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
         return jax.core.DShapedArray(shape, dtype)
     return jax.core.ShapedArray(shape, dtype)
+
+
+def _get_shifted_argnums(argnum, flat_args_tuple, num_abstract_shapes):
+
+    # Create argnum for the flat list of input arrays. For each flattened argument,
+    # add a list of flat argnums if the argument is trainable and an empty list otherwise.
+    start = 0
+    flat_argnum_gen = (
+        (
+            list(range(start, (start := start + len(flat_arg))))
+            if i in argnum
+            else list(range((start := start + len(flat_arg)), start))
+        )
+        for i, flat_arg in enumerate(flat_args_tuple)
+    )
+    flat_argnum = sum(flat_argnum_gen, start=[])
+    shifted_argnum = [a + num_abstract_shapes for a in flat_argnum]
+
+    return shifted_argnum
+
+
+# pylint: disable=import-outside-toplevel
+def _get_trainable_in_tree(in_trees, argnum, argnum_is_int):
+    from jax.tree_util import treedef_tuple
+
+    # Create a new input tree that only takes inputs marked by argnum into account
+    trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
+    # If an integer was provided as argnum, unpack the arguments axis of the derivatives
+    if argnum_is_int:
+        return list(trainable_in_trees)[0]
+    return treedef_tuple(trainable_in_trees)
 
 
 @lru_cache
@@ -173,70 +186,28 @@ def _get_jacobian_prim():
     return jacobian_prim
 
 
-def _capture_vjp(func, params, cotangents, argnum=None, method=None, h=None):
-    from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
-
-    if argnum is None:
-        argnum = 0
-    if argnum_is_int := isinstance(argnum, int):
-        argnum = [argnum]
-
-    flat_params, in_trees = zip(*(tree_flatten(arg) for arg in params))
-    flat_cotangents, _ = tree_flatten(cotangents)
-
-    # Create a new input tree that only takes inputs marked by argnum into account
-    trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
-    # If an integer was provided as argnum, unpack the arguments axis of the derivatives
-    if argnum_is_int:
-        trainable_in_tree = list(trainable_in_trees)[0]
-    else:
-        trainable_in_tree = treedef_tuple(trainable_in_trees)
-
-
 def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
 
-    if argnum is None:
-        argnum = 0
-    if argnum_is_int := isinstance(argnum, int):
-        argnum = [argnum]
-
     @wraps(func)
     def new_func(*args, **kwargs):
-        flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
+        if argnum is None:
+            argnum = 0
+        if argnum_is_int := isinstance(argnum, int):
+            argnum = [argnum]
+
+        flat_args_tuple, in_trees = zip(*(tree_flatten(arg) for arg in args))
         full_in_tree = treedef_tuple(in_trees)
-
-        # Create a new input tree that only takes inputs marked by argnum into account
-        trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
-        # If an integer was provided as argnum, unpack the arguments axis of the derivatives
-        if argnum_is_int:
-            trainable_in_tree = list(trainable_in_trees)[0]
-        else:
-            trainable_in_tree = treedef_tuple(trainable_in_trees)
-
-        # Create argnum for the flat list of input arrays. For each flattened argument,
-        # add a list of flat argnums if the argument is trainable and an empty list otherwise.
-        start = 0
-        flat_argnum_gen = (
-            (
-                list(range(start, (start := start + len(flat_arg))))
-                if i in argnum
-                else list(range((start := start + len(flat_arg)), start))
-            )
-            for i, flat_arg in enumerate(flat_args)
-        )
-        flat_argnum = sum(flat_argnum_gen, start=[])
 
         # Create fully flattened function (flat inputs & outputs)
         flat_fn = capture.FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
-        flat_args = sum(flat_args, start=[])
+        flat_args = sum(flat_args_tuple, start=[])
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
 
-        num_abstract_shapes = len(abstract_shapes)
-        shifted_argnum = [a + num_abstract_shapes for a in flat_argnum]
+        shifted_argnum = _get_shifted_argnums(argnum, flat_args_tuple, len(abstract_shapes))
 
         prim_kwargs = {
             "argnum": shifted_argnum,
@@ -247,11 +218,52 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
             *jaxpr.consts, *abstract_shapes, *flat_args, **prim_kwargs, method=method, h=h
         )
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-        # The derivative output tree is the composition of output tree and trainable input trees
+        trainable_in_tree = _get_trainable_in_tree(in_trees, argnum, argnum_is_int)
         combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
         return tree_unflatten(combined_tree, out_flat)
 
     return new_func
+
+
+# pylint: disable=import-outside-toplevel
+def _capture_vjp(func, params, cotangents, *, argnum=None, method=None, h=None):
+
+    from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
+
+    if argnum is None:
+        argnum = 0
+    if argnum_is_int := isinstance(argnum, int):
+        argnum = [argnum]
+
+    flat_args_tuple, in_trees = zip(*(tree_flatten(arg) for arg in params))
+    full_in_tree = treedef_tuple(in_trees)
+
+    # Create fully flattened function (flat inputs & outputs)
+    flat_fn = capture.FlatFn(func, full_in_tree)
+    flat_args = sum(flat_args_tuple, start=[])
+    abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
+    jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
+
+    shifted_argnum = _get_shifted_argnums(argnum, flat_args_tuple, len(abstract_shapes))
+    prim_kwargs = {
+        "argnum": shifted_argnum,
+        "jaxpr": jaxpr.jaxpr,
+        "n_consts": len(jaxpr.consts),
+        "h": h,
+        "method": method,
+        "fn": func,
+    }
+    flat_cotangents = tree_flatten(cotangents)[0]
+    out_flat = _get_vjp_prim().bind(
+        *jaxpr.consts, *abstract_shapes, *flat_args, *flat_cotangents, **prim_kwargs
+    )
+    assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
+    num_res = len(jaxpr.out_avals)
+    res = tree_unflatten(flat_fn.out_tree, out_flat[:num_res])
+    trainable_in_tree = _get_trainable_in_tree(in_trees, argnum, argnum_is_int)
+
+    dargs = tree_unflatten(trainable_in_tree, out_flat[num_res:])
+    return res, dargs
 
 
 class grad:
@@ -761,6 +773,9 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     >>> vjp(x, dy)
     (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
     """
+    if capture.enabled():
+        return _capture_vjp(f, params, cotangents, method=method, h=h, argnum=argnum)
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
