@@ -244,18 +244,19 @@ class LegacyDeviceFacade(Device):
         if not execution_config:
             execution_config = ExecutionConfig()
 
+        if execution_config.mcm_config.mcm_method == "deferred":
+            program.add_transform(
+                defer_measurements,
+                allow_postselect=False,
+            )
+
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
 
         if _requests_adjoint(execution_config):
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
-        if execution_config.mcm_config.mcm_method == "deferred":
-            program.add_transform(
-                defer_measurements,
-                allow_postselect=False,
-            )
-        elif execution_config.mcm_config.mcm_method == "one-shot":
+        if execution_config.mcm_config.mcm_method == "one-shot":
             program.add_transform(
                 dynamic_one_shot,
                 postselect_mode=execution_config.mcm_config.postselect_mode,
