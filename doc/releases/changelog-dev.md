@@ -16,6 +16,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
+  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
+  Please use ``level='device'`` instead to apply the transform at the device level.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>

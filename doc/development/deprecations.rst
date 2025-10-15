@@ -129,13 +129,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* Passing the value ``None`` to the ``level`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch` ,
-  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms is deprecated and will be removed in
-  v0.44. Please use ``level='device'`` instead to apply the transform at the device level.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 * The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
 
@@ -169,6 +162,14 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
+  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
+  Please use ``level='device'`` instead to apply the transform at the device level.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
 
 * The boolean functions provided by ``pennylane.operation`` have been removed. See below for an example of alternative code to use.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
