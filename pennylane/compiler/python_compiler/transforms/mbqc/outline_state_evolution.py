@@ -163,22 +163,23 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     and not terminal_boundary_op
                 ):
                     insert_ops = set()
+                    terminal_boundary_op = None
 
                     # Insert all qubits recorded in the qubit_to_reg_idx dict before the
-                    # pre-assumed terminal opeartions.
+                    # pre-assumed terminal operations.
                     rewriter.insertion_point = InsertPoint.before(op)
                     for qb, idx in qubit_to_reg_idx.items():
                         insert_op = quantum.InsertOp(current_reg, idx, qb)
                         rewriter.insert(insert_op)
                         insert_ops.add(insert_op)
+                        terminal_boundary_op = insert_op
                         current_reg = insert_op.out_qreg
 
                     # Add the `"terminal_boundary"` attribute to the last newly added
                     # `quantum.insert` operation.
-                    list(insert_ops)[-1].attributes["terminal_boundary"] = builtin.UnitAttr()
-                    # Now a terminal boundary operation is created and terminal_boundary_op
-                    # should be updated.
-                    terminal_boundary_op = list(insert_ops)[-1]
+                    if terminal_boundary_op is None:
+                        raise RuntimeError("A terminal_boundary_op op is not found in the circuit.")
+                    terminal_boundary_op.attributes["terminal_boundary"] = builtin.UnitAttr()
 
                     # extract ops
                     rewriter.insertion_point = InsertPoint.before(op)

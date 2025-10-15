@@ -78,6 +78,25 @@ class TestOutlineStateEvolutionPass:
             run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_outline_state_evolution_no_terminal_op_error(self, run_filecheck_qjit):
+        """Test if outline_state_evolution_pass raises error when no terminal_boundary_op is found."""
+        dev = qml.device("null.qubit", wires=10)
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+        )
+        @outline_state_evolution_pass
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(
+            RuntimeError, match="A terminal_boundary_op op is not found in the circuit."
+        ):
+            circuit()
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_pass_only(self, run_filecheck_qjit):
         """Test the outline_state_evolution_pass only."""
         dev = qml.device("lightning.qubit", wires=1000)
