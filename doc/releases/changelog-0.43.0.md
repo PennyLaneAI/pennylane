@@ -1918,6 +1918,10 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 <h3>Documentation 📝</h3>
 
+* The :doc:`program capture sharp bits page </news/program_capture_sharp_bits>` has been updated to include a warning about 
+  the experimental nature of the feature.
+  [(#8448)](https://github.com/PennyLaneAI/pennylane/pull/8448)
+
 * The :doc:`installation page </development/guide/installation>` has been updated to include
   currently supported Python versions and installation instructions.
   [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
