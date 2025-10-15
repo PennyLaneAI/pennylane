@@ -210,8 +210,8 @@ class TestTrotterCDF:
             qre.TrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
@@ -351,8 +351,8 @@ class TestTrotterTHC:
             qre.TrotterTHC(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
@@ -551,8 +551,8 @@ class TestTrotterVibrational:
 
         res = qre.estimate(circ)()
 
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
@@ -705,8 +705,8 @@ class TestTrotterVibronic:
 
         res = qre.estimate(circ)()
 
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 

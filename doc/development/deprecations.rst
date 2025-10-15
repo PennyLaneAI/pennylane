@@ -9,17 +9,20 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Setting shots on a device through the `shots=` kwarg is deprecated.
-  Please use the :func:`pennylane.set_shots` transform on the :class:`~.QNode` instead.
+* Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
+  please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
+  :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
 
   .. code-block:: python
-  
+
     dev = qml.device("default.qubit", wires=2)
-    @qml.set_shots(1000)
-    @qml.qnode(dev)
+
+    @qml.qnode(dev, shots=1000)
     def circuit(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.Z(0))
+
+    circuit_analytic = qml.set_shots(circuit, None)
 
   - Deprecated in v0.43
   - Will be removed in a future version
@@ -28,10 +31,10 @@ Pending deprecations
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
   machine learning applications to benefit from enhanced support and features.
-  
+
   - Deprecated in v0.43
   - Will be removed in v0.44
-  
+
 * ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
   Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
 
@@ -75,18 +78,18 @@ Pending deprecations
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
-  
+
   - Deprecated in v0.43
   - Will be removed in a future version
 
 * ``MeasurementProcess.expand`` is deprecated. The relevant method can be replaced with 
   ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
-  
+
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``shots=`` kwarg in ``QNode`` calls is deprecated and will be removed in v0.44.
-  Instead, please use the ``qml.workflow.set_shots`` transform to set the number of shots for a ``QNode``.
+* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
+  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
@@ -102,8 +105,8 @@ Pending deprecations
     - ``print_contents`` in favor of ``print(obj)``
     - ``observables_in_order`` in favor of ``observables``
     - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order`` in favore of ``.descendants(obj, sort=True)``
+    - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
 
   - Deprecated in v0.43
   - Will be removed in v0.44
@@ -126,13 +129,14 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``level=None`` argument in the ``get_transform_program``, ``construct_batch`` , ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms is deprecated and will be removed in v0.43.
-  Please use ``level='device'`` instead to apply the noise model at the device level.
+* Passing the value ``None`` to the ``level`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch` ,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms is deprecated and will be removed in
+  v0.44. Please use ``level='device'`` instead to apply the transform at the device level.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
+* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
 
   - Deprecated in v0.43
@@ -166,7 +170,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for an example of alternative code to use.
+* The boolean functions provided by ``pennylane.operation`` have been removed. See below for an example of alternative code to use.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
   ``is_measurement``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
 
@@ -211,7 +215,7 @@ Completed deprecation cycles
         except TermsUndefinedError:
             return False
 
-* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised. They now live in
+* ``lie_closure``, ``structure_constants``, and ``center`` can no longer be accessed via ``qml.pauli``. Top level import and usage is advised. They now live in
   the ``liealg`` module.
 
   .. code-block:: python
@@ -222,9 +226,8 @@ Completed deprecation cycles
   - Deprecated in v0.40
   - Removed in v0.43
 
-* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
-  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
-  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
+* ``qml.operation.Observable`` has been removed. To indicate that an operator is an observable, operator developers should manually set
+  ``is_hermitian = True`` and update the ``queue`` function to stop it from being
   processed into the circuit.
 
   .. code-block:: python
@@ -237,19 +240,19 @@ Completed deprecation cycles
 
   To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
 
-  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+  Instead of ``Observable.compare``, ``qml.equal`` and ``op1 == op2`` should be used to compare instances.
 
   - Deprecated in v0.42
   - Removed in v0.43
 
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
-  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
+* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` have been removed. If an operation can act
+  on any number of wires, ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
   to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
-  
+
   - Deprecated in v0.42
   - Removed in v0.43
 
-* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+* The ``qml.QNode.get_gradient_fn`` method has been removed. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
 
   - Deprecated in v0.42
   - Removed in v0.43
@@ -300,7 +303,7 @@ Completed deprecation cycles
 
 * The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
-  
+
   - Deprecated in v0.41
   - Removed in v0.42
 
@@ -350,7 +353,7 @@ Completed deprecation cycles
 
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
   Instead, use the ``qml.workflow.construct_tape`` function.
-  
+
   - Deprecated in v0.40
   - Removed in v0.41
 
@@ -361,7 +364,7 @@ Completed deprecation cycles
 
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
   Instead, use the ``qml.workflow.get_best_diff_method`` function. 
-  
+
   - Deprecated in v0.40
   - Removed in v0.41
 
@@ -394,7 +397,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 
 * The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
 
@@ -417,7 +420,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 * The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
 
   - Deprecated in v0.39
@@ -434,7 +437,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 * The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
   ``qml.shadow_expval`` measurement process.
 
@@ -602,7 +605,7 @@ Completed deprecation cycles
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
-  
+
   - Deprecated in v0.35
   - Removed in v0.36
 
