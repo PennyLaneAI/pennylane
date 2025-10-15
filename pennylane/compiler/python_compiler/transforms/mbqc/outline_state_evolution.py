@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This file contains the implementation of the outline_state_evolution transform,
-written using xDSL."""
+"""This file contains the implementation of the outline_state_evolution transform."""
 
 from dataclasses import dataclass
 from itertools import chain
@@ -27,32 +26,24 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum
 
-T = TypeVar("T")
-
-
-def _get_parent_of_type(op: Operation, kind: Type[T]) -> T | None:
-    """Walk up the parent tree until an op of the specified type is found."""
-    while (op := op.parent_op()) and not isinstance(op, kind):
-        pass
-    return op
-
 
 @dataclass(frozen=True)
 class OutlineStateEvolutionPass(passes.ModulePass):
-    """Pass that put gate operations into a private outline_state_evolution callable."""
+    """Pass that puts gate operations into a private outline_state_evolution callable."""
 
     name = "outline-state-evolution"
 
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the outline-state-evolution pass."""
-        rewriter = pattern_rewriter.PatternRewriter(module)
         qnode = None
         for op in module.ops:
             if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
                 qnode = op
                 break
-        assert qnode is not None, "expected QNode in module"
+        if qnode is None:
+            raise RuntimeError("There is no funcOp with qnode attribute in the module")
+        rewriter = pattern_rewriter.PatternRewriter(module)
         OutlineStateEvolutionPattern().match_and_rewrite(qnode, rewriter)
 
 
@@ -60,7 +51,15 @@ outline_state_evolution_pass = compiler_transform(OutlineStateEvolutionPass)
 
 
 class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
-    """RewritePattern for outline state evolution regions in a quantum function."""
+    """RewritePattern for outlined state evolution regions in a quantum function."""
+
+    def _get_parent_module(self, op: Operation) -> builtin.ModuleOp:
+        """Walk up the parent tree until a builtin.ModuleOp op is found."""
+        while (op := op.parent_op()) and not isinstance(op, builtin.ModuleOp):
+            pass
+        if op is None:
+            raise RuntimeError("Got orphaned qnode function")
+        return op
 
     def __init__(self):
         self.module: builtin.ModuleOp = None
@@ -81,16 +80,14 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         """Transform a quantum function (qnode) to outline state evolution regions.
         This implementation assumes that there is only one `quantum.alloc` operation in
         the func operations with a "qnode" attribute and all quantum operations are between
-        the unique `quantum.alloc` operation and the ternimal_boundary_op. All operations in between
+        the unique `quantum.alloc` operation and the terminal_boundary_op. All operations in between
         are to be moved to the newly created outline-state-evolution function operation."""
         if "qnode" not in func_op.attributes:
             return
 
         self.original_func_op = func_op
 
-        self.module = _get_parent_of_type(func_op, builtin.ModuleOp)
-
-        assert self.module is not None, "got orphaned qnode function"
+        self.module = self._get_parent_module(func_op)
 
         # Simplify the quantum I/O to use only registers at boundaries
         self._simplify_quantum_io(func_op, rewriter)
@@ -120,8 +117,10 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         This ensures that state evolution regions only take registers as input/output,
         not individual qubits.
         """
-        # Note that there are three operations in qunatum dialects would update a qreg
-        # 1, quantum.alloc; 2, quantum.insert; 3, quantum.adjoint.
+        # Note that there are three operations in quantum dialects that return a qreg
+        # 1, quantum.alloc; 2, quantum.insert; 3, quantum.adjoint. mbqc.graph_state_prep
+        # also returns qreg but mbqc related operations should be inserted into the IR after
+        # this pass.
         current_reg = None
         qubit_to_reg_idx = {}
         terminal_boundary_op = None
@@ -206,11 +205,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         """Create a new function for the state evolution region using clone approach."""
 
         alloc_op, terminal_boundary_op = self._find_evolution_range()
-        if not alloc_op or not terminal_boundary_op:
-            raise ValueError("Could not find alloc_op or terminal_boundary_op")
-
-        if alloc_op.parent_block() != terminal_boundary_op.parent_block():
-            raise ValueError("alloc_op and terminal_boundary_op are not in the same block")
 
         # collect operation from alloc_op to terminal_boundary_op
         ops_to_clone = self._collect_operations_in_range(alloc_op, terminal_boundary_op)
@@ -273,6 +267,12 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                 alloc_op = op
             elif hasattr(op, "attributes") and "terminal_boundary" in op.attributes:
                 terminal_boundary_op = op
+
+        if not alloc_op or not terminal_boundary_op:
+            raise RuntimeError("Could not find alloc_op or terminal_boundary_op")
+
+        if alloc_op.parent_block() != terminal_boundary_op.parent_block():
+            raise RuntimeError("alloc_op and terminal_boundary_op are not in the same block")
 
         return alloc_op, terminal_boundary_op
 
