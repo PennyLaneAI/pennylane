@@ -20,7 +20,6 @@ import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.functions import bind_new_parameters
 
 

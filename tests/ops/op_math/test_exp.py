@@ -24,7 +24,6 @@ from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
 )
 from pennylane.ops.op_math import Evolution, Exp
 
