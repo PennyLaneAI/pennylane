@@ -164,7 +164,7 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.44
 
-* ``pennylane.devices.DefaultExecutionConfig`` is removed. Instead, use ``qml.devices.ExecutionConfig()``
+* ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use ``qml.devices.ExecutionConfig()``
   to create a default execution configuration.
 
   - Deprecated in v0.43
