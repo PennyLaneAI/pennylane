@@ -14,7 +14,6 @@
 """
 Tests for the add_noise transform.
 """
-
 from functools import partial
 
 import numpy as np
@@ -324,15 +323,12 @@ class TestAddNoiseInterface:
         """Test that a add_noise works with readout errors."""
         dev = qml.device("default.mixed", wires=2)
 
-        fc, fn = (
-            qml.noise.op_in([qml.RY, qml.RZ]),
-            qml.noise.partial_wires(qml.AmplitudeDamping, 0.4),
+        fc, fn = qml.noise.op_in([qml.RY, qml.RZ]), qml.noise.partial_wires(
+            qml.AmplitudeDamping, 0.4
         )
-        mc, mn = (
-            (qml.noise.meas_eq(qml.expval) | qml.noise.meas_eq(qml.var))
-            & qml.noise.wires_in([0, 1]),
-            qml.noise.partial_wires(qml.PhaseFlip, 0.2),
-        )
+        mc, mn = (qml.noise.meas_eq(qml.expval) | qml.noise.meas_eq(qml.var)) & qml.noise.wires_in(
+            [0, 1]
+        ), qml.noise.partial_wires(qml.PhaseFlip, 0.2)
 
         @partial(add_noise, noise_model=qml.NoiseModel({fc: fn}, {mc: mn}))
         @qml.qnode(dev)

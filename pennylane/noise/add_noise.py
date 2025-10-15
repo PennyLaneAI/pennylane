@@ -28,7 +28,7 @@ from .conditionals import partial_wires
 
 # pylint: disable=too-many-branches
 @transform
-def add_noise(tape, noise_model, level=None):
+def add_noise(tape, noise_model, level="user"):
     """Insert operations according to a provided noise model.
 
     Circuits passed through this quantum transform will be updated to apply the
