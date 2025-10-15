@@ -191,12 +191,13 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
 
+    if argnum is None:
+        argnum = 0
+    if argnum_is_int := isinstance(argnum, int):
+        argnum = [argnum]
+
     @wraps(func)
     def new_func(*args, **kwargs):
-        if argnum is None:
-            argnum = 0
-        if argnum_is_int := isinstance(argnum, int):
-            argnum = [argnum]
 
         flat_args_tuple, in_trees = zip(*(tree_flatten(arg) for arg in args))
         full_in_tree = treedef_tuple(in_trees)
