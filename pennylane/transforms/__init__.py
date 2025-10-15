@@ -82,7 +82,8 @@ There is a set of transforms that use ZX calculus to optimize circuits.
     zx.todd
 
 The following utility functions assist when working explicitly with ZX diagrams,
-for example when writing custom ZX compilation passes.
+for example when writing custom ZX compilation passes. Also see the section
+on intermediate representations below.
 
 .. currentmodule:: pennylane
 .. autosummary::
@@ -90,10 +91,6 @@ for example when writing custom ZX compilation passes.
 
     ~transforms.to_zx
     ~transforms.from_zx
-    ~transforms.postorder_traverse
-    ~transforms.preorder_traverse
-    ~transforms.parity_matrix
-    ~transforms.phase_polynomial
 
 Other compilation utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,12 +146,36 @@ preprocessing, getting information from a circuit, and more.
     ~quantum_monte_carlo
     ~transforms.resolve_dynamic_wires
 
+Transforms for intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically
+offering a more efficient classical description for special classes of circuits.
+The following functions produce intermediate representations of quantum circuits:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomial
+    ~transforms.rowcol
+
+In addition, there are the following utility functions to traverse a graph:
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    intermediate_reps.postorder_traverse
+    intermediate_reps.preorder_traverse
+
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These transforms only accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -375,8 +396,6 @@ from .intermediate_reps import (
     parity_matrix,
     phase_polynomial,
     rowcol,
-    postorder_traverse,
-    preorder_traverse,
 )
 from .rz_phase_gradient import rz_phase_gradient
 

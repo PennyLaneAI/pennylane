@@ -116,8 +116,8 @@ def dynamic_one_shot(
         dev = qml.device("default.qubit")
         params = np.pi / 4 * np.ones(2)
 
-        @partial(qml.set_shots, shots=100)
-        @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
+        @qml.set_shots(100)
+        @qml.qnode(dev, mcm_method="one-shot")
         def func(x, y):
             qml.RX(x, wires=0)
             m0 = qml.measure(0)
@@ -346,7 +346,6 @@ def _handle_measurement(
     postselect_mode,
     is_valid,
 ):
-
     if interface != "jax" and not has_valid:
         return _measurement_with_no_shots(m), m_count + int(m.mv is None)
 

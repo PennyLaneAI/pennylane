@@ -148,7 +148,7 @@ class TestQubitizeTHC:
         )
 
         assert wo_cost.algo_wires == expected_res["algo_wires"]
-        assert wo_cost.zeroed + wo_cost.any_state == expected_res["auxiliary_wires"]
+        assert wo_cost.zeroed_wires + wo_cost.any_state_wires == expected_res["auxiliary_wires"]
         assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     # The Toffoli and qubit costs are compared here
@@ -202,7 +202,7 @@ class TestQubitizeTHC:
         )
 
         assert wo_cost.algo_wires == expected_res["algo_wires"]
-        assert wo_cost.zeroed + wo_cost.any_state == expected_res["auxiliary_wires"]
+        assert wo_cost.zeroed_wires + wo_cost.any_state_wires == expected_res["auxiliary_wires"]
         assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):
