@@ -67,11 +67,13 @@ def _validate_level(
     if isinstance(level, (int, slice)):
         return
 
-    if isinstance(level, str) and level not in ("top", "user", "device", "gradient"):
-        raise ValueError(
-            f"level {level} not recognized. Acceptable strings are "
-            "'device', 'top', 'user', and 'gradient'."
-        )
+    if isinstance(level, str):
+        if level not in ("top", "user", "device", "gradient"):
+            raise ValueError(
+                f"level {level} not recognized. Acceptable strings are "
+                "'device', 'top', 'user', and 'gradient'."
+            )
+        return
 
     raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")
 
