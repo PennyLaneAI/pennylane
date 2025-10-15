@@ -351,6 +351,8 @@ class LegacyDeviceFacade(Device):
         return False
 
     def _validate_backprop_method(self, tape):
+        if tape is None:
+            tape = QuantumScript()
         if tape.shots:
             return False
         params = tape.get_parameters(trainable_only=False)
@@ -383,6 +385,8 @@ class LegacyDeviceFacade(Device):
         supported_device = all(hasattr(self._device, attr) for attr in required_attrs)
         supported_device = supported_device and self._device.capabilities().get("returns_state")
 
+        if tape is None:
+            tape = QuantumScript()
         if not supported_device or bool(tape.shots):
             return False
         program = TransformProgram()

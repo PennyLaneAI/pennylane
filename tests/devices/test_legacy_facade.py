@@ -240,11 +240,11 @@ def test_preprocessing_program():
     config = facade.setup_execution_config(circuit=tape)
     program = facade.preprocess_transforms(config)
 
+    assert program[0].transform == qml.defer_measurements.transform  # pylint: disable=no-member
     assert (
-        program[0].transform == legacy_device_batch_transform.transform
+        program[1].transform == legacy_device_batch_transform.transform
     )  # pylint: disable=no-member
-    assert program[1].transform == legacy_device_expand_fn.transform  # pylint: disable=no-member
-    assert program[2].transform == qml.defer_measurements.transform  # pylint: disable=no-member
+    assert program[2].transform == legacy_device_expand_fn.transform  # pylint: disable=no-member
 
     m0 = qml.measure(0)
     tape = qml.tape.QuantumScript(
@@ -316,13 +316,16 @@ class TestGradientSupport:
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="param_shift"))
 
         with pytest.raises(DeviceError):
-            dev.preprocess(ExecutionConfig(gradient_method="device"))
+            config = dev.setup_execution_config(ExecutionConfig(gradient_method="device"))
+            dev.preprocess(config)
 
         with pytest.raises(DeviceError):
-            dev.preprocess(ExecutionConfig(gradient_method="adjoint"))
+            config = dev.setup_execution_config(ExecutionConfig(gradient_method="adjoint"))
+            dev.preprocess(config)
 
         with pytest.raises(DeviceError):
-            dev.preprocess(ExecutionConfig(gradient_method="backprop"))
+            config = dev.setup_execution_config(ExecutionConfig(gradient_method="backprop"))
+            dev.preprocess(config)
 
     def test_adjoint_support(self):
         """Test that the facade can handle devices that support adjoint."""
