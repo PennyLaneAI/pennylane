@@ -361,7 +361,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         return required_outputs
 
     def _add_return_statement(self, target_block, required_outputs, value_mapper):
-        """add return statement to function"""
+        """add a func.return op to function"""
         return_values = []
         for output_val in required_outputs:
             if output_val not in value_mapper:
@@ -380,7 +380,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             self._update_value_mapper_recursively(op, cloned_op, value_mapper)
 
     def _update_value_mapper_recursively(self, orig_op, cloned_op, value_mapper):
-        """update value_mapper for all operations in operation"""
+        """recursively update value_mapper for all operations in operation"""
         for orig_result, new_result in zip(orig_op.results, cloned_op.results):
             value_mapper[orig_result] = new_result
 
