@@ -144,7 +144,8 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         qubit_to_reg_idx[op.results[i]] = qubit_to_reg_idx[qb]
                         del qubit_to_reg_idx[qb]
                 case quantum.InsertOp():
-                    assert qubit_to_reg_idx[op.qubit] is op.idx_attr if op.idx_attr else True
+                    if op.idx_attr and qubit_to_reg_idx[op.qubit] is not op.idx_attr:
+                        raise ValueError("op.qubit should be op.idx_attr.")
                     del qubit_to_reg_idx[op.qubit]
                     # update register since it might have changed
                     op.operands = (current_reg, op.idx, op.qubit)
@@ -406,9 +407,16 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                 end_idx = i + 1
                 break
 
-        assert begin_idx is not None, "alloc_op not found in original function"
-        assert end_idx is not None, "terminal_boundary_op not found in original function"
-        assert begin_idx <= end_idx, "alloc_op should come before terminal_boundary_op"
+        if begin_idx is None:
+            raise RuntimeError("A quantum.alloc operation is not found in original function.")
+        if end_idx is None:
+            raise RuntimeError(
+                "A terminal_boundary_op operation is not found in original function."
+            )
+        if begin_idx <= end_idx:
+            raise RuntimeError(
+                "A quantum.alloc operation should come before the terminal_boundary_op."
+            )
 
         pre_ops = ops_list[:begin_idx]
         post_ops = ops_list[end_idx:]
