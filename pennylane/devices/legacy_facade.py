@@ -244,18 +244,19 @@ class LegacyDeviceFacade(Device):
         if not execution_config:
             execution_config = ExecutionConfig()
 
+        if execution_config.mcm_config.mcm_method == "deferred":
+            program.add_transform(
+                defer_measurements,
+                allow_postselect=False,
+            )
+
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
 
         if _requests_adjoint(execution_config):
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
-        if execution_config.mcm_config.mcm_method == "deferred":
-            program.add_transform(
-                defer_measurements,
-                allow_postselect=False,
-            )
-        elif execution_config.mcm_config.mcm_method == "one-shot":
+        if execution_config.mcm_config.mcm_method == "one-shot":
             program.add_transform(
                 dynamic_one_shot,
                 postselect_mode=execution_config.mcm_config.postselect_mode,
@@ -350,6 +351,8 @@ class LegacyDeviceFacade(Device):
         return False
 
     def _validate_backprop_method(self, tape):
+        if tape is None:
+            tape = QuantumScript()
         if tape.shots:
             return False
         params = tape.get_parameters(trainable_only=False)
@@ -382,6 +385,8 @@ class LegacyDeviceFacade(Device):
         supported_device = all(hasattr(self._device, attr) for attr in required_attrs)
         supported_device = supported_device and self._device.capabilities().get("returns_state")
 
+        if tape is None:
+            tape = QuantumScript()
         if not supported_device or bool(tape.shots):
             return False
         program = TransformProgram()

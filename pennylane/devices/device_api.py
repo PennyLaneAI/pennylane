@@ -389,7 +389,7 @@ class Device(abc.ABC):
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
 
-        shots_present = bool(circuit and bool(circuit.shots))
+        shots_present = bool(circuit is not None and bool(circuit.shots))
         validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
         if config.mcm_config.mcm_method is None and self.capabilities is not None:
             # This is a sensible default strategy for resolving the MCM method based on declared
