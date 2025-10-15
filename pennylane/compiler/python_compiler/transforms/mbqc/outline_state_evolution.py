@@ -204,7 +204,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         current_reg = reg
 
     def _create_state_evolution_function(self, rewriter: pattern_rewriter.PatternRewriter):
-        """Create a new function for the state evolution region using clone approach."""
+        """Create a new func.func for the state evolution region using clone approach."""
 
         alloc_op, terminal_boundary_op = self._find_evolution_range()
 
@@ -308,7 +308,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         """Collect required inputs for the state evolution funcOp with a given list of operations."""
         ops_walk = list(chain(*[op.walk() for op in ops]))
 
+        # a set records the ssa values defined by the ops list
         ops_defined_values = set()
+        # a set records all the ssa values required for all operations in the ops list
         all_operands = set()
 
         for nested_op in ops_walk:
@@ -320,8 +322,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     for block in region.blocks:
                         ops_defined_values.update(block.args)
 
-        missing_values = list(all_operands - ops_defined_values)
-        required_inputs = [v for v in missing_values if v is not None]
+        # the ssa values not defined by the operations in the ops list
+        missing_defs = list(all_operands - ops_defined_values)
+        required_inputs = [v for v in missing_defs if v is not None]
 
         return required_inputs
 
@@ -329,10 +332,8 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         self, ops: list[Operation], terminal_op: Operation
     ) -> list[SSAValue]:
         """Get required outputs for the state evolution funcOp with a given list of operations.
-        Given a list of operations and a terminal operation, return the values that are
-        required by the operations after the terminal operation. Noted: It's only consdider
-        the values that are defined in the operations and required by the operations after
-        the terminal operation!
+        Noted: It's only consdider the values that are defined in the operations and required by
+        the operations after the terminal operation.
         """
         ops_walk = list(chain(*[op.walk() for op in ops]))
 
@@ -341,19 +342,23 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         for nested_op in ops_walk:
             ops_defined_values.update(nested_op.results)
 
-        required_outputs = set()
+        # use list here to maintain the order of required outputs
+        required_outputs = []
         found_terminal = False
         for op in self.original_func_op.body.walk():
+            # branch for the operations before the terminal_op
             if op == terminal_op:
                 found_terminal = True
                 continue
 
+            # branch for the operations after the terminal_op
             if found_terminal:
                 for operand in op.operands:
-                    if operand in ops_defined_values:
-                        required_outputs.add(operand)
+                    # a required output is an operand defined by a result of op in the ops
+                    if operand in ops_defined_values and operand not in required_outputs:
+                        required_outputs.append(operand)
 
-        return list(required_outputs)
+        return required_outputs
 
     def _add_return_statement(self, target_block, required_outputs, value_mapper):
         """add return statement to function"""
