@@ -167,7 +167,6 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.44
 
-
 * The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are removed.
   Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
 
