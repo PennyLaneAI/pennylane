@@ -853,6 +853,25 @@ class TestMeasurementsFromSamplesIntegration:
 
         run_filecheck_qjit(circuit)
 
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_integrate_with_decompose(self):
+        dev = qml.device("null.qubit", wires=4)
+
+        @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @measurements_from_samples_pass
+        @partial(
+            qml.transforms.decompose,
+            gate_set={"X", "Y", "Z", "S", "H", "CNOT", "RZ", "GlobalPhase"},
+        )
+        @qml.set_shots(1000)
+        @qml.qnode(dev, shots=1000)
+        def circuit():
+            qml.CRX(0.1, wires=[0, 1])
+            return qml.expval(qml.Z(0))
+
+        res = circuit()
+        assert res == 1.0
+
 
 def _counts_catalyst_to_pl(basis_states, counts):
     """Helper function to convert counts in the Catalyst format to the PennyLane format.
