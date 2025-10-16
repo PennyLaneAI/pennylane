@@ -14,7 +14,7 @@ Pending deprecations
   :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
 
   .. code-block:: python
-  
+
     dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev, shots=1000)
@@ -31,10 +31,10 @@ Pending deprecations
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
   machine learning applications to benefit from enhanced support and features.
-  
+
   - Deprecated in v0.43
   - Will be removed in v0.44
-  
+
 * ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
   Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
 
@@ -78,12 +78,12 @@ Pending deprecations
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
-  
+
   - Deprecated in v0.43
   - Will be removed in a future version
 
 
-* Specifying ``shots`` as a keyword argument when calling a :class:`~.QNode` is deprecated and will be removed in v0.44.
+* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
 
   - Deprecated in v0.43
@@ -251,7 +251,7 @@ Completed deprecation cycles
 * ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` have been removed. If an operation can act
   on any number of wires, ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
   to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
-  
+
   - Deprecated in v0.42
   - Removed in v0.43
 
@@ -306,7 +306,7 @@ Completed deprecation cycles
 
 * The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
-  
+
   - Deprecated in v0.41
   - Removed in v0.42
 
@@ -356,7 +356,7 @@ Completed deprecation cycles
 
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
   Instead, use the ``qml.workflow.construct_tape`` function.
-  
+
   - Deprecated in v0.40
   - Removed in v0.41
 
@@ -367,7 +367,7 @@ Completed deprecation cycles
 
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
   Instead, use the ``qml.workflow.get_best_diff_method`` function. 
-  
+
   - Deprecated in v0.40
   - Removed in v0.41
 
@@ -400,7 +400,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 
 * The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
 
@@ -423,7 +423,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 * The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
 
   - Deprecated in v0.39
@@ -440,7 +440,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 * The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
   ``qml.shadow_expval`` measurement process.
 
@@ -608,7 +608,7 @@ Completed deprecation cycles
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
-  
+
   - Deprecated in v0.35
   - Removed in v0.36
 
