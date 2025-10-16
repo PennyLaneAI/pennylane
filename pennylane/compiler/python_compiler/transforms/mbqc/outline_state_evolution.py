@@ -16,7 +16,6 @@
 
 from dataclasses import dataclass
 from itertools import chain
-from typing import Type, TypeVar
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
@@ -100,16 +99,18 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # Replace the original region with a call to the state evolution function
         # by inserting the corresponding callOp and update the rest of operations
         # in the qnode func.
-        self._finalize_transformation(rewriter)
+        self._finalize_transformation()
 
+    # pylint: disable=no-else-return
     def _get_extract_idx(self, op: Operation) -> int | None:
         """Get the extract index from an ExtractOp op."""
         if hasattr(op, "idx") and op.idx:
             return op.idx
-        elif hasattr(op, "idx_attr"):
+        if hasattr(op, "idx_attr"):
             return op.idx_attr
         return None
 
+    # pylint: disable=cell-var-from-loop
     def _simplify_quantum_io(
         self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
     ) -> func.FuncOp:
@@ -395,7 +396,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         orig_nested_op, cloned_nested_op, value_mapper
                     )
 
-    def _finalize_transformation(self, rewriter: pattern_rewriter.PatternRewriter):
+    def _finalize_transformation(self):
         """Replace the original function with a call to the state evolution function."""
         original_block = self.original_func_op.body.block
         ops_list = list(original_block.ops)
