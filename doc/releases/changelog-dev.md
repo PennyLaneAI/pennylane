@@ -14,8 +14,9 @@
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
-* Users can now estimate the resources for quantum circuits that contain symbolic operators 
-  like the `qml.ChangeOpBasis` operator.
+* Users can now estimate the resources for quantum circuits that contain or decompose into
+  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
+  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
 <h3>Breaking changes 💔</h3>
