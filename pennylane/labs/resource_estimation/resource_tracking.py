@@ -72,6 +72,8 @@ resource_config = {
     "precision_qrom_state_prep": 1e-9,
     "select_swap_depth": 1,
     "parallel_rotations": 1,
+    "precision_qubitization_prep": 15,
+    "precision_qubitization_select": 15
 }
 
 

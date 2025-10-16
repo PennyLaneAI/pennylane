@@ -61,7 +61,7 @@ class ResourceSelectTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        rot_prec_wires = rotation_precision #abs(math.floor(math.log2(rotation_precision)))
+        rotation_precision = rotation_precision or kwargs["config"]["precision_qubitization_select"]
 
         # Number of qubits needed for the integrals tensors
         m_register = int(np.ceil(math.log2(tensor_rank+1)))
@@ -69,7 +69,7 @@ class ResourceSelectTHC(ResourceOperator):
         gate_list = []
         # Select Circuit Fig. 5 in arXiv:2011.03494
         # Resource state
-        gate_list.append(AllocWires(rot_prec_wires))
+        gate_list.append(AllocWires(rotation_precision))
 
         # 1) SWAP gate cost (added both for swap and unswap)
 
@@ -129,9 +129,8 @@ class ResourceSelectTHC(ResourceOperator):
         tensor_rank = compact_ham.params["tensor_rank"]
 
         rotation_precision = (
-            rotation_precision or kwargs["config"]["precision_qubitization_rotation"]
+            rotation_precision or kwargs["config"]["precision_qubitization_select"]
         )
-        rot_prec_wires = rotation_precision#abs(math.floor(math.log2(rotation_precision)))
 
         gate_list = []
 
@@ -146,19 +145,19 @@ class ResourceSelectTHC(ResourceOperator):
             gate_list.append(AllocWires(1))
             gate_list.append(GateCount(mcx, 2))
 
-        phase_grad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": rot_prec_wires})
+        phase_grad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": rotation_precision})
         gate_list.append(GateCount(phase_grad, 1))
 
         swap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(GateCount(swap, 4 * num_orb))
 
         # For 2-body integrals
-        gate_list.append(AllocWires(rot_prec_wires * (num_orb - 1)))
+        gate_list.append(AllocWires(rotation_precision * (num_orb - 1)))
         qrom_twobody = resource_rep(
             plre.ResourceQROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rot_prec_wires,
+                "size_bitstring": rotation_precision,
                 "clean": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -170,7 +169,7 @@ class ResourceSelectTHC(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(
                     plre.ResourceSemiAdder,
-                    {"max_register_size": rot_prec_wires},
+                    {"max_register_size": rotation_precision},
                 ),
                 "num_ctrl_wires": 1,
                 "num_ctrl_values": 0,
@@ -190,7 +189,7 @@ class ResourceSelectTHC(ResourceOperator):
             plre.ResourceQROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rot_prec_wires,
+                "size_bitstring": rotation_precision,
                 "clean": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -228,7 +227,7 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(plre.GateCount(ccz, 1))
 
-        gate_list.append(FreeWires(rot_prec_wires * (num_orb - 1)))
+        gate_list.append(FreeWires(rotation_precision * (num_orb - 1)))
 
         if ctrl_num_ctrl_wires > 1:
             gate_list.append(FreeWires(1))
@@ -265,7 +264,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_prec_wires = coeff_precision#abs(math.floor(math.log2(coeff_precision)))
+        coeff_prec_wires = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
 
         # Number of qubits needed for the integrals tensors
         num_coeff = num_orb + tensor_rank*(tensor_rank+1)/2
@@ -350,7 +349,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_prec_wires = coeff_precision#abs(math.floor(math.log2(coeff_precision)))
+        coeff_prec_wires = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
 
         # Number of qubits needed for the integrals tensors
         num_coeff = num_orb + tensor_rank*(tensor_rank+1)/2
