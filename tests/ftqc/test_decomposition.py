@@ -30,6 +30,7 @@ from pennylane.ftqc import (
     cond_measure,
     convert_to_mbqc_formalism,
     convert_to_mbqc_gateset,
+    convert_to_mbqc_gateset_pass,
     diagonalize_mcms,
     measure_arbitrary_basis,
     measure_x,
@@ -111,6 +112,15 @@ class TestGateSetDecomposition:
 
         with pytest.raises(RuntimeError, match="requires the graph-based decomposition method"):
             _, _ = convert_to_mbqc_gateset(tape)
+
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_error_if_old_decomp_method_qjit(self):
+        """Test that a clear error is raised if trying to use the convert_to_mbqc_gateset
+        transform with the old decomposition method"""
+
+        with pytest.raises(RuntimeError, match="requires the graph-based decomposition method"):
+            _, _ = convert_to_mbqc_gateset_pass("pretend_mlir")
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qnode_integration(self):
@@ -203,6 +213,32 @@ class TestGateSetDecomposition:
         xzx_op = q.queue[0]
 
         assert np.allclose(rot_ref(angles), rot_mbqc(xzx_op))
+
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_qjit_integration(self, run_filecheck_qjit):
+        """Test that a qjitted QNode containing unsupported gates is decomposed as
+        expected by the convert_to_mbqc_gateset."""
+
+        # note the filecheck can't handle leaving RotXZX in the circuit, and we
+        # can't add a second decompose on top of the first one (yet), so we just
+        # test here with a gate that doesn't include RotXZX in its decomposition
+
+        from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+
+        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @convert_to_mbqc_gateset_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circuit_qjit():
+            # CHECK-NOT: quantum.custom "CZ"
+            # CHECK: quantum.custom "Hadamard"
+            # CHECK: quantum.custom "CNOT"
+            # CHECK: quantum.custom "Hadamard"
+            qml.CZ([0, 1])  # H(1), CNOT, H(1)
+            return qml.state()
+
+        run_filecheck_qjit(circuit_qjit)
 
 
 class TestMBQCFormalismConversion:
