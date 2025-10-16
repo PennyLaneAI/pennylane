@@ -241,11 +241,14 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         output_types = [val.type for val in ordered_outputs]
         fun_type = builtin.FunctionType.from_lists(input_types, output_types)
 
+        # create a new func.func op and insert it into the IR
         state_evolution_func = func.FuncOp(
             self.original_func_op.sym_name.data + ".state_evolution", fun_type, visibility="private"
         )
         rewriter.insert_op(state_evolution_func, InsertPoint.at_end(self.module.body.block))
 
+        # TODOs: how to define the `value_mapper` arg is not stated in the xdl.core module [here](https://github.com/xdslproject/xdsl/blob/e1301e0204bcf6ea5ed433e7da00bee57d07e695/xdsl/ir/core.py#L1429)_.
+        # It looks like storing ssa value to be cloned would maintain the dependency relationship required to build the new DAG for the new ops.
         block = state_evolution_func.regions[0].block
         value_mapper = {}
         for input, block_arg in zip(ordered_inputs, block.args):
