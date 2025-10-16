@@ -1133,7 +1133,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Add workflow to bump Catalyst and Lightning versions in RC branch after their new releases. [8352](https://github.com/PennyLaneAI/pennylane/pull/8352)
+* Add workflow to bump Catalyst and Lightning versions in RC branch, create new release tag and release draft, tag RC branch, and create PR to merge RC branch into master. [(8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
 
 * The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
   [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
