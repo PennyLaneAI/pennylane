@@ -119,11 +119,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         This ensures that state evolution regions only take registers as input/output,
         not individual qubits.
         """
-        # Note that there are three operations in quantum dialects that return a qreg
-        # 1, quantum.alloc; 2, quantum.insert; 3, quantum.adjoint. mbqc.graph_state_prep
-        # also returns qreg but mbqc related operations should be inserted into the IR after
-        # this pass.
         current_reg = None
+        # Note that all qubits recorded in the `qubit_to_reg_idx` will be inserted into
+        # the IR and the last insert_op will be set as the `terminal_boundary_op`.`
         qubit_to_reg_idx = {}
         terminal_boundary_op = None
 
