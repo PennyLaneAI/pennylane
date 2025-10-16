@@ -244,7 +244,8 @@ class grad:
         the arguments in ``argnums``.
     """
 
-    def __init__(self, func, argnums=None, h=None, method=None, argnum=None):
+    # pylint: disable=too-many-arguments
+    def __init__(self, func, argnums=None, h=None, method=None, *, argnum=None):
         self._forward = None
         self._grad_fn = None
         self._h = h
@@ -610,7 +611,8 @@ class jacobian:
 
     """
 
-    def __init__(self, func, argnums=None, method=None, h=None, argnum=None):
+    # pylint: disable=too-many-arguments
+    def __init__(self, func, argnums=None, method=None, h=None, *, argnum=None):
         self._func = func
         if argnum is not None:
             warnings.warn(
