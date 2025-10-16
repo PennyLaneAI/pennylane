@@ -5,10 +5,14 @@
 <h3>New features since last release</h3>
 
 * A new decomposition has been added to Controlled :class:`~.SemiAdder`. It is an efficient method
-  to control this operator instead of control all gates in the decomposition.
+  to control this operator instead of controlling all gates in the decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
+  capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
+  [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
@@ -33,4 +37,5 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso
-Lillian Frederiksen
+Lillian Frederiksen,
+Christina Lee,
