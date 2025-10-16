@@ -61,7 +61,9 @@ def _right_operator(wires, ik_is_zero=False):
     return [CNOT([ck, aux]), adjoint(TemporaryAND([ck, tk, aux]))]
 
 
-def _controlled_right_operator(wires, control_wires, control_values, ik_is_zero=False):
+def _controlled_right_operator(
+    wires, control_wires, control_values, ik_is_zero=False, work_wires=None
+):
     """Implement the right block in figure 4, https://arxiv.org/pdf/1709.06648"""
 
     if not ik_is_zero:
@@ -69,7 +71,12 @@ def _controlled_right_operator(wires, control_wires, control_values, ik_is_zero=
         return [
             CNOT([ck, aux]),
             adjoint(TemporaryAND([ik, tk, aux])),
-            ctrl(CNOT(wires=[ik, tk]), control=control_wires, control_values=control_values),
+            ctrl(
+                CNOT(wires=[ik, tk]),
+                control=control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+            ),
             CNOT([ck, ik]),
             CNOT([ck, tk]),
         ]
@@ -338,13 +345,19 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
 
     y_wires = base.hyperparameters["y_wires"]
     x_wires = base.hyperparameters["x_wires"]
-    work_wires = base.hyperparameters["work_wires"]
+    work_wires = base.hyperparameters["work_wires"][: len(y_wires) - 1]
+    extra_work_wires = base.hyperparameters["work_wires"][len(y_wires) - 1 :]
 
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
     if num_y_wires == 1:
-        ctrl(CNOT([x_wires[-1], y_wires[0]]), control=control_wires, control_values=control_values)
+        ctrl(
+            CNOT([x_wires[-1], y_wires[0]]),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=extra_work_wires,
+        )
         return
 
     x_wires_pl = x_wires[::-1][:num_y_wires]
@@ -362,6 +375,7 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
         CNOT([work_wires_pl[-1], y_wires_pl[-1]]),
         control=control_wires,
         control_values=control_values,
+        work_wires=extra_work_wires,
     )
 
     if num_x_wires >= num_y_wires:
@@ -373,6 +387,7 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
                 [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]],
                 control_wires=control_wires,
                 control_values=control_values,
+                work_wires=extra_work_wires,
             )
         else:
             _controlled_right_operator(
@@ -383,7 +398,12 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
             )
 
     adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
-    ctrl(CNOT([x_wires_pl[0], y_wires_pl[0]]), control=control_wires, control_values=control_values)
+    ctrl(
+        CNOT([x_wires_pl[0], y_wires_pl[0]]),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=extra_work_wires,
+    )
 
 
 add_decomps("C(SemiAdder)", _controlled_semi_adder)
