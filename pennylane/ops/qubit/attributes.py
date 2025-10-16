@@ -179,7 +179,8 @@ For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
 
 symmetric_over_control_wires = Attribute(["CCZ", "Toffoli"])
 """Attribute: Controlled operations that are the same if you exchange the order of all but
-the last (target) wire.
+the last (target) wire. Note that operators with multiple target qubits are not supposed
+to be added to this attribute.
 
 For example, ``qml.Toffoli(wires=[0, 1, 2])`` has the same effect as
 ``qml.Toffoli(wires=[1, 0, 2])``, but neither are the same as

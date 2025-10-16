@@ -45,11 +45,11 @@ def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> b
 
 
 def _ops_equal(op1: Operator, op2: Operator) -> bool:
-    """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
+    """Checks if two operators are equal in terms of class, data, hyperparameters, and
+    (potentially symmetrized) wires"""
     return (
         op1.__class__ is op2.__class__
         and _check_equality(op1.data, op2.data)
-        and _check_equality(op1.wires, op2.wires)
         and (op1.hyperparameters == op2.hyperparameters)
     )
 
@@ -75,6 +75,29 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
     # op2 is an `Adjoint` class and its base is equal to op1
     if isinstance(op2, Adjoint) and _ops_equal(op2.base, op1):
         return True
+
+    return False
+
+
+def _wires_allow_cancellation(op1: Operator, op2: Operator) -> bool:
+    if _check_equality(op1.wires, op2.wires):
+        return True
+    # If wires are not equal, there are two things that can happen.
+    # 1. There is not full overlap in the wires; we cannot cancel
+    if len(Wires.shared_wires([op1.wires, op2.wires])) != len(op1.wires):
+        return False
+
+    # 2. There is full overlap, but the wires are in a different order.
+    # If the wires are in a different order, gates that are "symmetric"
+    # over all wires (e.g., CZ), can be cancelled.
+    if op1 in symmetric_over_all_wires:
+        return True
+
+    # For other gates, as long as the control wires are the same, we can still
+    # cancel (e.g., the Toffoli gate).
+    if op1 in symmetric_over_control_wires:
+        if len(Wires.shared_wires([op1.wires[:-1], op2.wires[:-1]])) == len(op1.wires) - 1:
+            return True
 
     return False
 
@@ -365,8 +388,7 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
     operations = []
 
     while len(list_copy) > 0:
-        current_gate = list_copy[0]
-        list_copy.pop(0)
+        current_gate = list_copy.pop(0)
 
         # Find the next gate that acts on at least one of the same wires
         next_gate_idx = find_next_gate(current_gate.wires, list_copy)
@@ -379,42 +401,15 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
         # Otherwise, get the next gate
         next_gate = list_copy[next_gate_idx]
 
-        # If either of the two flags is true, we can potentially cancel the gates
         if _are_inverses(current_gate, next_gate):
-            # If the wires are the same, then we can safely remove both
-            if current_gate.wires == next_gate.wires:
+            # If the wires are the same, the ops have the same set of (all/control) wires
+            # and are symmetric over (all/control) wires, we can cancel
+            if _wires_allow_cancellation(current_gate, next_gate):
                 list_copy.pop(next_gate_idx)
-                continue
-            # If wires are not equal, there are two things that can happen.
-            # 1. There is not full overlap in the wires; we cannot cancel
-            if len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
-                current_gate.wires
-            ):
-                operations.append(current_gate)
                 continue
 
-            # 2. There is full overlap, but the wires are in a different order.
-            # If the wires are in a different order, gates that are "symmetric"
-            # over all wires (e.g., CZ), can be cancelled.
-            if current_gate in symmetric_over_all_wires:
-                list_copy.pop(next_gate_idx)
-                continue
-            # For other gates, as long as the control wires are the same, we can still
-            # cancel (e.g., the Toffoli gate).
-            if current_gate in symmetric_over_control_wires:
-                # TODO[David Wierichs]: This assumes single-qubit targets of controlled gates
-                if (
-                    len(Wires.shared_wires([current_gate.wires[:-1], next_gate.wires[:-1]]))
-                    == len(current_gate.wires) - 1
-                ):
-                    list_copy.pop(next_gate_idx)
-                    continue
-        # Apply gate any cases where
-        # - there is no wire symmetry
-        # - the control wire symmetry does not apply because the control wires are not the same
-        # - neither of the flags are_self_inverses and are_inverses are true
+        # Apply gate in any other cases
         operations.append(current_gate)
-        continue
 
     new_tape = tape.copy(operations=operations)
 

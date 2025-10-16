@@ -208,6 +208,20 @@ class TestCancelInverses:
 
         assert len(ops) == 0
 
+    def test_two_qubits_adjoints_opposite_direction(self):
+        """Test that two adjacent two-qubit operations that are the adjoint of each other but have
+        their wire order reversed do cancel due to symmetry."""
+
+        def qfunc():
+            qml.IsingXX(0.6, [0, 1])
+            qml.adjoint(qml.IsingXX(0.6, [1, 0]))
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        assert len(ops) == 0
+
 
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)

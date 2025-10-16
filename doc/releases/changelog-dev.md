@@ -6,6 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.transforms.cancel_inverses` now takes symmetry over wires into account for pairs
+  of operators that are the adjoint of each other. This improves its impact by allowing for more
+  cancellations.
+  [(#8480)](https://github.com/PennyLaneAI/pennylane/pull/8480)
+
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
@@ -34,3 +39,4 @@ This release contains contributions from (in alphabetical order):
 
 Lillian Frederiksen,
 Christina Lee,
+David Wierichs,
