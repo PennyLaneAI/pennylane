@@ -125,6 +125,9 @@ Completed deprecation cycles
   methods, providing the ``n`` parameter to perform the Suzuki-Trotter product approximation of a Hamiltonian
   with the specified number of Trotter steps.
 
+  - Deprecated in v0.43
+  - Removed in v0.44
+
   As a concrete example, consider the following case:
 
   .. code-block:: python
@@ -150,11 +153,22 @@ Completed deprecation cycles
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+
   - Deprecated in v0.43
   - Removed in v0.44
 
 * The ``qml.QNode.add_transform`` method is removed.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use ``qml.devices.ExecutionConfig()``
+  to create a default execution configuration.
 
   - Deprecated in v0.43
   - Removed in v0.44
