@@ -55,14 +55,41 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
-  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
+* Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
+  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
+  :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
+  product approximation of a Hamiltonian with the specified number of Trotter steps.
+
+  As a concrete example, consider the following case:
+
+  .. code-block:: python
+
+    coeffs = [0.5, -0.6]
+    ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+    H_flat = qml.dot(coeffs, ops)
+
+  Instead of computing the Suzuki-Trotter product approximation as:
+
+  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+
+  The same result can be obtained using :class:`~.TrotterProduct` as follows:
+
+  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
 
   - Deprecated in v0.43
-  - Will be removed in v0.44
+  - Will be removed in a future version
 
-* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are deprecated and will be removed in version v0.44.
-  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
+  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
@@ -103,11 +130,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
-  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
@@ -166,6 +188,24 @@ Completed deprecation cycles
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* The ``qml.QNode.add_transform`` method is removed.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* ``MeasurementProcess.expand`` is removed. The relevant method can be replaced with 
+  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
+  
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are removed.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
 
   - Deprecated in v0.43
   - Removed in v0.44

@@ -20,6 +20,7 @@
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
   methods, providing the ``n`` parameter to perform the Suzuki-Trotter product approximation of a Hamiltonian
   with the specified number of Trotter steps.
+  [(#8474)](https://github.com/PennyLaneAI/pennylane/pull/8474)
 
   As a concrete example, consider the following case:
 
@@ -46,6 +47,18 @@
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
 
+* `QuantumScript.shape` and `QuantumScript.numeric_type` are removed. The corresponding `MeasurementProcess`
+  methods should be used instead.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
+* `MeasurementProcess.expand` is removed. 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  can be used instead.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
+* The `qml.QNode.add_transform` method is removed.
+  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 <h3>Deprecations 👋</h3>
 
