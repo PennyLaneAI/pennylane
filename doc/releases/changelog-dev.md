@@ -26,6 +26,19 @@
   work wires are assumed to be restored to their original state upon completing the decomposition.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
 
+* `QuantumScript.shape` and `QuantumScript.numeric_type` are removed. The corresponding `MeasurementProcess`
+  methods should be used instead.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
+* `MeasurementProcess.expand` is removed. 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  can be used instead.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
+* The `qml.QNode.add_transform` method is removed.
+  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
