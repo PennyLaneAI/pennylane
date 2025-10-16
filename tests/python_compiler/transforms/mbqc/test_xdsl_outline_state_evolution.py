@@ -78,7 +78,7 @@ class TestOutlineStateEvolutionPass:
             run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_outline_state_evolution_no_terminal_op_error(self, run_filecheck_qjit):
+    def test_outline_state_evolution_no_terminal_op_error(self):
         """Test if outline_state_evolution_pass raises error when no terminal_boundary_op is found."""
         dev = qml.device("null.qubit", wires=10)
 
