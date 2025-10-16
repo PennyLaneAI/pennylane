@@ -74,17 +74,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
-
-    - ``print_contents`` in favor of ``print(obj)``
-    - ``observables_in_order`` in favor of ``observables``
-    - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 * The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
 
@@ -135,6 +124,17 @@ Completed deprecation cycles
   ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are restored to their original state upon completing the decomposition.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
+
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
 
   - Deprecated in v0.43
   - Removed in v0.44

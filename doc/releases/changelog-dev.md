@@ -30,6 +30,15 @@
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+  - ``print_contents`` in favor of ``print(obj)``
+  - ``observables_in_order`` in favor of ``observables``
+  - ``operations_in_order`` in favor of ``operations``
+  - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
+  - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
+
 * ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
   ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
