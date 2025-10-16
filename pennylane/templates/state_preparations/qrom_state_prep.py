@@ -64,7 +64,7 @@ class QROMStatePreparation(Operation):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
 
         import numpy as np
 

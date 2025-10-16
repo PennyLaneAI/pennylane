@@ -33,7 +33,7 @@ class ApproxTimeEvolution(Operation):
         matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
         taking the adjoint:
 
-        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n)) # doctest: +SKIP
 
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
@@ -113,7 +113,7 @@ class ApproxTimeEvolution(Operation):
                 return [qml.expval(qml.Z(i)) for i in wires]
 
         >>> circuit(1)
-        tensor([-0.41614684 -0.41614684], requires_grad=True)
+        [np.float64(-0.416...), np.float64(-0.416...)]
     """
 
     grad_method = None

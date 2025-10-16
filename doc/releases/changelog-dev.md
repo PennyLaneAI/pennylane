@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
+  capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
+  [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
+
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
@@ -33,5 +37,6 @@
 This release contains contributions from (in alphabetical order):
 
 Lillian Frederiksen,
+Christina Lee,
 Shuli Shu,
 Hongsheng Zheng,
