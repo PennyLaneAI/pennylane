@@ -158,19 +158,23 @@ def test_sixth_order(fragments, delta):
 
     bch = bch_expansion(second_order, order=7)
     for commutator, coeff in bch[2].items():
-        new_commutator = CommutatorNode(SymbolNode("ham"), CommutatorNode(commutator, commutator))
+        new_commutator = CommutatorNode(CommutatorNode(SymbolNode("ham"), commutator), SymbolNode("ham"))
         expected += (
             h_y3_y3 * coeff * (1j * delta) ** commutator.order * new_commutator.eval(fragments)
         )
 
         new_commutator = CommutatorNode(
-            SymbolNode("ham"),
-            CommutatorNode(
-                commutator,
                 CommutatorNode(
-                    SymbolNode("ham"), CommutatorNode(SymbolNode("ham"), SymbolNode("ham"))
+                    CommutatorNode(
+                        CommutatorNode(
+                            SymbolNode("ham"),
+                            commutator
+                        ),
+                        SymbolNode("ham"),
+                    ),
+                    SymbolNode("ham"),
                 ),
-            ),
+                SymbolNode("ham")
         )
         expected += (
             h_y3_hhh * coeff * (1j * delta) ** commutator.order * new_commutator.eval(fragments)
