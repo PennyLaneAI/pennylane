@@ -99,30 +99,11 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
+* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
+  Instead, the ``qml.to_openqasm`` function should be used.
 
   - Deprecated in v0.43
-  - Removed in v0.44
-
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
-  Instead, these functions should be imported from the ``pennylane.noise`` module.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
-  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Passing the value ``None`` to the ``level`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch` ,
-  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms is deprecated and will be removed in
-  v0.44. Please use ``level='device'`` instead to apply the transform at the device level.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
+  - Will be removed in a future version
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
