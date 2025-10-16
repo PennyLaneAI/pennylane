@@ -315,3 +315,33 @@ class TestOutlineStateEvolutionPass:
 
         res_ref = circuit_ref()
         assert res == res_ref
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_lightning_execution_with_multiple_qnodes(self):
+        """Test that the outline_state_evolution_pass on lightning.qubit for a circuit with multiple qnodes is executable and returns results as expected."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.X(0))
+
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit2(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.X(0))
+
+        def circuit_ref():
+            return circuit1(1.0) + circuit2(1.0)
+
+        res_ref = circuit_ref()
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+        )
+        @outline_state_evolution_pass
+        def circuit():
+            return circuit1(1.0) + circuit2(1.0)
+
+        res = circuit()
+        assert res == res_ref
