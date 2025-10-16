@@ -16,6 +16,7 @@ Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from __future__ import annotations
 
+import pprint
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -105,6 +106,14 @@ class MCMConfig:
         """Validate the configured mid-circuit measurement options."""
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+
+    def __str__(self):
+        """Return a formatted string representation of the MCMConfig."""
+        return (
+            f"{self.__class__.__name__}("
+            f"mcm_method={self.mcm_method!r}, "
+            f"postselect_mode={self.postselect_mode!r})"
+        )
 
 
 # pylint: disable=too-many-instance-attributes
@@ -209,6 +218,10 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
+
+    def __str__(self):
+        """Return a formatted string representation of the ExecutionConfig using pprint."""
+        return pprint.pformat(self)
 
 
 def __getattr__(name):
