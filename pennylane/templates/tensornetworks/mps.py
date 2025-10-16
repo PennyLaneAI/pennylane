@@ -14,7 +14,7 @@
 """
 Contains the MPS template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 import warnings
 
 from pennylane import math
@@ -151,14 +151,14 @@ class MPS(Operation):
                 return qml.state()
 
         >>> print(qml.draw(circuit, level='device')())
-        0: ─╭●─────────────┤  State
-        1: ─├●─╭●──────────┤  State
-        2: ─├●─├●─╭●───────┤  State
-        3: ─╰X─├●─├●─╭●────┤  State
-        4: ────╰X─├●─├●─╭●─┤  State
-        5: ───────╰X─├●─├●─┤  State
-        6: ──────────╰X─├●─┤  State
-        7: ─────────────╰X─┤  State
+            0: ─╭●─────────────┤ ╭State
+            1: ─├●─╭●──────────┤ ├State
+            2: ─├●─├●─╭●───────┤ ├State
+            3: ─╰X─├●─├●─╭●────┤ ├State
+            4: ────╰X─├●─├●─╭●─┤ ├State
+            5: ───────╰X─├●─├●─┤ ├State
+            6: ──────────╰X─├●─┤ ├State
+            7: ─────────────╰X─┤ ╰State
 
     """
 
@@ -231,8 +231,6 @@ class MPS(Operation):
         """int: Number of trainable parameters that the operator depends on."""
         return 0 if self._weights is None else 1
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(
         weights=None, wires=None, ind_gates=None, block=None, **kwargs

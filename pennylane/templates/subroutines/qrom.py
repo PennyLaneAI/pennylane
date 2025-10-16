@@ -114,15 +114,14 @@ class QROM(Operation):
 
     In this example, the QROM operator is applied to encode the third bitstring, associated with index 2, in the target wires.
 
-    .. code-block::
+    .. code-block:: python
 
         # a list of bitstrings is defined
         bitstrings = ["010", "111", "110", "000"]
 
         dev = qml.device("default.qubit")
 
-        @partial(qml.set_shots, shots = 1)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=1)
         def circuit():
 
             # the third index is encoded in the control wires [0, 1]
@@ -135,10 +134,8 @@ class QROM(Operation):
 
             return qml.sample(wires = [2,3,4])
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[1 1 0]]
+    >>> print(circuit())
+    [[1 1 0]]
 
 
     .. details::
@@ -434,6 +431,7 @@ def _qrom_decomposition_resources(
                 num_control_wires=num_control_select_wires,
                 op_reps=tuple(new_ops_reps),
                 partial=False,
+                num_work_wires=0,
             ): 1
         }
     else:

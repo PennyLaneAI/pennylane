@@ -270,7 +270,7 @@ class SpecialUnitary(Operation):
     For two qubits, this could look like this:
 
     >>> wires = [0, 1]
-    # Activating the Pauli words ["IY", "IZ", "XX", "XY", "YY", "YZ", "ZY", "ZZ"]
+    >>> # Activating the Pauli words ["IY", "IZ", "XX", "XY", "YY", "YZ", "ZY", "ZZ"]
     >>> theta = 0.3 * np.array([0, 1, 2, 0, -1, 1, 0, 0, 0, 1, 1, 1, 0, 0, -1])
     >>> len(theta) == 4 ** len(wires) - 1 # theta contains one parameter per Pauli word
     True
@@ -484,7 +484,11 @@ class SpecialUnitary(Operation):
             matrices = product(_pauli_matrices, repeat=num_wires)
             # Drop the identity from the generator of matrices
             _ = next(matrices)
-            A = sum(t * reduce(np.kron, letters) for t, letters in zip(theta, matrices))
+            A = sum(
+                t
+                * qml.math.asarray(reduce(qml.math.kron, pauli_ops), like=qml.math.get_interface(t))
+                for t, pauli_ops in zip(theta, matrices)
+            )
         else:
             A = qml.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
         if interface == "jax" and qml.math.ndim(theta) > 1:

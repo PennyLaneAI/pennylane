@@ -72,13 +72,16 @@ method for devices.
 
     decompose
     device_resolve_dynamic_wires
+    mid_circuit_measurements
     measurements_from_counts
     measurements_from_samples
+    validate_adjoint_trainable_params
     validate_observables
     validate_measurements
     validate_device_wires
     validate_multiprocessing_workers
     validate_adjoint_trainable_params
+    no_analytic
     no_sampling
 
 Other transforms that may be relevant to device preprocessing include:

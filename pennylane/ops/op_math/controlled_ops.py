@@ -99,8 +99,8 @@ class ControlledQubitUnitary(ControlledOp):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2])
-    Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
-        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
+    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
+        [-0.3159...,  0.948...]]), wires=[2]), control_wires=[0, 1])
 
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
@@ -113,10 +113,14 @@ class ControlledQubitUnitary(ControlledOp):
     second is in state ``1``, and the third in state ``1``, we can write:
 
     >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
+    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
+           [-0.3159...,  0.948...]]), wires=[3]), control_wires=[0, 1, 2], control_values=[False, True, True])
 
     or
 
     >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
+    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
+           [-0.3159...,  0.948...]]), wires=[3]), control_wires=[0, 1, 2], control_values=[False, True, True])
     """
 
     num_params = 1
@@ -333,8 +337,8 @@ class CH(ControlledOp):
         >>> print(qml.CH.compute_matrix())
         [[ 1.          0.          0.          0.        ]
          [ 0.          1.          0.          0.        ]
-         [ 0.          0.          0.70710678  0.70710678]
-         [ 0.          0.          0.70710678 -0.70710678]]
+         [ 0.          0.          0.707...  0.707...]
+         [ 0.          0.          0.707... -0.707...]]
         """
         return np.array(
             [
@@ -882,14 +886,14 @@ class CCZ(ControlledOp):
         **Example**
 
         >>> print(qml.CCZ.compute_matrix())
-        [[1 0 0 0 0 0 0 0]
-         [0 1 0 0 0 0 0 0]
-         [0 0 1 0 0 0 0 0]
-         [0 0 0 1 0 0 0 0]
-         [0 0 0 0 1 0 0 0]
-         [0 0 0 0 0 1 0 0]
-         [0 0 0 0 0 0 1 0]
-         [0 0 0 0 0 0 0 -1]]
+        [[ 1  0  0  0  0  0  0  0]
+        [ 0  1  0  0  0  0  0  0]
+        [ 0  0  1  0  0  0  0  0]
+        [ 0  0  0  1  0  0  0  0]
+        [ 0  0  0  0  1  0  0  0]
+        [ 0  0  0  0  0  1  0  0]
+        [ 0  0  0  0  0  0  1  0]
+        [ 0  0  0  0  0  0  0 -1]]
         """
         return np.array(
             [
@@ -1419,8 +1423,6 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
@@ -1577,12 +1579,12 @@ class MultiControlledX(ControlledOp):
 
         **Example:**
 
-        >>> print(qml.MultiControlledX.compute_decomposition(
-        ...     wires=[0,1,2,3], control_values=[1,1,1], work_wires=qml.wires.Wires("aux")))
-        [Toffoli(wires=[2, 'aux', 3]),
-        Toffoli(wires=[0, 1, 'aux']),
-        Toffoli(wires=[2, 'aux', 3]),
-        Toffoli(wires=[0, 1, 'aux'])]
+        .. code-block:: python
+
+            decomp = qml.MultiControlledX.compute_decomposition(wires=[0,1,2,3], control_values=[1,1,1], work_wires=qml.wires.Wires("aux"))
+
+        >>> print(decomp)
+        [Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux']), Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux'])]
 
         """
         wires = Wires(() if wires is None else wires)
@@ -1756,10 +1758,10 @@ class CRX(ControlledOp):
         **Example**
 
         >>> qml.CRX.compute_matrix(torch.tensor(0.5))
-        tensor([[1.0+0.0j, 0.0+0.0j,    0.0+0.0j,    0.0+0.0j],
-                [0.0+0.0j, 1.0+0.0j,    0.0+0.0j,    0.0+0.0j],
-                [0.0+0.0j, 0.0+0.0j, 0.9689+0.0j, 0.0-0.2474j],
-                [0.0+0.0j, 0.0+0.0j, 0.0-0.2474j, 0.9689+0.0j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j]])
         """
 
         interface = qml.math.get_interface(theta)
@@ -1806,12 +1808,7 @@ class CRX(ControlledOp):
         **Example:**
 
         >>> qml.CRX.compute_decomposition(1.2, wires=(0,1))
-        [RZ(1.5707963267948966, wires=[1]),
-        RY(0.6, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RY(-0.6, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RZ(-1.5707963267948966, wires=[1])]
+        [RZ(np.float64(1.5707963267948966), wires=[1]), RY(0.6, wires=[1]), CNOT(wires=[0, 1]), RY(-0.6, wires=[1]), CNOT(wires=[0, 1]), RZ(np.float64(-1.5707963267948966), wires=[1])]
 
         """
         pi_half = qml.math.ones_like(phi) * (np.pi / 2)
@@ -2149,10 +2146,10 @@ class CRZ(ControlledOp):
         **Example**
 
         >>> qml.CRZ.compute_matrix(torch.tensor(0.5))
-        tensor([[1.0+0.0j, 0.0+0.0j,       0.0+0.0j,       0.0+0.0j],
-                [0.0+0.0j, 1.0+0.0j,       0.0+0.0j,       0.0+0.0j],
-                [0.0+0.0j, 0.0+0.0j, 0.9689-0.2474j,       0.0+0.0j],
-                [0.0+0.0j, 0.0+0.0j,       0.0+0.0j, 0.9689+0.2474j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
         if (
             qml.math.get_interface(theta) == "tensorflow"
@@ -2376,11 +2373,11 @@ class CRot(ControlledOp):
 
         **Example**
 
-         >>> qml.CRot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
-         tensor([[ 1.0+0.0j,  0.0+0.0j,        0.0+0.0j,        0.0+0.0j],
-                [ 0.0+0.0j,  1.0+0.0j,        0.0+0.0j,        0.0+0.0j],
-                [ 0.0+0.0j,  0.0+0.0j,  0.9752-0.1977j, -0.0993+0.0100j],
-                [ 0.0+0.0j,  0.0+0.0j,  0.0993+0.0100j,  0.9752+0.1977j]])
+        >>> qml.CRot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        tensor([[ 1.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  1.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.9752-0.1977j, -0.0993+0.0100j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0993+0.0100j,  0.9752+0.1977j]])
         """
         # It might be that they are in different interfaces, e.g.,
         # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
@@ -2580,10 +2577,10 @@ class ControlledPhaseShift(ControlledOp):
         **Example**
 
         >>> qml.ControlledPhaseShift.compute_matrix(torch.tensor(0.5))
-            tensor([[1.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
-                    [0.0+0.0j, 1.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
-                    [0.0+0.0j, 0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j],
-                    [0.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]])
         """
         if (
             qml.math.get_interface(phi) == "tensorflow"

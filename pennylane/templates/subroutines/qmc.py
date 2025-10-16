@@ -54,11 +54,11 @@ def probs_to_unitary(probs):
     **Example:**
 
     >>> p = np.ones(4) / 4
-    >>> probs_to_unitary(p)
-    array([[ 0.5       ,  0.5       ,  0.5       ,  0.5       ],
-           [ 0.5       , -0.83333333,  0.16666667,  0.16666667],
-           [ 0.5       ,  0.16666667, -0.83333333,  0.16666667],
-           [ 0.5       ,  0.16666667,  0.16666667, -0.83333333]])
+    >>> probs_to_unitary(p) # doctest: +SKIP
+    array([[ 0.5   ,  0.5   ,  0.5   ,  0.5   ],
+           [ 0.5   , -0.8333,  0.1667,  0.1667],
+           [ 0.5   ,  0.1667, -0.8333,  0.1667],
+           [ 0.5   ,  0.1667,  0.1667, -0.8333]])
     """
 
     if not math.is_abstract(
@@ -116,20 +116,15 @@ def func_to_unitary(func, M):
 
     >>> func = lambda i: np.sin(i) ** 2
     >>> M = 16
-    >>> func_to_unitary(func, M)
-    array([[ 1.        ,  0.        ,  0.        , ...,  0.        ,
-             0.        ,  0.        ],
-           [ 0.        , -1.        ,  0.        , ...,  0.        ,
-             0.        ,  0.        ],
-           [ 0.        ,  0.        ,  0.54030231, ...,  0.        ,
-             0.        ,  0.        ],
+    >>> func_to_unitary(func, M) # doctest: +SKIP
+    array([[ 1.    ,  0.    ,  0.    , ...,  0.    ,  0.    ,  0.    ],
+           [ 0.    , -1.    ,  0.    , ...,  0.    ,  0.    ,  0.    ],
+           [ 0.    ,  0.    ,  0.5403, ...,  0.    ,  0.    ,  0.    ],
            ...,
-           [ 0.        ,  0.        ,  0.        , ..., -0.13673722,
-             0.        ,  0.        ],
-           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-             0.75968791,  0.65028784],
-           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-             0.65028784, -0.75968791]])
+           [ 0.    ,  0.    ,  0.    , ..., -0.1367,  0.    ,  0.    ],
+           [ 0.    ,  0.    ,  0.    , ...,  0.    ,  0.7597,  0.6503],
+           [ 0.    ,  0.    ,  0.    , ...,  0.    ,  0.6503, -0.7597]],
+          shape=(32, 32))
     """
     unitary = np.zeros((2 * M, 2 * M))
 
@@ -313,7 +308,7 @@ class QuantumMonteCarlo(Operation):
 
         The ``QuantumMonteCarlo`` template can then be used:
 
-        .. code-block::
+        .. code-block:: python
 
             n = 10
             N = 2 ** n
@@ -338,7 +333,7 @@ class QuantumMonteCarlo(Operation):
         The estimated value can be retrieved using the formula :math:`\mu = (1-\cos(\pi \theta))/2`
 
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
-        0.4327096457464369
+        np.float64(0.4327...)
     """
 
     grad_method = None
@@ -350,8 +345,6 @@ class QuantumMonteCarlo(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=protected-access
         new_op._hyperparameters = dict(metadata[1])
 
         # call operation.__init__ to initialize private properties like _name, _id, _pauli_rep, etc.
@@ -402,8 +395,6 @@ class QuantumMonteCarlo(Operation):
     def num_params(self):
         return 3
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(
         A, R, Q, wires, estimation_wires, target_wires

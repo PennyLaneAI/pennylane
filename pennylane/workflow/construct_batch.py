@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable
-from functools import wraps
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
@@ -33,35 +32,6 @@ if TYPE_CHECKING:
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
-
-
-def null_postprocessing(results):
-    """A postprocessing function with null behaviour."""
-    return results[0]
-
-
-def expand_fn_transform(expand_fn: Callable) -> qml.transforms.core.TransformDispatcher:
-    """Construct a transform from a tape-to-tape function.
-
-    Args:
-        expand_fn (Callable): a function from a single tape to a single tape
-
-    Returns:
-
-        .TransformDispatcher: Returns a transform dispatcher object that that can transform any
-        circuit-like object in PennyLane.
-
-    >>> device = qml.device('default.mixed', wires=2)
-    >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
-    >>> my_transform
-    <transform: expand_fn>
-    """
-
-    @wraps(expand_fn)
-    def wrapped_expand_fn(tape, *args, **kwargs):
-        return (expand_fn(tape, *args, **kwargs),), null_postprocessing
-
-    return qml.transforms.transform(wrapped_expand_fn)
 
 
 def _get_full_transform_program(qnode: QNode, gradient_fn) -> qml.transforms.core.TransformProgram:
@@ -197,14 +167,21 @@ def get_transform_program(
 ) -> qml.transforms.core.TransformProgram:
     """Extract a transform program at a designated level.
 
+    .. warning::
+
+        Using ``level=None`` is deprecated and will be removed in a future release.
+        Please use ``level='device'`` to include all transforms.
+
     Args:
         qnode (QNode): the qnode to get the transform program for.
         level (None, str, int, slice): An indication of what transforms to use from the full program.
 
-            * ``None``: use the full transform program
-            * ``str``: Acceptable keys are ``"user"``, ``"device"``, ``"top"`` and ``"gradient"``
-            * ``int``: How many transforms to include, starting from the front of the program
-            * ``slice``: a slice to select out components of the transform program.
+            - ``None`` or ``"device"``: Uses the entire transformation pipeline.
+            - ``"top"``: Ignores transformations and returns the original tape as defined.
+            - ``"user"``: Includes transformations that are manually applied by the user.
+            - ``"gradient"``: Extracts the gradient-level tape.
+            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
+            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
 
         gradient_fn (None, str, TransformDispatcher): The processed gradient fn for the workflow.
 
@@ -341,14 +318,16 @@ def construct_batch(
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
+    .. warning::
+
+        Using ``level=None`` is deprecated and will be removed in a future release.
+        Please use ``level='device'`` to include all transforms.
+
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): And indication of what transforms to use from the full program.
-
-            * ``None``: use the full transform program.
-            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
-            * ``int``: How many transforms to include, starting from the front of the program.
-            * ``slice``: a slice to select out components of the transform program.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            this argument.
 
     Returns:
         Callable:  A function with the same call signature as the initial quantum function. This function returns
@@ -472,9 +451,7 @@ def construct_batch(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
         )
-        execution_config = _make_execution_config(
-            qnode, qnode.diff_method, mcm_config
-        )  # pylint: disable = protected-access
+        execution_config = _make_execution_config(qnode, qnode.diff_method, mcm_config)
 
         ###### Resolution of the execution config ######
         execution_config = _resolve_execution_config(

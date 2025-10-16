@@ -40,7 +40,11 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
+    @register_resources(
+        _resource_fn,
+        work_wires=base_decomposition._work_wire_spec,
+        exact=base_decomposition.exact_resources,
+    )
     def _impl(*params, wires, base, **__):
         # pylint: disable=protected-access
         qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
@@ -213,7 +217,11 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
 
     # pylint: disable=protected-access,too-many-arguments
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
+    @register_resources(
+        _resource_fn,
+        work_wires=base_decomposition._work_wire_spec,
+        exact=base_decomposition.exact_resources,
+    )
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
@@ -253,7 +261,11 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=inner_decomp._work_wire_spec)
+    @register_resources(
+        _resource_fn,
+        work_wires=inner_decomp._work_wire_spec,
+        exact=inner_decomp.exact_resources,
+    )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
@@ -278,7 +290,7 @@ def _flip_control_adjoint_resource(
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-):  # pylint: disable=unused-argument, too-many-arguments
+):  # pylint: disable=too-many-arguments
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(
@@ -318,7 +330,7 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
     }
 
 
-# pylint: disable=protected-access,unused-argument,too-many-arguments
+# pylint: disable=protected-access,unused-argument
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):

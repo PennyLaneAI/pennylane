@@ -149,7 +149,7 @@ class Hadamard(Operation):
         **Example**
 
         >>> print(qml.Hadamard.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
@@ -421,7 +421,7 @@ class PauliX(Operation):
         **Example**
 
         >>> print(qml.X.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
@@ -703,7 +703,7 @@ class PauliY(Operation):
         **Example**
 
         >>> print(qml.Y.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
@@ -958,12 +958,10 @@ class PauliZ(Operation):
         **Example**
 
         >>> print(qml.Z.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_diagonalizing_gates(
         wires: WiresLike,
@@ -1359,8 +1357,8 @@ class T(Operation):
         **Example**
 
         >>> print(qml.T.compute_matrix())
-        [[1.+0.j         0.        +0.j        ]
-         [0.+0.j         0.70710678+0.70710678j]]
+        [[1.        +0.j         0.        +0.j        ]
+        [0.        +0.j         0.70710678+0.70710678j]]
         """
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
@@ -1385,7 +1383,7 @@ class T(Operation):
         **Example**
 
         >>> print(qml.T.compute_eigvals())
-        [1.+0.j 0.70710678+0.70710678j]
+        [1.        +0.j         0.70710678+0.70710678j]
         """
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
@@ -1864,11 +1862,16 @@ class ECR(Operation):
 
         **Example**
 
-        >>> print(qml.ECR.compute_matrix())
-         [[0+0.j 0.+0.j 1/sqrt(2)+0.j 0.+1j/sqrt(2)]
-         [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
-         [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
-         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
+        >>> from pprint import pprint
+        >>> pprint(qml.ECR.compute_matrix())
+        array([[ 0.        +0.j        ,  0.        +0.j        ,
+                 0.70710678+0.j        ,  0.        +0.70710678j],
+               [ 0.        +0.j        ,  0.        +0.j        ,
+                 0.        +0.70710678j,  0.70710678+0.j        ],
+               [ 0.70710678+0.j        , -0.        -0.70710678j,
+                 0.        +0.j        ,  0.        +0.j        ],
+               [-0.        -0.70710678j,  0.70710678+0.j        ,
+                 0.        +0.j        ,  0.        +0.j        ]])
         """
 
         return np.array(
@@ -1902,7 +1905,7 @@ class ECR(Operation):
         **Example**
 
         >>> print(qml.ECR.compute_eigvals())
-        [1, -1, 1, -1]
+        [ 1 -1  1 -1]
         """
 
         return np.array([1, -1, 1, -1])
@@ -1911,28 +1914,27 @@ class ECR(Operation):
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
-           .. math:: O = O_1 O_2 \dots O_n.
+        .. math:: O = O_1 O_2 \dots O_n.
 
 
-           .. seealso:: :meth:`~.ECR.decomposition`.
+        .. seealso:: :meth:`~.ECR.decomposition`.
 
-           Args:
-               wires (Iterable, Wires): wires that the operator acts on
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
 
-           Returns:
-               list[Operator]: decomposition into lower level operations
+        Returns:
+            list[Operator]: decomposition into lower level operations
 
-           **Example:**
+        **Example:**
 
-           >>> print(qml.ECR.compute_decomposition((0,1)))
-
-
+        >>> from pprint import pprint
+        >>> pprint(qml.ECR.compute_decomposition((0,1)))
         [Z(0),
-         CNOT(wires=[0, 1]),
-         SX(1),
-         RX(1.5707963267948966, wires=[0]),
-         RY(1.5707963267948966, wires=[0]),
-         RX(1.5707963267948966, wires=[0])]
+        CNOT(wires=[0, 1]),
+        SX(1),
+        RX(1.5707963267948966, wires=[0]),
+        RY(1.5707963267948966, wires=[0]),
+        RX(1.5707963267948966, wires=[0])]
 
         """
         pi = np.pi
@@ -2060,7 +2062,7 @@ class ISWAP(Operation):
         **Example**
 
         >>> print(qml.ISWAP.compute_eigvals())
-        [1j, -1j, 1, 1]
+        [ 0.+1.j -0.-1.j  1.+0.j  1.+0.j]
         """
         return np.array([1j, -1j, 1, 1])
 
@@ -2203,11 +2205,16 @@ class SISWAP(Operation):
 
         **Example**
 
-        >>> print(qml.SISWAP.compute_matrix())
-        [[1.+0.j          0.+0.j          0.+0.j  0.+0.j]
-         [0.+0.j  0.70710678+0.j  0.+0.70710678j  0.+0.j]
-         [0.+0.j  0.+0.70710678j  0.70710678+0.j  0.+0.j]
-         [0.+0.j          0.+0.j          0.+0.j  1.+0.j]]
+        >>> from pprint import pprint
+        >>> pprint(qml.SISWAP.compute_matrix())
+        array([[1.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 0.        +0.j        ],
+            [0.        +0.j        , 0.70710678+0.j        ,
+                0.        +0.70710678j, 0.        +0.j        ],
+            [0.        +0.j        , 0.        +0.70710678j,
+                0.70710678+0.j        , 0.        +0.j        ],
+            [0.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 1.        +0.j        ]])
         """
         return np.array(
             [
@@ -2240,7 +2247,7 @@ class SISWAP(Operation):
         **Example**
 
         >>> print(qml.SISWAP.compute_eigvals())
-        [0.70710678+0.70710678j 0.70710678-0.70710678j 1.+0.j 1.+0.j]
+        [0.70710678+0.70710678j 0.70710678-0.70710678j 1.        +0.j 1.        +0.j        ]
         """
         return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
@@ -2262,7 +2269,7 @@ class SISWAP(Operation):
         **Example:**
 
         >>> print(qml.SISWAP.compute_decomposition((0,1)))
-        [SX(0)),
+        [SX(0),
         RZ(1.5707963267948966, wires=[0]),
         CNOT(wires=[0, 1]),
         SX(0),

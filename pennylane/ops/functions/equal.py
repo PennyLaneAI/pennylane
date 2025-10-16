@@ -16,8 +16,6 @@ This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 from collections.abc import Iterable
 from functools import singledispatch
 
@@ -33,7 +31,7 @@ from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Po
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
-from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep, Select
+from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -90,11 +88,6 @@ def equal(
     >>> qml.equal(prod1, prod2), qml.equal(prod1, prod3)
     (True, False)
 
-    >>> prod = qml.X(0) @ qml.Y(1)
-    >>> ham = qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)])
-    >>> qml.equal(prod, ham)
-    True
-
     >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.Z(0) @ qml.Y(1), qml.Y(1) @ qml.Z(0) @ qml.Identity("a")])
     >>> H2 = qml.Hamiltonian([1], [qml.Z(0) @ qml.Y(1)])
     >>> H3 = qml.Hamiltonian([2], [qml.Z(0) @ qml.Y(1)])
@@ -109,9 +102,9 @@ def equal(
     True
     >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
     >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.Z(0))])
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-7)
     False
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-5)
     True
 
     .. details::
@@ -127,8 +120,8 @@ def equal(
         >>> qml.equal(op1, op2, check_interface=False, check_trainability=False)
         True
 
-        >>> op3 = qml.RX(np.array(1.2, requires_grad=True), wires=0)
-        >>> op4 = qml.RX(np.array(1.2, requires_grad=False), wires=0)
+        >>> op3 = qml.RX(pnp.array(1.2, requires_grad=True), wires=0)
+        >>> op4 = qml.RX(pnp.array(1.2, requires_grad=False), wires=0)
         >>> qml.equal(op3, op4)
         False
 
@@ -189,12 +182,15 @@ def assert_equal(
     >>> op1 = qml.RX(np.array(0.12), wires=0)
     >>> op2 = qml.RX(np.array(1.23), wires=0)
     >>> qml.assert_equal(op1, op2)
-    AssertionError: op1 and op2 have different data.
-    Got (array(0.12),) and (array(1.23),)
+    Traceback (most recent call last):
+        ...
+    AssertionError: op1 and op2 have different data. Got (array(0.12),) and (array(1.23),)
 
     >>> h1 = qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)])
     >>> h2 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)])
     >>> qml.assert_equal(h1, h2)
+    Traceback (most recent call last):
+        ...
     AssertionError: op1 and op2 have different operands because op1 and op2 have different scalars. Got 2 and 1
 
     """
@@ -796,6 +792,23 @@ def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
+    return True
+
+
+@_equal_dispatch.register
+def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
+    """Determine whether two QSVT are equal"""
+    if not equal(UA1 := op1.hyperparameters["UA"], UA2 := op2.hyperparameters["UA"], **kwargs):
+        return f"op1 and op2 have different block encodings UA. Got {UA1} and {UA2}."
+    projectors1 = op1.hyperparameters["projectors"]
+    projectors2 = op2.hyperparameters["projectors"]
+    if len(projectors1) != len(projectors2):
+        return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
+    for i, (p1, p2) in enumerate(zip(projectors1, projectors2)):
+        try:
+            assert_equal(p1, p2, **kwargs)
+        except AssertionError as e:
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {e}."
     return True
 
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains a transform to apply the
+This module contains a transform ``todd`` to apply the
 `phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
 to a PennyLane Clifford + T circuit.
@@ -31,18 +31,24 @@ from .helper import _needs_pyzx
 def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Apply the `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>`__ algorithm to reduce
-    the number of T gates in the given Clifford + T circuit.
+    the number of T gates in a given Clifford + T circuit.
 
-    This transform optimizes a Clifford + T circuit by cutting it into phase-polynomial blocks,
-    and using the TODD algorithm to optimize each of these phase polynomials.
-    Depending on the number of qubits and T gates in the original circuit, it might take a long time to run.
+    This transform optimizes a `Clifford + T circuit <https://pennylane.ai/compilation/clifford-t-gate-set>`__
+    by cutting it into `phase-polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__
+    blocks, and using the TODD algorithm to optimize each of these phase polynomials.
+    Depending on the number of qubits and T gates in the original circuit, it might
+    take a long time to run.
 
     .. note::
 
         The transformed output circuit is equivalent to the input up to a global phase.
 
     The implementation is based on the
-    `pyzx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ pass.
+    `pyzx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ pass, using
+    `ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation>`__
+    under the hood.
+    It often is paired with :func:`~.transforms.zx.push_hadamards` into the combined optimization
+    pass :func:`~.transforms.zx.optimize_t_count`.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -57,9 +63,8 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         import pennylane.transforms.zx as zx
 
         dev = qml.device("default.qubit")
@@ -76,13 +81,10 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             qml.T(1)
             return qml.state()
 
-
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)())
-        0: ──S†─╭Z─╭●─╭●─┤  State
-        1: ──S──╰●─│──╰X─┤  State
-        2: ────────╰X────┤  State
+    >>> print(qml.draw(circuit)())
+    0: ──S†─╭Z─╭●─╭●─┤  State
+    1: ──S──╰●─│──╰X─┤  State
+    2: ────────╰X────┤  State
 
     """
     # pylint: disable=import-outside-toplevel

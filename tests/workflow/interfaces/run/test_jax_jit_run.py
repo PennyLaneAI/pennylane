@@ -19,10 +19,10 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
+import pennylane as qml
+
 # pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
-
-import pennylane as qml
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 jax = pytest.importorskip("jax")

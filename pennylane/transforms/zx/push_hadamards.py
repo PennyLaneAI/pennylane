@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains a transform to apply the
+This module contains a transform ``push_hadamards`` to apply the
 `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
 to a PennyLane phase-polynomial + Hadamard circuit.
@@ -30,8 +30,9 @@ from .helper import _needs_pyzx
 @transform
 def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
-    Push Hadamard gates as far as possible to one side to cancel them and create fewer larger phase-polynomial blocks,
-    improving the effectiveness of phase-polynomial optimization techniques.
+    Push Hadamard gates as far as possible to one side to cancel them and create fewer larger
+    `phase-polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__
+    blocks, improving the effectiveness of phase-polynomial optimization techniques.
 
     This transform optimizes circuits composed of phase-polynomial blocks and Hadamard gates.
     This strategy works by commuting Hadamard gates through the circuit.
@@ -44,7 +45,11 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     gates together when possible (e.g. T^4 = S^2 = Z).
 
     The implementation is based on the
-    `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
+    `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass, using
+    `ZX calculus <https://pennylane.ai/compilation/zx-calculus-intermediate-representation>`__
+    under the hood.
+    It often is paired with :func:`~.transforms.zx.todd` into the combined optimization
+    pass :func:`~.transforms.zx.optimize_t_count`.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -59,9 +64,8 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         import pennylane.transforms.zx as zx
 
         dev = qml.device("default.qubit")
@@ -79,13 +83,10 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             qml.Hadamard(2)
             return qml.state()
 
-
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)())
-        0: ──T────┤  State
-        1: ──T─╭X─┤  State
-        2: ──H─╰●─┤  State
+    >>> print(qml.draw(circuit)())
+    0: ──T────┤  State
+    1: ──T─╭X─┤  State
+    2: ──H─╰●─┤  State
 
     """
     # pylint: disable=import-outside-toplevel

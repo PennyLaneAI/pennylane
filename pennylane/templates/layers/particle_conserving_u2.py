@@ -15,12 +15,9 @@ r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
 from pennylane import math
-
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
-
-from ..embeddings import BasisEmbedding
+from pennylane.templates.embeddings import BasisEmbedding
 
 
 def u2_ex_gate(phi, wires=None):
@@ -207,14 +204,16 @@ class ParticleConservingU2(Operation):
 
         **Example**
 
-        >>> torch.tensor([[0.3, 1., 0.2]])
-        >>> qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
-        [BasisEmbedding(wires=['a', 'b']),
-         RZ(tensor(0.3000), wires=['a']),
-         RZ(tensor(1.), wires=['b']),
-         CNOT(wires=['a', 'b']),
-         CRX(tensor(0.4000), wires=['b', 'a']),
-         CNOT(wires=['a', 'b'])]
+        >>> weights = torch.tensor([[0.3, 1., 0.2]])
+        >>> ops = qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
+        RZ(tensor(0.3000), wires=['a']),
+        RZ(tensor(1.), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        CRX(0.4000000059604645, wires=['b', 'a']),
+        CNOT(wires=['a', 'b'])]
         """
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]

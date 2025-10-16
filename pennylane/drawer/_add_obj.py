@@ -25,8 +25,6 @@ Usage:
 The `_add_obj` function is automatically invoked by the text drawer when rendering a quantum circuit. Users typically do not need to call it directly.
 """
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 
 from functools import singledispatch
 
@@ -172,7 +170,7 @@ def _add_elbow_core(obj, layer_str, config):
     mapped_wires = [config.wire_map[w] for w in obj.wires]
     layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
     layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
-    layer_str[mapped_wires[2]] += "─"
+    layer_str[mapped_wires[2]] += "⊕"
     return layer_str, mapped_wires
 
 
@@ -182,7 +180,8 @@ def _add_left_elbow(
 ):
     """Updates ``layer_str`` with ``op`` operation of type ``TemporaryAND``,
     also known as left elbow."""
-    layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
     layer_str, _ = _add_elbow_core(obj, layer_str, config)
     return layer_str
 

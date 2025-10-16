@@ -16,11 +16,10 @@ Contains the CVNeuralNetLayers template.
 """
 from pennylane import math
 
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access,arguments-differ
+# pylint: disable=too-many-arguments
 from pennylane.operation import Operation
 from pennylane.ops.cv import Displacement, Kerr, Squeezing
-
-from ..subroutines import Interferometer
+from pennylane.templates.subroutines import Interferometer
 
 
 class CVNeuralNetLayers(Operation):
@@ -178,7 +177,7 @@ class CVNeuralNetLayers(Operation):
 
         >>> theta_1 = torch.tensor([[0.4]])
         >>> phi_1 = torch.tensor([[-0.3]])
-        >>> varphi_1 = = torch.tensor([[1.7, 0.1]])
+        >>> varphi_1 = torch.tensor([[1.7, 0.1]])
         >>> r = torch.tensor([[-1., -0.2]])
         >>> phi_r = torch.tensor([[0.2, -0.2]])
         >>> theta_2 = torch.tensor([[1.4]])
