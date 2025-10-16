@@ -82,13 +82,11 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-
 * Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
-
 
 * Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
 
@@ -100,6 +98,11 @@ Pending deprecations
 
   - Deprecated in v0.43
   - Will be removed in v0.44
+
+* The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
 
 * Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
   Instead, these functions should be imported from the ``pennylane.noise`` module.
@@ -157,11 +160,6 @@ Completed deprecation cycles
 
 * The ``qml.QNode.add_transform`` method is removed.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
-
-  - Deprecated in v0.43
-  - Removed in v0.44
-
-* The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
 
   - Deprecated in v0.43
   - Removed in v0.44
