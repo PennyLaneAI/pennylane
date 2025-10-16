@@ -118,7 +118,7 @@ def test_fourth_order(fragments, delta):
     bch = bch_expansion(second_order, order=5)
     for commutator, coeff in bch[2].items():
         new_commutator = CommutatorNode(
-            SymbolNode("ham"), CommutatorNode(commutator, SymbolNode("ham"))
+                CommutatorNode(SymbolNode("ham"), commutator), SymbolNode("ham")
         )
         expected += y3 * coeff * (1j * delta) ** commutator.order * new_commutator.eval(fragments)
     for commutator, coeff in bch[4].items():
