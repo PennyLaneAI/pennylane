@@ -57,15 +57,15 @@ def about():
         dist_name = "name"
 
     info = None
-    if find_spec("pip") is not None:  # skip if pip is not available
-        try:
-            info = check_output(
-                [sys.executable, "-m", "pip", "show", "pennylane"],
-                text=True,
-                stderr=DEVNULL,  # suppress "no module named pip" error
-            )
-        except (CalledProcessError, FileNotFoundError):
-            info = None
+
+    try:
+        info = check_output(
+            [sys.executable, "-m", "pip", "show", "pennylane"],
+            text=True,
+            stderr=DEVNULL,  # suppress "no module named pip" error
+        )
+    except (CalledProcessError, FileNotFoundError):
+        pass
 
     if info is None:
         try:
