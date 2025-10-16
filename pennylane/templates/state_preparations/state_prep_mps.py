@@ -254,7 +254,7 @@ class MPSPrep(Operation):
 
     Example using the ``lightning.tensor`` device:
 
-    .. code-block::
+    .. code-block:: python
 
         mps = [
             np.array([[0.0, 0.107], [0.994, 0.0]]),
@@ -267,21 +267,21 @@ class MPSPrep(Operation):
             np.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
 
+    .. code-block::
+
         dev = qml.device("lightning.tensor", wires=3)
         @qml.qnode(dev)
         def circuit():
             qml.MPSPrep(mps, wires = [0,1,2])
             return qml.state()
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
-        0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
+    >>> print(circuit()) # doctest: +SKIP
+    [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
+    0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
 
     Example using the ``default.qubit`` device:
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=4)
         @qml.qnode(dev)
@@ -289,11 +289,9 @@ class MPSPrep(Operation):
             qml.MPSPrep(mps, wires = [1,2,3], work_wires = [0])
             return qml.state()
 
-    .. code-block:: pycon
-
-        >>> print(circuit()[:8])
-        [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
-        0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
+    >>> print(circuit()[:8]) # doctest: +SKIP
+    [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
+      0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
 
     .. details::
         :title: Usage Details

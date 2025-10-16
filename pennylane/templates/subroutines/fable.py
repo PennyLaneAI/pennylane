@@ -67,8 +67,8 @@ class FABLE(Operation):
     >>> expected = 2**s * qml.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
     >>> print(f"Block-encoded matrix:\n{expected}")
     Block-encoded matrix:
-    [[0.1 0.2]
-    [0.3 -0.2]]
+    [[ 0.1  0.2]
+     [ 0.3 -0.2]]
 
     .. note::
         FABLE can be implemented for matrices of arbitrary shape and size.

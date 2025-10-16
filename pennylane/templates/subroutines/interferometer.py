@@ -119,16 +119,16 @@ class Interferometer(CVOperation):
 
             shapes = [[6, ], [6, ], [4, ]]
             params = []
-            for shape in shapes:
-                params.append(np.random.random(shape))
+            rng = np.random.default_rng(12345)
+            params = [rng.random(shape) for shape in shapes]
 
         Using these random parameters, the resulting circuit is:
 
         >>> print(qml.draw(circuit, level="device")(params))
-        0: ─╭BS(0.97,0.09)────────────────╭BS(0.89,0.33)──R(0.83)────────────────┤  <I>
-        1: ─╰BS(0.97,0.09)─╭BS(0.94,0.05)─╰BS(0.89,0.33)─╭BS(0.92,0.27)──R(0.36)─┤
-        2: ─╭BS(0.78,0.20)─╰BS(0.94,0.05)─╭BS(0.60,0.39)─╰BS(0.92,0.27)──R(0.28)─┤
-        3: ─╰BS(0.78,0.20)────────────────╰BS(0.60,0.39)──R(0.54)────────────────┤
+        0: ─╭BS(0.23,0.60)────────────────╭BS(0.68,0.94)──R(0.67)────────────────┤  <I>
+        1: ─╰BS(0.23,0.60)─╭BS(0.80,0.67)─╰BS(0.68,0.94)─╭BS(0.33,0.95)──R(0.10)─┤
+        2: ─╭BS(0.32,0.19)─╰BS(0.80,0.67)─╭BS(0.39,0.25)─╰BS(0.33,0.95)──R(0.44)─┤
+        3: ─╰BS(0.32,0.19)────────────────╰BS(0.39,0.25)──R(0.89)────────────────┤
 
         Using different values for optional arguments:
 

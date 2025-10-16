@@ -6,11 +6,28 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
+  capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
+  [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
+
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
 <h3>Breaking changes 💔</h3>
+
+* `QuantumScript.shape` and `QuantumScript.numeric_type` are removed. The corresponding `MeasurementProcess`
+  methods should be used instead.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
+* `MeasurementProcess.expand` is removed. 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  can be used instead.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
+* The `qml.QNode.add_transform` method is removed.
+  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 <h3>Deprecations 👋</h3>
 
@@ -32,4 +49,5 @@
 This release contains contributions from (in alphabetical order):
 
 Lillian Frederiksen,
+Christina Lee,
 Shuli Shu
