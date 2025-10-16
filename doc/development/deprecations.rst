@@ -82,11 +82,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* ``MeasurementProcess.expand`` is deprecated. The relevant method can be replaced with 
-  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
 
 * Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
@@ -94,11 +89,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are deprecated and will be removed in version v0.44.
-  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
 
 * Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
 
@@ -136,11 +126,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
-  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
@@ -169,6 +154,24 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``qml.QNode.add_transform`` method is removed.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* ``MeasurementProcess.expand`` is removed. The relevant method can be replaced with 
+  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
+  
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are removed.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
 
 * The boolean functions provided by ``pennylane.operation`` have been removed. See below for an example of alternative code to use.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
