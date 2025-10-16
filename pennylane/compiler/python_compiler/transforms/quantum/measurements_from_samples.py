@@ -583,9 +583,11 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
     if isinstance(shots_extract_op, arith.ConstantOp):
         shots_value_attribute: builtin.IntAttr = shots_extract_op.properties.get("value")
         return shots_value_attribute.value.data
-    
-    raise ValueError(f"Expected owner of shots operand to be a tensor.ExtractOp or arith.ConstantOp but got "
-                     f"{type(shots_extract_op).__name__}")
+
+    raise ValueError(
+        f"Expected owner of shots operand to be a tensor.ExtractOp or arith.ConstantOp but got "
+        f"{type(shots_extract_op).__name__}"
+    )
 
 
 @xdsl_module
