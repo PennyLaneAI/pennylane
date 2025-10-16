@@ -86,7 +86,12 @@ def _controlled_right_operator(
     return [
         CNOT([ck, aux]),
         adjoint(TemporaryAND([ck, tk, aux])),
-        ctrl(CNOT(wires=[ck, tk]), control=control_wires, control_values=control_values),
+        ctrl(
+            CNOT(wires=[ck, tk]),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+        ),
         CNOT([ck, tk]),
     ]
 
