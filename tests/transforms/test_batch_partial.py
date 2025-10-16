@@ -244,7 +244,7 @@ def test_partial_evaluation_autograd(diff_method):
     # check the results against individually executed circuits
     indiv_grad = []
     for x_indiv in x:
-        indiv_grad.append(qml.grad(circuit, argnum=0)(x_indiv, y))
+        indiv_grad.append(qml.grad(circuit, argnums=0)(x_indiv, y))
 
     assert np.allclose(grad, indiv_grad)
 
