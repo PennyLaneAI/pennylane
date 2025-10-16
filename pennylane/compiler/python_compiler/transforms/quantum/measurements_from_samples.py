@@ -565,7 +565,6 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
     shots_operand = device_op.shots
     shots_extract_op = shots_operand.owner
 
-    # This branch is for a stablehlo.ConstantOp that stores the values of `shots`
     if isinstance(shots_extract_op, tensor.ExtractOp):
         shots_constant_op = shots_extract_op.operands[0].owner
         shots_value_attribute: builtin.DenseIntOrFPElementsAttr = shots_constant_op.properties.get(
