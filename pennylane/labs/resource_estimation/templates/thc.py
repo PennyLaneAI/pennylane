@@ -34,167 +34,392 @@ from pennylane.wires import Wires
 
 
 class ResourceSelectTHC(ResourceOperator):
+    """Note: The phase gradient state prep cost is not included here."""
 
-    def __init__(self, compact_ham, rotation_precision= 2e-5, wires=None):
+    def __init__(self, compact_ham, select_swap_depth=None, rotation_precision= None, wires=None):
 
         self.compact_ham = compact_ham
+        self.select_swap_depth = select_swap_depth
         self.rotation_precision = rotation_precision
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
-        self.num_wires = num_orb*2 +  2 * int(np.ceil(math.log2(2*tensor_rank+1)))
+        self.num_wires = num_orb*2 +  2 * int(np.ceil(math.log2(tensor_rank+1))) + 6
         super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
-        return {"compact_ham": self.compact_ham, "rotation_precision": self.rotation_precision}
+        return {"compact_ham": self.compact_ham, "select_swap_depth": self.select_swap_depth, "rotation_precision": self.rotation_precision}
 
     @classmethod
-    def resource_rep(cls, compact_ham, rotation_precision=2e-5) -> CompressedResourceOp:
-        params = {"compact_ham": compact_ham,"rotation_precision": rotation_precision}
+    def resource_rep(cls, compact_ham, select_swap_depth=None, rotation_precision=None) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham, "select_swap_depth": select_swap_depth, "rotation_precision": rotation_precision}
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def default_resource_decomp(cls, compact_ham, rotation_precision=2e-5, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, compact_ham, select_swap_depth=None, rotation_precision=None, **kwargs) -> list[GateCount]:
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        rot_prec_wires = abs(math.floor(math.log2(rotation_precision)))
+        rotation_precision = rotation_precision or kwargs["config"]["precision_qubitization_select"]
 
         # Number of qubits needed for the integrals tensors
-        m_register = int(np.ceil(math.log2(2*tensor_rank+1)))
+        m_register = int(np.ceil(math.log2(tensor_rank+1)))
 
         gate_list = []
         # Select Circuit Fig. 5 in arXiv:2011.03494
-        # Resource state, 2 wires for spin registers, one for checking between one-body and two-body
-
-        gate_list.append(AllocWires(rot_prec_wires + 3))
+        # Resource state
+        gate_list.append(AllocWires(rotation_precision))
 
         # 1) SWAP gate cost (added both for swap and unswap)
 
         swap = resource_rep(plre.ResourceCSWAP)
-        gate_list.append(plre.GateCount(swap, 2*num_orb))
+        gate_list.append(plre.GateCount(swap, 4*num_orb))
 
 
         # 2) Loading angles and rotations
         # Qubits for loading angles, will change based on parallel rotations
-        mult_rots = resource_rep(plre.ResourceParallelMultiplexedRotation, {"num_ctrl_wires": m_register, "total_rotations":num_orb-1})
-        gate_list.append(plre.GateCount(mult_rots, 4))
+        # For two body integrals
+        mult_rots_twobody = resource_rep(plre.ResourceParallelMultiplexedRotation, {"num_bit_strings": tensor_rank, "total_rotations":num_orb-1, "select_swap_depth": select_swap_depth, "precision": rotation_precision})
+        gate_list.append(plre.GateCount(mult_rots_twobody, 1))
 
-        # 3) Extra QROM cost for unloading the last angle
+        adj_twobody_rot = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": mult_rots_twobody})
+        gate_list.append(plre.GateCount(adj_twobody_rot, 1))
 
-        qrom_angle = resource_rep(plre.ResourceQROM,
-            {
-                "num_bitstrings": 2**m_register,
-                "size_bitstring": rot_prec_wires,
-                "clean": False,
-            }
-        )
+        # For one body integrals
+        mult_rots_onebody = resource_rep(plre.ResourceParallelMultiplexedRotation, {"num_bit_strings": tensor_rank, "total_rotations":num_orb-1, "one_body":True, "select_swap_depth": select_swap_depth, "precision": rotation_precision})
+        gate_list.append(plre.GateCount(mult_rots_onebody, 1))
 
-        gate_list.append(plre.GateCount(qrom_angle,1))
-
+        adj_onebody_rot = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": mult_rots_onebody})
+        gate_list.append(plre.GateCount(adj_onebody_rot, 1))
 
         # 4) Z operation
         # Z gate in the center of rotations
-        cz = resource_rep(plre.ResourceControlled,
-                    {
-                       "base_cmpr_op": plre.ResourceZ.resource_rep(),
-                        "num_ctrl_wires": 1,
-                        "num_ctrl_values": 0,
-                    })
+
+        gate_list.append(plre.GateCount(resource_rep(plre.ResourceZ)))
+        cz = resource_rep(plre.ResourceCZ)
         gate_list.append(plre.GateCount(cz, 1))
 
-        ccz = resource_rep(plre.ResourceControlled,
-                    {
-                       "base_cmpr_op": plre.ResourceZ.resource_rep(),
-                        "num_ctrl_wires": 2,
-                        "num_ctrl_values": 1,
-                    })
-        gate_list.append(plre.GateCount(ccz, 1))
         return gate_list
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, compact_ham, rotation_precision=None, select_swap_depth=None, **kwargs
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for the controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+                Hamiltonian on which the select operator is being applied
+            coeff_precision (float, optional): precision for loading the rotation angles
+            rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
+
+        Resources:
+            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+
+        rotation_precision = (
+            rotation_precision or kwargs["config"]["precision_qubitization_select"]
+        )
+
+        gate_list = []
+
+        if ctrl_num_ctrl_wires > 1:
+            mcx = resource_rep(
+                plre.ResourceMultiControlledX,
+                {
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                },
+            )
+            gate_list.append(AllocWires(1))
+            gate_list.append(GateCount(mcx, 2))
+
+        phase_grad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": rotation_precision})
+        gate_list.append(GateCount(phase_grad, 1))
+
+        swap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(GateCount(swap, 4 * num_orb))
+
+        # For 2-body integrals
+        gate_list.append(AllocWires(rotation_precision * (num_orb - 1)))
+        qrom_twobody = resource_rep(
+            plre.ResourceQROM,
+            {
+                "num_bitstrings": tensor_rank + num_orb,
+                "size_bitstring": rotation_precision,
+                "clean": False,
+                "select_swap_depth": select_swap_depth,
+            },
+        )
+        gate_list.append(GateCount(qrom_twobody))
+
+        semiadder = resource_rep(
+            plre.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(
+                    plre.ResourceSemiAdder,
+                    {"max_register_size": rotation_precision},
+                ),
+                "num_ctrl_wires": 1,
+                "num_ctrl_values": 0,
+            },
+        )
+        gate_list.append(GateCount(semiadder, num_orb - 1))
+
+        gate_list.append(
+            GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_twobody}))
+        )
+        gate_list.append(
+            GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
+        )
+
+        # For one body integrals
+        qrom_onebody = resource_rep(
+            plre.ResourceQROM,
+            {
+                "num_bitstrings": tensor_rank,
+                "size_bitstring": rotation_precision,
+                "clean": False,
+                "select_swap_depth": select_swap_depth,
+            },
+        )
+        gate_list.append(GateCount(qrom_onebody))
+
+        gate_list.append(GateCount(semiadder, num_orb - 1))
+
+        h = resource_rep(plre.ResourceHadamard)
+        s = resource_rep(plre.ResourceS)
+        s_dagg = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": s})
+
+        gate_list.append(GateCount(h, 4 * (num_orb)))
+        gate_list.append(GateCount(s, 2 * num_orb))
+        gate_list.append(GateCount(s_dagg, 2 * num_orb))
+
+        gate_list.append(
+            GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_onebody}))
+        )
+        gate_list.append(
+            GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
+        )
+
+        # Z gate in the center of rotations
+        cz = resource_rep(plre.ResourceCZ)
+        gate_list.append(plre.GateCount(cz, 1))
+
+        ccz = resource_rep(
+            plre.ResourceControlled,
+            {
+                "base_cmpr_op": plre.ResourceZ.resource_rep(),
+                "num_ctrl_wires": 2,
+                "num_ctrl_values": 1,
+            },
+        )
+        gate_list.append(plre.GateCount(ccz, 1))
+
+        gate_list.append(FreeWires(rotation_precision * (num_orb - 1)))
+
+        if ctrl_num_ctrl_wires > 1:
+            gate_list.append(FreeWires(1))
+        elif ctrl_num_ctrl_values > 0:
+            gate_list.append(GateCount(resource_rep(plre.ResourceX), 2 * ctrl_num_ctrl_values))
+
+        return gate_list
+
 
 
 class ResourcePrepTHC(ResourceOperator):
 
-    def __init__(self, compact_ham, coeff_precision= 2e-5, wires=None):
+    def __init__(self, compact_ham, coeff_precision= None, select_swap_depth=None, wires=None):
 
         self.compact_ham = compact_ham
         self.coeff_precision = coeff_precision
-        num_orb = compact_ham.params["num_orbitals"]
+        self.select_swap_depth = select_swap_depth
         tensor_rank = compact_ham.params["tensor_rank"]
-        self.num_wires = 2 * int(np.ceil(math.log2(2*tensor_rank+1)))
+        self.num_wires = 2 * int(np.ceil(math.log2(tensor_rank+1)))
         super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
-        return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision}
+        return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision, "select_swap_depth": self.select_swap_depth}
 
     @classmethod
-    def resource_rep(cls, compact_ham, coeff_precision=2e-5) -> CompressedResourceOp:
-        params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision}
+    def resource_rep(cls, compact_ham, coeff_precision=None, select_swap_depth=None) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision, "select_swap_depth":select_swap_depth}
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def default_resource_decomp(cls, compact_ham, coeff_precision=2e-5, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs) -> list[GateCount]:
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
-        coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
-        compare_precision_wires = 7 # set from paper
+        coeff_prec_wires = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
 
         # Number of qubits needed for the integrals tensors
-        num_coeff = num_orb + tensor_rank*(2*tensor_rank+1)
+        num_coeff = num_orb + tensor_rank*(tensor_rank+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
-        m_register = int(np.ceil(math.log2(2*tensor_rank+1)))
+        m_register = int(np.ceil(math.log2(tensor_rank+1)))
 
         gate_list = []
 
         # Extra wires
-        gate_list.append(AllocWires(coeff_register+2*m_register+4))
-
-        # Figure - 3 cost
-        # Comparative circuit cost taken from paper
-        toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(plre.GateCount(toffoli, 8*m_register-7))
-
-        # br-3 bits of precision
-        gate_list.append(plre.GateCount(toffoli, 2*(compare_precision_wires-3)))
+        gate_list.append(AllocWires(coeff_register+2*m_register+2*coeff_prec_wires+6))
 
         # hadamards
         hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 2*m_register))
 
-        # rotations
-        ry = resource_rep(plre.ResourceRY)
-        gate_list.append(plre.GateCount(ry, 2))
+        # Figure - 3 cost
+        # Comparative circuit cost taken from paper
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
 
-        #reflection cost
-        gate_list.append(plre.GateCount(toffoli,3))
+        # Reflection on 5 registers
+        ccz = resource_rep(plre.ResourceCCZ)
+        gate_list.append(plre.GateCount(resource_rep(plre.ResourceControlled, {"base_cmpr_op": ccz, "num_ctrl_wires":1, "num_ctrl_values":0}), 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
 
-        # inverting about zero cost
-        gate_list.append(plre.GateCount(toffoli, 2*m_register-2))
+        # hadamards
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
 
-        # Figure- 4 cost
-        gate_list.append(plre.GateCount(hadamard, 2))
+        # Rotation of ancilla with br bits of precision
+        gate_list.append(AllocWires(coeff_prec_wires))
+        gate_list.append(plre.GateCount(toffoli, 2*(coeff_prec_wires-3)))
+        gate_list.append(FreeWires(coeff_prec_wires))
+
+        # Reflection about zero on nM registers
+        gate_list.append(plre.GateCount(ccz, 2*m_register-1))
+
+        # hadamards
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        # Comparative circuit cost taken from paper
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
+
+        # Checking inequality
+        mcx = resource_rep(plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        gate_list.append(plre.GateCount(mcx, 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        x = resource_rep(plre.ResourceX)
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Figure- 4 cost (Subprepare Circuit)
+        gate_list.append(plre.GateCount(hadamard, coeff_prec_wires + 1))
 
         #Contiguous register cost
         gate_list.append(plre.GateCount(toffoli, m_register**2+m_register-1))
 
-        qrom_coeff = resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": False})
+        qrom_coeff = resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": True,"select_swap_depth": select_swap_depth})
         gate_list.append(plre.GateCount(qrom_coeff, 1))
 
         # Comparator
-        comparator = resource_rep(plre.ResourceComparator, {"num_wires": coeff_prec_wires})
-        gate_list.append(comparator)
+        comparator = resource_rep(plre.ResourceRegisterComparator, {"a_num_qubits": coeff_prec_wires, "b_num_qubits": coeff_prec_wires, "geq":False})
+        gate_list.append(plre.GateCount(comparator))
 
         # swap cost
+        cz = resource_rep(plre.ResourceCZ)
+        gate_list.append(plre.GateCount(cz, 2))
+        gate_list.append(plre.GateCount(x, 2))
+
         cswap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(plre.GateCount(cswap, 2*m_register))
 
         # swap the \mu and \nu registers
         gate_list.append(plre.GateCount(cswap, m_register))
         gate_list.append(plre.GateCount(toffoli, 1))
+
+        return gate_list
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs) -> list[GateCount]:
+
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+
+        coeff_prec_wires = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
+
+        # Number of qubits needed for the integrals tensors
+        num_coeff = num_orb + tensor_rank*(tensor_rank+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        m_register = int(np.ceil(math.log2(tensor_rank+1)))
+        gate_list = []
+
+        # hadamards
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        # Figure - 3 cost
+        # Comparative circuit cost taken from paper
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
+
+        # Reflection on 5 registers
+        ccz = resource_rep(plre.ResourceCCZ)
+        gate_list.append(plre.GateCount(resource_rep(plre.ResourceControlled, {"base_cmpr_op": ccz, "num_ctrl_wires":1, "num_ctrl_values":0}), 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        # hadamards
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        # Rotation of ancilla with br bits of precision
+        gate_list.append(AllocWires(coeff_prec_wires))
+        gate_list.append(plre.GateCount(toffoli, 2*(coeff_prec_wires-3)))
+        gate_list.append(FreeWires(coeff_prec_wires))
+
+        # Reflection about zero on nM registers
+        gate_list.append(plre.GateCount(ccz, 2*m_register-1))
+
+        # hadamards
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        # Comparative circuit cost taken from paper
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
+
+        # Checking inequality
+        mcx = resource_rep(plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        gate_list.append(plre.GateCount(mcx, 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        x = resource_rep(plre.ResourceX)
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Figure- 4 cost (Subprepare Circuit)
+        gate_list.append(plre.GateCount(hadamard, coeff_prec_wires + 1))
+
+        #Contiguous register cost
+        gate_list.append(plre.GateCount(toffoli, m_register**2+m_register-1))
+
+        qrom_adj= resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": True, "select_swap_depth": select_swap_depth})})
+        gate_list.append(plre.GateCount(qrom_adj, 1))
+
+        # swap cost
+        cz = resource_rep(plre.ResourceCZ)
+        gate_list.append(plre.GateCount(cz, 2))
+        gate_list.append(plre.GateCount(x, 2))
+
+        cswap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(plre.GateCount(cswap, 2*m_register))
+
+        # swap the \mu and \nu registers
+        gate_list.append(plre.GateCount(cswap, m_register))
+        gate_list.append(plre.GateCount(toffoli, 1))
+
+        # Extra wires
+        gate_list.append(FreeWires(coeff_register+2*m_register+2*coeff_prec_wires+6))
 
         return gate_list
 
