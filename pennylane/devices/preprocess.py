@@ -189,6 +189,15 @@ def mid_circuit_measurements(
     In the case where no method is specified, if the tape or device
     uses finite-shot, the ``qml.dynamic_one_shot`` transform will be
     applied, otherwise ``qml.defer_measurements`` is used instead.
+
+    .. warning::
+
+        This transform is deprecated and will be removed in a future release. Instead,
+        the device should determine which mcm method to use, and explicitly include
+        :func:`~pennylane.transforms.dynamic_one_shot` or :func:`~pennylane.transforms.defer_measurements`
+        in its preprocess transforms if necessary. See :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>`
+        and :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+
     """
 
     warnings.warn(
