@@ -225,21 +225,23 @@ class grad:
         the arguments in ``argnum``.
     """
 
-    def __init__(self, func, argnum=None, h=None, method=None):
+    def __init__(self, func, argnum=None, h=None, method=None, argnums=None):
         self._forward = None
         self._grad_fn = None
         self._h = h
         self._method = method
 
         self._fun = func
-        self._argnum = argnum
+        self._argnum = argnum or argnums
+
+        self.__name__ = f"<grad: {self._fun}>"
 
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
             # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
-            self._grad_fn = self._grad_with_forward(func, argnum=argnum)
+            self._grad_fn = self._grad_with_forward(func, argnum=self._argnum)
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -581,11 +583,12 @@ class jacobian:
 
     """
 
-    def __init__(self, func, argnum=None, method=None, h=None):
+    def __init__(self, func, argnum=None, method=None, h=None, argnums=None):
         self._func = func
-        self._argnum = argnum
+        self._argnum = argnums if argnums is not None else argnum
         self._method = method
         self._h = h
+        self.__name__ = f"<jacobian: {self._func}>"
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
