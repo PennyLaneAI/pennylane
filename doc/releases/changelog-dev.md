@@ -22,6 +22,10 @@
   Please use ``level='device'`` instead to apply the transform at the device level.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.	
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
 * ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
