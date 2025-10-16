@@ -53,8 +53,9 @@ outline_state_evolution_pass = compiler_transform(OutlineStateEvolutionPass)
 class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
     """RewritePattern for outlined state evolution regions in a quantum function."""
 
-    def _get_parent_module(self, op: Operation) -> builtin.ModuleOp:
-        """Walk up the parent tree until a builtin.ModuleOp op is found."""
+    # pylint: disable=too-few-public-methods
+    def _get_parent_module(self, op: func.FuncOp) -> builtin.ModuleOp:
+        """Get the first ancestral builtin.ModuleOp op of a given func.func op."""
         while (op := op.parent_op()) and not isinstance(op, builtin.ModuleOp):
             pass
         if op is None:
@@ -164,7 +165,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     and not terminal_boundary_op
                 ):
                     insert_ops = set()
-                    terminal_boundary_op = None
 
                     # Insert all qubits recorded in the qubit_to_reg_idx dict before the
                     # pre-assumed terminal operations.
@@ -379,6 +379,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
             self._update_value_mapper_recursively(op, cloned_op, value_mapper)
 
+    # pylint: disable=too-many-branches
     def _update_value_mapper_recursively(self, orig_op, cloned_op, value_mapper):
         """recursively update value_mapper for all operations in operation"""
         for orig_result, new_result in zip(orig_op.results, cloned_op.results):
