@@ -672,24 +672,6 @@ class QNode:
         """The transform program used by the QNode."""
         return self._transform_program
 
-    @debug_logger
-    def add_transform(self, transform_container: TransformContainer):
-        """Add a transform (container) to the transform program.
-
-        .. warning::
-
-            This method is deprecated and will be removed in v0.44. Instead, please use :meth:`~.TransformProgram.push_back` on
-            the ``QNode.transform_program`` property to add transforms to the transform program.
-
-        .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
-        """
-        warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44. "
-            "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
-            PennyLaneDeprecationWarning,
-        )
-        self._transform_program.push_back(transform_container=transform_container)
-
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
 
