@@ -321,7 +321,7 @@ def __getattr__(name):
         from pennylane.devices.qubit.simulate import _find_post_processed_mcms  # tach-ignore
 
         return _find_post_processed_mcms
-    if name in {"find_post_processed_mcms", "get_mcm_predicates"}:
+    if name == "get_mcm_predicates":
         # warnings.warn(
         #    f"{name} has been moved from the measurements module to pennylane.ops.mid_measure.",
         #    PennyLaneDeprecationWarning,

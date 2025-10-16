@@ -44,6 +44,23 @@ from pennylane.wires import Wires
 # pylint: disable=too-few-public-methods, unused-argument
 
 
+def test_measurements_module_getattr():
+    """Test that the getattr raises an attribute error for things that dont exist."""
+    with pytest.raises(AttributeError):
+        qml.measurements.not_here  # pylint: disable=pointless-statement
+
+
+def test_mid_measure_deprecations():
+
+    assert qml.measurements.MidMeasureMP == qml.ops.MidMeasure
+    assert qml.measurements.MeasurementValue == qml.ops.MeasurementValue
+    assert qml.measurements.measure == qml.ops.measure
+    assert qml.measurements.get_mcm_predicates == qml.ops.mid_measure.get_mcm_predicates
+    from pennylane.devices.qubit.simulate import _find_post_processed_mcms
+
+    assert qml.measurements.find_post_processed_mcms == _find_post_processed_mcms
+
+
 class NotValidMeasurement(MeasurementProcess):
     _shortname = "NotValidReturnType"
 

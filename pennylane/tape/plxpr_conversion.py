@@ -62,7 +62,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
     >>> collector.state
-        {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(Array(2.4, dtype=float32, weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
+    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(Array(2.4, dtype=float32, weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
 
     After execution, the collected operations and measurements are available in the ``state``
     property.
