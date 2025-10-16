@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
 
@@ -57,7 +58,11 @@ two_h2_ph = np.array(  # in physicist notation
 )
 def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
     r"""Test that the DoubleFactorization class initiates correct parameters."""
-    est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.DoubleFactorization`` is deprecated"
+    ):
+        est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
+
     assert np.allclose(est.one_electron, one)
     assert np.allclose(est.two_electron, two)
     assert np.allclose(est.error, error)
@@ -76,7 +81,11 @@ def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
 )
 def test_df_notation_conversion(one, two_phys, two_chem):
     r"""Test that the DoubleFactorization class initiates correct two-electron integrals."""
-    est = qml.resource.DoubleFactorization(one, two_phys, chemist_notation=False)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.DoubleFactorization`` is deprecated"
+    ):
+        est = qml.resource.DoubleFactorization(one, two_phys, chemist_notation=False)
+
     assert np.allclose(est.two_electron, two_chem)
 
 
@@ -112,7 +121,10 @@ def test_df_notation_conversion(one, two_phys, two_chem):
 )
 def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m, rank_max):
     r"""Test that DoubleFactorization class returns correct factorization values."""
-    est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.DoubleFactorization`` is deprecated"
+    ):
+        est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
 
     assert np.allclose(est.n, n)
     assert np.allclose(est.factors, factors)
@@ -126,7 +138,10 @@ def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m
 @pytest.mark.parametrize(("one", "two", "lamb"), [(one_h2, two_h2_ph, 1.6570518796336895)])
 def test_df_lamb(one, two, lamb):
     r"""Test that DoubleFactorization class returns a correct norm."""
-    est = qml.resource.DoubleFactorization(one, two)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.DoubleFactorization`` is deprecated"
+    ):
+        est = qml.resource.DoubleFactorization(one, two)
 
     assert np.allclose(est.lamb, lamb)
 
@@ -134,7 +149,10 @@ def test_df_lamb(one, two, lamb):
 @pytest.mark.parametrize(("one", "two", "g_cost", "q_cost"), [(one_h2, two_h2, 876953, 113)])
 def test_df_costs(one, two, g_cost, q_cost):
     r"""Test that DoubleFactorization class returns correct costs."""
-    est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.DoubleFactorization`` is deprecated"
+    ):
+        est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
 
     assert np.allclose(est.gates, g_cost)
     assert np.allclose(est.qubits, q_cost)

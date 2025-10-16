@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 @pytest.mark.parametrize(
@@ -30,7 +31,10 @@ from pennylane import numpy as np
 )
 def test_fq_params(n, eta, omega, error, charge, br):
     r"""Test that the FirstQuantization class initiates correct parameters."""
-    est = qml.resource.FirstQuantization(n, eta, omega)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.FirstQuantization`` is deprecated"
+    ):
+        est = qml.resource.FirstQuantization(n, eta, omega)
 
     assert np.allclose(est.n, n)
     assert np.allclose(est.eta, eta)
@@ -48,7 +52,10 @@ def test_fq_params(n, eta, omega, error, charge, br):
 )
 def test_fq_vals(n, eta, omega, lamb, g_cost, q_cost):
     r"""Test that the FirstQuantization class computes correct attributes."""
-    est = qml.resource.FirstQuantization(n, eta, omega)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.FirstQuantization`` is deprecated"
+    ):
+        est = qml.resource.FirstQuantization(n, eta, omega)
 
     assert np.allclose(est.lamb, lamb)
     assert np.allclose(est.gates, g_cost)
@@ -320,7 +327,10 @@ def test_norm_error(n, eta, omega, error, br, charge):
 )
 def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
     r"""Test that the FirstQuantization class computes correct attributes."""
-    est = qml.resource.FirstQuantization(n, eta, omega, vectors=vectors)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``qml.resource.FirstQuantization`` is deprecated"
+    ):
+        est = qml.resource.FirstQuantization(n, eta, omega, vectors=vectors)
 
     assert np.allclose(est.lamb, lamb)
     assert np.allclose(est.gates, g_cost)
@@ -336,7 +346,10 @@ def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
 def test_init_error_1(n, eta, omega, error, br, charge, vectors):
     r"""Test that init raises an error when volume and vectors are None."""
     with pytest.raises(ValueError, match="The lattice vectors must be provided"):
-        qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``qml.resource.FirstQuantization`` is deprecated"
+        ):
+            qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
 
 
 @pytest.mark.parametrize(
@@ -362,7 +375,10 @@ def test_init_error_1(n, eta, omega, error, br, charge, vectors):
 def test_init_error_2(n, eta, omega, error, br, charge, vectors):
     r"""Test that init raises an error when volume and vectors are None."""
     with pytest.raises(ValueError, match="lattice vectors and the unit cell volume should not be"):
-        qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``qml.resource.FirstQuantization`` is deprecated"
+        ):
+            qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
 
 
 @pytest.mark.parametrize(

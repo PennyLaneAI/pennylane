@@ -16,9 +16,12 @@ This module contains the functions needed for estimating the number of logical q
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
+import warnings
+
 import numpy as np
 import scipy as sp
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 
 
@@ -31,6 +34,11 @@ class FirstQuantization(Operation):
     computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
     :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
     value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
+
+    .. note::
+
+        ``qml.resource.FirstQuantization`` is deprecated and will be removed in v0.45.
+        Instead, please use ``qml.estimator.FirstQuantization`.
 
     Args:
         n (int): number of plane waves
@@ -100,6 +108,12 @@ class FirstQuantization(Operation):
         self.br = br
         self.vectors = vectors
         self.cubic = True
+
+        warnings.warn(
+            "``qml.resource.FirstQuantization`` is deprecated and will be removed in v0.45. "
+            "Instead, please use ``qml.estimator.FirstQuantization``",
+            PennyLaneDeprecationWarning,
+        )
 
         if omega is None and vectors is None:
             raise ValueError("The lattice vectors must be provided.")

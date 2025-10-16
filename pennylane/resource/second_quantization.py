@@ -16,8 +16,11 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 # pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
+import warnings
+
 import numpy as np
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.qchem import factorize
 
@@ -25,6 +28,11 @@ from pennylane.qchem import factorize
 class DoubleFactorization(Operation):
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
     algorithm in second quantization with a double-factorized Hamiltonian.
+
+    .. note::
+
+        ``qml.resource.DoubleFactorization`` is deprecated and will be removed in v0.45.
+        Instead, please use ``qml.estimator.DoubleFactorization`.
 
     Atomic units are used throughout the class.
 
@@ -119,6 +127,12 @@ class DoubleFactorization(Operation):
         self.br = br
         self.alpha = alpha
         self.beta = beta
+
+        warnings.warn(
+            "``qml.resource.DoubleFactorization`` is deprecated and will be removed in v0.45. "
+            "Instead, please use ``qml.estimator.DoubleFactorization``",
+            PennyLaneDeprecationWarning,
+        )
 
         self.n = two_electron.shape[0] * 2
 
