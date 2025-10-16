@@ -28,7 +28,7 @@ from pennylane.labs.trotter_error.product_formulas.bch import (
 )
 from pennylane.labs.trotter_error.product_formulas.commutator import CommutatorNode, SymbolNode
 
-deltas = [0.5, 0.1, 0.01]
+deltas = [1, 0.5, 0.1, 0.01]
 
 np.random.seed(42)
 fragment_list = [
@@ -117,10 +117,10 @@ def test_fourth_order(fragments, delta):
 
     bch = bch_expansion(second_order, order=5)
     for commutator, coeff in bch[2].items():
-        commutator = CommutatorNode(
+        new_commutator = CommutatorNode(
             SymbolNode("ham"), CommutatorNode(commutator, SymbolNode("ham"))
         )
-        expected += y3 * coeff * (1j * delta) ** commutator.order * commutator.eval(fragments)
+        expected += y3 * coeff * (1j * delta) ** commutator.order * new_commutator.eval(fragments)
     for commutator, coeff in bch[4].items():
         expected += y5 * coeff * (1j * delta) ** commutator.order * commutator.eval(fragments)
 
