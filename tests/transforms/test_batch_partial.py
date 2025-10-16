@@ -454,7 +454,7 @@ def test_lambda_evaluation_autograd(diff_method):
     # check the results against individually executed circuits
     indiv_grad = []
     for y0_indiv in y0:
-        grad_wrt_second_arg = qml.grad(circuit, argnum=1)(x, y + y0_indiv * np.ones(2))
+        grad_wrt_second_arg = qml.grad(circuit, argnums=1)(x, y + y0_indiv * np.ones(2))
         grad_wrt_y0 = qml.math.sum(grad_wrt_second_arg)
         indiv_grad.append(grad_wrt_y0)
 
