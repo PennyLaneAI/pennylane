@@ -82,11 +82,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* ``MeasurementProcess.expand`` is deprecated. The relevant method can be replaced with 
-  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
 
 * Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
@@ -94,11 +89,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are deprecated and will be removed in version v0.44.
-  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
 
 * Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
 
@@ -122,6 +112,14 @@ Pending deprecations
 
   - Deprecated in v0.43
   - Will be removed in v0.44
+
+* Passing the value ``None`` to the ``level`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch` ,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms is deprecated and will be removed in
+  v0.44. Please use ``level='device'`` instead to apply the transform at the device level.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
@@ -157,6 +155,12 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.44
 
+* The ``qml.QNode.add_transform`` method is removed.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
 * The ``QuantumScript.to_openqasm`` method has been removed. Instead, the ``qml.to_openqasm`` function should be used.
 
   - Deprecated in v0.43
@@ -166,6 +170,18 @@ Completed deprecation cycles
   :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
   :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
   Please use ``level='device'`` instead to apply the transform at the device level.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* ``MeasurementProcess.expand`` is removed. The relevant method can be replaced with 
+  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
+  
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are removed.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
 
   - Deprecated in v0.43
   - Removed in v0.44
