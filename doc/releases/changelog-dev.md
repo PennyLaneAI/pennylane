@@ -41,6 +41,15 @@
 
 <h3>Deprecations 👋</h3>
 
+* Some functions and classes in the `~pennylane.resources` module are deprecated and will be
+  refactored or moved into the `~.pennylane.estimator` module in v0.45:
+  [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
+    
+    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+
 <h3>Internal changes ⚙️</h3>
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
