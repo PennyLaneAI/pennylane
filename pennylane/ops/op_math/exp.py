@@ -81,7 +81,7 @@ def _find_equal_generator(base, coeff):
     return None
 
 
-def exp(op, coeff=1.0, id=None):
+def exp(op, coeff: float = 1.0, id: str | None = None):
     """Take the exponential of an Operator times a coefficient.
 
     Args:
