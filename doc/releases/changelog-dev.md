@@ -16,6 +16,37 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
+  and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
+  methods, providing the ``n`` parameter to perform the Suzuki-Trotter product approximation of a Hamiltonian
+  with the specified number of Trotter steps.
+  [(#8474)](https://github.com/PennyLaneAI/pennylane/pull/8474)
+
+  As a concrete example, consider the following case:
+
+  .. code-block:: python
+
+    coeffs = [0.5, -0.6]
+    ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+    H_flat = qml.dot(coeffs, ops)
+
+  Instead of computing the Suzuki-Trotter product approximation as:
+
+  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+
+  The same result can be obtained using :class:`~.TrotterProduct` as follows:
+
+  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+
 * The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
   :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
   :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
