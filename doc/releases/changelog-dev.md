@@ -119,6 +119,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for :func:`pennylane.qjit` has been updated to match :func:`catalyst.qjit`.
+  [(#8485)](https://github.com/PennyLaneAI/pennylane/pull/8485)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested, 
