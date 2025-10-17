@@ -1199,7 +1199,7 @@ class TestNativeMidCircuitMeasurements:
     class MCMDevice(DefaultQubitLegacy):
         def apply(self, *args, **kwargs):
             for op in args[0]:
-                if isinstance(op, qml.measurements.MidMeasureMP):
+                if isinstance(op, qml.ops.MidMeasure):
                     kwargs["mid_measurements"][op] = 0
 
         @classmethod
@@ -1228,7 +1228,7 @@ class TestNativeMidCircuitMeasurements:
     def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
         """Test that the specified postselect mode propagates to execution as expected."""
         dev = self.MCMDevice(wires=1)
-        dev.operations.add("MidMeasureMP")
+        dev.operations.add("MidMeasure")
         pm_propagated = False
 
         def new_apply(*args, **kwargs):  # pylint: disable=unused-argument

@@ -21,7 +21,7 @@ import pytest
 
 from pennylane.ftqc import QubitMgr
 from pennylane.ftqc.utils import parity
-from pennylane.measurements import MeasurementValue, MidMeasureMP
+from pennylane.ops import MeasurementValue, MidMeasure
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
@@ -66,10 +66,10 @@ def test_parity_measurement_values(args, expected_outcome):
     with a processing function that applied the parity check when concrete values
     are provided."""
     mvs = [
-        MeasurementValue([MidMeasureMP(0, id=3)], lambda x: x),
-        MeasurementValue([MidMeasureMP(1, id=4)], lambda x: x),
-        MeasurementValue([MidMeasureMP(2, id=5)], lambda x: x),
-        MeasurementValue([MidMeasureMP(3, id=6)], lambda x: x),
+        MeasurementValue([MidMeasure(0, id=3)], lambda x: x),
+        MeasurementValue([MidMeasure(1, id=4)], lambda x: x),
+        MeasurementValue([MidMeasure(2, id=5)], lambda x: x),
+        MeasurementValue([MidMeasure(3, id=6)], lambda x: x),
     ]
 
     # only use as many MeasurementValues as matches the input arguments
@@ -90,9 +90,9 @@ def test_parity_measurement_values(args, expected_outcome):
 def test_parity_mvs_and_constant(args, expected_outcome):
     """Test that passing a sequence of MeasurementValues and a constant to the parity
     function returns the expected MeasurementValue with the correct processing function."""
-    m1 = MeasurementValue([MidMeasureMP(0, id=3)], lambda x: x)
-    m2 = MeasurementValue([MidMeasureMP(1, id=4)], lambda x: x)
-    m3 = MeasurementValue([MidMeasureMP(2, id=5)], lambda x: x)
+    m1 = MeasurementValue([MidMeasure(0, id=3)], lambda x: x)
+    m2 = MeasurementValue([MidMeasure(1, id=4)], lambda x: x)
+    m3 = MeasurementValue([MidMeasure(2, id=5)], lambda x: x)
 
     par = parity(m1, m2, m3, 1)
     assert isinstance(par, MeasurementValue)

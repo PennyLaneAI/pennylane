@@ -15,15 +15,226 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from collections.abc import Hashable
+from collections.abc import Callable, Hashable
 from functools import lru_cache
 
+from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurement_value import MeasurementValue
+
+def no_processing(results):
+    """A postprocessing function with no effect."""
+    return results
+
+
+class MeasurementValue:
+    """A class representing unknown measurement outcomes in the qubit model.
+
+    Measurements on a single qubit in the computational basis are assumed.
+
+    Args:
+        measurements (list[.MidMeasure]): The measurement(s) that this object depends on.
+        processing_fn (callable | None): A lazy transformation applied to the measurement values.
+    """
+
+    name = "MeasurementValue"
+
+    def __init__(self, measurements: list, processing_fn: Callable | None = None):
+        self.measurements = measurements
+        self._processing_fn = processing_fn
+
+    @property
+    def has_processing(self) -> bool:
+        """Whether or not classical processing is applied to the measurement value."""
+        return self._processing_fn is not None
+
+    @property
+    def processing_fn(self) -> Callable:
+        """A lazy transformation applied to the measurement values."""
+        if self._processing_fn is None:
+            return no_processing
+        return self._processing_fn
+
+    def items(self):
+        """A generator representing all the possible outcomes of the MeasurementValue."""
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
+            yield branch, self.processing_fn(*branch)
+
+    def postselected_items(self):
+        """A generator representing all the possible outcomes of the MeasurementValue,
+        taking postselection into account."""
+        # pylint: disable=stop-iteration-return
+        ps = {i: p for i, m in enumerate(self.measurements) if (p := m.postselect) is not None}
+        num_non_ps = len(self.measurements) - len(ps)
+        if num_non_ps == 0:
+            yield (), self.processing_fn(*ps.values())
+            return
+        for i in range(2**num_non_ps):
+            # Create the branch ignoring postselected measurements
+            non_ps_branch = tuple(int(b) for b in f"{i:0{num_non_ps}b}")
+            # We want a consumable iterable and the static tuple above
+            non_ps_branch_iter = iter(non_ps_branch)
+            # Extend the branch to include postselected measurements
+            full_branch = tuple(
+                ps[j] if j in ps else next(non_ps_branch_iter)
+                for j in range(len(self.measurements))
+            )
+            # Return the reduced non-postselected branch and the procesing function
+            # evaluated on the full branch
+            yield non_ps_branch, self.processing_fn(*full_branch)
+
+    @property
+    def wires(self):
+        """Returns a list of wires corresponding to the mid-circuit measurements."""
+        return Wires.all_wires([m.wires for m in self.measurements])
+
+    @property
+    def branches(self):
+        """A dictionary representing all possible outcomes of the MeasurementValue."""
+        ret_dict = {}
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
+            ret_dict[branch] = self.processing_fn(*branch)
+        return ret_dict
+
+    def map_wires(self, wire_map):
+        """Returns a copy of the current ``MeasurementValue`` with the wires of each measurement changed
+        according to the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            MeasurementValue: new ``MeasurementValue`` instance with measurement wires mapped
+        """
+        mapped_measurements = [m.map_wires(wire_map) for m in self.measurements]
+        return MeasurementValue(mapped_measurements, self._processing_fn)
+
+    def _transform_bin_op(self, base_bin, other):
+        """Helper function for defining dunder binary operations."""
+        if isinstance(other, MeasurementValue):
+            # pylint: disable=protected-access
+            return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
+        # if `other` is not a MeasurementValue then apply it to each branch
+        return self._apply(lambda v: base_bin(v, other))
+
+    def __invert__(self):
+        """Return a copy of the measurement value with an inverted control
+        value."""
+        return self._apply(math.logical_not)
+
+    def __bool__(self) -> bool:
+        raise ValueError(
+            "The truth value of a MeasurementValue is undefined. To condition on a MeasurementValue, please use qml.cond instead."
+        )
+
+    def __eq__(self, other):
+        return self._transform_bin_op(lambda a, b: a == b, other)
+
+    def __ne__(self, other):
+        return self._transform_bin_op(lambda a, b: a != b, other)
+
+    def __add__(self, other):
+        return self._transform_bin_op(lambda a, b: a + b, other)
+
+    def __radd__(self, other):
+        return self._apply(lambda v: other + v)
+
+    def __sub__(self, other):
+        return self._transform_bin_op(lambda a, b: a - b, other)
+
+    def __rsub__(self, other):
+        return self._apply(lambda v: other - v)
+
+    def __mul__(self, other):
+        return self._transform_bin_op(lambda a, b: a * b, other)
+
+    def __rmul__(self, other):
+        return self._apply(lambda v: other * math.cast_like(v, other))
+
+    def __truediv__(self, other):
+        return self._transform_bin_op(lambda a, b: a / b, other)
+
+    def __rtruediv__(self, other):
+        return self._apply(lambda v: other / v)
+
+    def __lt__(self, other):
+        return self._transform_bin_op(lambda a, b: a < b, other)
+
+    def __le__(self, other):
+        return self._transform_bin_op(lambda a, b: a <= b, other)
+
+    def __gt__(self, other):
+        return self._transform_bin_op(lambda a, b: a > b, other)
+
+    def __ge__(self, other):
+        return self._transform_bin_op(lambda a, b: a >= b, other)
+
+    def __and__(self, other):
+        return self._transform_bin_op(math.logical_and, other)
+
+    def __or__(self, other):
+        return self._transform_bin_op(math.logical_or, other)
+
+    def __mod__(self, other):
+        return self._transform_bin_op(math.mod, other)
+
+    def __xor__(self, other):
+        return self._transform_bin_op(math.logical_xor, other)
+
+    def _apply(self, fn):
+        """Apply a post computation to this measurement"""
+        return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
+
+    def concretize(self, measurements: dict):
+        """Returns a concrete value from a dictionary of hashes with concrete values."""
+        values = tuple(measurements[meas] for meas in self.measurements)
+        return self.processing_fn(*values)
+
+    def _merge(self, other: "MeasurementValue"):
+        """Merge two measurement values"""
+
+        # create a new merged list with no duplicates and in lexical ordering
+        merged_measurements = list(set(self.measurements).union(set(other.measurements)))
+        merged_measurements.sort(key=lambda m: m.id)
+
+        # create a new function that selects the correct indices for each sub function
+        def merged_fn(*x):
+            sub_args_1 = (x[i] for i in [merged_measurements.index(m) for m in self.measurements])
+            sub_args_2 = (x[i] for i in [merged_measurements.index(m) for m in other.measurements])
+
+            out_1 = self.processing_fn(*sub_args_1)
+            out_2 = other.processing_fn(*sub_args_2)
+
+            return out_1, out_2
+
+        return MeasurementValue(merged_measurements, merged_fn)
+
+    def __getitem__(self, i):
+        branch = tuple(int(b) for b in f"{i:0{len(self.measurements)}b}")
+        return self.processing_fn(*branch)
+
+    def __str__(self):
+        lines = []
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
+            id_branch_mapping = [
+                f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
+            ]
+            lines.append(
+                "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
+            )
+        return "\n".join(lines)
+
+    def __repr__(self):
+        return f"MeasurementValue(wires={self.wires.tolist()})"
 
 
 def _measure_impl(
@@ -38,7 +249,7 @@ def _measure_impl(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
+    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp])
 
 
@@ -97,27 +308,7 @@ def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementV
     return new_conds
 
 
-def find_post_processed_mcms(circuit):
-    """Return the subset of mid-circuit measurements which are required for post-processing.
-
-    This includes any mid-circuit measurement that is post-selected or the object of a terminal
-    measurement.
-    """
-    post_processed_mcms = {
-        op
-        for op in circuit.operations
-        if isinstance(op, MidMeasureMP) and op.postselect is not None
-    }
-    for m in circuit.measurements:
-        if isinstance(m.mv, list):
-            for mv in m.mv:
-                post_processed_mcms = post_processed_mcms | set(mv.measurements)
-        elif m.mv is not None:
-            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
-    return post_processed_mcms
-
-
-class MidMeasureMP(Operator):
+class MidMeasure(Operator):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
@@ -135,6 +326,9 @@ class MidMeasureMP(Operator):
         id (str): Custom label given to a measurement instance.
     """
 
+    def __repr__(self):
+        return f"MidMeasure(wires={list(self.wires)}, postselect={self.postselect}, reset={self.reset})"
+
     num_wires = 1
     num_params = 0
     batch_size = None
@@ -142,15 +336,16 @@ class MidMeasureMP(Operator):
     def __init__(
         self,
         wires: Wires | None = None,
-        reset: bool | None = False,
+        reset: bool = False,
         postselect: int | None = None,
         id: str | None = None,
     ):
         super().__init__(wires=Wires(wires), id=id)
         self._hyperparameters = {"reset": reset, "postselect": postselect, "id": id}
+        self._name = "MidMeasureMP"
 
     @property
-    def reset(self) -> bool | None:
+    def reset(self) -> bool:
         """Whether to reset the wire into the zero state after the measurement."""
         return self.hyperparameters["reset"]
 
@@ -207,6 +402,20 @@ def measure(
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
+    Args:
+        wires (Wires): The wire to measure.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
+
+    Returns:
+        MeasurementValue: A reference to the future result of the mid circuit measurement
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+
     Computational basis measurements are performed using the 0, 1 convention
     rather than the ±1 convention.
     Measurement outcomes can be used to conditionally apply operations, and measurement
@@ -217,7 +426,7 @@ def measure(
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -232,14 +441,14 @@ def measure(
 
     Executing this QNode:
 
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> pars = np.array([0.643, 0.246])
     >>> func(*pars)
-    tensor([0.90165331, 0.09834669], requires_grad=True)
+    array([0.901..., 0.0983...])
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
     to the :math:`|0 \rangle` state by setting ``reset=True``.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -252,7 +461,7 @@ def measure(
     Executing this QNode:
 
     >>> func()
-    tensor([1., 0.], requires_grad=True)
+    array([1., 0.])
 
     Mid-circuit measurements can be manipulated using the following arithmetic operators:
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
@@ -273,9 +482,9 @@ def measure(
         Computational basis measurements are performed using the 0, 1 convention rather than the ±1 convention.
         So, for example, ``expval(qml.measure(0))`` and ``expval(qml.Z(0))`` will give different answers.
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=1234)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -286,22 +495,8 @@ def measure(
                 qml.sample(m0), qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0),
             )
 
-    >>> circuit(1.0, 2.0, shots=1000)
-    (array([0, 1, 1, ..., 1, 1, 1])), 0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702})
-
-    Args:
-        wires (Wires): The wire to measure.
-        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
-            state after measurement.
-        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
-            measurement. None by default. If postselection is requested, only the post-measurement
-            state that is used for postselection will be considered in the remaining circuit.
-
-    Returns:
-        MidMeasureMP: measurement process instance
-
-    Raises:
-        QuantumFunctionError: if multiple wires were specified
+    >>> qml.set_shots(circuit, shots=1000)(1.0, 2.0)
+        (array([0, 1, 0, ... 1, 0, 1]), np.float64(0.713), np.float64(0.2046...), array([0.287, 0.713]), {0.0: np.int64(287), 1.0: np.int64(713)})
 
     .. details::
         :title: Postselection
@@ -310,9 +505,9 @@ def measure(
         argument. For example, specifying ``postselect=1`` on wire 0 would be equivalent to projecting
         the state vector onto the :math:`|1\rangle` state on wire 0:
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qml.device("default.qubit", seed=1234)
 
             @qml.qnode(dev)
             def func(x):
@@ -326,9 +521,11 @@ def measure(
 
         >>> qml.set_shots(func, 10)(np.pi / 2)
         array([[1],
-        [1],
-        [1],
-        [1]])
+            [1],
+            [1],
+            [1],
+            [1],
+            [1]])
 
         Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
         thrown away.
@@ -336,7 +533,7 @@ def measure(
         If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``
         or ``Inf`` values:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
 
@@ -348,22 +545,22 @@ def measure(
                 return qml.probs(wires=1)
 
         >>> func(0.0)
-        tensor([nan, nan], requires_grad=True)
+        array([nan, nan])
 
-        In the case of ``qml.sample``, an empty array will be returned:
+        In the case of ``qml.sample`` and `mcm_method="deferred"`, an empty array will be returned:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qml.qnode(dev, mcm_method="deferred")
             def func(x):
                 qml.RX(x, wires=0)
                 m0 = qml.measure(0, postselect=1)
                 qml.cond(m0, qml.X)(wires=1)
                 return qml.sample(wires=[0, 1])
 
-        >>> func(0.0, shots=[10, 10])
+        >>> qml.set_shots(func, shots=[10, 10])(0.0)
         (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
 
         .. note::

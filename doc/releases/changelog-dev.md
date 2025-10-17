@@ -95,6 +95,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
+  and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
+  `MidMeasureMP` is now renamed to `MidMeasure`.
+  `qml.measurements.find_post_processed_mcms` is now `qml.devices.qubit.simulate._find_post_processed_mcms`,
+  and is being made private, as it is an utility for tree-traversal.
+  [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
+
 <h3>Internal changes ⚙️</h3>
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug

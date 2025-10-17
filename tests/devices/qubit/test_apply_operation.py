@@ -1497,7 +1497,7 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("m_res", [(0, 0), (1, 1)])
     def test_mid_measure(self, m_res, monkeypatch):
-        """Test the application of a MidMeasureMP on an arbitrary state to give a basis state."""
+        """Test the application of a MidMeasure on an arbitrary state to give a basis state."""
 
         initial_state = np.array(
             [
@@ -1526,6 +1526,6 @@ class TestConditionalsAndMidMeasure:
     def test_error_bactched_mid_measure(self):
         """Test that an error is raised when mid_measure is applied to a batched input state."""
 
-        with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
+        with pytest.raises(ValueError, match="MidMeasure cannot be applied to batched states."):
             m0, input_state = qml.measure(0).measurements[0], qml.math.array([[1, 0], [1, 0]])
             apply_operation(m0, state=input_state, is_state_batched=True)

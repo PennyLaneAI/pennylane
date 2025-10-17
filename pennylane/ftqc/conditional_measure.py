@@ -18,7 +18,7 @@ from collections.abc import Callable
 
 from pennylane import capture
 from pennylane.capture.autograph import wraps
-from pennylane.measurements import MeasurementValue, MidMeasureMP
+from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.ops.op_math.condition import CondCallable, Conditional, cond
 from pennylane.queuing import QueuingManager
 
@@ -133,7 +133,7 @@ def _validate_measurements(true_meas, false_meas):
     (representing a true and false functions for the conditional) and confirms that
     they have the expected type, and 'match' except for the measurement basis"""
 
-    if not (isinstance(true_meas, MidMeasureMP) and isinstance(false_meas, MidMeasureMP)):
+    if not (isinstance(true_meas, MidMeasure) and isinstance(false_meas, MidMeasure)):
         raise ValueError(
             "Only measurement functions that return a measurement value can be used in `cond_measure`"
         )

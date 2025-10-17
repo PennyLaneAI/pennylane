@@ -21,13 +21,13 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.ops import MeasurementValue
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .counts import CountsMP
 from .measurements import SampleMeasurement
-from .mid_measure import MeasurementValue
 from .process_samples import process_raw_samples
 
 

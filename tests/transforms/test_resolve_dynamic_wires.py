@@ -140,7 +140,7 @@ class TestFirstExtraction:
         [new_tape], _ = qml.transforms.resolve_dynamic_wires(tape, any_state=("a",))
 
         assert len(new_tape) == 2
-        assert isinstance(new_tape[0], qml.measurements.MidMeasureMP)
+        assert isinstance(new_tape[0], qml.ops.MidMeasure)
         assert new_tape[0].wires == qml.wires.Wires(("a",))
         assert new_tape[0].reset
 
@@ -212,7 +212,7 @@ class TestReuse:
         qml.assert_equal(new_tape[0], qml.X("a"))
         qml.assert_equal(new_tape[2], qml.Y("a"))
 
-        assert isinstance(new_tape[1], qml.measurements.MidMeasureMP)
+        assert isinstance(new_tape[1], qml.ops.MidMeasure)
         assert new_tape[1].wires == qml.wires.Wires(("a",))
         assert new_tape[1].reset
 
