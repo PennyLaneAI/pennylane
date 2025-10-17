@@ -16,6 +16,29 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
+  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
+  Please use ``level='device'`` instead to apply the transform at the device level.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.	
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+  - ``print_contents`` in favor of ``print(obj)``
+  - ``observables_in_order`` in favor of ``observables``
+  - ``operations_in_order`` in favor of ``operations``
+  - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
+  - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
+
 * ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
   ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
@@ -47,6 +70,9 @@
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
+* The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
+  [(#8460)](https://github.com/PennyLaneAI/pennylane/pull/8460)
+
 * The :class:`~pennylane.devices.LegacyDeviceFacade` is slightly refactored to implement `setup_execution_config` and `preprocess_transforms`
   separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
   from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`.
@@ -64,3 +90,4 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
+Shuli Shu
