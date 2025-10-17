@@ -13,7 +13,7 @@ Pending deprecations
   and jax.
 
   - Deprecated in v0.44
-  - Removed in v0.45
+  - Will bemoved in v0.45
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
