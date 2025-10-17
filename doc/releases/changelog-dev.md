@@ -95,6 +95,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
+  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. 
+  [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
+
 <h3>Internal changes ⚙️</h3>
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
