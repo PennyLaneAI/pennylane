@@ -290,8 +290,12 @@ def test_mcm_validation():
 def test_mcm_resolution_when_supported():
     """Tests resolution of the mcm method when mcm is supported."""
 
-    dev = DummyDevice(wires=[0, 1])
-    dev._capabilities["supports_mid_measure"] = True
+    class MidMeasureDev(DummyDevice):
+        """A dummy device that supports mid circuit measurements."""
+
+        _capabilities = {"supports_mid_measure": True}
+
+    dev = MidMeasureDev(wires=[0, 1])
     facade = LegacyDeviceFacade(dev)
 
     m0 = qml.measure(0)
