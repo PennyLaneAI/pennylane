@@ -79,3 +79,27 @@ Resource Hamiltonians
     :toctree: api
     :no-inherited-members:
     :classes-only:
+
+
+QPE Resource Classes
+--------------------
+
+.. currentmodule:: pennylane.estimator
+
+.. autosummary::
+    :toctree: api
+
+    ~qpe_resources.FirstQuantization
+    ~qpe_resources.DoubleFactorization
+
+
+Measurement Functions
+---------------------
+
+.. currentmodule:: pennylane.estimator
+
+.. autosummary::
+    :toctree: api
+
+    ~measurement.estimate_shots
+    ~measurement.estimate_error

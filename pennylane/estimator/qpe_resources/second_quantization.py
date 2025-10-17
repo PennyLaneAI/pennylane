@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +16,8 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 # pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
-import warnings
-
 import numpy as np
 
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.qchem import factorize
 
@@ -28,11 +25,6 @@ from pennylane.qchem import factorize
 class DoubleFactorization(Operation):
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
     algorithm in second quantization with a double-factorized Hamiltonian.
-
-    .. note::
-
-        ``qml.resource.DoubleFactorization`` is deprecated and will be removed in v0.45.
-        Instead, please use ``qml.estimator.DoubleFactorization`.
 
     Atomic units are used throughout the class.
 
@@ -57,7 +49,7 @@ class DoubleFactorization(Operation):
     ...                      [0.00000000, -1.45278171, -1.00662237]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> algo = qml.resource.DoubleFactorization(one, two)
+    >>> algo = qml.estimator.DoubleFactorization(one, two)
     >>> algo.lamb # the 1-Norm of the Hamiltonian
     np.float64(53.6...)
     >>> algo.gates # estimated number of non-Clifford gates
@@ -85,13 +77,13 @@ class DoubleFactorization(Operation):
         smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
         average number of the retained eigenvalues, :math:`M`, determines the rank of the second
         factorization step. The 1-norm of the Hamiltonian can then be computed using the
-        :func:`~.pennylane.resource.DoubleFactorization.norm` function from the electron integrals
+        :func:`~.pennylane.estimator.DoubleFactorization.norm` function from the electron integrals
         and the eigenvalues of the matrices :math:`L^{(r)}`.
 
         The total number of gates and qubits for implementing the quantum phase estimation algorithm
         for the given Hamiltonian can then be computed using the functions
-        :func:`~.pennylane.resource.DoubleFactorization.gate_cost` and
-        :func:`~.pennylane.resource.DoubleFactorization.qubit_cost` with a target error that has the
+        :func:`~.pennylane.estimator.DoubleFactorization.gate_cost` and
+        :func:`~.pennylane.estimator.DoubleFactorization.qubit_cost` with a target error that has the
         default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
         of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     """
@@ -127,12 +119,6 @@ class DoubleFactorization(Operation):
         self.br = br
         self.alpha = alpha
         self.beta = beta
-
-        warnings.warn(
-            "``qml.resource.DoubleFactorization`` is deprecated and will be removed in v0.45. "
-            "Instead, please use ``qml.estimator.DoubleFactorization``",
-            PennyLaneDeprecationWarning,
-        )
 
         self.n = two_electron.shape[0] * 2
 
@@ -266,7 +252,7 @@ class DoubleFactorization(Operation):
 
         >>> lamb = 72.49779513025341
         >>> error = 0.001
-        >>> qml.resource.DoubleFactorization.estimation_cost(lamb, error)
+        >>> qml.estimator.DoubleFactorization.estimation_cost(lamb, error)
         113880
         """
         if error <= 0.0:
@@ -311,7 +297,7 @@ class DoubleFactorization(Operation):
         **Example**
 
         >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
-        >>> qml.resource.DoubleFactorization._qrom_cost(constants)
+        >>> qml.estimator.DoubleFactorization._qrom_cost(constants)
         (168, 4)
         """
         a, b, c, d, e = constants
@@ -351,7 +337,7 @@ class DoubleFactorization(Operation):
         ...           'alpha': 10,
         ...           'beta': 20,
         ...         }
-        >>> qml.resource.DoubleFactorization.unitary_cost(**kwargs)
+        >>> qml.estimator.DoubleFactorization.unitary_cost(**kwargs)
         2007
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -438,7 +424,7 @@ class DoubleFactorization(Operation):
         ...           'alpha': 10,
         ...           'beta': 20,
         ...         }
-        >>> qml.resource.DoubleFactorization.gate_cost(**kwargs)
+        >>> qml.estimator.DoubleFactorization.gate_cost(**kwargs)
         167048631
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -508,7 +494,7 @@ class DoubleFactorization(Operation):
         ...           'alpha': 10,
         ...           'beta': 20,
         ...         }
-        >>> qml.resource.DoubleFactorization.qubit_cost(**kwargs)
+        >>> qml.estimator.DoubleFactorization.qubit_cost(**kwargs)
         292
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -610,7 +596,7 @@ class DoubleFactorization(Operation):
         >>> core, one, two = qml.qchem.electron_integrals(mol)()
         >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
         >>> _, eigvals, _ = qml.qchem.factorize(two, 1e-5)
-        >>> print(qml.resource.DoubleFactorization.norm(one, two, eigvals))
+        >>> print(qml.estimator.DoubleFactorization.norm(one, two, eigvals))
         369.4...
         """
         t_matrix = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)

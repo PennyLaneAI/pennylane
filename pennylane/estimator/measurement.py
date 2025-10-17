@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,21 +15,12 @@
 This module contains the functions needed for estimating the number of measurements and the error
 for computing expectation values.
 """
-import warnings
-
 import numpy as np
-
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 def estimate_shots(coeffs, variances=None, error=0.0016):
     r"""Estimate the number of measurements required to compute an expectation value with a target
     error.
-
-    .. note::
-
-        ``qml.resource.estimate_shots`` is deprecated and will be removed in v0.45.
-        Instead, please use ``qml.estimator.estimate_shots`.
 
     See also :func:`estimate_error`.
 
@@ -44,7 +35,7 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> qml.resource.estimate_shots(coeffs)
+    >>> qml.estimator.estimate_shots(coeffs)
     419218
 
     .. details::
@@ -98,11 +89,6 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
         where :math:`i` and :math:`j` run over the observable groups and the Pauli words inside the
         group, respectively.
     """
-    warnings.warn(
-        "``qml.resource.estimate_shots`` is deprecated and will be removed in v0.45. "
-        "Instead, please use ``qml.estimator.estimate_shots``",
-        PennyLaneDeprecationWarning,
-    )
     if variances:
         return int(np.ceil(np.sum(np.sqrt(variances)) ** 2 / error**2))
 
@@ -112,11 +98,6 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
 
 def estimate_error(coeffs, variances=None, shots=1000):
     r"""Estimate the error in computing an expectation value with a given number of measurements.
-
-    .. note::
-
-        ``qml.resource.estimate_error`` is deprecated and will be removed in v0.45.
-        Instead, please use ``qml.estimator.estimate_error`.
 
     See also :func:`estimate_shots`.
 
@@ -131,7 +112,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> qml.resource.estimate_error(coeffs, shots=100000)
+    >>> qml.estimator.estimate_error(coeffs, shots=100000)
     np.float64(0.0032759684708248507)
 
     .. details::
@@ -185,11 +166,6 @@ def estimate_error(coeffs, variances=None, shots=1000):
         where :math:`i` and :math:`j` run over the observable groups and the Pauli words inside the
         group, respectively.
     """
-    warnings.warn(
-        "``qml.resource.estimate_error`` is deprecated and will be removed in v0.45. "
-        "Instead, please use ``qml.estimator.estimate_error``",
-        PennyLaneDeprecationWarning,
-    )
     if variances:
         return np.sum(np.sqrt(variances)) / np.sqrt(shots)
 
