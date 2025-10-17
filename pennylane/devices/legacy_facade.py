@@ -24,6 +24,7 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 from pennylane import math, ops
+from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.math import Interface, requires_grad
 from pennylane.measurements import ExpectationMP, MidMeasureMP, Shots
@@ -176,7 +177,11 @@ class LegacyDeviceFacade(Device):
             )
 
         self._device = device
-        self.config_filepath = getattr(self._device, "config_filepath", None)
+        self.capabilities = None
+
+        _config_filepath = getattr(self._device, "config_filepath", None)
+        if _config_filepath:
+            self.capabilities = DeviceCapabilities.from_toml_file(_config_filepath)
 
         if self._device.shots:
             warnings.warn(
@@ -319,13 +324,9 @@ class LegacyDeviceFacade(Device):
             return self._setup_device_config(config, circuit)
 
         shots_present = bool(circuit and bool(circuit.shots))
-        _validate_mcm_method(
-            self._device.capabilities(),
-            config.mcm_config.mcm_method,
-            shots_present,
-        )
+        self._validate_mcm_method(config.mcm_config.mcm_method, shots_present)
         if config.mcm_config.mcm_method is None:
-            default_mcm_method = _default_mcm_method(self._device.capabilities(), shots_present)
+            default_mcm_method = self._default_mcm_method(shots_present)
             new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
             config = replace(config, mcm_config=new_mcm_config)
 
@@ -405,6 +406,41 @@ class LegacyDeviceFacade(Device):
         # determine if the device provides its own jacobian method
         return self._device.capabilities().get("provides_jacobian", False)
 
+    def _validate_mcm_method(self, mcm_method: str, shots_present: bool):
+        """Validates an MCM method against the device's capabilities."""
+
+        if mcm_method in (None, "deferred"):
+            return  # No need to validate because "deferred" is always supported.
+
+        if mcm_method == "one-shot" and not shots_present:
+            raise QuantumFunctionError('mcm_method="one-shot" is only supported with finite shots.')
+
+        supported_mcm_methods = ("deferred",)
+        if self.capabilities:
+            supported_mcm_methods += tuple(self.capabilities.supported_mcm_methods)
+        elif self._device.capabilities().get("supports_mid_measure", False):
+            supported_mcm_methods += ("one-shot",)
+
+        if mcm_method not in supported_mcm_methods:
+            raise QuantumFunctionError(
+                f'The requested MCM method "{mcm_method}" unsupported by the device. '
+                f"Supported methods are: {supported_mcm_methods}."
+            )
+
+    def _default_mcm_method(self, shots_present: bool) -> str:
+        """Simple strategy to find the best match for the default mcm method."""
+
+        supports_one_shot = False
+        if self.capabilities and "one-shot" in self.capabilities.supported_mcm_methods:
+            supports_one_shot = True
+        elif self._device.capabilities().get("supports_mid_measure", False):
+            supports_one_shot = True
+
+        if supports_one_shot and shots_present:
+            return "one-shot"
+
+        return "deferred"
+
     def execute(self, circuits, execution_config: ExecutionConfig | None = None):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -448,34 +484,3 @@ class LegacyDeviceFacade(Device):
                 circuits, **execution_config.gradient_keyword_arguments
             )
         return tuple(self.compute_derivatives((c,), execution_config) for c in circuits)
-
-
-def _validate_mcm_method(capabilities: dict, mcm_method: str, shots_present: bool):
-    """Validates an MCM method against the device's capabilities."""
-
-    if mcm_method is None or mcm_method == "deferred":
-        return  # no need to validate if requested deferred or if no method is requested.
-
-    if mcm_method == "one-shot" and not shots_present:
-        raise QuantumFunctionError('The "one-shot" MCM method is only supported with finite shots.')
-
-    if mcm_method not in ("deferred", "one-shot", "tree-traversal"):
-        raise QuantumFunctionError(
-            f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
-            f'are: "deferred", "one-shot", and "tree-traversal".'
-        )
-
-    if not capabilities.get("supports_mid_measure", False) and mcm_method != "deferred":
-        raise QuantumFunctionError(
-            f'Requested MCM method "{mcm_method}" unsupported by the device. '
-            'Please use mcm_method="deferred" instead.'
-        )
-
-
-def _default_mcm_method(capabilities: dict, shots_present: bool) -> str:
-    """Simple strategy to find the best match for the default mcm method."""
-
-    if capabilities.get("supports_mid_measure", False) and shots_present:
-        return "one-shot"
-
-    return "deferred"
