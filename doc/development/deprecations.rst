@@ -35,6 +35,12 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
+* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
+  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.	
+
+  - Deprecated in v0.43	
+  - Will be removed in v0.44
+
 * The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
 
