@@ -23,13 +23,13 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.devices.execution_config import ExecutionConfig
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,
     legacy_device_batch_transform,
     legacy_device_expand_fn,
 )
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 
 
 class DummyDevice(qml.devices.LegacyDevice):
@@ -264,6 +264,27 @@ def test_preprocessing_program():
     assert tape2.shots == qml.measurements.Shots(50)
 
     assert qml.math.allclose(fn((1.0, 2.0)), 3.0)
+
+
+def test_mcm_validation():
+    """Tests that the setup_execution_config correctly validates mcm methods."""
+
+    dev = DummyDevice(wires=[0, 1])
+    facade = LegacyDeviceFacade(dev)
+
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))])
+    with pytest.raises(QuantumFunctionError, match="only supported with finite shots"):
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
+        facade.setup_execution_config(config, tape)
+
+    with pytest.raises(QuantumFunctionError, match="unsupported by the device"):
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="hello"))
+        facade.setup_execution_config(config, tape)
+
+    with pytest.raises(QuantumFunctionError, match="unsupported by the device"):
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="tree-traversal"))
+        facade.setup_execution_config(config, tape)
 
 
 def test_preprocessing_program_supports_mid_measure():

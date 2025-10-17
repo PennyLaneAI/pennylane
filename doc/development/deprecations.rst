@@ -43,21 +43,7 @@ Pending deprecations
 
   - Deprecated in v0.43
   - Will be removed in v0.44
-
-* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
-  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
-  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
-  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
-  work wires are restored to their original state upon completing the decomposition.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
+  
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
   :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
@@ -91,31 +77,8 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* ``MeasurementProcess.expand`` is deprecated. The relevant method can be replaced with 
-  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 * Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are deprecated and will be removed in version v0.44.
-  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
-
-    - ``print_contents`` in favor of ``print(obj)``
-    - ``observables_in_order`` in favor of ``observables``
-    - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
 
   - Deprecated in v0.43
   - Will be removed in v0.44
@@ -124,32 +87,7 @@ Pending deprecations
   Instead, the ``qml.to_openqasm`` function should be used.
 
   - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
-  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
-  Instead, these functions should be imported from the ``pennylane.noise`` module.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Passing the value ``None`` to the ``level`` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch` ,
-  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms is deprecated and will be removed in
-  v0.44. Please use ``level='device'`` instead to apply the transform at the device level.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.44.
-  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
+  - Will be removed in a future version
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
@@ -178,6 +116,69 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module has been removed.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.	
+
+  - Deprecated in v0.43	
+  - Removed in v0.44
+
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
+
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* The ``qml.QNode.add_transform`` method is removed.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
+  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
+  Please use ``level='device'`` instead to apply the transform at the device level.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use ``qml.devices.ExecutionConfig()``
+  to create a default execution configuration.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* ``MeasurementProcess.expand`` is removed. The relevant method can be replaced with 
+  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
+  
+  - Deprecated in v0.43
+  - Removed in v0.44
+
+* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are removed.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+
+  - Deprecated in v0.43
+  - Removed in v0.44
 
 * The boolean functions provided by ``pennylane.operation`` have been removed. See below for an example of alternative code to use.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
