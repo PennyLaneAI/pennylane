@@ -6,6 +6,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a keyword argument ``iterative`` to ``qml.transforms.cancel_inverses`` that enables
+  iterative cancellation of nested pairs of mutually inverse gates. This makes the transform
+  more powerful, because it can cancel larger blocks of inverse gates without having to scan
+  the circuit from scratch. For backwards compatibility, the default is ``iterative=False``. Unless
+  you run into performance issues, it is recommended to set ``iterative=True``.
+  [(#8___)](https://github.com/PennyLaneAI/pennylane/pull/8___)
+
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
@@ -20,7 +27,7 @@
   ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
   ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are assumed to be restored to their original state upon completing the decomposition.
@@ -30,7 +37,7 @@
   methods should be used instead.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
-* `MeasurementProcess.expand` is removed. 
+* `MeasurementProcess.expand` is removed.
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
   can be used instead.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
@@ -63,3 +70,4 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
+David Wierichs,
