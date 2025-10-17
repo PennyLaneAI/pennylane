@@ -296,22 +296,41 @@ class CondCallable:
         flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
-        end_const_ind = len(
-            branches
-        )  # consts go after the len(branches) conditions, first const at len(branches)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+
+        # First pass: create initial jaxprs to determine type promotion
+        temp_jaxprs = []
+        for pred, fn in branches:
+            if fn is None:
+                fn = _empty_return_fn
+            f = FlatFn(functools.partial(fn, **kwargs))
+            if jax.config.jax_dynamic_shapes:
+                f = _add_abstract_shapes(f)
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+            temp_jaxprs.append(jaxpr.jaxpr)
+
+        # Determine promoted dtypes
+        promoted_dtypes = _get_promoted_dtypes_from_jaxprs(temp_jaxprs)
+
+        # Second pass: create final jaxprs with promotion
+        end_const_ind = len(branches)
         conditions = []
         jaxpr_branches = []
         consts = []
         consts_slices = []
 
-        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
-
         for pred, fn in branches:
             if (pred_shape := qml.math.shape(pred)) != ():
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
             conditions.append(pred)
+
             if fn is None:
                 fn = _empty_return_fn
+
+            # Apply promotion if needed
+            if promoted_dtypes:
+                fn = _make_promoted_fn(fn, promoted_dtypes)
+
             f = FlatFn(functools.partial(fn, **kwargs))
             if jax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
@@ -717,6 +736,67 @@ def cond(
     return wrapper
 
 
+def _make_promoted_fn(original_fn, promoted_dtypes):
+    """Create a function that promotes its outputs to target dtypes."""
+    import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+
+    if not promoted_dtypes:
+        return original_fn
+
+    def promoted_fn(*args, **kwargs):
+        result = original_fn(*args, **kwargs)
+        if isinstance(result, (tuple, list)):
+            promoted = []
+            for i, res in enumerate(result):
+                if i < len(promoted_dtypes) and promoted_dtypes[i] is not None:
+                    promoted.append(jnp.asarray(res, dtype=promoted_dtypes[i]))
+                else:
+                    promoted.append(res)
+            return tuple(promoted) if isinstance(result, tuple) else promoted
+        elif len(promoted_dtypes) > 0 and promoted_dtypes[0] is not None:
+            return jnp.asarray(result, dtype=promoted_dtypes[0])
+        return result
+
+    return promoted_fn
+
+
+def _get_promoted_dtypes_from_jaxprs(jaxpr_branches):
+    """Extract promoted dtypes needed from jaxpr branches."""
+    from functools import reduce
+
+    import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+
+    if len(jaxpr_branches) < 2:
+        return None
+
+    # Extract dtypes from all branch outputs
+    all_dtypes = []
+    for jaxpr in jaxpr_branches:
+        if hasattr(jaxpr, "outvars") and jaxpr.outvars:
+            dtypes = [getattr(out.aval, "dtype", None) for out in jaxpr.outvars]
+            all_dtypes.append(dtypes)
+        else:
+            all_dtypes.append([])
+
+    if not all_dtypes or not all(len(dt) == len(all_dtypes[0]) for dt in all_dtypes):
+        return None
+
+    # Compute promoted dtypes per position
+    promoted_dtypes = []
+    for i in range(len(all_dtypes[0])):
+        pos_dtypes = [dt[i] for dt in all_dtypes if i < len(dt) and dt[i] is not None]
+        if pos_dtypes and len(set(pos_dtypes)) > 1:
+            try:
+                promoted_dtype = reduce(jnp.promote_types, pos_dtypes)
+                promoted_dtypes.append(promoted_dtype)
+            except (TypeError, ValueError):
+                promoted_dtypes.append(None)
+        else:
+            promoted_dtypes.append(None)
+
+    return promoted_dtypes if any(dt is not None for dt in promoted_dtypes) else None
+
+
 def _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval):
     raise ValueError(
         f"Mismatch in output abstract values in {branch_type} branch "
@@ -728,8 +808,9 @@ def _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval):
 def _validate_abstract_values(
     outvals: list, expected_outvals: list, branch_type: str, branch_index: int
 ) -> None:
-    """Ensure the collected abstract values match the expected ones."""
+    """Ensure the collected abstract values match the expected ones, allowing type promotion."""
     import jax  # pylint: disable=import-outside-toplevel
+    import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
     if len(outvals) != len(expected_outvals):
         msg = (
@@ -746,7 +827,17 @@ def _validate_abstract_values(
             # we need to be a bit more manual with the comparison.
             if type(outval) != type(expected_outval):
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
-            if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
+
+            # Check dtype compatibility with type promotion
+            dtype1 = getattr(outval, "dtype", None)
+            dtype2 = getattr(expected_outval, "dtype", None)
+            if dtype1 is not None and dtype2 is not None:
+                try:
+                    # Check if dtypes can be promoted to a common type
+                    jnp.result_type(dtype1, dtype2)
+                except (TypeError, ValueError):
+                    _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
+            elif dtype1 != dtype2:
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
             shape1 = getattr(outval, "shape", ())
@@ -757,11 +848,39 @@ def _validate_abstract_values(
                 elif isinstance(s1, int) and s1 != s2:
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
-        elif outval != expected_outval:
-            _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
+        else:
+            # For non-dynamic shapes, allow limited type promotion
+            if outval != expected_outval:
+                # Check if they have dtypes that can be promoted
+                dtype1 = getattr(outval, "dtype", None)
+                dtype2 = getattr(expected_outval, "dtype", None)
+                shape1 = getattr(outval, "shape", ())
+                shape2 = getattr(expected_outval, "shape", ())
+
+                # Only allow type promotion for scalars (shape == ())
+                # This allows int + 1 vs float + 2.0 but prevents array dtype mismatches
+                if (
+                    dtype1 is not None
+                    and dtype2 is not None
+                    and shape1 == shape2 == ()
+                    and dtype1 != dtype2
+                ):
+                    try:
+                        # If dtypes can be promoted for scalars, allow it
+                        jnp.result_type(dtype1, dtype2)
+                        # If we get here, scalar types are promotable
+                    except (TypeError, ValueError):
+                        _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
+                else:
+                    # For arrays or other mismatches, require exact match
+                    _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
 
 def _validate_jaxpr_returns(jaxpr_branches, false_fn):
+    """Validate that branch returns are compatible, with enhanced type promotion support."""
+    if not jaxpr_branches:
+        return
+
     out_avals_true = [out.aval for out in jaxpr_branches[0].outvars]
 
     if false_fn is None and out_avals_true:
@@ -791,7 +910,11 @@ def _get_cond_qfunc_prim():
 
     @cond_prim.def_abstract_eval
     def _(*_, jaxpr_branches, **__):
-        return [out.aval for out in jaxpr_branches[0].outvars]
+        # Return the promoted abstract values from the first branch
+        # Since promotion happens at jaxpr creation, all branches should now be consistent
+        if jaxpr_branches and hasattr(jaxpr_branches[0], "outvars"):
+            return [out.aval for out in jaxpr_branches[0].outvars]
+        return []
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
