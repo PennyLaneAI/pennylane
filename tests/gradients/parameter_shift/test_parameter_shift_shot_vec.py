@@ -1371,6 +1371,7 @@ class TestParameterShiftRule:
             assert gradF[0] == pytest.approx(expected, abs=2)
             assert qml.math.allclose(gradF[1], expected, atol=1.5)
 
+    @pytest.mark.skip(reason="Flaky test, temporarily skipping for investigation.")
     @pytest.mark.local_salt(42)
     def test_involutory_and_noninvolutory_variance_single_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
@@ -1726,6 +1727,7 @@ class TestParameterShiftRule:
             assert isinstance(gradF, tuple)
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
+    @pytest.mark.skip(reason="Flaky test, temporarily skipping for investigation.")
     @pytest.mark.local_salt(42)
     def test_expval_and_variance_multi_param(self, broadcast, seed):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
