@@ -430,9 +430,6 @@ class LegacyDeviceFacade(Device):
     def _default_mcm_method(self, shots_present: bool) -> str:
         """Simple strategy to find the best match for the default mcm method."""
 
-        if self.capabilities and "device" in self.capabilities.supported_mcm_methods:
-            return "device"
-
         supports_one_shot = False
         if self.capabilities and "one-shot" in self.capabilities.supported_mcm_methods:
             supports_one_shot = True
