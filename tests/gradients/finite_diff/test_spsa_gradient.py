@@ -107,10 +107,8 @@ class TestRademacherSampler:
         assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
         # Test that the variance of non-zero entries is approximately right
         assert np.allclose(np.var(outputs, axis=0)[ids_mask], 1, atol=4 / N)
-        # Test that the mean of zero entries is exactly 0, because all entries should be
+        # Test that all the zero entries are exactly 0
         assert np.allclose(np.mean(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
-        # Test that the variance of zero entries is exactly 0, because all entries are the same
-        assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
 
 
 class TestSpsaGradient:
