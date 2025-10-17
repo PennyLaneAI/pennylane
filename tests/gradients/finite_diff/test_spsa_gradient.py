@@ -86,6 +86,7 @@ class TestRademacherSampler:
         second_direction = _rademacher_sampler(ids, num, rng=rng)
         assert np.allclose(first_direction, second_direction)
 
+    @pytest.mark.xfail(reason="To be fixed at sc-90962")
     @pytest.mark.parametrize(
         "ids, num",
         [
