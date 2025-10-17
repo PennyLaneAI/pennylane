@@ -374,18 +374,16 @@ class _CachedCallable:
     def __init__(self, method, epsilon, cache_size, is_qjit=False, **method_kwargs):
         match method:
             case "sk":
-                self.decompose_fn = lru_cache(maxsize=cache_size)(
-                    partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
-                )
+                method_func = sk_decomposition
             case "gridsynth":
-                self.decompose_fn = lru_cache(maxsize=cache_size)(
-                    partial(rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs)
-                )
+                method_func = rs_decomposition
             case _:
                 raise NotImplementedError(
                     f"Currently we only support Solovay-Kitaev ('sk') and Ross-Selinger ('gridsynth') decompositions, got {method}"
                 )
-
+        self.decompose_fn = lru_cache(maxsize=cache_size)(
+            partial(method_func, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs)
+        )
         self.method = method
         self.epsilon = epsilon
         self.cache_size = cache_size

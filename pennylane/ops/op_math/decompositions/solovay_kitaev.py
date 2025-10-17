@@ -275,7 +275,9 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     return w_hat, v_hat
 
 
-def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10):
+def sk_decomposition(
+    op, epsilon, is_qjit=False, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10
+):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements the Solovay-Kitaev decomposition algorithm that approximates any single-qubit
@@ -288,6 +290,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation.
         epsilon (float): The maximum permissible error.
+        is_qjit (bool): Whether the decomposition is being performed with QJIT enabled.
 
     Keyword Args:
         max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
@@ -326,6 +329,12 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
     True
 
     """
+    if not is_qjit and qml.compiler.active_compiler() == "catalyst":
+        is_qjit = True
+
+    if is_qjit:
+        raise RuntimeError("Solovay-Kitaev decomposition is not supported with QJIT enabled.")
+
     # Check for length of wires in the operation
     if len(op.wires) != 1:
         raise ValueError(
