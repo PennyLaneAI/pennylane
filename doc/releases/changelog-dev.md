@@ -14,6 +14,9 @@
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
+* Added optional importance sampling functionality to Trotter error estimation.
+  [(#8247)](https://github.com/PennyLaneAI/pennylane/pull/8247)
+
 <h3>Breaking changes 💔</h3>
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
