@@ -15,6 +15,11 @@ on:
         description: 'Whether to create a PR for the release or directly push to the branch'
         required: true
         type: string
+      bump_catalyst_lightning:
+        description: 'Whether to bump catalyst and lightning versions in the RC branch'
+        required: false
+        type: boolean
+        default: true
 jobs:
   bump_rc_branch:
     name: Update catalyst and lightning in RC branch
@@ -31,7 +36,7 @@ jobs:
           pip install setuptools wheel twine
 
       - name: Create PR to bump Catalyst and Lightning versions
-        if: ${{ env.catalyst_release == 'true' && env.lightning_release == 'true' }}
+        if: ${{ inputs.bump_catalyst_lightning == true }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
         run: |
