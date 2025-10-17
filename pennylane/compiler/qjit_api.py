@@ -19,65 +19,82 @@ from .compiler import AvailableCompilers, _check_compiler_version, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
-    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane.
+    """A just-in-time decorator for PennyLane and JAX programs using Catalyst.
 
     This decorator enables both just-in-time and ahead-of-time compilation,
-    depending on the compiler package and whether function argument type hints
-    are provided.
+    depending on whether function argument type hints are provided.
 
     .. note::
 
-        Currently, only two compilers are supported; the :doc:`Catalyst <catalyst:index>` hybrid
-        quantum-classical compiler, which works with the JAX interface, and CUDA Quantum.
-
-        For more details on Catalyst, see the :doc:`Catalyst documentation <catalyst:index>` and
-        :func:`catalyst.qjit`.
-
-    .. note::
-
-        Catalyst only supports the JAX interface and selected devices.
-        Supported backend devices for Catalyst include
-        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
-        but **not** ``default.qubit``.
-
-        For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
-
-        CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
+        Not all PennyLane devices currently work with Catalyst. Supported backend devices include
+        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``. For
+        a full of supported devices, please see :doc:`/dev/devices`.
 
     Args:
-        fn (Callable): Hybrid (quantum-classical) function to compile
+        fn (Callable): The quantum or classical function.
         compiler (str): Name of the compiler to use for just-in-time compilation. Available
-            options include ``catalyst`` and ``cuda_quantum``.
+            options include ``catalyst`` and
+            :func:`cuda_quantum <catalyst.third_party.cuda.cudaqjit>`.
         autograph (bool): Experimental support for automatically converting Python control
-            flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
-            ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
-            available TensorFlow installation. See the
-            :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
-        keep_intermediate (bool): Whether or not to store the intermediate files throughout the
-            compilation. The files are stored at the location where the Python script is called.
-            If ``True``, intermediate representations are available via the
-            :attr:`~.QJIT.mlir`, :attr:`~.QJIT.jaxpr`, and :attr:`~.QJIT.qir`, representing
-            different stages in the optimization process.
-        verbosity (bool): If ``True``, the tools and flags used by Catalyst behind the scenes are
+            flow statements (including ``if`` statements, ``for`` and ``while`` loops) to
+            Catalyst-compatible control flow, and more. For more details, see the
+            :doc:`AutoGraph guide </dev/autograph>`.
+        autograph_include: A list of (sub)modules to be allow-listed for autograph conversion.
+        async_qnodes (bool): Experimental support for automatically executing
+            QNodes asynchronously, if supported by the device runtime.
+        target (str): the compilation target
+        keep_intermediate (Union[str, int, bool]): Level controlling intermediate file generation.
+            - ``False`` or ``0`` or ``"none"`` or ``None`` (default): No intermediate file is kept.
+            - ``True`` or ``1`` or ``"pipeline"``: Intermediate files are saved after each pipeline.
+            - ``2`` or ``"pass"``: Intermediate files are saved after each pass.
+            If enabled, intermediate representations are available via the following attributes:
+            - :attr:`~.QJIT.jaxpr`: JAX program representation
+            - :attr:`~.QJIT.mlir`: MLIR representation after canonicalization
+            - :attr:`~.QJIT.mlir_opt`: MLIR representation after optimization
+            - :attr:`~.QJIT.qir`: QIR in LLVM IR form
+        verbose (bool): If ``True``, the tools and flags used by Catalyst behind the scenes are
             printed out.
-        logfile (TextIOWrapper): File object to write verbose messages to (default is
-            ``sys.stderr``)
-        pipelines (List[Tuple[str, List[str]]]): A list of pipelines to be executed. The
+        logfile (Optional[TextIOWrapper]): File object to write verbose messages to (default -
+            ``sys.stderr``).
+        pipelines (Optional(List[Tuple[str,List[str]]])): A list of pipelines to be executed. The
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
-        static_argnums(int or Sequence[Int]): an index or a sequence of indices that specifies the
+        static_argnums(int or Seqence[Int]): an index or a sequence of indices that specifies the
             positions of static arguments.
+        static_argnames(str or Seqence[str]): a string or a sequence of strings that specifies the
+            names of static arguments.
         abstracted_axes (Sequence[Sequence[str]] or Dict[int, str] or Sequence[Dict[int, str]]):
             An experimental option to specify dynamic tensor shapes.
             This option affects the compilation of the annotated function.
             Function arguments with ``abstracted_axes`` specified will be compiled to ranked tensors
             with dynamic shapes. For more details, please see the Dynamically-shaped Arrays section
             below.
+        disable_assertions (bool): If set to ``True``, runtime assertions included in
+            ``fn`` via :func:`~.debug_assert` will be disabled during compilation.
+        seed (Optional[Int]):
+            The seed for circuit readout results when the qjit-compiled function is executed
+            on simulator devices including ``lightning.qubit``, ``lightning.kokkos``, and
+            ``lightning.gpu``. The default value is None, which means no seeding is performed,
+            and all processes are random. A seed is expected to be an unsigned 32-bit integer.
+            Currently, the following measurement processes are seeded: :func:`~.measure`,
+            :func:`qml.sample() <pennylane.sample>`, :func:`qml.counts() <pennylane.counts>`,
+            :func:`qml.probs() <pennylane.probs>`, :func:`qml.expval() <pennylane.expval>`,
+            :func:`qml.var() <pennylane.var>`.
+        circuit_transform_pipeline (Optional[dict[str, dict[str, str]]]):
+            A dictionary that specifies the quantum circuit transformation pass pipeline order,
+            and optionally arguments for each pass in the pipeline. Keys of this dictionary
+            should correspond to names of passes found in the `catalyst.passes <https://docs.
+            pennylane.ai/projects/catalyst/en/stable/code/__init__.html#module-catalyst.passes>`_
+            module, values should either be empty dictionaries (for default pass options) or
+            dictionaries of valid keyword arguments and values for the specific pass.
+            The order of keys in this dictionary will determine the pass pipeline.
+            If not specified, the default pass pipeline will be applied.
+        pass_plugins (Optional[List[Path]]): List of paths to pass plugins.
+        dialect_plugins (Optional[List[Path]]): List of paths to dialect plugins.
 
     Returns:
-        catalyst.QJIT: A class that, when executed, just-in-time compiles and executes the
-        decorated function
+        QJIT object.
 
     Raises:
         FileExistsError: Unable to create temporary directory
