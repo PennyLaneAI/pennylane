@@ -201,7 +201,6 @@ class TestIntegration:
 
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
-    # @pytest.mark.skip(reason="TEMP: Test is flaky, needs investigation")
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize(

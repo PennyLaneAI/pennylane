@@ -1723,7 +1723,7 @@ class TestParameterShiftRule:
             assert isinstance(gradF, tuple)
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
-    @pytest.mark.skip(reason="Flaky test, temporarily skipping for investigation.")
+    @pytest.mark.xfail(reason="Flaky test, to be fixed at sc-101770", strict=False)
     @pytest.mark.local_salt(42)
     def test_expval_and_variance_multi_param(self, broadcast, seed):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with

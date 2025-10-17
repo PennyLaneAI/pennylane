@@ -1616,7 +1616,7 @@ class TestMidMeasurements:
 
     # Near 10% failure rate; need revise and fix soon
     # FIXME: [sc-95724]
-    @pytest.mark.skip(reason="Flaky test; needs to be fixed sc-95724")
+    @pytest.mark.xfail(reason="Flaky test; needs to be fixed sc-95724", strict=False)
     @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
