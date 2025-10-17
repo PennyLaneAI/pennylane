@@ -329,9 +329,6 @@ def sk_decomposition(
     True
 
     """
-    if not is_qjit and qml.compiler.active_compiler() == "catalyst":
-        is_qjit = True
-
     if is_qjit:
         raise RuntimeError("Solovay-Kitaev decomposition is not supported with QJIT enabled.")
 
