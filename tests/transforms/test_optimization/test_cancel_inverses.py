@@ -208,6 +208,58 @@ class TestCancelInverses:
 
         assert len(ops) == 0
 
+    @pytest.mark.parametrize("wrapped", [False, True])
+    def test_no_iterative_cancellation_with_iterative_false(self, wrapped):
+        """Test that with `iterative=False`, nested pairs of inverses are not cancelled."""
+
+        def qfunc():
+            if wrapped:
+                qml.X(0)
+            qml.S(0)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.adjoint(qml.S(0))
+            if wrapped:
+                qml.Y(0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        if wrapped:
+            names_expected = ["PauliX", "S", "Adjoint(S)", "PauliY"]
+            wires_expected = [Wires(0)] * 4
+        else:
+            names_expected = ["S", "Adjoint(S)"]
+            wires_expected = [Wires(0)] * 2
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    @pytest.mark.parametrize("wrapped", [False, True])
+    def test_iterative_cancellation_with_iterative_true(self, wrapped):
+        """Test that with `iterative=True`, nested pairs of inverses are cancelled."""
+
+        def qfunc():
+            if wrapped:
+                qml.X(0)
+            qml.S(0)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.adjoint(qml.S(0))
+            if wrapped:
+                qml.Y(0)
+
+        transformed_qfunc = cancel_inverses(qfunc, iterative=True)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        if wrapped:
+            names_expected = ["PauliX", "PauliY"]
+            wires_expected = [Wires(0)] * 2
+        else:
+            names_expected = []
+            wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
+
 
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)

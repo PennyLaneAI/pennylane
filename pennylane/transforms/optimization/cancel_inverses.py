@@ -417,8 +417,10 @@ def cancel_inverses(
         list_copy, cancelled = _try_to_cancel_with_next(current_gate, list_copy)
         if cancelled:
             if iterative:
-                while cancelled:
+                while cancelled and operations:
                     list_copy, cancelled = _try_to_cancel_with_next(operations[-1], list_copy)
+                    if cancelled:
+                        operations.pop(-1)
         else:
             operations.append(current_gate)
 
