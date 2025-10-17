@@ -47,6 +47,29 @@
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
 
+* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
+  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
+  Please use ``level='device'`` instead to apply the transform at the device level.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.	
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+* Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+  - ``print_contents`` in favor of ``print(obj)``
+  - ``observables_in_order`` in favor of ``observables``
+  - ``operations_in_order`` in favor of ``operations``
+  - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
+  - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
+
 * ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
   ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
