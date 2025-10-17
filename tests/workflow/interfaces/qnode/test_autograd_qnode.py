@@ -373,7 +373,7 @@ class TestQNode:
             qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        grad_fn = qml.grad(circuit, argnum=0)
+        grad_fn = qml.grad(circuit, argnums=0)
         data1 = np.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with pytest.raises(qml.numpy.NonDifferentiableError, match="is non-differentiable"):
@@ -1533,12 +1533,12 @@ class TestTapeExpansion:
         ):
             if diff_method == "backprop":
                 with pytest.warns(UserWarning, match=r"Output seems independent of input."):
-                    grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+                    grad2_c = qml.jacobian(qml.grad(circuit, argnums=2), argnums=2)(d, w, c)
             else:
-                grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+                grad2_c = qml.jacobian(qml.grad(circuit, argnums=2), argnums=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)
 
-            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
+            grad2_w_c = qml.jacobian(qml.grad(circuit, argnums=1), argnums=2)(d, w, c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
                 0,
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
@@ -1611,10 +1611,10 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2 and dev.name != "param_shift.qubit":
-            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            grad2_c = qml.jacobian(qml.grad(circuit, argnums=2), argnums=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)
 
-            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
+            grad2_w_c = qml.jacobian(qml.grad(circuit, argnums=1), argnums=2)(d, w, c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
                 0,
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),

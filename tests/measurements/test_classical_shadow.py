@@ -879,7 +879,7 @@ class TestExpvalBackward:
             0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
         )
         actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
-        expected = qml.jacobian(cost_exact, argnum=0)(x, obs)
+        expected = qml.jacobian(cost_exact, argnums=0)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
