@@ -1371,8 +1371,7 @@ class TestParameterShiftRule:
             assert gradF[0] == pytest.approx(expected, abs=2)
             assert qml.math.allclose(gradF[1], expected, atol=1.5)
 
-    @pytest.mark.skip(reason="Flaky test, temporarily skipping for investigation.")
-    @pytest.mark.local_salt(42)
+    @pytest.mark.xfail(reason="Flaky test, to be fixed at sc-101770", strict=False)
     def test_involutory_and_noninvolutory_variance_single_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
@@ -1382,8 +1381,6 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=2, seed=seed)
         a = 0.54
 
-        if not broadcast:
-            pytest.xfail("This test fails with broadcasting disabled. See [sc-91487] for tracking.")
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(a, wires=0)
