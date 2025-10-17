@@ -14,6 +14,7 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
+import numbers
 import warnings
 from functools import lru_cache, partial, wraps
 
@@ -37,6 +38,7 @@ except ImportError:
     has_jax = False
 
 
+# pylint: disable=unused-argument, too-many-arguments
 @lru_cache
 def _get_grad_prim():
     """Create a primitive for gradient computations.
@@ -50,72 +52,41 @@ def _get_grad_prim():
     grad_prim.prim_type = "higher_order"
 
     @grad_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, h):
-        if method or h:  # pragma: no cover
-            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+    def _(*args, argnum, jaxpr, n_consts, method, h, scalar_out, fn):
         consts = args[:n_consts]
         args = args[n_consts:]
 
         def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)[0]
+            res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+            return res[0] if scalar_out else res
 
-        return jax.grad(func, argnums=argnum)(*args)
-
-    # pylint: disable=unused-argument
-    @grad_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts, method, h):
-        if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
-            raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        return tuple(args[i + n_consts] for i in argnum)
-
-    return grad_prim
-
-
-def _shape(shape, dtype):
-    if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
-        return jax.core.DShapedArray(shape, dtype)
-    return jax.core.ShapedArray(shape, dtype)
-
-
-@lru_cache
-def _get_jacobian_prim():
-    """Create a primitive for Jacobian computations.
-    This primitive is used when capturing ``qml.jacobian``.
-    """
-    if not has_jax:  # pragma: no cover
-        return None
-
-    jacobian_prim = capture.QmlPrimitive("jacobian")
-    jacobian_prim.multiple_results = True
-    jacobian_prim.prim_type = "higher_order"
-
-    @jacobian_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, h):
-        if method or h:  # pragma: no cover
-            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
-        consts = args[:n_consts]
-        args = args[n_consts:]
-
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
-
+        if scalar_out:
+            return jax.grad(func, argnums=argnum)(*args)
         return jax.tree_util.tree_leaves(jax.jacobian(func, argnums=argnum)(*args))
 
     # pylint: disable=unused-argument
-    @jacobian_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts, method, h):
+    @grad_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts, method, h, scalar_out, fn):
+        if scalar_out and (len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ()):
+            raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
         in_avals = tuple(args[i + n_consts] for i in argnum)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
-            _shape(out_shape + in_aval.shape, in_aval.dtype)
+            _shape(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
             for out_shape in out_shapes
             for in_aval in in_avals
         ]
 
-    return jacobian_prim
+    return grad_prim
 
 
-def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
+def _shape(shape, dtype, weak_type=False):
+    if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
+        return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)
+    return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
+
+
+def _capture_diff(func, *, argnum, scalar_out: bool, method, h):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
@@ -124,6 +95,14 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
         argnum = 0
     if argnum_is_int := isinstance(argnum, int):
         argnum = [argnum]
+
+    if h is None:
+        h = 1e-6
+    elif not isinstance(h, numbers.Number):
+        raise ValueError(f"Invalid h value ({h}). number was expected.")
+    method = method or "auto"
+    if method not in {"auto", "fd"}:
+        raise ValueError(f"Got unrecognized method {method}. Options are 'auto' and 'fd'.")
 
     @wraps(func)
     def new_func(*args, **kwargs):
@@ -164,9 +143,16 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
             "argnum": shifted_argnum,
             "jaxpr": jaxpr.jaxpr,
             "n_consts": len(jaxpr.consts),
+            "fn": func,
+            "method": method,
+            "h": h,
+            "scalar_out": scalar_out,
         }
-        out_flat = diff_prim.bind(
-            *jaxpr.consts, *abstract_shapes, *flat_args, **prim_kwargs, method=method, h=h
+        out_flat = _get_grad_prim().bind(
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
+            **prim_kwargs,
         )
 
         # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
@@ -239,21 +225,23 @@ class grad:
         the arguments in ``argnum``.
     """
 
-    def __init__(self, func, argnum=None, h=None, method=None):
+    def __init__(self, func, argnum=None, h=None, method=None, argnums=None):
         self._forward = None
         self._grad_fn = None
         self._h = h
         self._method = method
 
         self._fun = func
-        self._argnum = argnum
+        self._argnum = argnum or argnums
+
+        self.__name__ = f"<grad: {self._fun}>"
 
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
             # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
-            self._grad_fn = self._grad_with_forward(func, argnum=argnum)
+            self._grad_fn = self._grad_with_forward(func, argnum=self._argnum)
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -297,7 +285,7 @@ class grad:
 
         if capture.enabled():
             return _capture_diff(
-                self._fun, self._argnum, _get_grad_prim(), method=self._method, h=self._h
+                self._fun, argnum=self._argnum, scalar_out=True, method=self._method, h=self._h
             )(*args, **kwargs)
 
         if self._method:
@@ -595,11 +583,12 @@ class jacobian:
 
     """
 
-    def __init__(self, func, argnum=None, method=None, h=None):
+    def __init__(self, func, argnum=None, method=None, h=None, argnums=None):
         self._func = func
-        self._argnum = argnum
+        self._argnum = argnums if argnums is not None else argnum
         self._method = method
         self._h = h
+        self.__name__ = f"<jacobian: {self._func}>"
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
@@ -611,7 +600,7 @@ class jacobian:
 
         if capture.enabled():
             g = _capture_diff(
-                self._func, self._argnum, _get_jacobian_prim(), method=self._method, h=self._h
+                self._func, argnum=self._argnum, scalar_out=False, method=self._method, h=self._h
             )
             return g(*args, **kwargs)
 

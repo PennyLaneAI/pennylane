@@ -24,7 +24,6 @@ from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,
     grad_prim,
-    jacobian_prim,
     measure_prim,
     qnode_prim,
     while_loop_prim,
@@ -564,7 +563,7 @@ class TestCancelInversesInterpreter:
         jaxpr = jax.make_jaxpr(f)(1.5)
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert jaxpr.eqns[1].primitive == grad_prim if grad_fn == qml.grad else jacobian_prim
+        assert jaxpr.eqns[1].primitive == grad_prim
         assert jaxpr.eqns[2].primitive == qml.RY._primitive
 
         inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]

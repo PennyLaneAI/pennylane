@@ -102,6 +102,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `grad` and `jacobian` primitives now store the function under `fn`.
+  [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
+
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
