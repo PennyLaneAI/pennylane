@@ -16,7 +16,9 @@ Implements the pauli measurement.
 """
 
 import uuid
+from functools import lru_cache
 
+from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
@@ -64,6 +66,10 @@ class PauliMeasure(Operator):
         """Which outcome to postselect after the measurement."""
         return self.hyperparameters["postselect"]
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return type.__call__(cls, *args, **kwargs)
+
     def __repr__(self) -> str:
         return f"PauliMeasure({self.pauli_word}, wires={self.wires.tolist()})"
 
@@ -77,8 +83,41 @@ class PauliMeasure(Operator):
         return hash((self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.id))
 
 
-def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = None):
-    """Perform a Pauli product measurement."""
+def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | None = None):
+    """Concrete implementation of the pauli_measure primitive."""
     measurement_id = str(uuid.uuid4())
     measurement = PauliMeasure(pauli_word, wires, postselect, measurement_id)
     return MeasurementValue([measurement])
+
+
+@lru_cache
+def _create_pauli_measure_primitive():
+    """Create a primitive corresponding to a Pauli product measurement."""
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import QmlPrimitive
+
+    pauli_measure_p = QmlPrimitive("pauli_measure")
+
+    @pauli_measure_p.def_impl
+    def _(wires, pauli_word="", postselect=None):
+        return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
+
+    @pauli_measure_p.def_abstract_eval
+    def _(*_, **__):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        return jax.core.ShapedArray((), dtype)
+
+    return pauli_measure_p
+
+
+def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = None):
+    """Perform a Pauli product measurement."""
+
+    if capture_enabled():
+        primitive = _create_pauli_measure_primitive()
+        return primitive.bind(wires, pauli_word=pauli_word, postselect=postselect)
+
+    return _pauli_measure_impl(wires, pauli_word, postselect)
