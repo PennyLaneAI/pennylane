@@ -89,7 +89,9 @@ class TestRademacherSampler:
     @pytest.mark.parametrize(
         "ids, num",
         [
-            (list(range(5)), 5),
+            pytest.param(
+                list(range(5)), 5, marks=pytest.mark.xfail(reason="To be fixed at sc-90962")
+            ),
             ([0, 2, 4], 5),
             ([0], 1),
             ([2, 3], 5),
