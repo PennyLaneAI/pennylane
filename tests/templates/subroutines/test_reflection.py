@@ -201,10 +201,21 @@ class TestIntegration:
 
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
-    @pytest.mark.skip(reason="TEMP: Test is flaky, needs investigation")
+    # @pytest.mark.skip(reason="TEMP: Test is flaky, needs investigation")
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
-    @pytest.mark.parametrize("shots", [None, 50000])
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            None,
+            pytest.param(
+                50000,
+                marks=pytest.mark.xfail(
+                    reason="Flaky test, to be fixed at sc-101771", strict=False
+                ),
+            ),
+        ],
+    )
     def test_qnode_jax(self, shots, use_jit, seed):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""

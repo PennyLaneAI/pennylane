@@ -1381,7 +1381,6 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=2, seed=seed)
         a = 0.54
 
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)

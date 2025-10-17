@@ -1579,7 +1579,7 @@ class TestStochPulseGradIntegration:
         )
         jax.clear_caches()
 
-    @pytest.mark.skip(reason="Temp skip. See sc-101765 for progress.")
+    @pytest.mark.xfail(reason="Temp xfail. See sc-101765 for progress.", strict=False)
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_qnode_probs_expval_broadcasting(self, num_split_times, shots, tol, seed):
