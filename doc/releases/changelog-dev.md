@@ -51,6 +51,7 @@
   separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
   from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`.
   [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
+  [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
 
 <h3>Documentation 📝</h3>
 
