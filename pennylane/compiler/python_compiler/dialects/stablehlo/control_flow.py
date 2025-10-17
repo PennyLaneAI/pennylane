@@ -21,7 +21,6 @@ Control flow operations for the StableHLO dialect.
 from typing import TypeVar
 
 from xdsl.dialects.builtin import AnyTensorType
-from xdsl.dialects.stablehlo import ReturnOp
 from xdsl.irdl import (
     IRDLOperation,
     irdl_op_definition,
@@ -37,6 +36,7 @@ from xdsl.traits import (
     RecursiveMemoryEffect,
     SingleBlockImplicitTerminator,
 )
+from xdsl_jax.dialects.stablehlo import ReturnOp
 
 # Import our custom StableHLO types
 from .types import HLO_PredTensor, HLO_TensorOrPerAxisQuantizedTensorOrToken, HLO_TensorOrToken

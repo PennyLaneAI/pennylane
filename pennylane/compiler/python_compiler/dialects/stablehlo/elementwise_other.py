@@ -18,7 +18,7 @@ Other elementwise operations for the StableHLO dialect.
 
 # pylint: disable=too-few-public-methods
 
-import xdsl.dialects.stablehlo as xstablehlo
+import xdsl_jax.dialects.stablehlo as xstablehlo
 from xdsl.dialects.builtin import (
     AnyFloat,
     DenseArrayBase,
