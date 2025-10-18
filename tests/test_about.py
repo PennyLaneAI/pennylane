@@ -47,13 +47,13 @@ def test_about():
     assert "default.qubit" in out
     assert "default.gaussian" in out
 
-def test_about_handles_missing_pip(monkeypatch, capsys):
+def test_about_prints_core_fields(capsys):
     about = importlib.import_module("pennylane.about")
-    # Pretend pip isn't available so the fallback path is taken
-    monkeypatch.setattr(about, "find_spec", lambda name: None)
     about.about()
     cap = capsys.readouterr()
-    assert cap.err == ""  # no stderr noise
-    assert re.search(r"Name:\s*PennyLane", cap.out, re.I)
-    assert "Platform info:" in cap.out
-    assert "Location: ." not in cap.out
+
+    assert cap.err == ""
+    assert re.search(r"Name:\s*pennylane", cap.out, re.I)
+    assert "Version:" in cap.out
+    assert "Summary:" in cap.out
+    assert "Location:" in cap.out

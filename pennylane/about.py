@@ -18,10 +18,10 @@ e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 import platform
 import sys
 import os
+import json
 from importlib import metadata
 from importlib.metadata import version, PackageNotFoundError
 from importlib.util import find_spec
-from subprocess import check_output, CalledProcessError, DEVNULL
 from sys import version_info
 
 import numpy
@@ -33,15 +33,17 @@ else:
     jax_version = None
 
 def _pkg_location():
-    """Return absolute path to the installed PennyLane package"""
-    mod = sys.modules.get("pennylane")
-    if mod and hasattr(mod, "__file__"):
-        return os.path.abspath(os.path.dirname(mod.__file__))
+    """Return absolute path to the installed PennyLane package."""
     try:
         dist = metadata.distribution("pennylane")
         return os.path.abspath(str(dist.locate_file("")))
     except (PackageNotFoundError, OSError):
+        # Use imported module path if available
+        mod = sys.modules.get("pennylane")
+        if mod and getattr(mod, "__file__", None):
+            return os.path.abspath(os.path.dirname(mod.__file__))
         return "(unknown)"
+
 
 def about():
     """
@@ -56,39 +58,46 @@ def about():
         plugin_devices = metadata.entry_points(group="pennylane.plugins")
         dist_name = "name"
 
-    info = None
-
     try:
-        info = check_output(
-            [sys.executable, "-m", "pip", "show", "pennylane"],
-            text=True,
-            stderr=DEVNULL,  # suppress "no module named pip" error
-        )
-    except (CalledProcessError, FileNotFoundError):
-        pass
+        dist = metadata.distribution("pennylane")
+        meta = dist.metadata
+        location = _pkg_location()
 
-    if info is None:
+        lines = [
+            f"Name: {meta.get('Name', 'PennyLane')}",
+            f"Version: {meta.get('Version', '')}",
+            f"Summary: {meta.get('Summary', '')}",
+            f"Home-page: {meta.get('Home-page', '')}",
+            f"Author: {meta.get('Author', '')}",
+            f"License: {meta.get('License', '')}",
+            f"Location: {location or '(unknown)'}",
+        ]
+
+        # PEP 610: detect editable with direct_url.json
         try:
-            meta = metadata.metadata("pennylane")
-            location = _pkg_location()
-            editable = meta.get("Editable-Project-Location", "")
-            lines = [
-                f"Name: {meta.get('Name', 'PennyLane')}",
-                f"Version: {meta.get('Version', '')}",
-                f"Summary: {meta.get('Summary', '')}",
-                f"Home-page: {meta.get('Home-page', '')}",
-                f"Author: {meta.get('Author', '')}",
-                f"License: {meta.get('License', '')}",
-                f"Location: {location or '(unknown)'}",
-            ]
-            if editable:
-                lines.append(f"Editable project location: {editable}")
-            lines.append("(Installer metadata unavailable)")
-            info = "\n".join(lines)
-        except PackageNotFoundError:
-            info = "PennyLane version info unavailable (no pip or metadata)"
-        except OSError:
-            info = "PennyLane version info unavailable (metadata read error)"
+            raw = dist.read_text("direct_url.json")
+        except FileNotFoundError:
+            raw = None
+
+        if raw:
+            try:
+                direct = json.loads(raw)
+            except json.JSONDecodeError:
+                direct = None
+            else:
+                if direct.get("dir_info", {}).get("editable"):
+                    url = direct.get("url", "")
+                    if url.startswith("file://"):
+                        url = url[7:]
+                    lines.append(f"Editable project location: {url}")
+
+        info = "\n".join(lines)
+
+    except PackageNotFoundError:
+        info = "PennyLane version info unavailable (no distribution metadata)"
+    except OSError:
+        info = "PennyLane version info unavailable (metadata read error)"
+
     print(info)
     print(f"Platform info:           {platform.platform(aliased=True)}")
     print(
