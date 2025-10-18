@@ -17,7 +17,6 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Optional
@@ -28,13 +27,12 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
-    PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
 from pennylane.operation import Operator, _get_abstract_operator
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -353,9 +351,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     @property
     def has_decomposition(self):
-        r"""Bool: Whether or not the MeasurementProcess returns a defined decomposition
-        when calling ``expand``.
-        """
+        r"""Bool: Whether or not the MeasurementProcess has diagonalizing gates.``."""
         # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
         # which we have to check to be defined. The subsequent creation of the new
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
@@ -365,66 +361,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     def samples_computational_basis(self):
         r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
         return self.obs is None
-
-    def expand(self):
-        """Expand the measurement of an observable to a unitary
-        rotation and a measurement in the computational basis.
-
-        .. warning::
-
-            This method is deprecated due to circular dependency issues and lack of use.
-
-            The relevant code can be reproduced by:
-
-            .. code-block:: python
-
-                diagonalized_mp = type(mp)(eigvals=mp.eigvals(), wires=mp.wires)
-                qml.tape.QuantumScript(mp.diagonalizing_gates(), [diagonalized_mp])
-
-        Returns:
-            .QuantumTape: a quantum tape containing the operations
-            required to diagonalize the observable
-
-        **Example:**
-
-        Consider a measurement process consisting of the expectation
-        value of an Hermitian observable:
-
-        >>> H = np.array([[1, 2], [2, 4]])
-        >>> obs = qml.Hermitian(H, wires=['a'])
-        >>> m = MeasurementProcess(Expectation, obs=obs)
-
-        Expanding this out:
-
-        >>> tape = m.expand()
-
-        We can see that the resulting tape has the qubit unitary applied,
-        and a measurement process with no observable, but the eigenvalues
-        specified:
-
-        >>> print(tape.operations)
-        [QubitUnitary(array([[-0.89442719,  0.4472136 ],
-              [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].eigvals())
-        [0. 5.]
-        >>> print(tape.measurements[0].obs)
-        None
-        """
-        warnings.warn(
-            "MeasurementProcess.expand is deprecated. Use diagonalizing_gates and eigvals manually instead.",
-            PennyLaneDeprecationWarning,
-        )
-        if self.obs is None:
-            raise DecompositionUndefinedError
-
-        with AnnotatedQueue() as q:
-            self.obs.diagonalizing_gates()
-            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
-
-        # tach-ignore
-        from pennylane.tape import QuantumScript  # pylint: disable=import-outside-toplevel
-
-        return QuantumScript.from_queue(q)
 
     def queue(self, context=QueuingManager):
         """Append the measurement process to an annotated queue."""

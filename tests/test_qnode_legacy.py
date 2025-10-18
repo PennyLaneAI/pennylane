@@ -813,7 +813,7 @@ class TestShots:
             assert len(circuit(0.8)) == 10
             with pytest.warns(
                 PennyLaneDeprecationWarning,
-                match="Specifying 'shots' when calling a QNode is deprecated",
+                match="Specifying 'shots' when executing a QNode is deprecated",
             ):
                 assert len(circuit(0.8, shots=2)) == 2
                 assert len(circuit(0.8, shots=3178)) == 3178
@@ -838,7 +838,7 @@ class TestShots:
         # check that the circuit is temporary non-analytic
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
@@ -933,7 +933,7 @@ class TestShots:
         assert dev.shots == 3
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             res = circuit(0.8, shots=2)
         assert len(res) == 2
@@ -1050,7 +1050,7 @@ class TestShots:
         # Override
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
@@ -1075,7 +1075,7 @@ class TestShots:
         # Override
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
