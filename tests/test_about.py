@@ -19,6 +19,7 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import contextlib
 import io
 import re
+import importlib
 
 import pytest
 
@@ -45,3 +46,14 @@ def test_about():
     assert "Scipy version" in out
     assert "default.qubit" in out
     assert "default.gaussian" in out
+
+def test_about_prints_core_fields(capsys):
+    about = importlib.import_module("pennylane.about")
+    about.about()
+    cap = capsys.readouterr()
+
+    assert cap.err == ""
+    assert re.search(r"Name:\s*pennylane", cap.out, re.I)
+    assert "Version:" in cap.out
+    assert "Summary:" in cap.out
+    assert "Location:" in cap.out
