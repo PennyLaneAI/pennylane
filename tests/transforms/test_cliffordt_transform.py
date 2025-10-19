@@ -220,34 +220,6 @@ class TestCliffordCompile:
         res1, res2 = decomp_cir(), qjit_cir()
         assert qml.math.isclose(res1, res2, atol=1e-2)
 
-    @pytest.mark.catalyst
-    @pytest.mark.jax
-    @pytest.mark.external
-    def test_decomposition_with_rs_qjit_dynamic_param(self):
-        """Test clifford T decomposition with qjit and dynamic parameters."""
-
-        pytest.importorskip("jax")
-        pytest.importorskip("catalyst")
-
-        def circuit(angle, qb):
-            qml.H(qb)
-            qml.CNOT([qb, qb + 1])
-            qml.RX(angle * 0.37, qb)
-            qml.RZ(angle * 0.27, qb + 1)
-            qml.RY(angle * 0.73, qb)
-            qml.CNOT([qb + 1, qb])
-            qml.H(qb)
-            return qml.expval(qml.Z(0) @ qml.Z(1))
-
-        dev = qml.device("lightning.qubit", wires=2)
-        decomposed_cir = qml.QNode(clifford_t_decomposition(circuit, method="gridsynth"), dev)
-        qjit_cir = qml.qjit(decomposed_cir)
-
-        angle, qb = PI, 0
-        default_res, qjit_res = decomposed_cir(angle, qb), qjit_cir(angle, qb)
-
-        assert qml.math.allclose(default_res, qjit_res, atol=1e-2)
-
     def test_qnode_decomposition(self):
         """Test decomposition for the Clifford transform applied to a QNode."""
 
@@ -735,3 +707,47 @@ class TestCatalyst:
 
         results = circuit()
         assert results[0] and not results[1]
+
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    def test_decomposition_with_rs_qjit_dynamic_param(self):
+        """Test clifford T decomposition with qjit and dynamic parameters."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        def circuit(angle, qb):
+            qml.H(qb)
+            qml.CNOT([qb, qb + 1])
+            qml.RX(angle * 0.37, qb)
+            qml.RZ(angle * 0.27, qb + 1)
+            qml.RY(angle * 0.73, qb)
+            qml.CNOT([qb + 1, qb])
+            qml.H(qb)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        dev = qml.device("lightning.qubit", wires=2)
+        decomposed_cir = qml.QNode(clifford_t_decomposition(circuit, method="gridsynth"), dev)
+        qjit_cir = qml.qjit(decomposed_cir)
+
+        angle, qb = PI, 0
+        default_res, qjit_res = decomposed_cir(angle, qb), qjit_cir(angle, qb)
+
+        assert qml.math.allclose(default_res, qjit_res, atol=1e-2)
+
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    def test_decomposition_with_sk_qjit_raise(self):
+        """Test decomposition for the Clifford transform with Solovay-Kitaev method
+        with QJIT enabled raises an error."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=4)
+        qnode_cir = qml.qnode(dev)(circuit_7)
+        decomp_cir = clifford_t_decomposition(qnode_cir, method="sk")
+        with pytest.raises(RuntimeError, match="Solovay-Kitaev decomposition"):
+            _ = qml.qjit(decomp_cir)()
