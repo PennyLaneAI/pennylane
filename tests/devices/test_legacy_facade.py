@@ -287,6 +287,60 @@ def test_mcm_validation():
         facade.setup_execution_config(config, tape)
 
 
+def test_mcm_resolution_when_supported():
+    """Tests resolution of the mcm method when mcm is supported."""
+
+    class MidMeasureDev(DummyDevice):
+        """A dummy device that supports mid circuit measurements."""
+
+        _capabilities = {"supports_mid_measure": True}
+
+    dev = MidMeasureDev(wires=[0, 1])
+    facade = LegacyDeviceFacade(dev)
+
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))], shots=100)
+    config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
+
+    config = ExecutionConfig()
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
+
+
+@pytest.mark.usefixtures("create_temporary_toml_file")
+@pytest.mark.parametrize(
+    "create_temporary_toml_file",
+    [
+        """
+        schema = 3
+
+        [compilation]
+
+        supported_mcm_methods = ["one-shot"]
+        """
+    ],
+    indirect=True,
+)
+def test_mcm_resolution_toml_present(request):
+    """Tests resolution of the mcm methods when a toml file is provided."""
+
+    dev = DummyDevice(wires=[0, 1])
+    dev.config_filepath = request.node.toml_file  # pylint: disable=attribute-defined-outside-init
+    facade = LegacyDeviceFacade(dev)
+
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))], shots=100)
+    config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
+
+    config = ExecutionConfig()
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
+
+
 def test_preprocessing_program_supports_mid_measure():
     """Test that if the device natively supports mid measure, defer_measurements wont be applied."""
 
