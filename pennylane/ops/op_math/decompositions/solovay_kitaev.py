@@ -275,6 +275,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     return w_hat, v_hat
 
 
+# pylint: disable=too-many-arguments
 def sk_decomposition(
     op, epsilon, is_qjit=False, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10
 ):
