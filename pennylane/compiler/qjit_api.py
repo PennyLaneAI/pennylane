@@ -19,30 +19,30 @@ from .compiler import AvailableCompilers, _check_compiler_version, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
-    """A just-in-time decorator for PennyLane and JAX programs using Catalyst.
+    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane.
 
-    This decorator enables both just-in-time and ahead-of-time compilation,
-    depending on whether function argument type hints are provided.
+    This decorator enables both just-in-time and ahead-of-time compilation, depending on whether
+    function argument type hints are provided.
 
     .. note::
 
-        Not all PennyLane devices currently work with Catalyst. Supported backend devices include
-        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``. For
-        a full of supported devices, please see :doc:`/dev/devices`.
+        Not all PennyLane devices currently work with Catalyst. For a complete list of supported
+        backend devices, please consult
+        :doc:`Catalyst's Supported Devices page <catalyst:dev/devices>`__.
 
     Args:
         fn (Callable): The quantum or classical function.
         compiler (str): Name of the compiler to use for just-in-time compilation. Available
-            options include ``catalyst`` and
-            :func:`cuda_quantum <catalyst.third_party.cuda.cudaqjit>`.
-        autograph (bool): Experimental support for automatically converting Python control
-            flow statements (including ``if`` statements, ``for`` and ``while`` loops) to
+            options include ``"catalyst"`` (works with JAX) and
+            :func:`cuda_quantum <catalyst.third_party.cuda.cudaqjit>` (works with CUDA Quantum).
+        autograph (bool): Experimental support for automatically converting Python control flow
+            statements (including ``if`` statements, ``for`` and ``while`` loops) to
             Catalyst-compatible control flow, and more. For more details, see the
-            :doc:`AutoGraph guide </dev/autograph>`.
+            :doc:`AutoGraph guide <catalyst:dev/autograph>`__.
         autograph_include: A list of (sub)modules to be allow-listed for autograph conversion.
-        async_qnodes (bool): Experimental support for automatically executing
-            QNodes asynchronously, if supported by the device runtime.
-        target (str): the compilation target
+        async_qnodes (bool): Experimental support for automatically executing QNodes asynchronously,
+            if supported by the device runtime.
+        target (str): The compilation target
         keep_intermediate (Union[str, int, bool]): Level controlling intermediate file generation.
             - ``False`` or ``0`` or ``"none"`` or ``None`` (default): No intermediate file is kept.
             - ``True`` or ``1`` or ``"pipeline"``: Intermediate files are saved after each pipeline.
@@ -54,30 +54,29 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             - :attr:`~.QJIT.qir`: QIR in LLVM IR form
         verbose (bool): If ``True``, the tools and flags used by Catalyst behind the scenes are
             printed out.
-        logfile (Optional[TextIOWrapper]): File object to write verbose messages to (default -
+        logfile (Optional[TextIOWrapper]): File object to write verbose messages to (default is
             ``sys.stderr``).
-        pipelines (Optional(List[Tuple[str,List[str]]])): A list of pipelines to be executed. The
+        pipelines (Optional(List[Tuple[str, List[str]]])): A list of pipelines to be executed. The
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
-        static_argnums(int or Seqence[Int]): an index or a sequence of indices that specifies the
+        static_argnums (int or Sequence[Int]): An index or a sequence of indices that specifies the
             positions of static arguments.
-        static_argnames(str or Seqence[str]): a string or a sequence of strings that specifies the
+        static_argnames (str or Seqence[str]): A string or a sequence of strings that specifies the
             names of static arguments.
         abstracted_axes (Sequence[Sequence[str]] or Dict[int, str] or Sequence[Dict[int, str]]):
-            An experimental option to specify dynamic tensor shapes.
-            This option affects the compilation of the annotated function.
-            Function arguments with ``abstracted_axes`` specified will be compiled to ranked tensors
-            with dynamic shapes. For more details, please see the Dynamically-shaped Arrays section
-            below.
-        disable_assertions (bool): If set to ``True``, runtime assertions included in
-            ``fn`` via :func:`~.debug_assert` will be disabled during compilation.
+            An experimental option to specify dynamic tensor shapes. This option affects the
+            compilation of the annotated function. Function arguments with ``abstracted_axes``
+            specified will be compiled to ranked tensors with dynamic shapes. For more details,
+            please see the Dynamically-shaped Arrays section below.
+        disable_assertions (bool): If set to ``True``, runtime assertions included in ``fn`` via
+            :func:`catalyst.debug_assert` will be disabled during compilation.
         seed (Optional[Int]):
-            The seed for circuit readout results when the qjit-compiled function is executed
-            on simulator devices including ``lightning.qubit``, ``lightning.kokkos``, and
-            ``lightning.gpu``. The default value is None, which means no seeding is performed,
+            The seed for circuit readout results when the qjit-compiled function is executed on
+            simulator devices including ``lightning.qubit``, ``lightning.kokkos``, and
+            ``lightning.gpu``. The default value is ``None``, which means no seeding is performed,
             and all processes are random. A seed is expected to be an unsigned 32-bit integer.
-            Currently, the following measurement processes are seeded: :func:`~.measure`,
+            Currently, the following measurement processes are seeded: :func:`catalyst.measure`,
             :func:`qml.sample() <pennylane.sample>`, :func:`qml.counts() <pennylane.counts>`,
             :func:`qml.probs() <pennylane.probs>`, :func:`qml.expval() <pennylane.expval>`,
             :func:`qml.var() <pennylane.var>`.
@@ -87,27 +86,27 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             should correspond to names of passes found in the `catalyst.passes <https://docs.
             pennylane.ai/projects/catalyst/en/stable/code/__init__.html#module-catalyst.passes>`_
             module, values should either be empty dictionaries (for default pass options) or
-            dictionaries of valid keyword arguments and values for the specific pass.
-            The order of keys in this dictionary will determine the pass pipeline.
-            If not specified, the default pass pipeline will be applied.
+            dictionaries of valid keyword arguments and values for the specific pass. The order of
+            keys in this dictionary will determine the pass pipeline. If not specified, the default
+            pass pipeline will be applied.
         pass_plugins (Optional[List[Path]]): List of paths to pass plugins.
         dialect_plugins (Optional[List[Path]]): List of paths to dialect plugins.
 
     Returns:
-        QJIT object.
+        :class:`catalyst.QJIT`: A class that, when executed, just-in-time compiles and executes the
+        decorated function.
 
     Raises:
-        FileExistsError: Unable to create temporary directory
-        PermissionError: Problems creating temporary directory
-        OSError: Problems while creating folder for intermediate files
-        AutoGraphError: Raised if there was an issue converting the given the function(s).
-        ImportError: Raised if AutoGraph is turned on and TensorFlow could not be found.
+        ``FileExistsError``: Unable to create temporary directory
+        ``PermissionError``: Problems creating temporary directory
+        ``OSError``: Problems while creating folder for intermediate files
+        ``AutoGraphError``: Raised if there was an issue converting the given the function(s).
+        ``ImportError``: Raised if AutoGraph is turned on and TensorFlow could not be found.
 
     **Example**
 
-    In just-in-time (JIT) mode, the compilation is triggered at the call site the
-    first time the quantum function is executed. For example, ``circuit`` is
-    compiled as early as the first call.
+    In just-in-time (JIT) mode, the compilation is triggered at the call site the first time the
+    quantum function is executed. For example, ``circuit`` is compiled as early as the first call.
 
     .. code-block:: python
 
@@ -127,8 +126,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     array(0.)
 
     :func:`~.qjit` compiled programs also support nested container types as inputs and outputs of
-    compiled functions. This includes lists and dictionaries, as well as any data structure implementing
-    the `JAX PyTree <https://jax.readthedocs.io/en/latest/pytrees.html>`__.
+    compiled functions. This includes lists and dictionaries, as well as any data structure
+    implementing the `JAX PyTree <https://jax.readthedocs.io/en/latest/pytrees.html>`__.
 
     .. code-block:: python
 
@@ -149,13 +148,11 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     >>> f(x)
     {'X': array(-0.75271018), 'XY': array(1.)}
 
-    For more details on using the :func:`~.qjit` decorator and Catalyst
-    with PennyLane, please refer to the Catalyst
-    :doc:`quickstart guide <catalyst:dev/quick_start>`,
-    as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-    page for an overview of the differences between Catalyst and PennyLane, and
-    how to best structure your workflows to improve performance when
-    using Catalyst.
+    For more details on using the :func:`~.qjit` decorator and Catalyst with PennyLane, please
+    refer to the Catalyst doc:`quickstart guide <catalyst:dev/quick_start>`, as well as the
+    :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>` page for an overview of the
+    differences between Catalyst and PennyLane, and how to best structure your workflows to improve
+    performance when using Catalyst.
 
     .. details::
         :title: Static arguments
@@ -189,9 +186,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             f(2, MyClass(5)) # no re-compilation
 
         In the example above, ``y`` is static. Note that the second function call triggers
-        re-compilation since the input object is different from the previous one. However,
-        the third function call directly uses the previous compiled one and does not introduce
-        re-compilation.
+        re-compilation since the input object is different from the previous one. However, the third
+        function call directly uses the previous compiled one and does not introduce re-compilation.
 
         .. code-block:: python
 
@@ -216,13 +212,13 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             my_obj_1.val = 7
             f(1, my_obj_1, my_obj_2) # re-compilation
 
-        In the example above, ``y`` and ``z`` are static. The second function will cause
-        function ``f`` to re-compile because ``my_obj_1`` is changed. This requires that
-        the mutation is properly reflected in the hash value.
+        In the example above, ``y`` and ``z`` are static. The second function will cause function
+        ``f`` to re-compile because ``my_obj_1`` is changed. This requires that the mutation is
+        properly reflected in the hash value.
 
-        Note that when ``static_argnums`` is used in conjunction with type hinting,
-        ahead-of-time compilation will not be possible since the static argument values
-        are not yet available. Instead, compilation will be just-in-time.
+        Note that when ``static_argnums`` is used in conjunction with type hinting, ahead-of-time
+        compilation will not be possible since the static argument values are not yet available.
+        Instead, compilation will be just-in-time.
 
 
     .. details::
@@ -235,9 +231,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
             abstracted_axes=((), ('n',), ('m', 'n'))
 
-        Each tuple in the sequence corresponds to one of the arguments in the annotated
-        function. Empty tuples can
-        be used and correspond to parameters with statically known shapes.
+        Each tuple in the sequence corresponds to one of the arguments in the annotated function.
+        Empty tuples can be used and correspond to parameters with statically known shapes.
         Non-empty tuples correspond to parameters with dynamically known shapes.
 
         In this example above,
@@ -257,10 +252,9 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
             abstracted_axes={0: 'n'}
 
-        This approach allows a concise expression of the relationships
-        between axes for different function arguments. In this example,
-        it specifies that for all function arguments, the zeroth axis will
-        have dynamic shape ``n``.
+        This approach allows a concise expression of the relationships between axes for different
+        function arguments. In this example, it specifies that for all function arguments, the
+        zeroth axis will have dynamic shape ``n``.
 
         Passing a sequence of dictionaries:
 
@@ -268,13 +262,13 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
             abstracted_axes=({}, {0: 'n'}, {1: 'm', 0: 'n'})
 
-        The example here is a more verbose version of the tuple example. This convention
-        allows axes to be omitted from the list of abstracted axes.
+        The example here is a more verbose version of the tuple example. This convention allows axes
+        to be omitted from the list of abstracted axes.
 
-        Using ``abstracted_axes`` can help avoid the cost of recompilation.
-        By using ``abstracted_axes``, a more general version of the compiled function will be
-        generated. This more general version is parametrized over the abstracted axes and
-        allows results to be computed over tensors independently of their axes lengths.
+        Using ``abstracted_axes`` can help avoid the cost of recompilation. By using
+        ``abstracted_axes``, a more general version of the compiled function will be generated. This
+        more general version is parametrized over the abstracted axes and allows results to be
+        computed over tensors independently of their axes lengths.
 
         For example:
 
@@ -287,8 +281,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             sum(jnp.array([1]))     # Compilation happens here.
             sum(jnp.array([1, 1]))  # And here!
 
-        The ``sum`` function would recompile each time an array of different size is passed
-        as an argument.
+        The ``sum`` function would recompile each time an array of different size is passed as an
+        argument.
 
         .. code-block:: python
 
@@ -299,8 +293,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             sum(jnp.array([1]))     # Compilation happens here.
             sum(jnp.array([1, 1]))  # No need to recompile.
 
-        The ``sum_abstracted`` function would only compile once and its definition would be
-        reused for subsequent function calls.
+        The ``sum_abstracted`` function would only compile once and its definition would be reused
+        for subsequent function calls.
     """
 
     if not available(compiler):
