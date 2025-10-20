@@ -9,11 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* `argnum` has been renamed `argnums` in `qml.grad` and `qml.jacobian` to better match catalyst
-  and jax.
+* `argnum` has been renamed `argnums` in `qml.grad`, `qml.jacobian`, `qml.jvp`, and `qml.vjp`
+  to better match catalyst and jax.
 
   - Deprecated in v0.44
-  - Will bemoved in v0.45
+  - Will removed in v0.45
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
