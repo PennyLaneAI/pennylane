@@ -22,6 +22,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -929,7 +930,10 @@ class TestOperationConstruction:
             grad_method = None
 
         op = DummyOp(wires=0)
-        assert op.is_hermitian is False
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="The 'is_hermitian' property is deprecated"
+        ):
+            assert op.is_hermitian is False
 
 
 class TestObservableConstruction:
@@ -1030,7 +1034,10 @@ class TestObservableConstruction:
             grad_method = None
 
         op = DummyObserv(wires=0)
-        assert op.is_hermitian is False
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="The 'is_hermitian' property is deprecated"
+        ):
+            assert op.is_hermitian is False
 
 
 class TestOperatorIntegration:

@@ -200,6 +200,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -341,7 +342,7 @@ def create_operator_primitive(
     primitive.prim_type = "operator"
 
     @primitive.def_impl
-    def _(*args, **kwargs):
+    def _def_impl(*args, **kwargs):
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
@@ -357,7 +358,7 @@ def create_operator_primitive(
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return abstract_type()
 
     return primitive
@@ -1288,9 +1289,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def is_hermitian(self) -> bool:
         """This property determines if an operator is likely hermitian.
 
-        .. note:: It is recommended to use the :func:`~.is_hermitian` function.
-            Although this function may be expensive to calculate,
-            the ``op.is_hermitian`` property can lead to technically incorrect results.
+        .. warning::
+
+            This property is deprecated and will be removed in PennyLane v0.45.
+            Consider using the :func:`~.is_hermitian` function instead as it provides
+            a more reliable check for hermiticity. Please be aware that it comes
+            with a higher computational cost.
 
         If this property returns ``True``, the operator is guaranteed to
         be hermitian, but if it returns ``False``, the operator may still be hermitian.
@@ -1306,6 +1310,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> qml.is_hermitian(op)
         True
         """
+        warnings.warn(
+            "The 'is_hermitian' property is deprecated and will be removed in PennyLane v0.45. "
+            "Consider using the 'is_hermitian' function instead as it provides a more reliable check "
+            "for hermiticity. Please be aware that it comes with a higher computational cost.",
+            PennyLaneDeprecationWarning,
+        )
+
         return False
 
     # pylint: disable=no-self-argument, comparison-with-callable
