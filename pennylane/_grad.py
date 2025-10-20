@@ -239,25 +239,11 @@ class grad:
         the arguments in ``argnum``.
     """
 
-    def __new__(cls, func, argnum=None, method=None, h=None):
-        """Patch to the proper grad function"""
-
-        if active_jit := compiler.active_compiler():
-            available_eps = compiler.AvailableCompilers.names_entrypoints
-            ops_loader = available_eps[active_jit]["ops"].load()
-            return ops_loader.grad(func, method=method, h=h, argnums=argnum)
-
-        if capture.enabled():
-            return _capture_diff(func, argnum, _get_grad_prim(), method=method, h=h)
-
-        if method or h:  # pragma: no cover
-            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
-
-        return super().__new__(cls)
-
-    def __init__(self, func, argnum=None):
+    def __init__(self, func, argnum=None, h=None, method=None):
         self._forward = None
         self._grad_fn = None
+        self._h = h
+        self._method = method
 
         self._fun = func
         self._argnum = argnum
@@ -302,6 +288,26 @@ class grad:
         return self._grad_with_forward(self._fun, argnum=argnum), argnum
 
     def __call__(self, *args, **kwargs):
+        if active_jit := compiler.active_compiler():
+            available_eps = compiler.AvailableCompilers.names_entrypoints
+            ops_loader = available_eps[active_jit]["ops"].load()
+            return ops_loader.grad(self._fun, method=self._method, h=self._h, argnums=self._argnum)(
+                *args, **kwargs
+            )
+
+        if capture.enabled():
+            return _capture_diff(
+                self._fun, self._argnum, _get_grad_prim(), method=self._method, h=self._h
+            )(*args, **kwargs)
+
+        if self._method:
+            raise ValueError(f"method = '{self._method}' unsupported without QJIT. Must be `None`.")
+        if self._h:
+            raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
+
+        return self._autograd_call(*args, **kwargs)
+
+    def _autograd_call(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
         grad_fn, argnum = self._get_grad_fn(args)
@@ -360,7 +366,23 @@ def _error_if_not_array(f):
     return new_f
 
 
-def jacobian(func, argnum=None, method=None, h=None):
+def _get_argnum(args):
+    """Inspect the arguments for differentiability and return the
+    corresponding indices."""
+    argnum = []
+
+    for idx, arg in enumerate(args):
+        trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
+        if trainable:
+            if arg.dtype.name[:3] == "int":
+                raise ValueError("Autograd does not support differentiation of ints.")
+            argnum.append(idx)
+
+    return argnum
+
+
+# pylint: disable=too-few-public-methods
+class jacobian:
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
     This function is compatible with Autograd and :func:`~.qjit`.
 
@@ -422,7 +444,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     Consider the QNode
 
-    .. code-block::
+    .. code-block:: python
 
         import pennylane as qml
         from pennylane import numpy as np
@@ -448,7 +470,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     On the other hand, consider the following QNode for the same circuit
     structure:
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.qnode(dev)
         def circuit(x, y, z):
@@ -467,7 +489,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     >>> jac = qml.jacobian(circuit)(x, y, z)
     >>> type(jac)
-    tuple
+    <class 'tuple'>
     >>> for sub_jac in jac:
     ...     print(sub_jac.shape)
     (4,)
@@ -476,7 +498,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     For a more advanced setting of QNode arguments, consider the QNode
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -532,7 +554,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     We can also compute the Jacobian transformation inside a :func:`~.qjit` decorated program:
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -554,7 +576,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     You can further compute the Jacobian transformation using other supported differentiation
     methods by :func:`catalyst.jacobian`.
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.qjit
         def workflow(x):
@@ -568,37 +590,39 @@ def jacobian(func, argnum=None, method=None, h=None):
             return g(x)
 
     >>> workflow(np.array([2.0, 1.0]))
-    Array([[-0.03996468, -0.42472435],
-           [ 0.03996468,  0.42472435]], dtype=float64)
+    Array([[-0.37120096, -0.45467246],
+           [ 0.37120096,  0.45467246]], dtype=float64)
 
     """
 
-    if active_jit := compiler.active_compiler():
-        available_eps = compiler.AvailableCompilers.names_entrypoints
-        ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jacobian(func, method=method, h=h, argnums=argnum)
+    def __init__(self, func, argnum=None, method=None, h=None):
+        self._func = func
+        self._argnum = argnum
+        self._method = method
+        self._h = h
 
-    if capture.enabled():
-        return _capture_diff(func, argnum, _get_jacobian_prim(), method=method, h=h)
+    def __call__(self, *args, **kwargs):
+        if active_jit := compiler.active_compiler():
+            available_eps = compiler.AvailableCompilers.names_entrypoints
+            ops_loader = available_eps[active_jit]["ops"].load()
+            return ops_loader.jacobian(
+                self._func, method=self._method, h=self._h, argnums=self._argnum
+            )(*args, **kwargs)
 
-    if method or h:
-        raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+        if capture.enabled():
+            g = _capture_diff(
+                self._func, self._argnum, _get_jacobian_prim(), method=self._method, h=self._h
+            )
+            return g(*args, **kwargs)
 
-    def _get_argnum(args):
-        """Inspect the arguments for differentiability and return the
-        corresponding indices."""
-        argnum = []
+        if self._method:
+            raise ValueError(f"method = '{self._method}' unsupported without QJIT. Must be `None`.")
+        if self._h:
+            raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
-        for idx, arg in enumerate(args):
-            trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
-            if trainable:
-                if arg.dtype.name[:3] == "int":
-                    raise ValueError("Autograd does not support differentiation of ints.")
-                argnum.append(idx)
+        return self._autograd_call(*args, **kwargs)
 
-        return argnum
-
-    def _jacobian_function(*args, **kwargs):
+    def _autograd_call(self, *args, **kwargs):
         """Compute the autograd Jacobian.
 
         This wrapper function is returned to the user instead of autograd.jacobian,
@@ -606,15 +630,15 @@ def jacobian(func, argnum=None, method=None, h=None):
         jacobian function once, but then calls it with arguments that change
         in differentiability.
         """
-        if argnum is None:
+        if self._argnum is None:
             # Infer which arguments to consider trainable
             _argnum = _get_argnum(args)
             # Infer whether to unpack from the inferred argnum
             unpack = len(_argnum) == 1
         else:
             # For a single integer as argnum, unpack the Jacobian tuple
-            unpack = isinstance(argnum, int)
-            _argnum = [argnum] if unpack else argnum
+            unpack = isinstance(self._argnum, int)
+            _argnum = [self._argnum] if unpack else self._argnum
 
         if not _argnum:
             warnings.warn(
@@ -622,11 +646,11 @@ def jacobian(func, argnum=None, method=None, h=None):
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnum' keyword."
             )
-        jac = tuple(_jacobian(_error_if_not_array(func), arg)(*args, **kwargs) for arg in _argnum)
+        jac = tuple(
+            _jacobian(_error_if_not_array(self._func), arg)(*args, **kwargs) for arg in _argnum
+        )
 
         return jac[0] if unpack else jac
-
-    return _jacobian_function
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -684,8 +708,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     >>> x = jnp.array([0.1, 0.2])
     >>> dy = jnp.array([-0.5, 0.1, 0.3])
     >>> vjp(x, dy)
-    [array([0.09983342, 0.04      , 0.02      ]),
-    array([-0.43750208,  0.07000001])]
+    (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
     """
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
@@ -750,8 +773,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     >>> x = jnp.array([0.1, 0.2])
     >>> tangent = jnp.array([0.3, 0.6])
     >>> jvp(x, tangent)
-    [array([0.09983342, 0.04      , 0.02      ]),
-    array([0.29850125, 0.24000006, 0.12      ])]
+    (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), Array([0.29850125, 0.24      , 0.12      ], dtype=float64))
 
     **Example 2 (argnum usage)**
 
@@ -775,7 +797,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
     >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
     >>> workflow(params, dy)
-    [array(0.78766064), array(-0.7011436)]
+    (Array(0.78766064, dtype=float64), Array(-0.70114352, dtype=float64))
     """
 
     if active_jit := compiler.active_compiler():

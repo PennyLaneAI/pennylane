@@ -73,6 +73,8 @@ class SymbolicOp(Operator):
     # pylint: disable=super-init-not-called
     def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
+        if isinstance(base, qml.measurements.MidMeasureMP):
+            raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
         self._id = id
         self._pauli_rep = None
         self.queue()

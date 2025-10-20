@@ -15,6 +15,7 @@
 This module contains the ``TransformProgram`` class.
 """
 from collections.abc import Sequence
+from copy import copy
 from functools import partial
 from typing import overload
 
@@ -165,6 +166,9 @@ class TransformProgram:
         self._transform_program = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache
 
+    def __copy__(self):
+        return TransformProgram(self._transform_program, self.cotransform_cache)
+
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
         return self._transform_program.__iter__()
@@ -271,16 +275,14 @@ class TransformProgram:
             raise TransformError("Only transform dispatcher can be added to the transform program.")
 
         if transform.expand_transform:
-            self.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
+            self.push_back(
+                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+            )
         self.push_back(
             TransformContainer(
-                transform.transform,
+                transform,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=transform.classical_cotransform,
-                plxpr_transform=transform.plxpr_transform,
-                is_informative=transform.is_informative,
-                final_transform=transform.final_transform,
             )
         )
 
@@ -302,18 +304,16 @@ class TransformProgram:
 
         self.insert_front(
             TransformContainer(
-                transform.transform,
+                transform,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=transform.classical_cotransform,
-                plxpr_transform=transform.plxpr_transform,
-                is_informative=transform.is_informative,
-                final_transform=transform.final_transform,
             )
         )
 
         if transform.expand_transform:
-            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
+            self.insert_front(
+                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+            )
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
@@ -498,3 +498,27 @@ class TransformProgram:
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
         return self.__call_tapes(*args, **kwargs)
+
+
+@TransformDispatcher.generic_register
+def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
+    program = copy(obj)
+
+    if transform.expand_transform:
+        # pylint: disable=protected-access
+        program.push_back(
+            TransformContainer(
+                transform.expand_transform,
+                targs,
+                tkwargs,
+                use_argnum=transform._use_argnum_in_expand,
+            )
+        )
+    program.push_back(
+        TransformContainer(
+            transform,
+            args=targs,
+            kwargs=tkwargs,
+        )
+    )
+    return program

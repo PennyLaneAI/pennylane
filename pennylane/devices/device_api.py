@@ -27,7 +27,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import TransformDispatcher, TransformError, TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -389,7 +389,7 @@ class Device(abc.ABC):
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
 
-        shots_present = circuit and bool(circuit.shots)
+        shots_present = bool(circuit is not None and bool(circuit.shots))
         validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
         if config.mcm_config.mcm_method is None and self.capabilities is not None:
             # This is a sensible default strategy for resolving the MCM method based on declared
@@ -1068,3 +1068,83 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
         return "one-shot"
 
     return "deferred"
+
+
+def _preprocess_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
+
+        def preprocess(
+            self,
+            execution_config: ExecutionConfig | None = None,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program, config = self.original_device.preprocess(execution_config)
+            program = self.transform(program, *self.targs, **self.tkwargs)
+            return program, config
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
+def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess_transforms method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
+
+        def preprocess_transforms(
+            self,
+            execution_config: ExecutionConfig | None = None,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program = self.original_device.preprocess_transforms(execution_config)
+            program = self.transform(program, *self.targs, **self.tkwargs)
+            return program
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
+@TransformDispatcher.generic_register
+def apply_to_device(obj: Device, transform, *targs, **tkwargs):
+    """Apply the transform on a device"""
+    if transform.expand_transform:
+        raise TransformError("Device transform does not support expand transforms.")
+    if transform.is_informative:
+        raise TransformError("Device transform does not support informative transforms.")
+    if transform.final_transform:
+        raise TransformError("Device transform does not support final transforms.")
+
+    if type(obj).preprocess != Device.preprocess:
+        return _preprocess_device(obj, transform, targs, tkwargs)
+
+    return _preprocess_transforms_device(obj, transform, targs, tkwargs)

@@ -94,7 +94,7 @@ class PhaseAdder(Operation):
 
     This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 8
         k = 5
@@ -104,8 +104,8 @@ class PhaseAdder(Operation):
         work_wire=[5]
 
         dev = qml.device("default.qubit")
-        @partial(qml.set_shots, shots=1)
-        @qml.qnode(dev)
+
+        @qml.qnode(dev, shots=1)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
@@ -113,10 +113,8 @@ class PhaseAdder(Operation):
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[1 1 0 1]]
+    >>> print(circuit())
+    [[1 1 0 1]]
 
     The result, :math:`[[1 1 0 1]]`, is the binary representation of
     :math:`8 + 5  \; \text{modulo} \; 15 = 13`.
@@ -244,9 +242,7 @@ class PhaseAdder(Operation):
         **Example**
 
         >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
-        [PhaseShift(6.283185307179586, wires=[1]),
-        PhaseShift(3.141592653589793, wires=[2]),
-        PhaseShift(1.5707963267948966, wires=[3])]
+        [PhaseShift(6.28..., wires=[0]), PhaseShift(3.141..., wires=[1]), PhaseShift(1.57..., wires=[2])]
         """
         op_list = []
 

@@ -16,7 +16,7 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 """
 from collections.abc import Hashable, Sequence
 
-from pennylane.allocation import Allocate, AllocateState, Deallocate
+from pennylane.allocation import AllocateState
 from pennylane.exceptions import AllocationError
 from pennylane.measurements import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -91,6 +91,28 @@ def null_postprocessing(results: ResultBatch) -> Result:
     return results[0]
 
 
+def _new_ops(operations, manager, wire_map, deallocated):
+    for op in operations:
+        # check name faster than isinstance
+        if op.name == "Allocate":
+            for w in op.wires:
+                wire, ops = manager.get_wire(**op.hyperparameters)
+                yield from ops
+                wire_map[w] = wire
+        elif op.name == "Deallocate":
+            for w in op.wires:
+                deallocated.add(w)
+                manager.return_wire(wire_map.pop(w))
+        else:
+            if wire_map:
+                op = op.map_wires(wire_map)
+            if deallocated and (intersection := deallocated.intersection(set(op.wires))):
+                raise AllocationError(
+                    f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
+                )
+            yield op
+
+
 @transform
 def resolve_dynamic_wires(
     tape: QuantumScript,
@@ -99,11 +121,11 @@ def resolve_dynamic_wires(
     min_int: int | None = None,
     allow_resets: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
+    r"""Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
 
     Args:
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
-        zeroed (Sequence[Hashable]): a register of wires known to be the zero state
+        zeroed (Sequence[Hashable]): a register of wires known to be in the :math:`|0\rangle` state
         any_state (Sequence[Hashable]): a register of wires with any state
         min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
@@ -121,7 +143,7 @@ def resolve_dynamic_wires(
 
         This approach also means we pop wires from the *end* of the stack first.
 
-    For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before erroring:
+    For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before raising an error:
 
       #. If wires exist in the ``zeroed`` register, we take one from that register
       #. If no ``zeroed`` wires exist and we are allowed to use resets, we pull one from ``any_state`` and apply a reset operation
@@ -130,7 +152,7 @@ def resolve_dynamic_wires(
 
     For a dynamic wire with ``state="any"``, we try:
 
-      #. If wires exist in the ``any_state``, we take one from that register
+      #. If wires exist in the ``any_state`` register, we take one from there
       #. If no wires exist in ``any_state``, we pull one from ``zeroed``
       #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
          we increment ``min_int`` and add a new wire
@@ -234,25 +256,8 @@ def resolve_dynamic_wires(
     wire_map = {}
     deallocated = set()
 
-    new_ops = []
-    for op in tape.operations:
-        if isinstance(op, Allocate):
-            for w in op.wires:
-                wire, ops = manager.get_wire(**op.hyperparameters)
-                new_ops += ops
-                wire_map[w] = wire
-        elif isinstance(op, Deallocate):
-            for w in op.wires:
-                deallocated.add(w)
-                manager.return_wire(wire_map.pop(w))
-        else:
-            if wire_map:
-                op = op.map_wires(wire_map)
-            if intersection := deallocated.intersection(set(op.wires)):
-                raise AllocationError(
-                    f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
-                )
-            new_ops.append(op)
+    # note that manager, wire_map, and deallocated updated in place
+    new_ops = list(_new_ops(tape.operations, manager, wire_map, deallocated))
 
     if wire_map:
         mps = [mp.map_wires(wire_map) for mp in tape.measurements]
@@ -263,6 +268,11 @@ def resolve_dynamic_wires(
             raise AllocationError(
                 f"Encountered deallocated wires {intersection} in {mp}. Dynamic wires cannot be used after deallocation."
             )
+
+    if not wire_map and not deallocated:
+        return (tape,), null_postprocessing
+    # use private trainable params to avoid calculating them if they haven't already been set
+    # pylint: disable=protected-access
     return (
-        tape.copy(ops=new_ops, measurements=mps, trainable_params=tape.trainable_params),
+        tape.copy(ops=new_ops, measurements=mps, trainable_params=tape._trainable_params),
     ), null_postprocessing
