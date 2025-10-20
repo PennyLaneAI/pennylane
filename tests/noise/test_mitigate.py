@@ -425,10 +425,10 @@ class TestMitiqIntegration:
         with pytest.raises(CircuitConversionError):
             res_mitigated = mitigated_circuit(w1, w2)
 
-        res_ideal = ideal_circuit(w1, w2)
+            res_ideal = ideal_circuit(w1, w2)
 
-        assert res_mitigated.shape == res_ideal.shape
-        assert not np.allclose(res_mitigated, res_ideal, atol=0, rtol=0)
+            assert res_mitigated.shape == res_ideal.shape
+            assert not np.allclose(res_mitigated, res_ideal, atol=0, rtol=0)
 
     def test_integration(self):
         """Test if the error of the mitigated result is less than the error of the unmitigated
