@@ -178,22 +178,45 @@ class TestQSVT:
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 
-    def test_queuing_ops_defined_in_circuit(self):
+    @pytest.mark.parametrize(
+        ("U_A", "lst_projectors", "results"),
+        [
+            (
+                qml.PauliX(wires=0),
+                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
+                [
+                    qml.PCPhase(0.2, dim=1, wires=[0]),
+                    qml.PauliX(wires=0),
+                    qml.PCPhase(0.3, dim=1, wires=[0]),
+                ],
+            ),
+            (
+                qml.PauliZ(wires=0),
+                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
+                [
+                    qml.RZ(0.1, wires=[0]),
+                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
+                    qml.RZ(0.3, wires=[1]),
+                ],
+            ),
+        ],
+    )
+    def test_queuing_ops_defined_in_circuit(self, U_A, lst_projectors, results):
         """Test that qml.QSVT queues operations correctly when they are called in the qnode."""
-        lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
-        results = [
-            qml.PCPhase(0.2, dim=1, wires=[0]),
-            qml.PauliX(wires=[0]),
-            qml.PCPhase(0.3, dim=1, wires=[0]),
-        ]
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QSVT(qml.PauliX(wires=0), lst_projectors)
+            qml.QSVT(U_A, lst_projectors)
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        for expected, val in zip(results, tape.expand().operations):
-            qml.assert_equal(expected, val)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QSVT.compute_decomposition(UA=U_A, projectors=lst_projectors)
+
+        tape2 = qml.tape.QuantumScript.from_queue(q)
+
+        for expected, val1, val2 in zip(results, tape.expand().operations, tape2.operations):
+            qml.assert_equal(expected, val1)
+            qml.assert_equal(expected, val2)
 
     def test_decomposition_queues_its_contents(self):
         """Test that the decomposition method queues the decomposition in the correct order."""

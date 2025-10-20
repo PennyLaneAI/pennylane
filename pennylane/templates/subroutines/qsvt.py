@@ -584,8 +584,6 @@ class QSVT(Operation):
 
         for op in projectors[1:-1]:
             op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
-            if QueuingManager.recording():
-                apply(op_list[-1])
 
         if len(projectors) % 2 == 0:
             if QueuingManager.recording():
