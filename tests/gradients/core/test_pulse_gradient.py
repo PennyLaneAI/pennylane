@@ -1579,7 +1579,9 @@ class TestStochPulseGradIntegration:
         )
         jax.clear_caches()
 
-    @pytest.mark.xfail(reason="Test seems wrong and is under investigation (tracked in sc-101765)", strict=False)
+    @pytest.mark.xfail(
+        reason="Test seems wrong and is under investigation (tracked in sc-101765)", strict=False
+    )
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_qnode_probs_expval_broadcasting(self, num_split_times, shots, tol, seed):

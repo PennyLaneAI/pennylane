@@ -89,7 +89,10 @@ class TestEdgeHermitian:
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
         assert np.allclose(res, expected, atol=0.01, rtol=0)
 
-    @pytest.mark.xfail(reason="Test under investigation: atol doesn't seem reasonable (tracked in sc-101767)", strict=False)
+    @pytest.mark.xfail(
+        reason="Test under investigation: atol doesn't seem reasonable (tracked in sc-101767)",
+        strict=False,
+    )
     @pytest.mark.parametrize("theta", THETA)
     @pytest.mark.parametrize("w1, w2", list(itertools.permutations(range(4), 2)))
     def test_hermitian_two_wires_permuted(self, w1, w2, shots, theta, seed):
