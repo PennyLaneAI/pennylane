@@ -40,10 +40,9 @@ class OutlineStateEvolutionPass(passes.ModulePass):
             if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
                 qnode = op
                 break
-        if qnode is None:
-            raise RuntimeError("There is no funcOp with qnode attribute in the module")
-        rewriter = pattern_rewriter.PatternRewriter(module)
-        OutlineStateEvolutionPattern().match_and_rewrite(qnode, rewriter)
+        if qnode is not None:
+            rewriter = pattern_rewriter.PatternRewriter(module)
+            OutlineStateEvolutionPattern().match_and_rewrite(qnode, rewriter)
 
 
 outline_state_evolution_pass = compiler_transform(OutlineStateEvolutionPass)
@@ -102,8 +101,8 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         self._finalize_transformation()
 
     # pylint: disable=no-else-return
-    def _get_extract_idx(self, op: Operation) -> int | None:
-        """Get the extract index from an ExtractOp op."""
+    def _get_qubit_idx(self, op: Operation) -> int | None:
+        """Get the qubit index from an ExtractOp op."""
         if hasattr(op, "idx") and op.idx:
             return op.idx
         if hasattr(op, "idx_attr"):
@@ -131,11 +130,12 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     current_reg = op.qreg
                 case quantum.ExtractOp():
                     # Update register mapping
-                    extract_idx = self._get_extract_idx(op)
+                    extract_idx = self._get_qubit_idx(op)
                     qubit_to_reg_idx[op.qubit] = extract_idx
                     op.operands = (current_reg, extract_idx)
                 case quantum.MeasureOp():
                     # TODOs: what if the qubit that quantum.measure target at is reset?
+                    # Not a concern by EOY 2025
                     qubit_to_reg_idx[op.out_qubit] = qubit_to_reg_idx[op.in_qubit]
                     del qubit_to_reg_idx[op.in_qubit]
                 case quantum.CustomOp():
