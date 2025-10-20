@@ -129,16 +129,17 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
             See also: :meth:`~.interpret_operation_eqn`.
 
             """
-            # pylint: disable=too-many-branches
-            print("Interpreting {op}")
             if len(op.wires) == 0:
-                print("No wires")
                 return super().interpret_operation(op)
 
+            # Throughout we will use that any pair of operators we want to cancel must act on the
+            # same set of wires. We use the marker (1) to indicate that we used this fact.
+
+            # previous operator that last acted on first wire of ``op``.
+            # Only need to look at one wire for this (1).
             prev_op = self.previous_ops.get(op.wires[0], None)
             dyn_wires = {w for w in op.wires if is_abstract(w)}
             other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
-            print("Previous op: {prev_op}")
 
             if prev_op is None or (dyn_wires and other_saved_wires):
                 # If there are dynamic wires, we need to make sure that there are no
@@ -152,42 +153,28 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
                     self.previous_ops[w] = op
                 return []
 
-            cancel = False
-            if _are_inverses(op, prev_op):
-                # Same wires, cancel
-                if op.wires == prev_op.wires:
-                    cancel = True
-                # Full overlap over wires
-                elif len(Wires.shared_wires([op.wires, prev_op.wires])) == len(op.wires):
-                    # symmetric op + full wire overlap; cancel
-                    if op in symmetric_over_all_wires:
-                        cancel = True
-                    # symmetric over control wires, full overlap over control wires; cancel
-                    elif op in symmetric_over_control_wires and (
-                        len(Wires.shared_wires([op.wires[:-1], prev_op.wires[:-1]]))
-                        == len(op.wires) - 1
-                    ):
-                        cancel = True
-                # No or partial overlap over wires; can't cancel
-
-            if cancel:
+            if _can_cancel(prev_op, op):
+                # If we can cancel the previous op with the current op, we simply don't interpret
+                # either and remove the previous op from `self.previous_ops`. We do not need to
+                # remove ops on any other wires (1).
                 for w in op.wires:
                     self.previous_ops.pop(w)
                 return []
 
+            # If we can't cancel, get all previous ops with wire overlap with `op`, interpret them,
+            # and pop them. They won't cancel with any other operator as `op` blocks them (1).
             previous_ops_on_wires = list(
                 dict.fromkeys(o for w in op.wires if (o := self.previous_ops.get(w)) is not None)
             )
-
+            res = [super().interpret_operation(o) for o in previous_ops_on_wires]
             for o in previous_ops_on_wires:
                 for w in o.wires:
                     self.previous_ops.pop(w)
+
+            # Record `op` as last op that acted on its wires.
             for w in op.wires:
                 self.previous_ops[w] = op
 
-            res = []
-            for o in previous_ops_on_wires:
-                res.append(super().interpret_operation(o))
             return res
 
         def interpret_all_previous_ops(self) -> None:
@@ -284,12 +271,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr = _get_plxpr_cancel_inverses()
 
 
-def _can_cancel(current_gate, next_gate_idx, list_copy):
-    # If no next gate is found: can not cancel
-    if next_gate_idx is None:
-        return False
-    # Otherwise, get the next gate
-    next_gate = list_copy[next_gate_idx]
+def _can_cancel(current_gate, next_gate):
 
     if _are_inverses(current_gate, next_gate):
         # If the wires are exactly the same, then we can safely remove both
@@ -317,12 +299,16 @@ def _can_cancel(current_gate, next_gate_idx, list_copy):
 
 
 def _try_to_cancel_with_next(current_gate, list_copy):
+    cancelled = False
     next_gate_idx = find_next_gate(current_gate.wires, list_copy)
-    if _can_cancel(current_gate, next_gate_idx, list_copy):
+    # If no next gate is found: can not cancel
+    if next_gate_idx is None:
+        return list_copy, cancelled
+    # Otherwise, get the next gate
+    next_gate = list_copy[next_gate_idx]
+    if _can_cancel(current_gate, next_gate):
         list_copy.pop(next_gate_idx)
         cancelled = True
-    else:
-        cancelled = False
     return list_copy, cancelled
 
 
