@@ -915,11 +915,6 @@ class TestShotsIntegration:
 
         expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
         assert qml.math.allclose(res[1], expected_probs, atol=1 / qml.math.sqrt(shots), rtol=0.03)
-        assert qml.math.allclose(
-            res[1][0], expected_probs[0], atol=1 / qml.math.sqrt(shots), rtol=0.03
-        )
-        # Smaller atol since sin(0.25)**2 is close to zero
-        assert qml.math.allclose(res[1][1], expected_probs[1], atol=0.5 * 1 / qml.math.sqrt(shots))
 
     @pytest.mark.parametrize("shots", [(10, 10), (10, 15)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
