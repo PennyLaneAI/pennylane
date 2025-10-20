@@ -71,7 +71,7 @@ class PauliMeasure(Operator):
         return type.__call__(cls, *args, **kwargs)
 
     def __repr__(self) -> str:
-        return f"PauliMeasure({self.pauli_word}, wires={self.wires.tolist()})"
+        return f"PauliMeasure('{self.pauli_word}', wires={self.wires.tolist()})"
 
     @property
     def resource_params(self) -> dict:
