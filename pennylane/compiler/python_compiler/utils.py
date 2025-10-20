@@ -16,10 +16,13 @@
 
 from numbers import Number
 
-from xdsl.dialects import arith, builtin, tensor
+from xdsl.dialects.arith import ConstantOp as arithConstantOp
+from xdsl.dialects.builtin import ContainerType
+from xdsl.dialects.stablehlo import ConstantOp as hloConstantOp
+from xdsl.dialects.tensor import ExtractOp as tensorExtractOp
 from xdsl.ir import SSAValue
 
-from .dialects.stablehlo import ConstantOp as hloConstantOp
+# from .dialects.stablehlo import ConstantOp as hloConstantOp
 
 
 def get_scalar_constant(value: SSAValue) -> Number | None:
@@ -41,17 +44,18 @@ def get_scalar_constant(value: SSAValue) -> Number | None:
     # this because constant-like operations can return container types. This includes
     # arith.constant, which may return containers, and stablehlo.constant, which
     # always returns a tensor.
-    if not isinstance(value.type, builtin.ContainerType):
+    if not isinstance(value.type, ContainerType):
         owner = value.owner
-        if isinstance(owner, arith.ConstantOp):
+        if isinstance(owner, arithConstantOp):
             return owner.value.data
 
         # If a scalar constant is created by stablehlo.constant, there will be a tensor.extract
         # to remove the scalar value from the tensor returned by stablehlo.constant.
-        if isinstance(owner, tensor.ExtractOp):
+        if isinstance(owner, tensorExtractOp):
             tensor_ = owner.tensor
             if len(tensor_.shape) == 0 and isinstance(tensor_.owner, hloConstantOp):
-                dense_attr = tensor_.owner.value
+                # dense_attr = tensor_.owner.value
+                dense_attr = tensor_.owner.attributes["value"]
                 # We know that the tensor has shape (). Dense element attributes store
                 # their data as a sequence. For a scalar, this will be a sequence with
                 # a single element.
