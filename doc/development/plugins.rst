@@ -285,13 +285,15 @@ registered with ``qml.add_decomps``:
 
 Then, the transform can be added with:
 
->>> program.add_transform(
-...     decompose, 
-...     stopping_condition=supports_operation,
-...     device_wires=2, 
-...     target_gates={qml.IsingXX, "RX", "RY"}, 
-...     name="my_device"
-...     )
+.. code-block:: python
+
+    program.add_transform(
+        decompose, 
+        stopping_condition=supports_operation,
+        device_wires=2, 
+        target_gates={qml.IsingXX, "RX", "RY"}, 
+        name="my_device"
+    )
 
 .. _device_capabilities:
 
