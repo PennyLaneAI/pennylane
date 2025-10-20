@@ -15,19 +15,14 @@ r"""
 The ``resource`` module provides classes and functionality to track the quantum resources
 (number of qubits, circuit depth, etc.) required to implement advanced quantum algorithms.
 
+.. warning::
+    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
+    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
+    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
+    in v0.45.
+
 .. seealso::
     The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
-
-Expectation Value Functions
----------------------------
-
-.. currentmodule:: pennylane.resource
-
-.. autosummary::
-    :toctree: api
-
-    ~estimate_error
-    ~estimate_shots
 
 Circuit specifications
 ----------------------
@@ -39,17 +34,6 @@ Circuit specifications
 
     ~specs
 
-
-Quantum Phase Estimation Resources
-----------------------------------
-
-.. currentmodule:: pennylane.resource
-
-.. autosummary::
-    :toctree: api
-
-    ~FirstQuantization
-    ~DoubleFactorization
 
 Error Tracking
 --------------
@@ -140,8 +124,6 @@ gate_sizes:
 {1: 5, 2: 2}
 """
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
-from .first_quantization import FirstQuantization
-from .measurement import estimate_error, estimate_shots
 from .resource import (
     Resources,
     ResourcesOperation,
@@ -151,5 +133,29 @@ from .resource import (
     mul_in_parallel,
     substitute,
 )
-from .second_quantization import DoubleFactorization
 from .specs import specs
+
+
+def __getattr__(name):
+    if name in {
+        "estimate_error",
+        "estimate_shots",
+        "FirstQuantization",
+        "DoubleFactorization",
+    }:
+
+        # pylint: disable=import-outside-toplevel
+        import warnings
+        from pennylane import estimator
+        from pennylane.exceptions import PennyLaneDeprecationWarning
+
+        warnings.warn(
+            f"pennylane.{name} is no longer accessible from the resource module \
+                and must be imported as pennylane.estimator.{name}. \
+                    Support for access through this module will be removed in v0.45.",
+            PennyLaneDeprecationWarning,
+        )
+
+        return getattr(estimator, name)
+
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")  # pragma: no cover

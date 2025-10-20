@@ -180,8 +180,6 @@ _ABSTRACT_OR_META_TYPES = {
     StatePrepBase,
     qml.resource.ResourcesOperation,
     qml.resource.ErrorOperation,
-    qml.resource.FirstQuantization,
-    qml.resource.DoubleFactorization,
     PowOperation,
     qml.StatePrep,
     qml.FromBloq,
