@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The :prop:``pennylane.operation.Operator.is_hermitian`` property is deprecated. Instead, please use the
+  :func:`pennylane.is_hermitian` function to check for hermiticity.
+
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
