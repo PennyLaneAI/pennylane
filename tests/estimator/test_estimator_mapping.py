@@ -209,6 +209,18 @@ class TestMapToResourceOp:
                     wires=[0, 1, 2, 3],
                 ),
             ),
+            (
+                qtemps.QROMStatePreparation(
+                    1j * np.array([0.25] * 16), wires=[0, 1, 2, 3], precision_wires=[4, 5]
+                ),
+                re_temps.QROMStatePreparation(
+                    num_state_qubits=4,
+                    precision=np.pi / 4,
+                    positive_and_real=False,
+                    select_swap_depths=1,
+                    wires=[0, 1, 2, 3],
+                ),
+            ),
         ],
     )
     def test_map_to_resource_op_templates(self, operator, expected_res_op):
@@ -284,6 +296,10 @@ class TestMapToResourceOp:
                         wires=[0, 1, 2],
                     ),
                 ),
+            ),
+            (
+                qops.adjoint(qops.T(wires=0)),
+                re_ops.Adjoint(re_ops.T(wires=0)),
             ),
             (
                 qops.pow(qops.Hadamard(wires=0), z=7),
