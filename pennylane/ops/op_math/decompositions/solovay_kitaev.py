@@ -276,9 +276,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
 
 
 # pylint: disable=too-many-arguments
-def sk_decomposition(
-    op, epsilon, is_qjit=False, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10
-):
+def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements the Solovay-Kitaev decomposition algorithm that approximates any single-qubit
@@ -291,7 +289,6 @@ def sk_decomposition(
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation.
         epsilon (float): The maximum permissible error.
-        is_qjit (bool): Whether the decomposition is being performed with QJIT enabled.
 
     Keyword Args:
         max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
@@ -328,11 +325,7 @@ def sk_decomposition(
 
     >>> qml.math.allclose(op.matrix(), matrix_sk, atol=1e-3)
     True
-
     """
-    if is_qjit:
-        raise RuntimeError("Solovay-Kitaev decomposition is not supported with QJIT enabled.")
-
     # Check for length of wires in the operation
     if len(op.wires) != 1:
         raise ValueError(
@@ -340,6 +333,13 @@ def sk_decomposition(
         )
 
     with QueuingManager.stop_recording():
+        # Obtain the operation matrix and interface
+        op_matrix = op.matrix()
+        if qml.compiler.active() or qml.math.is_abstract(op_matrix):
+            raise RuntimeError(
+                "Solovay-Kitaev decomposition is not supported with QJIT or JAX-JIT enabled."
+            )
+
         # Build the approximate set with caching
         approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat = _approximate_set(
             tuple(basis_set), max_length=basis_length
@@ -348,8 +348,7 @@ def sk_decomposition(
         # Build the k-d tree with the current approximation set for querying in the base case
         kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
 
-        # Obtain the SU(2) and quaternion for the operation
-        op_matrix = op.matrix()
+        # Build the SU(2) and quaternion for the operation
         interface = qml.math.get_deep_interface(op_matrix)
         gate_mat, gate_gph = _SU2_transform(qml.math.unwrap(op_matrix))
         gate_qat = _quaternion_transform(gate_mat)
