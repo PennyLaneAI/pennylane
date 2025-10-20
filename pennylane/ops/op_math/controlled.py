@@ -36,7 +36,6 @@ from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
     SparseMatrixUndefinedError,
 )
 from pennylane.operation import Operation, Operator, classproperty
@@ -608,14 +607,6 @@ class Controlled(SymbolicOp):
                 "Work wires must be different the control_wires and base operation wires."
             )
 
-        if work_wire_type in ("clean", "dirty"):
-            work_wire_type = "zeroed" if work_wire_type == "clean" else "borrowed"
-            warnings.warn(
-                "Specifying work_wire_type as 'clean' or 'dirty' is deprecated, "
-                "use 'zeroed' or 'borrowed' instead.",
-                PennyLaneDeprecationWarning,
-            )
-
         if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
                 f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
@@ -848,7 +839,6 @@ class Controlled(SymbolicOp):
         return False
 
     def decomposition(self):
-
         if self.compute_decomposition is not Operator.compute_decomposition:
             return self.compute_decomposition(*self.data, self.wires)
 
