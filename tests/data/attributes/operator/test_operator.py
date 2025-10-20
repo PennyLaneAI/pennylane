@@ -243,6 +243,7 @@ def test_value_init_not_supported():
         DatasetOperator(NotSupported(1))
 
 
+@pytest.mark.skip(reason="Integration test requiring network access to cloud.pennylane.ai to download datasets - prone to timeouts in CI/offline environments". Should be taken care of by mocking sc-101869.)
 def test_retrieve_operator_from_loaded_data():
     """Test that uploaded data can be downloaded and used to retrieve an
     operation representing the Hamiltonian"""

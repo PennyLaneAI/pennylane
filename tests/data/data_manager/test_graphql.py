@@ -19,6 +19,7 @@ class TestGetGraphql:
         }
         """
 
+    @pytest.mark.skip(reason="Integration test requiring network access to cloud.pennylane.ai - prone to timeouts in CI/offline environments. Should be taken care of by mocking sc-101869.")
     def test_return_json(self):
         """Tests that a dictionary representation of a json response is returned for a
         valid query and url."""
@@ -37,6 +38,7 @@ class TestGetGraphql:
                 self.query,
             )
 
+    @pytest.mark.skip(reason="Integration test requiring network access to cloud.pennylane.ai - prone to timeouts in CI/offline environments. Should be taken care of by mocking sc-101869.")
     def test_bad_query(self):
         """Tests that a ``HTTPError`` is returned for a invalid query and valid url."""
 
