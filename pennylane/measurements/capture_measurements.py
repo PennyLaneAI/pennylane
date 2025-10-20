@@ -217,7 +217,7 @@ def create_measurement_wires_primitive(
     abstract_type = _get_abstract_measurement()
 
     @primitive.def_abstract_eval
-    def _(*args, has_eigvals=False, **_):
+    def _abstract_eval(*args, has_eigvals=False, **_):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         n_wires = len(args) - 1 if has_eigvals else len(args)
         return abstract_type(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)
