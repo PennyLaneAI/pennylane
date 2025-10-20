@@ -641,7 +641,7 @@ class TestValidation:
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
         with pytest.raises(
             TransformError,
-            match="Input is not an Operator, tape, QNode, or quantum function",
+            match=r"No matrix transform registered for .*",
         ):
             _ = qml.matrix(None)
 
