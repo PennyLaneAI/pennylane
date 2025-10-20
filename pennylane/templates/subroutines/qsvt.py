@@ -373,7 +373,7 @@ class QSVT(Operation):
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
     >>> print(q_script.expand().draw(decimals=2))
-    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+    0: ──RZ(-2.46)──(H†)@RZ(1.00)@H──RZ(-8.00)─┤
 
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
@@ -596,19 +596,6 @@ class QSVT(Operation):
             if QueuingManager.recording():
                 apply(projectors[-1])
             op_list.append(projectors[-1])
-
-        # for idx, op in enumerate(projectors[:-1]):
-        #     if QueuingManager.recording():
-        #         apply(op)
-        #     op_list.append(op)
-
-        #     if idx % 2 == 0:
-        #         if QueuingManager.recording():
-        #             apply(UA)
-        #         op_list.append(UA)
-
-        #     else:
-        #         op_list.append(ops.adjoint(UA_adj))
 
         return op_list
 
