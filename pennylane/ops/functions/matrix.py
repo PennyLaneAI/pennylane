@@ -28,11 +28,6 @@ from pennylane.typing import PostprocessingFn, TensorLike
 from pennylane.workflow.qnode import QNode
 
 
-def catalyst_qjit(qnode):
-    """A method checking whether a qnode is compiled by catalyst.qjit"""
-    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
-
-
 # pylint: disable=unused-argument
 @transform
 def matrix(
@@ -203,7 +198,8 @@ def _matrix_tape(op: QuantumScript, wire_order: Sequence | None = None) -> Tenso
 
 @matrix.register
 def _matrix_qnode(op: QNode, wire_order: Sequence | None = None) -> TensorLike:
-    if catalyst_qjit(op):
+    # Handle Catalyst QJIT-compiled QNodes
+    if op.__class__.__name__ == "QJIT" and hasattr(op, "user_function"):
         op = op.user_function
 
     if wire_order is None and op.device.wires is None:
