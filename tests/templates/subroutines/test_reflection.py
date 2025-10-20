@@ -210,7 +210,7 @@ class TestIntegration:
             pytest.param(
                 50000,
                 marks=pytest.mark.xfail(
-                    reason="Flaky test, to be fixed at sc-101771", strict=False
+                    reason="Flaky test under investigation (tracked in sc-101771)", strict=False
                 ),
             ),
         ],
