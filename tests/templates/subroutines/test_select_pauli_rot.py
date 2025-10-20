@@ -220,12 +220,11 @@ class TestSelectPauliRot:
         wires = qml.registers({"control": 2, "target": 1})
         dev = qml.device("default.qubit", wires=3)
 
-        qs = get_tape(torch.tensor(angles), wires)
+        qs = get_tape(torch.tensor(angles, dtype=torch.float64), wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
-        output_torch = dev.execute(tape[0])[0]
-
+        output_torch = qml.execute(tape[0], dev, interface="torch")[0]
         qs = get_tape(angles, wires)
 
         program, _ = dev.preprocess()
