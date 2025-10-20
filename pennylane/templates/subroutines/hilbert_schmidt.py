@@ -251,7 +251,7 @@ class HilbertSchmidt(Operation):
 if HilbertSchmidt._primitive is not None:
 
     @HilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
         return type.__call__(HilbertSchmidt, V, U, **kwargs)
@@ -260,7 +260,8 @@ if HilbertSchmidt._primitive is not None:
 class LocalHilbertSchmidt(HilbertSchmidt):
     r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
 
-    The result of the LHST is a useful quantity for compiling a unitary `U` with an approximate unitary `V`. The
+    The result of the LHST is a useful quantity for compiling a un
+    itary `U` with an approximate unitary `V`. The
     LHST is used as a distance between `U` and `V`. It is similar to the Hilbert-Schmidt test, but the measurement is
     made only on one qubit at the end of the circuit. The LHST cost is always smaller than the HST cost and is useful
     for large unitaries.
@@ -386,7 +387,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 if LocalHilbertSchmidt._primitive is not None:
 
     @LocalHilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
         return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
