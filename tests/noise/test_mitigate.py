@@ -388,9 +388,9 @@ class TestMitiqIntegration:
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
         set not equal to 1"""
+        from mitiq.interface.conversions import CircuitConversionError
         from mitiq.zne.inference import RichardsonFactory
         from mitiq.zne.scaling import fold_gates_at_random
-        from mitiq.interface.conversions import CircuitConversionError
 
         noise_strength = 0.05
 
