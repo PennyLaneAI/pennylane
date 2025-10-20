@@ -218,7 +218,7 @@ def _matrix_function(op: Callable, wire_order: Sequence | None = None) -> Tensor
     return _matrix_transform(op, wire_order=wire_order)
 
 
-# Dispatching is ordered from most to least specific, so the fallback must be last.
+# Dispatching is ordered from most to least specific, so the fallback is a dispatch to "object"
 @matrix.register
 def _matrix_fallback(op: object, **_kwargs) -> TensorLike:
     raise TransformError(
