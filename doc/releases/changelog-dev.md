@@ -102,6 +102,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Refactor `qml.matrix` to use new transform dispatching for supported types.
+  [(#8501)](https://github.com/PennyLaneAI/pennylane/pull/8501)
+
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
