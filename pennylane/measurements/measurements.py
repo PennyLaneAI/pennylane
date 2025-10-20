@@ -31,7 +31,7 @@ from pennylane.exceptions import (
 )
 from pennylane.math.utils import is_abstract
 from pennylane.operation import Operator, _get_abstract_operator
-from pennylane.pytrees import register_pytree
+from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -99,9 +99,11 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
                 *wires, eigvals, has_eigvals=True, **kwargs
             )  # wires + eigvals
 
-        if isinstance(obs, Operator) or isinstance(
-            getattr(obs, "aval", None), _get_abstract_operator()
-        ):
+        if isinstance(obs, Operator):
+            # turn into abstract operator
+            obs = unflatten(*flatten(obs))
+
+        if isinstance(getattr(obs, "aval", None), _get_abstract_operator()):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
             return cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
