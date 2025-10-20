@@ -258,7 +258,7 @@ def insert(
 
         if req_ops:
             for operation in req_ops:
-                if operation == type(circuit_op):
+                if isinstance(circuit_op, operation):
                     for w in circuit_op.wires:
                         sub_tape = make_qscript(op)(*op_args, wires=w)
                         new_operations.extend(sub_tape.operations)
