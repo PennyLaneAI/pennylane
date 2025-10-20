@@ -390,6 +390,7 @@ class TestMitiqIntegration:
         set not equal to 1"""
         from mitiq.zne.inference import RichardsonFactory
         from mitiq.zne.scaling import fold_gates_at_random
+        from mitiq.interface.conversions import CircuitConversionError
 
         noise_strength = 0.05
 
@@ -420,7 +421,9 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        res_mitigated = mitigated_circuit(w1, w2)
+        # Note that Mitiq should no longer raise this error once it has reached v0.48.0
+        with pytest.raises(CircuitConversionError):
+            res_mitigated = mitigated_circuit(w1, w2)
 
         res_ideal = ideal_circuit(w1, w2)
 
