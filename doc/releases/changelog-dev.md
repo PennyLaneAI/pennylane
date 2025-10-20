@@ -95,6 +95,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
+  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. 
+  [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
+
 <h3>Internal changes ⚙️</h3>
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
@@ -106,12 +111,19 @@
 
 * The :class:`~pennylane.devices.LegacyDeviceFacade` is slightly refactored to implement `setup_execution_config` and `preprocess_transforms`
   separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
-  from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`.
+  from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`. By default, the ``_capabilities``
+  dictionary is queried for the ``"supports_mid_measure"`` property. If the underlying device defines a TOML file, the ``supported_mcm_methods``
+  field in the TOML file is used as the source of truth.
   [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
+  [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
 
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested, 
+  when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
+  [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
 
 <h3>Contributors ✍️</h3>
 
