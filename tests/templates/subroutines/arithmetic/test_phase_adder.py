@@ -239,7 +239,6 @@ class TestPhaseAdder:
         phase_adder_decomp = qml.PhaseAdder(k, x_wires, mod, work_wire).compute_decomposition(
             k, x_wires, mod, work_wire
         )
-
         cob_index = len(_add_k_fourier(k, x_wires)) + len(_add_k_fourier(mod, x_wires))
         cob_decomp1 = phase_adder_decomp[cob_index].decomposition()
         cob_decomp2 = phase_adder_decomp[-1].decomposition()
@@ -248,12 +247,13 @@ class TestPhaseAdder:
             *phase_adder_decomp[:cob_index],
             *cob_decomp1,
             *phase_adder_decomp[cob_index + 1 : -1],
-            cob_decomp2[0],
-            *cob_decomp2[1].decomposition(),
-            cob_decomp2[2],
+            *cob_decomp2,
         ]
 
         op_list = []
+        base_list_op = [qml.adjoint(op) for op in _add_k_fourier(k, x_wires)] + [
+            qml.adjoint(qml.QFT)(wires=x_wires)
+        ]
 
         if mod == 2 ** (len(x_wires)):
             op_list.extend(_add_k_fourier(k, x_wires))
@@ -265,11 +265,9 @@ class TestPhaseAdder:
             op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=1))
             op_list.append(qml.QFT(wires=x_wires))
             op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-            op_list.append(qml.prod(*[qml.adjoint(op) for op in _add_k_fourier(k, x_wires)]))
-            op_list.append(qml.adjoint(qml.QFT)(wires=x_wires))
+            op_list.append(qml.prod(*base_list_op))
             op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=0))
-            op_list.append(qml.QFT(wires=x_wires))
-            op_list.append(qml.prod(*reversed(_add_k_fourier(k, x_wires))))
+            op_list.append(qml.adjoint(qml.prod)(*base_list_op))
 
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qml.assert_equal(op1, op2)

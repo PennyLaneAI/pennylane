@@ -163,9 +163,7 @@ class TestQSVT:
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
                 [
                     qml.RZ(0.1, wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.RY(0.2, wires=[0]),
-                    qml.adjoint(qml.PauliZ(wires=[0])),
+                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
                     qml.RZ(0.3, wires=[1]),
                 ],
             ),

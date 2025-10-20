@@ -49,13 +49,13 @@ class TestSelectPauliRot:
         wires = qml.registers({"control_wires": 3, "target_wire": 1})
 
         op = qml.SelectPauliRot(
-            angles=qml.math.ones(8),
+            angles=qml.math.random.RandomState(8).random(8),
             control_wires=wires["control_wires"],
             target_wire=wires["target_wire"],
             rot_axis="X",
         )
 
-        qml.ops.functions.assert_valid(op, heuristic_resources=True)
+        qml.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("angles", "rot_axis", "target_wire", "msg_match"),

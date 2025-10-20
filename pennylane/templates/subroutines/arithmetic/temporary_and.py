@@ -14,12 +14,19 @@
 """
 Contains the TemporaryAND template, which also is known as Elbow.
 """
-
+from collections import defaultdict
 from functools import lru_cache
 
 from pennylane import math
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
-from pennylane.ops import CNOT, Hadamard, Operation, S, T, X, adjoint
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    change_op_basis_resource_rep,
+    register_resources,
+    resource_rep,
+)
+from pennylane.ops import CNOT, Hadamard, Operation, S, T, X, adjoint, change_op_basis
+from pennylane.ops.op_math import Prod
 from pennylane.wires import Wires, WiresLike
 
 
@@ -192,16 +199,7 @@ class TemporaryAND(Operation):
         **Example:**
 
         >>> print(qml.TemporaryAND.compute_decomposition((0,1,2)))
-        [H(2),
-        T(2),
-        CNOT(wires=[1, 2]),
-        Adjoint(T(2)),
-        CNOT(wires=[0, 2]),
-        T(2),
-        CNOT(wires=[1, 2]),
-        Adjoint(T(2)),
-        H(2),
-        Adjoint(S(2))]
+        [(H(2) @ ((Adjoint(T(2))) @ (CNOT(wires=[1, 2])) @ T(2))) @ (CNOT(wires=[0, 2])) @ (((Adjoint(T(2))) @ (CNOT(wires=[1, 2])) @ T(2)) @ H(2)), Adjoint(S(2))]
         """
 
         list_decomp = []
@@ -209,15 +207,13 @@ class TemporaryAND(Operation):
         list_decomp.extend([X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
 
         list_decomp += [
-            Hadamard(wires=wires[2]),
-            T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            adjoint(T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            adjoint(T(wires=wires[2])),
-            Hadamard(wires=wires[2]),
+            change_op_basis(
+                change_op_basis(T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]]))
+                @ Hadamard(wires=wires[2]),
+                CNOT(wires=[wires[0], wires[2]]),
+                Hadamard(wires=wires[2])
+                @ change_op_basis(T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]])),
+            ),
             adjoint(S(wires=wires[2])),
         ]
 
@@ -227,13 +223,29 @@ class TemporaryAND(Operation):
 
 
 def _temporary_and_resources():
+    basis_rep = change_op_basis_resource_rep(
+        resource_rep(T), resource_rep(CNOT), adjoint_resource_rep(T)
+    )
+
     number_xs = 4  # worst case scenario
     return {
-        X: number_xs,
-        Hadamard: 2,
-        CNOT: 3,
-        T: 2,
-        adjoint_resource_rep(T, {}): 2,
+        resource_rep(X): number_xs,
+        change_op_basis_resource_rep(
+            resource_rep(
+                Prod, resources=defaultdict(int, {basis_rep: 1, resource_rep(Hadamard): 1})
+            ),
+            resource_rep(CNOT),
+            resource_rep(
+                Prod,
+                resources=defaultdict(
+                    int,
+                    {
+                        resource_rep(Hadamard): 1,
+                        basis_rep: 1,
+                    },
+                ),
+            ),
+        ): 1,
         adjoint_resource_rep(S, {}): 1,
     }
 
@@ -247,15 +259,17 @@ def _temporary_and(wires: WiresLike, **kwargs):
     if control_values[1] == 0:
         X(wires[1])
 
-    Hadamard(wires=wires[2])
-    T(wires=wires[2])
-    CNOT(wires=[wires[1], wires[2]])
-    adjoint(T(wires=wires[2]))
-    CNOT(wires=[wires[0], wires[2]])
-    T(wires=wires[2])
-    CNOT(wires=[wires[1], wires[2]])
-    adjoint(T(wires=wires[2]))
-    Hadamard(wires=wires[2])
+    change_op_basis(
+        change_op_basis(
+            T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]]), adjoint(T(wires=wires[2]))
+        )
+        @ Hadamard(wires=wires[2]),
+        CNOT(wires=[wires[0], wires[2]]),
+        Hadamard(wires=wires[2])
+        @ change_op_basis(
+            T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]]), adjoint(T(wires=wires[2]))
+        ),
+    )
     adjoint(S(wires=wires[2]))
 
     if control_values[0] == 0:
