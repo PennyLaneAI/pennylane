@@ -28,7 +28,7 @@ from pennylane.compiler.python_compiler.dialects import quantum
 
 @dataclass(frozen=True)
 class OutlineStateEvolutionPass(passes.ModulePass):
-    """Pass that puts gate operations into a private outline_state_evolution callable."""
+    """Pass that puts gate operations into an outline_state_evolution callable."""
 
     name = "outline-state-evolution"
 
@@ -241,7 +241,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         # create a new func.func op and insert it into the IR
         state_evolution_func = func.FuncOp(
-            self.original_func_op.sym_name.data + ".state_evolution", fun_type, visibility="private"
+            self.original_func_op.sym_name.data + ".state_evolution", fun_type, visibility="public"
         )
         rewriter.insert_op(state_evolution_func, InsertPoint.at_end(self.module.body.block))
 
