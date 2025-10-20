@@ -16,7 +16,6 @@ Tests for the gradients.spsa_gradient module.
 """
 import numpy as np
 import pytest
-from scipy import stats
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
@@ -104,31 +103,27 @@ class TestRademacherSampler:
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
         outputs = [_rademacher_sampler(ids, num, rng=rng) for _ in range(N)]
-        
+
         # Test that the mean of non-zero entries is approximately right
         assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
-        
+
         # Test that the variance of non-zero entries is approximately right
-        # For Rademacher distribution, sample variance S² is related to sample mean by S² = 1 - X̄²
-        # The distribution (N-1)S²/σ² follows chi-squared with (N-1) degrees of freedom
-        # Since variance fluctuations are asymmetric (always S² ≤ 1), use one-sided test
+        # DEV NOTE: For Rademacher distribution X ∈ {-1, +1}, the sample variance S² has a special
+        # property: S² = 1 - X̄². Since X̄ ~ N(0, 1/N), we have N·X̄² ~ χ²(1) with df=1 (NOT df=N-1).
+        # This is the key insight: the variance is completely determined by the mean.
+        #
+        # For a one-sided lower bound test at 99.73% confidence (3-sigma equivalent, α = 0.0027):
+        # We want P(S² < s_lower) = α, which translates to P(N·X̄² > N(1 - s_lower)) = α.
+        # Since N·X̄² ~ χ²(1), we need: N(1 - s_lower) = χ²_{0.9973}(1) ≈ 9.0
+        # Therefore: s_lower = 1 - 9.0/10000 ≈ 0.9991
+        #
+        # For N=10000: lower_bound = 1 - χ²_{0.9973}(1) / 10000 ≈ 0.9991
         sample_vars = np.var(outputs, axis=0)[ids_mask]
-        
-        # For 99.73% confidence (3-sigma equivalent), use α = 0.0027 for one-sided lower tail
-        # Critical value: chi2_critical corresponds to the 0.27% quantile
-        alpha = 0.0027
-        chi2_critical = stats.chi2.ppf(alpha, df=N-1)
-        
-        # The lower bound for sample variance: S² ≥ σ² * chi2_critical / (N-1)
-        # For Rademacher, σ² = 1
-        lower_bound = chi2_critical / (N - 1)
-        
-        # Assert that all observed variances are above the lower bound
-        assert np.all(sample_vars >= lower_bound), (
-            f"Sample variance {sample_vars} fell below lower bound {lower_bound} "
+        assert np.all(sample_vars >= 0.9991), (
+            f"Sample variance {sample_vars} fell below lower bound 0.9991 "
             f"at 99.73% confidence level (3-sigma equivalent)"
         )
-        
+
         # Test that all the zero entries are exactly 0
         assert np.allclose(np.mean(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
 
