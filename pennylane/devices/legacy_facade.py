@@ -23,17 +23,14 @@ from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
 
-from pennylane.exceptions import (
-    DecompositionUndefinedError,
-    DeviceError,
-    PennyLaneDeprecationWarning,
-)
-from pennylane.math import Interface, get_interface, requires_grad
+from pennylane import math, ops
+from pennylane.devices.capabilities import DeviceCapabilities
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.math import Interface, requires_grad
 from pennylane.measurements import ExpectationMP, MidMeasureMP, Shots
 from pennylane.operation import Operator
-from pennylane.ops import QubitUnitary, SparseHamiltonian
 from pennylane.tape import QuantumScript
-from pennylane.transforms import broadcast_expand, defer_measurements
+from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.wires import Wires
 
@@ -114,7 +111,7 @@ def legacy_device_batch_transform(tape, device):
 
 def adjoint_ops(op: Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    if isinstance(op, QubitUnitary) and not any(requires_grad(d) for d in op.data):
+    if isinstance(op, ops.QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True
     return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0 or (op.num_params == 1 and op.has_generator)
@@ -180,8 +177,12 @@ class LegacyDeviceFacade(Device):
                 "The LegacyDeviceFacade only accepts a device of type qml.devices.LegacyDevice."
             )
 
-        self._device: LegacyDevice = device
-        self.config_filepath = getattr(self._device, "config_filepath", None)
+        self._device = device
+        self.capabilities = None
+
+        _config_filepath = getattr(self._device, "config_filepath", None)
+        if _config_filepath:
+            self.capabilities = DeviceCapabilities.from_toml_file(_config_filepath)
 
         if self._device.shots:
             warnings.warn(
@@ -218,7 +219,7 @@ class LegacyDeviceFacade(Device):
         return type(self)(deepcopy(self.target_device, memo))
 
     @property
-    def target_device(self) -> "qml.devices.LegacyDevice":
+    def target_device(self) -> LegacyDevice:
         """The device wrapped by the facade."""
         return self._device
 
@@ -241,12 +242,19 @@ class LegacyDeviceFacade(Device):
     def _debugger(self, new_debugger):
         self._device._debugger = new_debugger
 
-    def preprocess(self, execution_config: ExecutionConfig | None = None):
-        if execution_config is None:
+    def preprocess_transforms(
+        self, execution_config: ExecutionConfig | None = None
+    ) -> TransformProgram:
+        program = TransformProgram()
+
+        if not execution_config:
             execution_config = ExecutionConfig()
 
-        execution_config = self._setup_execution_config(execution_config)
-        program = TransformProgram()
+        if execution_config.mcm_config.mcm_method == "deferred":
+            program.add_transform(
+                defer_measurements,
+                allow_postselect=False,
+            )
 
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
@@ -254,27 +262,22 @@ class LegacyDeviceFacade(Device):
         if _requests_adjoint(execution_config):
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
-        if self._device.capabilities().get("supports_mid_measure", False):
+        if execution_config.mcm_config.mcm_method == "one-shot":
             program.add_transform(
-                mid_circuit_measurements,
-                device=self,
-                mcm_config=execution_config.mcm_config,
+                dynamic_one_shot,
+                postselect_mode=execution_config.mcm_config.postselect_mode,
             )
-        else:
-            program.add_transform(defer_measurements, allow_postselect=False)
 
-        return program, execution_config
+        return program
 
-    def _setup_backprop_config(self, execution_config):
-        tape = QuantumScript()
+    def _setup_backprop_config(self, execution_config, tape):
         if not self._validate_backprop_method(tape):
             raise DeviceError("device does not support backprop.")
         if execution_config.use_device_gradient is None:
             return replace(execution_config, use_device_gradient=True)
         return execution_config
 
-    def _setup_adjoint_config(self, execution_config):
-        tape = QuantumScript([], [])
+    def _setup_adjoint_config(self, execution_config, tape):
         if not self._validate_adjoint_method(tape):
             raise DeviceError("device does not support device derivatives")
         updated_values = {
@@ -287,9 +290,7 @@ class LegacyDeviceFacade(Device):
             updated_values["grad_on_execution"] = True
         return replace(execution_config, **updated_values)
 
-    def _setup_device_config(self, execution_config):
-        tape = QuantumScript([], [])
-
+    def _setup_device_config(self, execution_config, tape):
         if not self._validate_device_method(tape):
             raise DeviceError("device does not support device derivatives")
 
@@ -300,25 +301,37 @@ class LegacyDeviceFacade(Device):
             updated_values["grad_on_execution"] = True
         return replace(execution_config, **updated_values)
 
-    def _setup_execution_config(self, execution_config):
-        if execution_config.gradient_method == "best":
-            tape = QuantumScript([], [])
-            if self._validate_device_method(tape):
-                config = replace(execution_config, gradient_method="device")
-                return self._setup_execution_config(config)
+    def setup_execution_config(
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
+    ) -> ExecutionConfig:
+        """Sets up an ``ExecutionConfig`` that configures the execution behaviour."""
 
-            if self._validate_backprop_method(tape):
-                config = replace(execution_config, gradient_method="backprop")
-                return self._setup_backprop_config(config)
+        config = config or ExecutionConfig()
 
-        if execution_config.gradient_method == "backprop":
-            return self._setup_backprop_config(execution_config)
-        if _requests_adjoint(execution_config):
-            return self._setup_adjoint_config(execution_config)
-        if execution_config.gradient_method == "device":
-            return self._setup_device_config(execution_config)
+        if config.gradient_method == "best":
+            if self._validate_device_method(circuit):
+                config = replace(config, gradient_method="device")
+                return self.setup_execution_config(config, circuit)
 
-        return execution_config
+            if self._validate_backprop_method(circuit):
+                config = replace(config, gradient_method="backprop")
+                return self._setup_backprop_config(config, circuit)
+
+        if config.gradient_method == "backprop":
+            return self._setup_backprop_config(config, circuit)
+        if _requests_adjoint(config):
+            return self._setup_adjoint_config(config, circuit)
+        if config.gradient_method == "device":
+            return self._setup_device_config(config, circuit)
+
+        shots_present = bool(circuit and bool(circuit.shots))
+        self._validate_mcm_method(config.mcm_config.mcm_method, shots_present)
+        if config.mcm_config.mcm_method is None:
+            default_mcm_method = self._default_mcm_method(shots_present)
+            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+            config = replace(config, mcm_config=new_mcm_config)
+
+        return config
 
     def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
         circuit = QuantumScript([], [], shots=self.shots) if circuit is None else circuit
@@ -340,13 +353,15 @@ class LegacyDeviceFacade(Device):
         return False
 
     def _validate_backprop_method(self, tape):
+        if tape is None:
+            tape = QuantumScript()
         if tape.shots:
             return False
         params = tape.get_parameters(trainable_only=False)
-        if (interface := get_interface(*params)) != "numpy":
+        if (interface := math.get_interface(*params)) != "numpy":
             interface = Interface(interface).value
 
-        if tape and any(isinstance(m.obs, SparseHamiltonian) for m in tape.measurements):
+        if tape and any(isinstance(m.obs, ops.SparseHamiltonian) for m in tape.measurements):
             return False
 
         # determine if the device supports backpropagation
@@ -372,6 +387,8 @@ class LegacyDeviceFacade(Device):
         supported_device = all(hasattr(self._device, attr) for attr in required_attrs)
         supported_device = supported_device and self._device.capabilities().get("returns_state")
 
+        if tape is None:
+            tape = QuantumScript()
         if not supported_device or bool(tape.shots):
             return False
         program = TransformProgram()
@@ -389,6 +406,41 @@ class LegacyDeviceFacade(Device):
     def _validate_device_method(self, _):
         # determine if the device provides its own jacobian method
         return self._device.capabilities().get("provides_jacobian", False)
+
+    def _validate_mcm_method(self, mcm_method: str, shots_present: bool):
+        """Validates an MCM method against the device's capabilities."""
+
+        if mcm_method in (None, "deferred"):
+            return  # No need to validate because "deferred" is always supported.
+
+        if mcm_method == "one-shot" and not shots_present:
+            raise QuantumFunctionError('mcm_method="one-shot" is only supported with finite shots.')
+
+        supported_mcm_methods = ("deferred",)
+        if self.capabilities:
+            supported_mcm_methods += tuple(self.capabilities.supported_mcm_methods)
+        elif self._device.capabilities().get("supports_mid_measure", False):
+            supported_mcm_methods += ("one-shot",)
+
+        if mcm_method not in supported_mcm_methods:
+            raise QuantumFunctionError(
+                f'The requested MCM method "{mcm_method}" unsupported by the device. '
+                f"Supported methods are: {supported_mcm_methods}."
+            )
+
+    def _default_mcm_method(self, shots_present: bool) -> str:
+        """Simple strategy to find the best match for the default mcm method."""
+
+        supports_one_shot = False
+        if self.capabilities and "one-shot" in self.capabilities.supported_mcm_methods:
+            supports_one_shot = True
+        elif self._device.capabilities().get("supports_mid_measure", False):
+            supports_one_shot = True
+
+        if supports_one_shot and shots_present:
+            return "one-shot"
+
+        return "deferred"
 
     def execute(self, circuits, execution_config: ExecutionConfig | None = None):
         if execution_config is None:

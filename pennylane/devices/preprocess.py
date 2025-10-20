@@ -26,6 +26,7 @@ from pennylane.exceptions import (
     AllocationError,
     DecompositionUndefinedError,
     DeviceError,
+    PennyLaneDeprecationWarning,
     QuantumFunctionError,
     WireError,
 )
@@ -198,7 +199,24 @@ def mid_circuit_measurements(
     In the case where no method is specified, if the tape or device
     uses finite-shot, the ``qml.dynamic_one_shot`` transform will be
     applied, otherwise ``qml.defer_measurements`` is used instead.
+
+    .. warning::
+
+        This transform is deprecated and will be removed in a future release. Instead,
+        the device should determine which mcm method to use, and explicitly include
+        :func:`~pennylane.transforms.dynamic_one_shot` or :func:`~pennylane.transforms.defer_measurements`
+        in its preprocess transforms if necessary. See :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>`
+        and :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+
     """
+
+    warnings.warn(
+        "The mid_circuit_measurements transform is deprecated. Instead, the device should "
+        "determine the best mcm method, and explicitly include qml.transforms.dynamic_one_shot "
+        "or qml.transforms.defer_measurements in the preprocess transform program if needed.",
+        PennyLaneDeprecationWarning,
+    )
+
     if isinstance(mcm_config, dict):
         mcm_config = MCMConfig(**mcm_config)
     mcm_method = mcm_config.mcm_method
@@ -401,7 +419,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     graph_solution = None
     if target_gates is not None and enabled_graph():
-
         # Filter out MeasurementProcess instances that shouldn't be decomposed
         decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
 
