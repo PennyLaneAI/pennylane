@@ -38,7 +38,7 @@ class FirstQuantization(Operation):
     .. note::
 
         ``qml.resource.FirstQuantization`` is deprecated and will be removed in v0.45.
-        Instead, please use ``qml.estimator.FirstQuantization`.
+        Instead, please use ``qml.estimator.FirstQuantization``.
 
     Args:
         n (int): number of plane waves

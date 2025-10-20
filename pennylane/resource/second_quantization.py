@@ -32,7 +32,7 @@ class DoubleFactorization(Operation):
     .. note::
 
         ``qml.resource.DoubleFactorization`` is deprecated and will be removed in v0.45.
-        Instead, please use ``qml.estimator.DoubleFactorization`.
+        Instead, please use ``qml.estimator.DoubleFactorization``.
 
     Atomic units are used throughout the class.
 

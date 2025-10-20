@@ -29,7 +29,7 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
     .. note::
 
         ``qml.resource.estimate_shots`` is deprecated and will be removed in v0.45.
-        Instead, please use ``qml.estimator.estimate_shots`.
+        Instead, please use ``qml.estimator.estimate_shots``.
 
     See also :func:`estimate_error`.
 
@@ -116,7 +116,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
     .. note::
 
         ``qml.resource.estimate_error`` is deprecated and will be removed in v0.45.
-        Instead, please use ``qml.estimator.estimate_error`.
+        Instead, please use ``qml.estimator.estimate_error``.
 
     See also :func:`estimate_shots`.
 
