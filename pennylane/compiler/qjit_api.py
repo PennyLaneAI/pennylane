@@ -97,11 +97,11 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         decorated function.
 
     Raises:
-        ``FileExistsError``: Unable to create temporary directory
-        ``PermissionError``: Problems creating temporary directory
-        ``OSError``: Problems while creating folder for intermediate files
-        ``AutoGraphError``: Raised if there was an issue converting the given the function(s).
-        ``ImportError``: Raised if AutoGraph is turned on and TensorFlow could not be found.
+        FileExistsError: Unable to create temporary directory
+        PermissionError: Problems creating temporary directory
+        OSError: Problems while creating folder for intermediate files
+        AutoGraphError: Raised if there was an issue converting the given the function(s).
+        ImportError: Raised if AutoGraph is turned on and TensorFlow could not be found.
 
     **Example**
 
