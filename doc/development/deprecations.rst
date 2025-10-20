@@ -54,7 +54,7 @@ Pending deprecations
   Instead, the ``qml.to_openqasm`` function should be used.
 
   - Deprecated in v0.43
-  - Will be removed in a future version
+  - Removed in v0.44
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
