@@ -142,7 +142,7 @@ def matrix(
         >>> theta = pnp.array(0.3, requires_grad=True)
         >>> # Expected value is 2 * cos(0.3 / 2)
         >>> cost(theta)
-        np.float64(1.97...)
+        1.977...
         >>> # The gradient is -sin(0.3 / 2)
         >>> qml.grad(cost, argnum=0)(theta)
         tensor(-0.14943813, requires_grad=True)
@@ -220,6 +220,7 @@ def _matrix_function(op: Callable, wire_order: Sequence | None = None) -> Tensor
         raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
 
     return _matrix_transform(op, wire_order=wire_order)
+
 
 # Registering for 'object' creates a fallback for any type not specifically handled.
 @matrix.register
