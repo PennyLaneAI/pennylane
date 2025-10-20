@@ -27,16 +27,6 @@ from pennylane.tape import QuantumScript
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
 
 
-def test_to_openqasm_deprecation():
-    """Test deprecation of the ``QuantumScript.to_openqasm`` method."""
-    circuit = qml.tape.QuantumScript()
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-    ):
-        circuit.to_openqasm()
-
-
 class TestInitialization:
     """Test the non-update components of intialization."""
 
