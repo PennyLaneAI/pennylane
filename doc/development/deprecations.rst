@@ -13,7 +13,7 @@ Pending deprecations
   and jax.
 
   - Deprecated in v0.44
-  - Will bemoved in v0.45
+  - Will be removed in v0.45
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
