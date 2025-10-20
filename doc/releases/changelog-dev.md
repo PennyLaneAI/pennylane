@@ -19,6 +19,7 @@
 <h3>Deprecations 👋</h3>
 
 * `argnum` has been renamed `argnums` for `qml.grad`, `qml.jacobian`, `qml.jvp` and `qml.vjp`.
+ [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
 <h3>Internal changes ⚙️</h3>
