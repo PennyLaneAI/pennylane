@@ -130,12 +130,15 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
             """
             # pylint: disable=too-many-branches
+            print("Interpreting {op}")
             if len(op.wires) == 0:
+                print("No wires")
                 return super().interpret_operation(op)
 
             prev_op = self.previous_ops.get(op.wires[0], None)
             dyn_wires = {w for w in op.wires if is_abstract(w)}
             other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+            print("Previous op: {prev_op}")
 
             if prev_op is None or (dyn_wires and other_saved_wires):
                 # If there are dynamic wires, we need to make sure that there are no

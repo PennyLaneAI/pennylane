@@ -24,6 +24,7 @@ from pennylane.transforms.optimization import cancel_inverses
 from pennylane.wires import Wires
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
 class TestCancelInverses:
     """Test that adjacent inverse gates are cancelled."""
 
