@@ -52,7 +52,7 @@ def translate_op_alias(op_alias):
 def toggle_graph_decomposition():
     """A closure that toggles the experimental graph-based decomposition on and off."""
 
-    _GRAPH_DECOMPOSITION = False
+    _GRAPH_DECOMPOSITION = True
 
     def enable():
         """
