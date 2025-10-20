@@ -141,7 +141,7 @@ def matrix(
 
         >>> theta = pnp.array(0.3, requires_grad=True)
         >>> # Expected value is 2 * cos(0.3 / 2)
-        >>> cost(theta)
+        >>> print(cost(theta))
         1.977...
         >>> # The gradient is -sin(0.3 / 2)
         >>> qml.grad(cost, argnum=0)(theta)
