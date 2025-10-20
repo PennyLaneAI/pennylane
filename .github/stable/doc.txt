@@ -10,7 +10,7 @@ botocore==1.34.46
 certifi==2023.11.17
 chardet==5.2.0
 click==8.1.6
-cloud-init==25.1.4
+cloud-init==25.2
 colorama==0.4.6
 command-not-found==0.3
 configobj==5.0.8
@@ -40,8 +40,8 @@ netifaces==0.11.0
 oauthlib==3.2.2
 packaging==24.0
 pexpect==4.9.0
-pipx==1.7.1
-platformdirs==4.4.0
+pipx==1.8.0
+platformdirs==4.5.0
 ptyprocess==0.7.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
