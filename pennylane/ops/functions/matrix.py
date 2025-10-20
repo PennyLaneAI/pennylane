@@ -176,6 +176,7 @@ def _matrix_op(op: Operator, wire_order: Sequence | None = None) -> TensorLike:
 
 @matrix.register
 def _matrix_pauli(op: PauliWord | PauliSentence, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a PauliWord or PauliSentence."""
     if wire_order is None and len(op.wires) > 1:
         raise ValueError(
             "wire_order is required by qml.matrix() for PauliWords "
@@ -186,6 +187,7 @@ def _matrix_pauli(op: PauliWord | PauliSentence, wire_order: Sequence | None = N
 
 @matrix.register
 def _matrix_tape(op: QuantumScript, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a QuantumScript."""
     if wire_order is None:
         error_base_str = "wire_order is required by qml.matrix() for tapes"
         if len(op.wires) > 1:
@@ -198,6 +200,7 @@ def _matrix_tape(op: QuantumScript, wire_order: Sequence | None = None) -> Tenso
 
 @matrix.register
 def _matrix_qnode(op: QNode, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a QNode."""
     # Handle Catalyst QJIT-compiled QNodes
     if op.__class__.__name__ == "QJIT" and hasattr(op, "user_function"):
         op = op.user_function
@@ -212,6 +215,7 @@ def _matrix_qnode(op: QNode, wire_order: Sequence | None = None) -> TensorLike:
 
 @matrix.register
 def _matrix_function(op: Callable, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a quantum function."""
     if getattr(op, "num_wires", 0) != 1 and wire_order is None:
         raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
 
@@ -220,6 +224,7 @@ def _matrix_function(op: Callable, wire_order: Sequence | None = None) -> Tensor
 # Registering for 'object' creates a fallback for any type not specifically handled.
 @matrix.register
 def _matrix_fallback(op: object, **_kwargs) -> TensorLike:
+    """Fallback for unsupported types."""
     raise TransformError(
         f"No matrix transform registered for type {type(op).__name__}. "
         "The qml.matrix transform only supports Operators, PauliWord, PauliSentence, "
@@ -239,7 +244,7 @@ def _matrix_transform(
         )
 
     wires = kwargs.get("device_wires", None) or tape.wires
-    wire_order = wire_order or wires
+    wire_order = wires if wire_order is None else wire_order
 
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""
