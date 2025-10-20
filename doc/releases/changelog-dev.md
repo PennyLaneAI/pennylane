@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
+  working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
+  [(#____)](https://github.com/PennyLaneAI/pennylane/pull/____)
+
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
@@ -132,4 +136,5 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
+Mudit Pandey,
 Shuli Shu
