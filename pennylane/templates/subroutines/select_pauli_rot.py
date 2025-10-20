@@ -238,13 +238,13 @@ def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
         case "X":
             change_op_basis(
                 Hadamard(wires[-1]),
-                prod(*q.queue),
+                prod(*reversed(q.queue)),
                 Hadamard(wires[-1]),
             )
         case "Y":
             change_op_basis(
                 Hadamard(wires[-1]) @ adjoint(S(wires[-1])),
-                prod(*q.queue),
+                prod(*reversed(q.queue)),
                 S(wires[-1]) @ Hadamard(wires[-1]),
             )
         case "Z":

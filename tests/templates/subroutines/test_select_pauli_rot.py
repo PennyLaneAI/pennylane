@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math import Prod
 
 
 def get_tape(angles, wires):
@@ -147,6 +148,14 @@ class TestSelectPauliRot:
         decomposition_2 = qml.SelectPauliRot(
             x, control_wires=range(n), target_wire=n, rot_axis=axis
         ).decomposition()
+
+        if axis in "XY":
+            decomp_1 = decomposition[0].decomposition()
+            decomp_2 = decomposition_2[0].decomposition()
+            decomposition, decomposition_2 = [], []
+            for op1, op2 in zip(decomp_1, decomp_2):
+                decomposition.extend([op1] if not isinstance(op1, Prod) else op1.decomposition())
+                decomposition_2.extend([op2] if not isinstance(op2, Prod) else op2.decomposition())
 
         for dec in [decomposition, decomposition_2]:
             if axis == "Y":
