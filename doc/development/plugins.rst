@@ -233,11 +233,9 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
   
-**Custom decompositions:**
+**Decompositions:**
 
-When adding a new pluging, one may need to define how unsupported operations decompose to the
-device's native gates. The transform can be specified via the decomposer keyword argument of
-:func:`pennylane.devices.preprocess.decompose`.
+The :func:`~pennylane.devices.preprocess.decompose` transform is typically required as part of the transform program that decomposes unsupported operations to the device's native gate set.
 
 For example, suppose we have a device with RX, RY and IsingXX as native gates but we want to execute a circuit
 written in terms of CNOTs. First, we need to define a decomposition function (e.g., `decompose_cnot`) that takes
