@@ -421,10 +421,7 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res_mitigated = mitigated_circuit(w1, w2)
+        res_mitigated = mitigated_circuit(w1, w2)
 
         res_ideal = ideal_circuit(w1, w2)
 
