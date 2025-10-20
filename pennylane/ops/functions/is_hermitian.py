@@ -14,10 +14,16 @@
 """
 This module contains the qml.is_hermitian function.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pennylane.math import allclose
-from pennylane.operation import Operator
 from pennylane.ops import adjoint
 from pennylane.ops.functions.matrix import matrix
+
+if TYPE_CHECKING:
+    from pennylane.operation import Operator
 
 
 def is_hermitian(op: Operator):
