@@ -50,7 +50,7 @@ def _get_grad_prim():
     grad_prim.prim_type = "higher_order"
 
     @grad_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, h):
+    def _grad_def_impl(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
         consts = args[:n_consts]
@@ -90,7 +90,7 @@ def _get_jacobian_prim():
     jacobian_prim.prim_type = "higher_order"
 
     @jacobian_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, h):
+    def _jacobian_def_impl(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
         consts = args[:n_consts]
