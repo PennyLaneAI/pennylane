@@ -237,8 +237,8 @@ or can include in-built transforms such as:
 
 The :func:`~pennylane.devices.preprocess.decompose` transform is typically required as part of the transform program that decomposes unsupported operations to the device's native gate set.
 
-For example, suppose we have a device with RX, RY and IsingXX as native gates but we want to execute a circuit
-written in terms of CNOTs. First, we need to define a decomposition function (e.g., `decompose_cnot`) that takes
+For example, suppose we have a device with ``RX``, ``RY`` and ``IsingXX`` as native gates but we want to execute a circuit
+written in terms of ``CNOT``s. First, we need to define a decomposition function (e.g., ``decompose_cnot``) that takes
 the CNOT operator as argument:
 
 .. code-block:: python
