@@ -341,7 +341,7 @@ def create_operator_primitive(
     primitive.prim_type = "operator"
 
     @primitive.def_impl
-    def _(*args, **kwargs):
+    def _impl(*args, **kwargs):
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
@@ -357,7 +357,7 @@ def create_operator_primitive(
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return abstract_type()
 
     return primitive
