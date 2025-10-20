@@ -232,6 +232,81 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
+  
+**Custom decompositions:**
+
+When constructing a device, to decompose a quantum circuit to the native gates supported
+by your device, use the decomposer keyword argument of :func:`pennylane.devices.preprocess.decompose`.
+
+For example, suppose we are running on an ion trap device that does not
+natively implement the CNOT gate, but we would still like to write our
+circuits in terms of CNOTs. On an ion trap device, CNOT can be implemented
+using the ``IsingXX`` gate. 
+.. We first define a decomposition function (such functions have the signature ``decomposition(*params, wires)``):
+
+.. code-block:: python
+
+    from pennylane.devices.preprocess import decompose
+
+    def supports_operation(op): 
+        return getattr(op, "name", None) in operation_names
+    
+    def ion_trap_cnot(op: qml.CNOT):
+        wires = op.wires
+        return [
+            qml.RY(np.pi/2, wires=wires[0]),
+            qml.IsingXX(np.pi/2, wires=wires),
+            qml.RX(-np.pi/2, wires=wires[0]),
+            qml.RY(-np.pi/2, wires=wires[0]),
+            qml.RY(-np.pi/2, wires=wires[1])
+        ]
+        
+    program.add_transform(decompose, stopping_condition=supports_operation, decomposer=ion_trap_cnot, name="my_device")
+
+Next, we create a device and a QNode for testing. When constructing the
+QNode, we can set the expansion strategy to ``"device"`` to ensure the
+decomposition is applied and will be viewable when we draw the circuit.
+Note that custom decompositions should accept keyword arguments even when
+it is not used.
+
+.. code-block:: python
+
+    dev = qml.device(
+        'my_device', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
+    )
+
+    @qml.qnode(dev)
+    def run_cnot():
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.X(1))
+
+>>> print(qml.draw(run_cnot, level="device")())
+0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
+1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
+
+The procedure above uses the "legacy" decomposition system, with graph enabled, you can also do...
+
+.. code-block:: python
+
+    qml.decomposition.enable_graph()
+
+    @qml.register_resources({qml.RY: 3, qml.RX: 1, qml.IsingXX: 1})
+    def ion_trap_cnot(wires):
+        qml.RY(np.pi/2, wires=wires[0]),
+        qml.IsingXX(np.pi/2, wires=wires),
+        qml.RX(-np.pi/2, wires=wires[0]),
+        qml.RY(-np.pi/2, wires=wires[0]),
+        qml.RY(-np.pi/2, wires=wires[1])
+
+    qml.add_decomps(qml.CNOT, ion_trap_cnot)
+
+    program.add_transform(
+        decompose, 
+        stopping_condition=supports_operation,
+        device_wires=2, 
+        target_gates={qml.IsingXX, "RX", "RY"}, 
+        name="my_device"
+        )
 
 .. _device_capabilities:
 
