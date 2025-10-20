@@ -16,6 +16,7 @@
   
 * With capture enabled, measurements can now be performed on Operator instances passed as closure
   variables from outside the workflow scope.
+  [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
 
 <h3>Breaking changes 💔</h3>
 
