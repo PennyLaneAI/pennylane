@@ -260,8 +260,7 @@ if HilbertSchmidt._primitive is not None:
 class LocalHilbertSchmidt(HilbertSchmidt):
     r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
 
-    The result of the LHST is a useful quantity for compiling a un
-    itary `U` with an approximate unitary `V`. The
+    The result of the LHST is a useful quantity for compiling a unitary `U` with an approximate unitary `V`. The
     LHST is used as a distance between `U` and `V`. It is similar to the Hilbert-Schmidt test, but the measurement is
     made only on one qubit at the end of the circuit. The LHST cost is always smaller than the HST cost and is useful
     for large unitaries.
