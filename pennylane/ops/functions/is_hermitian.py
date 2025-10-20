@@ -17,7 +17,7 @@ This module contains the qml.is_hermitian function.
 from pennylane.math import allclose
 from pennylane.operation import Operator
 from pennylane.ops import adjoint
-from pennylane.ops.functions import matrix
+from pennylane.ops.functions.matrix import matrix
 
 
 def is_hermitian(op: Operator):
