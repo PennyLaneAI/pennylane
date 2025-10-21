@@ -57,7 +57,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         while (op := op.parent_op()) and not isinstance(op, builtin.ModuleOp):
             pass
         if op is None:
-            raise RuntimeError("Got orphaned qnode function")
+            raise RuntimeError(
+                f"The given qnode func is not nested within a builtin.module. Please ensure the qnode func is defined in a builtin.module."
+            )
         return op
 
     def __init__(self):
@@ -102,12 +104,52 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
     # pylint: disable=no-else-return
     def _get_qubit_idx(self, op: Operation) -> int | None:
-        """Get the qubit index from an ExtractOp op."""
+        """Get the index of qubit that an ExtractOp op extracts."""
         if hasattr(op, "idx") and op.idx:
             return op.idx
         if hasattr(op, "idx_attr"):
             return op.idx_attr
         return None
+
+    def _set_up_terminal_boundary_op(
+        self,
+        current_reg: quantum.QuregType,
+        terminal_boundary_op: Operation | None,
+        qubit_to_reg_idx: dict,
+        op: Operation,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Set up the terminal boundary operation. This terminal_boundary_op is set as the last
+        quantum.insert operations added to the IR."""
+        insert_ops = set()
+
+        # Insert all qubits recorded in the qubit_to_reg_idx dict before the
+        # pre-assumed terminal operations.
+        rewriter.insertion_point = InsertPoint.before(op)
+        for qb, idx in qubit_to_reg_idx.items():
+            insert_op = quantum.InsertOp(current_reg, idx, qb)
+            rewriter.insert(insert_op)
+            insert_ops.add(insert_op)
+            terminal_boundary_op = insert_op
+            current_reg = insert_op.out_qreg
+
+        # Add the `"terminal_boundary"` attribute to the last newly added
+        # `quantum.insert` operation.
+        if terminal_boundary_op is None:
+            raise RuntimeError("A terminal_boundary_op op is not found in the circuit.")
+        terminal_boundary_op.attributes["terminal_boundary"] = builtin.UnitAttr()
+
+        # extract ops
+        rewriter.insertion_point = InsertPoint.before(op)
+        for qb, idx in list(qubit_to_reg_idx.items()):
+            extract_op = quantum.ExtractOp(current_reg, idx)
+            rewriter.insert(extract_op)
+            qb.replace_by_if(extract_op.qubit, lambda use: use.operation not in insert_ops)
+            # update the qubit_to_reg_idx dict
+            qubit_to_reg_idx[extract_op.qubit] = idx
+            # pop out qb from the dict
+            del qubit_to_reg_idx[qb]
+        return current_reg, terminal_boundary_op
 
     # pylint: disable=cell-var-from-loop
     def _simplify_quantum_io(
@@ -132,7 +174,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     # Update register mapping
                     extract_idx = self._get_qubit_idx(op)
                     qubit_to_reg_idx[op.qubit] = extract_idx
-                    op.operands = (current_reg, extract_idx)
                 case quantum.MeasureOp():
                     # TODOs: what if the qubit that quantum.measure target at is reset?
                     # Not a concern by EOY 2025
@@ -147,8 +188,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     if op.idx_attr and qubit_to_reg_idx[op.qubit] is not op.idx_attr:
                         raise ValueError("op.qubit should be op.idx_attr.")
                     del qubit_to_reg_idx[op.qubit]
-                    # update register since it might have changed
-                    op.operands = (current_reg, op.idx, op.qubit)
                     current_reg = op.out_qreg
 
                 case _ if (
@@ -163,35 +202,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     )
                     and not terminal_boundary_op
                 ):
-                    insert_ops = set()
-
-                    # Insert all qubits recorded in the qubit_to_reg_idx dict before the
-                    # pre-assumed terminal operations.
-                    rewriter.insertion_point = InsertPoint.before(op)
-                    for qb, idx in qubit_to_reg_idx.items():
-                        insert_op = quantum.InsertOp(current_reg, idx, qb)
-                        rewriter.insert(insert_op)
-                        insert_ops.add(insert_op)
-                        terminal_boundary_op = insert_op
-                        current_reg = insert_op.out_qreg
-
-                    # Add the `"terminal_boundary"` attribute to the last newly added
-                    # `quantum.insert` operation.
-                    if terminal_boundary_op is None:
-                        raise RuntimeError("A terminal_boundary_op op is not found in the circuit.")
-                    terminal_boundary_op.attributes["terminal_boundary"] = builtin.UnitAttr()
-
-                    # extract ops
-                    rewriter.insertion_point = InsertPoint.before(op)
-                    for qb, idx in list(qubit_to_reg_idx.items()):
-                        extract_op = quantum.ExtractOp(current_reg, idx)
-                        rewriter.insert(extract_op)
-                        qb.replace_by_if(
-                            extract_op.qubit, lambda use: use.operation not in insert_ops
-                        )
-                        # update the qubit_to_reg_idx dict
-                        qubit_to_reg_idx[extract_op.qubit] = idx
-                        del qubit_to_reg_idx[qb]
+                    current_reg, terminal_boundary_op = self._set_up_terminal_boundary_op(
+                        current_reg, qubit_to_reg_idx, terminal_boundary_op, op, rewriter
+                    )
 
                 case _:
                     # Handle other operations that might has qreg result
@@ -213,7 +226,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # collect required inputs for the state evolution funcOp
         required_inputs = self._collect_required_inputs_for_state_evolution_func(ops_to_clone)
 
-        # colloect required outputs for the state evolution funcOp
+        # collect required outputs for the state evolution funcOp
         required_outputs = self._collect_required_outputs(ops_to_clone, terminal_boundary_op)
 
         register_inputs = []
@@ -272,8 +285,8 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             elif hasattr(op, "attributes") and "terminal_boundary" in op.attributes:
                 terminal_boundary_op = op
 
-        if not alloc_op or not terminal_boundary_op:
-            raise RuntimeError("Could not find alloc_op or terminal_boundary_op")
+        if not (alloc_op and terminal_boundary_op):
+            raise RuntimeError("Could not find both alloc_op and terminal_boundary_op")
 
         if alloc_op.parent_block() != terminal_boundary_op.parent_block():
             raise RuntimeError("alloc_op and terminal_boundary_op are not in the same block")
