@@ -171,7 +171,11 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
-        ([np.sqrt(1 / n) for _ in range(n // 2)], n, 1 / n, n % 2 == 0) for n in range(1, 5)
+        ([], 1, 1.0, False),
+        ([0.7071067811865476], 2, 0.5, True),
+        ([0.5773502691896257], 3, 0.3333333333333333, False),
+        ([0.5, 0.5], 4, 0.25, True),
+        ([0.4472135954999579, 0.4472135954999579], 5, 0.2, False),
     ]
 
     @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize"), DECOMP_PARAMS)
