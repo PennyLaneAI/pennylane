@@ -17,6 +17,7 @@ Contains the QSVT template and qsvt wrapper function.
 
 import copy
 import math
+from collections import Counter
 from collections.abc import Sequence
 from functools import reduce
 from typing import Literal
@@ -24,6 +25,7 @@ from typing import Literal
 import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
+from pennylane.decomposition import resource_rep, adjoint_resource_rep
 
 from pennylane import math, ops
 from pennylane.operation import Operation, Operator
@@ -644,6 +646,16 @@ class QSVT(Operation):
             mat = ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
 
         return mat
+
+
+def _QSVT_resources(projectors, UA):
+    resources = Counter({
+        resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
+        adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1) // 2
+    })
+
+    for op in projectors:
+        resources[resource_rep(type(op), **op.resource_params)] += 1
 
 
 # pylint: disable=protected-access
