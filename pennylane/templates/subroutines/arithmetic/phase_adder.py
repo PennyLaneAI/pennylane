@@ -286,9 +286,9 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
     basis_op_resources = defaultdict(
         int,
         {
-            adjoint_resource_rep(PhaseShift): num_x_wires,
-            adjoint_resource_rep(QFT, {"num_wires": num_x_wires}): 1,
             resource_rep(X): 1,
+            adjoint_resource_rep(QFT, {"num_wires": num_x_wires}): 1,
+            adjoint_resource_rep(PhaseShift): num_x_wires,
         },
     )
 
@@ -333,7 +333,7 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
     )
     ctrl(_add_k_fourier_loop, control=work_wire)(mod)
     change_op_basis(
-        prod(adjoint(QFT)(wires=x_wires), X(aux_k), *adjoint(_add_k_fourier_loop)(k)),
+        prod(X(aux_k), adjoint(QFT)(wires=x_wires), *adjoint(_add_k_fourier_loop)(k)),
         CNOT(wires=[aux_k, work_wire[0]]),
     )
 
