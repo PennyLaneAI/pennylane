@@ -171,16 +171,13 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
-        (
-            [np.sqrt(1 / n) for _ in range(n // 2)],
-            n,
-            1 / n,
-            True if n % 2 == 0 else False,
-            False
-        ) for n in range(1, 5)
+        ([np.sqrt(1 / n) for _ in range(n // 2)], n, 1 / n, True if n % 2 == 0 else False, False)
+        for n in range(1, 5)
     ]
 
-    @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize", "validate_norm"), DECOMP_PARAMS)
+    @pytest.mark.parametrize(
+        ("features", "wires", "pad_with", "normalize", "validate_norm"), DECOMP_PARAMS
+    )
     def test_decomposition_new(self, features, wires, pad_with, normalize, validate_norm):
         """Test the decomposition of the Superposition template."""
         op = qml.AmplitudeEmbedding(

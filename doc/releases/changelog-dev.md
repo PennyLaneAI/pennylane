@@ -8,6 +8,7 @@
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
+  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
 
   - :class:`~.AmplitudeEmbedding`
 
