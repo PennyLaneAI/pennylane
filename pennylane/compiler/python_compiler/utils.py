@@ -17,20 +17,24 @@
 from numbers import Number
 
 from xdsl.dialects.arith import ConstantOp as arithConstantOp
-from xdsl.dialects.builtin import ContainerType
-from xdsl.dialects.stablehlo import ConstantOp as hloConstantOp
+from xdsl.dialects.builtin import ComplexType, ShapedType
 from xdsl.dialects.tensor import ExtractOp as tensorExtractOp
 from xdsl.ir import SSAValue
 
-# from .dialects.stablehlo import ConstantOp as hloConstantOp
+from .dialects.stablehlo import ConstantOp as hloConstantOp
 
 
-def get_scalar_constant(value: SSAValue) -> Number | None:
-    """Return the concrete number corresponding to an SSA value if it is a numerical constant.
+def get_constant_from_ssa(value: SSAValue) -> Number | None:
+    """Return the concrete value corresponding to an SSA value if it is a numerical constant.
 
     Numerical constants can be created by ``arith.constant`` and ``stablehlo.constant``. If scalar
     values are created using ``stablehlo.constant``, their owner will be a ``tensor.extract``,
     because ``stablehlo.constant`` returns a ``tensor``.
+
+    .. note::
+
+        This function currently only returns constants if they are scalar. For non-scalar constants,
+        ``None`` will be returned.
 
     Args:
         value (xdsl.ir.SSAValue): the SSA value to check
@@ -40,25 +44,38 @@ def get_scalar_constant(value: SSAValue) -> Number | None:
         will be returned, else ``None``.
     """
 
-    # If the value is a container, we can assume that it is not scalar. We check
+    # If the value has a shape, we can assume that it is not scalar. We check
     # this because constant-like operations can return container types. This includes
     # arith.constant, which may return containers, and stablehlo.constant, which
-    # always returns a tensor.
-    if not isinstance(value.type, ContainerType):
+    # always returns a container.
+    if not isinstance(value.type, ShapedType):
         owner = value.owner
-        if isinstance(owner, arithConstantOp):
-            return owner.value.data
 
-        # If a scalar constant is created by stablehlo.constant, there will be a tensor.extract
-        # to remove the scalar value from the tensor returned by stablehlo.constant.
+        if isinstance(owner, arithConstantOp):
+            const_attr = owner.value
+            return const_attr.value.data
+
+        # Constant-like operations can also create scalars by returning rank 0 tensors.
+        # In this case, the owner of a scalar value should be a tensor.extract, which
+        # uses the aforementioned rank 0 constant tensor as input.
         if isinstance(owner, tensorExtractOp):
             tensor_ = owner.tensor
-            if len(tensor_.shape) == 0 and isinstance(tensor_.owner, hloConstantOp):
-                # dense_attr = tensor_.owner.value
-                dense_attr = tensor_.owner.attributes["value"]
+            if (
+                len(owner.indices) == 0
+                and len(tensor_.type.shape) == 0
+                and isinstance(tensor_.owner, (arithConstantOp, hloConstantOp))
+            ):
+                dense_attr = tensor_.owner.value
                 # We know that the tensor has shape (). Dense element attributes store
                 # their data as a sequence. For a scalar, this will be a sequence with
                 # a single element.
-                return dense_attr.get_values()[0]
+                val = dense_attr.get_values()[0]
+                if isinstance(tensor_.type.element_type, ComplexType):
+                    # If the dtype is complex, the value will be a 2-tuple containing
+                    # the real and imaginary components of the number rather than a
+                    # Python complex number
+                    val = val[0] + 1j * val[1]
+
+                return val
 
     return None
