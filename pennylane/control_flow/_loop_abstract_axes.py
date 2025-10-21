@@ -92,13 +92,26 @@ def get_dummy_arg(arg):
     We use numpy instead of jax so the creation of the array will not show up in the jaxpr.
 
     """
-    if all(isinstance(s, int) for s in arg.shape):
-        return arg
-    # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
-    shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
+    # In JAX 0.7+, access shape and dtype via .aval for both tracers and Vars
+    import jax.extend.core as core  # pylint: disable=import-outside-toplevel
+    import jax._src.core as src_core  # pylint: disable=import-outside-toplevel
     from jax.numpy import empty  # pylint: disable=import-outside-toplevel
 
-    return empty(shape=shape, dtype=arg.dtype)
+    aval = arg.aval if hasattr(arg, "aval") else arg
+    shape = aval.shape
+    dtype = aval.dtype
+
+    # For Var objects or tracers, we need to create a concrete dummy arg
+    # since they can't be passed to make_jaxpr in nested trace contexts
+    # Use public API for Var, internal API for Tracer (not exposed publicly)
+    is_traced = isinstance(arg, (core.Var, src_core.Tracer))
+
+    if not is_traced and all(isinstance(s, int) for s in shape):
+        return arg
+    # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
+    concrete_shape = tuple(s if isinstance(s, int) else 2 for s in shape)
+
+    return empty(shape=concrete_shape, dtype=dtype)
 
 
 def validate_no_resizing_returns(

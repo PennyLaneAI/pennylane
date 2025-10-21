@@ -175,16 +175,22 @@ def register_custom_staging_rule(
         Create a new tracer and return var from the true branch outvar.
         Returned vars are cached in env for use in future shapes
         """
+        # In JAX 0.7+: create Var directly, then create tracer for it
+        # Use public API for Var, internal API for ShapedArray/DShapedArray (not exposed)
+        import jax.extend.core as core
+        import jax._src.core as src_core  # pylint: disable=import-outside-toplevel
+
         if not hasattr(outvar.aval, "shape"):
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval, None)
-            return out_tracer, jaxpr_trace.makevar(out_tracer)
+            new_var = core.Var(outvar.aval)
+            out_tracer = jaxpr_trace.var_to_tracer(new_var, None)
+            return out_tracer, new_var
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
         if all(isinstance(s, int) for s in outvar.aval.shape):
-            new_aval = jax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
+            new_aval = src_core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
         else:
-            new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
-        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval, None)
-        new_var = jaxpr_trace.makevar(out_tracer)
+            new_aval = src_core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+        new_var = core.Var(new_aval)
+        out_tracer = jaxpr_trace.var_to_tracer(new_var, None)
 
         if not isinstance(outvar, jax.extend.core.Literal):
             env[outvar] = new_var
@@ -211,10 +217,10 @@ def register_custom_staging_rule(
         else:
             out_tracers, returned_vars = (), ()
 
-        invars = [jaxpr_trace.getvar(x) for x in tracers]
-        eqn = jax.core.new_jaxpr_eqn(
-            invars,
-            returned_vars,
+        # In JAX 0.7+: use make_eqn to create TracingEqn, then add_eqn
+        eqn = jaxpr_trace.make_eqn(
+            tracers,
+            out_tracers,
             primitive,
             params,
             jax.core.no_effects,
