@@ -15,14 +15,14 @@ r"""
 The ``resource`` module provides classes and functionality to track the quantum resources
 (number of qubits, circuit depth, etc.) required to implement advanced quantum algorithms.
 
+.. seealso::
+    The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
+
 .. warning::
     The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
     ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
     Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
     in v0.45.
-
-.. seealso::
-    The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
 Circuit specifications
 ----------------------

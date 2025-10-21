@@ -102,8 +102,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* Some functions and classes in the `~pennylane.resources` module are deprecated and will be
-  refactored or moved into the `~.pennylane.estimator` module in v0.45:
+* The following functions and classes in the `~pennylane.resources` module are deprecated and will be
+  refactored and moved into the `~.pennylane.estimator` module in v0.45:
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
     
     - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
