@@ -79,7 +79,8 @@ class CompositeOp(Operator):
     ):  # pylint: disable=super-init-not-called
         self._id = id
         self._name = self.__class__.__name__
-
+        if any(isinstance(op, qml.measurements.MidMeasureMP) for op in operands):
+            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
@@ -337,9 +338,7 @@ class CompositeOp(Operator):
 
         >>> op = qml.S(0) + qml.X(0) + qml.Rot(1,2,3, wires=[1])
         >>> op.label()
-        '(S+X)+Rot'
-        >>> op.label(decimals=2, base_label=[["my_s", "my_x"], "inc_rot"])
-        '(my_s+my_x)+inc_rot\n(1.00,\n2.00,\n3.00)'
+        '𝓗'
 
         """
 

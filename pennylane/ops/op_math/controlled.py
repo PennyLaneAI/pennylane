@@ -36,7 +36,6 @@ from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
     SparseMatrixUndefinedError,
 )
 from pennylane.operation import Operation, Operator, classproperty
@@ -94,7 +93,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(qml.device('default.qubit', wires=range(4)))
         def circuit(x):
@@ -107,11 +106,11 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     1: ────├○─────┤
     2: ──X─├●─────┤
     3: ────╰○─────┤
-    >>> x = np.array(1.2)
+    >>> x = qml.numpy.array(1.2, requires_grad=True)
     >>> circuit(x)
-    tensor(0.36235775, requires_grad=True)
+    tensor(0.362..., requires_grad=True)
     >>> qml.grad(circuit)(x)
-    tensor(-0.93203909, requires_grad=True)
+    tensor(-0.932..., requires_grad=True)
 
     :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
     and individual :class:`~.operation.Operator`'s.
@@ -150,7 +149,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             return qml.probs()
 
     >>> workflow(jnp.pi/4, 1, 0)
-    array([0.25, 0.25, 0.03661165, 0.46338835])
+    Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
 
     if active_jit := compiler.active_compiler():
@@ -450,7 +449,7 @@ class Controlled(SymbolicOp):
     Controlled(RX(1.234, wires=[1]), control_wires=[0, 2, 3], control_values=[True, False, True])
     >>> op = Controlled(base, 0, control_values=[0])
     >>> op
-    Controlled(RX(1.234, wires=[1]), control_wires=[0], control_values=[0])
+    Controlled(RX(1.234, wires=[1]), control_wires=[0], control_values=[False])
 
     The operation has both standard :class:`~.operation.Operator` properties
     and ``Controlled`` specific properties:
@@ -470,7 +469,7 @@ class Controlled(SymbolicOp):
     ``0==False`` value or the ``1==True`` wire.
 
     >>> op.control_values
-    [0]
+    [False]
 
     Provided control values are converted to booleans internally, so
     any "truthy" or "falsy" objects work.
@@ -491,19 +490,19 @@ class Controlled(SymbolicOp):
     >>> qml.eigvals(op)
     array([1.    +0.j    , 1.    +0.j    , 0.8156+0.5786j, 0.8156-0.5786j])
     >>> print(qml.generator(op, format='observable'))
-    (-0.5) [Projector0 X1]
+    Projector(array([0]), wires=[0]) @ (-0.5 * X(1))
     >>> op.sparse_matrix()
-    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
-                with 6 stored elements in Compressed Sparse Row format>
+    <Compressed Sparse Row sparse matrix of dtype 'complex128'
+        with 6 stored elements and shape (4, 4)>
 
     If the provided base matrix is an :class:`~.operation.Operation`, then the created
     object will be of type :class:`~.ops.op_math.ControlledOp`. This class adds some additional
     methods and properties to the basic :class:`~.ops.op_math.Controlled` class.
 
     >>> type(op)
-    <class 'pennylane.ops.op_math.controlled_class.ControlledOp'>
+    <class 'pennylane.ops.op_math.controlled.ControlledOp'>
     >>> op.parameter_frequencies
-    [(0.5, 1.0)]
+    [(np.float64(0.5), np.float64(1.0))]
 
     """
 
@@ -606,14 +605,6 @@ class Controlled(SymbolicOp):
         if len(Wires.shared_wires([work_wires, base.wires + control_wires])) != 0:
             raise ValueError(
                 "Work wires must be different the control_wires and base operation wires."
-            )
-
-        if work_wire_type in ("clean", "dirty"):
-            work_wire_type = "zeroed" if work_wire_type == "clean" else "borrowed"
-            warnings.warn(
-                "Specifying work_wire_type as 'clean' or 'dirty' is deprecated, "
-                "use 'zeroed' or 'borrowed' instead.",
-                PennyLaneDeprecationWarning,
             )
 
         if work_wire_type not in {"zeroed", "borrowed"}:
@@ -848,7 +839,6 @@ class Controlled(SymbolicOp):
         return False
 
     def decomposition(self):
-
         if self.compute_decomposition is not Operator.compute_decomposition:
             return self.compute_decomposition(*self.data, self.wires)
 
