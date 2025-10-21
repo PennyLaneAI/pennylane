@@ -22,7 +22,8 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
     r"""Estimate the number of measurements required to compute an expectation value with a target
     error.
 
-    See also :func:`estimate_error`.
+    .. seealso::
+        :func:`estimate_error`
 
     Args:
         coeffs (list[tensor_like]): list of coefficient groups
@@ -99,7 +100,8 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
 def estimate_error(coeffs, variances=None, shots=1000):
     r"""Estimate the error in computing an expectation value with a given number of measurements.
 
-    See also :func:`estimate_shots`.
+    .. seealso::
+        :func:`estimate_shots`
 
     Args:
         coeffs (list[tensor_like]): list of coefficient groups
