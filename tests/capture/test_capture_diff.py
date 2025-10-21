@@ -37,7 +37,7 @@ def test_error_with_non_scalar_function():
 
 
 def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
-    argnum = [0] if argnum is None else argnum
+    argnums = [0] if argnums is None else argnums
     assert eqn.primitive == grad_prim
     assert set(eqn.params.keys()) == {
         "argnums",
@@ -48,7 +48,7 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         "fn",
         "scalar_out",
     }
-    assert eqn.params["argnums"] == argnum
+    assert eqn.params["argnums"] == argnums
     assert eqn.params["n_consts"] == n_consts
     assert eqn.params["method"] == "auto"
     assert eqn.params["h"] == 1e-6
@@ -263,7 +263,7 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnums)
 
         grad_eqn = jaxpr.eqns[2]
-        diff_eqn_assertions(grad_eqn, scalar_out=True, argnums=argnum, fn=inner_func)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, argnums=argnums, fn=inner_func)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 

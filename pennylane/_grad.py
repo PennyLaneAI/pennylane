@@ -52,9 +52,11 @@ def _get_grad_prim():
     grad_prim.prim_type = "higher_order"
 
     @grad_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts, method, h, scalar_out, fn):
-        if method or h:  # pragma: no cover
-            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+    def _(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+        if method != "auto":  # pragma: no cover
+            raise ValueError(f"Invalid values '{method=}' without QJIT.")
+        if h != 1e-6:
+            raise ValueError(f"Invalid h={h} without QJIT.")
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -63,15 +65,15 @@ def _get_grad_prim():
             return res[0] if scalar_out else res
 
         if scalar_out:
-            return jax.grad(func, argnums=argnum)(*args)
-        return jax.tree_util.tree_leaves(jax.jacobian(func, argnums=argnum)(*args))
+            return jax.grad(func, argnums=argnums)(*args)
+        return jax.tree_util.tree_leaves(jax.jacobian(func, argnums=argnums)(*args))
 
     # pylint: disable=unused-argument
     @grad_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts, method, h, scalar_out, fn):
+    def _(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if scalar_out and (len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        in_avals = tuple(args[i + n_consts] for i in argnum)
+        in_avals = tuple(args[i + n_consts] for i in argnums)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
             _shape(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
@@ -81,12 +83,14 @@ def _get_grad_prim():
 
     return grad_prim
 
+
 def _shape(shape, dtype, weak_type=False):
     if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
         return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)
     return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
-def _capture_diff(func, *, argnums=None, scalar_out: bool=False, method=None, h=None):
+
+def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
@@ -238,7 +242,7 @@ class grad:
         self._method = method
 
         self._fun = func
-        self.__name__ = f"<grad: {self._fun}>"
+        self.__name__ = f"<grad: {self._fun.__name__}>"
         self._argnums = argnums if argnums is not None else argnum
         if argnum is not None:
             warnings.warn(
@@ -295,7 +299,7 @@ class grad:
 
         if capture.enabled():
             return _capture_diff(
-                self._fun, argnums=self._argnum, scalar_out=True, method=self._method, h=self._h
+                self._fun, argnums=self._argnums, scalar_out=True, method=self._method, h=self._h
             )(*args, **kwargs)
 
         if self._method:
@@ -621,7 +625,7 @@ class jacobian:
 
         if capture.enabled():
             g = _capture_diff(
-                self._func, argnums=self._argnum, scalar_out=False, method=self._method, h=self._h
+                self._func, argnums=self._argnums, scalar_out=False, method=self._method, h=self._h
             )
             return g(*args, **kwargs)
 
