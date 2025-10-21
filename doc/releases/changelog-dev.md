@@ -97,6 +97,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* `argnum` has been renamed `argnums` for `qml.grad` and `qml.jacobian`.
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
+
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. 
