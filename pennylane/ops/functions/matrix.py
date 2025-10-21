@@ -145,7 +145,7 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
         >>> cost(theta)
         np.float64(1.97...)
         >>> # The gradient is -sin(0.3 / 2)
-        >>> qml.grad(cost, argnum=0)(theta)
+        >>> qml.grad(cost, argnums=0)(theta)
         tensor(-0.14943813, requires_grad=True)
 
     """
