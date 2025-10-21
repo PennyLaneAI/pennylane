@@ -16,7 +16,7 @@ Training and interfaces
 
 The bridge between the quantum and classical worlds is provided in PennyLane via interfaces to
 automatic differentiation libraries.
-Currently, four libraries are supported: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
+Currently, three libraries are supported: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
 <interfaces/torch>`, and :doc:`JAX <interfaces/jax>`. PennyLane makes
 each of these libraries quantum-aware, allowing quantum circuits to be treated just
 like any other operation. Any automatic differentiation framework can be chosen with any device.
