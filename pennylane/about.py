@@ -76,20 +76,14 @@ def about():
         # PEP 610: detect editable with direct_url.json
         try:
             raw = dist.read_text("direct_url.json")
-        except FileNotFoundError:
-            raw = None
-
-        if raw:
-            try:
-                direct = json.loads(raw)
-            except json.JSONDecodeError:
-                direct = None
-            else:
-                if direct.get("dir_info", {}).get("editable"):
-                    url = direct.get("url", "")
-                    if url.startswith("file://"):
-                        url = url[7:]
-                    lines.append(f"Editable project location: {url}")
+            direct = json.loads(raw)
+            if direct.get("dir_info", {}).get("editable"):
+                url = direct.get("url", "")
+                if url.startswith("file://"):
+                    url = url[7:]
+                lines.append(f"Editable project location: {url}")
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
 
         info = "\n".join(lines)
 
