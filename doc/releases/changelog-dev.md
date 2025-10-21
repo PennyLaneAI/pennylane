@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * A new decomposition has been added to :class:`~.MultiControlledX`,
-  which uses `~.TemporaryAnd` operators in the decomposition.
+  which uses `~.TemporaryAnd` operators.
   [(#8510)](https://github.com/PennyLaneAI/pennylane/pull/8510)
 
 <h3>Improvements 🛠</h3>
