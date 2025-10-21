@@ -142,7 +142,7 @@ class TestIsIndependentAutograd:
         qml.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
-        qml.jacobian(lambda x, y: 4 * x - 2.1 * y, argnum=[0, 1]),
+        qml.jacobian(lambda x, y: 4 * x - 2.1 * y, argnums=[0, 1]),
     ]
 
     args_constant = [
@@ -189,7 +189,7 @@ class TestIsIndependentAutograd:
         """Tests that kwargs are taken into account when checking
         independence of outputs."""
         f = lambda x, kw=False: 0.1 * x if kw else 0.2
-        jac = qml.jacobian(f, argnum=0)
+        jac = qml.jacobian(f, argnums=0)
         args = (0.2,)
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})
