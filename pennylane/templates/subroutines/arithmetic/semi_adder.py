@@ -324,8 +324,10 @@ add_decomps(SemiAdder, _semiadder)
 def _controlled_semi_adder_resource(
     base_class, base_params, num_control_wires, num_zero_control_values, **kwargs
 ):  # pylint: disable=unused-argument
-    # Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
-    # In the case where len(x_wires) < len(y_wires), this is an upper bound.
+    r"""
+    Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
+    In the case where len(x_wires) < len(y_wires), this is an upper bound.
+    """
     num_y_wires = base_params["num_y_wires"]
     return {
         TemporaryAND: num_y_wires - 1,
@@ -343,8 +345,10 @@ def _controlled_semi_adder_resource(
 
 @register_resources(_controlled_semi_adder_resource, exact=False)
 def _controlled_semi_adder(base, control_wires, control_values, **__):
-    # Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
-    # using building block described in Figure 4.
+    r"""
+    Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
+    using building block described in Figure 4.
+    """
 
     y_wires = base.hyperparameters["y_wires"]
     x_wires = base.hyperparameters["x_wires"]
