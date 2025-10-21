@@ -176,7 +176,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, pad_with, normalize):
-        """Test the decomposition of the Superposition template."""
+        """Test the decomposition of the AmplitudeEmbedding template."""
         op = qml.AmplitudeEmbedding(features, wires, pad_with=pad_with, normalize=normalize)
         for rule in qml.list_decomps(qml.AmplitudeEmbedding):
             _test_decomposition_rule(op, rule)
