@@ -31,7 +31,12 @@ Current pass returns multiple qreg in some tests is not expected. A simple examp
     ```python
         dev = qml.device("null.qubit",wires=50)
 
-        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True,  pipelines=mbqc_pipeline(),keep_intermediate = True,)
+        @qml.qjit(
+            target="mlir", 
+            pass_plugins=[getXDSLPluginAbsolutePath()], 
+            autograph=True,  
+            pipelines=mbqc_pipeline(),
+            keep_intermediate = True,)
         @outline_state_evolution_pass
         @qml.qnode(dev)
         def circuit():
@@ -46,7 +51,8 @@ Current pass returns multiple qreg in some tests is not expected. A simple examp
     ```
 The main issue that it's not trivial to insert a terminal boundary operation (quantum operations) into IR and ensure the global qreg is 
 consistently updated. One way to solve this issue might be add a lineator before this transform.
-""" 
+"""
+
 
 @dataclass(frozen=True)
 class OutlineStateEvolutionPass(passes.ModulePass):
