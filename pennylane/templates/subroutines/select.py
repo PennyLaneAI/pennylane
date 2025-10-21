@@ -347,6 +347,9 @@ class Select(Operation):
           apply :math:`2^{c-2}` operators each.
           The controlled gate on the right applies the single remaining operator.
 
+    .. details::
+        :title: Available decomposition rules
+
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
