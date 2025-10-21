@@ -275,7 +275,6 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     return w_hat, v_hat
 
 
-# pylint: disable=too-many-arguments
 def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
