@@ -100,8 +100,10 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             )  # wires + eigvals
 
         if isinstance(obs, Operator):
+            QueuingManager.remove(obs)
             # turn into abstract operator
-            obs = unflatten(*flatten(obs))
+            with QueuingManager.stop_recording():
+                obs = unflatten(*flatten(obs))
 
         if isinstance(getattr(obs, "aval", None), _get_abstract_operator()):
             return cls._obs_primitive.bind(obs, **kwargs)
