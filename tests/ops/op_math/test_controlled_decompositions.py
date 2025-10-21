@@ -976,7 +976,7 @@ class TestMCXDecomposition:
 
         def arbitrary_input(wires):
             for ind, wire in enumerate(wires):
-                qml.RX(ind, wire)
+                qml.RX(ind + 0.3, wire)
 
         dev = qml.device("default.qubit")
 
