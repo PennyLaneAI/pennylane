@@ -205,12 +205,12 @@ from importlib.util import find_spec as _find_spec
 from packaging.version import Version as _Version
 
 if _find_spec("jax") is not None:
-    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.6.2"):  # pragma: no cover
+    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.7.1"):  # pragma: no cover
         warnings.warn(
-            "PennyLane is not yet compatible with JAX versions > 0.6.2. "
+            "PennyLane is not yet compatible with JAX versions > 0.7.1. "
             f"You have version {jax_version} installed. "
-            "Please downgrade JAX to 0.6.2 to avoid runtime errors using "
-            "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
+            "Please downgrade JAX to 0.7.1 to avoid runtime errors using "
+            "python -m pip install jax~=0.7.1 jaxlib~=0.7.1",
             RuntimeWarning,
         )
 
