@@ -26,7 +26,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Not all PennyLane devices currently work with Catalyst. For a complete list of supported
+        Not all PennyLane devices, including ``default.qubit``, currently work with Catalyst. For a complete list of supported
         backend devices, please consult
         :doc:`Catalyst's Supported Devices page <catalyst:dev/devices>`__.
 
