@@ -34,3 +34,21 @@ def test_kwarg_errors_without_qjit(grad_fn):
 
     with pytest.raises(ValueError, match="unsupported without QJIT. "):
         grad_fn(f, h=1e-6)(0.5)
+
+
+@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+def test_argnum_deprecation(grad_fn):
+    """Test that using argnum raises a deprecation warning."""
+
+    def f(x, y):
+        return y * x**2
+
+    with pytest.warns(
+        qml.exceptions.PennyLaneDeprecationWarning, match="has been renamed to argnums"
+    ):
+        g = grad_fn(f, argnum=1)
+
+    x = 0.5
+    y = qml.numpy.array(0.5, requires_grad=True)
+    r = g(x, y)
+    assert qml.math.allclose(r, 0.25)
