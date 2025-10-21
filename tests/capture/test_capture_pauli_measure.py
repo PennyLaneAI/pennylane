@@ -13,17 +13,19 @@
 # limitations under the License.
 """Tests for capturing Pauli product measurements."""
 
-# pylint: disable=wrong-import-order,wrong-import-position
+# pylint: disable=wrong-import-order,wrong-import-position,ungrouped-imports
 
 import pytest
 
 import pennylane as qml
 from pennylane.measurements import MeasurementValue, PauliMeasure
-from pennylane.tape.plxpr_conversion import plxpr_to_tape
 from pennylane.wires import Wires
 
 jax = pytest.importorskip("jax")
+
 import jax.numpy as jnp
+
+from pennylane.tape.plxpr_conversion import plxpr_to_tape
 
 pytestmark = [pytest.mark.capture, pytest.mark.jax]
 
