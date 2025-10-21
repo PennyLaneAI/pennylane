@@ -25,6 +25,9 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum
 
+# Known limitations for the latest implementation:
+# 1. The terminal boundary operation is inserted at before the first measurement operations, namely, quantum.ComputationalBasisOp, quantum.NamedObsOp, quantum.HamiltonianOp, quantum.TensorOp.
+# 2. 
 
 @dataclass(frozen=True)
 class OutlineStateEvolutionPass(passes.ModulePass):
@@ -186,12 +189,20 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         qubit_to_reg_idx[op.results[i]] = qubit_to_reg_idx[qb]
                         del qubit_to_reg_idx[qb]
                 case quantum.InsertOp():
+                    # TODOs: current implementation would lead to multiple qreg returns
+                    # for the outline_state_evolution func. It works fine for now for
+                    # all unit tests we have in-place. However, there is a risk that
+                    # it could break the split-non-commuting pass. The main issue is that
+                    # the qreg used in the quantum.insert operation after the terminal_boundary_op
+                    # still use the qreg return by an operation before terminal_boundary_op, which
+                    # would lead to two qreg returns. It works for now for the XAS applications.
+                    # However, this work around could fail for other applications.
                     if not terminal_boundary_op:
                         if op.idx_attr and qubit_to_reg_idx[op.qubit] is not op.idx_attr:
                             raise ValueError("op.qubit should be op.idx_attr.")
                         del qubit_to_reg_idx[op.qubit]
                         current_reg = op.out_qreg
-                    elif num_insert_ops >= 0:
+                    elif num_insert_ops == 0:
                         new_insert_op = quantum.InsertOp(current_reg, op.idx, op.qubit)
                         rewriter.insertion_point = InsertPoint.before(op)
                         rewriter.insert(new_insert_op)
@@ -215,7 +226,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     current_reg, terminal_boundary_op = self._set_up_terminal_boundary_op(
                         current_reg, terminal_boundary_op, qubit_to_reg_idx, op, rewriter
                     )
-
                 case _:
                     # Handle other operations that might has qreg result
                     # Note that this branch might not be tested so far as adjoint op is not
