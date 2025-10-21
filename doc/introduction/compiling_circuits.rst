@@ -38,7 +38,6 @@ other PennyLane objects.
     ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.commute_controlled
     ~pennylane.transforms.merge_amplitude_embedding
-    ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.merge_rotations
     ~pennylane.transforms.pattern_matching
     ~pennylane.transforms.remove_barrier
