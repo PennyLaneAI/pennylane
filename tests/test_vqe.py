@@ -998,7 +998,7 @@ class TestInterfaces:
         params = np.array([a, b])
 
         cost = generate_cost_fn(ansatz, H, dev, interface=interface)
-        dcost = qml.grad(cost, argnum=[0])
+        dcost = qml.grad(cost, argnums=[0])
         res = dcost(params)
 
         expected = [
@@ -1099,7 +1099,7 @@ class TestInterfaces:
         w = params
         ansatz = qml.templates.layers.StronglyEntanglingLayers
         cost = generate_cost_fn(ansatz, H, dev, interface="autograd")
-        dcost = qml.grad(cost, argnum=[0])
+        dcost = qml.grad(cost, argnums=[0])
         res = dcost(w)
 
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
