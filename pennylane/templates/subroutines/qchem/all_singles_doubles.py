@@ -18,11 +18,10 @@ Contains the AllSinglesDoubles template.
 import copy
 
 import numpy as np
+
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
-
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
-
-from pennylane import math, capture
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
@@ -32,7 +31,6 @@ try:
     from jax import numpy as jnp
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
-
 
 
 class AllSinglesDoubles(Operation):
