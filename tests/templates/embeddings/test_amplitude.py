@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 FEATURES = [
     np.array([0, 1, 0, 0]),
@@ -168,6 +169,25 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    DECOMP_PARAMS = [
+        (
+            [np.sqrt(1 / n) for _ in range(n // 2)],
+            n,
+            1 / n,
+            True if n % 2 == 0 else False,
+            False
+        ) for n in range(1, 5)
+    ]
+
+    @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize", "validate_norm"), DECOMP_PARAMS)
+    def test_decomposition_new(self, features, wires, pad_with, normalize, validate_norm):
+        """Test the decomposition of the Superposition template."""
+        op = qml.AmplitudeEmbedding(
+            features, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+        )
+        for rule in qml.list_decomps(qml.AmplitudeEmbedding):
+            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:
