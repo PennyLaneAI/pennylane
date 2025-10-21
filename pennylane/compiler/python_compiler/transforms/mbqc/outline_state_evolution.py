@@ -25,6 +25,28 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum
 
+"""
+Known limitations:
+Current pass returns multiple qreg in some tests is not expected. A simple example is:
+    ```python
+        dev = qml.device("null.qubit",wires=50)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True,  pipelines=mbqc_pipeline(),keep_intermediate = True,)
+        @outline_state_evolution_pass
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            for i in range(50):
+                qml.X(i)
+                qml.Y(i)
+                qml.Z(i)
+            return qml.expval(qml.X(0))
+
+        circuit()
+    ```
+The main issue that it's not trivial to insert a terminal boundary operation (quantum operations) into IR and ensure the global qreg is 
+consistently updated. One way to solve this issue might be add a lineator before this transform.
+""" 
 
 @dataclass(frozen=True)
 class OutlineStateEvolutionPass(passes.ModulePass):
