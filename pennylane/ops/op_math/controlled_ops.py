@@ -48,13 +48,13 @@ from .decompositions.controlled_decompositions import (
     decompose_mcx_one_borrowed_worker,
     decompose_mcx_one_worker_explicit,
     decompose_mcx_one_zeroed_worker,
+    decompose_mcx_temporary_and,
     decompose_mcx_two_borrowed_workers,
     decompose_mcx_two_workers_explicit,
     decompose_mcx_two_zeroed_workers,
     decompose_mcx_with_no_worker,
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
-    decompose_mcx_temporary_and,
 )
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
