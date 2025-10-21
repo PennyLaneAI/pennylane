@@ -63,9 +63,8 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         import pennylane.transforms.zx as zx
 
         dev = qml.device("default.qubit")
@@ -82,13 +81,10 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             qml.T(1)
             return qml.state()
 
-
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)())
-        0: ──S†─╭Z─╭●─╭●─┤  State
-        1: ──S──╰●─│──╰X─┤  State
-        2: ────────╰X────┤  State
+    >>> print(qml.draw(circuit)())
+    0: ──S†─╭Z─╭●─╭●─┤  State
+    1: ──S──╰●─│──╰X─┤  State
+    2: ────────╰X────┤  State
 
     """
     # pylint: disable=import-outside-toplevel

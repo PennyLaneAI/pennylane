@@ -382,8 +382,8 @@ def decompose(
             which case the total cost will be minimized (only available when the new graph-based
             decomposition system is enabled), or (3) a function that returns ``True`` if the
             operator belongs to the target gate set (not supported with the new graph-based
-            decomposition system). If ``None``, the gate set is considered to be all available
-            :doc:`quantum operators </introduction/operations>`.
+            decomposition system). If ``None``, the gate set is considered to be all operations in
+            ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>` for this list.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"

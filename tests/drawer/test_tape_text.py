@@ -294,8 +294,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
-            (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰─"]),
-            (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰─"]),
+            (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰⊕"]),
+            (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰⊕"]),
+            (qml.ctrl(qml.TemporaryAND([0, 1, 2]), control=[3]), ["╭●", "├●", "├⊕", "╰●"]),
         ],
     )
     def test_add_obj(self, op, out):
@@ -679,11 +680,11 @@ single_op_tests_data = [
     ),
     (
         qml.TemporaryAND([3, 0, 2], control_values=(1, 0)),
-        "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰──┤  ",
+        "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰⊕─┤  ",
     ),
     (
         qml.adjoint(qml.TemporaryAND([3, 0, 2], control_values=(0, 1))),
-        "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ───╯─┤  ",
+        "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ──⊕╯─┤  ",
     ),
 ]
 
@@ -749,11 +750,11 @@ class TestLayering:
         )
         expected = (
             "a: ─╭●───○╮─┤  \n"
-            "b: ─├●────┤─┤  \n"
-            "c: ─╰─────│─┤  \n"
+            "b: ─├●───⊕┤─┤  \n"
+            "c: ─╰⊕────│─┤  \n"
             "d: ──●╮──○╯─┤  \n"
-            "e: ───┤─╭○──┤  \n"
-            "f: ──●╯─├───┤  \n"
+            "e: ──⊕┤─╭○──┤  \n"
+            "f: ──●╯─├⊕──┤  \n"
             "g: ─────│───┤  \n"
             "h: ─────╰●──┤  "
         )

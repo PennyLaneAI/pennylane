@@ -17,11 +17,11 @@ Extended StableHLO dialect that dynamically includes all upstream operations
 plus custom operations for PennyLane's compiler infrastructure.
 
 This module automatically imports all operations and attributes from the upstream
-xdsl.dialects.stablehlo and adds custom ones without needing to hardcode
+xdsl_jax.dialects.stablehlo and adds custom ones without needing to hardcode
 the upstream operation list.
 """
 
-import xdsl.dialects.stablehlo as xstablehlo
+import xdsl_jax.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
 from .attributes import (

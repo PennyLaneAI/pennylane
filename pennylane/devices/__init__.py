@@ -72,13 +72,16 @@ method for devices.
 
     decompose
     device_resolve_dynamic_wires
+    mid_circuit_measurements
     measurements_from_counts
     measurements_from_samples
+    validate_adjoint_trainable_params
     validate_observables
     validate_measurements
     validate_device_wires
     validate_multiprocessing_workers
     validate_adjoint_trainable_params
+    no_analytic
     no_sampling
 
 Other transforms that may be relevant to device preprocessing include:
@@ -183,18 +186,4 @@ from ._qutrit_device import QutritDevice
 def __getattr__(name):
     if name == "plugin_devices":
         return device_constructor.plugin_devices
-
-    if name == "DefaultExecutionConfig":
-        # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane.exceptions import PennyLaneDeprecationWarning
-
-        warnings.warn(
-            "`pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44. "
-            "Please use `ExecutionConfig()` instead.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
-        return ExecutionConfig()
-
     raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

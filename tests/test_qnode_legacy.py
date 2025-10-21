@@ -167,7 +167,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnums=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -813,7 +813,7 @@ class TestShots:
             assert len(circuit(0.8)) == 10
             with pytest.warns(
                 PennyLaneDeprecationWarning,
-                match="Specifying 'shots' when calling a QNode is deprecated",
+                match="Specifying 'shots' when executing a QNode is deprecated",
             ):
                 assert len(circuit(0.8, shots=2)) == 2
                 assert len(circuit(0.8, shots=3178)) == 3178
@@ -838,7 +838,7 @@ class TestShots:
         # check that the circuit is temporary non-analytic
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
@@ -933,7 +933,7 @@ class TestShots:
         assert dev.shots == 3
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             res = circuit(0.8, shots=2)
         assert len(res) == 2
@@ -1015,7 +1015,7 @@ class TestShots:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
-            qml.jacobian(circuit, argnum=0)(0.3)
+            qml.jacobian(circuit, argnums=0)(0.3)
 
     # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
@@ -1050,7 +1050,7 @@ class TestShots:
         # Override
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
@@ -1075,7 +1075,7 @@ class TestShots:
         # Override
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots

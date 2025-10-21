@@ -203,6 +203,26 @@ class TestOutPoly:
         for rule in qml.list_decomps(qml.OutPoly):
             _test_decomposition_rule(op, rule)
 
+    def test_compute_decomposition_no_coeffs_list(self):
+        """Test that coeffs list is an optional argnument to compute_decomposition."""
+
+        decomp = qml.OutPoly.compute_decomposition(
+            lambda x, y: x + y, input_registers=[[0, 1], [2, 3]], output_wires=[4, 5], mod=4
+        )
+
+        pa2 = qml.PhaseAdder(k=2, mod=4, x_wires=[4, 5])
+        pa1 = qml.PhaseAdder(k=1, mod=4, x_wires=[4, 5])
+        expected = [
+            qml.QFT(wires=[4, 5]),
+            qml.ctrl(pa1, [3]),
+            qml.ctrl(pa2, 2),
+            qml.ctrl(pa1, 1),
+            qml.ctrl(pa2, 0),
+            qml.adjoint(qml.QFT(wires=[4, 5])),
+        ]
+        for op1, op2 in zip(decomp, expected):
+            qml.assert_equal(op1, op2)
+
     @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
