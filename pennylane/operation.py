@@ -702,6 +702,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             tuple,
             qml.wires.Wires,
             range,
+            qml.capture.autograph.ag_primitives.PRange,
             set,
             *array_types,
         )
