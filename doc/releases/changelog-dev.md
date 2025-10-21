@@ -113,6 +113,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Reclassifies `registers` as a tertiary module for use with tach.
+
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
