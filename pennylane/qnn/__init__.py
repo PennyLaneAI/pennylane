@@ -29,9 +29,8 @@ with PyTorch.
 
     ~TorchLayer
 """
-import importlib
 
-from . import cost
+import importlib
 
 class_map = {"TorchLayer": "torch"}
 mods = "torch"

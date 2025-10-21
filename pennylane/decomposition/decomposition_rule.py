@@ -124,17 +124,22 @@ def register_condition(
 
 @overload
 def register_resources(
-    ops: Callable | dict, *, work_wires: Callable | dict | None = None
+    ops: Callable | dict, *, work_wires: Callable | dict | None = None, exact: bool = True
 ) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_resources(
-    ops: Callable | dict, qfunc: Callable, *, work_wires: Callable | dict | None = None
+    ops: Callable | dict,
+    qfunc: Callable,
+    *,
+    work_wires: Callable | dict | None = None,
+    exact: bool = True,
 ) -> DecompositionRule: ...
 def register_resources(
     ops: Callable | dict,
     qfunc: Callable | None = None,
     *,
     work_wires: Callable | dict | None = None,
+    exact: bool = True,
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Binds a quantum function to its required resources.
 
@@ -152,12 +157,17 @@ def register_resources(
             to their number of occurrences therein. If a function is provided instead of a static
             dictionary, a dictionary must be returned from the function. For more information,
             consult the "Quantum Functions as Decomposition Rules" section below.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
+
+    Keyword Args:
         work_wires (dict or Callable): a dictionary declaring the number of work wires of each type
             required to perform this decomposition. Accepted work wire types include ``"zeroed"``,
             ``"borrowed"``, ``"burnable"``, and ``"garbage"``. For more information, consult the
             "Dynamic Allocation of Work Wires" section below.
-        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
-            returns a decorator for acting on a function.
+        exact (bool): whether the resources are computed exactly (``True``, default) or
+            estimated heuristically (``False``). This information is only relevant for testing
+            and validation purposes.
 
     Returns:
         DecompositionRule:
@@ -344,11 +354,13 @@ def register_resources(
 
     def _decorator(_qfunc) -> DecompositionRule:
         if isinstance(_qfunc, DecompositionRule):
-            _qfunc.set_resources(ops)
+            _qfunc.set_resources(ops, exact_resources=exact)
             if work_wires:
                 _qfunc.set_work_wire_spec(work_wires)
             return _qfunc
-        return DecompositionRule(_qfunc, resources=ops, work_wires=work_wires)
+        return DecompositionRule(
+            _qfunc, resources=ops, work_wires=work_wires, exact_resources=exact
+        )
 
     return _decorator(qfunc) if qfunc else _decorator
 
@@ -361,6 +373,7 @@ class DecompositionRule:
         func: Callable,
         resources: Callable | dict | None = None,
         work_wires: Callable | dict | None = None,
+        exact_resources: bool = True,
     ):
 
         self._impl = func
@@ -382,6 +395,7 @@ class DecompositionRule:
 
         self._conditions = []
         self._work_wire_spec = work_wires or {}
+        self.exact_resources = exact_resources
 
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
@@ -415,7 +429,7 @@ class DecompositionRule:
         """Adds a condition for this decomposition rule."""
         self._conditions.append(condition)
 
-    def set_resources(self, resources: Callable | dict) -> None:
+    def set_resources(self, resources: Callable | dict, exact_resources: bool = True) -> None:
         """Sets the resources for this decomposition rule."""
 
         if isinstance(resources, dict):
@@ -426,6 +440,7 @@ class DecompositionRule:
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
+        self.exact_resources = exact_resources
 
     def set_work_wire_spec(self, work_wires: Callable | dict) -> None:
         """Sets the work wire usage of this decomposition rule."""

@@ -31,12 +31,18 @@ from .resources_base import Resources
 
 
 class CompressedResourceOp:
-    r"""Defines a lightweight class corresponding to the operator type and its parameters.
+    r"""This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`,
+    containing only the operator type and the necessary parameters to estimate its resources.
 
-    This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`, containing
-    only the operator type and the necessary parameters to estimate its resources.
-    It is designed for efficient hashing and comparison, allowing it to be used
-    effectively in collections where uniqueness and quick lookups are important.
+    The ``CompressedResourceOp`` object is returned by the ``.resource_rep()`` method of resource
+    operators. The object is used by resource operators to efficiently compute the resource counts.
+
+    .. code-block:: pycon
+
+        >>> import pennylane.estimator as qre
+        >>> cmpr_op = qre.PauliRot.resource_rep(pauli_string="XYZ")
+        >>> print(cmpr_op)
+        CompressedResourceOp(PauliRot, num_wires=3, params={'pauli_string':'XYZ', 'precision':None})
 
     Args:
         op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:`~.pennylane.estimator.ResourceOperator`
@@ -48,16 +54,6 @@ class CompressedResourceOp:
             provided, a name will be generated using ``op_type.make_tracking_name``
             with the given parameters.
 
-    .. details::
-
-        This representation is the minimal amount of information required to estimate resources for an operator.
-
-    **Example**
-
-    >>> from pennylane import estimator as qre
-    >>> compressed_hadamard = qre.CompressedResourceOp(qre.Hadamard, num_wires=1)
-    >>> print(compressed_hadamard)
-    CompressedResourceOp(Hadamard, num_wires=1)
     """
 
     def __init__(
@@ -74,7 +70,7 @@ class CompressedResourceOp:
         self.num_wires = num_wires
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
-        self._name = name or op_type.make_tracking_name(**self.params)
+        self._name = name or op_type.tracking_name(**self.params)
 
     def __hash__(self) -> int:
         return hash((self.op_type, self.num_wires, self._hashable_params))
@@ -150,7 +146,7 @@ class ResourceOperator(ABC):
 
         .. code-block:: python
 
-            from pennylane import estimator as qre
+            import pennylane.estimator as qre
 
             class QFT(qre.ResourceOperator):
 
@@ -326,14 +322,14 @@ class ResourceOperator(ABC):
             raise TypeError(f"Cannot multiply resource operator {self} with type {type(scalar)}.")
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo_wires=self.num_wires, gate_types=gate_types)
+        return Resources(zeroed_wires=0, algo_wires=self.num_wires, gate_types=gate_types)
 
     def __matmul__(self, scalar: int):
         if not isinstance(scalar, int):
             raise TypeError(f"Cannot multiply resource operator {self} with type {type(scalar)}.")
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
 
-        return Resources(zeroed=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
+        return Resources(zeroed_wires=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 
     def add_series(self, other):
         """Adds a :class:`~.pennylane.estimator.ResourceOperator` or :class:`~.pennylane.estimator.Resources` in series.
@@ -372,15 +368,10 @@ class ResourceOperator(ABC):
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
-    # pylint: disable=unused-argument
     @classmethod
-    def make_tracking_name(cls, *args, **kwargs) -> str:
+    def tracking_name(cls, *args, **kwargs) -> str:
         r"""Returns a name used to track the operator during resource estimation."""
-        return cls.__name__.replace("Resource", "")
-
-    def tracking_name(self) -> str:
-        r"""Returns the tracking name built with the operator's parameters."""
-        return self.make_tracking_name(**self.resource_params)
+        return cls.__name__
 
 
 def _dequeue(
@@ -396,7 +387,34 @@ def _dequeue(
 
 
 class GateCount:
-    r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
+    r"""Stores a lightweight representation of a gate and its number of occurrences in a decomposition.
+
+    The decomposition of a resource operator is tracked as a sequence of gates and the corresponding
+    number of times those gates occur in the decomposition. For a given resource operator, this
+    decomposition can be accessed with the operator's ``.resource_decomp()`` method. The method
+    returns a sequence of ``GateCount`` objects where each object groups the two pieces of
+    information, gate and counts, for the decomposition.
+
+    For example, the decomposition of the Quantum Fourier Transform (QFT)
+    contains 3 ``Hadamard`` gates, 1 ``SWAP`` gate and 3 ``ControlledPhaseShift`` gates.
+
+    .. code-block:: pycon
+
+        >>> import pennylane.estimator as qre
+        >>> lst_of_gate_counts = qre.QFT.resource_decomp(num_wires=3)
+        >>> lst_of_gate_counts
+        [(3 x Hadamard), (1 x SWAP), (3 x ControlledPhaseShift)]
+
+    **Example**
+
+    This example creates an object to count ``5`` instances of :code:`QFT` acting
+    on three wires:
+
+    >>> import pennylane.estimator as qre
+    >>> qft = qre.resource_rep(qre.QFT, {"num_wires": 3})
+    >>> counts = qre.GateCount(qft, 5)
+    >>> counts
+    (5 x QFT(3))
 
     Args:
         gate (CompressedResourceOp): The compressed resource representation of the gate being counted.
@@ -405,17 +423,6 @@ class GateCount:
 
     Returns:
         GateCount: The container object holding both pieces of information.
-
-    **Example**
-
-    This example creates an object to count ``5`` instances of :code:`qre.QFT` acting
-    on three wires:
-
-    >>> from pennylane import estimator as qre
-    >>> qft = qre.resource_rep(qre.QFT, {"num_wires": 3})
-    >>> counts = qre.GateCount(qft, 5)
-    >>> counts
-    (5 x QFT(3))
 
     """
 
@@ -451,23 +458,37 @@ def resource_rep(
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
 
-    Note, the :code:`resource_params` dictionary should specify the required resource
-    parameters of the operator. The required resource parameters are listed in the
-    :code:`resource_keys` class property of every :class:`~.pennylane.estimator.ResourceOperator`.
+    This function produces the expected compressed representation of a resource operator class.
+    The compressed representation
+    (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`) is used instead of
+    the resource operator to enable faster performance of the resource estimation functionality.
+
+    This function is used when defining the resource decompositions of a resource operator.
+    Specifically, all resource decompositions are represented as a list of operators
+    (``CompressedResourceOp``) and the number of times they occur in the decomposition (``int``).
+    Those two pieces of information are tracked inside the
+    :class:`~.pennylane.estimator.resource_operator.GateCount` class.
+
+    .. note::
+
+        The :code:`resource_params` dictionary should specify the required resource
+        parameters of the operator. The required resource parameters are listed in the
+        :code:`resource_keys` class property of every :class:`~.pennylane.estimator.ResourceOperator`.
 
     Args:
         resource_op (type[ResourceOperator]]): The type of operator for which to retrieve the compact representation.
         resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
 
     Returns:
-        :class:`~.pennylane.estimator.CompressedResourceOp`: A compressed representation of a resource operator
+        :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of a resource operator
 
     **Example**
 
-    In this example we obtain the compressed resource representation for :code:`QFT`.
-    We begin by checking what parameters are required for resource estimation, and then providing
-    them accordingly:
+    This example shows how to obtain the compressed resource representation for the quantum Fourier
+    transform (:code:`QFT`) operation. We begin by checking what parameters are required for
+    resource estimation and then provide them accordingly:
 
+    >>> import pennylane.estimator as qre
     >>> qre.QFT.resource_keys
     {'num_wires'}
     >>> cmpr_qft = qre.resource_rep(
@@ -475,7 +496,53 @@ def resource_rep(
     ...     {"num_wires": 3},
     ... )
     >>> cmpr_qft
-    QFT(3)
+    CompressedResourceOp(QFT, num_wires=3, params={'num_wires':3})
+
+    .. details::
+        :title: Usage Details
+
+        In this example we create a custom resource decomposition function which returns the
+        decomposition using the ``GateCount`` class. We use the ``resource_rep`` function to
+        obtain the compressed representations of each gate in the decomposition.
+
+        .. code-block:: python
+
+            import pennylane.estimator as qre
+
+            def custom_RX_decomp(precision):  # RX = H @ RZ @ H
+                h = qre.resource_rep(qre.Hadamard)
+                rz = qre.resource_rep(qre.RZ, resource_params={"precision": None})
+                return [qre.GateCount(h, 2), qre.GateCount(rz, 1)]
+
+        .. code-block:: pycon
+
+            >>> print(qre.estimate(qre.RX(), gate_set={"Hadamard", "RZ", "T"}))
+            --- Resources: ---
+             Total wires: 1
+               algorithmic wires: 1
+               allocated wires: 0
+                 zero state: 0
+                 any state: 0
+             Total gates : 44
+               'T': 44
+
+        We override the default decomposition using the
+        :class:`~.pennylane.estimator.resource_config.ResourceConfig` class.
+
+        .. code-block:: pycon
+
+            >>> config = qre.ResourceConfig()
+            >>> config.set_decomp(qre.RX, custom_RX_decomp)
+            >>> print(qre.estimate(qre.RX(), gate_set={"Hadamard", "RZ", "T"}, config=config))
+            --- Resources: ---
+             Total wires: 1
+               algorithmic wires: 1
+               allocated wires: 0
+                 zero state: 0
+                 any state: 0
+             Total gates : 3
+               'RZ': 1,
+               'Hadamard': 2
 
     """
 

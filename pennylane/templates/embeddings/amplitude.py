@@ -99,8 +99,8 @@ class AmplitudeEmbedding(StatePrep):
 
             state = circuit(f=[1/sqrt(2), 1/sqrt(2)])
 
-        >>> state
-        array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+        >>> state # doctest: +SKIP
+        array([0.7071+0.j, 0.7071+0.j, 0.    +0.j, 0.    +0.j])
 
     """
 

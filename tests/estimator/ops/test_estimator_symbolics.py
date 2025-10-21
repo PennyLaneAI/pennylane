@@ -14,6 +14,8 @@
 """
 Tests for symbolic resource operators.
 """
+from collections import defaultdict
+
 import pytest
 
 import pennylane.estimator as qre
@@ -75,6 +77,57 @@ class TestAdjoint:
             )
         ]
         assert adj_op.resource_decomp(**adj_op.resource_params) == expected_res
+
+    @pytest.mark.parametrize(
+        "base_op, adj_res",
+        (
+            (
+                qre.SemiAdder(5),
+                qre.Resources(
+                    zeroed_wires=4,
+                    any_state_wires=0,
+                    algo_wires=10,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 25,
+                            resource_rep(qre.Toffoli, {"elbow": "left"}): 4,
+                            resource_rep(qre.Hadamard): 12,
+                        },
+                    ),
+                ),
+            ),
+            (
+                qre.CRZ(precision=1e-3),
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=2,
+                    gate_types=defaultdict(
+                        int, {resource_rep(qre.CNOT): 2, resource_rep(qre.T): 42}
+                    ),
+                ),
+            ),
+            (
+                qre.CRZ(),
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=2,
+                    gate_types=defaultdict(
+                        int, {resource_rep(qre.CNOT): 2, resource_rep(qre.T): 88}
+                    ),
+                ),
+            ),
+        ),
+    )
+    def test_estimate_for_adjoint(self, base_op, adj_res):
+        """Test that the adjoint of this operator produces expected resources with estimate."""
+        adj_op = qre.Adjoint(base_op)
+        adj_adj_op = qre.Adjoint(adj_op)
+
+        assert qre.estimate(adj_op) == adj_res
+        assert qre.estimate(adj_adj_op) == adj_res
 
     @pytest.mark.parametrize(
         "base_op",
@@ -183,6 +236,108 @@ class TestControlled:
             ),
         ]
         assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
+
+    @pytest.mark.parametrize(
+        "base_op, ctrl_res, ctrl_ctrl_res",
+        (
+            (
+                qre.SemiAdder(5),
+                qre.Resources(
+                    zeroed_wires=4,
+                    any_state_wires=0,
+                    algo_wires=11,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 32,
+                            resource_rep(qre.Toffoli, {"elbow": "left"}): 8,
+                            resource_rep(qre.Hadamard): 24,
+                        },
+                    ),
+                ),
+                qre.Resources(
+                    zeroed_wires=5,
+                    any_state_wires=0,
+                    algo_wires=12,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 32,
+                            resource_rep(qre.Toffoli, {"elbow": "left"}): 8,
+                            resource_rep(qre.Toffoli): 2,
+                            resource_rep(qre.Hadamard): 24,
+                        },
+                    ),
+                ),
+            ),
+            (
+                qre.CRZ(precision=1e-3),
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=3,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 42,
+                            resource_rep(qre.Toffoli): 2,
+                        },
+                    ),
+                ),
+                qre.Resources(
+                    zeroed_wires=1,
+                    any_state_wires=0,
+                    algo_wires=4,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 2,
+                            resource_rep(qre.T): 42,
+                            resource_rep(qre.Toffoli): 2,
+                            resource_rep(qre.Toffoli, {"elbow": "left"}): 2,
+                            resource_rep(qre.Hadamard): 6,
+                        },
+                    ),
+                ),
+            ),
+            (
+                qre.CRZ(),
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=3,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 88,
+                            resource_rep(qre.Toffoli): 2,
+                        },
+                    ),
+                ),
+                qre.Resources(
+                    zeroed_wires=1,
+                    any_state_wires=0,
+                    algo_wires=4,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.CNOT): 2,
+                            resource_rep(qre.T): 88,
+                            resource_rep(qre.Toffoli): 2,
+                            resource_rep(qre.Toffoli, {"elbow": "left"}): 2,
+                            resource_rep(qre.Hadamard): 6,
+                        },
+                    ),
+                ),
+            ),
+        ),
+    )
+    def test_estimate_for_controlled(self, base_op, ctrl_res, ctrl_ctrl_res):
+        """Test that the controlled operator produces expected resources with estimate"""
+        ctrl_op = qre.Controlled(base_op, num_ctrl_wires=1, num_zero_ctrl=0)
+        ctrl_ctrl_op = qre.Controlled(ctrl_op, num_ctrl_wires=1, num_zero_ctrl=0)
+        assert qre.estimate(ctrl_op) == ctrl_res
+        assert qre.estimate(ctrl_ctrl_op) == ctrl_ctrl_res
 
     @pytest.mark.parametrize(
         "ctrl_wires, ctrl_values",
@@ -304,6 +459,48 @@ class TestPow:
             )
         ]
         assert pow_pow_op.resource_decomp(**pow_pow_op.resource_params) == expected_res
+
+    @pytest.mark.parametrize(
+        "base_op, z, pow_res",
+        (
+            (
+                qre.RX(),
+                2,
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=1,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 44,
+                        },
+                    ),
+                ),
+            ),
+            (
+                qre.RX(precision=1e-3),
+                2,
+                qre.Resources(
+                    zeroed_wires=0,
+                    any_state_wires=0,
+                    algo_wires=1,
+                    gate_types=defaultdict(
+                        int,
+                        {
+                            resource_rep(qre.T): 21,
+                        },
+                    ),
+                ),
+            ),
+        ),
+    )
+    def test_estimate_for_pow(self, base_op, z, pow_res):
+        """Test that the power of this operator produces expected resources with estimate."""
+        pow_op = qre.Pow(base_op, z)
+        pow_pow_op = qre.Pow(pow_op, pow_z=5)
+        assert qre.estimate(pow_op) == pow_res
+        assert (qre.estimate(pow_pow_op)) == pow_res
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
@@ -477,6 +674,7 @@ class TestChangeOpBasis:
         ),
     )
     def test_resource_rep(self, compute_op, target_op, uncompute_op, num_wires):
+        """Test that correct compressed representation is obtained."""
         op = qre.ChangeOpBasis(compute_op, target_op, uncompute_op)
         cmpr_compute_op = compute_op.resource_rep_from_op()
         cmpr_target_op = target_op.resource_rep_from_op()

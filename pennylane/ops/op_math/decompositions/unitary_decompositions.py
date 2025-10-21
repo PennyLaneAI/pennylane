@@ -54,17 +54,20 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     **Example**
 
+    >>> from pprint import pprint
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
-    >>> qml.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
-    [RZ(3.1415926535897927, wires=[0]),
-     RY(1.5707963267948963, wires=[0]),
-     RZ(0.0, wires=[0]),
-     GlobalPhase(-1.5707963267948966, wires=[])]
-    >>> qml.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
-    [RX(1.5707963267948966, wires=[0]),
-     RZ(1.5707963267948968, wires=[0]),
-     RX(1.5707963267948966, wires=[0]),
-     GlobalPhase(-1.5707963267948966, wires=[])]
+    >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
+    >>> pprint(decomp)
+    [RZ(np.float64(3.14159...), wires=[0]),
+     RY(np.float64(1.57079...), wires=[0]),
+     RZ(np.float64(0.0), wires=[0]),
+     GlobalPhase(np.float64(-1.57079...), wires=[])]
+    >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
+    >>> pprint(decomp)
+    [RX(np.float64(1.57079...), wires=[0]),
+     RZ(np.float64(1.57079...), wires=[0]),
+     RX(np.float64(1.57079...), wires=[0]),
+     GlobalPhase(np.float64(-1.57079...), wires=[])]
     """
 
     supported_rotations = {
@@ -155,36 +158,28 @@ def two_qubit_decomposition(U, wires):
     into elementary gates in our circuit.
 
     >>> from scipy.stats import unitary_group
-    >>> U = unitary_group.rvs(4)
-    >>> U
-    array([[-0.29113625+0.56393527j,  0.39546712-0.14193837j,
-             0.04637428+0.01311566j, -0.62006741+0.18403743j],
-           [-0.45479211+0.25978444j, -0.52737418-0.5549423j ,
-            -0.23429057+0.10728103j,  0.16061807-0.21769762j],
-           [-0.4501231 +0.04065613j, -0.25558662+0.38209554j,
-            -0.04143479-0.56598134j,  0.12983673+0.49548507j],
-           [ 0.23899902+0.24800931j,  0.03374589-0.15784319j,
-             0.24898226-0.73975147j,  0.0269508 -0.49534518j]])
+    >>> U = unitary_group.rvs(4, random_state=42)
 
     We can compute its decompositon like so:
 
+    >>> from pprint import pprint
     >>> decomp = qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
-    >>> decomp
-    [QubitUnitary(array([[ 0.02867704+0.82548843j,  0.5568274 -0.08769111j],
-           [-0.5568274 -0.08769111j,  0.02867704-0.82548843j]]), wires=[0]),
-    QubitUnitary(array([[ 0.32799033-0.78598401j,  0.40660725+0.33063881j],
-           [-0.40660725+0.33063881j,  0.32799033+0.78598401j]]), wires=[1]),
-    CNOT(wires=[1, 0]),
-    RZ(0.259291854677022, wires=[0]),
-    RY(-0.05808874413267284, wires=[1]),
-    CNOT(wires=[0, 1]),
-    RY(-1.6742322786950354, wires=[1]),
-    CNOT(wires=[1, 0]),
-    QubitUnitary(array([[ 0.91031205-0.21930866j,  0.20674186-0.28371375j],
-           [-0.20674186-0.28371375j,  0.91031205+0.21930866j]]), wires=[1]),
-    QubitUnitary(array([[-0.81886788-0.02979899j,  0.53279787-0.21140919j],
-           [-0.53279787-0.21140919j, -0.81886788+0.02979899j]]), wires=[0]),
-    GlobalPhase(0.1180587403699308, wires=[])]
+    >>> pprint(decomp) # doctest: +SKIP
+    [QubitUnitary(array([[ 0.35935497-0.35945703j, -0.81150079+0.28830732j],
+           [ 0.81150079+0.28830732j,  0.35935497+0.35945703j]]), wires=[0]),
+     QubitUnitary(array([[ 0.73465919-0.15696895j,  0.51629531-0.41118825j],
+           [-0.51629531-0.41118825j,  0.73465919+0.15696895j]]), wires=[1]),
+     CNOT(wires=[1, 0]),
+     RZ(np.float64(0.028408953417448358), wires=[0]),
+     RY(np.float64(0.6226823676455966), wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(np.float64(-0.7259987841675299), wires=[1]),
+     CNOT(wires=[1, 0]),
+     QubitUnitary(array([[ 0.85429569-0.34743933j,  0.14569083+0.35810469j],
+           [-0.14569083+0.35810469j,  0.85429569+0.34743933j]]), wires=[0]),
+     QubitUnitary(array([[-0.30052527-0.4826478j ,  0.74833925-0.34164898j],
+           [-0.74833925-0.34164898j, -0.30052527+0.4826478j ]]), wires=[1]),
+     GlobalPhase(np.float64(0.07394316416802127), wires=[])]
 
     """
 
@@ -283,8 +278,9 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     def _resource_fn(num_wires):  # pylint: disable=unused-argument
         return su2_resource() | {ops.GlobalPhase: 1}
 
+    # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda num_wires: num_wires == 1)
-    @register_resources(_resource_fn)
+    @register_resources(_resource_fn, exact=False)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -375,7 +371,7 @@ def _two_qubit_resource(**_):
 
 
 @register_condition(lambda num_wires: num_wires == 2)
-@register_resources(_two_qubit_resource)
+@register_resources(_two_qubit_resource, exact=False)
 def two_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a two-qubit unitary."""
 

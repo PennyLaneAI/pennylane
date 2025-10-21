@@ -14,6 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+
 from __future__ import annotations
 
 import copy
@@ -97,7 +98,6 @@ def _make_execution_config(
 
 
 def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: bool) -> Result:
-
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
@@ -525,7 +525,7 @@ class QNode:
         interface: str | Interface = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
-        shots: ShotsLike = "unset",
+        shots: ShotsLike | Literal["unset"] = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
@@ -579,7 +579,7 @@ class QNode:
 
         # input arguments
         self.func = func
-        self.device = device
+        self.device: Device = device
         self._interface = Interface(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
@@ -611,7 +611,7 @@ class QNode:
         self.gradient_kwargs = gradient_kwargs
 
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
-        self._shots_override_device: bool = False
+        self._shots_override_device: bool = shots != "unset"
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
@@ -670,24 +670,6 @@ class QNode:
     def transform_program(self) -> TransformProgram:
         """The transform program used by the QNode."""
         return self._transform_program
-
-    @debug_logger
-    def add_transform(self, transform_container: TransformContainer):
-        """Add a transform (container) to the transform program.
-
-        .. warning::
-
-            This method is deprecated and will be removed in v0.44. Instead, please use :meth:`~.TransformProgram.push_back` on
-            the ``QNode.transform_program`` property to add transforms to the transform program.
-
-        .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
-        """
-        warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44. "
-            "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
-            PennyLaneDeprecationWarning,
-        )
-        self._transform_program.push_back(transform_container=transform_container)
 
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
@@ -754,13 +736,16 @@ class QNode:
 
         old_shots = self.shots
         # set shots issue
-        if "device" in kwargs:
-            if old_shots != kwargs["device"].shots:
-                warnings.warn(
-                    "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
-                    UserWarning,
-                )
+        if (
+            not self._shots_override_device
+            and "device" in kwargs
+            and old_shots != kwargs["device"].shots
+        ):
+            warnings.warn(
+                "The device's shots value does not match the QNode's shots value. "
+                "This may lead to unexpected behaviour. Use `set_shots` to update the QNode's shots.",
+                UserWarning,
+            )
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
@@ -812,7 +797,8 @@ class QNode:
         if "shots" in kwargs:
             # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
-                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
+                "Specifying 'shots' when executing a QNode is deprecated and will be removed in "
+                "v0.44. Please set shots on QNode initialization, or use qml.set_shots instead.",
                 PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
@@ -855,7 +841,6 @@ class QNode:
         return tape
 
     def _impl_call(self, *args, **kwargs) -> Result:
-
         # construct the tape
         tape = self.construct(args, kwargs)
 
@@ -899,3 +884,14 @@ def qnode(device, **kwargs) -> Callable[[Callable], QNode]:
 
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+# pylint: disable=protected-access
+@TransformDispatcher.generic_register
+def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
+    """The default behavior for applying a transform to a QNode."""
+    if transform._custom_qnode_transform:
+        return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
+    new_qnode = copy.copy(obj)
+    new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
+    return new_qnode

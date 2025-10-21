@@ -73,14 +73,14 @@ class SemiAdder(Operation):
         y_wires (Sequence[int]): The wires that store the integer :math:`y`. The number of wires must be sufficient to
             represent :math:`y` in binary. These wires are also used
             to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
-        work_wires (Sequence[int]): The auxiliary wires to use for the addition. At least, ``len(y_wires) - 1`` work
+        work_wires (Optional(Sequence[int])): The auxiliary wires to use for the addition. At least, ``len(y_wires) - 1`` work
             wires should be provided.
 
     **Example**
 
     This example computes the sum of two integers :math:`x=3` and :math:`y=4`.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 3
         y = 4
@@ -106,7 +106,7 @@ class SemiAdder(Operation):
 
     Note that the result is computed modulo :math:`2^{\text{len(y_wires)}}` which makes the computed value dependent on the size of the ``y_wires`` register. This behavior is demonstrated in the following example.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 3
         y = 1
@@ -123,10 +123,8 @@ class SemiAdder(Operation):
             qml.SemiAdder(wires["x"], wires["y"], wires["work"])
             return qml.sample(wires=wires["y"])
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[0 0]]
+    >>> print(circuit())
+    [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
     """
@@ -135,13 +133,15 @@ class SemiAdder(Operation):
 
     resource_keys = {"num_y_wires"}
 
-    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires, id=None):
+    def __init__(
+        self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None, id=None
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
+        work_wires = Wires(work_wires if work_wires is not None else [])
 
         if work_wires:
-            work_wires = Wires(work_wires)
             if len(work_wires) < len(y_wires) - 1:
                 raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
             if work_wires.intersection(x_wires):
@@ -240,7 +240,7 @@ def _semiadder_resources(num_y_wires):
     }
 
 
-@register_resources(_semiadder_resources)
+@register_resources(_semiadder_resources, exact=False)
 def _semiadder(x_wires, y_wires, work_wires, **_):
 
     num_y_wires = len(y_wires)

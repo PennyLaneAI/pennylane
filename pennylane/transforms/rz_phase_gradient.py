@@ -14,9 +14,11 @@
 """
 A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
+
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -36,7 +38,7 @@ def _binary_repr_int(phi, precision):
 @QueuingManager.stop_recording()
 def _rz_phase_gradient(
     phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+) -> Operator:
     """Function that transforms the RZ gate to the phase gradient circuit
     The precision is implicitly defined by the length of ``angle_wires``
     Note that the global phases are collected and added as one big global phase in the main function

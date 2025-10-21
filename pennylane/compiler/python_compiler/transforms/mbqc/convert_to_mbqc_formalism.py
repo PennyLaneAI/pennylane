@@ -31,9 +31,27 @@ from ...dialects.mbqc import (
     MeasurementPlaneAttr,
     MeasurementPlaneEnum,
 )
-from ...dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
+from ...dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, GlobalPhaseOp, QubitType
 from ...pass_api import compiler_transform
 from .graph_state_utils import generate_adj_matrix, get_num_aux_wires
+
+_PAULIS = {
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Identity",
+}
+
+_MBQC_ONE_QUBIT_GATES = {
+    "Hadamard",
+    "S",
+    "RZ",
+    "RotXZX",
+}
+
+_MBQC_TWO_QUBIT_GATES = {
+    "CNOT",
+}
 
 
 @dataclass(frozen=True)
@@ -482,7 +500,7 @@ class ConvertToMBQCFormalismPattern(
         tgt_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[1], op, rewriter)
         z_parity = self._parity_check([m9, m11, m13], op, rewriter)
         tgt_aux_qubit = self._insert_cond_byproduct_op(
-            x_parity, "PauliZ", tgt_aux_qubit, op, rewriter
+            z_parity, "PauliZ", tgt_aux_qubit, op, rewriter
         )
 
         return ctrl_aux_qubit, tgt_aux_qubit
@@ -555,12 +573,7 @@ class ConvertToMBQCFormalismPattern(
             two_wire_adj_matrix_op = None
             for op in region.ops:
                 # TODOs: Refactor the code below in this loop into separate functions
-                if isinstance(op, CustomOp) and op.gate_name.data in [
-                    "Hadamard",
-                    "S",
-                    "RZ",
-                    "RotXZX",
-                ]:
+                if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_ONE_QUBIT_GATES:
                     # Allocate auxiliary qubits and entangle them
                     if one_wire_adj_matrix_op is None:
                         adj_matrix = generate_adj_matrix(op.gate_name.data)
@@ -602,7 +615,7 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
                     # Remove op operation
                     rewriter.erase_op(op)
-                elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
+                elif isinstance(op, CustomOp) and op.gate_name.data in _MBQC_TWO_QUBIT_GATES:
                     # Allocate auxiliary qubits and entangle them
                     if two_wire_adj_matrix_op is None:
                         adj_matrix = generate_adj_matrix(op.gate_name.data)
@@ -649,6 +662,10 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[15])
                     # Remove op operation
                     rewriter.erase_op(op)
+                elif isinstance(op, GlobalPhaseOp) or (
+                    isinstance(op, CustomOp) and op.gate_name.data in _PAULIS
+                ):
+                    continue
                 elif isinstance(op, CustomOp):
                     raise NotImplementedError(
                         f"{op.gate_name.data} cannot be converted to the MBQC formalism."
