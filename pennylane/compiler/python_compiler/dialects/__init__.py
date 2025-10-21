@@ -14,12 +14,11 @@
 
 """This submodule contains xDSL dialects for the Python compiler."""
 
+from xdsl_jax.dialects.stablehlo import StableHLO
 from .catalyst import Catalyst
 from .mbqc import MBQC
 from .quantum import Quantum
 from .qec import QEC
-from .stablehlo import StableHLO
 from .transform import Transform
-
 
 __all__ = ["Catalyst", "MBQC", "Quantum", "QEC", "StableHLO", "Transform"]
