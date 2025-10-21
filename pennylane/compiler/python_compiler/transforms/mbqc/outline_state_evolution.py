@@ -165,6 +165,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # the IR and the last insert_op will be set as the `terminal_boundary_op`.`
         qubit_to_reg_idx = {}
         terminal_boundary_op = None
+        num_insert_ops = 0
 
         for op in func_op.body.ops:
             match op:
@@ -185,10 +186,19 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         qubit_to_reg_idx[op.results[i]] = qubit_to_reg_idx[qb]
                         del qubit_to_reg_idx[qb]
                 case quantum.InsertOp():
-                    if op.idx_attr and qubit_to_reg_idx[op.qubit] is not op.idx_attr:
-                        raise ValueError("op.qubit should be op.idx_attr.")
-                    del qubit_to_reg_idx[op.qubit]
-                    current_reg = op.out_qreg
+                    if not terminal_boundary_op:
+                        if op.idx_attr and qubit_to_reg_idx[op.qubit] is not op.idx_attr:
+                            raise ValueError("op.qubit should be op.idx_attr.")
+                        del qubit_to_reg_idx[op.qubit]
+                        current_reg = op.out_qreg
+                    elif num_insert_ops >= 0:
+                        new_insert_op = quantum.InsertOp(current_reg, op.idx, op.qubit)
+                        rewriter.insertion_point = InsertPoint.before(op)
+                        rewriter.insert(new_insert_op)
+                        current_reg = new_insert_op.out_qreg
+                        rewriter.replace_all_uses_with(op.out_qreg, current_reg)
+                        rewriter.erase_op(op)
+                        num_insert_ops += 1
 
                 case _ if (
                     isinstance(
