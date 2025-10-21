@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* A new decomposition has been added to Controlled :class:`~.SemiAdder`. It is an efficient method
-  to control this operator instead of controlling all gates in the decomposition.
+* A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
+  which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
 <h3>Improvements 🛠</h3>
