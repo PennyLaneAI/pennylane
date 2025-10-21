@@ -524,6 +524,14 @@ def handle_for_loop(
 @PlxprInterpreter.register_primitive(cond_prim)
 def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle a cond primitive."""
+    # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+    args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+    consts_slices = (
+        tuple(slice(*s) for s in consts_slices)
+        if consts_slices and isinstance(consts_slices[0], tuple)
+        else consts_slices
+    )
+
     args = invals[args_slice]
 
     new_jaxprs = []
@@ -539,14 +547,18 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
         new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
         end_const_ind += len(new_jaxpr.consts)
 
+    # Convert slices to hashable tuples for JAX 0.7+ when binding
+    new_consts_slices_hashable = tuple((s.start, s.stop, s.step) for s in new_consts_slices)
     new_args_slice = slice(end_const_ind, None)
+    new_args_slice_hashable = (new_args_slice.start, new_args_slice.stop, new_args_slice.step)
+
     return cond_prim.bind(
         *invals[: len(jaxpr_branches)],
         *new_consts,
         *args,
-        jaxpr_branches=new_jaxprs,
-        consts_slices=new_consts_slices,
-        args_slice=new_args_slice,
+        jaxpr_branches=tuple(new_jaxprs),
+        consts_slices=new_consts_slices_hashable,
+        args_slice=new_args_slice_hashable,
     )
 
 
@@ -683,6 +695,14 @@ FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 @FlattenedInterpreter.register_primitive(cond_prim)
 def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
+    # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+    args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+    consts_slices = (
+        tuple(slice(*s) for s in consts_slices)
+        if consts_slices and isinstance(consts_slices[0], tuple)
+        else consts_slices
+    )
+
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
     args = invals[args_slice]
