@@ -80,7 +80,6 @@ class TestCancelInversesInterpreter:
         ]
 
         assert ops == expected_ops
-        assert False
 
     def test_cancel_inverses_true_inverses(self):
         """Test that operations that are inverses with the same wires are cancelled."""
