@@ -25,7 +25,7 @@ from pennylane.wires import Wires
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
 
-pytestmark = [pytest.mark.capture]
+pytestmark = [pytest.mark.capture, pytest.mark.jax]
 
 
 @pytest.mark.parametrize("postselect", [None, 0, 1])
