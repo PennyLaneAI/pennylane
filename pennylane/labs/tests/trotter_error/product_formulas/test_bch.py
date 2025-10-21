@@ -134,7 +134,7 @@ def test_sixth_order(fragments, delta):
     h_y3_hhh = -2.76996721648715 * 1e-6
     h_y3_y3 = -1.0079627372761 * 1e-5
     h_y5_h = 5.28014551264278 * 1e-5
-    y7 = 0.000134083888042369
+    y7 = 1.34083888042369 * 1e-4
 
     frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
     frag_coeffs = [1 / 2] * len(frag_labels)
