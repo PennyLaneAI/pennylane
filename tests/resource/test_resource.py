@@ -40,7 +40,7 @@ from pennylane.resource.resource import (
 )
 from pennylane.tape import QuantumScript
 
-DEPRECATED_CLASSES_FUNCTIONS = (
+_DEPRECATED_CLASSES_FUNCTIONS = (
     "estimate_shots",
     "estimate_error",
     "FirstQuantization",
@@ -48,7 +48,7 @@ DEPRECATED_CLASSES_FUNCTIONS = (
 )
 
 
-@pytest.mark.parametrize("item", DEPRECATED_CLASSES_FUNCTIONS)
+@pytest.mark.parametrize("item", _DEPRECATED_CLASSES_FUNCTIONS)
 def test_deprecated_items(item):
     """Test that accessing the items from the resource module raises
     a deprecation error."""
