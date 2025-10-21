@@ -182,6 +182,7 @@ class LegacyDeviceFacade(Device):
         _config_filepath = getattr(self._device, "config_filepath", None)
         if _config_filepath:
             self.capabilities = DeviceCapabilities.from_toml_file(_config_filepath)
+            self.config_filepath = _config_filepath
 
         if self._device.shots:
             warnings.warn(
