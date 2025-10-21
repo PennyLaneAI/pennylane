@@ -241,6 +241,10 @@ def _get_while_loop_qfunc_prim():
         cond_slice,
         args_slice,
     ):
+        # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+        body_slice = slice(*body_slice) if isinstance(body_slice, tuple) else body_slice
+        cond_slice = slice(*cond_slice) if isinstance(cond_slice, tuple) else cond_slice
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
 
         jaxpr_consts_body = args[body_slice]
         jaxpr_consts_cond = args[cond_slice]
@@ -254,6 +258,8 @@ def _get_while_loop_qfunc_prim():
 
     @while_loop_prim.def_abstract_eval
     def _(*args, args_slice, **__):
+        # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
         return args[args_slice]
 
     return while_loop_prim
@@ -342,15 +348,20 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         cond_consts = slice(body_consts.stop, body_consts.stop + len(jaxpr_cond_fn.consts))
         args_slice = slice(cond_consts.stop, None)
 
+        # Convert slices to hashable tuples for JAX 0.7+
+        body_consts_hashable = (body_consts.start, body_consts.stop, body_consts.step)
+        cond_consts_hashable = (cond_consts.start, cond_consts.stop, cond_consts.step)
+        args_slice_hashable = (args_slice.start, args_slice.stop, args_slice.step)
+
         results = while_loop_prim.bind(
             *jaxpr_body_fn.consts,
             *jaxpr_cond_fn.consts,
             *all_args,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
-            body_slice=body_consts,
-            cond_slice=cond_consts,
-            args_slice=args_slice,
+            body_slice=body_consts_hashable,
+            cond_slice=cond_consts_hashable,
+            args_slice=args_slice_hashable,
         )
 
         results = results[-out_tree.num_leaves :]

@@ -281,6 +281,14 @@ def _get_for_loop_qfunc_prim():
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
     def _(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice):
+        # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+        consts_slice = slice(*consts_slice) if isinstance(consts_slice, tuple) else consts_slice
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+        abstract_shapes_slice = (
+            slice(*abstract_shapes_slice)
+            if isinstance(abstract_shapes_slice, tuple)
+            else abstract_shapes_slice
+        )
 
         consts = args[consts_slice]
         init_state = args[args_slice]
@@ -297,6 +305,13 @@ def _get_for_loop_qfunc_prim():
     # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
     def _(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+        # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+        abstract_shapes_slice = (
+            slice(*abstract_shapes_slice)
+            if isinstance(abstract_shapes_slice, tuple)
+            else abstract_shapes_slice
+        )
         return args[abstract_shapes_slice] + args[args_slice]
 
     return for_loop_prim
@@ -403,6 +418,15 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
         args_slice = slice(abstract_shapes_slice.stop, None)
 
+        # Convert slices to hashable tuples for JAX 0.7+
+        consts_slice_hashable = (consts_slice.start, consts_slice.stop, consts_slice.step)
+        abstract_shapes_slice_hashable = (
+            abstract_shapes_slice.start,
+            abstract_shapes_slice.stop,
+            abstract_shapes_slice.step,
+        )
+        args_slice_hashable = (args_slice.start, args_slice.stop, args_slice.step)
+
         results = for_loop_prim.bind(
             self.start,
             self.stop,
@@ -411,9 +435,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             *abstract_shapes,
             *flat_args,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
-            consts_slice=consts_slice,
-            args_slice=args_slice,
-            abstract_shapes_slice=abstract_shapes_slice,
+            consts_slice=consts_slice_hashable,
+            args_slice=args_slice_hashable,
+            abstract_shapes_slice=abstract_shapes_slice_hashable,
         )
         results = results[-out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(out_tree, results)

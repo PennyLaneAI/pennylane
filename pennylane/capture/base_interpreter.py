@@ -497,6 +497,15 @@ def handle_for_loop(
     self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle a for loop primitive."""
+    # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+    consts_slice = slice(*consts_slice) if isinstance(consts_slice, tuple) else consts_slice
+    args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+    abstract_shapes_slice = (
+        slice(*abstract_shapes_slice)
+        if isinstance(abstract_shapes_slice, tuple)
+        else abstract_shapes_slice
+    )
+
     consts = args[consts_slice]
     init_state = args[args_slice]
     abstract_shapes = args[abstract_shapes_slice]
@@ -507,6 +516,16 @@ def handle_for_loop(
     consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
     abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
     args_slice = slice(abstract_shapes_slice.stop, None)
+
+    # Convert slices to hashable tuples for JAX 0.7+ when binding
+    consts_slice_hashable = (consts_slice.start, consts_slice.stop, consts_slice.step)
+    abstract_shapes_slice_hashable = (
+        abstract_shapes_slice.start,
+        abstract_shapes_slice.stop,
+        abstract_shapes_slice.step,
+    )
+    args_slice_hashable = (args_slice.start, args_slice.stop, args_slice.step)
+
     return for_loop_prim.bind(
         start,
         stop,
@@ -515,9 +534,9 @@ def handle_for_loop(
         *abstract_shapes,
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
-        consts_slice=consts_slice,
-        args_slice=args_slice,
-        abstract_shapes_slice=abstract_shapes_slice,
+        consts_slice=consts_slice_hashable,
+        args_slice=args_slice_hashable,
+        abstract_shapes_slice=abstract_shapes_slice_hashable,
     )
 
 
@@ -573,6 +592,11 @@ def handle_while_loop(
     args_slice,
 ):
     """Handle a while loop primitive."""
+    # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+    body_slice = slice(*body_slice) if isinstance(body_slice, tuple) else body_slice
+    cond_slice = slice(*cond_slice) if isinstance(cond_slice, tuple) else cond_slice
+    args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
@@ -584,15 +608,20 @@ def handle_while_loop(
     cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
     args_slice = slice(cond_consts.stop, None)
 
+    # Convert slices to hashable tuples for JAX 0.7+ when binding
+    body_consts_hashable = (body_consts.start, body_consts.stop, body_consts.step)
+    cond_consts_hashable = (cond_consts.start, cond_consts.stop, cond_consts.step)
+    args_slice_hashable = (args_slice.start, args_slice.stop, args_slice.step)
+
     return while_loop_prim.bind(
         *new_jaxpr_body_fn.consts,
         *new_jaxpr_cond_fn.consts,
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
         jaxpr_cond_fn=new_jaxpr_cond_fn.jaxpr,
-        body_slice=body_consts,
-        cond_slice=cond_consts,
-        args_slice=args_slice,
+        body_slice=body_consts_hashable,
+        cond_slice=cond_consts_hashable,
+        args_slice=args_slice_hashable,
     )
 
 
@@ -678,6 +707,11 @@ def flatten_while_loop(
     args_slice,
 ):
     """Handle the while loop by a flattened python strategy."""
+    # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+    body_slice = slice(*body_slice) if isinstance(body_slice, tuple) else body_slice
+    cond_slice = slice(*cond_slice) if isinstance(cond_slice, tuple) else cond_slice
+    args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
@@ -726,6 +760,15 @@ def flattened_for(
     self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle the for loop by a flattened python strategy."""
+    # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+    consts_slice = slice(*consts_slice) if isinstance(consts_slice, tuple) else consts_slice
+    args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+    abstract_shapes_slice = (
+        slice(*abstract_shapes_slice)
+        if isinstance(abstract_shapes_slice, tuple)
+        else abstract_shapes_slice
+    )
+
     consts = invals[consts_slice]
     init_state = invals[args_slice]
     abstract_shapes = invals[abstract_shapes_slice]
