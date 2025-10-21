@@ -203,7 +203,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     and not terminal_boundary_op
                 ):
                     current_reg, terminal_boundary_op = self._set_up_terminal_boundary_op(
-                        current_reg, qubit_to_reg_idx, terminal_boundary_op, op, rewriter
+                        current_reg, terminal_boundary_op, qubit_to_reg_idx, op, rewriter
                     )
 
                 case _:
@@ -288,9 +288,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         if not (alloc_op and terminal_boundary_op):
             raise RuntimeError("Could not find both alloc_op and terminal_boundary_op")
 
-        if alloc_op.parent_block() != terminal_boundary_op.parent_block():
-            raise RuntimeError("alloc_op and terminal_boundary_op are not in the same block")
-
         return alloc_op, terminal_boundary_op
 
     def _collect_operations_in_range(self, begin_op, end_op):
@@ -320,7 +317,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
     def _collect_required_inputs_for_state_evolution_func(
         self, ops: list[Operation]
     ) -> list[SSAValue]:
-        """Collect required inputs for the state evolution funcOp with a given list of operations."""
+        """Collect required inputs for the state evolution funcOp with a given list of operations.
+        Note that this method does not intent to keep the order of required input SSAValues.
+        """
         ops_walk = list(chain(*[op.walk() for op in ops]))
 
         # a set records the ssa values defined by the ops list
@@ -347,7 +346,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         self, ops: list[Operation], terminal_op: Operation
     ) -> list[SSAValue]:
         """Get required outputs for the state evolution funcOp with a given list of operations.
-        Noted: It's only consdider the values that are defined in the operations and required by
+        Noted: It only consdiders the values that are defined in the operations and required by
         the operations after the terminal operation.
         """
         ops_walk = list(chain(*[op.walk() for op in ops]))
