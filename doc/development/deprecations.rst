@@ -11,6 +11,12 @@ Pending deprecations
 
 * The :prop:``pennylane.operation.Operator.is_hermitian`` property is deprecated. Instead, please use the
   :func:`pennylane.is_hermitian` function to check for hermiticity.
+  
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+
+* `argnum` has been renamed `argnums` in `qml.grad`, `qml.jacobian`, `qml.jvp`, and `qml.vjp`
+  to better match catalyst and jax.
 
   - Deprecated in v0.44
   - Will be removed in v0.45

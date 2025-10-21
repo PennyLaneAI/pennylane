@@ -148,14 +148,22 @@ def test_hybrid_capture_parametrization():
         np.array([0]),
     ),
 )
-def test_different_wires(w, as_kwarg):
+@pytest.mark.parametrize("autograph", (True, False))
+def test_different_wires(w, as_kwarg, autograph):
     """Test that wires can be passed positionally and as a keyword in a variety of different types."""
 
-    def qfunc():
-        if as_kwarg:
+    if as_kwarg:
+
+        def qfunc():
             qml.X(wires=w)
-        else:
+
+    else:
+
+        def qfunc():
             qml.X(w)
+
+    if autograph:
+        qfunc = qml.capture.run_autograph(qfunc)
 
     jaxpr = jax.make_jaxpr(qfunc)()
 

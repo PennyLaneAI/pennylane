@@ -39,10 +39,10 @@ from xdsl.dialects.builtin import (
     TensorType,
     i1,
 )
-from xdsl.dialects.stablehlo import TokenType
 from xdsl.irdl import eq, irdl_attr_definition
 from xdsl.irdl.attributes import EqAttrConstraint, ParamAttrConstraint
 from xdsl.irdl.constraints import IntSetConstraint
+from xdsl_jax.dialects.stablehlo import TokenType
 
 from pennylane.compiler.python_compiler.xdsl_extras.constraints import (
     NestedTupleOfConstraint,

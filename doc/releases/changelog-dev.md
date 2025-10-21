@@ -14,6 +14,8 @@
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
+* Wires can be specified via `range` with program capture and autograph.
+
 <h3>Breaking changes 💔</h3>
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
@@ -98,6 +100,10 @@
 * The :prop:``pennylane.operation.Operator.is_hermitian`` property is deprecated. Instead, please use the
   :func:`pennylane.is_hermitian` function to check for hermiticity.
   [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
+  
+* `argnum` has been renamed `argnums` for `qml.grad`, `qml.jacobian`, `qml.jvp` and `qml.vjp`.
+  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
@@ -120,6 +126,7 @@
   field in the TOML file is used as the source of truth.
   [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
+  [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
 <h3>Documentation 📝</h3>
 
