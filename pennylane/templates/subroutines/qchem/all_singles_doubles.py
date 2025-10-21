@@ -116,7 +116,7 @@ class AllSinglesDoubles(Operation):
 
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
-                qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+                qml.templates.AllSinglesDoubles(weights, hf_state, wires, singles, doubles)
                 return qml.expval(qml.Z(0))
 
             # Evaluate the QNode for a given set of parameters
@@ -128,7 +128,7 @@ class AllSinglesDoubles(Operation):
 
     resource_keys = {"num_singles", "num_doubles", "num_wires"}
 
-    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
+    def __init__(self, weights, hf_state, wires, singles=None, doubles=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
@@ -190,7 +190,7 @@ class AllSinglesDoubles(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, hf_state, singles, doubles
+        weights, hf_state, wires, singles, doubles
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -204,14 +204,13 @@ class AllSinglesDoubles(Operation):
             weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
                 angles entering the :class:`~.pennylane.SingleExcitation` and
                 :class:`~.pennylane.DoubleExcitation` operations, in that order
-            wires (Any or Iterable[Any]): wires that the operator acts on
             hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 Hartree-Fock state. ``hf_state`` is used to initialize the wires.
             singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
                 the :class:`~.pennylane.SingleExcitation` operations act on
             doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
                 the :class:`~.pennylane.DoubleExcitation` operations act on
-
+            wires (Any or Iterable[Any]): wires that the operator acts on
         Returns:
             list[.Operator]: decomposition of the operator
         """
@@ -265,7 +264,7 @@ def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
 
 
 @register_resources(_all_singles_doubles_resouces)
-def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles):
+def _all_singles_doubles_decomposition(weights, hf_state, wires, singles, doubles):
     BasisState(hf_state, wires=wires)
 
     if has_jax and capture.enabled():

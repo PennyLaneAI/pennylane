@@ -81,7 +81,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         @qml.qnode(dev)
         def circuit(weights, hf_state, singles, doubles):
-            qml.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+            qml.AllSinglesDoubles(weights, hf_state, wires, singles, doubles)
             return qml.expval(qml.Z(0))
 
         # Evaluate the QNode for a given set of parameters
