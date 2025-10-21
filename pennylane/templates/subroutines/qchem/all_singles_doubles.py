@@ -275,7 +275,7 @@ def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, double
     def doubles_loop(i):
         DoubleExcitation(weights[len(singles) + i], wires=doubles[i])
 
-    doubles_loop()
+    doubles_loop()  # pylint: disable=no-value-for-parameter
 
     if has_jax and capture.enabled():
         singles = jnp.array(singles)
@@ -284,7 +284,7 @@ def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, double
     def singles_loop(j):
         SingleExcitation(weights[j], wires=singles[j])
 
-    singles_loop()
+    singles_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(AllSinglesDoubles, _all_singles_doubles_decomposition)
