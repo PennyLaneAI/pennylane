@@ -38,7 +38,7 @@ def zyz_rotation_angles(U, return_global_phase=False):
 
     Returns:
         tuple: The rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
-            global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` if ``return_global_phase=True``.
 
     """
 
@@ -73,7 +73,7 @@ def xyx_rotation_angles(U, return_global_phase=False):
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-            global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` if ``return_global_phase=True``.
 
     """
 
@@ -109,7 +109,7 @@ def xzx_rotation_angles(U, return_global_phase=False):
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-            global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` if ``return_global_phase=True``.
 
     """
 
@@ -158,7 +158,7 @@ def zxz_rotation_angles(U, return_global_phase=False):
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-            global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` if ``return_global_phase=True``.
 
     """
 
@@ -575,6 +575,15 @@ def _left_givens(indices, unitary, j, real_valued):
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
+    Args:
+        unitary (tensor): unitary matrix on which decomposition will be performed
+
+    Returns:
+        (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices
+
+    Raises:
+        ValueError: if the provided matrix is not square.
+
     This decomposition is based on the construction scheme given in `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ ,
     which allows one to write any :math:`N\times N` unitary matrix :math:`U` as:
 
@@ -628,15 +637,6 @@ def givens_decomposition(unitary):
     (tensor([[ 0.36147547+0.73779454j, -0.57008306-0.j        ],
             [ 0.2508207 +0.51194108j,  0.82158706-0.j        ]], requires_grad=True),
     (0, 1))]
-
-    Args:
-        unitary (tensor): unitary matrix on which decomposition will be performed
-
-    Returns:
-        (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices
-
-    Raises:
-        ValueError: if the provided matrix is not square.
 
     .. details::
         :title: Theory and Pseudocode

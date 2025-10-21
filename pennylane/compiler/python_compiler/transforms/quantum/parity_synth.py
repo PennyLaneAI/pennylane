@@ -140,31 +140,38 @@ def _loop_body_parity_network_synth(
         ``circuit`` representation is grown by one entry, corresponding to that parity.
 
     """
-    parity_idx = np.argmin(np.sum(P, axis=0))
-    parity = P[:, parity_idx]
-    graph_nodes = list(map(int, np.where(parity)[0]))
+    parity_idx = np.argmin(np.sum(P, axis=0))  # ╮ Line 3
+    parity = P[:, parity_idx]  # ╯
+    graph_nodes = list(map(int, np.where(parity)[0]))  # Line 5, vertices
     if len(graph_nodes) == 1:
         # The parity already has Hamming weight 1, so we don't need any modifications
         # Just slice out the parity and append the parity/angle index as well as the qubit
         # on which the parity has support
-        P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
-        circuit.append((parity_idx, graph_nodes[0], []))
+        P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)  # Line 4
+        circuit.append((parity_idx, graph_nodes[0], []))  # Record parity index, qubit index, CNOTs
         return P, inv_synth_matrix, circuit
-    single_weights = np.sum(P, axis=1)
-    parity_graph = nx.DiGraph()
-    parity_graph.add_weighted_edges_from(
-        [
-            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])
-            for i, j in product(graph_nodes, repeat=2)
-            if i != j
-        ]
-    )
-    arbor = nx.minimum_spanning_arborescence(parity_graph)
+
+    # Note that there is a bug in the algorithm as written in the paper: We first want to compute
+    # the edge weights for parity_graph (G_y) and _then_ slice out `parity` from `P`.
+    single_weights = np.sum(P, axis=1)  # ╮
+    parity_graph = nx.DiGraph()  # │
+    parity_graph.add_weighted_edges_from(  # │
+        [  # │
+            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])  # │ Line 5, edges
+            for i, j in product(graph_nodes, repeat=2)  # │
+            if i != j  # │
+        ]  # │
+    )  # ╯
+    arbor = nx.minimum_spanning_arborescence(parity_graph)  # Line 6
+
+    # Find the root of the tree
     root = next(iter(node for node, degree in arbor.in_degree() if degree == 0))
-    P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
+
+    P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)  # Line 4
+    # Lines 7-10, update P and inv_synth_matrix in place
     sub_circuit = _apply_dfs_po_circuit(arbor, root, P, inv_synth_matrix)
-    circuit.append((parity_idx, root, sub_circuit))
-    return P % 2, inv_synth_matrix, circuit
+    circuit.append((parity_idx, root, sub_circuit))  # Record parity index, qubit index, CNOTs
+    return P, inv_synth_matrix, circuit
 
 
 def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivity):
@@ -214,6 +221,7 @@ def _parity_network_synth(
 
     Args:
         P (np.ndarray): Parity table to be synthesized.
+            Shape should be ``(num_wires, num_parities)``
         connectivity (nx.Graph): Connectivity to be taken into account during the synthesis.
 
     Returns:
@@ -222,24 +230,28 @@ def _parity_network_synth(
         inverse of the parity matrix implemented by the synthesized circuit.
 
     """
-    if len(P) == 0:
+    if P.shape[-1] == 0:
+        # Nothing to do if there are not parities
         return [], None
 
-    circuit = []
+    circuit = []  # Line 1 in Alg. 1
     num_wires, num_parities = P.shape
-    inv_synth_matrix = np.eye(num_wires, dtype=int)
+    # Initialize an inverse parity matrix that is updated with the CNOTs that are synthesized here.
+    inv_synth_mat = np.eye(num_wires, dtype=int)
     if connectivity is None:
+        # `num_parities` loop iterations because each loop body takes care of one parity, we just
+        # don't know which one. This makes the `for`-loop equivalent to line 2 in Alg. 1
         for _ in range(num_parities):
-            P, inv_synth_matrix, circuit = _loop_body_parity_network_synth(
-                P, inv_synth_matrix, circuit
-            )
+            P, inv_synth_mat, circuit = _loop_body_parity_network_synth(P, inv_synth_mat, circuit)
     else:
+        # `num_parities` loop iterations because each loop body takes care of one parity, we just
+        # don't know which one. This makes the `for`-loop equivalent to line 3 in Alg. 4
         for _ in range(num_parities):
-            P, inv_synth_matrix, circuit = _loop_body_parity_network_synth_con(
-                P, inv_synth_matrix, circuit, connectivity
+            P, inv_synth_mat, circuit = _loop_body_parity_network_synth_con(
+                P, inv_synth_mat, circuit, connectivity
             )
 
-    return circuit, inv_synth_matrix % 2
+    return circuit, inv_synth_mat % 2
 
 
 ### end of xDSL-agnostic part
@@ -268,6 +280,7 @@ def make_phase_polynomial(
             wire_map[op.out_qubits[0]] = control
             wire_map[op.out_qubits[1]] = target
             continue
+
         # RZ
         angle = op.operands[0]
         if getattr(op, "adjoint", False):
@@ -279,10 +292,7 @@ def make_phase_polynomial(
         parity_table.append(parity_matrix[wire].copy())  # append _current_ parity (hence the copy)
         wire_map[op.out_qubits[0]] = wire
 
-    return parity_matrix % 2, np.array(parity_table).T % 2, np.array(angles), arith_ops
-
-
-# todo: parity table reduction function (for repeated parities)
+    return parity_matrix % 2, np.array(parity_table).T % 2, angles, arith_ops
 
 
 class ParitySynthPattern(pattern_rewriter.RewritePattern):
@@ -370,11 +380,6 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         # end of operations; rewrite terminal phase polynomial
         self.rewrite_phase_polynomial(rewriter)
 
-        # Mock the rewriter to think it reached a steady state already, because re-applying
-        # ParitySynth is not useful
-        # todo: to this properly by using a different rewriter or so
-        rewriter.has_done_action = False
-
     def _match_and_rewrite_with_connectivity(self, funcOp, rewriter):
         self.global_wire_map = {}
         allocated_first_register = False
@@ -446,11 +451,6 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         print(f"After:\n   init_wire_map:{ {id(k): v for k, v in self.init_wire_map.items()}}")
         print(f"   global_wire_map:{ {id(k): v for k, v in self.global_wire_map.items()}}")
 
-        # Mock the rewriter to think it reached a steady state already, because re-applying
-        # ParitySynth is not useful
-        # todo: to this properly by using a different rewriter or so
-        rewriter.has_done_action = False
-
     @staticmethod
     def _cnot(i: int, j: int, inv_wire_map: dict[int, QubitType]):
         """Create a CNOT operator acting on the qubits that map to wires ``i`` and ``j``
@@ -508,7 +508,6 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         for op in arith_ops:
             rewriter.insert_op(op, insertion_point)
 
-        # todo: call parity table reduction function once it exists
         subcircuits, inv_network_parity_matrix = _parity_network_synth(P, self.connectivity)
         # `inv_network_parity_matrix` might be None if the parity table was empty
         if inv_network_parity_matrix is not None:
@@ -520,8 +519,7 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             for i, j in subcircuit:
                 rewriter.insert_op(self._cnot(i, j, inv_wire_map), insertion_point)
 
-            rewriter.insert_op(self._rz(phase_wire, angles[idx], inv_wire_map), insertion_point)
-            angles = np.concatenate([angles[:idx], angles[idx + 1 :]])
+            rewriter.insert_op(self._rz(phase_wire, angles.pop(idx), inv_wire_map), insertion_point)
 
         # Apply the remaining parity matrix part of the new circuit
         for i, j in rowcol_circuit:
@@ -566,11 +564,10 @@ class ParitySynthPass(passes.ModulePass):
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the ParitySynth pass."""
-        pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier(
-                [ParitySynthPattern(connectivity=self.connectivity)]
-            )
-        ).rewrite_module(module)
+        pattern = ParitySynthPattern(connectivity=self.connectivity)
+        applier = pattern_rewriter.GreedyRewritePatternApplier([pattern])
+        walker = pattern_rewriter.PatternRewriteWalker(applier, apply_recursively=False)
+        walker.rewrite_module(module)
 
 
 parity_synth_pass = compiler_transform(ParitySynthPass)

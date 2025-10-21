@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the ParitySynth transform"""
+from itertools import product
+
 import networkx as nx
+import numpy as np
 import pytest
+from numpy.testing import assert_allclose, assert_equal
 
 pytestmark = pytest.mark.external
 
@@ -26,6 +30,183 @@ from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import ParitySynthPass, parity_synth_pass
+from pennylane.compiler.python_compiler.transforms.quantum.parity_synth import (
+    _parity_network_synth,
+)
+from pennylane.transforms.intermediate_reps import phase_polynomial
+
+
+def assert_binary_matrix(matrix: np.ndarray):
+    """Check that the input matrix is two-dimensional, ``np.int64``-dtyped and
+    only contains zeros and ones.
+    """
+    if matrix.ndim != 2:
+        raise ValueError(
+            f"Expected the matrix to be two-dimensional, but got {matrix.ndim} dimensions."
+        )
+    if matrix.dtype != np.int64:
+        raise ValueError(
+            f"Expected the data type of the matrix to be np.int64, but got {matrix.dtype}."
+        )
+    if not set(matrix.flat).issubset({0, 1}):
+        raise ValueError(
+            f"Expected the entries of the matrix to be from {{0, 1}} but got {set(matrix.flat)}."
+        )
+
+
+class TestParityNetworkSynth:
+    """Tests for the synthesizing of a parity network with ``_parity_network_synth``."""
+
+    @staticmethod
+    def validate_circuit_entry(entry, exp_len=None):
+        """Validate that an object is a three-tuple consisting of an two integers and a list
+        of two-tuples with integers in them, like ``(1, 4, [(0, 2), (1, 0)])``. This constitutes
+        the format for circuit entries in the output of ``_parity_network_synth``."""
+        assert isinstance(entry, tuple) and len(entry) == 3
+        parity_idx, qubit_idx, cnot_circuit = entry
+        assert isinstance(parity_idx, np.int64)
+        assert isinstance(qubit_idx, int)
+        assert isinstance(cnot_circuit, list)
+        if exp_len is not None:
+            assert len(cnot_circuit) == exp_len
+        assert all(isinstance(_cnot, tuple) and len(_cnot) == 2 for _cnot in cnot_circuit)
+
+    def test_empty_parity_table(self):
+        """Test that an empty parity table results in an empty circuit."""
+        P = np.ones(shape=(10, 0), dtype=int)
+        circuit, inv_synth_matrix = _parity_network_synth(P)
+        assert not circuit
+        assert inv_synth_matrix is None
+
+    @pytest.mark.parametrize("n, idx", [(1, 0), (2, 0), (2, 1), (3, 2), (10, 5)])
+    def test_single_unit_vector_parity(self, n, idx):
+        """Test that a single unit vector-parity is synthesized into no CNOTs and a single RZ."""
+        I = np.eye(n, dtype=int)
+        P = I[:, idx : idx + 1]
+        circuit, inv_synth_matrix = _parity_network_synth(P)
+        assert isinstance(circuit, list) and len(circuit) == 1
+        self.validate_circuit_entry(circuit[0], exp_len=0)
+        assert_binary_matrix(inv_synth_matrix)
+        assert_equal(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize(
+        "n, ids",
+        [
+            (1, [0]),
+            (2, [1, 0]),
+            (2, [0, 1]),
+            (3, [2, 0]),
+            (3, [0, 1]),
+            (5, [0, 4]),
+            (10, [5, 4, 9, 0, 2, 3]),
+        ],
+    )
+    def test_multiple_unit_vector_parities(self, n, ids):
+        """Test that multiple unit vector-parities are synthesized into no CNOTs and a
+        series of RZ gates."""
+        I = np.eye(n, dtype=int)
+        P = np.concatenate([I[:, idx : idx + 1] for idx in ids], axis=1)
+        circuit, inv_synth_matrix = _parity_network_synth(P)
+        assert isinstance(circuit, list) and len(circuit) == len(ids)
+        for entry in circuit:
+            self.validate_circuit_entry(entry, exp_len=0)
+        assert_binary_matrix(inv_synth_matrix)
+        assert_equal(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize(
+        "parity",
+        [
+            [1, 0, 0, 1, 0, 1],
+            [1, 1, 1],
+            [0, 1, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1],
+        ],
+    )
+    def test_single_non_unit_parity(self, parity):
+        """Test that a single non-unit vector-parity ``p`` is synthesized into
+        ``|p|-1`` CNOTs and a single RZ."""
+        P = np.array([parity]).T
+        circuit, inv_synth_matrix = _parity_network_synth(P)
+        assert isinstance(circuit, list) and len(circuit) == 1
+        self.validate_circuit_entry(circuit[0], exp_len=np.sum(P) - 1)
+        I = np.eye(len(parity), dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize(
+        "parities, exp_lens",
+        [
+            ([[1, 0, 0, 1, 0, 1], [0, 0, 1, 1, 0, 0], [0, 0, 1, 1, 0, 0]], (1, 0, 2)),
+            ([[1, 1, 1], [0, 1, 1], [1, 1, 1]], (1, 1, 0)),
+            ([[0, 1, 1, 1, 0, 0, 0, 1, 1], [0, 1, 1, 1, 0, 0, 0, 1, 1]], (4, 0)),
+            ([[1, 1], [1, 1], [0, 1], [1, 0], [1, 0], [0, 1]], (0, 0, 0, 0, 1, 0)),
+            (
+                [[1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1]],
+                (1, 0, 0),
+            ),
+        ],
+    )
+    def test_with_repeated_parities(self, parities, exp_lens):
+        """Test that repeated (non-unit vector-)parities are synthesized in sequence and
+        require no CNOT between their RZ gates."""
+        P = np.array(parities).T
+        circuit, inv_synth_matrix = _parity_network_synth(P)
+        assert isinstance(circuit, list) and len(circuit) == len(parities)
+        for entry, exp_len in zip(circuit, exp_lens, strict=True):
+            self.validate_circuit_entry(entry, exp_len=exp_len)
+        I = np.eye(len(parities[0]), dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize("n, seed", [(2, 851), (3, 231), (4, 8241), (5, 214)])
+    @pytest.mark.parametrize("num_parities", (1, 2, 3, 10, 20))
+    def test_roundtrip(self, num_parities, n, seed):
+        """Test that the parity table of a randomly sampled CNOT+RZ circuit is synthesized
+        into a new CNOT+RZ circuit with the same parities, and that the inverse of the
+        parity matrix of the new circuit is reported correctly."""
+        # pylint: disable=unbalanced-tuple-unpacking
+
+        np.random.seed(seed)  # todo: proper seeding
+        # Make all cnot ops
+        all_cnots = [qml.CNOT((i, j)) for i, j in product(range(n), repeat=2) if i != j]
+        # Sample random CNOTs (by index into above list) and rotation angles
+        cnots = [
+            np.random.choice(len(all_cnots), size=n, replace=True) for _ in range(num_parities)
+        ]
+        thetas = np.random.random(num_parities)
+        # Make PL circuit
+        circuit = sum(
+            [
+                [all_cnots[i] for i in sub_circuit] + [qml.RZ(x, j % n)]
+                for j, (sub_circuit, x) in enumerate(zip(cnots, thetas, strict=True))
+            ],
+            start=[],
+        )
+        # Compute IR
+        _, P, angles = phase_polynomial(qml.tape.QuantumScript(circuit), wire_order=range(n))
+
+        angles_ = list(angles)
+        # Synthesize parity network and compute new PL circuit from it
+        new_circuit, inv_parity_matrix = _parity_network_synth(P)
+        new_circuit = sum(
+            [
+                [qml.CNOT(_cnot) for _cnot in sub_circuit]
+                + [qml.RZ(angles_.pop(angle_idx), qubit_idx)]
+                for angle_idx, qubit_idx, sub_circuit in new_circuit
+            ],
+            start=[],
+        )
+        # Compute IR of new PL circuit
+        new_parity_matrix, new_P, new_angles = phase_polynomial(
+            qml.tape.QuantumScript(new_circuit), wire_order=range(n)
+        )
+        # Compare phase parities and make sure that the inv_parity_matrix is valid
+        assert_allclose(new_P @ new_angles, P @ angles)
+        assert_binary_matrix(inv_parity_matrix)
+        assert_equal((new_parity_matrix @ inv_parity_matrix) % 2, np.eye(n, dtype=int))
 
 
 def translate_program_to_xdsl(program):
