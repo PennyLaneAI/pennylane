@@ -106,16 +106,20 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
     """
     # pylint: disable=import-outside-toplevel
     import pyzx
+    import quizx
 
-    zx_graph = to_zx(tape)
+    quizx_graph = to_zx(tape)
 
-    pyzx.hsimplify.from_hypergraph_form(zx_graph)
-    pyzx.full_reduce(zx_graph)
+    pyzx.hsimplify.from_hypergraph_form(quizx_graph)
+    # print(type(pyzx_graph))
+    # quizx_graph = pyzx_graph.to_graph(backend="quizx-vec")
+    quizx.full_simp(quizx_graph)
 
-    zx_circ = pyzx.extract_circuit(zx_graph)
-    zx_circ = pyzx.basic_optimization(zx_circ.to_basic_gates())
+    quizx_circuit = quizx.extract_circuit(quizx_graph)
+    pyzx_graph = quizx_circuit.to_graph()
+    # pyzx_circuit = pyzx.basic_optimization(quizx_circuit.to_graph().to_basic_gates())
 
-    qscript = from_zx(zx_circ.to_graph())
+    qscript = from_zx(pyzx_graph)
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):

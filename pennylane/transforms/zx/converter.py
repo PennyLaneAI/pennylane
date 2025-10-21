@@ -360,7 +360,7 @@ def _to_zx_transform(
 
     def processing_fn(res):
         # Create the graph, a qubit mapper, the classical mapper stays empty as PennyLane does not support classical bits.
-        graph = Graph(None)
+        graph = Graph("quizx-vec")
         q_mapper = TargetMapper()
         c_mapper = TargetMapper()
 
