@@ -1,5 +1,3 @@
-:orphan:
-
 # Release 0.44.0-dev (development release)
 
 <h3>New features since last release</h3>
@@ -112,6 +110,9 @@
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
+
+* Update versions for `pylint`, `isort` and `black` in `format.yml`
+  [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
