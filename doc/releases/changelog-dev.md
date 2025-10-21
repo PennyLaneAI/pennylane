@@ -11,7 +11,7 @@
   more powerful, because it can cancel larger blocks of inverse gates without having to scan
   the circuit from scratch. For backwards compatibility, the default is ``iterative=False``. Unless
   you run into performance issues, it is recommended to set ``iterative=True``.
-  [(#8___)](https://github.com/PennyLaneAI/pennylane/pull/8___)
+  [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
@@ -20,6 +20,8 @@
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
+
+* Wires can be specified via `range` with program capture and autograph.
 
 <h3>Breaking changes 💔</h3>
 
@@ -102,6 +104,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `argnum` has been renamed `argnums` for `qml.grad`, `qml.jacobian`, `qml.jvp` and `qml.vjp`.
+  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
+
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary.
@@ -123,6 +129,7 @@
   field in the TOML file is used as the source of truth.
   [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
+  [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
 <h3>Documentation 📝</h3>
 
