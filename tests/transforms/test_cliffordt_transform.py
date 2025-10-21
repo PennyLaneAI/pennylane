@@ -749,5 +749,5 @@ class TestCatalyst:
         dev = qml.device("lightning.qubit", wires=4)
         qnode_cir = qml.qnode(dev)(circuit_7)
         decomp_cir = clifford_t_decomposition(qnode_cir, method="sk")
-        with pytest.raises(RuntimeError, match="Solovay-Kitaev decomposition"):
+        with pytest.raises(RuntimeError, match=r"Solovay-Kitaev decomposition"):
             _ = qml.qjit(decomp_cir)()

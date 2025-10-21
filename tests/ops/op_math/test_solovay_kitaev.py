@@ -224,3 +224,21 @@ def test_exception():
         match=r"Operator must be a single qubit operation",
     ):
         sk_decomposition(op, epsilon=1e-4, max_depth=1)
+
+
+@pytest.mark.catalyst
+def test_exception_with_qjit_jit():
+    """Test operation wire exception in Solovay-Kitaev"""
+    pytest.importorskip("catalyst")
+    pytest.importorskip("jax")
+
+    import jax.numpy as jnp
+    from catalyst import qjit
+    from jax import jit
+
+    op = qml.RZ(jnp.array(1.0), wires=[1])
+    with pytest.raises(RuntimeError, match=r"Solovay-Kitaev decomposition is not supported"):
+        qjit(sk_decomposition)(op, epsilon=1e-4, max_depth=1)
+
+    with pytest.raises(RuntimeError, match=r"Solovay-Kitaev decomposition is not supported"):
+        jit(sk_decomposition)(op, epsilon=1e-4, max_depth=1)
