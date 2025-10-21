@@ -114,8 +114,11 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     mapped_func = partial(func, **kwargs)
 
     _vjp = jax.vjp(mapped_func, *args)[1]
-    if _vjp.args[0].args != ((),):
-        return False
+
+    # NOTE: in 0.7.1 JAX changed the internal structure of the VJP object.
+    # Check the VJP structure to determine independence
+    # In JAX, if the function is independent, the first element of the
+    # first tuple in args[0].func.args[0] will be None
     if _vjp.args[0].func.args[0][0][0] is not None:
         return False
 
