@@ -18,13 +18,14 @@ Implements the pauli measurement.
 import uuid
 from functools import lru_cache
 
+from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
 
-_VALID_PAULI_CHARS = "IXYZ"
+_VALID_PAULI_CHARS = "XYZ"
 
 
 class PauliMeasure(Operator):
@@ -42,7 +43,7 @@ class PauliMeasure(Operator):
         if not all(c in _VALID_PAULI_CHARS for c in pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that '
-                "are not allowed. Allowed characters are I, X, Y and Z."
+                "are not allowed. Allowed characters are X, Y and Z."
             )
 
         wires = Wires(wires)
@@ -102,7 +103,7 @@ def _create_pauli_measure_primitive():
     pauli_measure_p = QmlPrimitive("pauli_measure")
 
     @pauli_measure_p.def_impl
-    def _(wires, pauli_word="", postselect=None):
+    def _(*wires, pauli_word="", postselect=None):
         return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
     @pauli_measure_p.def_abstract_eval
@@ -118,6 +119,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     if capture_enabled():
         primitive = _create_pauli_measure_primitive()
-        return primitive.bind(wires, pauli_word=pauli_word, postselect=postselect)
+        wires = (wires,) if math.shape(wires) == () else tuple(wires)
+        return primitive.bind(*wires, pauli_word=pauli_word, postselect=postselect)
 
     return _pauli_measure_impl(wires, pauli_word, postselect)
