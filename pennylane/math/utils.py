@@ -413,22 +413,16 @@ def is_abstract(tensor, like=None):
 
     if interface == "jax":
         import jax
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        if isinstance(
-            tensor,
-            (
-                jax.interpreters.ad.JVPTracer,
-                jax.interpreters.batching.BatchTracer,
-                jax.interpreters.partial_eval.JaxprTracer,
-            ),
-        ):
-            # Tracer objects will be used when computing gradients or applying transforms.
+        # Check if the tensor is a Tracer (base class for all JAX tracers)
+        # This is more robust than checking specific tracer types, as new tracer types
+        # may be added in future JAX versions (e.g., LinearizeTracer in JAX 0.7+)
+        if isinstance(tensor, jax.core.Tracer):
             # If the value of the tracer is known, jax.core.is_concrete will return True.
             # Otherwise, it will be abstract.
             return not jax.core.is_concrete(tensor)
 
-        return isinstance(tensor, DynamicJaxprTracer)
+        return False
 
     if (
         interface == "tensorflow"
