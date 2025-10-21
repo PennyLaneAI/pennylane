@@ -387,7 +387,8 @@ class TestMitiqIntegration:
 
     @pytest.mark.xfail(
         reason="Mitiq uses removed QuantumScript.to_openqasm. Note that Mitiq should "
-        "no longer raise this error once it has reached v0.48.0."
+        "no longer raise this error once it has reached v0.48.0 "
+        "as per https://github.com/unitaryfoundation/mitiq/issues/2814."
     )
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
