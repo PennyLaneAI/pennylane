@@ -27,21 +27,17 @@ from .dialects.stablehlo import ConstantOp as hloConstantOp
 def get_constant_from_ssa(value: SSAValue) -> Number | None:
     """Return the concrete value corresponding to an SSA value if it is a numerical constant.
 
-    Numerical constants can be created by ``arith.constant`` and ``stablehlo.constant``. If scalar
-    values are created using ``stablehlo.constant``, their owner will be a ``tensor.extract``,
-    because ``stablehlo.constant`` returns a ``tensor``.
-
     .. note::
 
-        This function currently only returns constants if they are scalar. For non-scalar constants,
-        ``None`` will be returned.
+        This function currently only returns constants if they are scalar. For non-scalar
+        constants, ``None`` will be returned.
 
     Args:
         value (xdsl.ir.SSAValue): the SSA value to check
 
     Returns:
-        Number or None: If the value corresponds to a scalar constant, its concrete value
-        will be returned, else ``None``.
+        Number or None: If the value corresponds to a constant, its concrete value will
+        be returned, else ``None``.
     """
 
     # If the value has a shape, we can assume that it is not scalar. We check
