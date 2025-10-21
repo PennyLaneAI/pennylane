@@ -551,7 +551,7 @@ class TestCliffordCompile:
             # Autograd Interface
             A = qml.numpy.array(coeffs)
             fres_numpy = qcirc(A)
-            grad_numpy = qml.grad(qcirc, argnum=0)(A)
+            grad_numpy = qml.grad(qcirc, argnums=0)(A)
 
             # Jax Interface
             A = jax.numpy.array(coeffs)
