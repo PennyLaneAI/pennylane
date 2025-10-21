@@ -18,11 +18,21 @@ Contains the AllSinglesDoubles template.
 import copy
 
 import numpy as np
+from pennylane.control_flow import for_loop
 
-from pennylane import math
+from pennylane.decomposition import resource_rep, register_resources, add_decomps
+
+from pennylane import math, capture
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 
 
 class AllSinglesDoubles(Operation):
@@ -118,6 +128,8 @@ class AllSinglesDoubles(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_singles", "num_doubles", "num_wires"}
+
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
         if len(wires) < 2:
             raise ValueError(
@@ -156,6 +168,14 @@ class AllSinglesDoubles(Operation):
         }
 
         super().__init__(weights, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_singles": len(self.hyperparameters["singles"]),
+            "num_doubles": len(self.hyperparameters["doubles"]),
+            "num_wires": len(self.wires),
+        }
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
@@ -236,3 +256,37 @@ class AllSinglesDoubles(Operation):
             shape_ = (len(singles) + len(doubles),)
 
         return shape_
+
+
+def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
+    return {
+        resource_rep(BasisState, num_wires=num_wires): 1,
+        resource_rep(DoubleExcitation): num_doubles,
+        resource_rep(SingleExcitation): num_singles,
+    }
+
+
+@register_resources(_all_singles_doubles_resouces)
+def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles):
+    BasisState(hf_state, wires=wires)
+
+    if has_jax and capture.enabled():
+        doubles = jnp.array(doubles)
+
+    @for_loop(len(doubles))
+    def doubles_loop(i):
+        DoubleExcitation(weights[len(singles) + i], wires=doubles[i])
+
+    doubles_loop()
+
+    if has_jax and capture.enabled():
+        singles = jnp.array(singles)
+
+    @for_loop(len(singles))
+    def singles_loop(j):
+        SingleExcitation(weights[j], wires=singles[j])
+
+    singles_loop()
+
+
+add_decomps(AllSinglesDoubles, _all_singles_doubles_decomposition)
