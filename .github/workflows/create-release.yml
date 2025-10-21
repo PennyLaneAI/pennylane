@@ -62,7 +62,7 @@ jobs:
           git commit -m "Bump minimum Lightning and Catalyst versions to ${lightning_version} and ${catalyst_version}"
         
           git push origin bump-lightning-catalyst-$(date +'%Y-%m-%d-%H-%M-%S')
-          gh pr create --base ${{ env.rc_branch }} --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
+          gh pr create --base ${{ inputs.release_branch }} --title "Bump minimum Lightning and Catalyst versions" --body "Bump minimum Lightning and Catalyst versions"
           gh pr merge --merge
 
   create_release:
