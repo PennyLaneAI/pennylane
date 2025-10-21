@@ -676,7 +676,7 @@ class jacobian:
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
-def vjp(f, params, cotangents, method=None, h=None, argnum=None):
+def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 
     This function allows the Vector-Jacobian Product of a hybrid quantum-classical function to be
@@ -695,16 +695,21 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
+    .. warning::
+
+        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
+        ``argnum`` will be removed in v0.45.
+
     Args:
         f(Callable): Function-like object to calculate VJP for
         params(List[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
                              VJP at. A subset of these parameters are declared as
-                             differentiable by listing their indices in the ``argnum`` parameter.
+                             differentiable by listing their indices in the ``argnums`` parameter.
         cotangents(List[Array]): List (or a tuple) of tangent values to use in VJP. The list size
                                  and shapes must match the size and shape of ``f`` outputs.
         method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
-        argnum (Union[int, List[int]]): the params' indices to differentiate.
+        argnums (Union[int, List[int]]): the params' indices to differentiate.
 
     Returns:
         Tuple[Array]: Return values of ``f`` paired with the VJP values.
@@ -732,16 +737,23 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     >>> vjp(x, dy)
     (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
     """
+    argnums = argnums if argnums is not None else argnum
+    if argnum is not None:
+        warnings.warn(
+            "argnum in qml.vjp has been renamed to argnums to match jax and catalyst.",
+            PennyLaneDeprecationWarning,
+        )
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnum)
+        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnums)
 
     raise CompileError("Pennylane does not support the VJP function without QJIT.")
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
-def jvp(f, params, tangents, method=None, h=None, argnum=None):
+def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
     """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
 
     This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
@@ -760,16 +772,21 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
+    .. warning::
+
+        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
+        ``argnum`` will be removed in v0.45.
+
     Args:
         f (Callable): Function-like object to calculate JVP for
         params (List[Array]): List (or a tuple) of the function arguments specifying the point
                               to calculate JVP at. A subset of these parameters are declared as
-                              differentiable by listing their indices in the ``argnum`` parameter.
+                              differentiable by listing their indices in the ``argnums`` parameter.
         tangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size and
                                shapes must match the ones of differentiable params.
         method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
-        argnum (Union[int, List[int]]): the params' indices to differentiate.
+        argnums (Union[int, List[int]]): the params' indices to differentiate.
 
     Returns:
         Tuple[Array]: Return values of ``f`` paired with the JVP values.
@@ -797,11 +814,11 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     >>> jvp(x, tangent)
     (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), Array([0.29850125, 0.24      , 0.12      ], dtype=float64))
 
-    **Example 2 (argnum usage)**
+    **Example 2 (argnums usage)**
 
-    Here we show how to use ``argnum`` to ignore the non-differentiable parameter ``n`` of the
+    Here we show how to use ``argnums`` to ignore the non-differentiable parameter ``n`` of the
     target function. Note that the length and shapes of tangents must match the length and shape of
-    primal parameters, which we mark as differentiable by passing their indices to ``argnum``.
+    primal parameters, which we mark as differentiable by passing their indices to ``argnums``.
 
     .. code-block:: python
 
@@ -814,7 +831,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
 
         @qml.qjit
         def workflow(primals, tangents):
-            return qml.jvp(circuit, [1, primals], [tangents], argnum=[1])
+            return qml.jvp(circuit, [1, primals], [tangents], argnums=[1])
 
     >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
     >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
@@ -822,9 +839,16 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     (Array(0.78766064, dtype=float64), Array(-0.70114352, dtype=float64))
     """
 
+    argnums = argnums if argnums is not None else argnum
+    if argnum is not None:
+        warnings.warn(
+            "argnum in qml.jvp has been renamed to argnums to match jax and catalyst.",
+            PennyLaneDeprecationWarning,
+        )
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnum)
+        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnums)
 
     raise CompileError("Pennylane does not support the JVP function without QJIT.")
