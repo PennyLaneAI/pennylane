@@ -60,35 +60,40 @@ def _loop_body_parity_network_synth(
         ``circuit`` representation is grown by one entry, corresponding to that parity.
 
     """
-    parity_idx = np.argmin(np.sum(P, axis=0))
-    parity = P[:, parity_idx]
-    graph_nodes = list(map(int, np.where(parity)[0]))
+    parity_idx = np.argmin(np.sum(P, axis=0))  # ╮ Line 3
+    parity = P[:, parity_idx]  # ╯
+    graph_nodes = list(map(int, np.where(parity)[0]))  # Line 5, vertices
     if len(graph_nodes) == 1:
         # The parity already has Hamming weight 1, so we don't need any modifications
         # Just slice out the parity and append the parity/angle index as well as the qubit
         # on which the parity has support
-        P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
-        circuit.append((parity_idx, graph_nodes[0], []))
+        P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)  # Line 4
+        circuit.append((parity_idx, graph_nodes[0], []))  # Record parity index, qubit index, CNOTs
         return P, inv_synth_matrix, circuit
-    single_weights = np.sum(P, axis=1)
-    parity_graph = nx.DiGraph()
-    parity_graph.add_weighted_edges_from(
-        [
-            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])
-            for i, j in product(graph_nodes, repeat=2)
-            if i != j
-        ]
-    )
-    arbor = nx.minimum_spanning_arborescence(parity_graph)
-    roots = [node for node, degree in arbor.in_degree() if degree == 0]
+
+    # Note that there is a bug in the algorithm as written in the paper: We first want to compute
+    # the edge weights for parity_graph (G_y) and _then_ slice out `parity` from `P`.
+    single_weights = np.sum(P, axis=1)  # ╮
+    parity_graph = nx.DiGraph()  # │
+    parity_graph.add_weighted_edges_from(  # │
+        [  # │
+            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])  # │ Line 5, edges
+            for i, j in product(graph_nodes, repeat=2)  # │
+            if i != j  # │
+        ]  # │
+    )  # ╯
+    arbor = nx.minimum_spanning_arborescence(parity_graph)  # Line 6
+
+    roots = [node for node, degree in arbor.in_degree() if degree == 0]  # Find the root of the tree
     assert len(roots) == 1
-    P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
+
+    P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)  # Line 4
     sub_circuit = []
-    for i, j in postorder_traverse(arbor, source=roots[0]):
-        sub_circuit.append((i, j))
-        P[i] = np.mod(P[i] + P[j], 2)
-        inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
-    circuit.append((parity_idx, roots[0], sub_circuit))
+    for i, j in postorder_traverse(arbor, source=roots[0]):  # Line 7 + 8
+        sub_circuit.append((i, j))  # Line 9
+        P[i] = np.mod(P[i] + P[j], 2)  # Line 10
+        inv_synth_matrix[:, i] += inv_synth_matrix[:, j]  # Update parity matrix (not in Alg.1)
+    circuit.append((parity_idx, roots[0], sub_circuit))  # Record parity index, qubit index, CNOTs
     return P, inv_synth_matrix, circuit
 
 
@@ -99,6 +104,7 @@ def _parity_network_synth(P: np.ndarray) -> list[int, list[tuple[int]]]:
 
     Args:
         P (np.ndarray): Parity table to be synthesized.
+            Shape should be ``(num_wires, num_parities)``
 
     Returns:
         tuple[list[int, list[tuple[int]]], np.ndarray]: Synthesized parity network, as a
@@ -107,15 +113,19 @@ def _parity_network_synth(P: np.ndarray) -> list[int, list[tuple[int]]]:
 
     """
     if P.shape[-1] == 0:
+        # Nothing to do if there are not parities
         return [], None
 
-    circuit = []
+    circuit = []  # Line 1 in Alg. 1
     num_wires, num_parities = P.shape
-    inv_synth_matrix = np.eye(num_wires, dtype=int)
+    # Initialize an inverse parity matrix that is updated with the CNOTs that are synthesized here.
+    inv_synth_mat = np.eye(num_wires, dtype=int)
+    # `num_parities` loop iterations because each loop body takes care of one parity, we just
+    # don't know which one. This makes the `for`-loop equivalent to line 2 in Alg. 1
     for _ in range(num_parities):
-        P, inv_synth_matrix, circuit = _loop_body_parity_network_synth(P, inv_synth_matrix, circuit)
+        P, inv_synth_mat, circuit = _loop_body_parity_network_synth(P, inv_synth_mat, circuit)
 
-    return circuit, inv_synth_matrix % 2
+    return circuit, inv_synth_mat % 2
 
 
 ### end of xDSL-agnostic part
@@ -144,6 +154,7 @@ def make_phase_polynomial(
             wire_map[op.out_qubits[0]] = control
             wire_map[op.out_qubits[1]] = target
             continue
+
         # RZ
         angle = op.operands[0]
         if getattr(op, "adjoint", False):
@@ -227,11 +238,6 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
 
         # end of operations; rewrite terminal phase polynomial
         self.rewrite_phase_polynomial(rewriter)
-
-        # Mock the rewriter to think it reached a steady state already, because re-applying
-        # ParitySynth is not useful
-        # todo: to this properly by using a different rewriter or so
-        rewriter.has_done_action = False
 
     @staticmethod
     def _cnot(i: int, j: int, inv_wire_map: dict[int, QubitType]):
@@ -321,7 +327,8 @@ class ParitySynthPass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the ParitySynth pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([ParitySynthPattern()])
+            pattern_rewriter.GreedyRewritePatternApplier([ParitySynthPattern()]),
+            apply_recursively=False,
         ).rewrite_module(module)
 
 
