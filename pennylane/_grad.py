@@ -26,7 +26,7 @@ from autograd.wrap_util import unary_to_nary
 
 from pennylane import capture
 from pennylane.compiler import compiler
-from pennylane.exceptions import CompileError
+from pennylane.exceptions import CompileError, PennyLaneDeprecationWarning
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -53,6 +53,8 @@ def _get_grad_prim():
 
     @grad_prim.def_impl
     def _(*args, argnum, jaxpr, n_consts, method, h, scalar_out, fn):
+        if method or h:  # pragma: no cover
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -79,22 +81,20 @@ def _get_grad_prim():
 
     return grad_prim
 
-
 def _shape(shape, dtype, weak_type=False):
     if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
         return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)
     return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
-
-def _capture_diff(func, *, argnum, scalar_out: bool, method, h):
+def _capture_diff(func, *, argnums=None, scalar_out: bool=False, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
-    if argnum is None:
-        argnum = 0
-    if argnum_is_int := isinstance(argnum, int):
-        argnum = [argnum]
+    if argnums is None:
+        argnums = 0
+    if argnums_is_int := isinstance(argnums, int):
+        argnums = [argnums]
 
     if h is None:
         h = 1e-6
@@ -109,26 +109,26 @@ def _capture_diff(func, *, argnum, scalar_out: bool, method, h):
         flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
         full_in_tree = treedef_tuple(in_trees)
 
-        # Create a new input tree that only takes inputs marked by argnum into account
-        trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
-        # If an integer was provided as argnum, unpack the arguments axis of the derivatives
-        if argnum_is_int:
+        # Create a new input tree that only takes inputs marked by argnums into account
+        trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnums)
+        # If an integer was provided as argnums, unpack the arguments axis of the derivatives
+        if argnums_is_int:
             trainable_in_tree = list(trainable_in_trees)[0]
         else:
             trainable_in_tree = treedef_tuple(trainable_in_trees)
 
-        # Create argnum for the flat list of input arrays. For each flattened argument,
-        # add a list of flat argnums if the argument is trainable and an empty list otherwise.
+        # Create argnums for the flat list of input arrays. For each flattened argument,
+        # add a list of flat argnumss if the argument is trainable and an empty list otherwise.
         start = 0
-        flat_argnum_gen = (
+        flat_argnums_gen = (
             (
                 list(range(start, (start := start + len(flat_arg))))
-                if i in argnum
+                if i in argnums
                 else list(range((start := start + len(flat_arg)), start))
             )
             for i, flat_arg in enumerate(flat_args)
         )
-        flat_argnum = sum(flat_argnum_gen, start=[])
+        flat_argnums = sum(flat_argnums_gen, start=[])
 
         # Create fully flattened function (flat inputs & outputs)
         flat_fn = capture.FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
@@ -137,10 +137,10 @@ def _capture_diff(func, *, argnum, scalar_out: bool, method, h):
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
 
         num_abstract_shapes = len(abstract_shapes)
-        shifted_argnum = [a + num_abstract_shapes for a in flat_argnum]
+        shifted_argnums = [a + num_abstract_shapes for a in flat_argnums]
 
         prim_kwargs = {
-            "argnum": shifted_argnum,
+            "argnums": shifted_argnums,
             "jaxpr": jaxpr.jaxpr,
             "n_consts": len(jaxpr.consts),
             "fn": func,
@@ -170,10 +170,10 @@ class grad:
     :func:`~.qjit` and Autograd compatible.
 
     By default, gradients are computed for arguments which contain
-    the property ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument
+    the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
     can be specified to compute gradients for function arguments without this property,
     such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
-    ``argnum`` to the index of an argument with ``requires_grad=False`` will raise
+    ``argnums`` to the index of an argument with ``requires_grad=False`` will raise
     a ``NonDifferentiableError``.
 
     When the output gradient function is executed, both the forward pass
@@ -181,7 +181,12 @@ class grad:
     The value of the forward pass is available via the :attr:`~.forward` property.
 
     .. warning::
-        ``grad`` is intended to be used with the Autograd interface only.
+        ``grad`` is intended to be used with the Autograd and Catalyst.
+
+    .. warning::
+
+        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
+        ``argnum`` will be removed in v0.45.
 
     .. note::
 
@@ -196,7 +201,7 @@ class grad:
         func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
 
-        argnum (int, list(int), None): Which argument(s) to take the gradient
+        argnums (int, list(int), None): Which argument(s) to take the gradient
             with respect to. By default, the arguments themselves are used
             to determine differentiability, by examining the ``requires_grad``
             property.
@@ -222,26 +227,31 @@ class grad:
     Returns:
         function: The function that returns the gradient of the input
         function with respect to the differentiable arguments, or, if specified,
-        the arguments in ``argnum``.
+        the arguments in ``argnums``.
     """
 
-    def __init__(self, func, argnum=None, h=None, method=None, argnums=None):
+    # pylint: disable=too-many-arguments
+    def __init__(self, func, argnums=None, h=None, method=None, *, argnum=None):
         self._forward = None
         self._grad_fn = None
         self._h = h
         self._method = method
 
         self._fun = func
-        self._argnum = argnum or argnums
-
         self.__name__ = f"<grad: {self._fun}>"
+        self._argnums = argnums if argnums is not None else argnum
+        if argnum is not None:
+            warnings.warn(
+                "argnum in qml.grad has been renamed to argnums to match jax and catalyst.",
+                PennyLaneDeprecationWarning,
+            )
 
-        if self._argnum is not None:
+        if self._argnums is not None:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
             # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
-            self._grad_fn = self._grad_with_forward(func, argnum=self._argnum)
+            self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -254,38 +264,38 @@ class grad:
           as differentiable.
         """
         if self._grad_fn is not None:
-            return self._grad_fn, self._argnum
+            return self._grad_fn, self._argnums
 
         # Inspect the arguments for differentiability, and
         # compute the autograd gradient function with required argnums
         # dynamically.
-        argnum = []
+        argnums = []
 
         for idx, arg in enumerate(args):
             trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
                 if arg.dtype.name[:3] == "int":
                     raise ValueError("Autograd does not support differentiation of ints.")
-                argnum.append(idx)
+                argnums.append(idx)
 
-        if len(argnum) == 1:
-            argnum = argnum[0]
+        if len(argnums) == 1:
+            argnums = argnums[0]
 
         # Known pylint issue with function signatures and decorators:
         # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
-        return self._grad_with_forward(self._fun, argnum=argnum), argnum
+        return self._grad_with_forward(self._fun, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
             available_eps = compiler.AvailableCompilers.names_entrypoints
             ops_loader = available_eps[active_jit]["ops"].load()
-            return ops_loader.grad(self._fun, method=self._method, h=self._h, argnums=self._argnum)(
-                *args, **kwargs
-            )
+            return ops_loader.grad(
+                self._fun, method=self._method, h=self._h, argnums=self._argnums
+            )(*args, **kwargs)
 
         if capture.enabled():
             return _capture_diff(
-                self._fun, argnum=self._argnum, scalar_out=True, method=self._method, h=self._h
+                self._fun, argnums=self._argnum, scalar_out=True, method=self._method, h=self._h
             )(*args, **kwargs)
 
         if self._method:
@@ -304,7 +314,7 @@ class grad:
             warnings.warn(
                 "Attempted to differentiate a function with no trainable parameters. "
                 "If this is unintended, please add trainable parameters via the "
-                "'requires_grad' attribute or 'argnum' keyword."
+                "'requires_grad' attribute or 'argnums' keyword."
             )
             self._forward = self._fun(*args, **kwargs)
             return ()
@@ -383,13 +393,18 @@ class jacobian:
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
+    .. warning::
+
+        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
+        ``argnum`` will be removed in v0.45.
+
     Args:
         func (function): A vector-valued Python function or QNode that contains
             a combination of quantum and classical nodes. The output of the computation
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
 
-        argnum (int or Sequence[int]): Which argument to take the gradient
+        argnums (int or Sequence[int]): Which argument to take the gradient
             with respect to. If a sequence is given, the Jacobian corresponding
             to all marked inputs and all output elements is returned.
 
@@ -500,7 +515,7 @@ class jacobian:
         x = np.array([0.1, 0.5], requires_grad=True)
         y = np.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
 
-    If we do not provide ``argnum``, ``qml.jacobian`` will correctly identify both,
+    If we do not provide ``argnums``, ``qml.jacobian`` will correctly identify both,
     ``x`` and ``y``, as trainable function arguments:
 
     >>> jac = qml.jacobian(circuit)(x, y)
@@ -517,9 +532,9 @@ class jacobian:
     Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(8, 2, 4)``.
 
     Instead, we may choose the output to contain only one of the two
-    entries by providing an iterable as ``argnum``:
+    entries by providing an iterable as ``argnums``:
 
-    >>> jac = qml.jacobian(circuit, argnum=[1])(x, y)
+    >>> jac = qml.jacobian(circuit, argnums=[1])(x, y)
     >>> print(type(jac), len(jac))
     <class 'tuple'> 1
     >>> qml.math.shape(jac)
@@ -529,9 +544,9 @@ class jacobian:
     first dimension of size ``1``.
 
     Finally, we may want to receive the single entry above directly, not as a tuple
-    with a single entry. This is done by providing a single integer as ``argnum``
+    with a single entry. This is done by providing a single integer as ``argnums``
 
-    >>> jac = qml.jacobian(circuit, argnum=1)(x, y)
+    >>> jac = qml.jacobian(circuit, argnums=1)(x, y)
     >>> print(type(jac), len(jac))
     <class 'numpy.ndarray'> 8
     >>> qml.math.shape(jac)
@@ -583,9 +598,15 @@ class jacobian:
 
     """
 
-    def __init__(self, func, argnum=None, method=None, h=None, argnums=None):
+    # pylint: disable=too-many-arguments
+    def __init__(self, func, argnums=None, method=None, h=None, *, argnum=None):
         self._func = func
-        self._argnum = argnums if argnums is not None else argnum
+        if argnum is not None:
+            warnings.warn(
+                "argnum in qml.jacobian has been renamed to argnums to match jax and catalyst.",
+                PennyLaneDeprecationWarning,
+            )
+        self._argnums = argnums if argnums is not None else argnum
         self._method = method
         self._h = h
         self.__name__ = f"<jacobian: {self._func}>"
@@ -595,12 +616,12 @@ class jacobian:
             available_eps = compiler.AvailableCompilers.names_entrypoints
             ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.jacobian(
-                self._func, method=self._method, h=self._h, argnums=self._argnum
+                self._func, method=self._method, h=self._h, argnums=self._argnums
             )(*args, **kwargs)
 
         if capture.enabled():
             g = _capture_diff(
-                self._func, argnum=self._argnum, scalar_out=False, method=self._method, h=self._h
+                self._func, argnums=self._argnum, scalar_out=False, method=self._method, h=self._h
             )
             return g(*args, **kwargs)
 
@@ -619,31 +640,31 @@ class jacobian:
         jacobian function once, but then calls it with arguments that change
         in differentiability.
         """
-        if self._argnum is None:
+        if self._argnums is None:
             # Infer which arguments to consider trainable
-            _argnum = _get_argnum(args)
+            _argnums = _get_argnum(args)
             # Infer whether to unpack from the inferred argnum
-            unpack = len(_argnum) == 1
+            unpack = len(_argnums) == 1
         else:
             # For a single integer as argnum, unpack the Jacobian tuple
-            unpack = isinstance(self._argnum, int)
-            _argnum = [self._argnum] if unpack else self._argnum
+            unpack = isinstance(self._argnums, int)
+            _argnums = [self._argnums] if unpack else self._argnums
 
-        if not _argnum:
+        if not _argnums:
             warnings.warn(
                 "Attempted to differentiate a function with no trainable parameters. "
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnum' keyword."
             )
         jac = tuple(
-            _jacobian(_error_if_not_array(self._func), arg)(*args, **kwargs) for arg in _argnum
+            _jacobian(_error_if_not_array(self._func), arg)(*args, **kwargs) for arg in _argnums
         )
 
         return jac[0] if unpack else jac
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
-def vjp(f, params, cotangents, method=None, h=None, argnum=None):
+def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 
     This function allows the Vector-Jacobian Product of a hybrid quantum-classical function to be
@@ -662,16 +683,21 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
+    .. warning::
+
+        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
+        ``argnum`` will be removed in v0.45.
+
     Args:
         f(Callable): Function-like object to calculate VJP for
         params(List[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
                              VJP at. A subset of these parameters are declared as
-                             differentiable by listing their indices in the ``argnum`` parameter.
+                             differentiable by listing their indices in the ``argnums`` parameter.
         cotangents(List[Array]): List (or a tuple) of tangent values to use in VJP. The list size
                                  and shapes must match the size and shape of ``f`` outputs.
         method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
-        argnum (Union[int, List[int]]): the params' indices to differentiate.
+        argnums (Union[int, List[int]]): the params' indices to differentiate.
 
     Returns:
         Tuple[Array]: Return values of ``f`` paired with the VJP values.
@@ -699,16 +725,23 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     >>> vjp(x, dy)
     (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
     """
+    argnums = argnums if argnums is not None else argnum
+    if argnum is not None:
+        warnings.warn(
+            "argnum in qml.vjp has been renamed to argnums to match jax and catalyst.",
+            PennyLaneDeprecationWarning,
+        )
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnum)
+        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnums)
 
     raise CompileError("Pennylane does not support the VJP function without QJIT.")
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
-def jvp(f, params, tangents, method=None, h=None, argnum=None):
+def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
     """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
 
     This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
@@ -727,16 +760,21 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
+    .. warning::
+
+        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
+        ``argnum`` will be removed in v0.45.
+
     Args:
         f (Callable): Function-like object to calculate JVP for
         params (List[Array]): List (or a tuple) of the function arguments specifying the point
                               to calculate JVP at. A subset of these parameters are declared as
-                              differentiable by listing their indices in the ``argnum`` parameter.
+                              differentiable by listing their indices in the ``argnums`` parameter.
         tangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size and
                                shapes must match the ones of differentiable params.
         method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
-        argnum (Union[int, List[int]]): the params' indices to differentiate.
+        argnums (Union[int, List[int]]): the params' indices to differentiate.
 
     Returns:
         Tuple[Array]: Return values of ``f`` paired with the JVP values.
@@ -764,11 +802,11 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     >>> jvp(x, tangent)
     (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), Array([0.29850125, 0.24      , 0.12      ], dtype=float64))
 
-    **Example 2 (argnum usage)**
+    **Example 2 (argnums usage)**
 
-    Here we show how to use ``argnum`` to ignore the non-differentiable parameter ``n`` of the
+    Here we show how to use ``argnums`` to ignore the non-differentiable parameter ``n`` of the
     target function. Note that the length and shapes of tangents must match the length and shape of
-    primal parameters, which we mark as differentiable by passing their indices to ``argnum``.
+    primal parameters, which we mark as differentiable by passing their indices to ``argnums``.
 
     .. code-block:: python
 
@@ -781,7 +819,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
 
         @qml.qjit
         def workflow(primals, tangents):
-            return qml.jvp(circuit, [1, primals], [tangents], argnum=[1])
+            return qml.jvp(circuit, [1, primals], [tangents], argnums=[1])
 
     >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
     >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
@@ -789,9 +827,16 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     (Array(0.78766064, dtype=float64), Array(-0.70114352, dtype=float64))
     """
 
+    argnums = argnums if argnums is not None else argnum
+    if argnum is not None:
+        warnings.warn(
+            "argnum in qml.jvp has been renamed to argnums to match jax and catalyst.",
+            PennyLaneDeprecationWarning,
+        )
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnum)
+        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnums)
 
     raise CompileError("Pennylane does not support the JVP function without QJIT.")

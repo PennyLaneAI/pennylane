@@ -158,7 +158,7 @@ class TestCaptureForLoop:
         grad_eqn = jaxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
         assert set(grad_eqn.params.keys()) == {
-            "argnum",
+            "argnums",
             "n_consts",
             "jaxpr",
             "method",

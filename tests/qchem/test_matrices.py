@@ -143,8 +143,8 @@ class TestOverlapMat:
         r"""Test that the overlap gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[0])(*args)
-        g_coeff = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[1])(*args)
+        g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[0])(*args)
+        g_coeff = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[1])(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -257,8 +257,8 @@ class TestMomentMat:
         r"""Test that the moment matrix gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=[0])(*args)
-        g_coeff = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=[1])(*args)
+        g_alpha = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[0])(*args)
+        g_coeff = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[1])(*args)
 
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
@@ -375,8 +375,8 @@ class TestKineticMat:
         r"""Test that the kinetic gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=[0])(*args)
-        g_coeff = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=[1])(*args)
+        g_alpha = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[0])(*args)
+        g_coeff = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[1])(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -504,7 +504,8 @@ class TestAttractionMat:
         args = [mol.coordinates, mol.alpha, mol.coeff, r_basis]
 
         g_r = qml.jacobian(
-            qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=[0]
+            qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates),
+            argnums=[0],
         )(*args)
         assert np.allclose(g_r, g_r_ref)
 
