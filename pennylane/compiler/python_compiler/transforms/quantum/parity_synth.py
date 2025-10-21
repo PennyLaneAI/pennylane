@@ -140,7 +140,7 @@ def _loop_body_parity_network_synth(
         ``circuit`` representation is grown by one entry, corresponding to that parity.
 
     """
-    parity_idx = np.argmin(np.sum(P, axis=0))  # ╮ Line 3
+    parity_idx = np.argmin(np.sum(P, axis=0))  # ┬ Line 3
     parity = P[:, parity_idx]  #                 ╯
     graph_nodes = list(map(int, np.where(parity)[0]))  # Line 5, vertices
     if len(graph_nodes) == 1:
@@ -157,7 +157,7 @@ def _loop_body_parity_network_synth(
     parity_graph = nx.DiGraph()  #                                        │
     parity_graph.add_weighted_edges_from(  #                              │
         [  #                                                              │
-            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])  # │ Line 5, edges
+            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])  # ├ Line 5, edges
             for i, j in product(graph_nodes, repeat=2)  #                 │
             if i != j  #                                                  │
         ]  #                                                              │
