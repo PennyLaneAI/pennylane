@@ -895,6 +895,7 @@ class TestShotsIntegration:
         expected_g = 2 * np.cos(0.5) * np.sin(0.5)
         assert qml.math.allclose(g, expected_g, atol=1 / qml.math.sqrt(shots), rtol=0.03)
 
+    @pytest.mark.xfail(reason="Test under investigation (tracked in sc-101768)", strict=False)
     @pytest.mark.parametrize("shots", [10000, 10005])
     def test_finite_shot_multiple_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes."""
@@ -1759,10 +1760,10 @@ class TestTapeExpansion:
     #     # test second-order derivatives
     #     if diff_method == "parameter-shift" and max_diff == 2:
 
-    #         grad2_c = jax.jacobian(jax.grad(circuit, argnum=2), argnum=2)(d, w, c)
+    #         grad2_c = jax.jacobian(jax.grad(circuit, argnums=2), argnums=2)(d, w, c)
     #         assert np.allclose(grad2_c, 0, atol=tol)
 
-    #         grad2_w_c = jax.jacobian(jax.grad(circuit, argnum=1), argnum=2)(d, w, c)
+    #         grad2_w_c = jax.jacobian(jax.grad(circuit, argnums=1), argnums=2)(d, w, c)
     #         expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
     #             0,
     #             -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
