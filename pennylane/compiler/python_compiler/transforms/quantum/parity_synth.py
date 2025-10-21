@@ -27,7 +27,7 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
-from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
+from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix, postorder_traverse
 from ...dialects.quantum import (
     AllocOp,
     AllocQubitOp,
@@ -44,14 +44,14 @@ from ...visualization.xdsl_conversion import resolve_constant_wire
 
 
 def _apply_dfs_po_circuit(tree, source, P, inv_synth_matrix=None):
-    dfs_po = list(nx.dfs_postorder_nodes(tree, source=source))
+    dfs_po = postorder_traverse(tree, source=source)
     sub_circuit = []
     if inv_synth_matrix is None:
-        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+        for i, j in dfs_po:
             sub_circuit.append((i, j))
             P[i] += P[j]
     else:
-        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+        for i, j in dfs_po:
             sub_circuit.append((i, j))
             P[i] += P[j]
             inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
@@ -82,7 +82,7 @@ def _compute_cost(terminal_nodes: list[int], connectivity: nx.Graph) -> tuple[nx
 
 
 def _find_parity(P, connectivity):
-    terminals = [list(np.where(y)[0]) for y in P.T]
+    terminals = [list(map(int, np.where(y)[0])) for y in P.T]
     trees, cost = zip(*[_compute_cost(terminal, connectivity) for terminal in terminals])
     min_idx = np.argmin(cost)
     return min_idx, trees[min_idx], list(map(int, terminals[min_idx]))
@@ -141,7 +141,7 @@ def _loop_body_parity_network_synth(
 
     """
     parity_idx = np.argmin(np.sum(P, axis=0))  # ╮ Line 3
-    parity = P[:, parity_idx]  # ╯
+    parity = P[:, parity_idx]  #                 ╯
     graph_nodes = list(map(int, np.where(parity)[0]))  # Line 5, vertices
     if len(graph_nodes) == 1:
         # The parity already has Hamming weight 1, so we don't need any modifications
@@ -153,15 +153,15 @@ def _loop_body_parity_network_synth(
 
     # Note that there is a bug in the algorithm as written in the paper: We first want to compute
     # the edge weights for parity_graph (G_y) and _then_ slice out `parity` from `P`.
-    single_weights = np.sum(P, axis=1)  # ╮
-    parity_graph = nx.DiGraph()  # │
-    parity_graph.add_weighted_edges_from(  # │
-        [  # │
+    single_weights = np.sum(P, axis=1)  #                                 ╮
+    parity_graph = nx.DiGraph()  #                                        │
+    parity_graph.add_weighted_edges_from(  #                              │
+        [  #                                                              │
             (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])  # │ Line 5, edges
-            for i, j in product(graph_nodes, repeat=2)  # │
-            if i != j  # │
-        ]  # │
-    )  # ╯
+            for i, j in product(graph_nodes, repeat=2)  #                 │
+            if i != j  #                                                  │
+        ]  #                                                              │
+    )  #                                                                  ╯
     arbor = nx.minimum_spanning_arborescence(parity_graph)  # Line 6
 
     # Find the root of the tree
@@ -190,7 +190,7 @@ def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivi
     for root in t:
         P_X = P.copy()
 
-        sub_circuit = _apply_dfs_po_circuit(t, root, P_X, inv_synth_matrix)
+        sub_circuit = _apply_dfs_po_circuit(t, root, P_X, None)
 
         new_cost_vector = sorted(
             _compute_cost(list(np.where(y)[0]), connectivity)[1] for y in P_X.T
@@ -244,6 +244,7 @@ def _parity_network_synth(
         for _ in range(num_parities):
             P, inv_synth_mat, circuit = _loop_body_parity_network_synth(P, inv_synth_mat, circuit)
     else:
+        P = P.copy()
         # `num_parities` loop iterations because each loop body takes care of one parity, we just
         # don't know which one. This makes the `for`-loop equivalent to line 3 in Alg. 4
         for _ in range(num_parities):

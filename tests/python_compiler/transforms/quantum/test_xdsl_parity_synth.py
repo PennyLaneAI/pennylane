@@ -54,41 +54,54 @@ def assert_binary_matrix(matrix: np.ndarray):
         )
 
 
+path_2 = nx.path_graph(2)
+path_4 = nx.path_graph(4)
+
+
 class TestParityNetworkSynth:
     """Tests for the synthesizing of a parity network with ``_parity_network_synth``."""
 
     @staticmethod
-    def validate_circuit_entry(entry, exp_len=None):
+    def validate_circuit_entry(entry, exp_len=None, connectivity=None):
         """Validate that an object is a three-tuple consisting of an two integers and a list
         of two-tuples with integers in them, like ``(1, 4, [(0, 2), (1, 0)])``. This constitutes
-        the format for circuit entries in the output of ``_parity_network_synth``."""
+        the format for circuit entries in the output of ``_parity_network_synth``.
+        Also checks that the CNOTs adhere to a specific connectivity, if given."""
         assert isinstance(entry, tuple) and len(entry) == 3
         parity_idx, qubit_idx, cnot_circuit = entry
         assert isinstance(parity_idx, np.int64)
         assert isinstance(qubit_idx, int)
+        # Check cnot_circuit
         assert isinstance(cnot_circuit, list)
         if exp_len is not None:
             assert len(cnot_circuit) == exp_len
         assert all(isinstance(_cnot, tuple) and len(_cnot) == 2 for _cnot in cnot_circuit)
+        if connectivity is not None:
+            assert all(connectivity.has_edge(*_cnot) for _cnot in cnot_circuit)
 
-    def test_empty_parity_table(self):
+    @pytest.mark.parametrize("connectivity", (None, path_2))
+    def test_empty_parity_table(self, connectivity):
         """Test that an empty parity table results in an empty circuit."""
         P = np.ones(shape=(10, 0), dtype=int)
-        circuit, inv_synth_matrix = _parity_network_synth(P)
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
         assert not circuit
         assert inv_synth_matrix is None
 
+    @pytest.mark.parametrize("connectivity", (None, "path"))
     @pytest.mark.parametrize("n, idx", [(1, 0), (2, 0), (2, 1), (3, 2), (10, 5)])
-    def test_single_unit_vector_parity(self, n, idx):
+    def test_single_unit_vector_parity(self, n, idx, connectivity):
         """Test that a single unit vector-parity is synthesized into no CNOTs and a single RZ."""
+        if connectivity == "path":
+            connectivity = nx.path_graph(n)
         I = np.eye(n, dtype=int)
         P = I[:, idx : idx + 1]
-        circuit, inv_synth_matrix = _parity_network_synth(P)
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
         assert isinstance(circuit, list) and len(circuit) == 1
-        self.validate_circuit_entry(circuit[0], exp_len=0)
+        self.validate_circuit_entry(circuit[0], exp_len=0, connectivity=connectivity)
         assert_binary_matrix(inv_synth_matrix)
         assert_equal(I, inv_synth_matrix)
 
+    @pytest.mark.parametrize("connectivity", (None, "path"))
     @pytest.mark.parametrize(
         "n, ids",
         [
@@ -101,15 +114,17 @@ class TestParityNetworkSynth:
             (10, [5, 4, 9, 0, 2, 3]),
         ],
     )
-    def test_multiple_unit_vector_parities(self, n, ids):
+    def test_multiple_unit_vector_parities(self, n, ids, connectivity):
         """Test that multiple unit vector-parities are synthesized into no CNOTs and a
         series of RZ gates."""
+        if connectivity == "path":
+            connectivity = nx.path_graph(n)
         I = np.eye(n, dtype=int)
         P = np.concatenate([I[:, idx : idx + 1] for idx in ids], axis=1)
-        circuit, inv_synth_matrix = _parity_network_synth(P)
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
         assert isinstance(circuit, list) and len(circuit) == len(ids)
         for entry in circuit:
-            self.validate_circuit_entry(entry, exp_len=0)
+            self.validate_circuit_entry(entry, exp_len=0, connectivity=connectivity)
         assert_binary_matrix(inv_synth_matrix)
         assert_equal(I, inv_synth_matrix)
 
@@ -131,6 +146,66 @@ class TestParityNetworkSynth:
         assert isinstance(circuit, list) and len(circuit) == 1
         self.validate_circuit_entry(circuit[0], exp_len=np.sum(P) - 1)
         I = np.eye(len(parity), dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize(
+        "parity",
+        [
+            [1, 0, 0, 1, 0, 1],
+            [1, 1, 1],
+            [0, 1, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1],
+        ],
+    )
+    def test_single_non_unit_parity_path(self, parity):
+        """Test that a single non-unit vector-parity ``p`` is synthesized into
+        ``2|V_T| - |p| - 1`` CNOTs and a single RZ, for a path graph connectivity."""
+
+        num_wires = len(parity)
+        connectivity = nx.path_graph(num_wires)
+        P = np.array([parity]).T
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
+        assert isinstance(circuit, list) and len(circuit) == 1
+        ones = np.where(parity)[0]
+        # Steiner tree in path graph is just the path graph between first and last `1` in parity
+        steiner_size = np.max(ones) - np.min(ones) + 1
+        # See "cost" on p.10: C(y) = 2 |V_T| - |S| - 1.
+        exp_len = 2 * steiner_size - np.sum(P) - 1
+        self.validate_circuit_entry(circuit[0], exp_len=exp_len, connectivity=connectivity)
+        I = np.eye(num_wires, dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize(
+        "parity",
+        [
+            [1, 0, 0, 1, 0, 1],
+            [1, 1, 1],
+            [0, 1, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1],
+        ],
+    )
+    def test_single_non_unit_parity_star(self, parity):
+        """Test that a single non-unit vector-parity ``p`` is synthesized into
+        ``2|V_T| - |p| - 1`` CNOTs and a single RZ, for a star graph connectivity."""
+
+        num_wires = len(parity)
+        connectivity = nx.star_graph(num_wires - 1)  # Star graph with num_wires nodes, 0 in center
+        P = np.array([parity]).T
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
+        assert isinstance(circuit, list) and len(circuit) == 1
+        # Steiner tree in star graph is just the star graph with `1`s in parity. If parity[0] is
+        # `0`, we therefore need to account for it additionally
+        steiner_size = np.sum(P) + (1 - parity[0])
+        # See "cost" on p.10: C(y) = 2 |V_T| - |S| - 1.
+        exp_len = 2 * steiner_size - np.sum(P) - 1
+        self.validate_circuit_entry(circuit[0], exp_len=exp_len, connectivity=connectivity)
+        I = np.eye(num_wires, dtype=int)
         assert I.shape == inv_synth_matrix.shape
         assert set(inv_synth_matrix.flat).issubset({0, 1})
         assert not np.allclose(I, inv_synth_matrix)
@@ -161,13 +236,57 @@ class TestParityNetworkSynth:
         assert set(inv_synth_matrix.flat).issubset({0, 1})
         assert not np.allclose(I, inv_synth_matrix)
 
+    @pytest.mark.parametrize(
+        "parities, exp_lens",
+        [
+            ([[1, 0, 0, 1, 0, 1], [0, 0, 1, 1, 0, 0], [0, 0, 1, 1, 0, 0]], (1, 0, 7)),
+            ([[1, 1, 1], [0, 1, 1], [1, 1, 1]], (1, 1, 0)),
+            ([[0, 1, 1, 1, 0, 0, 0, 1, 1], [0, 1, 1, 1, 0, 0, 0, 1, 1]], (10, 0)),
+            ([[1, 1], [1, 1], [0, 1], [1, 0], [1, 0], [0, 1]], (0, 0, 0, 0, 1, 0)),
+            (
+                [[1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1]],
+                (13, 0, 0),
+            ),
+        ],
+    )
+    def test_with_repeated_parities_path(self, parities, exp_lens):
+        """Test that repeated (non-unit vector-)parities are synthesized in sequence and
+        require no CNOT between their RZ gates, with path connectivity."""
+
+        num_wires = len(parities[0])
+        connectivity = nx.path_graph(num_wires)
+        P = np.array(parities).T
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
+        assert isinstance(circuit, list) and len(circuit) == len(parities)
+        for entry, exp_len in zip(circuit, exp_lens, strict=True):
+            self.validate_circuit_entry(entry, exp_len=exp_len)
+        I = np.eye(num_wires, dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize("connectivity", [None, "path", "star", "random"])
     @pytest.mark.parametrize("n, seed", [(2, 851), (3, 231), (4, 8241), (5, 214)])
     @pytest.mark.parametrize("num_parities", (1, 2, 3, 10, 20))
-    def test_roundtrip(self, num_parities, n, seed):
+    def test_roundtrip(self, num_parities, n, seed, connectivity):
         """Test that the parity table of a randomly sampled CNOT+RZ circuit is synthesized
         into a new CNOT+RZ circuit with the same parities, and that the inverse of the
         parity matrix of the new circuit is reported correctly."""
         # pylint: disable=unbalanced-tuple-unpacking
+
+        if n == 2 and connectivity is not None:
+            pytest.skip(reason="All connected graphs for n=2 are equal")
+        if connectivity == "path":
+            connectivity = nx.path_graph(n)
+        elif connectivity == "star":
+            connectivity = nx.star_graph(n - 1)
+        elif connectivity == "random":
+            connected = False
+            seed = 5712
+            while not connected:
+                connectivity = nx.gnp_random_graph(n, 0.2, seed)
+                seed += 1
+                connected = nx.is_connected(connectivity)
 
         np.random.seed(seed)  # todo: proper seeding
         # Make all cnot ops
@@ -190,8 +309,8 @@ class TestParityNetworkSynth:
 
         angles_ = list(angles)
         # Synthesize parity network and compute new PL circuit from it
-        new_circuit, inv_parity_matrix = _parity_network_synth(P)
-        new_circuit = sum(
+        new_circuit, inv_parity_matrix = _parity_network_synth(P, connectivity)
+        new_ops = sum(
             [
                 [qml.CNOT(_cnot) for _cnot in sub_circuit]
                 + [qml.RZ(angles_.pop(angle_idx), qubit_idx)]
@@ -201,12 +320,15 @@ class TestParityNetworkSynth:
         )
         # Compute IR of new PL circuit
         new_parity_matrix, new_P, new_angles = phase_polynomial(
-            qml.tape.QuantumScript(new_circuit), wire_order=range(n)
+            qml.tape.QuantumScript(new_ops), wire_order=range(n)
         )
         # Compare phase parities and make sure that the inv_parity_matrix is valid
         assert_allclose(new_P @ new_angles, P @ angles)
         assert_binary_matrix(inv_parity_matrix)
         assert_equal((new_parity_matrix @ inv_parity_matrix) % 2, np.eye(n, dtype=int))
+        if connectivity is not None:
+            for *_, sub_circuit in new_circuit:
+                assert all(connectivity.has_edge(*_cnot) for _cnot in sub_circuit)
 
 
 def translate_program_to_xdsl(program):
@@ -259,8 +381,8 @@ class TestParitySynthPass:
     """Unit tests for ParitySynthPass."""
 
     pipeline = (ParitySynthPass(),)
-    pipeline_path_graph_2 = (ParitySynthPass(connectivity=nx.path_graph(2)),)
-    pipeline_path_graph_4 = (ParitySynthPass(connectivity=nx.path_graph(4)),)
+    pipeline_path_graph_2 = (ParitySynthPass(connectivity=path_2),)
+    pipeline_path_graph_4 = (ParitySynthPass(connectivity=path_4),)
 
     def test_no_phase_polynomial_ops(self, run_filecheck):
         """Test that nothing changes when there are no phase polynomial gates."""
