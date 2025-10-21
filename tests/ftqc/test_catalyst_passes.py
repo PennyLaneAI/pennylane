@@ -25,6 +25,8 @@ from pennylane.ftqc.catalyst_passes import (
     to_ppr,
 )
 
+pytest.importorskip("jax")
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
