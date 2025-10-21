@@ -116,6 +116,7 @@
   field in the TOML file is used as the source of truth.
   [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
+  [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
 <h3>Documentation 📝</h3>
 
