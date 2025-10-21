@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ForceField>
+ <Info>
+  <DateGenerated>2025-09-04</DateGenerated>
+  <Source>Custom HCN parameters based on GAFF</Source>
+  <Reference>Generated for DSO vibrational workflow</Reference>
+ </Info>
+ <AtomTypes>
+  <!-- HCN atom types -->
+  <Type name="hc" class="HC" element="H" mass="1.008"/>
+  <Type name="c1" class="C1" element="C" mass="12.01"/>
+  <Type name="n1" class="N1" element="N" mass="14.007"/>
+ </AtomTypes>
+ <Residues>
+  <!-- Support both HCN and CHN residue names for compatibility -->
+  <Residue name="HCN">
+   <Atom name="H1" type="hc"/>
+   <Atom name="C1" type="c1"/>
+   <Atom name="N1" type="n1"/>
+   <Bond atomName1="H1" atomName2="C1"/>
+   <Bond atomName1="C1" atomName2="N1"/>
+  </Residue>
+  <Residue name="CHN">
+   <Atom name="H1" type="hc"/>
+   <Atom name="C1" type="c1"/>
+   <Atom name="N1" type="n1"/>
+   <Bond atomName1="H1" atomName2="C1"/>
+   <Bond atomName1="C1" atomName2="N1"/>
+  </Residue>
+ </Residues>
+ <HarmonicBondForce>
+  <Bond class1="HC" class2="C1" length="0.1064" k="374886.4"/>
+  <Bond class1="C1" class2="N1" length="0.1153" k="963184.0"/>
+ </HarmonicBondForce>
+ <HarmonicAngleForce>
+  <Angle class1="HC" class2="C1" class3="N1" angle="3.14159" k="167.36"/>
+ </HarmonicAngleForce>
+ <NonbondedForce coulomb14scale="0.8333333333" lj14scale="0.5">
+  <Atom type="hc" charge="0.223" sigma="0.247135" epsilon="0.06568"/>
+  <Atom type="c1" charge="0.427" sigma="0.339771" epsilon="0.36981"/>
+  <Atom type="n1" charge="-0.650" sigma="0.324499" epsilon="0.71128"/>
+ </NonbondedForce>
+</ForceField>

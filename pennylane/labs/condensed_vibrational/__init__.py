@@ -12,34 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This package contains experimental features for PennyLane.
+Condensed vibrational spectroscopy module for Pennylane.
+
+This module extends the standard vibrational spectroscopy capabilities to include
+condensed phase effects using QMM (Quantum Mechanical/Molecular Mechanical) methods.
 """
 
-r"""
-.. currentmodule:: pennylane
+from .pes_driver import condensed_vibrational_pes
 
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    dla
-    resource_estimation
-    trotter_error
-    intermediate_reps
-
-"""
-
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import trotter_error
-from pennylane.labs import intermediate_reps
-from pennylane.labs import condensed_vibrational
-
-__all__ = []
+__all__ = [
+    "condensed_vibrational_pes"
+]

@@ -1285,12 +1285,12 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
 
         dipole_cform_twobody = None
 
-        if pes.localized is True or pes.dipole_level > 1:
+        if pes.dipole_level > 1:
             dipole_cform_twobody = _cform_twomode_dipole(
                 pes, n_states, num_workers=num_workers, backend=backend, path=path
             )
 
-        if pes.localized is True or pes.dipole_level > 2:
+        if pes.dipole_level > 2:
             dipole_cform_threebody = _cform_threemode_dipole(
                 pes, n_states, num_workers=num_workers, backend=backend, path=path
             )
