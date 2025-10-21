@@ -26,11 +26,27 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
-from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix, postorder_traverse
+from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
 from ...dialects.quantum import CustomOp, QubitType
 from ...pass_api import compiler_transform
 
 ### xDSL-agnostic part
+
+
+def _apply_dfs_po_circuit(tree, source, P, inv_synth_matrix=None):
+    dfs_po = list(nx.dfs_postorder_nodes(tree, source=source))
+    sub_circuit = []
+    if inv_synth_matrix is None:
+        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+            sub_circuit.append((i, j))
+            P[i] += P[j]
+    else:
+        for i, j in zip(dfs_po[:-1], dfs_po[1:]):
+            sub_circuit.append((i, j))
+            P[i] += P[j]
+            inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
+    P %= 2
+    return sub_circuit
 
 
 def _loop_body_parity_network_synth(
@@ -60,8 +76,8 @@ def _loop_body_parity_network_synth(
         ``circuit`` representation is grown by one entry, corresponding to that parity.
 
     """
-    parity_idx = np.argmin(np.sum(P, axis=0))  # ╮ Line 3
-    parity = P[:, parity_idx]  # ╯
+    parity_idx = np.argmin(np.sum(P, axis=0))  # ┬ Line 3
+    parity = P[:, parity_idx]  #                 ╯
     graph_nodes = list(map(int, np.where(parity)[0]))  # Line 5, vertices
     if len(graph_nodes) == 1:
         # The parity already has Hamming weight 1, so we don't need any modifications
@@ -73,27 +89,24 @@ def _loop_body_parity_network_synth(
 
     # Note that there is a bug in the algorithm as written in the paper: We first want to compute
     # the edge weights for parity_graph (G_y) and _then_ slice out `parity` from `P`.
-    single_weights = np.sum(P, axis=1)  # ╮
-    parity_graph = nx.DiGraph()  # │
-    parity_graph.add_weighted_edges_from(  # │
-        [  # │
-            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])  # │ Line 5, edges
-            for i, j in product(graph_nodes, repeat=2)  # │
-            if i != j  # │
-        ]  # │
-    )  # ╯
+    single_weights = np.sum(P, axis=1)  #                                 ╮
+    parity_graph = nx.DiGraph()  #                                        │
+    parity_graph.add_weighted_edges_from(  #                              │
+        [  #                                                              │
+            (i, j, np.sum(np.mod(P[i] + P[j], 2)) - single_weights[j])  # ├ Line 5, edges
+            for i, j in product(graph_nodes, repeat=2)  #                 │
+            if i != j  #                                                  │
+        ]  #                                                              │
+    )  #                                                                  ╯
     arbor = nx.minimum_spanning_arborescence(parity_graph)  # Line 6
 
-    roots = [node for node, degree in arbor.in_degree() if degree == 0]  # Find the root of the tree
-    assert len(roots) == 1
+    # Find the root of the tree
+    root = next(iter(node for node, degree in arbor.in_degree() if degree == 0))
 
     P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)  # Line 4
-    sub_circuit = []
-    for i, j in postorder_traverse(arbor, source=roots[0]):  # Line 7 + 8
-        sub_circuit.append((i, j))  # Line 9
-        P[i] = np.mod(P[i] + P[j], 2)  # Line 10
-        inv_synth_matrix[:, i] += inv_synth_matrix[:, j]  # Update parity matrix (not in Alg.1)
-    circuit.append((parity_idx, roots[0], sub_circuit))  # Record parity index, qubit index, CNOTs
+    # Lines 7-10, update P and inv_synth_matrix in place
+    sub_circuit = _apply_dfs_po_circuit(arbor, root, P, inv_synth_matrix)
+    circuit.append((parity_idx, root, sub_circuit))  # Record parity index, qubit index, CNOTs
     return P, inv_synth_matrix, circuit
 
 
@@ -174,6 +187,12 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
     phase polynomials.
     """
 
+    phase_polynomial_ops: list[CustomOp]
+    init_wire_map: [QubitType, int]
+    global_wire_map: [QubitType, int]
+    phase_polynomial_ops: set[QubitType]
+    num_phase_polynomial_qubits: int
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._reset_vars()
@@ -181,10 +200,10 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
     def _reset_vars(self):
         """Initialize/reset variables that are used in ``match_and_rewrite`` as well as
         ``rewrite_phase_polynomial``."""
-        self.phase_polynomial_ops: list[CustomOp] = []
-        self.init_wire_map: dict[QubitType, int] = {}
-        self.phase_polynomial_qubits: set[QubitType] = set()
-        self.num_phase_polynomial_qubits: int = 0
+        self.phase_polynomial_ops = []
+        self.init_wire_map = {}
+        self.phase_polynomial_qubits = set()
+        self.num_phase_polynomial_qubits = 0
 
     def _record_phase_poly_op(self, op: CustomOp):
         """Add a ``CustomOp`` to the phase polynomial ops, remove its input qubits
@@ -326,10 +345,9 @@ class ParitySynthPass(passes.ModulePass):
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the ParitySynth pass."""
-        pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([ParitySynthPattern()]),
-            apply_recursively=False,
-        ).rewrite_module(module)
+        applier = pattern_rewriter.GreedyRewritePatternApplier([ParitySynthPattern()])
+        walker = pattern_rewriter.PatternRewriteWalker(applier, apply_recursively=False)
+        walker.rewrite_module(module)
 
 
 parity_synth_pass = compiler_transform(ParitySynthPass)
