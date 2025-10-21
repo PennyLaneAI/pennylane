@@ -16,7 +16,7 @@ This submodule provides the functionality to calculate vibrational Hamiltonians.
 """
 
 from .christiansen_ham import christiansen_bosonic, christiansen_dipole, christiansen_hamiltonian
-from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
+from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole, christiansen_integrals_placzek
 from .localize_modes import localize_normal_modes
 from .pes_generator import vibrational_pes
 from .taylor_ham import taylor_bosonic, taylor_coeffs, taylor_dipole_coeffs, taylor_hamiltonian

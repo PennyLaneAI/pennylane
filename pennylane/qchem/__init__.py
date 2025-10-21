@@ -90,6 +90,7 @@ from .vibrational import (
     christiansen_hamiltonian,
     christiansen_integrals,
     christiansen_integrals_dipole,
+    christiansen_integrals_placzek,
     localize_normal_modes,
     optimize_geometry,
     polarizable_pes,

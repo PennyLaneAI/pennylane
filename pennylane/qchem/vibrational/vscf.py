@@ -321,7 +321,7 @@ def _rotate_dipole(d_integrals, mode_rots, modals):
     """
     n = len(d_integrals)
 
-    nmodes = np.shape(d_integrals[0])[0]
+    nmodes = len(modals)
     imax = np.max(modals)
     d1_rot = np.zeros((3, nmodes, imax, imax))
 
@@ -349,6 +349,47 @@ def _rotate_dipole(d_integrals, mode_rots, modals):
 
     return dip_data
 
+def _rotate_placzek(p_integrals, mode_rots, modals):
+    r"""Generates VSCF rotated placzek.
+
+    Args:
+        p_integrals (list[TensorLike[float]]): list of n-mode expansion of placzek integrals
+        mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
+
+    Returns:
+        tuple(TensorLike[float]): a tuple of rotated placzek integrals
+
+    """
+    n = len(p_integrals)
+
+    nmodes = len(modals)
+    imax = np.max(modals)
+    p1_rot = np.zeros((6, nmodes, imax, imax))
+
+    for alpha in range(6):
+        p1_rot[alpha, ::] = _rotate_one_body(
+            p_integrals[0][alpha, ::], nmodes, mode_rots, modals=modals
+        )
+    plac_data = [p1_rot]
+
+    if n > 1:
+        p2_rot = np.zeros((6, nmodes, nmodes, imax, imax, imax, imax))
+        for alpha in range(6):
+            p2_rot[alpha, ::] = _rotate_two_body(
+                p_integrals[1][alpha, ::], nmodes, mode_rots, modals=modals
+            )
+        plac_data = [p1_rot, p2_rot]
+
+    if n > 2:
+        p3_rot = np.zeros((6, nmodes, nmodes, nmodes, imax, imax, imax, imax, imax, imax))
+        for alpha in range(6):
+            p3_rot[alpha, ::] = _rotate_three_body(
+                p_integrals[2][alpha, ::], nmodes, mode_rots, modals=modals
+            )
+        plac_data = [p1_rot, p2_rot, p3_rot]
+
+    return plac_data
 
 def _rotate_hamiltonian(h_integrals, mode_rots, modals):
     r"""Generates VSCF rotated Hamiltonian.
@@ -380,7 +421,7 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
     return h_data
 
 
-def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
+def vscf_integrals(h_integrals, d_integrals=None, p_integrals=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
     r"""Generates vibrational self-consistent field rotated integrals.
 
     This function converts the Christiansen vibrational Hamiltonian integrals obtained in the harmonic
@@ -392,6 +433,8 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         h_integrals (list[TensorLike[float]]): List of Hamiltonian integrals for up to 3 coupled vibrational modes.
             Look at the Usage Details for more information.
         d_integrals (list[TensorLike[float]]): List of dipole integrals for up to 3 coupled vibrational modes.
+            Look at the Usage Details for more information.
+        p_integrals (list[TensorLike[float]]): List of placzek integrals for up to 3 coupled vibrational modes.
             Look at the Usage Details for more information.
         modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
             Default value is the maximum number of modals.
@@ -458,6 +501,12 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
                 f"Building n-mode dipole is not implemented for n equal to {len(d_integrals)}."
             )
 
+    if p_integrals is not None:
+        if len(p_integrals) > 3:
+            raise ValueError(
+                f"Building n-mode dipole is not implemented for n equal to {len(p_integrals)}."
+            )
+
     nmodes = np.shape(h_integrals[0])[0]
 
     imax = np.shape(h_integrals[0])[1]
@@ -481,6 +530,12 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
 
     if d_integrals is not None:
         dip_data = _rotate_dipole(d_integrals, mode_rots, modals)
-        return h_data, dip_data
+    else:
+        dip_data = None
 
-    return h_data, None
+    if p_integrals is not None:
+        plac_data = _rotate_placzek(p_integrals, mode_rots, modals)
+    else:
+        plac_data = None
+
+    return h_data, dip_data, plac_data
