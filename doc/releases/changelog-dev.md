@@ -93,48 +93,7 @@
 
 * The `qml.QNode.add_transform` method is removed.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
-  [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
-  [(#8266)](https://github.com/PennyLaneAI/pennylane/pull/8266)
-
-<h3>Internal changes ⚙️</h3>
-
-* Add workflow to bump Catalyst and Lightning versions in RC branch, create new release tag and release draft, tag RC branch, and create PR to merge RC branch into master. [(8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
-
-* The `templates/subroutines` now has `arithmetic`, `qchem`, and `time_evolution` submodules.
-  [(#8333)](https://github.com/PennyLaneAI/pennylane/pull/8333)
-
-* `test_horizontal_cartan_subalgebra.py` uses our fixture `seed` for reproducibility and CI stability.
-  [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
-
-* Restructured the `qml.compiler.python_compiler` submodule to be more cohesive.
-  [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
-
-* `default.tensor` now supports graph decomposition mode during preprocessing.
-  [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
-
-* Remove legacy interface names from tests (e.g. `interface="jax-python"` or `interface="pytorch"`)
-  [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
-
-* `qml.devices.preprocess.decompose` now works in graph decomposition mode
-  when a gateset is provided. `default.qubit` and `null.qubit` can now use
-  graph decomposition mode.
-  [(#8225)](https://github.com/PennyLaneAI/pennylane/pull/8225)
-  [(#8265)](https://github.com/PennyLaneAI/pennylane/pull/8265)
-  [(#8260)](https://github.com/PennyLaneAI/pennylane/pull/8260)
-
-* `DefaultQubit` now determines the `mcm_method` in `Device.setup_execution_config`,
-  making it easier to tell which mcm method will be used. This also allows `defer_measurements` and `dynamic_one_shot` to be applied at different
-  locations in the preprocessing program.
-  [(#8184)](https://github.com/PennyLaneAI/pennylane/pull/8184)
-
-* Remove usage of the `pytest.mark.capture` marker from tests in the `tests/python_compiler` directory.
-  [(#8234)](https://github.com/PennyLaneAI/pennylane/pull/8234)
-
-* Update `pylint` to `3.3.8` in CI and `requirements-dev.txt`
-  [(#8216)](https://github.com/PennyLaneAI/pennylane/pull/8216)
-
-* Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
-  [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
+  [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 <h3>Deprecations 👋</h3>
 
@@ -148,6 +107,8 @@
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add workflow to bump Catalyst and Lightning versions in RC branch, create new release tag and release draft, tag RC branch, and create PR to merge RC branch into master. [(8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
