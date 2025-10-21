@@ -54,6 +54,7 @@ from .decompositions.controlled_decompositions import (
     decompose_mcx_with_no_worker,
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
+    decompose_mcx_temporary_and,
 )
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
@@ -1655,6 +1656,7 @@ add_decomps(
     decompose_mcx_one_borrowed_worker,
     decompose_mcx_one_zeroed_worker,
     decompose_mcx_with_no_worker,
+    decompose_mcx_temporary_and,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)

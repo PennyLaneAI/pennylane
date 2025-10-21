@@ -45,6 +45,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _mcx_two_workers,
     decompose_mcx_many_workers_explicit,
     decompose_mcx_one_worker_explicit,
+    decompose_mcx_temporary_and,
 )
 from pennylane.wires import Wires
 
@@ -964,6 +965,48 @@ class TestMCXDecomposition:
         expected_matrix = equivalent_op.sparse_matrix(wire_order=all_wires)
 
         assert qml.math.allclose(matrix, expected_matrix)
+
+    @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
+    def test_decomposition_temporary_and(self, n_ctrl_wires):
+        """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
+
+        control_wires = list(range(1, n_ctrl_wires + 1))
+        target_wire = 0
+        work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires)
+
+        def arbitrary_input(wires):
+            for ind, wire in enumerate(wires):
+                qml.RX(ind, wire)
+
+        dev = qml.device("default.qubit")
+
+        with qml.tape.QuantumTape() as tape:
+
+            arbitrary_input(wires=control_wires + [target_wire])
+            qml.MultiControlledX(
+                wires=control_wires + [target_wire],
+                work_wires=work_wires,
+            )
+
+            decompose_mcx_temporary_and(
+                wires=control_wires + [target_wire],
+                control_wires=control_wires,
+                work_wires=work_wires,
+                control_values=[1] * len(control_wires),
+            )
+
+            qml.adjoint(arbitrary_input)(wires=control_wires + [target_wire])
+
+        qs = qml.tape.QuantumScript(
+            tape.operations,
+            [qml.probs(wires=control_wires + [target_wire])],
+        )
+
+        program, _ = dev.preprocess()
+        tape = program([qs])
+        output = dev.execute(tape[0])[0]
+
+        assert np.isclose(output[0], 1.0)
 
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_no_workers(self, n_ctrl_wires):
