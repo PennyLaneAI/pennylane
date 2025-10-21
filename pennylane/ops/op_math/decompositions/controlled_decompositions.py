@@ -778,6 +778,7 @@ def _decompose_mcx_temporary_and_resource(num_control_wires, **__):
 
 
 def condition(num_control_wires, num_work_wires, **_):
+    """Auxiliar condition used in the TemporaryAnd decomposition"""
     if num_work_wires > num_control_wires - 1:
         return True
     return False
@@ -787,17 +788,17 @@ def condition(num_control_wires, num_work_wires, **_):
 @register_condition(lambda num_control_wires, **_: num_control_wires >= 2)
 @register_resources(_decompose_mcx_temporary_and_resource)
 def _decompose_mcx_temporary_and(wires, control_wires, work_wires, **_):
-    """Use waterfall TemporaryAnd decomposition."""
+    """Use waterfall TemporaryAnd decomposition. Fig 5. (https://arxiv.org/abs/1805.03662) provides
+    an example of this decomposition"""
 
-    print(wires, control_wires, work_wires, "patata")
     qml.TemporaryAND([control_wires[0], control_wires[1], work_wires[0]])
 
     for ind, wire in enumerate(control_wires[2:]):
         qml.TemporaryAND([work_wires[ind], wire, work_wires[ind + 1]])
 
-    qml.CNOT([work_wires[ind + 1], wires[-1]])
+    qml.CNOT([work_wires[len(control_wires) - 2], wires[-1]])
 
-    for ind, wire in enumerate(control_wires[2:]):
+    for ind, wire in reversed(list(enumerate(control_wires[2:]))):
         qml.adjoint(qml.TemporaryAND([work_wires[ind], wire, work_wires[ind + 1]]))
 
     qml.adjoint(qml.TemporaryAND([control_wires[0], control_wires[1], work_wires[0]]))
