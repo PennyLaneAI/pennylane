@@ -28,6 +28,9 @@ class DoubleFactorization(Operation):
 
     Atomic units are used throughout the class.
 
+    .. seealso::
+        :class:`~.FirstQuantization`
+
     Args:
         one_electron (array[array[float]]): one-electron integrals
         two_electron (tensor_like): two-electron integrals
