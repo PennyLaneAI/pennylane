@@ -134,4 +134,5 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
-Shuli Shu
+Shuli Shu,
+Leo Wei
