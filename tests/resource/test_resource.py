@@ -40,12 +40,12 @@ from pennylane.resource.resource import (
 )
 from pennylane.tape import QuantumScript
 
-DEPRECATED_CLASSES_FUNCTIONS = {
+DEPRECATED_CLASSES_FUNCTIONS = (
     "estimate_shots",
     "estimate_error",
     "FirstQuantization",
     "DoubleFactorization",
-}
+)
 
 
 @pytest.mark.parametrize("item", DEPRECATED_CLASSES_FUNCTIONS)
