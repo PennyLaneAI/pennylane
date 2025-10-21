@@ -67,10 +67,6 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
     if op1 in self_inverses and op1.name == op2.name:
         return True
 
-    # op1 is an `Adjoint` class and its base is equal to op2
-    if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
-        return True
-
     # op2 is an `Adjoint` class and its base is equal to op1
     if isinstance(op2, Adjoint) and _ops_equal(op2.base, op1):
         return True
@@ -270,29 +266,28 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr = _get_plxpr_cancel_inverses()
 
 
-def _can_cancel(current_gate, next_gate):
+def _can_cancel(op1, op2):
+    # Make sure that if one of the operators is an adjoint it is the latter
+    if isinstance(op1, Adjoint):
+        op1, op2 = op2, op1
 
-    if _are_inverses(current_gate, next_gate):
+    if _are_inverses(op1, op2):
         # If the wires are exactly the same, then we can safely remove both
-        if current_gate.wires == next_gate.wires:
+
+        if op1.wires == op2.wires:
             return True
         # If wires are not exactly equal, they don't have full overlap, or differ by a permutation
         # 1. There is not full overlap in the wires; we cannot cancel
-        if len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
-            current_gate.wires
-        ):
+        if len(Wires.shared_wires([op1.wires, op2.wires])) != len(op1.wires):
             return False
         # 2. There is full overlap, but the wires are in a different order.
         # If the wires are in a different order, gates that are "symmetric"
         # over all wires (e.g., CZ), can be cancelled.
-        if current_gate in symmetric_over_all_wires:
+        if op1 in symmetric_over_all_wires:
             return True
         # For gates that are symmetric over controls and have a single target (e.g., Toffoli),
         # we can still cancel as long as the target wire is the same
-        if (
-            current_gate in symmetric_over_control_wires
-            and current_gate.wires[-1] == next_gate.wires[-1]
-        ):
+        if op1 in symmetric_over_control_wires and op1.wires[-1] == op2.wires[-1]:
             return True
     return False
 
@@ -313,7 +308,7 @@ def _try_to_cancel_with_next(current_gate, list_copy):
 
 @partial(transform, plxpr_transform=cancel_inverses_plxpr_to_plxpr)
 def cancel_inverses(
-    tape: QuantumScript, iterative: bool = False
+    tape: QuantumScript, iterative: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform to remove any operations that are applied next to their
     (self-)inverses or adjoint.
@@ -321,7 +316,7 @@ def cancel_inverses(
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         iterative (bool): Whether or not to iteratively cancel inverses after a first pair
-            of mutual inverses has been cancelled.
+            of mutual inverses has been cancelled. Enabled by default.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -336,7 +331,7 @@ def cancel_inverses(
 
     .. code-block:: python
 
-        @cancel_inverses
+        @qml.transforms.cancel_inverses
         @qml.qnode(device=dev)
         def circuit(x, y, z):
             qml.Hadamard(wires=0)
@@ -351,8 +346,8 @@ def cancel_inverses(
             qml.X(1)
             return qml.expval(qml.Z(0))
 
-    >>> circuit(0.1, 0.2, 0.3)
-    0.999999999999999
+    >>> print(circuit(0.1, 0.2, 0.3))
+    1.0
 
     .. details::
         :title: Usage Details
@@ -387,7 +382,7 @@ def cancel_inverses(
         second qubit that should cancel. We can obtain a simplified circuit by running
         the ``cancel_inverses`` transform:
 
-        >>> optimized_qfunc = cancel_inverses(qfunc)
+        >>> optimized_qfunc = qml.transforms.cancel_inverses(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)(1, 2, 3))
         0: ──RZ(3.00)───────────╭●─┤  <Z>
@@ -404,11 +399,12 @@ def cancel_inverses(
 
         list_copy, cancelled = _try_to_cancel_with_next(current_gate, list_copy)
         if cancelled:
-            if iterative:
-                while cancelled and operations:
-                    list_copy, cancelled = _try_to_cancel_with_next(operations[-1], list_copy)
-                    if cancelled:
-                        operations.pop(-1)
+            if not iterative:
+                continue
+            while cancelled and operations:
+                list_copy, cancelled = _try_to_cancel_with_next(operations[-1], list_copy)
+                if cancelled:
+                    operations.pop(-1)
         else:
             operations.append(current_gate)
 

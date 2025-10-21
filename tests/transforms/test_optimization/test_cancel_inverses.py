@@ -24,7 +24,6 @@ from pennylane.transforms.optimization import cancel_inverses
 from pennylane.wires import Wires
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
 class TestCancelInverses:
     """Test that adjacent inverse gates are cancelled."""
 
@@ -223,7 +222,7 @@ class TestCancelInverses:
             if wrapped:
                 qml.Y(0)
 
-        transformed_qfunc = cancel_inverses(qfunc)
+        transformed_qfunc = cancel_inverses(qfunc, iterative=False)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -249,7 +248,7 @@ class TestCancelInverses:
             if wrapped:
                 qml.Y(0)
 
-        transformed_qfunc = cancel_inverses(qfunc, iterative=True)
+        transformed_qfunc = cancel_inverses(qfunc)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -259,6 +258,43 @@ class TestCancelInverses:
         else:
             names_expected = []
             wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    def test_deep_iterative_cancellation(self):
+        """Test that deeply nested pairs are cancelled for ``iterative=True``."""
+
+        def qfunc():
+            xs = np.arange(500)
+            for x in xs:
+                qml.RX(x, 0)
+            for x in xs[::-1]:
+                qml.adjoint(qml.RX(x, 0))
+
+        transformed_qfunc = cancel_inverses(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        names_expected = []
+        wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    @pytest.mark.parametrize("adjoint_first", [True, False])
+    def test_symmetric_over_all_wires(self, adjoint_first):
+        """Test that adjacent adjoint ops are cancelled due to wire symmetry."""
+
+        def qfunc(x):
+            if adjoint_first:
+                qml.adjoint(qml.MultiRZ(x, [2, 0, 1]))
+                qml.MultiRZ(x, [0, 1, 2])
+            else:
+                qml.MultiRZ(x, [2, 0, 1])
+                qml.adjoint(qml.MultiRZ(x, [0, 1, 2]))
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)(1.5).operations
+
+        names_expected = []
+        wires_expected = []
         compare_operation_lists(ops, names_expected, wires_expected)
 
 
