@@ -968,7 +968,7 @@ class TestMCXDecomposition:
 
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_temporary_and(self, n_ctrl_wires):
-        """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
+        """Test that the decomposed MCX gate using TemporaryAnd operators works properly."""
 
         control_wires = list(range(1, n_ctrl_wires + 1))
         target_wire = 0
