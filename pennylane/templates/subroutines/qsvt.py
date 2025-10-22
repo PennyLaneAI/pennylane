@@ -657,6 +657,19 @@ def _QSVT_resources(projectors, UA):
     for op in projectors:
         resources[resource_rep(type(op), **op.resource_params)] += 1
 
+def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
+    for idx, op in enumerate(projectors[:-1]):
+        op._unflatten(*op._flatten())
+
+        if idx % 2 == 0:
+            UA._unflatten(*UA._flatten())
+
+        else:
+            UA_adj = ops.adjoint(UA)
+            UA_adj._unflatten(*UA_adj._flatten())
+
+    projectors[-1]._unflatten(*projectors[-1]._flatten())
+
 
 # pylint: disable=protected-access
 if QSVT._primitive is not None:
