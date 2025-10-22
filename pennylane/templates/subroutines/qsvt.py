@@ -25,6 +25,10 @@ from typing import Literal
 import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
+from pennylane.ops import cond
+
+from pennylane.control_flow import for_loop
+
 from pennylane.decomposition import resource_rep, adjoint_resource_rep
 
 from pennylane import math, ops
@@ -474,6 +478,8 @@ class QSVT(Operation):
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
+    resource_keys = { "UA", "projectors" }
+
     def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
@@ -486,6 +492,13 @@ class QSVT(Operation):
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
         super().__init__(wires=total_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "UA": self.hyperparameters["UA"],
+            "projectors": self.hyperparameters["projectors"],
+        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -658,15 +671,19 @@ def _QSVT_resources(projectors, UA):
         resources[resource_rep(type(op), **op.resource_params)] += 1
 
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
-    for idx, op in enumerate(projectors[:-1]):
+
+    @for_loop(len(projectors) - 1)
+    def proj_loop(idx):
+        op = projectors[idx]
         op._unflatten(*op._flatten())
 
-        if idx % 2 == 0:
-            UA._unflatten(*UA._flatten())
+        cond(
+            idx % 2 == 0,
+            lambda: UA._unflatten(*UA._flatten()),
+            lambda: ops.adjoint(UA)._unflatten(*ops.adjoint(UA)._flatten())
+        )
 
-        else:
-            UA_adj = ops.adjoint(UA)
-            UA_adj._unflatten(*UA_adj._flatten())
+    proj_loop()  # pylint: disable=no-value-for-parameter
 
     projectors[-1]._unflatten(*projectors[-1]._flatten())
 
