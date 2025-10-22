@@ -26,15 +26,15 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Not all PennyLane devices, including ``default.qubit``, currently work with Catalyst. For a complete list of supported
+        Not all PennyLane devices, such as ``default.qubit``, currently work with Catalyst. For a complete list of supported
         backend devices, please consult
         :doc:`Catalyst's Supported Devices page <catalyst:dev/devices>`__.
 
     Args:
         fn (Callable): The quantum or classical function.
         compiler (str): Name of the compiler to use for just-in-time compilation. Available
-            options include ``"catalyst"`` (works with JAX) and
-            :func:`cuda_quantum <catalyst.third_party.cuda.cudaqjit>` (works with CUDA Quantum).
+            options include :func:`"catalyst" <catalyst.qjit>` and
+:func:`"cuda_quantum" <catalyst.third_party.cuda.cudaqjit>` (for integration with CUDA Quantum).
         autograph (bool): Experimental support for automatically converting Python control flow
             statements (including ``if`` statements, ``for`` and ``while`` loops) to
             Catalyst-compatible control flow, and more. For more details, see the
