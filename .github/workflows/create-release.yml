@@ -12,7 +12,7 @@ on:
         type: string
         default: 'main'
       release_notes:
-        description: 'Whether to create a PR for the release or directly push to the branch'
+        description: 'The release notes to use for the GitHub release'
         required: true
         type: string
       bump_catalyst_lightning:
