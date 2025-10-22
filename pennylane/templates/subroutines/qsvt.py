@@ -16,7 +16,7 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import copy
-from collections import Counter
+from collections import defaultdict
 from collections.abc import Sequence
 from functools import reduce
 from typing import Literal
@@ -662,7 +662,9 @@ class QSVT(Operation):
 
 
 def _QSVT_resources(projectors, UA):
-    resources = Counter(
+    resources = defaultdict(int)
+
+    resources.update(
         {
             resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
             adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1)
