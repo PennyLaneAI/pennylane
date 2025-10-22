@@ -404,8 +404,10 @@ def _get_plxpr_defer_measurements():
                 args_slice=args_slice,
             )
 
+        from pennylane.capture import _restore_slice
+
         conditions = get_mcm_predicates(conditions[:-1])
-        args = invals[args_slice]
+        args = invals[_restore_slice(args_slice)]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
 
@@ -414,7 +416,7 @@ def _get_plxpr_defer_measurements():
 
                 for branch, value in condition.items():
                     # When reduce_postselected is True, some branches can be ()
-                    cur_consts = invals[consts_slices[i]]
+                    cur_consts = invals[_restore_slice(consts_slices[i])]
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
                         *args,

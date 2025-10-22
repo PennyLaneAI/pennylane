@@ -795,6 +795,12 @@ def _get_cond_qfunc_prim():
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
+        # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+        from pennylane.capture import _restore_slice
+
+        args_slice = _restore_slice(args_slice)
+        consts_slices = [_restore_slice(s) for s in consts_slices]
+
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
         args = all_args[args_slice]
