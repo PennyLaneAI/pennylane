@@ -258,12 +258,12 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     ):
         r"""Initialize the TrotterProduct class"""
 
-        if check_hermitian is None:
+        if check_hermitian is True:
             warnings.warn(
                 "The `check_hermitian` argument is deprecated and will be removed in PennyLane v0.45. If you need to check if the Hamiltonian is Hermitian, please do so manually and consider using `qml.is_hermitian` to do so.",
                 PennyLaneDeprecationWarning,
             )
-            check_hermitian = False
+        check_hermitian = False
 
         if order <= 0 or order != 1 and order % 2 != 0:
             raise ValueError(
