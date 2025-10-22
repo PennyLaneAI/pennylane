@@ -496,6 +496,7 @@ jobs:
         git+https://github.com/xdslproject/xdsl-jax.git@main
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
+        # TODO: Remove once galois supports a numba version that supports numpy>=2.2.
         numpy<2.2
 
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
