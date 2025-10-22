@@ -34,6 +34,7 @@
 <h3>Breaking changes 💔</h3>
 
 * Arg order to :class:`~.AllSinglesDoubles` has been reversed from `wires, hf_state` to `hf_state, wires`.
+  [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
