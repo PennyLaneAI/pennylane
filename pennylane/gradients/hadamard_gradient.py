@@ -75,6 +75,7 @@ def _expand_transform_hadamard(
         tape,
         stopping_condition=_hadamard_stopping_condition,
         skip_initial_state_prep=False,
+        target_gates={"X", "Y", "Z", "RX", "RY", "RZ", "H", "CNOT"},
         name="hadamard",
         error=DecompositionUndefinedError,
     )

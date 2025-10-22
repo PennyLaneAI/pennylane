@@ -175,6 +175,7 @@ expand_trainable_multipar = create_expand_fn(
     depth=None,
     stop_at=_trainable_multipar_stopping_fn,
     docstring=_expand_trainable_multipar_doc,
+    gate_set={"X", "Y", "Z", "RX", "RY", "RZ", "H", "CNOT"},
 )
 
 
