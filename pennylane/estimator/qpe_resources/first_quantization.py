@@ -30,7 +30,9 @@ class FirstQuantization(Operation):
     the number of electrons and the lattice vectors need to be defined. The costs can then be
     computed using the functions :func:`~.pennylane.estimator.FirstQuantization.gate_cost` and
     :func:`~.pennylane.estimator.FirstQuantization.qubit_cost` with a target error that has the default
-    value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
+    value of 0.0016 Ha (chemical accuracy). 
+    
+    Atomic units are used throughout the class.
 
     Args:
         n (int): number of plane waves
