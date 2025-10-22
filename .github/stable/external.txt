@@ -79,8 +79,8 @@ ipywidgets==8.1.7
 isoduration==20.11.0
 isort==6.0.1
 itsdangerous==2.2.0
-jax==0.6.2
-jaxlib==0.6.2
+jax==0.7.0
+jaxlib==0.7.0
 jedi==0.19.2
 Jinja2==3.1.6
 joblib==1.5.2
