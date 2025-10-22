@@ -160,58 +160,72 @@ def device(name, *args, **kwargs):
     >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
     (array([1., 1., 1.]), array([ 1.,  1.,  1., -1.]), array([ 1.,  1., -1.,  1.]))
 
-    When constructing a device, we may optionally pass a dictionary of custom
-    decompositions to be applied to certain operations upon device execution.
-    This is useful for enabling support of gates on devices where they would normally
-    be unsupported.
+    .. details::
+        :title: Custom Decompositions Details
 
-    For example, suppose we are running on an ion trap device that does not
-    natively implement the CNOT gate, but we would still like to write our
-    circuits in terms of CNOTs. On an ion trap device, CNOT can be implemented
-    using the ``IsingXX`` gate. We first define a decomposition function
-    (such functions have the signature ``decomposition(*params, wires)``):
+        .. warning::
+            The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
+            has been deprecated and will be removed in v0.44. Instead, to apply custom decompositions for a
+            specific workflow, use the ``qml.transforms.decompose`` transform with the new
+            graph-based system enabled via ``qml.decomposition.enable_graph()``. See the documentation
+            on **Customizing Decompositions** in the :func:`qml.transforms.decompose <pennylane.transforms.decompose>`
+            transfom for more details on how to define and register decomposition rules.
 
-    .. code-block:: python
+            For enabling support of gates on devices where they would normally be unsupported, see
+            the **Preprocessing** section under the :doc:`/development/plugins` page.
 
-        def ion_trap_cnot(wires, **_):
-            return [
-                qml.RY(np.pi/2, wires=wires[0]),
-                qml.IsingXX(np.pi/2, wires=wires),
-                qml.RX(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[1])
-            ]
+        When constructing a device, we may optionally pass a dictionary of custom
+        decompositions to be applied to certain operations upon device execution.
+        This is useful for enabling support of gates on devices where they would normally
+        be unsupported.
 
-    Next, we create a device and a QNode for testing. When constructing the
-    QNode, we can set the expansion strategy to ``"device"`` to ensure the
-    decomposition is applied and will be viewable when we draw the circuit.
-    Note that custom decompositions should accept keyword arguments even when
-    it is not used.
+        For example, suppose we are running on an ion trap device that does not
+        natively implement the CNOT gate, but we would still like to write our
+        circuits in terms of CNOTs. On an ion trap device, CNOT can be implemented
+        using the ``IsingXX`` gate. We first define a decomposition function
+        (such functions have the signature ``decomposition(*params, wires)``):
 
-    .. code-block:: python
+        .. code-block:: python
 
-        # As the CNOT gate normally has no decomposition, we can use default.qubit
-        # here for expository purposes.
-        dev = qml.device(
-            'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
-        )
+            def ion_trap_cnot(wires, **_):
+                return [
+                    qml.RY(np.pi/2, wires=wires[0]),
+                    qml.IsingXX(np.pi/2, wires=wires),
+                    qml.RX(-np.pi/2, wires=wires[0]),
+                    qml.RY(-np.pi/2, wires=wires[0]),
+                    qml.RY(-np.pi/2, wires=wires[1])
+                ]
 
-        @qml.qnode(dev)
-        def run_cnot():
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.X(1))
+        Next, we create a device and a QNode for testing. When constructing the
+        QNode, we can set the expansion strategy to ``"device"`` to ensure the
+        decomposition is applied and will be viewable when we draw the circuit.
+        Note that custom decompositions should accept keyword arguments even when
+        it is not used.
 
-    >>> print(qml.draw(run_cnot, level="device")())
-    0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
-    1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
+        .. code-block:: python
 
-    Some devices may accept additional arguments. For instance,
-    ``default.gaussian`` accepts the keyword argument ``hbar``, to set
-    the convention used in the commutation relation :math:`[\x,\p]=i\hbar`
-    (by default set to 2).
+            # As the CNOT gate normally has no decomposition, we can use default.qubit
+            # here for expository purposes.
+            dev = qml.device(
+                'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
+            )
 
-    Please refer to the documentation for the individual devices to see any
-    additional arguments that might be required or supported.
+            @qml.qnode(dev)
+            def run_cnot():
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.X(1))
+
+        >>> print(qml.draw(run_cnot, level="device")())
+        0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
+        1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
+
+        Some devices may accept additional arguments. For instance,
+        ``default.gaussian`` accepts the keyword argument ``hbar``, to set
+        the convention used in the commutation relation :math:`[\x,\p]=i\hbar`
+        (by default set to 2).
+
+        Please refer to the documentation for the individual devices to see any
+        additional arguments that might be required or supported.
     """
     if name not in plugin_devices:
         # Device does not exist in the loaded device list.
