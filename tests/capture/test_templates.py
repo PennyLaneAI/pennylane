@@ -31,6 +31,29 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
+def normalize_for_comparison(obj):
+    """Normalize objects for comparison by converting tuples to lists recursively.
+
+    In JAX 0.7.0, _make_hashable converts lists to tuples for hashability.
+    This function reverses that for test comparisons.
+    """
+    # Don't normalize special objects like operators, arrays, or functions
+    if hasattr(obj, "__class__") and (
+        "Operator" in str(obj.__class__.__mro__) or "Array" in str(type(obj)) or callable(obj)
+    ):
+        return obj
+
+    if isinstance(obj, dict):
+        return {k: normalize_for_comparison(v) for k, v in obj.items()}
+    elif isinstance(obj, tuple):
+        # Convert tuple to list and normalize contents
+        return [normalize_for_comparison(item) for item in obj]
+    elif isinstance(obj, list):
+        return [normalize_for_comparison(item) for item in obj]
+    else:
+        return obj
+
+
 unmodified_templates_cases = [
     (qml.AmplitudeEmbedding, (jnp.array([1.0, 0.0]), 2), {}),
     (qml.AmplitudeEmbedding, (jnp.eye(4)[2], [2, 3]), {"normalize": False}),
@@ -222,7 +245,8 @@ def test_unmodified_templates(template, args, kwargs):
         wires = (wires,)
     assert eqn.params.pop("n_wires") == len(wires)
     # Check that remaining kwargs are passed properly to the eqn
-    assert eqn.params == kwargs
+    # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
+    assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
 
 # Only add a template to the following list if you manually added a test for it to
@@ -307,7 +331,7 @@ class TestModifiedTemplates:
         assert eqn.invars[0] == jaxpr.eqns[4].outvars[0]  # the sum op
         assert eqn.invars[1].val == 2.4
 
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -346,7 +370,7 @@ class TestModifiedTemplates:
         assert eqn.primitive == qml.AmplitudeAmplification._primitive
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # Hadamard
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]  # FlipSign
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -443,7 +467,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.FermionicDoubleExcitation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -707,7 +731,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.QuantumMonteCarlo._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -737,7 +761,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Qubitization._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -771,7 +795,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.QROM._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -805,7 +829,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.QROMStatePreparation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -874,7 +898,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.PhaseAdder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -908,7 +932,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Adder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -941,7 +965,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.SemiAdder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -975,7 +999,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Multiplier._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1010,7 +1034,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.OutMultiplier._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1045,7 +1069,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.OutAdder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1080,7 +1104,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.ModExp._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1119,7 +1143,7 @@ class TestModifiedTemplates:
         assert eqn.primitive == qml.OutPoly._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
 
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
@@ -1225,7 +1249,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[3]
         assert eqn.primitive == qml.QuantumPhaseEstimation._primitive
         assert eqn.invars == jaxpr.eqns[2].outvars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -1294,7 +1318,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.Superposition._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
