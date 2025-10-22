@@ -255,7 +255,7 @@ an error will be raised. In this case, you may need to override the decompositio
 via the ``decomposer`` argument. 
 
 For example, consider we have a device with ``RX``, ``RY`` and ``IsingXX`` as native gates but we want
-to execute a circuit written in terms of ``CNOT``s. Then, we can define a decomposition for ``CNOT``
+to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decomposition for ``CNOT`` 
 (e.g., ``custom_decomposer``) and pass it to the decomposer:
 
 .. code-block:: python

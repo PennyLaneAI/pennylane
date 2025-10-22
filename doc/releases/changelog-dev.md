@@ -54,6 +54,12 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
+  and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
+  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
+  the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
+  [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
@@ -63,3 +69,4 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
+Gabriela Sanchez Diaz,

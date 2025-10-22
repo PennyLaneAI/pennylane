@@ -165,14 +165,15 @@ def device(name, *args, **kwargs):
 
         .. warning::
             The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
-            has been deprecated and will be removed in v0.44. Instead, to apply custom decompositions for a
-            specific workflow, use the ``qml.transforms.decompose`` transform with the new
+            has been deprecated and will be removed in v0.44. Instead, to specify custom decompositions for
+            your operators, use the ``qml.transforms.decompose`` transform with the new
             graph-based system enabled via ``qml.decomposition.enable_graph()``. See the documentation
-            on **Customizing Decompositions** in the :func:`qml.transforms.decompose <pennylane.transforms.decompose>`
-            transfom for more details on how to define and register decomposition rules.
+            on **Customizing Decompositions** in :func:`~.transforms.decompose` for more details on how
+            to define and register decomposition rules.
 
             For enabling support of gates on devices where they would normally be unsupported, see
-            the **Preprocessing** section under the :doc:`/development/plugins` page.
+            the details about operator decomposition under the **Preprocessing** section in
+            :doc:`Building a plugin </development/plugins>`.
 
         When constructing a device, we may optionally pass a dictionary of custom
         decompositions to be applied to certain operations upon device execution.
