@@ -254,11 +254,11 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian=None, id=None
+        self, hamiltonian, time, n=1, order=1, check_hermitian="unset", id=None
     ):
         r"""Initialize the TrotterProduct class"""
 
-        if check_hermitian is True:
+        if check_hermitian != "unset":
             warnings.warn(
                 "The `check_hermitian` argument is deprecated and will be removed in PennyLane v0.45. If you need to check if the Hamiltonian is Hermitian, please do so manually and consider using `qml.is_hermitian` to do so.",
                 PennyLaneDeprecationWarning,
