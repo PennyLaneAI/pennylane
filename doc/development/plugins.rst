@@ -286,7 +286,7 @@ RY(-1.5707963267948966, wires=[1]),
 expval(Z(0))]
 
 An alternative approach for overriding the decompositions of certain operators is by taking advantage of
-the new graph-based decomposition algorithm.
+the new graph-based decomposition algorithm, with :func:`<qml.decomposition.enable_graph()> pennylane.decomposition.enable_graph`.
 In this case the ``target_gates`` kwarg needs to be specified in the :func:`~pennylane.devices.preprocess.decompose`
 transform. Note that the stopping condition function defines whether an operator should be decomposed,
 while the ``target_gates`` defines the set of operator types that the graph-based decomposition
