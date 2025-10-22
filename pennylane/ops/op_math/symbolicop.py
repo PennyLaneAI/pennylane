@@ -52,7 +52,10 @@ class SymbolicOp(Operator):
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         # has no wires, so doesn't need any wires processing
-        return cls._primitive.bind(*args, **kwargs)
+        # JAX 0.7.1: Remove _pauli_rep from kwargs as PauliSentence is not hashable
+        # It will be recomputed in __init__ if needed
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k != "_pauli_rep"}
+        return cls._primitive.bind(*args, **filtered_kwargs)
 
     @handle_recursion_error
     def __copy__(self):

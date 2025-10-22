@@ -574,10 +574,15 @@ class Controlled(SymbolicOp):
         id=None,
     ):
         control_wires = Wires(control_wires)
+        # JAX 0.7.1 requires all primitive parameters to be hashable
+        # Convert control_values list to tuple if it's not None
+        control_values_hashable = (
+            tuple(control_values) if isinstance(control_values, list) else control_values
+        )
         return cls._primitive.bind(
             base,
             *control_wires,
-            control_values=control_values,
+            control_values=control_values_hashable,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )

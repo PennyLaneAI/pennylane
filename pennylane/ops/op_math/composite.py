@@ -63,7 +63,10 @@ class CompositeOp(Operator):
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         # needs to be overwritten because it doesnt take wires
-        return cls._primitive.bind(*args, **kwargs)
+        # JAX 0.7.1: Remove _pauli_rep from kwargs as PauliSentence is not hashable
+        # It will be recomputed in __init__ if needed
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k != "_pauli_rep"}
+        return cls._primitive.bind(*args, **filtered_kwargs)
 
     def _flatten(self):
         return tuple(self.operands), tuple()
