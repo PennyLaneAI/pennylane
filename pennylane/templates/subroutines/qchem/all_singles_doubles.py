@@ -16,6 +16,7 @@ Contains the AllSinglesDoubles template.
 """
 # pylint: disable=too-many-arguments,protected-access
 import copy
+import itertools
 
 import numpy as np
 
@@ -169,8 +170,15 @@ class AllSinglesDoubles(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        all_wires = []
+        for sub in list(args[1]) + kwargs["singles"] + kwargs["doubles"]:
+            if isinstance(sub, list):
+                for wire in sub:
+                    all_wires.append(wire)
+            else:
+                all_wires.append(sub)
         return super()._primitive_bind_call(
-            weights=args[0], hf_state=args[2], wires=args[1], **kwargs
+            weights=args[0], hf_state=args[2], wires=list(set(all_wires)), **kwargs
         )
 
     @property
@@ -210,7 +218,7 @@ class AllSinglesDoubles(Operation):
             weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
                 angles entering the :class:`~.pennylane.SingleExcitation` and
                 :class:`~.pennylane.DoubleExcitation` operations, in that order
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (Any or Iterable[Any]): wires that the BasisState operator acts on
             hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 Hartree-Fock state. ``hf_state`` is used to initialize the wires.
             singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
