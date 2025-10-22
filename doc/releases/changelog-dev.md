@@ -64,11 +64,11 @@
   Please use ``level='device'`` instead to apply the transform at the device level.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.	
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
   Instead, these functions should be imported from the ``pennylane.noise`` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
-* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
@@ -85,7 +85,7 @@
   ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
   ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are assumed to be restored to their original state upon completing the decomposition.
@@ -95,7 +95,7 @@
   methods should be used instead.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
-* `MeasurementProcess.expand` is removed. 
+* `MeasurementProcess.expand` is removed.
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
   can be used instead.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
@@ -112,13 +112,17 @@
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
-  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. 
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary.
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
 
+* Reclassifies `registers` as a tertiary module for use with tach.
+  [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
+
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
-  that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
+  that included the wrong SSA value for final qubit insertion and deallocation at the end of the
+  circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
 * The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
@@ -137,7 +141,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested, 
+* Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
+  instance from being constructed.
+  [(#8456)](https://github.com/PennyLaneAI/pennylane/pull/8456)
+
+* Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested,
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
 
@@ -150,3 +158,4 @@ Lillian Frederiksen,
 Christina Lee,
 Shuli Shu,
 Jay Soni,
+David Wierichs,
