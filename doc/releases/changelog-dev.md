@@ -114,7 +114,7 @@
     - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
     - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
-* `argnum` has been renamed `argnums` for `qml.grad`, `qml.jacobian`, `qml.jvp` and `qml.vjp`.
+* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and `qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
