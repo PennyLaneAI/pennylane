@@ -177,8 +177,8 @@ def register_custom_staging_rule(
         """
         # In JAX 0.7+: create Var directly, then create tracer for it
         # Use public API for Var, internal API for ShapedArray/DShapedArray (not exposed)
-        import jax.extend.core as core
         import jax._src.core as src_core  # pylint: disable=import-outside-toplevel
+        import jax.extend.core as core
 
         if not hasattr(outvar.aval, "shape"):
             new_var = core.Var(outvar.aval)

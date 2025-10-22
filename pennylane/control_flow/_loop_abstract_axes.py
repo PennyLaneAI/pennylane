@@ -93,8 +93,8 @@ def get_dummy_arg(arg):
 
     """
     # In JAX 0.7+, access shape and dtype via .aval for both tracers and Vars
-    import jax.extend.core as core  # pylint: disable=import-outside-toplevel
     import jax._src.core as src_core  # pylint: disable=import-outside-toplevel
+    import jax.extend.core as core  # pylint: disable=import-outside-toplevel
     from jax.numpy import empty  # pylint: disable=import-outside-toplevel
 
     aval = arg.aval if hasattr(arg, "aval") else arg

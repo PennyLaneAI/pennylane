@@ -53,6 +53,10 @@ def _get_grad_prim():
     def _(*args, argnums, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+
+        # JAX 0.7.1: argnums was converted to tuple, but jax.grad expects int or sequence
+        # Keep as tuple since it's already a valid sequence type
+
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -66,6 +70,7 @@ def _get_grad_prim():
     def _(*args, argnums, jaxpr, n_consts, method, h):
         if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
+        # argnums is already a tuple in JAX 0.7.1
         return tuple(args[i + n_consts] for i in argnums)
 
     return grad_prim
@@ -93,6 +98,10 @@ def _get_jacobian_prim():
     def _(*args, argnums, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+
+        # JAX 0.7.1: argnums was converted to tuple, but jax.jacobian expects int or sequence
+        # Keep as tuple since it's already a valid sequence type
+
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -104,6 +113,7 @@ def _get_jacobian_prim():
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
     def _(*args, argnums, jaxpr, n_consts, method, h):
+        # argnums is already a tuple in JAX 0.7.1
         in_avals = tuple(args[i + n_consts] for i in argnums)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
@@ -160,8 +170,10 @@ def _capture_diff(func, argnums=None, diff_prim=None, method=None, h=None):
         num_abstract_shapes = len(abstract_shapes)
         shifted_argnums = [a + num_abstract_shapes for a in flat_argnums]
 
+        # JAX 0.7.1 requires all primitive parameters to be hashable
+        # Convert argnums list to tuple
         prim_kwargs = {
-            "argnums": shifted_argnums,
+            "argnums": tuple(shifted_argnums),
             "jaxpr": jaxpr.jaxpr,
             "n_consts": len(jaxpr.consts),
         }

@@ -42,10 +42,30 @@ def _create_transform_primitive(name):
     transform_prim.multiple_results = True
     transform_prim.prim_type = "transform"
 
+    def _unmake_hashable(obj):
+        """Recursively convert hashable tuples back to original dict/list structures."""
+        if (
+            isinstance(obj, tuple)
+            and len(obj) > 0
+            and isinstance(obj[0], tuple)
+            and len(obj[0]) == 2
+        ):
+            # Looks like a dict converted to tuple of key-value pairs
+            return {k: _unmake_hashable(v) for k, v in obj}
+        if isinstance(obj, tuple):
+            # Could be a list or just a tuple - keep as tuple since we can't distinguish
+            return tuple(_unmake_hashable(item) for item in obj)
+        return obj
+
     @transform_prim.def_impl
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
+        # Convert hashable tuples back to slices and dict for JAX 0.7+ compatibility
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+        consts_slice = slice(*consts_slice) if isinstance(consts_slice, tuple) else consts_slice
+        tkwargs = _unmake_hashable(tkwargs) if tkwargs else {}
+
         args = all_args[args_slice]
         consts = all_args[consts_slice]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
@@ -108,10 +128,31 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
     except ImportError:
         return
 
+    def _unmake_hashable_expand(obj):
+        """Recursively convert hashable tuples back to original dict/list structures."""
+        if (
+            isinstance(obj, tuple)
+            and len(obj) > 0
+            and isinstance(obj[0], tuple)
+            and len(obj[0]) == 2
+        ):
+            # Looks like a dict converted to tuple of key-value pairs
+            return {k: _unmake_hashable_expand(v) for k, v in obj}
+        if isinstance(obj, tuple):
+            # Could be a list or just a tuple - keep as tuple since we can't distinguish
+            return tuple(_unmake_hashable_expand(item) for item in obj)
+        return obj
+
     @ExpandTransformsInterpreter.register_primitive(primitive)
     def _(
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=too-many-arguments
+        # Convert hashable tuples back to slices and dict for JAX 0.7+ compatibility
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+        consts_slice = slice(*consts_slice) if isinstance(consts_slice, tuple) else consts_slice
+        targs_slice = slice(*targs_slice) if isinstance(targs_slice, tuple) else targs_slice
+        tkwargs = _unmake_hashable_expand(tkwargs) if tkwargs else {}
+
         args = invals[args_slice]
         consts = invals[consts_slice]
         targs = invals[targs_slice]
@@ -523,6 +564,16 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     return transformed_tapes, processing_fn
 
 
+def _make_hashable(obj):
+    """Recursively convert non-hashable types to hashable equivalents for JAX 0.7+."""
+    if isinstance(obj, dict):
+        return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
+    if isinstance(obj, (list, tuple)):
+        return tuple(_make_hashable(item) for item in obj)
+    # Assume everything else is either hashable or should remain as-is
+    return obj
+
+
 def _capture_apply(obj, transform, *targs, **tkwargs):
     @wraps(obj)
     def qfunc_transformed(*args, **kwargs):
@@ -538,15 +589,21 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         consts_slice = slice(n_args, n_args + n_consts)
         targs_slice = slice(n_args + n_consts, None)
 
+        # Convert slices and dict to hashable tuples for JAX 0.7+
+        args_slice_hashable = (args_slice.start, args_slice.stop, args_slice.step)
+        consts_slice_hashable = (consts_slice.start, consts_slice.stop, consts_slice.step)
+        targs_slice_hashable = (targs_slice.start, targs_slice.stop, targs_slice.step)
+        tkwargs_hashable = _make_hashable(tkwargs) if tkwargs else ()
+
         results = transform._primitive.bind(  # pylint: disable=protected-access
             *flat_args,
             *jaxpr.consts,
             *targs,
             inner_jaxpr=jaxpr.jaxpr,
-            args_slice=args_slice,
-            consts_slice=consts_slice,
-            targs_slice=targs_slice,
-            tkwargs=tkwargs,
+            args_slice=args_slice_hashable,
+            consts_slice=consts_slice_hashable,
+            targs_slice=targs_slice_hashable,
+            tkwargs=tkwargs_hashable,
         )
 
         assert flat_qfunc.out_tree is not None

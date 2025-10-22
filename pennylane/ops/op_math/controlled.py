@@ -291,6 +291,10 @@ def _get_ctrl_qfunc_prim():
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
+        # JAX 0.7.1: control_values was converted to tuple, convert back to list if needed
+        if control_values is not None and isinstance(control_values, tuple):
+            control_values = list(control_values)
+
         consts = args[:n_consts]
         control_wires = args[-n_control:]
         args = args[n_consts:-n_control]
@@ -325,6 +329,10 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
+        # JAX 0.7.1 requires all primitive parameters to be hashable
+        # Convert control_values list to tuple if it's not None
+        control_values_hashable = tuple(control_values) if control_values is not None else None
+
         ctrl_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
@@ -332,7 +340,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             *control_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            control_values=control_values,
+            control_values=control_values_hashable,
             work_wires=work_wires,
             n_consts=len(jaxpr.consts),
         )
