@@ -681,27 +681,22 @@ def _QSVT_resources(projectors, UA):
     for op in projectors:
         resources[resource_rep(type(op), **op.resource_params)] += 1
 
-    return resources
+    return dict(resources)
 
 
 @register_resources(_QSVT_resources)
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
-    if has_jax and capture.enabled():
-        projectors = jnp.array(projectors)
+    UA_adj = ops.adjoint(UA)
 
-    @for_loop(len(projectors) - 1)
-    def proj_loop(idx):
-        op = projectors[idx]
+    for idx, op in enumerate(projectors[:-1]):
         op._unflatten(*op._flatten())
 
         cond(
             idx % 2 == 0,
             lambda: UA._unflatten(*UA._flatten()),
-            lambda: ops.adjoint(UA)._unflatten(*ops.adjoint(UA)._flatten()),
-        )
-
-    proj_loop()  # pylint: disable=no-value-for-parameter
+            lambda: UA_adj._unflatten(*UA_adj._flatten()),
+        )()
 
     projectors[-1]._unflatten(*projectors[-1]._flatten())
 
