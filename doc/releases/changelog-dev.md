@@ -35,6 +35,7 @@
 
 * Arg order to :class:`~.AllSinglesDoubles` has been reversed from `wires, hf_state` to `hf_state, wires`, so that the 
   wires are provided last, to conform with the typical ordering and be compatible with arg parsing in `operation.py`.
+  [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
