@@ -16,4 +16,5 @@
 from .generic_fragments import generic_fragments, GenericFragment
 from .vibrational_fragments import vibrational_fragments
 from .vibronic_fragments import vibronic_fragments
-from .sparse_fragments import sparse_fragments
+from .sparse_fragments import sparse_fragments, SparseFragment, SparseState
+from .mpo_fragments import mpo_fragments, MPOperator, MPState

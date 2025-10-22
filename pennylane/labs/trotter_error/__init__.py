@@ -101,6 +101,9 @@ from .fragments import (
     vibrational_fragments,
     vibronic_fragments,
     sparse_fragments,
+    mpo_fragments,
+    MPOperator,
+    MPState,
 )
 from .product_formulas import (
     ProductFormula,
