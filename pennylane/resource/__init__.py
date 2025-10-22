@@ -12,20 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The ``resource`` module provides classes and functionality to estimate the quantum resources
+The ``resource`` module provides classes and functionality to track the quantum resources
 (number of qubits, circuit depth, etc.) required to implement advanced quantum algorithms.
 
+.. seealso::
+    The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
-Expectation Value Functions
----------------------------
-
-.. currentmodule:: pennylane.resource
-
-.. autosummary::
-    :toctree: api
-
-    ~estimate_error
-    ~estimate_shots
+.. warning::
+    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
+    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
+    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
+    in v0.45.
 
 Circuit specifications
 ----------------------
@@ -37,17 +34,6 @@ Circuit specifications
 
     ~specs
 
-
-Quantum Phase Estimation Resources
-----------------------------------
-
-.. currentmodule:: pennylane.resource
-
-.. autosummary::
-    :toctree: api
-
-    ~FirstQuantization
-    ~DoubleFactorization
 
 Error Tracking
 --------------
@@ -92,9 +78,10 @@ Tracking Resources for Custom Operations
 We can use the :code:`null.qubit` device with the :class:`pennylane.Tracker` to track the resources
 used in a quantum circuit with custom operations without execution.
 
-.. code-block:: python3
+.. code-block:: python
 
     from functools import partial
+    from pennylane import numpy as pnp
 
     class MyCustomAlgorithm(ResourcesOperation):
         num_wires = 2
@@ -118,7 +105,7 @@ used in a quantum circuit with custom operations without execution.
         MyCustomAlgorithm(wires=[1, 2])
         return qml.expval(qml.Z(1))
 
-    x = np.array(1.23, requires_grad=True)
+    x = pnp.array(1.23, requires_grad=True)
 
     with qml.Tracker(dev) as tracker:
         circuit(x)
@@ -130,15 +117,13 @@ We can examine the resources by accessing the :code:`resources` key:
 num_wires: 3
 num_gates: 7
 depth: 5
-shots: Shots(None)
+shots: Shots(total=100)
 gate_types:
-{"RZ": 1, "CNOT": 2, "Hadamard": 2, "PauliZ": 2}
+{'RZ': 1, 'CNOT': 2, 'Hadamard': 2, 'PauliZ': 2}
 gate_sizes:
 {1: 5, 2: 2}
 """
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
-from .first_quantization import FirstQuantization
-from .measurement import estimate_error, estimate_shots
 from .resource import (
     Resources,
     ResourcesOperation,
@@ -148,5 +133,29 @@ from .resource import (
     mul_in_parallel,
     substitute,
 )
-from .second_quantization import DoubleFactorization
 from .specs import specs
+
+
+def __getattr__(name):
+    if name in {
+        "estimate_error",
+        "estimate_shots",
+        "FirstQuantization",
+        "DoubleFactorization",
+    }:
+
+        # pylint: disable=import-outside-toplevel
+        import warnings
+        from pennylane import estimator
+        from pennylane.exceptions import PennyLaneDeprecationWarning
+
+        warnings.warn(
+            f"pennylane.{name} is no longer accessible from the resource module \
+                and must be imported as pennylane.estimator.{name}. \
+                    Support for access through this module will be removed in v0.45.",
+            PennyLaneDeprecationWarning,
+        )
+
+        return getattr(estimator, name)
+
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")  # pragma: no cover

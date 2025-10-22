@@ -117,7 +117,7 @@ class Identity(CVObservable, Operation):
         **Example**
 
         >>> print(qml.I.compute_eigvals())
-        [ 1 1]
+        [1. 1.]
         """
         return qml.math.ones(2**n_wires)
 
@@ -264,7 +264,7 @@ class GlobalPhase(Operation):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -280,31 +280,17 @@ class GlobalPhase(Operation):
     The circuit yields the same expectation values with and without the global phase:
 
     >>> circuit()
-    (tensor(-1., requires_grad=True), tensor(1., requires_grad=True))
+    (np.float64(-1.0), np.float64(1.0))
     >>> circuit(phi=0.123)
-    (tensor(-1., requires_grad=True), tensor(1., requires_grad=True))
+    (np.float64(-1.0), np.float64(1.0))
 
     However, the states of the two systems differ by a global phase factor:
 
     >>> circuit(return_state=True)
-    tensor([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j], requires_grad=True)
+    array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j])
     >>> circuit(return_state=True, phi=0.123)
-    tensor([0.        +0.j        , 0.        +0.j        ,
-            0.99244503-0.12269009j, 0.        +0.j        ], requires_grad=True)
-
-    The operator can be applied with a control to create a relative phase between terms:
-
-    .. code-block:: python3
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(0)
-            qml.ctrl(qml.GlobalPhase(0.123), 0)
-            return qml.state()
-
-        >>> circuit()
-        tensor([0.70710678+0.j        , 0.        +0.j        ,
-                0.70176461-0.08675499j, 0.        +0.j        ], requires_grad=True)
+    array([0.        +0.j        , 0.        +0.j        ,
+            0.99244503-0.12269009j, 0.        +0.j        ])
 
 
     """
@@ -353,7 +339,7 @@ class GlobalPhase(Operation):
         **Example**
 
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
-        array([6.123234e-17+1.j, 6.123234e-17+1.j])
+        array([6.123234e-17-1.j, 6.123234e-17-1.j])
         """
         if (
             qml.math.get_interface(phi) == "tensorflow"

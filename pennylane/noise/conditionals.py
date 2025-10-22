@@ -16,6 +16,7 @@
 Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
+
 from inspect import isclass, signature
 
 from pennylane import math, measurements
@@ -344,7 +345,6 @@ def _check_arithmetic_ops(op1, op2):
             not isinstance(op1, type(op2))
             or (op1.base.arithmetic_depth != op2.base.arithmetic_depth)
             or not math.allclose(op1.coeff, op2.coeff)
-            or (op1.num_steps != op2.num_steps)
         ):
             return False
         if op1.base.arithmetic_depth:
@@ -506,7 +506,6 @@ class MeasEq(BooleanFn):
         )
 
     def _check_meas(self, mp):
-
         if isclass(mp) and not issubclass(mp, measurements.MeasurementProcess):
             return False
 
@@ -666,7 +665,7 @@ def partial_wires(operation, *args, **kwargs):
     >>> func(2)
     RX(1.2, wires=[2])
     >>> func(qml.RY(1.0, ["wires"]))
-    RX(1.2, wires=["wires"])
+    RX(1.2, wires=['wires'])
 
     Additionally, an :class:`Operation <pennylane.operation.Operation>` class can
     also be provided, while providing required positional arguments via ``args``:
@@ -682,7 +681,7 @@ def partial_wires(operation, *args, **kwargs):
     RX(1.2, wires=[2])
     >>> rfunc = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)
     >>> rfunc(qml.RY(1.0, ["light"]))
-    RX(2.3, wires=["light"])
+    RX(2.3, wires=['light'])
 
     Finally, one may also use this with an instance of
     :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`

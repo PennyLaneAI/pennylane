@@ -37,7 +37,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript, expand_tape
@@ -199,13 +199,6 @@ class TestControlledInit:
         """Test checking work wires are not in contorl wires."""
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
-
-    @pytest.mark.parametrize("old_name, new_name", [("clean", "zeroed"), ("dirty", "borrowed")])
-    def test_old_work_wire_type_deprecated(self, old_name, new_name):
-        """Tests that specifying work_wire_type as 'clean' or 'dirty' is deprecated"""
-        with pytest.warns(PennyLaneDeprecationWarning, match="work_wire_type"):
-            op = Controlled(self.temp_op, "b", work_wires="c", work_wire_type=old_name)
-        assert op.work_wire_type == new_name
 
 
 class TestControlledProperties:
@@ -815,6 +808,14 @@ class TestMatrix:
 
 
 special_non_par_op_decomps = [
+    (
+        qml.Identity,
+        [],
+        [3],
+        [0, 1, 2],
+        (lambda wires: qml.ctrl(qml.Identity(wires[-1]), control=wires[:-1])),
+        [qml.Identity([0, 1, 2, 3])],
+    ),
     (qml.PauliY, [], [0], [1], qml.CY, [qml.CRY(np.pi, wires=[1, 0]), qml.S(1)]),
     (qml.PauliZ, [], [1], [0], qml.CZ, [qml.ControlledPhaseShift(np.pi, wires=[0, 1])]),
     (
@@ -1117,7 +1118,7 @@ class TestDecomposition:
         assert custom_ctrl_op.decomposition() == expected
         # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
         # to test, just the controlled decompositions logic.
-        if base_cls != qml.GlobalPhase:
+        if base_cls not in (qml.GlobalPhase, qml.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
         mat = qml.matrix(ctrl_op.decomposition, wire_order=active_wires)()

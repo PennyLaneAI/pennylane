@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,9 +28,11 @@ class FirstQuantization(Operation):
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
     the number of electrons and the lattice vectors need to be defined. The costs can then be
-    computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
-    :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
-    value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
+    computed using the functions :func:`~.pennylane.estimator.FirstQuantization.gate_cost` and
+    :func:`~.pennylane.estimator.FirstQuantization.qubit_cost` with a target error that has the default
+    value of 0.0016 Ha (chemical accuracy).
+
+    Atomic units are used throughout the class.
 
     Args:
         n (int): number of plane waves
@@ -48,12 +50,13 @@ class FirstQuantization(Operation):
     >>> vectors = np.array([[10.46219511,  0.00000000,  0.00000000],
     ...                     [ 0.00000000, 10.46219511,  0.00000000],
     ...                     [ 0.00000000,  0.00000000, 10.46219511]])
-    >>> algo = qml.resource.FirstQuantization(n, eta, vectors=vectors)
-    >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
-    >>>       algo.gates, # estimated number of non-Clifford gates
-    >>>       algo.qubits # estimated number of logical qubits
-    >>>       )
-    649912.4804278888 1.1e+13 4416
+    >>> algo = qml.estimator.FirstQuantization(n, eta, vectors=vectors)
+    >>> algo.lamb # the 1-Norm of the Hamiltonian
+    np.float64(649912.4804278888)
+    >>> f"{algo.gates:.1e}" # estimated number of non-Clifford gates
+    '1.1e+13'
+    >>> algo.qubits # estimated number of logical qubits
+    4416
 
     .. details::
         :title: Theory
@@ -200,8 +203,8 @@ class FirstQuantization(Operation):
 
         >>> n = 3
         >>> br = 8
-        >>> success_prob(n, br)
-        0.9999928850303523
+        >>> qml.estimator.FirstQuantization.success_prob(n, br)
+        np.float64(0.9999928850303523)
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
@@ -245,8 +248,8 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.001
-        >>> norm(n, eta, omega, error)
-        281053.75612801575
+        >>> qml.estimator.FirstQuantization.norm(n, eta, omega, error)
+        np.float64(281053.7561251118)
 
         .. details::
             :title: Theory
@@ -403,7 +406,7 @@ class FirstQuantization(Operation):
         **Example**
 
         >>> lz = 100
-        >>> _cost_qrom(lz)
+        >>> qml.estimator.FirstQuantization._cost_qrom(lz)
         21
         """
         if lz <= 0 or not isinstance(lz, (int, np.integer)):
@@ -442,7 +445,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> unitary_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.unitary_cost(n, eta, omega, error)
         17033
         """
         if n <= 0:
@@ -530,7 +533,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.01
-        >>> estimation_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.estimation_cost(n, eta, omega, error)
         102133985
         """
         if error <= 0.0:
@@ -578,7 +581,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> gate_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.gate_cost(n, eta, omega, error)
         3676557345574
         """
         if n <= 0:
@@ -637,7 +640,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qubit_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.qubit_cost(n, eta, omega, error)
         4377
         """
         if n <= 0:

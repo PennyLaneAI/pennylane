@@ -15,6 +15,7 @@
 Contains tests for the `qml.workflow.get_transform_program` getter and `construct_batch`.
 
 """
+
 from functools import partial
 
 import numpy as np
@@ -22,7 +23,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
 from pennylane.workflow import construct_batch, get_transform_program
@@ -61,14 +61,12 @@ class TestTransformProgramGetter:
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        expected_p0 = TransformContainer(qml.transforms.cancel_inverses.transform)
-        expected_p1 = TransformContainer(
-            qml.transforms.merge_rotations.transform, kwargs={"atol": 1e-5}
-        )
-        expected_p2 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
+        expected_p0 = TransformContainer(qml.transforms.cancel_inverses)
+        expected_p1 = TransformContainer(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
+        expected_p2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
 
         ps_expand_fn = TransformContainer(
-            qml.gradients.param_shift.expand_transform, kwargs={"shifts": 2}
+            qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
         p0 = get_transform_program(circuit, level=0)
@@ -88,12 +86,7 @@ class TestTransformProgramGetter:
         assert isinstance(p_grad, TransformProgram)
         p_default = get_transform_program(circuit)
         assert p_dev == p_default
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="`level=None` is deprecated",
-        ):
-            p_none = get_transform_program(circuit, None)
-        assert p_none == p_dev
+
         assert len(p_dev) == 10
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
@@ -162,11 +155,11 @@ class TestTransformProgramGetter:
 
         program = get_transform_program(circuit)
 
-        m1 = TransformContainer(qml.transforms.merge_rotations.transform)
+        m1 = TransformContainer(qml.transforms.merge_rotations)
         assert program[:1] == TransformProgram([m1])
 
         m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
-        assert program[1].transform == m2.transform.transform
+        assert program[1].transform == m2.transform
         assert program[1].kwargs["device"] == dev
 
         # a little hard to check the contents of a expand_fn transform
@@ -355,19 +348,6 @@ class TestConstructBatch:
         assert len(batch) == 2
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
-
-    def test_level_none_deprecated(self):
-        """Test that level=None raises a deprecation warning."""
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            return qml.state()
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="`level=None` is deprecated",
-        ):
-            construct_batch(circuit, level=None)
 
     def test_final_transform(self):
         """Test that the final transform is included when level="device"."""
