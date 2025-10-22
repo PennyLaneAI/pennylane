@@ -13,6 +13,17 @@
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
+  
+* With capture enabled, measurements can now be performed on Operator instances passed as closure
+  variables from outside the workflow scope.
+  [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
+
+* Users can now estimate the resources for quantum circuits that contain or decompose into
+  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
+  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
+  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
+
+* Wires can be specified via `range` with program capture and autograph.
 
 <h3>Breaking changes 💔</h3>
 
@@ -95,12 +106,19 @@
 
 <h3>Deprecations 👋</h3>
 
+* `argnum` has been renamed `argnums` for `qml.grad`, `qml.jacobian`, `qml.jvp` and `qml.vjp`.
+  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
+
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. 
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
+
+* Reclassifies `registers` as a tertiary module for use with tach.
+  [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
@@ -116,6 +134,7 @@
   field in the TOML file is used as the source of truth.
   [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
+  [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
 <h3>Documentation 📝</h3>
 
@@ -132,4 +151,5 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
-Shuli Shu
+Shuli Shu,
+Jay Soni,

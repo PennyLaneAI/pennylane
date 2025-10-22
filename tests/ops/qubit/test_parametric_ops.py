@@ -3469,13 +3469,13 @@ class TestSimplify:
             unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
             simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
-            unsimplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+            unsimplified_grad = qml.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
                 False,
                 wires,
                 *parameters,
                 **hyperparams,
             )
-            simplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+            simplified_grad = qml.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
                 True,
                 wires,
                 *parameters,
