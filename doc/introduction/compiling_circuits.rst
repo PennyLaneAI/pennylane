@@ -21,8 +21,8 @@ In addition to quantum circuit transforms, PennyLane also
 supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
 `Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
-of your workflow into a binary that can be run close to the accelerators.
-that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
+of your workflow into a binary that can be run close to the accelerators that you are using. 
+More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Compilation transforms for circuit optimization
 -----------------------------------------------
@@ -38,7 +38,6 @@ other PennyLane objects.
     ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.commute_controlled
     ~pennylane.transforms.merge_amplitude_embedding
-    ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.merge_rotations
     ~pennylane.transforms.pattern_matching
     ~pennylane.transforms.remove_barrier
