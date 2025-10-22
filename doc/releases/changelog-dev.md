@@ -43,20 +43,24 @@
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
+  ```pycon
   >>> qml.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
 
   The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
+  ```pycon
   >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
   >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
 
 * The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
   :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
