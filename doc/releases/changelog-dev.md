@@ -21,6 +21,15 @@
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
+* With capture enabled, measurements can now be performed on Operator instances passed as closure
+  variables from outside the workflow scope.
+  [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
+
+* Users can now estimate the resources for quantum circuits that contain or decompose into
+  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
+  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
+  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
+
 * Wires can be specified via `range` with program capture and autograph.
 
 <h3>Breaking changes 💔</h3>
@@ -147,4 +156,5 @@ Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
 Shuli Shu,
+Jay Soni,
 David Wierichs,
