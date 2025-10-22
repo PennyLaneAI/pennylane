@@ -48,6 +48,7 @@ from .decompositions.controlled_decompositions import (
     decompose_mcx_one_borrowed_worker,
     decompose_mcx_one_worker_explicit,
     decompose_mcx_one_zeroed_worker,
+    decompose_mcx_temporary_and,
     decompose_mcx_two_borrowed_workers,
     decompose_mcx_two_workers_explicit,
     decompose_mcx_two_zeroed_workers,
@@ -1655,6 +1656,7 @@ add_decomps(
     decompose_mcx_one_borrowed_worker,
     decompose_mcx_one_zeroed_worker,
     decompose_mcx_with_no_worker,
+    decompose_mcx_temporary_and,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
