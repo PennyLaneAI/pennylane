@@ -206,11 +206,11 @@ class AllSinglesDoubles(Operation):
                 :class:`~.pennylane.DoubleExcitation` operations, in that order
             hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 Hartree-Fock state. ``hf_state`` is used to initialize the wires.
+            wires (Any or Iterable[Any]): wires that the operator acts on
             singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
                 the :class:`~.pennylane.SingleExcitation` operations act on
             doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
                 the :class:`~.pennylane.DoubleExcitation` operations act on
-            wires (Any or Iterable[Any]): wires that the operator acts on
         Returns:
             list[.Operator]: decomposition of the operator
         """
