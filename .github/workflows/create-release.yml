@@ -83,7 +83,7 @@ jobs:
 
       - name: Create Release
         run: |
-          gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "PennyLane v${{ inputs.release_version }}" --notes "${{ inputs.release_notes }}" --draft
+          gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release ${{ inputs.release_version }}" --notes "${{ inputs.release_notes }}" --draft
 
   merge-rc-pr:
     name: Create PR to merge RC branch into master
