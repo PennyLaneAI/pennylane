@@ -239,16 +239,17 @@ The :func:`~pennylane.devices.preprocess.decompose` transform is typically requi
 decomposes unsupported operations to the device's native gate set. To define this transform a stopping condition needs
 to be specified. This is a function mapping an operator to a boolean that determines whether the operator should be decomposed.
 
-For example, for a device supporting the ``CNOT`` gate, the stopping condition and the decompose transform
+For example, for a device supporting the ``CNOT``, ``RX`` and ``RZ`` gates, the stopping condition and the decompose transform
 can be specified like so:
 
->>> from pennylane.devices.preprocess import decompose
->>> def stopping_condition(op):
-...     return op.name == "CNOT"
->>> tape = qml.tape.QuantumScript([qml.CNOT(wires=(0,1))], [qml.expval(qml.Z(0))])
->>> batch, fn = qml.devices.preprocess.decompose(tape, stopping_condition)
->>> batch[0].circuit
-[CNOT(wires=[0, 1]), expval(Z(0))]
+.. code-block:: python
+
+    from pennylane.devices.preprocess import decompose
+
+    def stopping_condition(op):
+        return obj.name in {"CNOT", "RX", "RZ"}
+    
+    program.add_transform(decompose, stopping_condition=stopping_condition, name="my_device")
 
 However, if the device native gate set is unreachable with the default decompositions defined in PennyLane,
 an error will be raised. In this case, you may need to override the decompositions of certain operators
@@ -256,7 +257,7 @@ via the ``decomposer`` argument.
 
 For example, consider we have a device with ``RX``, ``RY`` and ``IsingXX`` as native gates but we want
 to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decomposition for ``CNOT`` 
-(e.g., ``custom_decomposer``) and pass it to the decomposer:
+(e.g., ``custom_decomposer``) and pass it to the decomposer kwarg:
 
 .. code-block:: python
 
@@ -274,19 +275,16 @@ to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decom
                 qml.RY(-np.pi/2, wires=wires[1])
             ]
         return op.decomposition()
-
->>> circuit = qml.tape.QuantumScript([qml.CNOT(wires=(0,1))], [qml.expval(qml.Z(0))])
->>> batch, fn = decompose(circuit, stopping_condition, decomposer=custom_decomposer)
->>> batch[0].circuit
-[RY(1.5707963267948966, wires=[0]),
-IsingXX(1.5707963267948966, wires=[0, 1]),
-RX(-1.5707963267948966, wires=[0]),
-RY(-1.5707963267948966, wires=[0]),
-RY(-1.5707963267948966, wires=[1]),
-expval(Z(0))]
+    
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        decomposer=custom_decomposer,
+        name="my_device"
+    )
 
 An alternative approach for overriding the decompositions of certain operators is by taking advantage of
-the new graph-based decomposition algorithm, with :func:`<qml.decomposition.enable_graph()> pennylane.decomposition.enable_graph`.
+the new graph-based decomposition algorithm, with :func:`qml.decomposition.enable_graph() <~pennylane.decomposition.enable_graph>`.
 In this case the ``target_gates`` kwarg needs to be specified in the :func:`~pennylane.devices.preprocess.decompose`
 transform. Note that the stopping condition function defines whether an operator should be decomposed,
 while the ``target_gates`` defines the set of operator types that the graph-based decomposition
@@ -302,8 +300,6 @@ registered with ``qml.add_decomps``:
     def stopping_condition(op):
         return op.name in {"IsingXX", "RX", "RY"}
 
-    target_gates={qml.IsingXX, "RX", "RY"}
-
     @qml.register_resources({qml.RY: 3, qml.RX: 1, qml.IsingXX: 1})
     def decompose_cnot(wires, **_):
         qml.RY(np.pi/2, wires=wires[0]),
@@ -314,9 +310,13 @@ registered with ``qml.add_decomps``:
 
     qml.add_decomps(qml.CNOT, decompose_cnot)
 
->>> circuit = qml.tape.QuantumScript([qml.CNOT(wires=(0,1))], [qml.expval(qml.Z(0))])
->>> batch, fn = decompose(circuit, stopping_condition, device_wires=[2], target_gates=target_gates)
->>> batch[0].circuit
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        device_wires=[2],
+        target_gates={qml.IsingXX, "RX", "RY"},
+        name="my_device"
+    )
 
 .. _device_capabilities:
 
