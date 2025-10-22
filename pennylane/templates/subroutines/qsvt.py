@@ -16,7 +16,6 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import copy
-import math
 from collections import Counter
 from collections.abc import Sequence
 from functools import reduce
@@ -29,9 +28,9 @@ from pennylane.ops import cond
 
 from pennylane.control_flow import for_loop
 
-from pennylane.decomposition import resource_rep, adjoint_resource_rep
+from pennylane.decomposition import resource_rep, adjoint_resource_rep, register_resources, add_decomps
 
-from pennylane import math, ops
+from pennylane import math, ops, capture
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
@@ -40,6 +39,12 @@ from pennylane.wires import Wires
 from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -670,7 +675,14 @@ def _QSVT_resources(projectors, UA):
     for op in projectors:
         resources[resource_rep(type(op), **op.resource_params)] += 1
 
+    return resources
+
+
+@register_resources(_QSVT_resources)
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
+
+    if has_jax and capture.enabled():
+        projectors = jnp.array(projectors)
 
     @for_loop(len(projectors) - 1)
     def proj_loop(idx):
@@ -687,6 +699,8 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
     projectors[-1]._unflatten(*projectors[-1]._flatten())
 
+
+add_decomps(QSVT, _QSVT_decomposition)
 
 # pylint: disable=protected-access
 if QSVT._primitive is not None:
