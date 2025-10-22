@@ -24,14 +24,17 @@ from typing import Literal
 import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
-from pennylane.ops import cond
 
+from pennylane import capture, math, ops
 from pennylane.control_flow import for_loop
-
-from pennylane.decomposition import resource_rep, adjoint_resource_rep, register_resources, add_decomps
-
-from pennylane import math, ops, capture
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation, Operator
+from pennylane.ops import cond
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -483,7 +486,7 @@ class QSVT(Operation):
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
-    resource_keys = { "UA", "projectors" }
+    resource_keys = {"UA", "projectors"}
 
     def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, Operator):
@@ -667,10 +670,13 @@ class QSVT(Operation):
 
 
 def _QSVT_resources(projectors, UA):
-    resources = Counter({
-        resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
-        adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1) // 2
-    })
+    resources = Counter(
+        {
+            resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
+            adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1)
+            // 2,
+        }
+    )
 
     for op in projectors:
         resources[resource_rep(type(op), **op.resource_params)] += 1
@@ -692,7 +698,7 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
         cond(
             idx % 2 == 0,
             lambda: UA._unflatten(*UA._flatten()),
-            lambda: ops.adjoint(UA)._unflatten(*ops.adjoint(UA)._flatten())
+            lambda: ops.adjoint(UA)._unflatten(*ops.adjoint(UA)._flatten()),
         )
 
     proj_loop()  # pylint: disable=no-value-for-parameter
