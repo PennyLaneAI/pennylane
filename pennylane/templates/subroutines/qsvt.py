@@ -673,8 +673,7 @@ def _QSVT_resources(projectors, UA):
     resources = Counter(
         {
             resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
-            adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1)
-            // 2,
+            adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1) // 2,
         }
     )
 
@@ -687,16 +686,13 @@ def _QSVT_resources(projectors, UA):
 @register_resources(_QSVT_resources)
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
-    UA_adj = ops.adjoint(UA)
-
     for idx, op in enumerate(projectors[:-1]):
         op._unflatten(*op._flatten())
 
-        cond(
-            idx % 2 == 0,
-            lambda: UA._unflatten(*UA._flatten()),
-            lambda: UA_adj._unflatten(*UA_adj._flatten()),
-        )()
+        if idx % 2 == 0:
+            UA._unflatten(*UA._flatten())
+        else:
+            ops.adjoint(UA)
 
     projectors[-1]._unflatten(*projectors[-1]._flatten())
 
