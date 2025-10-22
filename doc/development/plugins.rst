@@ -300,7 +300,7 @@ registered with ``qml.add_decomps``:
     qml.decomposition.enable_graph()
 
     def stopping_condition(op):
-    return op.name in {"IsingXX", "RX", "RY"}
+        return op.name in {"IsingXX", "RX", "RY"}
 
     target_gates={qml.IsingXX, "RX", "RY"}
 
