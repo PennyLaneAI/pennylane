@@ -32,8 +32,8 @@ identify==2.6.15
 idna==3.11
 iniconfig==2.3.0
 isort==6.0.1
-jax==0.7.0
-jaxlib==0.7.0
+jax==0.6.2
+jaxlib==0.6.2
 Jinja2==3.1.6
 joblib==1.5.2
 kiwisolver==1.4.9
