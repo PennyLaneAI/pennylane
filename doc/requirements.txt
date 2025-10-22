@@ -7,7 +7,7 @@ jax==0.6.0
 jaxlib==0.6.0
 mistune==0.8.4
 m2r2
-numpy
+numpy>=2.0.0
 pygments-github-lexers
 packaging
 pyzx
