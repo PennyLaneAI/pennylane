@@ -68,7 +68,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("weights", "wires", "hf_state", "singles", "doubles"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires, hf_state, singles, doubles):
         """Test the decomposition of the AllSinglesDoubles template."""
-        op = qml.AllSinglesDoubles(weights, hf_state, wires, singles=singles, doubles=doubles)
+        op = qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
         for rule in qml.list_decomps(qml.AllSinglesDoubles):
             _test_decomposition_rule(op, rule)
 
@@ -132,7 +132,7 @@ class TestDecomposition:
 
         hf_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.AllSinglesDoubles(weights, hf_state, wires, singles=singles, doubles=doubles)
+        op = qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
         queue = op.decomposition()
 
         assert len(queue) == len(singles) + len(doubles) + 1
