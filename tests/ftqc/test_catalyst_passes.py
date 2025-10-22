@@ -44,7 +44,8 @@ def test_pass_is_captured(pass_fn):
         return qml.sample()
 
     plxpr = make_plxpr(circ)()
-    assert pass_fn.__name__ in str(plxpr)
+    prim = plxpr.eqns[0].primitive
+    assert prim.name == pass_fn.__name__ + "_transform"
 
 
 @pytest.mark.parametrize(
