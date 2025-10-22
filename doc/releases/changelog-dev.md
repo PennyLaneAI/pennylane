@@ -6,11 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a keyword argument ``iterative`` to ``qml.transforms.cancel_inverses`` that enables
-  iterative cancellation of nested pairs of mutually inverse gates. This makes the transform
+* Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
+  recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
   more powerful, because it can cancel larger blocks of inverse gates without having to scan
-  the circuit from scratch. For backwards compatibility, the default is ``iterative=False``. Unless
-  you run into performance issues, it is recommended to set ``iterative=True``.
+  the circuit from scratch. By default, the recursive cancellation is enabled (``recursive=True``).
+  To obtain previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
