@@ -228,6 +228,14 @@ def _get_plxpr_merge_amplitude_embedding():
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
+        # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+        consts_slices = (
+            tuple(slice(*s) for s in consts_slices)
+            if consts_slices and isinstance(consts_slices[0], tuple)
+            else consts_slices
+        )
+
         args = invals[args_slice]
 
         new_jaxprs = []
@@ -281,13 +289,18 @@ def _get_plxpr_merge_amplitude_embedding():
         }
 
         new_args_slice = slice(end_const_ind, None)
+
+        # Convert slices and lists to hashable tuples for JAX 0.7+ when binding
+        new_consts_slices_hashable = tuple((s.start, s.stop, s.step) for s in new_consts_slices)
+        new_args_slice_hashable = (new_args_slice.start, new_args_slice.stop, new_args_slice.step)
+
         return cond_prim.bind(
             *invals[: len(jaxpr_branches)],
             *new_consts,
             *args,
-            jaxpr_branches=new_jaxprs,
-            consts_slices=new_consts_slices,
-            args_slice=new_args_slice,
+            jaxpr_branches=tuple(new_jaxprs),
+            consts_slices=new_consts_slices_hashable,
+            args_slice=new_args_slice_hashable,
         )
 
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)

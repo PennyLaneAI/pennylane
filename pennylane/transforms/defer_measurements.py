@@ -393,6 +393,14 @@ def _get_plxpr_defer_measurements():
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
+        # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+        consts_slices = (
+            tuple(slice(*s) for s in consts_slices)
+            if consts_slices and isinstance(consts_slices[0], tuple)
+            else consts_slices
+        )
+
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):

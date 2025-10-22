@@ -171,7 +171,8 @@ class TestAdjointQfunc:
         grad_eqn = plxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
         assert set(grad_eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
-        assert grad_eqn.params["argnums"] == [0]
+        # JAX 0.7.1: argnums list is converted to tuple for hashability
+        assert grad_eqn.params["argnums"] == (0,)
         assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] is None
         assert grad_eqn.params["h"] is None
@@ -293,7 +294,8 @@ class TestCtrlQfunc:
         qml.assert_equal(q.queue[0], expected)
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        assert plxpr.eqns[0].params["control_values"] == [True]
+        # JAX 0.7.1: control_values list is converted to tuple for hashability
+        assert plxpr.eqns[0].params["control_values"] == (True,)
         assert plxpr.eqns[0].params["n_control"] == 1
         assert plxpr.eqns[0].params["work_wires"] is None
         assert plxpr.eqns[0].params["n_consts"] == 0
@@ -315,7 +317,8 @@ class TestCtrlQfunc:
         assert len(q) == 1
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        assert plxpr.eqns[0].params["control_values"] == [True, True]
+        # JAX 0.7.1: control_values list is converted to tuple for hashability
+        assert plxpr.eqns[0].params["control_values"] == (True, True)
         assert plxpr.eqns[0].params["n_control"] == 2
         assert plxpr.eqns[0].params["work_wires"] is None
 
@@ -353,7 +356,8 @@ class TestCtrlQfunc:
         qml.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        assert plxpr.eqns[0].params["control_values"] == [False, True]
+        # JAX 0.7.1: control_values list is converted to tuple for hashability
+        assert plxpr.eqns[0].params["control_values"] == (False, True)
         assert plxpr.eqns[0].params["n_control"] == 2
 
     def test_nested_control(self):
@@ -408,7 +412,8 @@ class TestCtrlQfunc:
             qml.assert_equal(q.queue[2], qml.ctrl(qml.S(2), 0))
 
         eqn = jaxpr.eqns[0]
-        assert eqn.params["control_values"] == [True]
+        # JAX 0.7.1: control_values list is converted to tuple for hashability
+        assert eqn.params["control_values"] == (True,)
         assert eqn.params["n_consts"] == 0
         assert eqn.params["n_control"] == 1
         assert eqn.params["work_wires"] is None
@@ -432,7 +437,8 @@ class TestCtrlQfunc:
         grad_eqn = plxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
         assert set(grad_eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
-        assert grad_eqn.params["argnums"] == [0]
+        # JAX 0.7.1: argnums list is converted to tuple for hashability
+        assert grad_eqn.params["argnums"] == (0,)
         assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] is None
         assert grad_eqn.params["h"] is None

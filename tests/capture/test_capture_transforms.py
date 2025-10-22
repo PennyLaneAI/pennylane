@@ -120,10 +120,16 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 1)
-        assert params["consts_slice"] == slice(1, 1)
-        assert params["targs_slice"] == slice(1, None)
-        assert params["tkwargs"] == tkwargs
+        # JAX 0.7.1: slices and dicts are converted to tuples for hashability
+        assert params["args_slice"] == (0, 1, None)
+        assert params["consts_slice"] == (1, 1, None)
+        assert params["targs_slice"] == (1, None, None)
+        # tkwargs dict is converted to tuple of sorted items, potentially with nested conversion
+        assert (
+            dict(params["tkwargs"]) == tkwargs
+            if isinstance(params["tkwargs"], tuple)
+            else params["tkwargs"] == tkwargs
+        )
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -147,10 +153,15 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 2)
-        assert params["consts_slice"] == slice(2, 2)
-        assert params["targs_slice"] == slice(2, None)
-        assert params["tkwargs"] == tkwargs
+        # JAX 0.7.1: slices and dicts are converted to tuples for hashability
+        assert params["args_slice"] == (0, 2, None)
+        assert params["consts_slice"] == (2, 2, None)
+        assert params["targs_slice"] == (2, None, None)
+        assert (
+            dict(params["tkwargs"]) == tkwargs
+            if isinstance(params["tkwargs"], tuple)
+            else params["tkwargs"] == tkwargs
+        )
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -231,19 +242,29 @@ class TestCaptureTransforms:
         assert (transform_eqn1 := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params1 = transform_eqn1.params
-        assert params1["args_slice"] == slice(0, 1)
-        assert params1["consts_slice"] == slice(1, 1)
-        assert params1["targs_slice"] == slice(1, None)
-        assert params1["tkwargs"] == tkwargs1
+        # JAX 0.7.1: slices and dicts are converted to tuples for hashability
+        assert params1["args_slice"] == (0, 1, None)
+        assert params1["consts_slice"] == (1, 1, None)
+        assert params1["targs_slice"] == (1, None, None)
+        assert (
+            dict(params1["tkwargs"]) == tkwargs1
+            if isinstance(params1["tkwargs"], tuple)
+            else params1["tkwargs"] == tkwargs1
+        )
 
         inner_jaxpr = params1["inner_jaxpr"]
         assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == expval_z_obs_to_x_obs._primitive
 
         params2 = transform_eqn2.params
-        assert params2["args_slice"] == slice(0, 1)
-        assert params2["consts_slice"] == slice(1, 1)
-        assert params2["targs_slice"] == slice(1, None)
-        assert params2["tkwargs"] == tkwargs2
+        # JAX 0.7.1: slices and dicts are converted to tuples for hashability
+        assert params2["args_slice"] == (0, 1, None)
+        assert params2["consts_slice"] == (1, 1, None)
+        assert params2["targs_slice"] == (1, None, None)
+        assert (
+            dict(params2["tkwargs"]) == tkwargs2
+            if isinstance(params2["tkwargs"], tuple)
+            else params2["tkwargs"] == tkwargs2
+        )
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr

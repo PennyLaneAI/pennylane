@@ -323,14 +323,21 @@ class CondCallable:
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
         flat_args, _ = jax.tree_util.tree_flatten(args)
+        # Convert slices to hashable tuples for JAX 0.7+
+        consts_slices_hashable = tuple((s.start, s.stop, s.step) for s in consts_slices)
+        args_slice_hashable = (
+            slice(end_const_ind, None).start,
+            slice(end_const_ind, None).stop,
+            slice(end_const_ind, None).step,
+        )
         results = cond_prim.bind(
             *conditions,
             *consts,
             *abstract_shapes,
             *flat_args,
-            jaxpr_branches=jaxpr_branches,
-            consts_slices=consts_slices,
-            args_slice=slice(end_const_ind, None),
+            jaxpr_branches=tuple(jaxpr_branches),
+            consts_slices=consts_slices_hashable,
+            args_slice=args_slice_hashable,
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
@@ -795,6 +802,14 @@ def _get_cond_qfunc_prim():
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
+        # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+        args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+        consts_slices = (
+            tuple(slice(*s) for s in consts_slices)
+            if consts_slices and isinstance(consts_slices[0], tuple)
+            else consts_slices
+        )
+
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
         args = all_args[args_slice]

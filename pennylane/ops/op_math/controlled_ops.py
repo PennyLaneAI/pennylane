@@ -171,10 +171,18 @@ class ControlledQubitUnitary(ControlledOp):
     ):
 
         work_wires = Wires(() if work_wires is None else work_wires)
+
+        # JAX 0.7.1 requires all primitive parameters to be hashable
+        # Convert list wires to tuple, keep Wires objects as they are already hashable
+        wires_hashable = tuple(wires) if isinstance(wires, list) else wires
+        control_values_hashable = (
+            tuple(control_values) if isinstance(control_values, list) else control_values
+        )
+
         return cls._primitive.bind(
             base,
-            wires=wires,
-            control_values=control_values,
+            wires=wires_hashable,
+            control_values=control_values_hashable,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )

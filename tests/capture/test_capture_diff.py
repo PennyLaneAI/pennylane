@@ -60,7 +60,9 @@ def diff_eqn_assertions(eqn, primitive, argnums=None, n_consts=0):
     argnums = [0] if argnums is None else argnums
     assert eqn.primitive == primitive
     assert set(eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
-    assert eqn.params["argnums"] == argnums
+    # JAX 0.7.1: argnums list is converted to tuple for hashability
+    expected_argnums = tuple(argnums) if isinstance(argnums, list) else argnums
+    assert eqn.params["argnums"] == expected_argnums
     assert eqn.params["n_consts"] == n_consts
     assert eqn.params["method"] is None
     assert eqn.params["h"] is None
@@ -353,7 +355,8 @@ class TestGrad:
         assert grad_eqn.primitive == grad_prim
 
         shift = 1 if same_dynamic_shape else 2
-        assert grad_eqn.params["argnums"] == [shift, shift + 1]
+        # JAX 0.7.1: argnums list is converted to tuple for hashability
+        assert grad_eqn.params["argnums"] == (shift, shift + 1)
         assert len(grad_eqn.outvars) == 2
         assert grad_eqn.outvars[0].aval.shape == grad_eqn.invars[shift].aval.shape
         assert grad_eqn.outvars[1].aval.shape == grad_eqn.invars[shift + 1].aval.shape
@@ -636,7 +639,8 @@ class TestJacobian:
         assert grad_eqn.primitive == jacobian_prim
 
         shift = 1 if same_dynamic_shape else 2
-        assert grad_eqn.params["argnums"] == [shift, shift + 1]
+        # JAX 0.7.1: argnums list is converted to tuple for hashability
+        assert grad_eqn.params["argnums"] == (shift, shift + 1)
         assert len(grad_eqn.outvars) == 2
 
         assert grad_eqn.outvars[0].aval.shape == (4, *grad_eqn.invars[shift].aval.shape)

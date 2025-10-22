@@ -134,6 +134,14 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
 
 @CollectOpsandMeas.register_primitive(cond_prim)
 def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
+    # Convert hashable tuples back to slices for JAX 0.7+ compatibility
+    args_slice = slice(*args_slice) if isinstance(args_slice, tuple) else args_slice
+    consts_slices = (
+        tuple(slice(*s) for s in consts_slices)
+        if consts_slices and isinstance(consts_slices[0], tuple)
+        else consts_slices
+    )
+
     n_branches = len(jaxpr_branches)
     conditions = all_args[:n_branches]
     args = all_args[args_slice]

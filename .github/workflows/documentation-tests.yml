@@ -48,7 +48,7 @@ jobs:
           pip install --upgrade setuptools
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre pennylane-catalyst
           pip install -e .
-          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib
+          pip install sybil pytest "jax~=0.7.1" "jaxlib~=0.7.1" torch matplotlib
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
