@@ -25,9 +25,8 @@ from pennylane.ftqc.catalyst_passes import (
     to_ppr,
 )
 
-pytest.importorskip("jax")
 
-
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
     "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
@@ -48,6 +47,7 @@ def test_pass_is_captured(pass_fn):
     assert prim.name == pass_fn.__name__ + "_transform"
 
 
+@pytest.mark.catalyst
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
     "pass_fn, pass_name",
