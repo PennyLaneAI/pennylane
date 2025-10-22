@@ -4,7 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
+  that produces a set of gate names to be used as the target gate set in decompositions.
+  [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
+
 <h3>Improvements 🛠</h3>
+
+* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
+  additional templates.
+  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
+
+  - :class:`~.AmplitudeEmbedding`
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
@@ -43,20 +53,24 @@
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
+  ```pycon
   >>> qml.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
 
   The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
+  ```pycon
   >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
   >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
 
 * The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
   :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
@@ -106,7 +120,15 @@
 
 <h3>Deprecations 👋</h3>
 
-* `argnum` has been renamed `argnums` for `qml.grad`, `qml.jacobian`, `qml.jvp` and `qml.vjp`.
+* Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
+  [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
+    
+    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+
+* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and `qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
