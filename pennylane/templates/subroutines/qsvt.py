@@ -583,6 +583,7 @@ class QSVT(Operation):
         op_list.append(projectors[0])
 
         for op in projectors[1:-1]:
+            # change_op_basis would queue internally when called in a queuing context.
             op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
 
         if len(projectors) % 2 == 0:

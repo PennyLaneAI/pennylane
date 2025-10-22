@@ -40,6 +40,7 @@ from pennylane.ops import (
     prod,
 )
 from pennylane.ops.op_math import Prod
+from pennylane.tape import make_qscript
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
@@ -268,11 +269,13 @@ class PhaseAdder(Operation):
             op_list.append(
                 change_op_basis(
                     prod(
+                        X(aux_k),
                         adjoint(QFT)(wires=x_wires),
                         *[adjoint(op) for op in _add_k_fourier(k, x_wires)],
                     ),
-                    ctrl(X(work_wire), control=aux_k, control_values=0),
-                ),
+                    CNOT(wires=[aux_k, work_wire[0]]),
+                    prod(*_add_k_fourier(k, x_wires)[::-1], QFT(wires=x_wires), X(aux_k)),
+                )
             )
 
         return op_list
@@ -283,12 +286,21 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
     if mod == 2**num_x_wires:
         return {PhaseShift: num_x_wires}
 
-    basis_op_resources = defaultdict(
+    basis_op_resources1 = defaultdict(
         int,
         {
             resource_rep(X): 1,
             adjoint_resource_rep(QFT, {"num_wires": num_x_wires}): 1,
             adjoint_resource_rep(PhaseShift): num_x_wires,
+        },
+    )
+
+    basis_op_resources2 = defaultdict(
+        int,
+        {
+            resource_rep(PhaseShift): num_x_wires,
+            resource_rep(QFT, num_wires=num_x_wires): 1,
+            resource_rep(X): 1,
         },
     )
 
@@ -302,8 +314,9 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         ): 1,
         ControlledPhaseShift: num_x_wires,
         change_op_basis_resource_rep(
-            resource_rep(Prod, resources=basis_op_resources),
+            resource_rep(Prod, resources=basis_op_resources1),
             resource_rep(CNOT),
+            resource_rep(Prod, resources=basis_op_resources2),
         ): 1,
     }
 
@@ -333,8 +346,9 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
     )
     ctrl(_add_k_fourier_loop, control=work_wire)(mod)
     change_op_basis(
-        prod(X(aux_k), adjoint(QFT)(wires=x_wires), *adjoint(_add_k_fourier_loop)(k)),
+        prod(X(aux_k), adjoint(QFT)(wires=x_wires), *reversed(adjoint(_add_k_fourier_loop)(k))),
         CNOT(wires=[aux_k, work_wire[0]]),
+        prod(*make_qscript(_add_k_fourier_loop)(k).operations, QFT(wires=x_wires), X(aux_k)),
     )
 
 
