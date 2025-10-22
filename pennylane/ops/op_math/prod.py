@@ -15,9 +15,7 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
-
 import itertools
-import warnings
 from collections import Counter
 from copy import copy
 from functools import reduce
@@ -29,7 +27,6 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qml
 from pennylane import math
 from pennylane.capture.autograph import wraps
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -119,6 +116,7 @@ def prod(*ops, id=None, lazy=True):
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
+
             # dequeue operators passed as arguments to the quantum function
             leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
             for l in leaves:
@@ -265,13 +263,6 @@ class Prod(CompositeOp):
         yields false, which ARE hermitian. So a false result only implies a more explicit check
         must be performed.
         """
-        warnings.warn(
-            "The 'is_hermitian' property is deprecated and will be removed in PennyLane v0.45. "
-            "Consider using the 'is_hermitian' function instead as it provides a more reliable check "
-            "for hermiticity. Please be aware that it comes with a higher computational cost.",
-            PennyLaneDeprecationWarning,
-        )
-
         for o1, o2 in combinations(self.operands, r=2):
             if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
