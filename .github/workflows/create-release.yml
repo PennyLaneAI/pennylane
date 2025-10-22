@@ -7,10 +7,9 @@ on:
         required: true
         type: string
       release_branch:
-        description: 'The branch to release from, e.g., main or v0.43.0-rc0'
+        description: 'The branch to release from, e.g. v0.43.0-rc0'
         required: true
         type: string
-        default: 'main'
       release_notes:
         description: 'The release notes to use for the GitHub release'
         required: true
@@ -96,10 +95,11 @@ jobs:
 
       - name: Tag RC branch
         run: |
+          git checkout -b merge-rc-into-master-$(date +'%Y-%m-%d')
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git tag -a "v${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
-          git push origin "v${{ inputs.release_version }}"
+          git tag -a "${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
+          git push origin "${{ inputs.release_version }}"
 
       - name: Merge RC branch into master
         env:
