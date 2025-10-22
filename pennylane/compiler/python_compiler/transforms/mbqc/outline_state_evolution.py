@@ -32,9 +32,9 @@ Current pass returns multiple qreg in some tests is not expected. A simple examp
         dev = qml.device("null.qubit",wires=50)
 
         @qml.qjit(
-            target="mlir", 
-            pass_plugins=[getXDSLPluginAbsolutePath()], 
-            autograph=True,  
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            autograph=True,
             pipelines=mbqc_pipeline(),
             keep_intermediate = True,)
         @outline_state_evolution_pass
@@ -49,7 +49,7 @@ Current pass returns multiple qreg in some tests is not expected. A simple examp
 
         circuit()
     ```
-The main issue that it's not trivial to insert a terminal boundary operation (quantum operations) into IR and ensure the global qreg is 
+The main issue that it's not trivial to insert a terminal boundary operation (quantum operations) into IR and ensure the global qreg is
 consistently updated. One way to solve this issue might be add a lineator before this transform.
 """
 
@@ -470,36 +470,22 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         call_op = func.CallOp(self.state_evolution_func.sym_name.data, call_args, result_types)
 
-        # call_result_mapper is required for the clone operation. See more [here](https://github.com/xdslproject/xdsl/blob/e1301e0204bcf6ea5ed433e7da00bee57d07e695/xdsl/ir/core.py#L1429)_.
+        # TODO: I just removed all ops and add them again to update with value_mapper.
+        # It's not efficient, just because it's easy to implement. Should using replace use method
+        # instead.
+        # Deattach all ops of the orginal function
         call_result_mapper = {}
         for i, required_output in enumerate(self.required_outputs):
             if i < len(call_op.results):
                 call_result_mapper[required_output] = call_op.results[i]
 
-        # TODO: I just removed all ops and add them again to update with value_mapper.
-        # It's not efficient, just because it's easy to implement. Should using replace use method
-        # instead.
-        # Deattach all ops of the orginal function
-        for op in reversed(ops_list):
-            op.detach()
-
-        # Add a list of ops before the quantum.alloc ops in the original function
-        new_ops = []
-        for op in pre_ops:
-            new_ops.append(op)
-
-        # Add a callOp to the box
-        new_ops.append(call_op)
-
         value_mapper = call_result_mapper.copy()
-
-        for i, op in enumerate(post_ops):
+        original_block.add_op(call_op)
+        for op in post_ops:
             cloned_op = op.clone(value_mapper)
+            original_block.add_op(cloned_op)
 
-            for orig_result, new_result in zip(op.results, cloned_op.results):
-                value_mapper[orig_result] = new_result
-
-            new_ops.append(cloned_op)
-
-        for op in new_ops:
-            original_block.add_op(op)
+        # replace ops_list with call_op
+        for op in chain(reversed(post_ops), reversed(ops_list[begin_idx:end_idx])):
+            op.detach()
+            op.erase()
