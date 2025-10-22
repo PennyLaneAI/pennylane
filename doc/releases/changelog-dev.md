@@ -13,6 +13,15 @@
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
+  
+* With capture enabled, measurements can now be performed on Operator instances passed as closure
+  variables from outside the workflow scope.
+  [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
+
+* Users can now estimate the resources for quantum circuits that contain or decompose into
+  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
+  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
+  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
 * Wires can be specified via `range` with program capture and autograph.
 
@@ -108,6 +117,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Reclassifies `registers` as a tertiary module for use with tach.
+  [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
+
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the
   circuit. A clear error is now also raised when there are observables with overlapping wires.
@@ -145,4 +157,5 @@ Astral Cai,
 Lillian Frederiksen,
 Christina Lee,
 Shuli Shu,
+Jay Soni,
 David Wierichs,
