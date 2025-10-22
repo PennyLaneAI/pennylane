@@ -673,7 +673,8 @@ def _QSVT_resources(projectors, UA):
     resources = Counter(
         {
             resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
-            adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1) // 2,
+            adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1)
+            // 2,
         }
     )
 
