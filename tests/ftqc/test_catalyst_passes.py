@@ -20,7 +20,7 @@ from pennylane.capture import make_plxpr
 from pennylane.ftqc.catalyst_passes import (
     commute_ppr,
     merge_ppr_ppm,
-    pprm_to_mbqc,
+    ppm_to_mbqc,
     reduce_t_depth,
     to_ppr,
 )
@@ -30,7 +30,7 @@ pytest.importorskip("jax")
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
-    "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, pprm_to_mbqc, reduce_t_depth]
+    "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
 )
 def test_pass_is_captured(pass_fn):
 
@@ -48,7 +48,7 @@ def test_pass_is_captured(pass_fn):
 
 
 @pytest.mark.parametrize(
-    "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, pprm_to_mbqc, reduce_t_depth]
+    "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
 )
 def test_pass_without_qjit_raises_error(pass_fn):
     """Test that trying to apply the transform without QJIT raises an error"""
