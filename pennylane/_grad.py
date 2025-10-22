@@ -16,7 +16,7 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import numbers
 import warnings
-from functools import lru_cache, partial, wraps
+from functools import lru_cache, partial, update_wrapper, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -257,6 +257,8 @@ class grad:
             # Known pylint issue with function signatures and decorators:
             # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
+
+        update_wrapper(self, func)
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -616,6 +618,7 @@ class jacobian:
         self._h = h
         n = getattr(self._func, "__name__", repr(self._func))
         self.__name__ = f"<jacobian: {n}>"
+        update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
