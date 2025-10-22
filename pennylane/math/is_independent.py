@@ -96,7 +96,7 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     and inspecting its signature.
     The first argument of the output of ``jax.vjp`` is a ``Partial``.
     If *any* processing happens to any input, the arguments of that
-    ``Partial`` are unequal to ``((),)`.
+    ``Partial`` are unequal to ``((),)`` (JAX < 0.7.0) or ``([],)`` (JAX >= 0.7.0).
     Functions that depend on the input in a trivial manner, i.e., without
     processing it, will go undetected by this. Therefore we also
     test the arguments of the *function* of the above ``Partial``.
@@ -114,7 +114,9 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     mapped_func = partial(func, **kwargs)
 
     _vjp = jax.vjp(mapped_func, *args)[1]
-    if _vjp.args[0].args != ((),):
+
+    # JAX 0.7.0+ changed the VJP structure: args are now ([],) instead of ((),)
+    if _vjp.args[0].args not in (((),), ([],)):
         return False
     if _vjp.args[0].func.args[0][0][0] is not None:
         return False
