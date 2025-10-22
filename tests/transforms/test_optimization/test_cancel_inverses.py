@@ -209,8 +209,8 @@ class TestCancelInverses:
         assert len(ops) == 0
 
     @pytest.mark.parametrize("wrapped", [False, True])
-    def test_no_iterative_cancellation_with_iterative_false(self, wrapped):
-        """Test that with `iterative=False`, nested pairs of inverses are not cancelled."""
+    def test_no_recursive_cancellation_with_recursive_false(self, wrapped):
+        """Test that with `recursive=False`, nested pairs of inverses are not cancelled."""
 
         def qfunc():
             if wrapped:
@@ -222,7 +222,7 @@ class TestCancelInverses:
             if wrapped:
                 qml.Y(0)
 
-        transformed_qfunc = cancel_inverses(qfunc, iterative=False)
+        transformed_qfunc = cancel_inverses(qfunc, recursive=False)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -235,8 +235,8 @@ class TestCancelInverses:
         compare_operation_lists(ops, names_expected, wires_expected)
 
     @pytest.mark.parametrize("wrapped", [False, True])
-    def test_iterative_cancellation_with_iterative_true(self, wrapped):
-        """Test that with `iterative=True`, nested pairs of inverses are cancelled."""
+    def test_recursive_cancellation_with_recursive_true(self, wrapped):
+        """Test that with `recursive=True`, nested pairs of inverses are cancelled."""
 
         def qfunc():
             if wrapped:
@@ -260,8 +260,8 @@ class TestCancelInverses:
             wires_expected = []
         compare_operation_lists(ops, names_expected, wires_expected)
 
-    def test_deep_iterative_cancellation(self):
-        """Test that deeply nested pairs are cancelled for ``iterative=True``."""
+    def test_deep_recursive_cancellation(self):
+        """Test that deeply nested pairs are cancelled for ``recursive=True``."""
 
         def qfunc():
             xs = np.arange(500)

@@ -308,14 +308,14 @@ def _try_to_cancel_with_next(current_gate, list_copy):
 
 @partial(transform, plxpr_transform=cancel_inverses_plxpr_to_plxpr)
 def cancel_inverses(
-    tape: QuantumScript, iterative: bool = True
+    tape: QuantumScript, recursive: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform to remove any operations that are applied next to their
     (self-)inverses or adjoint.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        iterative (bool): Whether or not to iteratively cancel inverses after a first pair
+        recursive (bool): Whether or not to recursively cancel inverses after a first pair
             of mutual inverses has been cancelled. Enabled by default.
 
     Returns:
@@ -399,7 +399,7 @@ def cancel_inverses(
 
         list_copy, cancelled = _try_to_cancel_with_next(current_gate, list_copy)
         if cancelled:
-            if not iterative:
+            if not recursive:
                 continue
             while cancelled and operations:
                 list_copy, cancelled = _try_to_cancel_with_next(operations[-1], list_copy)
