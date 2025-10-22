@@ -15,8 +15,10 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
+
 # pylint: disable=arguments-differ
 import cmath
+import warnings
 from copy import copy
 from functools import lru_cache
 
@@ -39,6 +41,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     self_adjoint,
 )
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -285,7 +288,6 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
 
 @register_resources(_controlled_h_resources)
 def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CH(wires)
         return
@@ -831,7 +833,6 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
 
 @register_resources(_controlled_y_resource)
 def _controlled_y_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CY(wires=wires)
         return
@@ -1105,7 +1106,6 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, work_wire_typ
 
 @register_resources(_controlled_z_resources)
 def _controlled_z_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CZ(wires=wires)
         return
@@ -1751,6 +1751,12 @@ class SWAP(Operation):
 
     @property
     def is_hermitian(self) -> bool:
+        warnings.warn(
+            "The 'is_hermitian' property is deprecated and will be removed in PennyLane v0.45. "
+            "Consider using the 'is_hermitian' function instead as it provides a more reliable check "
+            "for hermiticity. Please be aware that it comes with a higher computational cost.",
+            PennyLaneDeprecationWarning,
+        )
         return True
 
 
@@ -1787,7 +1793,6 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_
 
 @register_resources(_controlled_swap_resources)
 def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CSWAP(wires=wires)
         return

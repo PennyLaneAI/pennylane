@@ -15,15 +15,15 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-
-
 import itertools
+import warnings
 from collections import Counter
 from collections.abc import Iterable
 from copy import copy
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
@@ -308,6 +308,13 @@ class Sum(CompositeOp):
     @handle_recursion_error
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
+        warnings.warn(
+            "The 'is_hermitian' property is deprecated and will be removed in PennyLane v0.45. "
+            "Consider using the 'is_hermitian' function instead as it provides a more reliable check "
+            "for hermiticity. Please be aware that it comes with a higher computational cost.",
+            PennyLaneDeprecationWarning,
+        )
+
         if self.pauli_rep is not None:
             coeffs_list = list(self.pauli_rep.values())
             if len(coeffs_list) == 0:
