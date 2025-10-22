@@ -161,7 +161,7 @@ def device(name, *args, **kwargs):
     (array([1., 1., 1.]), array([ 1.,  1.,  1., -1.]), array([ 1.,  1., -1.,  1.]))
 
     .. details::
-        :title: Custom Decompositions Details
+        :title: Custom Decompositions
 
         .. warning::
             The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
