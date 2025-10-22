@@ -76,6 +76,8 @@ def about():
         # PEP 610: detect editable with direct_url.json
         try:
             raw = dist.read_text("direct_url.json")
+            if raw is None:
+                raise FileNotFoundError
             direct = json.loads(raw)
             if direct.get("dir_info", {}).get("editable"):
                 url = direct.get("url", "")
