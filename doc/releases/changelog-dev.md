@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
+  that produces a set of gate names to be used as the target gate set in decompositions.
+  [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
+
 <h3>Improvements 🛠</h3>
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
