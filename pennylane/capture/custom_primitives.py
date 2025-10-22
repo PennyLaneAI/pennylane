@@ -67,8 +67,47 @@ def _restore_slice(obj: Any) -> Any:
     """
     if isinstance(obj, tuple) and len(obj) == 3:
         # Tuples representing slices have exactly 3 elements (start, stop, step)
-        return slice(*obj)
+        # Check if it's likely a slice by checking if elements look like slice components
+        # (None or integers for start/stop/step)
+        if all(x is None or isinstance(x, int) for x in obj):
+            return slice(*obj)
     return obj
+
+
+def _restore_hashable(obj: Any) -> Any:
+    """Restore unhashable objects from their hashable tuple representations.
+
+    This is the general inverse of _make_hashable. It attempts to detect and restore
+    lists and dicts that were converted to tuples.
+
+    Args:
+        obj: Object that may be a tuple representation of a list or dict
+
+    Returns:
+        Restored object (dict, list, slice) or original object unchanged
+    """
+    if not isinstance(obj, tuple):
+        return obj
+
+    # Empty tuple likely represents empty dict in transform kwargs context
+    if len(obj) == 0:
+        return {}
+
+    # Check if it's a dict representation (tuple of (key, value) tuples)
+    if len(obj) > 0 and all(isinstance(item, tuple) and len(item) == 2 for item in obj):
+        # Try to restore as dict
+        try:
+            return {k: _restore_hashable(v) for k, v in obj}
+        except (TypeError, ValueError):
+            # If it fails, it's probably a regular tuple, fall through
+            pass
+
+    # Check if it's a slice representation (3-tuple with None or ints)
+    if len(obj) == 3 and all(x is None or isinstance(x, int) for x in obj):
+        return slice(*obj)
+
+    # Otherwise try to restore as list with recursive restoration
+    return tuple(_restore_hashable(item) for item in obj)
 
 
 # pylint: disable=abstract-method,too-few-public-methods

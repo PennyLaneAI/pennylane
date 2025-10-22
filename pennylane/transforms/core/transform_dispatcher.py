@@ -114,11 +114,12 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
     def _(
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=too-many-arguments
-        from pennylane.capture import _restore_slice
+        from pennylane.capture import _restore_hashable, _restore_slice
 
         args = invals[_restore_slice(args_slice)]
         consts = invals[_restore_slice(consts_slice)]
         targs = invals[_restore_slice(targs_slice)]
+        tkwargs = _restore_hashable(tkwargs)
 
         def wrapper(*inner_args):
             return copy(self).eval(inner_jaxpr, consts, *inner_args)

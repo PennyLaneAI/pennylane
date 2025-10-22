@@ -214,14 +214,24 @@ def register_custom_staging_rule(
         else:
             out_tracers, returned_vars = (), ()
 
-        # JAX 0.7.0: Access variable via tracer.val instead of getvar
-        invars = [x.val for x in tracers]
-        eqn = jax.core.new_jaxpr_eqn(
-            invars,
+        # JAX 0.7.0: Create TracingEqn with proper context
+        from jax._src import compute_on, config, xla_metadata_lib
+        from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
+
+        ctx = JaxprEqnContext(
+            compute_on.current_compute_type(),
+            config.threefry_partitionable.value,
+            xla_metadata_lib.current_xla_metadata(),
+        )
+
+        eqn = TracingEqn(
+            tracers,  # in_tracers (not invars!)
             returned_vars,
             primitive,
             params,
             jax.core.no_effects,
+            source_info,
+            ctx,
         )
         jaxpr_trace.frame.add_eqn(eqn)
         return out_tracers
