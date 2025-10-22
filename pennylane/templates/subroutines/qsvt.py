@@ -25,8 +25,7 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import capture, math, ops
-from pennylane.control_flow import for_loop
+from pennylane import math, ops
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -34,7 +33,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import cond
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -42,12 +40,6 @@ from pennylane.wires import Wires
 from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -688,14 +680,14 @@ def _QSVT_resources(projectors, UA):
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
     for idx, op in enumerate(projectors[:-1]):
-        op._unflatten(*op._flatten())
+        op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
         if idx % 2 == 0:
-            UA._unflatten(*UA._flatten())
+            UA._unflatten(*UA._flatten())  # pylint: disable=protected-access
         else:
             ops.adjoint(UA)
 
-    projectors[-1]._unflatten(*projectors[-1]._flatten())
+    projectors[-1]._unflatten(*projectors[-1]._flatten())  # pylint: disable=protected-access
 
 
 add_decomps(QSVT, _QSVT_decomposition)
