@@ -105,4 +105,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create --title "Merge ${{ inputs.release_branch }} into main" --body "" --base main --head ${{ inputs.release_branch }} 
+          gh pr create --title "Merge ${{ inputs.release_branch }} into master" --body "" --base master --head ${{ inputs.release_branch }}
