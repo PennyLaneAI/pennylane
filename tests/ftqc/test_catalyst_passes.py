@@ -48,6 +48,34 @@ def test_pass_is_captured(pass_fn):
     assert prim.name == pass_fn.__name__ + "_transform"
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.parametrize(
+    "pass_fn, pass_name",
+    [
+        (to_ppr, "to-ppr"),
+        (commute_ppr, "commute-ppr"),
+        (merge_ppr_ppm, "merge-ppr-ppm"),
+        (ppm_to_mbqc, "ppm-to-mbqc"),
+        (reduce_t_depth, "reduce-t-depth"),
+    ],
+)
+def test_converstion_to_mlir(pass_fn, pass_name):
+    """Test that we can generate MLIR from the captured circuit and that the generated MLIR
+    includes the pass name we are mapping to"""
+
+    @qml.qjit(target="mlir")
+    @pass_fn
+    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    def circ():
+        qml.H(0)
+        qml.S(0)
+        qml.T(1)
+        qml.CNOT([0, 1])
+        return qml.sample()
+
+    assert pass_name in circ.mlir
+
+
 @pytest.mark.parametrize(
     "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
 )
