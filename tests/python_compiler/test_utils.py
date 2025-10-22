@@ -16,6 +16,7 @@
 
 import pytest
 
+pytestmark = pytest.mark.external
 xdsl = pytest.importorskip("xdsl")
 
 # pylint: disable=wrong-import-position
@@ -23,8 +24,6 @@ from xdsl.dialects import arith, builtin, tensor, test
 
 from pennylane.compiler.python_compiler.dialects.stablehlo import ConstantOp as hloConstantOp
 from pennylane.compiler.python_compiler.utils import get_constant_from_ssa
-
-pytestmark = pytest.mark.external
 
 
 class TestGetConstantFromSSA:
