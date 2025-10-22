@@ -242,7 +242,8 @@ class grad:
         self._method = method
 
         self._fun = func
-        self.__name__ = f"<grad: {getattr(self._fun, "__name__", repr(self._fun))}>"
+        n = getattr(self._fun, "__name__", repr(self._fun))
+        self.__name__ = f"<grad: {n}>"
         self._argnums = argnums if argnums is not None else argnum
         if argnum is not None:
             warnings.warn(
@@ -613,7 +614,8 @@ class jacobian:
         self._argnums = argnums if argnums is not None else argnum
         self._method = method
         self._h = h
-        self.__name__ = f"<jacobian: {getattr(self._func, "__name__", repr(self._func))}>"
+        n = getattr(self._func, "__name__", repr(self._func))
+        self.__name__ = f"<jacobian: {n}>"
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
