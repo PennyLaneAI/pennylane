@@ -336,4 +336,4 @@ def enable_and_disable_graph_decomp(request):
         # --- Teardown Phase ---
         # This code runs after the test function has finished,
         # regardless of whether it passed or failed.
-        qml.decomposition.disable_graph()
+        qml.decomposition.enable_graph()
