@@ -16,7 +16,6 @@ Contains the AllSinglesDoubles template.
 """
 # pylint: disable=too-many-arguments,protected-access
 import copy
-import itertools
 
 import numpy as np
 
