@@ -16,6 +16,8 @@ Catalyst passes when using capture and the unified compiler. This is a temporary
 to manually add passes relevant for ongoing MBQC work. It can be removed one a more
 general solution for all Catalyst passes is in place."""
 
+from catalyst.from_plxpr import register_transform
+
 from ..transforms.core import transform
 
 
@@ -24,6 +26,9 @@ def to_ppr(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
     The transform itself is only imnplemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError("The to_ppm pass is only implemented when using capture and QJIT.")
+
+
+register_transform(to_ppr, "to-ppr", False)
 
 
 @transform
@@ -35,6 +40,9 @@ def commute_ppr(tape):
     )
 
 
+register_transform(commute_ppr, "commute-ppr", False)
+
+
 @transform
 def merge_ppr_ppm(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
@@ -42,6 +50,9 @@ def merge_ppr_ppm(tape):
     raise NotImplementedError(
         "The merge_ppr_ppm pass is only implemented when using capture and QJIT."
     )
+
+
+register_transform(merge_ppr_ppm, "merge-ppr-ppm", False)
 
 
 @transform
@@ -53,6 +64,9 @@ def ppm_to_mbqc(tape):
     )
 
 
+register_transform(ppm_to_mbqc, "ppm-to-mbqc", False)
+
+
 @transform
 def reduce_t_depth(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
@@ -60,3 +74,6 @@ def reduce_t_depth(tape):
     raise NotImplementedError(
         "The reduce_t_depth pass is only implemented when using capture and QJIT."
     )
+
+
+register_transform(reduce_t_depth, "reduce-t-depth", False)
