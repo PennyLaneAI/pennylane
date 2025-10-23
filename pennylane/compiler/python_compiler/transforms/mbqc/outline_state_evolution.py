@@ -139,11 +139,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
     # pylint: disable=no-else-return
     def _get_qubit_idx(self, op: Operation) -> int | None:
         """Get the index of qubit that an ExtractOp op extracts."""
-        if hasattr(op, "idx") and op.idx:
-            return op.idx
-        if hasattr(op, "idx_attr"):
-            return op.idx_attr
-        return None
+        if getattr(op, "idx", None):  
+            return op.idx  
+        return getattr(op, "idx_attr", None) 
 
     def _set_up_terminal_boundary_op(
         self,
@@ -387,8 +385,8 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         ops_defined_values = set()
 
-        for nested_op in ops_walk:
-            ops_defined_values.update(nested_op.results)
+        for op_walk in ops_walk:
+            ops_defined_values.update(op_walk.results)
 
         # use list here to maintain the order of required outputs
         required_outputs = []
