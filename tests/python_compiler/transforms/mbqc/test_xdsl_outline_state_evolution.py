@@ -49,7 +49,7 @@ class TestOutlineStateEvolutionPass:
     """Unit tests for OutlineStateEvolutionPass."""
 
     def test_func_wo_qnode_attr(self, run_filecheck):
-        """Test outline state evolution pass does not apply to a func without a qnode attribute."""
+        """Test outline state evolution pass is not applied to a func without a qnode attribute."""
         program = """
             module @module_circuit {
                 func.func public @circuit() -> tensor<f64> {
@@ -69,6 +69,33 @@ class TestOutlineStateEvolutionPass:
                     return %from_elements : tensor<f64>
                 }
                 // CHECK-NOT: func.func public @circuit.state_evolution
+            }
+        """
+
+        pipeline = (OutlineStateEvolutionPass(),)
+        run_filecheck(program, pipeline)
+
+    def test_func_w_qnode_attr(self, run_filecheck):
+        """Test outline state evolution pass would be applied to a func with a qnode attribute."""
+        program = """
+            module @module_circuit {
+                func.func public @circuit() -> tensor<f64> attributes {qnode} {
+                    %0 = arith.constant 0 : i64
+                    quantum.device shots(%0) ["", "", ""]
+                    %1 = quantum.alloc( 50) : !quantum.reg
+                    %2 = quantum.extract %1[ 0] : !quantum.reg -> !quantum.bit
+                    // CHECK-NOT: quantum.custom "PauliX"()
+                    // CHECK: call @circuit.state_evolution
+                    %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
+                    %3 = quantum.namedobs %out_qubits[ PauliX] : !quantum.obs
+                    %4 = quantum.expval %3 : f64
+                    %from_elements = tensor.from_elements %4 : tensor<f64>
+                    %5 = quantum.insert %1[ 0], %out_qubits : !quantum.reg, !quantum.bit
+                    quantum.dealloc %5 : !quantum.reg
+                    quantum.device_release
+                    return %from_elements : tensor<f64>
+                }
+                // CHECK: func.func public @circuit.state_evolution
             }
         """
 
