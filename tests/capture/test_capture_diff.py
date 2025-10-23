@@ -30,6 +30,15 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
 
 jnp = jax.numpy
 
+# Dynamic shape support changed in JAX 0.7.0 - skip tests that use traced shapes in array creation
+from packaging import version
+
+jax_version = version.parse(jax.__version__)
+skip_dynamic_shapes_jax070 = pytest.mark.skipif(
+    jax_version >= version.parse("0.7.0"),
+    reason="Temporary Skip: Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
+)
+
 
 class TestExceptions:
     """Test that expected exceptions are correctly raised."""
@@ -331,6 +340,7 @@ class TestGrad:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
+    @skip_dynamic_shapes_jax070
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_grad_dynamic_shape_inputs(self, same_dynamic_shape):
@@ -615,6 +625,7 @@ class TestJacobian:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
+    @skip_dynamic_shapes_jax070
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_jacobian_dynamic_shape_inputs(self, same_dynamic_shape):
