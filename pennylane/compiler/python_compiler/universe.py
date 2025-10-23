@@ -39,7 +39,4 @@ names_to_passes = {
 # The Universe is used to expose custom dialects and transforms to xDSL. It is specified
 # as an entry point in PennyLane's pyproject.toml file, which makes it available to look
 # up by xDSL for tools such as xdsl-opt, xdsl-gui, etc.
-
-# TODO: Figure out how to support updating the universe dynamically. We are already able to
-# do so
 XDSL_UNIVERSE = Universe(all_dialects=names_to_dialects, all_passes=names_to_passes)
