@@ -14,9 +14,8 @@
 
 """This file contains the implementation of the split_non_commuting transform."""
 
-from ast import TypeVar
 from dataclasses import dataclass
-from typing import Type
+from typing import Type, TypeVar
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
