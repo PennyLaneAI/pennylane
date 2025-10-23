@@ -121,7 +121,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by falling back to standard library metadata.
+* Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by using standard library metadata.
   [(#8457)](https://github.com/PennyLaneAI/pennylane/pull/8457)
 * Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested, 
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
