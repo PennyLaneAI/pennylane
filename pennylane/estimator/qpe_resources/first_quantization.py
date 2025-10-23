@@ -801,8 +801,7 @@ class FirstQuantization(Operation):
         lambda_u_1 = lambda_u * lambda_nu_1 / lambda_nu
         lambda_v_1 = lambda_v * lambda_nu_1 / lambda_nu
 
-        b_mat = recip_vectors
-        abs_sum = np.abs(b_mat @ b_mat.T).flatten().sum()
+        abs_sum = np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
 
         # taken from Appendix I.1 of arXiv:2302.07981v1 (2023)
         if orthogonal:
