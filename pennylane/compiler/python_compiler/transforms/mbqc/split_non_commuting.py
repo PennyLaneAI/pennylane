@@ -47,7 +47,7 @@ split_non_commuting_pass = compiler_transform(SplitNonCommutingPass)
 
 
 class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
-    """RewritePattern for splitting non-commuting regions in a quantum function."""
+    """Split non-commuting region into multiple regions"""
 
     def __init__(self):
         self.module: builtin.ModuleOp = None
@@ -59,6 +59,12 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
         while (op := op.parent_op()) and not isinstance(op, kind):
             pass
         return op
+
+    def clone_operations_to_block(self, ops_to_clone, target_block, value_mapper):
+        """Clone operations to target block, use value_mapper to update references"""
+        for op in ops_to_clone:
+            cloned_op = op.clone(value_mapper)
+            target_block.add_op(cloned_op)
 
     def create_dup_function(
         self, func_op: func.FuncOp, i: int, rewriter: pattern_rewriter.PatternRewriter
@@ -129,7 +135,7 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
             if len(users) > 0:
                 continue
 
-            if not self.is_measurement_op(op):
+            if not self.is_observable_op(op):
                 # keep walking up the chain
                 for operand in op.operands:
                     if operand not in remove_ops:
@@ -171,6 +177,17 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
         """Check if an operation is a measurement operation."""
         # TODO: support more measurement operations
         if isinstance(op, quantum.ExpvalOp):
+            return True
+        return False
+
+    def is_observable_op(self, op: Operation) -> bool:
+        """Check if an operation is an observable operation."""
+        if (
+            isinstance(op, quantum.NamedObsOp)
+            or isinstance(op, quantum.ComputationalBasisOp)
+            or isinstance(op, quantum.HamiltonianOp)
+            or isinstance(op, quantum.TensorOp)
+        ):
             return True
         return False
 
@@ -350,8 +367,9 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
             for i, position in enumerate(positions):
                 final_return_values[position] = group_vals[i]
 
-        # Filter out None values (in case something went wrong)
-        final_return_values = [v for v in final_return_values if v is not None]
+        assert all(
+            v is not None for v in final_return_values
+        ), "final return values should not be None"
 
         # Create new return operation
         return_op = func.ReturnOp(*final_return_values)
