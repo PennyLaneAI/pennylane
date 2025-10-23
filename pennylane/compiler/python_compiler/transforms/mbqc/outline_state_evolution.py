@@ -44,7 +44,7 @@ Known limitations
 
     *   If the current pass is applied multiple times, the transform will fail as it would redefined the `state_evolution` func. This is
         caused by the way we define the terminal_boundary_op. Each time the pass is applied to the IR, it would insert a new
-        terminal_boundary_op into the IR. TODOs: Instead of inserting a new `terminal_boundary_op` op to the IR when applying the pass, it would be better to: 1. define a 
+        terminal_boundary_op into the IR. TODOs: Instead of inserting a new `terminal_boundary_op` op to the IR when applying the pass, it would be better to: 1. define a
         quantum.terminator op before this pass and use it as a delineation of quantum gate operation; 2. move the `simply_io` to a separate
         pass.
 """
@@ -59,6 +59,7 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum
+
 
 @dataclass(frozen=True)
 class OutlineStateEvolutionPass(passes.ModulePass):
