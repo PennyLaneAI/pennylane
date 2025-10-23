@@ -28,7 +28,7 @@ from pennylane.ftqc.catalyst_pass_aliases import (
 pytestmark = pytest.mark.external
 
 
-@pytest.mark.jax
+@pytest.mark.catalyst
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
     "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
@@ -78,6 +78,7 @@ def test_converstion_to_mlir(pass_fn, pass_name):
     assert pass_name in circ.mlir
 
 
+@pytest.mark.catalyst
 @pytest.mark.parametrize(
     "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
 )
