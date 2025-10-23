@@ -187,7 +187,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     extract_idx = self._get_qubit_idx(op)
                     qubit_to_reg_idx[op.qubit] = extract_idx
                     # branch to update extract_op with new qreg
-                    if terminal_op_in_reg and op.qreg is terminal_op_in_reg:
+                    if op.qreg is terminal_op_in_reg:
                         insertion_point = InsertPoint.before(op)
                         extract_op = quantum.ExtractOp(current_reg, extract_idx)
                         rewriter.insert_op(extract_op, insertion_point=insertion_point)
@@ -211,7 +211,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         del qubit_to_reg_idx[op.qubit]
                         current_reg = op.out_qreg
                     # branch to update insert_op with new qreg
-                    if terminal_op_in_reg and op.in_qreg is terminal_op_in_reg:
+                    if op.in_qreg is terminal_op_in_reg:
                         insertion_point = InsertPoint.before(op)
                         index = op.idx if op.idx else op.idx_attr
                         insert_op = quantum.InsertOp(current_reg, index, op.qubit)
