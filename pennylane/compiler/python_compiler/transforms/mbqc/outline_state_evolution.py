@@ -138,9 +138,9 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
     # pylint: disable=no-else-return
     def _get_qubit_idx(self, op: Operation) -> int | None:
         """Get the index of qubit that an ExtractOp op extracts."""
-        if getattr(op, "idx", None):  
-            return op.idx  
-        return getattr(op, "idx_attr", None) 
+        if getattr(op, "idx", None):
+            return op.idx
+        return getattr(op, "idx_attr", None)
 
     def _set_up_terminal_boundary_op(
         self,
@@ -156,10 +156,10 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
 
         # Insert all qubits recorded in the qubit_to_reg_idx dict before the
         # pre-assumed terminal operations.
-        rewriter.insertion_point = InsertPoint.before(op)
+        insertion_point = InsertPoint.before(op)
         for qb, idx in qubit_to_reg_idx.items():
             insert_op = quantum.InsertOp(current_reg, idx, qb)
-            rewriter.insert(insert_op)
+            rewriter.insert_op(insert_op, insertion_point=insertion_point)
             insert_ops.add(insert_op)
             terminal_boundary_op = insert_op
             current_reg = insert_op.out_qreg
@@ -171,11 +171,13 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         terminal_boundary_op.attributes["terminal_boundary"] = builtin.UnitAttr()
 
         # extract ops
-        rewriter.insertion_point = InsertPoint.before(op)
+        insertion_point = InsertPoint.before(op)
         for qb, idx in list(qubit_to_reg_idx.items()):
             extract_op = quantum.ExtractOp(current_reg, idx)
-            rewriter.insert(extract_op)
+            rewriter.insert_op(extract_op, insertion_point=insertion_point)
             qb.replace_by_if(extract_op.qubit, lambda use: use.operation not in insert_ops)
+            for use in qb.uses:
+                rewriter.notify_op_modified(use.operation)
             # update the qubit_to_reg_idx dict
             qubit_to_reg_idx[extract_op.qubit] = idx
             # pop out qb from the dict
