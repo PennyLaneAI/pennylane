@@ -292,21 +292,6 @@ class GlobalPhase(Operation):
     array([0.        +0.j        , 0.        +0.j        ,
             0.99244503-0.12269009j, 0.        +0.j        ])
 
-    The operator can be applied with a control to create a relative phase between terms:
-
-    .. code-block:: python
-
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(0)
-            qml.ctrl(qml.GlobalPhase(0.123), 0)
-            return qml.state()
-
-    >>> circuit()
-    array([0.70710678+0.j        , 0.70176461-0.08675499j])
-
 
     """
 
