@@ -28,7 +28,7 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-from .helper import _needs_pyzx
+from .helper import _might_need_quizx
 
 
 def _toffoli_clifford_t_decomp(wires):
@@ -101,15 +101,18 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
-@_needs_pyzx
-def to_zx(tape, expand_measurements=False):
-    """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
+@_might_need_quizx
+def to_zx(tape, expand_measurements=False, backend="pyzx"):
+    """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`__ (``backend=="pyzx"``) or in the `QuiZX framework <https://docs.rs/quizx/latest/quizx/>`__ (``backend=="quizx"``).
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
-        tape(QNode or QuantumTape or Callable or Operation): The PennyLane quantum circuit.
-        expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
+        tape (QNode or QuantumTape or Callable or Operation): The PennyLane quantum circuit.
+        expand_measurements (bool): The expansion will be applied on measurements that are not in the Z-basis and
             rotations will be added to the operations.
+        backend (str): Framework for which to create the ZX-Graph. Currently supported are
+            - ``"pyzx"`` (default): Uses and requires `PyZX <https://pyzx.readthedocs.io/en/latest/>`__
+            - ``"quizx"`` (default): Uses the Python bindings of `QuiZX <https://pyzx.readthedocs.io/en/latest/>`__. Requires both PyZX and QuiZX.
 
     Returns:
         graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -118,7 +121,7 @@ def to_zx(tape, expand_measurements=False):
         will provide the ZX graph in the form of a PyZX graph.
 
     Raises:
-        ModuleNotFoundError: if the required ``pyzx`` package is not installed.
+        ModuleNotFoundError: if one of the required packages (see ``backend`` argument for details) is not installed.
 
     **Example**
 
@@ -319,20 +322,31 @@ def to_zx(tape, expand_measurements=False):
     if not isinstance(tape, Operator):
         if not isinstance(tape, (qml.tape.QuantumScript, qml.QNode)) and not callable(tape):
             raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
-        return _to_zx_transform(tape, expand_measurements=expand_measurements)
+        return _to_zx_transform(tape, expand_measurements=expand_measurements, backend=backend)
 
-    return to_zx(QuantumScript([tape]))
+    return to_zx(QuantumScript([tape]), backend=backend)
 
 
 @partial(transform, is_informative=True)
 def _to_zx_transform(
-    tape: QuantumScript, expand_measurements=False
+    tape: QuantumScript,
+    expand_measurements=False,
+    backend="pyzx",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
     # pylint: disable=import-outside-toplevel
     import pyzx
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
+
+    if backend == "pyzx":
+        graph_backend = "simple"
+    elif backend == "quizx":
+        graph_backend = "quizx-vec"
+    else:
+        raise ValueError(
+            f"Unsupported ZX-Graph backend: {backend}. Supported backends are 'pyzx' and 'quizx'."
+        )
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     gate_types = {
@@ -360,7 +374,7 @@ def _to_zx_transform(
 
     def processing_fn(res):
         # Create the graph, a qubit mapper, the classical mapper stays empty as PennyLane does not support classical bits.
-        graph = Graph(None)
+        graph = Graph(backend=graph_backend)
         q_mapper = TargetMapper()
         c_mapper = TargetMapper()
 
@@ -586,23 +600,20 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
     if decompose_phases:
         type_z = type_1 == VertexType.Z
         if type_z and param.denominator == 2:
-            op = qml.adjoint(qml.S(wires=qubit_1)) if param.numerator == 3 else qml.S(wires=qubit_1)
+            op = (
+                qml.adjoint(qml.S(wires=qubit_1))
+                if (param.numerator % 4) == 3
+                else qml.S(wires=qubit_1)
+            )
             return [op]
         if type_z and param.denominator == 4:
-            if param.numerator in (1, 7):
-                op = (
-                    qml.adjoint(qml.T(wires=qubit_1))
-                    if param.numerator == 7
-                    else qml.T(wires=qubit_1)
-                )
+            numerator = param.numerator % 8
+            if numerator in (1, 7):
+                op = qml.adjoint(qml.T(wires=qubit_1)) if numerator == 7 else qml.T(wires=qubit_1)
                 return [op]
-            if param.numerator in (3, 5):
+            if numerator in (3, 5):
                 op1 = qml.Z(qubit_1)
-                op2 = (
-                    qml.adjoint(qml.T(wires=qubit_1))
-                    if param.numerator == 3
-                    else qml.T(wires=qubit_1)
-                )
+                op2 = qml.adjoint(qml.T(wires=qubit_1)) if numerator == 3 else qml.T(wires=qubit_1)
                 return [op1, op2]
         if param == 1:
             op = qml.Z(qubit_1) if type_1 == VertexType.Z else qml.X(qubit_1)

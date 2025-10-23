@@ -26,6 +26,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import TransformError
 
 pyzx = pytest.importorskip("pyzx")
+quizx = pytest.importorskip("quizx")
 pytestmark = pytest.mark.external
 supported_operations = [
     qml.X(wires=0),
@@ -52,38 +53,73 @@ supported_operations = [
 
 decompose_phases = [True, False]
 qscript = [True, False]
+backends = ["pyzx", "quizx"]
 
 
-def test_import_pyzx_error(monkeypatch):
-    """Test that a ModuleNotFoundError is raised by the to_zx function
-    when the pyzx external package is not installed."""
+class TestExceptions:
+    """Test exceptions are raise as expected."""
 
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "pyzx", None)
+    def test_import_pyzx_error(self, monkeypatch):
+        """Test that a ModuleNotFoundError is raised by the to_zx function
+        when the pyzx external package is not installed."""
 
-        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-            qml.transforms.to_zx(qml.PauliX(wires=0))
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "pyzx", None)
 
-        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-            qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
+            with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
+                qml.transforms.to_zx(qml.PauliX(wires=0))
+
+            with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
+                qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
+
+    def test_import_quizx_error(self, monkeypatch):
+        """Test that a ModuleNotFoundError is raised by the to_zx function
+        when the quizx external package is not installed but only if
+        ``backend="quizx"`` is requested."""
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "quizx", None)
+
+            with pytest.raises(ModuleNotFoundError, match="The `quizx` package is required."):
+                qml.transforms.to_zx(qml.PauliX(wires=0), backend="quizx")
+
+            with pytest.raises(ModuleNotFoundError, match="The `quizx` package is required."):
+                qml.transforms.to_zx(
+                    QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]), backend="quizx"
+                )
+
+            _ = qml.transforms.to_zx(qml.PauliX(wires=0))
+            _ = qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
+
+    def test_invalid_backend_error(self):
+        """Test that a ValueError is raised by the to_zx function if the given ``backend``
+        is not supported."""
+
+        with pytest.raises(ValueError, match="Unsupported ZX-Graph backend: does-."):
+            qml.transforms.to_zx(qml.PauliX(wires=0), backend="does-not-exist")
+
+        with pytest.raises(ValueError, match="Unsupported ZX-Graph backend: does-."):
+            qml.transforms.to_zx(
+                QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]), backend="does-not-exist"
+            )
 
 
+@pytest.mark.parametrize("backend", ["pyzx", "quizx"])
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
 
-    def test_invalid_argument(self):
+    def test_invalid_argument(self, backend):
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
         with pytest.raises(
             TransformError,
             match="Input is not an Operator, tape, QNode, or quantum function",
         ):
-            _ = qml.transforms.to_zx(None)
+            _ = qml.transforms.to_zx(None, backend=backend)
 
     @pytest.mark.parametrize("script", qscript)
     @pytest.mark.parametrize("operation", supported_operations)
-    def test_supported_operations(self, operation, script):
+    def test_supported_operations(self, operation, script, backend):
         """Test to convert the script to a ZX graph and back for supported operations."""
-
         I = qml.math.eye(2 ** len(operation.wires))
 
         if script:
@@ -93,10 +129,15 @@ class TestConvertersZX:
 
         matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
 
-        zx_g = qml.transforms.to_zx(qs)
+        zx_g = qml.transforms.to_zx(qs, backend=backend)
         matrix_zx = zx_g.to_matrix()
 
-        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+        if backend == "pyzx":
+            expected_graph_type = pyzx.graph.graph_s.GraphS
+        else:
+            expected_graph_type = quizx.VecGraph
+        assert isinstance(zx_g, expected_graph_type), f"{type(zx_g)=}"
+
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
         # Remove global phase
@@ -119,9 +160,8 @@ class TestConvertersZX:
         assert qml.math.allclose(mat_product, I)
 
     @pytest.mark.parametrize("decompose", decompose_phases)
-    def test_circuit(self, decompose):
+    def test_circuit(self, decompose, backend):
         """Test a simple circuit."""
-
         I = qml.math.eye(2**3)
 
         operations = [
@@ -141,9 +181,13 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(operations, [])
-        zx_g = qml.transforms.to_zx(qs)
+        zx_g = qml.transforms.to_zx(qs, backend=backend)
 
-        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+        if backend == "pyzx":
+            expected_graph_type = pyzx.graph.graph_s.GraphS
+        else:
+            expected_graph_type = quizx.VecGraph
+        assert isinstance(zx_g, expected_graph_type)
 
         matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
         matrix_zx = zx_g.to_matrix()
@@ -165,7 +209,7 @@ class TestConvertersZX:
 
         assert qml.math.allclose(mat_product, I)
 
-    def test_circuit_mod_5_4(self):
+    def test_circuit_mod_5_4(self, backend):
         """Test the circuit mod 5 4."""
         operations = [
             qml.PauliX(wires=4),
@@ -222,9 +266,13 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(operations, [])
-        zx_g = qml.transforms.to_zx(qs)
+        zx_g = qml.transforms.to_zx(qs, backend=backend)
 
-        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+        if backend == "pyzx":
+            expected_graph_type = pyzx.graph.graph_s.GraphS
+        else:
+            expected_graph_type = quizx.VecGraph
+        assert isinstance(zx_g, expected_graph_type)
 
         matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
         matrix_zx = zx_g.to_matrix()
@@ -246,7 +294,7 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
         assert qml.math.allclose(mat_product, I)
 
-    def test_expand_measurements(self):
+    def test_expand_measurements(self, backend):
         """Test with expansion of measurements."""
         I = qml.math.eye(2**2)
 
@@ -262,8 +310,12 @@ class TestConvertersZX:
         measurements = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
         qs = QuantumScript(operations, measurements)
-        zx_g = qml.transforms.to_zx(qs, expand_measurements=True)
-        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+        zx_g = qml.transforms.to_zx(qs, expand_measurements=True, backend=backend)
+        if backend == "pyzx":
+            expected_graph_type = pyzx.graph.graph_s.GraphS
+        else:
+            expected_graph_type = quizx.VecGraph
+        assert isinstance(zx_g, expected_graph_type)
 
         # Add rotation Hadamard because of PauliX
         operations.append(qml.Hadamard(wires=[1]))
@@ -288,7 +340,7 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
         assert qml.math.allclose(mat_product, I)
 
-    def test_embeddings(self):
+    def test_embeddings(self, backend):
         """Test with expansion of prep."""
         I = qml.math.eye(2**2)
 
@@ -305,9 +357,13 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(prep + operations, [])
-        zx_g = qml.transforms.to_zx(qs)
+        zx_g = qml.transforms.to_zx(qs, backend=backend)
 
-        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+        if backend == "pyzx":
+            expected_graph_type = pyzx.graph.graph_s.GraphS
+        else:
+            expected_graph_type = quizx.VecGraph
+        assert isinstance(zx_g, expected_graph_type), f"{type(zx_g)=}"
 
         matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
         matrix_zx = zx_g.to_matrix()
@@ -327,9 +383,10 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
         assert qml.math.allclose(mat_product, I)
 
-    def test_no_decomposition(self):
+    def test_no_decomposition(self, backend):
         """Cross qubit connections is not diagram-like."""
-        graph = pyzx.Graph(None)
+        graph_backend = "simple" if backend == "pyzx" else "quizx-vec"
+        graph = pyzx.Graph(backend=graph_backend)
         q_mapper = pyzx.circuit.gates.TargetMapper()
 
         inputs = []
@@ -379,7 +436,7 @@ class TestConvertersZX:
         ):
             qml.transforms.from_zx(graph)
 
-    def test_no_suitable_decomposition(self):
+    def test_no_suitable_decomposition(self, backend):
         """Test that an error is raised when no suitable decomposition is found."""
 
         operations = [qml.sum(qml.PauliX(0), qml.PauliZ(0))]
@@ -389,11 +446,12 @@ class TestConvertersZX:
             QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",
         ):
-            qml.transforms.to_zx(qs)
+            qml.transforms.to_zx(qs, backend=backend)
 
-    def test_same_type_nodes_simple_edge(self):
+    def test_same_type_nodes_simple_edge(self, backend):
         """Test that a Green-Green nodes with simple edge has no corresponding circuit."""
-        graph = pyzx.Graph(None)
+        graph_backend = "simple" if backend == "pyzx" else "quizx-vec"
+        graph = pyzx.Graph(backend=graph_backend)
         q_mapper = pyzx.circuit.gates.TargetMapper()
         c_mapper = pyzx.circuit.gates.TargetMapper()
 
@@ -444,9 +502,10 @@ class TestConvertersZX:
         ):
             qml.transforms.from_zx(graph)
 
-    def test_different_type_node_hadamard_edge(self):
+    def test_different_type_node_hadamard_edge(self, backend):
         """Test that a Green-Red nodes with Hadamard edge has no corresponding circuit."""
-        graph = pyzx.Graph(None)
+        graph_backend = "simple" if backend == "pyzx" else "quizx-vec"
+        graph = pyzx.Graph(graph_backend)
         q_mapper = pyzx.circuit.gates.TargetMapper()
         c_mapper = pyzx.circuit.gates.TargetMapper()
 
@@ -497,9 +556,10 @@ class TestConvertersZX:
         ):
             qml.transforms.from_zx(graph)
 
-    def test_cx_gate(self):
+    def test_cx_gate(self, backend):
         """Test that CX node is converted to the right tape"""
-        graph = pyzx.Graph(None)
+        graph_backend = "simple" if backend == "pyzx" else "quizx-vec"
+        graph = pyzx.Graph(graph_backend)
         q_mapper = pyzx.circuit.gates.TargetMapper()
         c_mapper = pyzx.circuit.gates.TargetMapper()
 
@@ -549,11 +609,11 @@ class TestConvertersZX:
         for op, op_ex in zip(tape.operations, expected_op):
             qml.assert_equal(op, op_ex)
 
-    def test_qnode_decorator(self):
+    def test_qnode_decorator(self, backend):
         """Test the QNode decorator."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @partial(qml.transforms.to_zx, expand_measurements=True, backend=backend)
         @qml.qnode(device=dev)
         def circuit(p):
             qml.RZ(p[0], wires=1)
@@ -570,13 +630,17 @@ class TestConvertersZX:
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)
 
-        assert isinstance(g, pyzx.graph.graph_s.GraphS)
+        if backend == "pyzx":
+            expected_graph_type = pyzx.graph.graph_s.GraphS
+        else:
+            expected_graph_type = quizx.VecGraph
+        assert isinstance(g, expected_graph_type), f"{type(g)=}"
 
-    def test_qnode_decorator_no_params(self):
+    def test_qnode_decorator_no_params(self, backend):
         """Test the QNode decorator."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @partial(qml.transforms.to_zx, expand_measurements=True, backend=backend)
         @qml.qnode(device=dev)
         def circuit():
             qml.PauliZ(wires=0)
@@ -585,4 +649,8 @@ class TestConvertersZX:
 
         g = circuit()
 
-        assert isinstance(g, pyzx.graph.graph_s.GraphS)
+        if backend == "pyzx":
+            expected_graph_type = pyzx.graph.graph_s.GraphS
+        else:
+            expected_graph_type = quizx.VecGraph
+        assert isinstance(g, expected_graph_type), f"{type(g)=}"

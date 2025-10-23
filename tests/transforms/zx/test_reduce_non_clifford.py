@@ -23,22 +23,53 @@ import pennylane as qml
 from pennylane.tape import QuantumScript
 
 pytest.importorskip("pyzx")
+quizx = pytest.importorskip("quizx")
+pytestmark = pytest.mark.external
+
+backends = ["pyzx", "quizx"]
 
 
-def test_import_pyzx_error(monkeypatch):
-    """Test that a ModuleNotFoundError is raised by the reduce_non_clifford transform
-    when the pyzx external package is not installed."""
+class TestExceptions:
+    """Test exceptions are raise as expected."""
 
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "pyzx", None)
+    def test_import_pyzx_error(self, monkeypatch):
+        """Test that a ModuleNotFoundError is raised by the reduce_non_clifford function
+        when the pyzx external package is not installed."""
 
-        qs = QuantumScript(ops=[], measurements=[])
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "pyzx", None)
 
-        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-            qml.transforms.zx.reduce_non_clifford(qs)
+            qs = QuantumScript()
+
+            with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
+                qml.transforms.zx.reduce_non_clifford(qs)
+
+    def test_import_quizx_error(self, monkeypatch):
+        """Test that a ModuleNotFoundError is raised by the to_zx function
+        when the quizx external package is not installed but only if
+        ``backend="quizx"`` is requested."""
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "quizx", None)
+
+            qs = QuantumScript()
+
+            with pytest.raises(ModuleNotFoundError, match="The `quizx` package is required."):
+                qml.transforms.zx.reduce_non_clifford(qs, backend="quizx")
+
+            _ = qml.transforms.zx.reduce_non_clifford(qs)
+
+    def test_invalid_backend_error(self):
+        """Test that a ValueError is raised by the to_zx function if the given ``backend``
+        is not supported."""
+
+        qs = QuantumScript([qml.X(0)])
+
+        with pytest.raises(ValueError, match="Unsupported ZX-Graph backend: does-."):
+            qml.transforms.zx.reduce_non_clifford(qs, backend="does-not-exist")
 
 
-@pytest.mark.external
+@pytest.mark.parametrize("backend", ["pyzx", "quizx"])
 class TestReduceNonClifford:
 
     @pytest.mark.parametrize(
@@ -61,12 +92,12 @@ class TestReduceNonClifford:
             qml.CCZ(wires=[0, 1, 2]),
         ),
     )
-    def test_hermitian_involutory_gates_cancellation(self, gate):
+    def test_hermitian_involutory_gates_cancellation(self, gate, backend):
         """Test cancellation for each supported Hermitian gate (involution property HH=I)"""
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs, backend=backend)
 
         assert new_qs.operations == []
 
@@ -78,12 +109,12 @@ class TestReduceNonClifford:
             (4, []),
         ),
     )
-    def test_S_gate_simplification(self, num_gates, expected_ops):
+    def test_S_gate_simplification(self, num_gates, expected_ops, backend):
         """Test S gate simplification/cancellation."""
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs, backend=backend)
 
         assert new_qs.operations == expected_ops
 
@@ -96,12 +127,12 @@ class TestReduceNonClifford:
             (8, []),
         ),
     )
-    def test_T_gate_simplification(self, num_gates, expected_ops):
+    def test_T_gate_simplification(self, num_gates, expected_ops, backend):
         """Test T gate simplification/cancellation."""
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs, backend=backend)
 
         assert new_qs.operations == expected_ops
 
@@ -113,12 +144,12 @@ class TestReduceNonClifford:
             (0.1, 0.9, -2.8),
         ),
     )
-    def test_merge_RX_rotations(self, params):
+    def test_merge_RX_rotations(self, params, backend):
         """Test that RX rotation gates are correctly merged together."""
         ops = [qml.RX(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs, backend=backend)
 
         assert len(new_qs.operations) == 3
 
@@ -137,12 +168,12 @@ class TestReduceNonClifford:
             (0.1, 0.9, -2.8),
         ),
     )
-    def test_merge_RY_rotations(self, params):
+    def test_merge_RY_rotations(self, params, backend):
         """Test that RY rotation gates are correctly merged together."""
         ops = [qml.RY(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs, backend=backend)
 
         assert len(new_qs.operations) == 5
 
@@ -165,12 +196,12 @@ class TestReduceNonClifford:
             (0.1, 0.9, -2.8),
         ),
     )
-    def test_merge_RZ_rotations(self, params):
+    def test_merge_RZ_rotations(self, params, backend):
         """Test that RZ rotation gates are correctly merged together."""
         ops = [qml.RZ(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs, backend=backend)
 
         assert len(new_qs.operations) == 1
 
@@ -193,12 +224,12 @@ class TestReduceNonClifford:
             (2 * np.pi, []),
         ),
     )
-    def test_RZ_rotation_with_Clifford_T_angle(self, angle, expected_ops):
+    def test_RZ_rotation_with_Clifford_T_angle(self, angle, expected_ops, backend):
         """Test that RZ rotation gates are transformed into the corresponding sequence of Clifford + T gates."""
         ops = [qml.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs, backend=backend)
 
         assert new_qs.operations == expected_ops
 
@@ -211,7 +242,7 @@ class TestReduceNonClifford:
             [qml.state()],
         ),
     )
-    def test_transformed_tape(self, measurements):
+    def test_transformed_tape(self, measurements, backend):
         """Test that the operations of the transformed tape match the expected operations
         and that the original measurements are not touched."""
         ops = [
@@ -230,20 +261,40 @@ class TestReduceNonClifford:
         ]
         original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        (transformed_tape,), _ = qml.transforms.zx.reduce_non_clifford(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.reduce_non_clifford(
+            original_tape, backend=backend
+        )
 
-        expected_ops = [
-            qml.S(wires=0),
-            qml.CNOT(wires=[2, 3]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(2.070796326790258, wires=[1]),
-            qml.CNOT(wires=[1, 3]),
-            qml.T(wires=3),
-            qml.CNOT(wires=[1, 3]),
-            qml.CNOT(wires=[2, 3]),
-            qml.CNOT(wires=[0, 1]),
-        ]
+        if backend == "pyzx":
+            expected_ops = [
+                qml.S(wires=0),
+                qml.CNOT(wires=[2, 3]),
+                qml.CNOT(wires=[0, 1]),
+                qml.RZ(2.070796326790258, wires=[1]),
+                qml.CNOT(wires=[1, 3]),
+                qml.T(wires=3),
+                qml.CNOT(wires=[1, 3]),
+                qml.CNOT(wires=[2, 3]),
+                qml.CNOT(wires=[0, 1]),
+            ]
+        else:
+            expected_ops = [
+                qml.S(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.RZ(2.070796326790258, wires=[1]),
+                qml.CNOT(wires=[1, 3]),
+                qml.CNOT(wires=[2, 3]),
+                qml.T(wires=3),
+                qml.CNOT(wires=[1, 3]),
+                qml.CNOT(wires=[2, 3]),
+                qml.CNOT(wires=[0, 1]),
+            ]
 
+        print(len(expected_ops), len(transformed_tape.operations))
+        print(qml.drawer.tape_text(qml.tape.QuantumScript(expected_ops), wire_order=[0, 1, 2, 3]))
+        print(qml.drawer.tape_text(transformed_tape, wire_order=[0, 1, 2, 3]))
+        for exp, op in zip(expected_ops, transformed_tape.operations):
+            print(exp, op)
         assert transformed_tape.operations == expected_ops
         assert transformed_tape.measurements == measurements
 
@@ -257,7 +308,7 @@ class TestReduceNonClifford:
             (3.2, -2.2),
         ),
     )
-    def test_equivalent_state(self, params):
+    def test_equivalent_state(self, params, backend):
         """Test that the output state returned by the transformed QNode matches
         the output state returned by the original QNode up to a global phase."""
         num_wires = 3
@@ -278,7 +329,7 @@ class TestReduceNonClifford:
             qml.CNOT(wires=[1, 2])
             return qml.state()
 
-        reduced_circ = qml.transforms.zx.reduce_non_clifford(original_circ)
+        reduced_circ = qml.transforms.zx.reduce_non_clifford(original_circ, backend=backend)
 
         state1 = original_circ(*params)
         state2 = reduced_circ(*params)

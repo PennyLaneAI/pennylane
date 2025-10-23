@@ -23,12 +23,14 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx, to_zx
-from .helper import _needs_pyzx
+from .helper import _might_need_quizx
 
 
-@_needs_pyzx
+@_might_need_quizx
 @transform
-def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def reduce_non_clifford(
+    tape: QuantumScript, backend: str = "pyzx"
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Reduce the number of non-Clifford gates by applying a combination of phase
     gadgetization strategies and Clifford gate simplification rules.
 
@@ -57,6 +59,8 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
+        backend (str): Backend framework to use for the ZX-Graph. See :func:`~.to_zx` for
+            available backends. Performance differs strongly between backends.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -104,19 +108,6 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
     - Aleks Kissinger, John van de Wetering (2020), "Reducing T-count with the ZX-calculus", `arXiv:1903.10477 <https://arxiv.org/abs/1903.10477>`__.
 
     """
-    # pylint: disable=import-outside-toplevel
-    import pyzx
-
-    zx_graph = to_zx(tape)
-
-    pyzx.hsimplify.from_hypergraph_form(zx_graph)
-    pyzx.full_reduce(zx_graph)
-
-    zx_circ = pyzx.extract_circuit(zx_graph)
-    zx_circ = pyzx.basic_optimization(zx_circ.to_basic_gates())
-
-    qscript = from_zx(zx_circ.to_graph())
-    new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -124,4 +115,32 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
         """
         return results[0]
 
+    if len(tape.operations) == 0:
+        return (tape,), null_postprocessing
+
+    # pylint: disable=import-outside-toplevel
+    import pyzx
+
+    zx_graph = to_zx(tape, backend=backend)
+    pyzx.hsimplify.from_hypergraph_form(zx_graph)
+
+    if backend == "pyzx":
+        pyzx.full_reduce(zx_graph)
+        zx_circuit = pyzx.extract_circuit(zx_graph)
+
+    elif backend == "quizx":
+        import quizx
+
+        # pylint: disable=no-member
+        quizx.full_simp(zx_graph)
+        zx_circuit = quizx.extract_circuit(zx_graph)
+
+    else:
+        raise ValueError(
+            f"Unsupported ZX-Graph backend: {backend}. Supported backends are 'pyzx' and 'quizx'."
+        )
+
+    opt_zx_graph = pyzx.basic_optimization(zx_circuit.to_basic_gates()).to_graph()
+    qscript = from_zx(opt_zx_graph)
+    new_tape = tape.copy(operations=qscript.operations)
     return (new_tape,), null_postprocessing

@@ -35,3 +35,37 @@ def _needs_pyzx(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def _might_need_quizx(func):
+    """Private function to use as a ZX-based transforms decorator to raise the
+    appropriate error when the pyzx external package is not installed, and also when
+    the quizx external package is not installed if the backend
+    kwarg (assumed to exist) is set to "quizx".
+
+    Note that ``_needs_pyzx`` is not needed when using this decorator."""
+
+    @wraps(func)
+    def wrapper(*args, backend="pyzx", **kwargs):
+        try:
+            # pylint: disable=import-outside-toplevel,unused-import
+            import pyzx
+
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                "The `pyzx` package is required. You can install it with `pip install pyzx`."
+            ) from e
+        if backend == "quizx":
+            try:
+                # pylint: disable=import-outside-toplevel,unused-import
+                import quizx
+
+            except ModuleNotFoundError as e:
+                raise ModuleNotFoundError(
+                    "The `quizx` package is required for backend=='quizx'. "
+                    "You can install it with `pip install quizx`."
+                ) from e
+
+        return func(*args, backend=backend, **kwargs)
+
+    return wrapper
