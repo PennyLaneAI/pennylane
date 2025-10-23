@@ -43,8 +43,20 @@ def _make_hashable(obj: Any) -> Any:
     Returns:
         Hashable version of the object
     """
+    # Import here to avoid circular dependency
+    import jax
+    import numpy as np
+
     if isinstance(obj, slice):
         return (obj.start, obj.stop, obj.step)
+    # Convert arrays (JAX and NumPy) to nested tuples for hashability
+    # Must check before list check since tolist() returns lists
+    if hasattr(jax, "Array") and isinstance(obj, jax.Array):
+        # Recursively convert nested lists from tolist() to tuples
+        return _make_hashable(obj.tolist())
+    if isinstance(obj, np.ndarray):
+        # Recursively convert nested lists from tolist() to tuples
+        return _make_hashable(obj.tolist())
     if isinstance(obj, list):
         return tuple(_make_hashable(item) for item in obj)
     if isinstance(obj, dict):
