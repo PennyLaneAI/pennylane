@@ -24,10 +24,11 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
-class TemporaryAND(ops.Operation):
+class TemporaryAND(Operation):
     r"""TemporaryAND(wires, control_values)
 
     The ``TemporaryAND`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
