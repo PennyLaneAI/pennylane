@@ -21,9 +21,11 @@
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
-  
+  [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
+
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
+  - :class:`~.IQPEmbedding`
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
