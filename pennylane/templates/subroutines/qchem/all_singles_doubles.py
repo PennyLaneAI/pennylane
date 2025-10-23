@@ -23,7 +23,6 @@ from autograd.core import primitive
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.math import is_abstract
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
