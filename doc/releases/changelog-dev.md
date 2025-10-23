@@ -19,8 +19,10 @@
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
+  [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
-
+  
+  - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
@@ -183,6 +185,7 @@
 This release contains contributions from (in alphabetical order):
 
 Astral Cai,
+Marcus Edwards,
 Lillian Frederiksen,
 Christina Lee,
 Shuli Shu,
