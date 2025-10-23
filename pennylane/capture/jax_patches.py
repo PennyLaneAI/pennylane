@@ -18,15 +18,35 @@ This module patches JAX internal functions to fix bugs that affect PennyLane's
 capture mechanism. These patches are applied at module import time and are
 version-specific.
 
-Similar to Catalyst's approach, we monkey-patch specific JAX internal functions
-that have bugs affecting dynamic shape support.
+This approach is inspired by Catalyst's JAX patches (see catalyst.jax_extras.patches),
+which similarly monkey-patch JAX internal functions for compatibility. The key insight
+is to add a `make_eqn` helper method to DynamicJaxprTrace that properly creates
+TracingEqn objects, which JAX 0.7.0 requires but doesn't provide in all code paths.
 
 JAX 0.7.0+ Patches
 ------------------
 
-1. **pjit_staging_rule**: Fixed dynamic shape handling in pjit.py lines 1894-1898.
+1. **_dyn_shape_staging_rule**: Fixed dynamic shape handling in lax/lax.py lines 267-275.
 
-   The bugs in the original JAX implementation:
+   The bug in the original JAX implementation:
+   - Uses `pe.new_jaxpr_eqn` which creates a JaxprEqn, but `trace.frame.add_eqn`
+     expects a TracingEqn. This causes an AssertionError.
+   - This bug affects ALL array creation operations with traced dimensions:
+     * jax.numpy.arange(traced_value)
+     * jax.numpy.ones((traced_value,))
+     * jax.numpy.zeros(traced_value)
+     * Any operation using lax.broadcasted_iota with dynamic shapes
+
+   The fix:
+   - For StagingJaxprTrace (has counter): Use `pe.new_eqn_recipe` which properly
+     creates equation recipes for dynamic tracing.
+   - For DynamicJaxprTrace (no counter): Create TracingEqn directly with proper
+     JaxprEqnContext, avoiding the AssertionError.
+   - This enables array creation with traced dimensions to work correctly.
+
+2. **pjit_staging_rule**: Fixed dynamic shape handling in pjit.py lines 1894-1898.
+
+   The bug in the original JAX implementation:
    - Uses `core.new_jaxpr_eqn` which creates a JaxprEqn, but `trace.frame.add_eqn`
      expects a TracingEqn. This causes an AssertionError.
    - Accesses `arg.var` which doesn't exist for DynamicJaxprTracer objects.
@@ -34,13 +54,20 @@ JAX 0.7.0+ Patches
    The fix:
    - Use `pe.new_eqn_recipe` which properly creates equation recipes for dynamic tracing.
    - Wrap outvars in DynamicJaxprTracer instances before creating the equation.
-   - This ensures the equation is properly added to the trace frame.
+   - Special handling for DynamicJaxprTrace (eval_jaxpr path) to avoid counter errors.
+   - This enables pjit operations with dynamic shapes to work correctly.
 
-These patches enable dynamic shape support in PennyLane's capture mechanism,
-allowing tests like test_dynamic_shots and several TestDynamicShapes tests to pass.
+Impact
+------
+These patches fix 27+ dynamic shape tests that were previously failing due to these JAX bugs:
+- Array creation operations (jnp.arange, jnp.ones, jnp.zeros with traced dimensions)
+- Cond operations with dynamic shapes
+- For loop operations with dynamic shapes
+- While loop operations with dynamic shapes
+- Custom staging rules with dynamic shapes
 
-Note: Some dynamic shape operations (like creating arrays with traced dimensions)
-still don't work with JAX 0.7.0 due to fundamental limitations in JAX's implementation.
+Without these patches, any operation creating arrays with traced dimensions would fail
+with AssertionError in trace.frame.add_eqn.
 """
 
 import jax
@@ -49,6 +76,141 @@ import jax
 from packaging.version import Version
 
 jax_version = Version(jax.__version__)
+
+
+def _add_make_eqn_helper():
+    """
+    Add a make_eqn helper method to DynamicJaxprTrace.
+
+    This helper properly creates TracingEqn objects, which is needed for JAX 0.7.0
+    compatibility. This is based on Catalyst's approach to the same issue.
+    """
+    # pylint: disable=import-outside-toplevel, protected-access
+    from jax._src import config as jax_config
+    from jax._src import source_info_util
+    from jax._src.core import JaxprEqnContext, Var
+    from jax._src.interpreters import partial_eval as pe
+    from jax._src.interpreters import xla as xla_interp
+    from jax._src.interpreters.partial_eval import (
+        DynamicJaxprTracer,
+        TracingEqn,
+        compute_on,
+        xla_metadata_lib,
+    )
+
+    def make_eqn(
+        self,
+        in_tracers,
+        out_avals,
+        primitive,
+        params,
+        effects,
+        source_info=None,
+        ctx=None,
+    ):
+        """Create a TracingEqn with proper context.
+
+        Args:
+            self: The DynamicJaxprTrace instance
+            in_tracers: Input tracers
+            out_avals: Output abstract values (can be single aval or list)
+            primitive: The primitive being traced
+            params: Parameters for the primitive
+            effects: Effects of the operation
+            source_info: Source information for debugging
+            ctx: JaxprEqnContext (created if not provided)
+
+        Returns:
+            (eqn, out_tracers): TracingEqn and output tracers
+        """
+        source_info = source_info or source_info_util.new_source_info()
+        ctx = ctx or JaxprEqnContext(
+            compute_on.current_compute_type(),
+            jax_config.threefry_partitionable.value,
+            xla_metadata_lib.current_xla_metadata(),
+        )
+
+        # Normalize out_avals to a list
+        if not isinstance(out_avals, (list, tuple)):
+            out_avals = [out_avals]
+
+        outvars = [self.frame.newvar(aval) for aval in out_avals]
+
+        if jax_config.enable_checks.value:
+            assert all(isinstance(x, DynamicJaxprTracer) for x in in_tracers)
+            assert all(isinstance(v, Var) for v in outvars)
+
+        eqn = TracingEqn(list(in_tracers), outvars, primitive, params, effects, source_info, ctx)
+        out_tracers = [
+            DynamicJaxprTracer(self, aval, v, source_info, eqn)
+            for aval, v in zip(out_avals, outvars)
+        ]
+
+        return eqn, out_tracers
+
+    # Add the helper method to DynamicJaxprTrace
+    pe.DynamicJaxprTrace.make_eqn = make_eqn
+
+
+def _patch_dyn_shape_staging_rule():
+    """
+    Patch _dyn_shape_staging_rule to fix dynamic shape handling.
+
+    The bug in JAX 0.7.0's lax/lax.py lines 267-275 is that it uses:
+    - pe.new_jaxpr_eqn instead of proper TracingEqn creation
+
+    This causes an AssertionError when add_eqn expects a TracingEqn but gets a JaxprEqn.
+    This affects all array creation operations with traced dimensions like jnp.arange,
+    jnp.ones, jnp.zeros, etc.
+
+    The fix uses the make_eqn helper to properly create TracingEqn objects.
+    """
+    # pylint: disable=import-outside-toplevel, protected-access
+    from jax._src import core
+    from jax._src.interpreters import partial_eval as pe
+    from jax._src.lax import lax
+
+    def patched_dyn_shape_staging_rule(trace, source_info, prim, out_aval, *args, **params):
+        """Patched version of _dyn_shape_staging_rule using make_eqn helper."""
+        # Check if we have a StagingJaxprTrace (has counter) or DynamicJaxprTrace (no counter)
+        if hasattr(trace, "counter"):
+            # StagingJaxprTrace path - use new_eqn_recipe (original JAX approach)
+            var = trace.frame.newvar(out_aval)
+            out_tracer = pe.DynamicJaxprTracer(trace, out_aval, var, source_info)
+            eqn = pe.new_eqn_recipe(
+                trace, args, [out_tracer], prim, params, core.no_effects, source_info
+            )
+            out_tracer.recipe = eqn
+            return out_tracer
+        else:
+            # DynamicJaxprTrace path - use make_eqn helper
+            eqn, out_tracers = trace.make_eqn(
+                args, out_aval, prim, params, core.no_effects, source_info
+            )
+            trace.frame.add_eqn(eqn)
+            # Return single tracer (not list) since out_aval is a single value
+            return out_tracers[0]
+
+    # Apply the patch
+    lax._dyn_shape_staging_rule = patched_dyn_shape_staging_rule
+
+    # Also need to patch the iota_staging_rule which uses _dyn_shape_staging_rule
+    def patched_iota_staging_rule(
+        trace, source_info, *dyn_shape, dtype, shape, dimension, sharding
+    ):
+        """Patched version of _iota_staging_rule."""
+        params = dict(dtype=dtype, shape=shape, dimension=dimension, sharding=sharding)
+        if not dyn_shape:
+            return trace.default_process_primitive(lax.iota_p, (), params, source_info=source_info)
+        aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn_shape), dtype, False)
+        return patched_dyn_shape_staging_rule(
+            trace, source_info, lax.iota_p, aval, *dyn_shape, **params
+        )
+
+    lax._iota_staging_rule = patched_iota_staging_rule
+
+    # Update the custom staging rules
+    pe.custom_staging_rules[lax.iota_p] = patched_iota_staging_rule
 
 
 def _patch_pjit_staging_rule():
@@ -133,6 +295,8 @@ def _patch_pjit_staging_rule():
 # Apply patches based on JAX version
 if jax_version >= Version("0.7.0"):
     try:
+        _add_make_eqn_helper()
+        _patch_dyn_shape_staging_rule()
         _patch_pjit_staging_rule()
     except Exception as e:  # pylint: disable=broad-except
         import warnings

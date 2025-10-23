@@ -120,7 +120,6 @@ class TestDyanmicShapes:
 
         _ = jax.make_jaxpr(f, abstracted_axes=initial_abstracted_axes)(arg)
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_input_created_with_jnp_ones(self):
         """Test that determine_abstracted_axes works with manually created dynamic arrays."""
 
@@ -137,7 +136,6 @@ class TestDyanmicShapes:
 
         _ = jax.make_jaxpr(f)(3)
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_large_number_of_abstract_axes(self):
         """Test that determine_abstracted_axes can handle over 26 abstract axes."""
 
@@ -152,7 +150,6 @@ class TestDyanmicShapes:
         _ = jax.make_jaxpr(f)(list(range(30)))
 
 
-@pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
 def test_custom_staging_rule(enable_disable_dynamic_shapes):
     """Test regsitering a custom staging rule for a new primitive."""
     my_prim = jax.extend.core.Primitive("my_prim")

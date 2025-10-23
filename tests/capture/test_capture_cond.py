@@ -840,7 +840,6 @@ class TestDynamicShapeValidation:
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             f(True)
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_different_dtype(self):
         """Test an error is raised in the outputs have different dtypes."""
 
@@ -856,7 +855,6 @@ class TestDynamicShapeValidation:
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             f(True, 3)
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_one_dynamic_shape_other_not(self):
         """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
 
@@ -887,7 +885,6 @@ class TestDynamicShapeValidation:
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             f(True)
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_different_sized_shapes(self):
         """Test an error is raised with different sized shapes."""
 
