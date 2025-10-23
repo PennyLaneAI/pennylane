@@ -101,7 +101,7 @@ class TestOutlineStateEvolutionPass:
 
         pipeline = (OutlineStateEvolutionPass(),)
         run_filecheck(program, pipeline)
-    
+
     def test_multiple_func_w_qnode_attr(self, run_filecheck):
         """Test outline state evolution pass would be applied to a func with a qnode attribute."""
         program = """
@@ -161,6 +161,7 @@ class TestOutlineStateEvolutionPass:
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_no_terminal_op_error(self):
         """Test if outline_state_evolution_pass raises error when no terminal_boundary_op is found."""
+        # TODOs: we can resolve this issue if the boundary op is inserted when the program is captured.
         dev = qml.device("null.qubit", wires=10)
 
         @qml.qjit(
