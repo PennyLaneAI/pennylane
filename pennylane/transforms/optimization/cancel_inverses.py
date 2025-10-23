@@ -161,7 +161,11 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
             previous_ops_on_wires = list(
                 dict.fromkeys(o for w in op.wires if (o := self.previous_ops.get(w)) is not None)
             )
-            res = [super().interpret_operation(o) for o in previous_ops_on_wires]
+            # pylint: disable=super-with-arguments
+            res = [
+                super(CancelInversesInterpreter, self).interpret_operation(o)
+                for o in previous_ops_on_wires
+            ]
             for o in previous_ops_on_wires:
                 for w in o.wires:
                     self.previous_ops.pop(w)
