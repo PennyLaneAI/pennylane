@@ -53,6 +53,7 @@ supported_operations = [
 
 decompose_phases = [True, False]
 qscript = [True, False]
+backends = ["pyzx", "quizx"]
 
 
 class TestExceptions:
@@ -73,7 +74,8 @@ class TestExceptions:
 
     def test_import_quizx_error(self, monkeypatch):
         """Test that a ModuleNotFoundError is raised by the to_zx function
-        when the quizx external package is not installed but ``backend="quizx"`` is requested."""
+        when the quizx external package is not installed but only if
+        ``backend="quizx"`` is requested."""
 
         with monkeypatch.context() as m:
             m.setitem(sys.modules, "quizx", None)
@@ -85,6 +87,9 @@ class TestExceptions:
                 qml.transforms.to_zx(
                     QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]), backend="quizx"
                 )
+
+            _ = qml.transforms.to_zx(qml.PauliX(wires=0))
+            _ = qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
 
     def test_invalid_backend_error(self):
         """Test that a ValueError is raised by the to_zx function if the given ``backend``
