@@ -69,7 +69,7 @@ class OutlineStateEvolutionPass(passes.ModulePass):
                 qnode = op
                 break
         if qnode is not None:
-            rewriter = pattern_rewriter.PatternRewriter(module)
+            rewriter = pattern_rewriter.PatternRewriter(qnode)
             OutlineStateEvolutionPattern().match_and_rewrite(qnode, rewriter)
 
 

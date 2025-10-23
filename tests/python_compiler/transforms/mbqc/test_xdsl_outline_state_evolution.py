@@ -48,34 +48,32 @@ def _while_for(i):
 class TestOutlineStateEvolutionPass:
     """Unit tests for OutlineStateEvolutionPass."""
 
-    # def test_func_wo_qnode_circuit_raise_error(self, run_filecheck):
-    #     """Test if error would be raised for the module without a qnode func."""
-    #     program = """
-    #         module @circuit {
-    #             module @module_circuit {
-    #                 func.func public @circuit() -> tensor<f64> {
-    #                     %c0_i64 = arith.constant 0 : i64
-    #                     quantum.device shots(%c0_i64) ["", "", ""]
-    #                     %0 = quantum.alloc( 50) : !quantum.reg
-    #                     %1 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-    #                     %out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
-    #                     %2 = quantum.namedobs %out_qubits[ PauliX] : !quantum.obs
-    #                     %3 = quantum.expval %2 : f64
-    #                     %from_elements = tensor.from_elements %3 : tensor<f64>
-    #                     %4 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
-    #                     quantum.dealloc %4 : !quantum.reg
-    #                     quantum.device_release
-    #                     return %from_elements : tensor<f64>
-    #                 }
-    #             }
-    #         }
-    #     """
+    def test_func_wo_qnode_attr(self, run_filecheck):
+        """Test outline state evolution pass does not apply to a func without a qnode attribute."""
+        program = """
+            module @module_circuit {
+                func.func public @circuit() -> tensor<f64> {
+                    %0 = arith.constant 0 : i64
+                    quantum.device shots(%0) ["", "", ""]
+                    %1 = quantum.alloc( 50) : !quantum.reg
+                    %2 = quantum.extract %1[ 0] : !quantum.reg -> !quantum.bit
+                    // CHECK: quantum.custom "PauliX"()
+                    // CHECK-NOT: call @circuit.state_evolution
+                    %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
+                    %3 = quantum.namedobs %out_qubits[ PauliX] : !quantum.obs
+                    %4 = quantum.expval %3 : f64
+                    %from_elements = tensor.from_elements %4 : tensor<f64>
+                    %5 = quantum.insert %1[ 0], %out_qubits : !quantum.reg, !quantum.bit
+                    quantum.dealloc %5 : !quantum.reg
+                    quantum.device_release
+                    return %from_elements : tensor<f64>
+                }
+                // CHECK-NOT: func.func public @circuit.state_evolution
+            }
+        """
 
-    #     pipeline = (OutlineStateEvolutionPass(),)
-    #     with pytest.raises(
-    #         RuntimeError, match="There is no funcOp with qnode attribute in the module"
-    #     ):
-    #         run_filecheck(program, pipeline)
+        pipeline = (OutlineStateEvolutionPass(),)
+        run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_no_error(self):

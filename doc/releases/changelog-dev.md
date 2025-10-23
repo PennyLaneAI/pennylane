@@ -106,7 +106,7 @@
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
-* Add a `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
   quantum gate operations to a private callable.
   [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
 
