@@ -168,6 +168,10 @@
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
+* The various private functions of the :class:`~pennylane.estimator.FirstQuantization` class have 
+been modified to avoid using `numpy.matrix` as this function is deprecated.
+  [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
