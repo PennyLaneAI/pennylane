@@ -103,11 +103,11 @@ def _create_pauli_measure_primitive():
     pauli_measure_p = QmlPrimitive("pauli_measure")
 
     @pauli_measure_p.def_impl
-    def _(*wires, pauli_word="", postselect=None):
+    def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
         return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
     @pauli_measure_p.def_abstract_eval
-    def _(*_, **__):
+    def _pauli_measure_primitive_abstract_eval(*_, **__):
         dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         return jax.core.ShapedArray((), dtype)
 

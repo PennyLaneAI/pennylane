@@ -14,7 +14,7 @@
 """
 Defines the MeasurementValue class
 """
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Generator
 
 from pennylane import math
 from pennylane.wires import Wires
@@ -52,14 +52,14 @@ class MeasurementValue:
             return no_processing
         return self._processing_fn
 
-    def items(self) -> Iterable:
+    def items(self) -> Generator:
         """A generator representing all the possible outcomes of the MeasurementValue."""
         num_meas = len(self.measurements)
         for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
 
-    def postselected_items(self) -> Iterable:
+    def postselected_items(self) -> Generator:
         """A generator representing all the possible outcomes of the MeasurementValue,
         taking postselection into account."""
         # pylint: disable=stop-iteration-return
