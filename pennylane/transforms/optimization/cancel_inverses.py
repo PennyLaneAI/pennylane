@@ -63,7 +63,7 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
     Returns:
         Bool
     """
-    # op1 is self-inverse and the next gate is also op1
+    # op1 is self-inverse and the next gate is of the same type as op1
     if op1 in self_inverses and op1.name == op2.name:
         return True
 
@@ -273,8 +273,7 @@ def _can_cancel(op1, op2):
 
     if _are_inverses(op1, op2):
         # If the wires are exactly the same, then we can safely remove both
-
-        if op1.wires == op2.wires:
+        if _check_equality(op1.wires, op2.wires):
             return True
         # If wires are not exactly equal, they don't have full overlap, or differ by a permutation
         # 1. There is not full overlap in the wires; we cannot cancel
