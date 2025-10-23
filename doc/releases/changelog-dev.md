@@ -125,8 +125,7 @@
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
 * The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc` 
-  and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR. Mapping these primitives to the MLIR passes in Catalyst will 
-  enable using the passes with the unified compiler and program capture.
+  and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
 
 <h3>Documentation 📝</h3>
