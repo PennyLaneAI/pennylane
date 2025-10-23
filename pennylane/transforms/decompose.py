@@ -946,13 +946,13 @@ def _resolve_gate_set(  # pylint: disable=too-many-branches
     # gate_set nor stopping_condition is provided. Here we handle the case when gate_set
     # is not provided but stopping_condition is. This would only be valid with graph disabled.
     elif gate_set is None:
+        gate_set = set()
+        gate_set_contains = lambda op: False  # pylint: disable=unnecessary-lambda-assignment
         if enabled_graph():
             raise TypeError(
                 "The gate_set argument is required when the graph-based decomposition system "
                 "is enabled via qml.decomposition.enable_graph()"
             )
-        gate_set = set()
-        gate_set_contains = lambda op: False  # pylint: disable=unnecessary-lambda-assignment
 
     # This branch exists for backwards compatibility reasons. I forgot to bring this up
     # as a v0.44 deprecation but maybe we should deprecate providing a function to the
