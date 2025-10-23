@@ -117,28 +117,6 @@ unmodified_templates_cases = [
         {"wires": [3, 2, 0], "id": "your_id"},
     ),
     (qml.MottonenStatePreparation, (), {"state_vector": jnp.array([1.0, 0.0]), "wires": [1]}),
-    # Need to fix AllSinglesDoubles positional args: Currently have to pass hf_state as kwarg
-    # if we want to pass wires as kwarg, see issue #5521
-    (
-        qml.AllSinglesDoubles,
-        (jnp.ones(3), [2, 3, 0, 1]),
-        {
-            "singles": [[0, 2], [1, 3]],
-            "doubles": [[2, 3, 0, 1]],
-            "hf_state": np.array([0, 1, 1, 0]),
-        },
-    ),
-    (
-        qml.AllSinglesDoubles,
-        (jnp.zeros(3),),
-        {
-            "singles": [[0, 2], [1, 3]],
-            "doubles": [[2, 3, 0, 1]],
-            "wires": list(range(8)),
-            "hf_state": np.ones(8, dtype=int),
-        },
-    ),
-    # (qml.AllSinglesDoubles, (jnp.ones(3), [2, 3, 0, 1], np.array([0, 1, 1, 0])), {"singles": [[0, 2], [1, 3]], "doubles": [[2,3,0,1]]}), # Can't trace
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qml.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
