@@ -19,24 +19,27 @@ from xdsl.universe import Universe
 from . import dialects, transforms
 
 shared_dialects = ("stablehlo", "transform")
-dialects_all = (getattr(dialects, name) for name in dialects.__all__)
-transforms_all = (getattr(transforms, name) for name in transforms.__all__)
 
-# Dialects that are already provided by xDSL cannot be loaded into the multiverse, so we
-# don't add them to our universe
+# Create a map from dialect names to dialect classes. Dialects that are already
+# provided by xDSL cannot be loaded into the multiverse, so we don't add them to
+# our universe.
 names_to_dialects = {
-    dialect.name: dialect for dialect in dialects_all if dialect.name not in shared_dialects
-}
-# The transforms module contains PassDispatcher instances as well as ModulePasses. We only
-# want to collect the ModulePasses. We cannot use issubclass with instances, which is why
-# we first check if isinstance(transform, type).
-names_to_passes = {
-    transform.name: transform
-    for transform in transforms_all
-    if isinstance(transform, type) and issubclass(transform, ModulePass)
+    d.name: d
+    for name in dialects.__all__
+    if (d := getattr(dialects, name)).name not in shared_dialects
 }
 
-# The Universe is used to expose custom dialects and transforms to xDSL. It is specified
-# as an entry point in PennyLane's pyproject.toml file, which makes it available to look
-# up by xDSL for tools such as xdsl-opt, xdsl-gui, etc.
+# Create a map from pass names to their respective ModulePass. The transforms module
+# contains PassDispatcher instances as well as ModulePasses. We only want to collect
+# the ModulePasses. We cannot use issubclass with instances, which is why we first
+# check if isinstance(transform, type).
+names_to_passes = {
+    t.name: t
+    for name in transforms.__all__
+    if isinstance((t := getattr(transforms, name)), type) and issubclass(t, ModulePass)
+}
+
+# The Universe is used to expose custom dialects and transforms to xDSL. It is
+# specified as an entry point in PennyLane's pyproject.toml file, which makes
+# it available to look up by xDSL for tools such as xdsl-opt, xdsl-gui, etc.
 XDSL_UNIVERSE = Universe(all_dialects=names_to_dialects, all_passes=names_to_passes)

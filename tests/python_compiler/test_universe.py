@@ -23,21 +23,23 @@ from xdsl.passes import ModulePass
 from xdsl.universe import Universe as xUniverse
 
 from pennylane.compiler.python_compiler import dialects, transforms
-from pennylane.compiler.python_compiler.universe import XDSL_UNIVERSE
+from pennylane.compiler.python_compiler.universe import XDSL_UNIVERSE, shared_dialects
 
 all_dialects = tuple(getattr(dialects, name) for name in dialects.__all__)
 all_transforms = tuple(
-    (transform := getattr(transforms, name))
+    transform
     for name in transforms.__all__
-    if isinstance(transform, type) and issubclass(transform, ModulePass)
+    if isinstance((transform := getattr(transforms, name)), type)
+    and issubclass(transform, ModulePass)
 )
 
 
 def test_correct_universe():
     """Test that all the available dialects and transforms are available in the universe."""
     for d in all_dialects:
-        assert d.name in XDSL_UNIVERSE.all_dialects
-        assert XDSL_UNIVERSE.all_dialects[d.name] == d
+        if d.name not in shared_dialects:
+            assert d.name in XDSL_UNIVERSE.all_dialects
+            assert XDSL_UNIVERSE.all_dialects[d.name] == d
 
     for t in all_transforms:
         assert t.name in XDSL_UNIVERSE.all_passes
@@ -50,7 +52,8 @@ def test_correct_multiverse():
 
     for d in all_dialects:
         assert d.name in multiverse.all_dialects
-        assert multiverse.all_dialects[d.name] == d
+        if d.name not in shared_dialects:
+            assert multiverse.all_dialects[d.name] == d
 
     for t in all_transforms:
         assert t.name in multiverse.all_passes
