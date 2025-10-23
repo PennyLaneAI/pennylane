@@ -17,13 +17,15 @@ import pytest
 
 import pennylane as qml
 from pennylane.capture import make_plxpr
-from pennylane.ftqc.catalyst_passes import (
+from pennylane.ftqc.catalyst_pass_aliases import (
     commute_ppr,
     merge_ppr_ppm,
     ppm_to_mbqc,
     reduce_t_depth,
     to_ppr,
 )
+
+pytestmark = pytest.mark.external
 
 
 @pytest.mark.jax
