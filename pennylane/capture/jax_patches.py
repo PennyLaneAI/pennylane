@@ -70,12 +70,14 @@ Without these patches, any operation creating arrays with traced dimensions woul
 with AssertionError in trace.frame.add_eqn.
 """
 
-import jax
+# pylint: disable=import-outside-toplevel
 
-# Check JAX version
-from packaging.version import Version
-
-jax_version = Version(jax.__version__)
+has_jax = True
+try:
+    import jax
+    from jax.interpreters import partial_eval as pe
+except ImportError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def _add_make_eqn_helper():
@@ -293,16 +295,22 @@ def _patch_pjit_staging_rule():
 
 
 # Apply patches based on JAX version
-if jax_version >= Version("0.7.0"):
-    try:
-        _add_make_eqn_helper()
-        _patch_dyn_shape_staging_rule()
-        _patch_pjit_staging_rule()
-    except Exception as e:  # pylint: disable=broad-except
-        import warnings
+if has_jax:
 
-        warnings.warn(
-            f"Failed to apply JAX patches for version {jax.__version__}: {e}. "
-            "Some dynamic shape features may not work correctly.",
-            UserWarning,
-        )
+    # Check JAX version
+    from packaging.version import Version
+
+    jax_version = Version(jax.__version__)
+    if jax_version >= Version("0.7.0"):
+        try:
+            _add_make_eqn_helper()
+            _patch_dyn_shape_staging_rule()
+            _patch_pjit_staging_rule()
+        except Exception as e:  # pylint: disable=broad-except
+            import warnings
+
+            warnings.warn(
+                f"Failed to apply JAX patches for version {jax.__version__}: {e}. "
+                "Some dynamic shape features may not work correctly.",
+                UserWarning,
+            )
