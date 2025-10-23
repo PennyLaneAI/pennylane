@@ -69,12 +69,11 @@ class OutlineStateEvolutionPass(passes.ModulePass):
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the outline-state-evolution pass."""
-        qnode = None
+        qnodes = []
         for op in module.ops:
             if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
-                qnode = op
-                break
-        if qnode is not None:
+                qnodes.append(op)
+        for qnode in qnodes:
             rewriter = pattern_rewriter.PatternRewriter(qnode)
             OutlineStateEvolutionPattern().match_and_rewrite(qnode, rewriter)
 

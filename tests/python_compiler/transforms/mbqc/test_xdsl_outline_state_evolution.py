@@ -101,6 +101,48 @@ class TestOutlineStateEvolutionPass:
 
         pipeline = (OutlineStateEvolutionPass(),)
         run_filecheck(program, pipeline)
+    
+    def test_multiple_func_w_qnode_attr(self, run_filecheck):
+        """Test outline state evolution pass would be applied to a func with a qnode attribute."""
+        program = """
+            module @module_circuit {
+                func.func public @circuit1() -> tensor<f64> attributes {qnode} {
+                    %0 = arith.constant 0 : i64
+                    quantum.device shots(%0) ["", "", ""]
+                    %1 = quantum.alloc( 50) : !quantum.reg
+                    %2 = quantum.extract %1[ 0] : !quantum.reg -> !quantum.bit
+                    // CHECK: call @circuit1.state_evolution
+                    %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
+                    %3 = quantum.namedobs %out_qubits[ PauliX] : !quantum.obs
+                    %4 = quantum.expval %3 : f64
+                    %from_elements = tensor.from_elements %4 : tensor<f64>
+                    %5 = quantum.insert %1[ 0], %out_qubits : !quantum.reg, !quantum.bit
+                    quantum.dealloc %5 : !quantum.reg
+                    quantum.device_release
+                    return %from_elements : tensor<f64>
+                }
+                func.func public @circuit2() -> tensor<f64> attributes {qnode} {
+                    %0 = arith.constant 0 : i64
+                    quantum.device shots(%0) ["", "", ""]
+                    %1 = quantum.alloc( 50) : !quantum.reg
+                    %2 = quantum.extract %1[ 0] : !quantum.reg -> !quantum.bit
+                    // CHECK: call @circuit2.state_evolution
+                    %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
+                    %3 = quantum.namedobs %out_qubits[ PauliX] : !quantum.obs
+                    %4 = quantum.expval %3 : f64
+                    %from_elements = tensor.from_elements %4 : tensor<f64>
+                    %5 = quantum.insert %1[ 0], %out_qubits : !quantum.reg, !quantum.bit
+                    quantum.dealloc %5 : !quantum.reg
+                    quantum.device_release
+                    return %from_elements : tensor<f64>
+                }
+                // CHECK: func.func public @circuit1.state_evolution
+                // CHECK: func.func public @circuit2.state_evolution
+            }
+        """
+
+        pipeline = (OutlineStateEvolutionPass(),)
+        run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_no_error(self):
