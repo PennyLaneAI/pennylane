@@ -69,7 +69,7 @@ pl-device-test = "pennylane.devices.tests:cli"
 "default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
 
 [project.entry-points."xdsl.universe"]
-"pennylane" = "pennylane.compiler.python_compiler:XDSL_UNIVERSE"
+"pennylane-xdsl-universe" = "pennylane.compiler.python_compiler.universe:XDSL_UNIVERSE"
 
 [project.entry-points."console_scripts"]
 "pl-device-test" = "pennylane.devices.tests:cli"
