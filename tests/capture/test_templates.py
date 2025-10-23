@@ -37,10 +37,6 @@ def normalize_for_comparison(obj):
     In JAX 0.7.0, _make_hashable converts lists to tuples for hashability.
     This function reverses that for test comparisons.
     """
-    # Import here to avoid issues if jax is not available
-    import jax
-    import numpy as np
-
     # Don't normalize special objects like operators or functions
     if hasattr(obj, "__class__") and ("Operator" in str(obj.__class__.__mro__) or callable(obj)):
         return obj

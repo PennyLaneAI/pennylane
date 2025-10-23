@@ -256,7 +256,6 @@ class TestCaptureTransforms:
         assert params2["args_slice"] == (0, 1, None)
         assert params2["consts_slice"] == (1, 1, None)
         assert params2["targs_slice"] == (1, None, None)
-        # Dicts are also converted to tuples
         assert _restore_hashable(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
