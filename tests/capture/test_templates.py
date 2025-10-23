@@ -207,6 +207,7 @@ def test_unmodified_templates(template, args, kwargs):
 # TestModifiedTemplates below.
 tested_modified_templates = [
     qml.TrotterProduct,
+    qml.AllSinglesDoubles,
     qml.AmplitudeAmplification,
     qml.ApproxTimeEvolution,
     qml.BasisRotation,
@@ -647,6 +648,39 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.MPSPrep(mps=mps, wires=wires)
+
+    def test_all_singles_doubles(self):
+        arguments = (
+            np.array([-2.8, 0.5]),
+            np.array([1, 2, 3, 4]),
+            np.array([1, 1, 0, 0]),
+        )
+        keyword_args = (
+            np.array([[0, 2]]),
+            np.array([[0, 1, 2, 3]]),
+        )
+        params = (*arguments, *keyword_args)
+
+        def qfunc(weights, wires, hf_state, singles, doubles):
+            qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
+
+        # Validate inputs
+        qfunc(*params)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(*params)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *params)
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.AllSinglesDoubles(
+            np.array([-2.8, 0.5]),
+            range(4),
+            np.array([1, 1, 0, 0]),
+            [[0, 2]],
+            [[0, 1, 2, 3]],
+        )
 
     def test_quantum_monte_carlo(self):
         """Test the primitive bind call of QuantumMonteCarlo."""

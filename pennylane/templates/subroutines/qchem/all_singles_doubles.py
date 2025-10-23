@@ -169,14 +169,31 @@ class AllSinglesDoubles(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        all_wires = []
-        for sub in list(args[1]) + kwargs["singles"] + kwargs["doubles"]:
-            if isinstance(sub, list):
-                for wire in sub:
-                    all_wires.append(wire)
-            else:
-                all_wires.append(sub)
-        return super()._primitive_bind_call(args[0], list(set(all_wires)), args[2], **kwargs)
+        def flatten(lst):
+            flat = []
+            for sub in lst:
+                if (
+                    isinstance(sub, list)
+                    or isinstance(sub, np.ndarray)
+                    or (hasattr(sub, "shape") and len(sub.shape) > 0 and sub.shape[0] >= 2)
+                ):
+                    for wire in sub:
+                        flat.append(wire)
+                else:
+                    flat.append(sub)
+            return flat
+
+        all_wires = list(
+            set(
+                flatten(list(args[1]))
+                + flatten(list(kwargs["singles"]))
+                + flatten(list(kwargs["doubles"]))
+            )
+        )
+        if has_jax and capture.enabled():
+            all_wires = jnp.array(all_wires)
+
+        return super()._primitive_bind_call(args[0], args[2], wires=all_wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -250,15 +267,15 @@ class AllSinglesDoubles(Operation):
         Returns:
             tuple(int): shape of the tensor containing the circuit parameters
         """
-        if not singles and not doubles:
+        if (singles is None or len(singles) == 0) and (doubles is None or len(doubles) == 0):
             raise ValueError(
                 f"'singles' and 'doubles' lists can not be both empty;"
                 f" got singles = {singles}, doubles = {doubles}"
             )
 
-        if not singles:
+        if singles is None or len(singles) == 0:
             shape_ = (len(doubles),)
-        elif not doubles:
+        elif doubles is None or len(doubles) == 0:
             shape_ = (len(singles),)
         else:
             shape_ = (len(singles) + len(doubles),)
@@ -273,12 +290,12 @@ if AllSinglesDoubles._primitive is not None:
         # need to convert array values into integers
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
-        wires = tuple(w if math.is_abstract(w) else int(w) for w in args[1])
+        wires = tuple(w if math.is_abstract(w) else int(w) for w in args[2:])
         return type.__call__(
             AllSinglesDoubles,
-            weights=args[0],
-            hf_state=args[2:],
-            wires=wires,
+            args[0],
+            wires,
+            args[1],
             singles=kwargs["singles"],
             doubles=kwargs["doubles"],
         )
