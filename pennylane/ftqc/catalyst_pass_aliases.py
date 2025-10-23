@@ -24,7 +24,7 @@ from ..transforms.core import transform
 @transform
 def to_ppr(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
-    The transform itself is only imnplemented in Catalyst. This is just to enable capture."""
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError("The to_ppm pass is only implemented when using capture and QJIT.")
 
 
@@ -34,7 +34,7 @@ register_transform(to_ppr, "to-ppr", False)
 @transform
 def commute_ppr(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
-    The transform itself is only imnplemented in Catalyst. This is just to enable capture."""
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError(
         "The commute_ppr pass is only implemented when using capture and QJIT."
     )
@@ -46,7 +46,7 @@ register_transform(commute_ppr, "commute-ppr", False)
 @transform
 def merge_ppr_ppm(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
-    The transform itself is only imnplemented in Catalyst. This is just to enable capture."""
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError(
         "The merge_ppr_ppm pass is only implemented when using capture and QJIT."
     )
@@ -58,9 +58,9 @@ register_transform(merge_ppr_ppm, "merge-ppr-ppm", False)
 @transform
 def ppm_to_mbqc(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
-    The transform itself is only imnplemented in Catalyst. This is just to enable capture."""
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError(
-        "The pprm_to_mbqc pass is only implemented when using capture and QJIT."
+        "The ppm_to_mbqc pass is only implemented when using capture and QJIT."
     )
 
 
@@ -70,7 +70,7 @@ register_transform(ppm_to_mbqc, "ppm-to-mbqc", False)
 @transform
 def reduce_t_depth(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
-    The transform itself is only imnplemented in Catalyst. This is just to enable capture."""
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError(
         "The reduce_t_depth pass is only implemented when using capture and QJIT."
     )
