@@ -913,7 +913,7 @@ def _resolve_gate_set(  # pylint: disable=too-many-branches
 
     # This is a special case when the decompose transform is called without a gate set or
     # a stopping condition. In this case, we assume all PennyLane operations are supported,
-    # i.e., we only decompose custom gates defined by the user.
+    # i.e., we only decompose templates and custom gates defined by the user.
     if gate_set is None and stopping_condition is None:
         gate_set = set(ops.__all__)
         return gate_set, lambda op: op.name in gate_set
