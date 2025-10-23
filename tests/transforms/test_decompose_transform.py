@@ -197,7 +197,6 @@ class TestDecompose:
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
         class CustomOp(Operation):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
             @property
