@@ -36,8 +36,6 @@ quantum operations supported by PennyLane, as well as their conventions.
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
 
-import math
-
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -68,8 +66,8 @@ def _rotation(phi, bare=False):
     Returns:
         array[float]: transformation matrix
     """
-    c = math.cos(phi)
-    s = math.sin(phi)
+    c = qml_math.cos(phi)
+    s = qml_math.sin(phi)
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
@@ -159,7 +157,7 @@ class Squeezing(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    multiplier = 0.5 / math.sinh(shift)
+    multiplier = 0.5 / qml_math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
@@ -169,7 +167,7 @@ class Squeezing(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
-        return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
+        return R @ np.diag([1, qml_math.exp(-p[0]), qml_math.exp(p[0])]) @ R.T
 
     def adjoint(self):
         r, phi = self.parameters
@@ -224,8 +222,8 @@ class Displacement(CVOperation):
 
     @staticmethod
     def _heisenberg_rep(p):
-        c = math.cos(p[1])
-        s = math.sin(p[1])
+        c = qml_math.cos(p[1])
+        s = qml_math.sin(p[1])
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
@@ -284,8 +282,8 @@ class Beamsplitter(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
-        c = math.cos(p[0])
-        s = math.sin(p[0])
+        c = qml_math.cos(p[0])
+        s = qml_math.sin(p[0])
         U = c * np.eye(5)
         U[0, 0] = 1
         U[1:3, 3:5] = -s * R.T
@@ -341,7 +339,7 @@ class TwoModeSqueezing(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    multiplier = 0.5 / math.sinh(shift)
+    multiplier = 0.5 / qml_math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
@@ -352,8 +350,8 @@ class TwoModeSqueezing(CVOperation):
     def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
 
-        S = math.sinh(p[0]) * np.diag([1, -1])
-        U = math.cosh(p[0]) * np.identity(5)
+        S = qml_math.sinh(p[0]) * np.diag([1, -1])
+        U = qml_math.cosh(p[0]) * np.identity(5)
 
         U[0, 0] = 1
         U[1:3, 3:5] = S @ R.T
@@ -1253,7 +1251,7 @@ class QuadOperator(CVObservable):
     @staticmethod
     def _heisenberg_rep(p):
         phi = p[0]
-        return np.array([0, math.cos(phi), math.sin(phi)])  # TODO check
+        return np.array([0, qml_math.cos(phi), qml_math.sin(phi)])  # TODO check
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
