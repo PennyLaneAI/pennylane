@@ -568,8 +568,12 @@ def clifford_t_decomposition(
 
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
-        if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
-            method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs
+        if (
+            _CLIFFORD_T_CACHE is None
+            or not _CLIFFORD_T_CACHE.compatible(
+                method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs
+            )
+            or (is_qjit and method == "gridsynth")
         ):
             _CLIFFORD_T_CACHE = _CachedCallable(
                 method, epsilon, cache_size, is_qjit, **method_kwargs
