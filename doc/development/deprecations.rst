@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The :prop:``pennylane.operation.Operator.is_hermitian`` property is deprecated. Instead, please use the
+  :func:`pennylane.is_hermitian` function to check for hermiticity.
+  
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+  
 * Access to the following functions and classes from the `~pennylane.resources` module are 
   deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
 

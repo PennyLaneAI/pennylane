@@ -18,6 +18,7 @@ Unit tests for the qml.is_hermitian function
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 
 hermitian_ops = (
@@ -78,13 +79,19 @@ class TestIsHermitian:
     def test_hermitian_ops(self, op: Operator):
         """Test that all the non-parametric ops are hermitian."""
         assert qml.is_hermitian(op)
-        assert op.is_hermitian
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="The 'is_hermitian' property is deprecated"
+        ):
+            assert op.is_hermitian
 
     @pytest.mark.parametrize("op", non_hermitian_ops)
     def test_non_hermitian_ops(self, op: Operator):
         """Test that all the non-parametric ops are hermitian."""
         assert not qml.is_hermitian(op)
-        assert not op.is_hermitian
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="The 'is_hermitian' property is deprecated"
+        ):
+            assert not op.is_hermitian
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
     def test_arithmetic_ops(self, arithmetic_ops: list[Operator]):

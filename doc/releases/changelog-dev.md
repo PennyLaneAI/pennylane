@@ -129,6 +129,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The :prop:``pennylane.operation.Operator.is_hermitian`` property is deprecated. Instead, please use the
+  :func:`pennylane.is_hermitian` function to check for hermiticity.
+  [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
+  
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
     
@@ -137,7 +141,7 @@
     - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
     - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
-* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and `qml.vjp``.
+* `argnum` has been renamed `argnums` for `qml.grad`, `qml.jacobian`, `qml.jvp` and `qml.vjp`.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
