@@ -921,9 +921,6 @@ class TestDynamicShapes:
         [op] = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
         qml.assert_equal(op, qml.RY(0.5, 1))
 
-    @pytest.mark.xfail(
-        reason="JAX 0.7.0 eval_jaxpr does not work properly with pjit and dynamic shapes"
-    )
     def test_cond_abstracted_axes(self):
         """Test cond can accept inputs with dynamic shapes."""
 
@@ -938,7 +935,6 @@ class TestDynamicShapes:
         output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
         assert qml.math.allclose(output_false[0], 0)  # 0 * 1
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_cond_dynamic_shape_output(self):
         """test that cond can return dynamic shapes."""
 
@@ -983,7 +979,6 @@ class TestDynamicShapes:
         [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
         qml.assert_equal(x_op2, qml.X(3))
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_cond_dynamic_array_creation(self):
         """Test that arrays with dynamic shapes can be created within branches."""
 
@@ -1003,7 +998,6 @@ class TestDynamicShapes:
         [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_dynamic_shape_matches_arg(self):
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 

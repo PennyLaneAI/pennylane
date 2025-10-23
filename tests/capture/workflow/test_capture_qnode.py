@@ -833,9 +833,6 @@ def test_qnode_jit():
 
 
 # pylint: disable=unused-argument
-@pytest.mark.xfail(
-    reason="JAX 0.7.0 eval_jaxpr does not work properly with pjit and dynamic shapes"
-)
 def test_dynamic_shape_input(enable_disable_dynamic_shapes):
     """Test that the qnode can accept an input with a dynamic shape."""
 
@@ -852,7 +849,6 @@ def test_dynamic_shape_input(enable_disable_dynamic_shapes):
 
 
 # pylint: disable=unused-argument
-@pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
 def test_dynamic_shape_matches_arg(enable_disable_dynamic_shapes):
 
     @qml.qnode(qml.device("default.qubit", wires=4))

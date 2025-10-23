@@ -748,7 +748,6 @@ class TestHigherOrderPrimitiveRegistrations:
         assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
 
-@pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
     """Test that our interpreters can handle dynamic array creation."""
