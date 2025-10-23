@@ -386,6 +386,22 @@ class TestExpvalVar:
         t = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
         assert shapes == jax.core.ShapedArray((), t)
 
+    def test_closure_obs(self, m_type):
+        """Test that closure Operator instances are converted to AbstractOperator."""
+
+        obs = 3 * qml.X(0) + qml.Y(1)
+
+        def f():
+            return m_type(obs=obs)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == qml.X._primitive
+        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[2].primitive == qml.Y._primitive
+        assert jaxpr.eqns[3].primitive == qml.ops.Sum._primitive
+        assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[3].outvars[0]
+        assert jaxpr.eqns[4].primitive == m_type._obs_primitive
+
 
 class TestProbs:
 
