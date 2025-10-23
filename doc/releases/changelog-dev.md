@@ -10,6 +10,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
+  recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
+  more powerful, because it can cancel larger blocks of inverse gates without having to scan
+  the circuit from scratch. By default, the recursive cancellation is enabled (``recursive=True``).
+  To obtain previous behaviour, disable it by setting ``recursive=False``.
+  [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
+
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
@@ -23,7 +30,7 @@
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
   can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
-  
+
 * With capture enabled, measurements can now be performed on Operator instances passed as closure
   variables from outside the workflow scope.
   [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
