@@ -309,6 +309,14 @@ def pytest_runtest_setup(item):
                 )
 
 
+@pytest.fixture(autouse=True)
+def reenable_graph():
+    try:
+        yield
+    finally:
+        qml.decomposition.enable_graph()
+
+
 @pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
 def enable_and_disable_graph_decomp(request):
     """
@@ -336,4 +344,4 @@ def enable_and_disable_graph_decomp(request):
         # --- Teardown Phase ---
         # This code runs after the test function has finished,
         # regardless of whether it passed or failed.
-        qml.decomposition.disable_graph()
+        qml.decomposition.enable_graph()
