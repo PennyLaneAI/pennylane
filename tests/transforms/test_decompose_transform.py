@@ -88,15 +88,10 @@ class TestDecompose:
         ),
         ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None),
         (
-            [qml.measurements.MidMeasureMP(0)],
-            {},
-            [qml.measurements.MidMeasureMP(0)],
-            {
-                "type": TypeError,
-                "msg": "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
-                "with the new experimental graph-based decomposition system. Enable the new system "
-                "using qml.decomposition.enable_graph()",
-            },
+            [qml.Hadamard(0)],
+            {qml.RX: 1, qml.RZ: 2},
+            [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
+            None,
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
@@ -318,22 +313,6 @@ class TestPrivateHelpers:
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, max_expansion=5))
 
         qml.assert_equal(op, final_decomp[0])
-
-    @pytest.mark.unit
-    def test_no_both_gate_set_and_stopping_condition_graph_disabled(self):
-        """Tests that with graph disabled, gate_set and stopping_condition cannot both exist."""
-
-        tape = qml.tape.QuantumScript([])
-
-        def stopping_condition(op):  # pylint: disable=unused-argument
-            return True
-
-        with pytest.raises(TypeError, match="Specifying both gate_set and stopping_condition"):
-            qml.transforms.decompose(
-                tape,
-                gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
-                stopping_condition=stopping_condition,
-            )
 
     @pytest.mark.unit
     def test_invalid_gate_set(self):
