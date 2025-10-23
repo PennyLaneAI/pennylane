@@ -23,18 +23,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-# Dynamic shape support changed in JAX 0.7.0 - skip tests that use traced shapes in array creation
-from packaging import version
-
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-jax_version = version.parse(jax.__version__)
-skip_dynamic_shapes_jax070 = pytest.mark.skipif(
-    jax_version >= version.parse("0.7.0"),
-    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
-)
 
 
 class TestAdjointQfunc:
@@ -197,10 +188,10 @@ class TestAdjointQfunc:
         assert qml.math.isclose(out, qml.math.sin(-(0.5 + 0.3)))
 
 
-@skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestAdjointDynamicShapes:
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 allclose triggers pjit with DynamicJaxprTrace issue")
     def test_dynamic_shape_input(self):
         """Test that the adjoint transform can accept arrays with dynamic shapes."""
 
@@ -213,6 +204,7 @@ class TestAdjointDynamicShapes:
         expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
         qml.assert_equal(tape[0], expected)
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_execution_of_dynamic_array_creation(self):
         """Test that the inner function can create a dynamic array."""
 
@@ -230,6 +222,7 @@ class TestAdjointDynamicShapes:
         expected = qml.adjoint(qml.RX(jax.numpy.arange(3), 3))
         qml.assert_equal(expected, collector.state["ops"][0])
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 allclose triggers pjit with DynamicJaxprTrace issue")
     def test_complicated_dynamic_shape_input(self):
         """Test a dynamic shape input with a more complicate shape."""
 
@@ -256,6 +249,7 @@ class TestAdjointDynamicShapes:
         qml.assert_equal(op1, tape[0])
         qml.assert_equal(op2, tape[1])
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_dynamic_shape_matches_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
 
@@ -271,6 +265,7 @@ class TestAdjointDynamicShapes:
         op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
         qml.assert_equal(op1, tape[0])
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_dynamic_shape_before_matching_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
 
@@ -479,10 +474,10 @@ class TestCtrlQfunc:
         qml.assert_equal(tape[0], expected)
 
 
-@skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCtrlDynamicShapeInput:
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 allclose triggers pjit with DynamicJaxprTrace issue")
     def test_dynamic_shape_input(self):
         """Test that ctrl can accept dynamic shape inputs."""
 
@@ -495,6 +490,7 @@ class TestCtrlDynamicShapeInput:
         expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
         qml.assert_equal(tape[0], expected)
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_execution_of_dynamic_array_creation(self):
         """Test that the inner function can create a dynamic array."""
 
@@ -512,6 +508,7 @@ class TestCtrlDynamicShapeInput:
         expected = qml.ctrl(qml.RX(jax.numpy.arange(3), 3), 4)
         qml.assert_equal(expected, collector.state["ops"][0])
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_dynamic_shape_matches_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
 
@@ -527,6 +524,7 @@ class TestCtrlDynamicShapeInput:
         op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 2)
         qml.assert_equal(op1, tape[0])
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_dynamic_shape_before_matching_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
 

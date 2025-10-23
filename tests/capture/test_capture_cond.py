@@ -29,17 +29,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-# Dynamic shape support changed in JAX 0.7.0 - skip tests that use traced shapes in array creation
-from packaging import version
-
 # must be below jax importorskip
 from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
-
-jax_version = version.parse(jax.__version__)
-skip_dynamic_shapes_jax070 = pytest.mark.skipif(
-    jax_version >= version.parse("0.7.0"),
-    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
-)
 
 
 @pytest.fixture
@@ -831,7 +822,6 @@ class TestPytree:
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 
 
-@skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapeValidation:
 
@@ -850,6 +840,7 @@ class TestDynamicShapeValidation:
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             f(True)
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_different_dtype(self):
         """Test an error is raised in the outputs have different dtypes."""
 
@@ -865,6 +856,7 @@ class TestDynamicShapeValidation:
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             f(True, 3)
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_one_dynamic_shape_other_not(self):
         """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
 
@@ -895,6 +887,7 @@ class TestDynamicShapeValidation:
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             f(True)
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_different_sized_shapes(self):
         """Test an error is raised with different sized shapes."""
 
@@ -911,7 +904,7 @@ class TestDynamicShapeValidation:
             f(True, 4)
 
 
-@skip_dynamic_shapes_jax070
+# @skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 
@@ -931,6 +924,9 @@ class TestDynamicShapes:
         [op] = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
         qml.assert_equal(op, qml.RY(0.5, 1))
 
+    @pytest.mark.xfail(
+        reason="JAX 0.7.0 eval_jaxpr does not work properly with pjit and dynamic shapes"
+    )
     def test_cond_abstracted_axes(self):
         """Test cond can accept inputs with dynamic shapes."""
 
@@ -945,6 +941,7 @@ class TestDynamicShapes:
         output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
         assert qml.math.allclose(output_false[0], 0)  # 0 * 1
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_cond_dynamic_shape_output(self):
         """test that cond can return dynamic shapes."""
 
@@ -989,6 +986,7 @@ class TestDynamicShapes:
         [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
         qml.assert_equal(x_op2, qml.X(3))
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_cond_dynamic_array_creation(self):
         """Test that arrays with dynamic shapes can be created within branches."""
 
@@ -1008,6 +1006,7 @@ class TestDynamicShapes:
         [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
+    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     def test_dynamic_shape_matches_arg(self):
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 

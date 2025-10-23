@@ -25,16 +25,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# Dynamic shape support changed in JAX 0.7.0 - skip tests that use traced shapes in array creation
-from packaging import version
-
 from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
-
-jax_version = version.parse(jax.__version__)
-skip_dynamic_shapes_jax070 = pytest.mark.skipif(
-    jax_version >= version.parse("0.7.0"),
-    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
-)
 
 
 class TestCaptureWhileLoop:
@@ -321,7 +312,7 @@ def test_pytree_input_output():
     assert qml.math.allclose(out["x"], 10)
 
 
-@skip_dynamic_shapes_jax070
+@pytest.mark.xfail(reason="While loop has issues with dynamic shapes in JAX 0.7.0")
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCaptureWhileLoopDynamicShapes:
 

@@ -18,7 +18,6 @@ from functools import partial
 
 # pylint: disable=protected-access
 import pytest
-from packaging import version
 
 import pennylane as qml
 from pennylane.exceptions import CaptureError, QuantumFunctionError
@@ -34,13 +33,6 @@ from pennylane.capture.autograph import run_autograph  # pylint: disable=wrong-i
 from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
 from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
     CollectOpsandMeas,
-)
-
-# Skip dynamic shape tests for JAX 0.7.0+ due to incompatibility with traced values in array creation
-jax_version = version.parse(jax.__version__)
-skip_dynamic_shapes_jax070 = pytest.mark.skipif(
-    jax_version >= version.parse("0.7.0"),
-    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
 )
 
 
@@ -376,7 +368,6 @@ class TestShots:
         with pytest.raises(ValueError, match=r"requires setting jax.config.update"):
             jax.make_jaxpr(w)(3)
 
-    @skip_dynamic_shapes_jax070
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_dynamic_shots(self):
         """Test that the shot number can be dynamic."""
@@ -401,7 +392,6 @@ class TestShots:
         assert eqn0.outvars[0].aval.shape[0] is eqn0.invars[0]
         assert eqn0.outvars[1].aval.shape == ()
 
-    @skip_dynamic_shapes_jax070
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_dynamic_shots_shot_vector(self):
         """Test that a shot vector can be used with a shot vector."""
@@ -843,6 +833,9 @@ def test_qnode_jit():
 
 
 # pylint: disable=unused-argument
+@pytest.mark.xfail(
+    reason="JAX 0.7.0 eval_jaxpr does not work properly with pjit and dynamic shapes"
+)
 def test_dynamic_shape_input(enable_disable_dynamic_shapes):
     """Test that the qnode can accept an input with a dynamic shape."""
 
@@ -859,6 +852,7 @@ def test_dynamic_shape_input(enable_disable_dynamic_shapes):
 
 
 # pylint: disable=unused-argument
+@pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
 def test_dynamic_shape_matches_arg(enable_disable_dynamic_shapes):
 
     @qml.qnode(qml.device("default.qubit", wires=4))
