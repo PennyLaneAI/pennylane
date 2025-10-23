@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Passing a function to the ``gate_set`` argument in the :func:`~pennylane.transforms.decompose` transform
+  is deprecated. The ``gate_set`` argument expects a static iterable of operator type and/or operator names,
+  and the function should be passed to the ``stopping_condition`` argument instead.
+
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+
 * Access to the following functions and classes from the `~pennylane.resources` module are 
   deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
 

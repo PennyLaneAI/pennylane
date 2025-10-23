@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
 from pennylane.ops import Conditional
@@ -146,13 +147,13 @@ class TestDecompose:
         """Tests that user warning is raised if operator does not have a valid decomposition"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
         with pytest.warns(UserWarning, match="does not define a decomposition"):
-            decompose(tape, gate_set=lambda op: op.name not in {"RX"})
+            decompose(tape, stopping_condition=lambda op: op.name not in {"RX"})
 
     def test_infinite_decomposition_loop(self):
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
         tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
-            decompose(tape, gate_set=lambda obj: obj.has_matrix)
+            decompose(tape, stopping_condition=lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
         "initial_ops, gate_set, expected_ops, warning_or_error_pattern", iterables_test
@@ -174,19 +175,33 @@ class TestDecompose:
             qml.assert_equal(decomposed_tape, expected_tape)
 
     @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", callables_test)
-    def test_callable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern):
-        """Tests that gate sets defined by callables decompose correctly"""
+    def test_callable_stopping_condition(
+        self, initial_ops, gate_set, expected_ops, warning_pattern
+    ):
+        """Tests that stopping_condition defined by callables decompose correctly"""
         tape = qml.tape.QuantumScript(initial_ops)
 
         if warning_pattern is not None:
             with pytest.warns(UserWarning, match=warning_pattern):
-                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                (decomposed_tape,), _ = decompose(tape, stopping_condition=gate_set)
         else:
-            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+            (decomposed_tape,), _ = decompose(tape, stopping_condition=gate_set)
 
         expected_tape = qml.tape.QuantumScript(expected_ops)
 
         qml.assert_equal(decomposed_tape, expected_tape)
+
+    def test_callable_gate_set_deprecated(self):
+        """Tests that passing a callable to gate_set is deprecated."""
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="Passing a function to the gate_set"):
+            tape = qml.tape.QuantumScript([qml.Hadamard(0)])
+            [decomp], _ = decompose(tape, gate_set=lambda op: op.name in {"RZ", "RX"})
+
+        expected = qml.tape.QuantumScript(
+            [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)]
+        )
+        qml.assert_equal(decomp, expected)
 
     def test_decompose_with_mcm(self):
         """Tests that circuits and decomposition rules containing MCMs are supported."""
