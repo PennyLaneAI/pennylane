@@ -125,8 +125,8 @@
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
 * The decompositions for several templates have been updated to use 
-  :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient by
-  eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`, 
+  :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
+  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`, 
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
 
