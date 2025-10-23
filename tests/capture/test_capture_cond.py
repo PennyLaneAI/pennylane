@@ -901,7 +901,6 @@ class TestDynamicShapeValidation:
             f(True, 4)
 
 
-# @skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 

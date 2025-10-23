@@ -15,7 +15,6 @@
 This module tests the default qubit interpreter.
 """
 import pytest
-from packaging import version
 
 jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]

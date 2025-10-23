@@ -17,7 +17,6 @@ Tests a function for determining abstracted axes and extracting the abstract sha
 # pylint: disable=redefined-outer-name, unused-argument
 
 import pytest
-from packaging import version
 
 from pennylane.capture import determine_abstracted_axes, register_custom_staging_rule
 
