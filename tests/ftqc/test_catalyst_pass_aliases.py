@@ -15,6 +15,9 @@
 
 import pytest
 
+pytest.importorskip("catalyst")
+# pylint: disable=wrong-import-position
+
 import pennylane as qml
 from pennylane.capture import make_plxpr
 from pennylane.ftqc.catalyst_pass_aliases import (
