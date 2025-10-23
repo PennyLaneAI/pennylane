@@ -39,7 +39,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane import math as qml_math
+from pennylane import math
 from pennylane.operation import CVObservable, CVOperation
 
 from .identity import I, Identity  # pylint: disable=unused-import
@@ -66,8 +66,8 @@ def _rotation(phi, bare=False):
     Returns:
         array[float]: transformation matrix
     """
-    c = qml_math.cos(phi)
-    s = qml_math.sin(phi)
+    c = math.cos(phi)
+    s = math.sin(phi)
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
@@ -157,7 +157,7 @@ class Squeezing(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    multiplier = 0.5 / qml_math.sinh(shift)
+    multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
@@ -167,7 +167,7 @@ class Squeezing(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
-        return R @ np.diag([1, qml_math.exp(-p[0]), qml_math.exp(p[0])]) @ R.T
+        return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
 
     def adjoint(self):
         r, phi = self.parameters
@@ -222,8 +222,8 @@ class Displacement(CVOperation):
 
     @staticmethod
     def _heisenberg_rep(p):
-        c = qml_math.cos(p[1])
-        s = qml_math.sin(p[1])
+        c = math.cos(p[1])
+        s = math.sin(p[1])
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
@@ -282,8 +282,8 @@ class Beamsplitter(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
-        c = qml_math.cos(p[0])
-        s = qml_math.sin(p[0])
+        c = math.cos(p[0])
+        s = math.sin(p[0])
         U = c * np.eye(5)
         U[0, 0] = 1
         U[1:3, 3:5] = -s * R.T
@@ -339,7 +339,7 @@ class TwoModeSqueezing(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    multiplier = 0.5 / qml_math.sinh(shift)
+    multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
@@ -350,8 +350,8 @@ class TwoModeSqueezing(CVOperation):
     def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
 
-        S = qml_math.sinh(p[0]) * np.diag([1, -1])
-        U = qml_math.cosh(p[0]) * np.identity(5)
+        S = math.sinh(p[0]) * np.diag([1, -1])
+        U = math.cosh(p[0]) * np.identity(5)
 
         U[0, 0] = 1
         U[1:3, 3:5] = S @ R.T
@@ -686,7 +686,7 @@ class InterferometerUnitary(CVOperation):
 
     def adjoint(self):
         U = self.parameters[0]
-        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires)
+        return InterferometerUnitary(math.T(math.conj(U)), wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -884,9 +884,9 @@ class FockState(CVOperation):
         if base_label is not None:
             if decimals is None:
                 return base_label
-            p = format(qml_math.asarray(self.parameters[0]), ".0f")
+            p = format(math.asarray(self.parameters[0]), ".0f")
             return base_label + f"\n({p})"
-        return f"|{qml_math.asarray(self.parameters[0])}⟩"
+        return f"|{math.asarray(self.parameters[0])}⟩"
 
 
 class FockStateVector(CVOperation):
@@ -1251,7 +1251,7 @@ class QuadOperator(CVObservable):
     @staticmethod
     def _heisenberg_rep(p):
         phi = p[0]
-        return np.array([0, qml_math.cos(phi), qml_math.sin(phi)])  # TODO check
+        return np.array([0, math.cos(phi), math.sin(phi)])  # TODO check
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -1284,7 +1284,7 @@ class QuadOperator(CVObservable):
         if decimals is None:
             p = "φ"
         else:
-            p = format(qml_math.array(self.parameters[0]), f".{decimals}f")
+            p = format(math.array(self.parameters[0]), f".{decimals}f")
         return f"cos({p})x\n+sin({p})p"
 
 
