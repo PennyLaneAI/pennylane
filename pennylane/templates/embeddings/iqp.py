@@ -308,22 +308,22 @@ def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
 
         @for_loop(len(pattern))
         def pattern_loop(j):
-            indices = []
 
-            @for_loop(len(pattern[j]))
-            def indices_loop(k):
-                search = pattern[j][k]
+            @while_loop(lambda curr: wires[curr] != pattern[j][0])
+            def search_loop_1(curr):
+                curr += 1
+                return curr
 
-                @while_loop(lambda curr: wires[curr] != search)
-                def search_loop(curr):
-                    curr += 1
-                    return curr
+            idx1 = search_loop_1(0)
 
-                indices.append(search_loop(0))
+            @while_loop(lambda curr: wires[curr] != pattern[j][1])
+            def search_loop_2(curr):
+                curr += 1
+                return curr
 
-            indices_loop()  # pylint: disable=no-value-for-parameter
+            idx2 = search_loop_2(0)
 
-            MultiRZ(features[indices[0]] * features[indices[1]], wires=pattern[j])
+            MultiRZ(features[idx1] * features[idx2], wires=pattern[j])
 
         pattern_loop()  # pylint: disable=no-value-for-parameter
 
