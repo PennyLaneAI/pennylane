@@ -23,6 +23,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -207,6 +208,30 @@ class TestQSVT:
         ops, _ = qml.queuing.process_queue(q)
         for op1, op2 in zip(ops, decomp):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("UA", "projectors"),
+        [
+            (
+                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.Hadamard(wires=0),
+                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+            ),
+        ],
+    )
+    def test_decomposition_new(self, UA, projectors):
+        """Test the decomposition of the QSVT template."""
+        op = qml.QSVT(UA, projectors)
+        for rule in qml.list_decomps(qml.QSVT):
+            _test_decomposition_rule(op, rule)
 
     def test_wire_order(self):
         """Test that the wire order is preserved."""
