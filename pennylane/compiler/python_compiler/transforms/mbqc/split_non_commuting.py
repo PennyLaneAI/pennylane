@@ -175,7 +175,11 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
         return False
 
     def calculate_num_commuting_region(self, func_op: func.FuncOp):
-        """calculate the number of commuting region"""
+        """calculate the number of commuting region
+
+        Group measurements on DIFFERENT wires together (they commute).
+        Split measurements on SAME wire into different groups (they don't commute).
+        """
         # Find all measurement operations in the current function
         measurement_ops = [op for op in func_op.body.ops if self.is_measurement_op(op)]
 
@@ -192,24 +196,38 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
             # TODO: handle multiple qubits
             assert len(qubits) == 1, "operation should act on exactly one qubit"
 
-        # Group measurement operations by their qubits
-        qubit_to_group = dict[SSAValue, int]()
-        group_counter = 0
+        # Group measurements: operations on different qubits can be in the same group
+        # Operations on the same qubit must be in different groups
+        groups: list[dict[Operation, set[SSAValue]]] = []  # Each group stores op -> qubits mapping
 
-        # Incrementally assign group IDs to operations that act on the same qubits
         for measurement_op, qubits in op_to_acted_qubits.items():
-            for qubit in qubits:
-                if qubit not in qubit_to_group:
-                    qubit_to_group[qubit] = group_counter
-                    group_counter += 1
+            # Find a group where no operation acts on any of the same qubits
+            assigned_group_id = None
 
-                # Tag the measurement operation with the group attribute
-                group_id = qubit_to_group[qubit]
-                measurement_op.attributes["group"] = builtin.IntegerAttr(
-                    group_id, builtin.IntegerType(64)
-                )
+            for group_id, group in enumerate(groups):
+                # Get all qubits already used in this group
+                used_qubits = set()
+                for group_qubits in group.values():
+                    used_qubits.update(group_qubits)
 
-        return group_counter
+                # Check if this measurement's qubits conflict with the group
+                if not qubits.intersection(used_qubits):
+                    # No conflict - can add to this group
+                    group[measurement_op] = qubits
+                    assigned_group_id = group_id
+                    break
+
+            # If no suitable group found, create a new one
+            if assigned_group_id is None:
+                assigned_group_id = len(groups)
+                groups.append({measurement_op: qubits})
+
+            # Tag the measurement operation with the group attribute
+            measurement_op.attributes["group"] = builtin.IntegerAttr(
+                assigned_group_id, builtin.IntegerType(64)
+            )
+
+        return len(groups)
 
     def get_qubits_from_observable(self, observable: SSAValue) -> set[SSAValue] | None:
         """Get the qubit used by an observable operation.
