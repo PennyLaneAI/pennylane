@@ -1,0 +1,361 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""This file contains the implementation of the split_non_commuting transform."""
+
+from ast import TypeVar
+from dataclasses import dataclass
+from typing import Type
+
+from xdsl import context, passes, pattern_rewriter
+from xdsl.dialects import builtin, func
+from xdsl.ir import Operation, SSAValue
+from xdsl.rewriter import InsertPoint
+
+from pennylane.compiler.python_compiler import compiler_transform
+from pennylane.compiler.python_compiler.dialects import quantum
+
+
+@dataclass(frozen=True)
+class SplitNonCommutingPass(passes.ModulePass):
+    """Pass that splits non-commuting regions in a quantum function."""
+
+    name = "split-non-commuting"
+
+    def apply(self, _ctx: context.Context, op: builtin.ModuleOp) -> None:
+        self.apply_on_qnode(op, SplitNonCommutingPattern())
+
+    def apply_on_qnode(self, module: builtin.ModuleOp, pattern: pattern_rewriter.RewritePattern):
+        """Apply given pattern once to the QNode function in this module."""
+        rewriter = pattern_rewriter.PatternRewriter(module)
+        for op in module.ops:
+            if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
+                pattern.match_and_rewrite(op, rewriter)
+
+
+split_non_commuting_pass = compiler_transform(SplitNonCommutingPass)
+
+
+class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
+    """RewritePattern for splitting non-commuting regions in a quantum function."""
+
+    def __init__(self):
+        self.module: builtin.ModuleOp = None
+
+    T = TypeVar("T")
+
+    def get_parent_of_type(self, op: Operation, kind: Type[T]) -> T | None:
+        """Walk up the parent tree until an op of the specified type is found."""
+        while (op := op.parent_op()) and not isinstance(op, kind):
+            pass
+        return op
+
+    def create_dup_function(
+        self, func_op: func.FuncOp, i: int, rewriter: pattern_rewriter.PatternRewriter
+    ):
+        """Create a new function for the dup region by fully cloning the original function."""
+        # Use the same signature as the original function
+        original_func_type = func_op.function_type
+        input_types = list(original_func_type.inputs.data)
+        output_types = list(original_func_type.outputs.data)
+        fun_type = builtin.FunctionType.from_lists(input_types, output_types)
+
+        dup_func = func.FuncOp(func_op.sym_name.data + ".dup." + str(i), fun_type)
+        rewriter.insert_op(dup_func, InsertPoint.at_end(self.module.body.block))
+
+        # Map original function arguments to dup function arguments
+        dup_block = dup_func.regions[0].block
+        orig_block = func_op.body.block
+        value_mapper = {}
+        for orig_arg, dup_arg in zip(orig_block.args, dup_block.args):
+            value_mapper[orig_arg] = dup_arg
+
+        # Clone all operations except the return statement
+        ops_to_clone = []
+        return_op = None
+        for op in orig_block.ops:
+            if isinstance(op, func.ReturnOp):
+                return_op = op
+            else:
+                ops_to_clone.append(op)
+
+        # Clone operations
+        self.clone_operations_to_block(ops_to_clone, dup_block, value_mapper)
+
+        # Clone the return statement
+        if return_op:
+            return_values = [value_mapper.get(val, val) for val in return_op.operands]
+            new_return_op = func.ReturnOp(*return_values)
+            dup_block.add_op(new_return_op)
+
+        # Remove expvals from other groups and update return statement
+        self.remove_group(dup_func, i)
+
+        return dup_func
+
+    def remove_group(self, dup_func: func.FuncOp, target_group: int):
+        """Remove measurement operations from other groups and update return statement."""
+        # Find the return operation in the dup function
+        return_op = list(dup_func.body.ops)[-1]
+
+        return_values_to_remove = set[SSAValue]()
+        for operand in return_op.operands:
+            group_id = self.find_group_for_return_value(operand)
+            if group_id != target_group:
+                return_values_to_remove.add(operand)
+
+        # collect all operations to remove
+        remove_ops = list[Operation]([value.owner for value in return_values_to_remove])
+
+        # update return statement
+        self.update_return_statement(dup_func, return_values_to_remove)
+
+        # remove operations
+        while remove_ops:
+            op = remove_ops.pop(0)
+            users = [use.operation for result in list(op.results) for use in list(result.uses)]
+
+            # if the operation has users, skip it
+            if len(users) > 0:
+                continue
+
+            if not self.is_measurement_op(op):
+                # keep walking up the chain
+                for operand in op.operands:
+                    if operand not in remove_ops:
+                        remove_ops.append(operand.owner)
+
+            op.detach()
+            op.erase()
+
+    def update_return_statement(self, func_op: func.FuncOp, values_to_remove: set[SSAValue]):
+        """Update the return statement to remove specified values."""
+        # Find the return operation
+        return_op = None
+        for op in func_op.body.ops:
+            if isinstance(op, func.ReturnOp):
+                return_op = op
+                break
+
+        if not return_op:
+            return
+
+        # Filter out values to remove
+        new_return_values = [val for val in return_op.operands if val not in values_to_remove]
+
+        # Create new return operation
+        new_return_op = func.ReturnOp(*new_return_values)
+
+        # Replace the old return operation
+        return_op.detach()
+        return_op.erase()  # Important: erase to remove operand uses
+        func_op.body.block.add_op(new_return_op)
+
+        # Update function signature
+        new_output_types = [val.type for val in new_return_values]
+        input_types = [arg.type for arg in func_op.body.block.args]
+        new_fun_type = builtin.FunctionType.from_lists(input_types, new_output_types)
+        func_op.function_type = new_fun_type
+
+    def is_measurement_op(self, op: Operation) -> bool:
+        """Check if an operation is a measurement operation."""
+        # TODO: support more measurement operations
+        if isinstance(op, quantum.ExpvalOp):
+            return True
+        return False
+
+    def calculate_num_commuting_region(self, func_op: func.FuncOp):
+        """calculate the number of commuting region"""
+        # Find all measurement operations in the current function
+        measurement_ops = [op for op in func_op.body.ops if self.is_measurement_op(op)]
+
+        # For each measurement operation, find the qubits the operation acts on
+        op_to_acted_qubits: dict[Operation, set[SSAValue]] = {
+            measurement_op: set() for measurement_op in measurement_ops
+        }
+
+        for measurement_op in measurement_ops:
+            observable = measurement_op.operands[0]
+            op_to_acted_qubits[measurement_op].update(self.get_qubits_from_observable(observable))
+
+        for op, qubits in op_to_acted_qubits.items():
+            # TODO: handle multiple qubits
+            assert len(qubits) == 1, "operation should act on exactly one qubit"
+
+        # Group measurement operations by their qubits
+        qubit_to_group = dict[SSAValue, int]()
+        group_counter = 0
+
+        # Incrementally assign group IDs to operations that act on the same qubits
+        for measurement_op, qubits in op_to_acted_qubits.items():
+            for qubit in qubits:
+                if qubit not in qubit_to_group:
+                    qubit_to_group[qubit] = group_counter
+                    group_counter += 1
+
+                # Tag the measurement operation with the group attribute
+                group_id = qubit_to_group[qubit]
+                measurement_op.attributes["group"] = builtin.IntegerAttr(
+                    group_id, builtin.IntegerType(64)
+                )
+
+        return group_counter
+
+    def get_qubits_from_observable(self, observable: SSAValue) -> set[SSAValue] | None:
+        """Get the qubit used by an observable operation.
+
+        Traces back from an observable to find the qubit it operates on.
+        Handles NamedObsOp, ComputationalBasisOp, HamiltonianOp, and TensorOp.
+        """
+        assert observable.owner is not None, "observable should have an owner"
+
+        acted_qubits = set[SSAValue]()
+
+        obs_op = observable.owner
+
+        # For NamedObsOp and ComputationalBasisOp, the first operand is the qubit
+        if isinstance(obs_op, (quantum.NamedObsOp, quantum.ComputationalBasisOp)):
+            acted_qubits.add(obs_op.operands[0])
+
+        # For HamiltonianOp and TensorOp, we need to handle multiple qubits
+        elif isinstance(obs_op, (quantum.HamiltonianOp, quantum.TensorOp)):
+            for operand in obs_op.operands:
+                acted_qubits.update(self.get_qubits_from_observable(operand))
+
+        return acted_qubits
+
+    def analyze_group_return_positions(
+        self, func_op: func.FuncOp, num_groups: int
+    ) -> dict[int, list[int]]:
+        """Analyze which return value positions belong to each group.
+
+        Returns a dict mapping group_id -> list of final return value positions
+        Example: {0: [0, 2], 1: [1]} for
+        return qml.expval(qml.X(0)), qml.expval(qml.X(1)), qml.expval(qml.Y(0))
+        """
+        # Find the return operation
+        return_op = list(func_op.body.ops)[-1]
+
+        # For each return value, trace back to find its group
+        group_positions = {i: [] for i in range(num_groups)}
+
+        for position, return_value in enumerate(return_op.operands):
+            # Trace back to find the expval operation
+            group_id = self.find_group_for_return_value(return_value)
+            if group_id is not None:
+                group_positions[group_id].append(position)
+
+        return group_positions
+
+    def find_group_for_return_value(self, return_value: SSAValue) -> int | None:
+        """Trace back from a return value to find which group's expval produced it."""
+        # BFS backward to find expval
+        to_check = [return_value]
+        checked = set()
+
+        while to_check:
+            val = to_check.pop(0)
+            if val in checked:
+                continue
+            checked.add(val)
+
+            op = val.owner
+
+            # If we found an expval, check its group
+            if self.is_measurement_op(op) and "group" in op.attributes:
+                group_attr = op.attributes["group"]
+                return group_attr.value.data
+
+            # Otherwise, check operands
+            to_check.extend([operand for operand in op.operands if operand not in checked])
+
+        return None
+
+    def replace_original_with_calls(
+        self,
+        func_op: func.FuncOp,
+        dup_functions: list[func.FuncOp],
+        group_return_positions: dict[int, list[int]],
+    ):
+        """Replace original function body with calls to dup functions.
+
+        Args:
+            dup_functions: List of duplicate functions (one per group)
+            group_return_positions: Dict mapping group_id -> list of return positions
+        """
+        original_block = func_op.body.block
+
+        for op in reversed(func_op.body.ops):
+            op.detach()
+            op.erase()
+
+        # Collect parameters needed for dup function calls
+        # Dup functions take the same parameters as the original begin/end region
+        # Look at what original function was using and find corresponding values
+        call_args = list(original_block.args)  # Use function arguments as base
+
+        group_results = dict[int, list[SSAValue]]()  # group_id -> list of result values
+
+        for group_id, dup_func in enumerate(dup_functions):
+            # Get the function signature to determine result types
+            func_type = dup_func.function_type
+            result_types = list(func_type.outputs.data)
+
+            # Create the call operation
+            call_op = func.CallOp(dup_func.sym_name.data, call_args, result_types)
+            original_block.add_op(call_op)
+
+            # Store results for this group
+            group_results[group_id] = list(call_op.results)
+
+        # Reconstruct the return statement in the original order
+        # Calculate total number of return values
+        total_returns = sum(len(positions) for positions in group_return_positions.values())
+        final_return_values = [None] * total_returns
+
+        for group_id, positions in group_return_positions.items():
+            group_vals = group_results[group_id]
+            assert len(group_vals) == len(
+                positions
+            ), "number of group values and positions must match"
+
+            for i, position in enumerate(positions):
+                final_return_values[position] = group_vals[i]
+
+        # Filter out None values (in case something went wrong)
+        final_return_values = [v for v in final_return_values if v is not None]
+
+        # Create new return operation
+        return_op = func.ReturnOp(*final_return_values)
+        original_block.add_op(return_op)
+
+    def match_and_rewrite(self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
+        """Split non-commuting region into multiple functions"""
+        self.module = self.get_parent_of_type(func_op, builtin.ModuleOp)
+        assert self.module is not None, "got orphaned qnode function"
+
+        # Calculate the number of commuting region
+        num_commuting_region = self.calculate_num_commuting_region(func_op)
+
+        # Analyze return value positions for each group
+        group_return_positions = self.analyze_group_return_positions(func_op, num_commuting_region)
+
+        # Create dup function for each commuting region
+        dup_functions = []
+        for i in range(num_commuting_region):
+            dup_func = self.create_dup_function(func_op, i, rewriter)
+            dup_functions.append(dup_func)
+
+        # Replace original function body with calls to dup functions
+        self.replace_original_with_calls(func_op, dup_functions, group_return_positions)

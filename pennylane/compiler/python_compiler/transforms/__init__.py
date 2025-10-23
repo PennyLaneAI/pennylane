@@ -18,6 +18,8 @@ from .mbqc import (
     ConvertToMBQCFormalismPass,
     decompose_graph_state_pass,
     DecomposeGraphStatePass,
+    split_non_commuting_pass,
+    SplitNonCommutingPass,
     null_decompose_graph_state_pass,
     NullDecomposeGraphStatePass,
 )
@@ -53,6 +55,8 @@ __all__ = [
     "ConvertToMBQCFormalismPass",
     "decompose_graph_state_pass",
     "DecomposeGraphStatePass",
+    "split_non_commuting_pass",
+    "SplitNonCommutingPass",
     "null_decompose_graph_state_pass",
     "NullDecomposeGraphStatePass",
 ]
