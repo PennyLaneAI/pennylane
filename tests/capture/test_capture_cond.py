@@ -29,8 +29,17 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
+# Dynamic shape support changed in JAX 0.7.0 - skip tests that use traced shapes in array creation
+from packaging import version
+
 # must be below jax importorskip
 from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
+
+jax_version = version.parse(jax.__version__)
+skip_dynamic_shapes_jax070 = pytest.mark.skipif(
+    jax_version >= version.parse("0.7.0"),
+    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
+)
 
 
 @pytest.fixture
@@ -822,6 +831,7 @@ class TestPytree:
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 
 
+@skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapeValidation:
 
@@ -901,6 +911,7 @@ class TestDynamicShapeValidation:
             f(True, 4)
 
 
+@skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 

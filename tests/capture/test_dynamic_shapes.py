@@ -17,6 +17,7 @@ Tests a function for determining abstracted axes and extracting the abstract sha
 # pylint: disable=redefined-outer-name, unused-argument
 
 import pytest
+from packaging import version
 
 from pennylane.capture import determine_abstracted_axes, register_custom_staging_rule
 
@@ -24,6 +25,13 @@ pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+
+# Skip dynamic shape tests for JAX 0.7.0+ due to incompatibility with traced values in array creation
+jax_version = version.parse(jax.__version__)
+skip_dynamic_shapes_jax070 = pytest.mark.skipif(
+    jax_version >= version.parse("0.7.0"),
+    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
+)
 
 
 def test_null_if_not_enabled():
@@ -38,6 +46,7 @@ def test_null_if_not_enabled():
     _ = jax.make_jaxpr(f)(jnp.eye(4))
 
 
+@skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDyanmicShapes:
 
@@ -149,6 +158,7 @@ class TestDyanmicShapes:
         _ = jax.make_jaxpr(f)(list(range(30)))
 
 
+@skip_dynamic_shapes_jax070
 def test_custom_staging_rule(enable_disable_dynamic_shapes):
     """Test regsitering a custom staging rule for a new primitive."""
     my_prim = jax.extend.core.Primitive("my_prim")

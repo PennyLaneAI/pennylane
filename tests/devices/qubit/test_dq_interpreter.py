@@ -15,6 +15,7 @@
 This module tests the default qubit interpreter.
 """
 import pytest
+from packaging import version
 
 jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
@@ -27,6 +28,13 @@ import pennylane as qml  # pylint: disable=wrong-import-position
 # pylint: disable=wrong-import-position
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
+
+# Skip dynamic shape tests for JAX 0.7.0+ due to incompatibility with traced values in array creation
+jax_version = version.parse(jax.__version__)
+skip_dynamic_shapes_jax070 = pytest.mark.skipif(
+    jax_version >= version.parse("0.7.0"),
+    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
+)
 
 
 def test_initialization():
@@ -651,6 +659,7 @@ class TestClassicalComponents:
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@skip_dynamic_shapes_jax070
 class TestDynamicShapes:
     """Tests for creating arrays with a dynamic input."""
 

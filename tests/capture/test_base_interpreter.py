@@ -34,6 +34,15 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
+# Dynamic shape support changed in JAX 0.7.0 - skip tests that use traced shapes in array creation
+from packaging import version
+
+jax_version = version.parse(jax.__version__)
+skip_dynamic_shapes_jax070 = pytest.mark.skipif(
+    jax_version >= version.parse("0.7.0"),
+    reason="Dynamic shape tests incompatible with JAX 0.7.0+ (traced values in array creation)",
+)
+
 
 class SimplifyInterpreter(PlxprInterpreter):
 
@@ -748,6 +757,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
 
+@skip_dynamic_shapes_jax070
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
     """Test that our interpreters can handle dynamic array creation."""
