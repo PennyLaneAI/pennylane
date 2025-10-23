@@ -236,9 +236,7 @@ class TestPhaseAdder:
         mod = 7
         work_wire = [0]
 
-        phase_adder_decomp = qml.PhaseAdder(k, x_wires, mod, work_wire).compute_decomposition(
-            k, x_wires, mod, work_wire
-        )
+        phase_adder_decomp = qml.PhaseAdder.compute_decomposition(k, x_wires, mod, work_wire)
         cob_index = len(_add_k_fourier(k, x_wires)) + len(_add_k_fourier(mod, x_wires))
         cob_decomp1 = phase_adder_decomp[cob_index].decomposition()
         cob_decomp2 = phase_adder_decomp[-1].decomposition()

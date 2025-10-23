@@ -202,7 +202,7 @@ class TestQSVT:
         ],
     )
     def test_queuing_ops_defined_in_circuit(self, U_A, lst_projectors, results):
-        """Test that qml.QSVT queues operations correctly when they are called in the qnode."""
+        """Test that qml.QSVT queues operations correctly."""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.QSVT(U_A, lst_projectors)
