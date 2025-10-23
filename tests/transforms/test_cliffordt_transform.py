@@ -736,9 +736,8 @@ class TestCatalyst:
 
         assert qml.math.allclose(default_res, qjit_res, atol=1e-2)
 
-    @pytest.mark.catalyst
-    @pytest.mark.jax
     @pytest.mark.external
+    @pytest.mark.catalyst
     def test_decomposition_with_sk_qjit_raise(self):
         """Test decomposition for the Clifford transform with Solovay-Kitaev method
         with QJIT enabled raises an error."""

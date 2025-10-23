@@ -336,8 +336,8 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         op_matrix = op.matrix()
         if qml.compiler.active() or qml.math.is_abstract(op_matrix):
             raise RuntimeError(
-                "Solovay-Kitaev decomposition is not supported with QJIT or JAX-JIT enabled,"
-                "use qml.ops.op_math.rs_decomposition (Ross-Selinger decomposition) instead."
+                "Solovay-Kitaev decomposition is not supported with QJIT or JAX-JIT enabled. "
+                "Use qml.ops.op_math.rs_decomposition (Ross-Selinger decomposition) instead."
             )
 
         # Build the approximate set with caching

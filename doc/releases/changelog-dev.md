@@ -133,6 +133,11 @@
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
+* Solovay-Kitaev decomposition using the `qml.clifford_t_decompostion` transform with `method="sk"`
+  or directly via `qml.ops.sk_decomposition` will now raise a more informative `RuntimeError` when
+  used in a JAX-JIT or QJIT workflow.
+  [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -145,6 +150,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Astral Cai,
 Lillian Frederiksen,
 Christina Lee,

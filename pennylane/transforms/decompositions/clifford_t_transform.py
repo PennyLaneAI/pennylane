@@ -567,8 +567,8 @@ def clifford_t_decomposition(
         is_qjit = qml.compiler.active_compiler() == "catalyst"
         if number_ops > 0 and is_qjit and method == "sk":
             raise RuntimeError(
-                "Solovay-Kitaev decomposition (method='sk') is not supported with QJIT enabled,"
-                "use Ross-Selinger decomposition (method='gridsynth') instead."
+                "Solovay-Kitaev decomposition (method='sk') is not supported with QJIT enabled. "
+                "Use Ross-Selinger decomposition (method='gridsynth') instead."
             )
 
         # Build the decomposition cache based on the method
