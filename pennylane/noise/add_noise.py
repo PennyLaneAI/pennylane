@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for adding a noise model to a quantum circuit or device"""
+
 from copy import copy
 from functools import lru_cache
 
@@ -27,7 +28,7 @@ from .conditionals import partial_wires
 
 # pylint: disable=too-many-branches
 @transform
-def add_noise(tape, noise_model, level=None):
+def add_noise(tape, noise_model, level="user"):
     """Insert operations according to a provided noise model.
 
     Circuits passed through this quantum transform will be updated to apply the
@@ -45,11 +46,10 @@ def add_noise(tape, noise_model, level=None):
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
             device to be transformed.
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
-        level (None, str, int, slice): An indication of which stage in the transform program the
+        level (str, int, slice): An indication of which stage in the transform program the
             noise model should be applied to. Only relevant when transforming a ``QNode``. More details
             on the following permissible values can be found in the :func:`~.workflow.get_transform_program` -
 
-            * ``None``: expands the tape to have no ``Adjoint`` and ``Templates``.
             * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
             * ``int``: how many transforms to include, starting from the front of the program.
             * ``slice``: a slice to select out components of the transform program.
@@ -180,7 +180,7 @@ def add_noise(tape, noise_model, level=None):
             f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."
         )
 
-    if level is None or level == "user":  # decompose templates and their adjoints
+    if level == "user":  # decompose templates and their adjoints
 
         def stop_at(obj):
             if not isinstance(obj, Operator):

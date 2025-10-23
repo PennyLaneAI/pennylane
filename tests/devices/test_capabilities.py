@@ -49,23 +49,23 @@ class TestTOML:
         [
             """
             schema = 3
-            
+
             [operators.gates]
-            
+
             RY = {}
             RZ = {}
             CNOT = {}
-            
+
             [operators.observables]
-            
+
             PauliZ = {}
             Hadamard = {}
-            
+
             [measurement_processes]
 
             ExpectationMP = { }
             SampleMP = { }
-            
+
             [compilation]
 
             qjit_compatible = false
@@ -138,7 +138,7 @@ class TestTOML:
         [
             """
             [operators.observables]
-            
+
             PauliX = { }
             Sum = { conditions = ["terms-commute"] }
             """
@@ -194,7 +194,7 @@ class TestTOML:
         [
             """
             [compilation]
-            
+
             qjit_compatible = true
             supported_mcm_methods = ["one-shot"]
             runtime_code_generation = false
@@ -219,7 +219,7 @@ class TestTOML:
         [
             """
             [pennylane.operators.gates]
-            
+
             PauliX = {}
             PauliY = {}
             PauliZ = {}
@@ -243,7 +243,7 @@ class TestTOML:
         [
             """
             [operators.gates]
-        
+
             PauliX = {}
             PauliY = {}
             PauliZ = {}
@@ -264,11 +264,11 @@ class TestTOML:
         [
             """
             [operators.gates]
-            
+
             PauliX = { invalid_attribute = ["invalid_attribute"] }
-            
+
             [measurement_processes]
-            
+
             CountsMP = { invalid_attribute = ["invalid_attribute"] }
             """
         ],
@@ -296,7 +296,7 @@ class TestTOML:
         [
             """
             [operators.gates]
-        
+
             PauliX = { properties = ["invalid_property"] }
             PauliY = {}
             PauliZ = {}
@@ -320,11 +320,11 @@ class TestTOML:
         [
             """
             [operators.observables]
-            
+
             Hamiltonian = { conditions = ["invalid_condition"] }
-            
+
             [measurement_processes]
-            
+
             CountsMP = { conditions = ["invalid_condition"] }
             """
         ],
@@ -352,11 +352,11 @@ class TestTOML:
         [
             """
             [operators.observables]
-            
+
             PauliZ = { conditions = ["terms-commute"] }
-            
+
             [measurement_processes]
-            
+
             CountsMP = { conditions = ["finiteshots", "analytic"] }
             """
         ],
@@ -384,7 +384,7 @@ class TestTOML:
         [
             """
             [compilation]
-            
+
             unknown_flag = true
             """
         ],
@@ -406,7 +406,7 @@ class TestTOML:
         [
             """
             [compilation]
-            
+
             overlapping_observables = false
             non_commuting_observables = true
             """
@@ -429,13 +429,13 @@ class TestTOML:
         [
             """
             schema = 3
-            
+
             [qjit.operators.gates]
-            
+
             PauliX = {}
-            
+
             [compilation]
-            
+
             qjit_compatible = false
             """
         ],
@@ -719,6 +719,51 @@ class TestDeviceCapabilities:
             qml.Hamiltonian([0.5], [qml.PauliZ(0)]),
         ]:
             assert capabilities.supports_observable(obs.name) is False
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            schema = 3
+
+            [operators.gates]
+
+            CNOT                   = { properties = [ "invertible",                 "differentiable" ] }
+            Rot                    = { properties = [ "invertible", "controllable",                  ] }
+            RX                     = { properties = [ "invertible", "controllable", "differentiable" ] }
+            T                      = { properties = [               "controllable", "differentiable" ] }
+
+            """
+        ],
+        indirect=True,
+    )
+    def test_gate_set(self, request):
+        """Tests the gate_set produced from the TOML file."""
+
+        document = load_toml_file(request.node.toml_file)
+        capabilities = parse_toml_document(document)
+        assert capabilities.gate_set() == {
+            "CNOT",
+            "Adjoint(CNOT)",
+            "Rot",
+            "Adjoint(Rot)",
+            "C(Rot)",
+            "RX",
+            "Adjoint(RX)",
+            "C(RX)",
+            "T",
+            "C(T)",
+        }
+        assert capabilities.gate_set(differentiable=True) == {
+            "CNOT",
+            "Adjoint(CNOT)",
+            "RX",
+            "Adjoint(RX)",
+            "C(RX)",
+            "T",
+            "C(T)",
+        }
 
 
 def test_observable_stopping_condition_factory():

@@ -55,6 +55,7 @@ from .elementwise_binary import (
 from .elementwise_other import (
     ClampOp,
     CompareOp,
+    ConstantOp,
     MapOp,
     ReducePrecisionOp,
     SelectOp,
@@ -135,6 +136,7 @@ __all__ = [
     # Elementwise other operations
     "ClampOp",
     "CompareOp",
+    "ConstantOp",
     "MapOp",
     "ReducePrecisionOp",
     "SelectOp",
