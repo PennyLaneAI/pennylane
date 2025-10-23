@@ -25,6 +25,8 @@ from pennylane.ftqc.catalyst_pass_aliases import (
     to_ppr,
 )
 
+pytestmark = pytest.mark.external
+
 
 @pytest.mark.jax
 @pytest.mark.usefixtures("enable_disable_plxpr")
