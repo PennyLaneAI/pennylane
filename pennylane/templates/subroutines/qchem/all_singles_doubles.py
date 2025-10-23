@@ -18,10 +18,12 @@ Contains the AllSinglesDoubles template.
 import copy
 
 import numpy as np
+from autograd.core import primitive
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.math import is_abstract
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
@@ -177,7 +179,7 @@ class AllSinglesDoubles(Operation):
             else:
                 all_wires.append(sub)
         return super()._primitive_bind_call(
-            weights=args[0], hf_state=args[2], wires=list(set(all_wires)), **kwargs
+            args[0], list(set(all_wires)), args[2], **kwargs
         )
 
     @property
@@ -266,6 +268,16 @@ class AllSinglesDoubles(Operation):
             shape_ = (len(singles) + len(doubles),)
 
         return shape_
+
+
+if AllSinglesDoubles._primitive is not None:
+   @AllSinglesDoubles._primitive.def_impl
+   def _(*args, **kwargs):
+       # need to convert array values into integers
+       # for plxpr, all wires must be integers
+       # could be abstract when using tracing evaluation in interpreter
+       wires = tuple(w if is_abstract(w) else int(w) for w in args[1])
+       return type.__call__(AllSinglesDoubles, weights=args[0], hf_state=args[2:], wires=wires, singles=kwargs['singles'], doubles=kwargs['doubles'])
 
 
 def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
