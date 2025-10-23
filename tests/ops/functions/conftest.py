@@ -80,7 +80,7 @@ _INSTANCES_TO_TEST = [
     (qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qml.ops.Evolution(qml.PauliX(0), 5.2), {}),
     (qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
-    (qml.resource.FirstQuantization(1, 2, 1), {}),
+    (qml.estimator.FirstQuantization(1, 2, 1), {}),
     (qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)), {}),
     (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
     (qml.Snapshot(tag="tag"), {}),
@@ -152,7 +152,7 @@ _INSTANCES_TO_FAIL = [
         ValueError,  # binding parameters fail, and more
     ),
     (
-        qml.resource.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
+        qml.estimator.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
         TypeError,  # op.eigvals is a list (overwritten in the init)
     ),
 ]
