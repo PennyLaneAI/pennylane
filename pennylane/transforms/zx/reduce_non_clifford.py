@@ -23,12 +23,15 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx, to_zx
-from .helper import _needs_pyzx
+from .helper import _might_need_quizx, _needs_pyzx
 
 
 @_needs_pyzx
+@_might_need_quizx
 @transform
-def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def reduce_non_clifford(
+    tape: QuantumScript, backend: str = "pyzx"
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Reduce the number of non-Clifford gates by applying a combination of phase
     gadgetization strategies and Clifford gate simplification rules.
 
@@ -57,6 +60,8 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
+        backend (str): Backend framework to use for the ZX-Graph. See :func:`~.to_zx` for
+            available backends. Performance differs strongly between backends.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
