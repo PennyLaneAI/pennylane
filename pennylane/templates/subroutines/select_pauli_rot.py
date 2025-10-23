@@ -223,25 +223,21 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
 def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
     r"""Decomposes the SelectPauliRot"""
 
-    with AnnotatedQueue() as q:
-        _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
-
     match rot_axis:
         case "X":
             change_op_basis(
                 Hadamard(wires[-1]),
-                prod(*reversed(q.queue)),
+                prod(_apply_uniform_rotation_dagger)(RZ, angles, wires[-2::-1], wires[-1]),
                 Hadamard(wires[-1]),
             )
         case "Y":
             change_op_basis(
                 Hadamard(wires[-1]) @ adjoint(S(wires[-1])),
-                prod(*reversed(q.queue)),
+                prod(_apply_uniform_rotation_dagger)(RZ, angles, wires[-2::-1], wires[-1]),
                 S(wires[-1]) @ Hadamard(wires[-1]),
             )
         case "Z":
-            for op in q.queue:
-                apply(op)
+            _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
 
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)

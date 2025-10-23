@@ -16,7 +16,7 @@ Contains the TemporaryAND template, which also is known as Elbow.
 """
 from functools import lru_cache
 
-from pennylane import math
+from pennylane import math, ops
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -24,11 +24,10 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.ops import CNOT, Hadamard, Operation, S, T, X, adjoint, change_op_basis
 from pennylane.wires import Wires, WiresLike
 
 
-class TemporaryAND(Operation):
+class TemporaryAND(ops.Operation):
     r"""TemporaryAND(wires, control_values)
 
     The ``TemporaryAND`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
@@ -200,36 +199,36 @@ class TemporaryAND(Operation):
 
         list_decomp = []
 
-        list_decomp.extend([X(wire) for wire, cval in zip(wires, control_values) if cval == 0])
+        list_decomp.extend([ops.X(wire) for wire, cval in zip(wires, control_values) if cval == 0])
 
         list_decomp += [
-            change_op_basis(
-                change_op_basis(T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]]))
-                @ Hadamard(wires=wires[2]),
-                CNOT(wires=[wires[0], wires[2]]),
-                Hadamard(wires=wires[2])
-                @ change_op_basis(T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]])),
+            ops.change_op_basis(
+                ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]]))
+                @ ops.Hadamard(wires=wires[2]),
+                ops.CNOT(wires=[wires[0], wires[2]]),
+                ops.Hadamard(wires=wires[2])
+                @ ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]])),
             ),
-            adjoint(S(wires=wires[2])),
+            ops.adjoint(ops.S(wires=wires[2])),
         ]
 
-        list_decomp.extend([X(wire) for wire, cval in zip(wires, control_values) if cval == 0])
+        list_decomp.extend([ops.X(wire) for wire, cval in zip(wires, control_values) if cval == 0])
 
         return list_decomp
 
 
 def _temporary_and_resources():
-    basis_rep = change_op_basis_resource_rep(resource_rep(T), resource_rep(CNOT))
+    basis_rep = change_op_basis_resource_rep(resource_rep(ops.T), resource_rep(ops.CNOT))
 
     number_xs = 4  # worst case scenario
     return {
-        resource_rep(X): number_xs,
+        resource_rep(ops.X): number_xs,
         change_op_basis_resource_rep(
-            resource_rep(Hadamard),
-            change_op_basis_resource_rep(basis_rep, resource_rep(CNOT), basis_rep),
-            resource_rep(Hadamard),
+            resource_rep(ops.Hadamard),
+            change_op_basis_resource_rep(basis_rep, resource_rep(ops.CNOT), basis_rep),
+            resource_rep(ops.Hadamard),
         ): 1,
-        adjoint_resource_rep(S, {}): 1,
+        adjoint_resource_rep(ops.S, {}): 1,
     }
 
 
@@ -237,28 +236,28 @@ def _temporary_and_resources():
 def _temporary_and(wires: WiresLike, **kwargs):
     control_values = kwargs["control_values"]
     if control_values[0] == 0:
-        X(wires[0])
+        ops.X(wires[0])
 
     if control_values[1] == 0:
-        X(wires[1])
+        ops.X(wires[1])
 
-    change_op_basis(
-        Hadamard(wires=wires[2]),
-        change_op_basis(
-            change_op_basis(T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]])),
-            CNOT(wires=[wires[0], wires[2]]),
-            change_op_basis(T(wires=wires[2]), CNOT(wires=[wires[1], wires[2]])),
+    ops.change_op_basis(
+        ops.Hadamard(wires=wires[2]),
+        ops.change_op_basis(
+            ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]])),
+            ops.CNOT(wires=[wires[0], wires[2]]),
+            ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]])),
         ),
-        Hadamard(wires=wires[2]),
+        ops.Hadamard(wires=wires[2]),
     )
 
-    adjoint(S(wires=wires[2]))
+    ops.adjoint(ops.S(wires=wires[2]))
 
     if control_values[0] == 0:
-        X(wires[0])
+        ops.X(wires[0])
 
     if control_values[1] == 0:
-        X(wires[1])
+        ops.X(wires[1])
 
 
 add_decomps(TemporaryAND, _temporary_and)

@@ -29,8 +29,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops.op_math import Prod
-from pennylane.tape import make_qscript
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
@@ -304,9 +302,9 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         ): 1,
         ops.ControlledPhaseShift: num_x_wires,
         change_op_basis_resource_rep(
-            resource_rep(Prod, resources=basis_op_resources1),
+            resource_rep(ops.Prod, resources=basis_op_resources1),
             resource_rep(ops.CNOT),
-            resource_rep(Prod, resources=basis_op_resources2),
+            resource_rep(ops.Prod, resources=basis_op_resources2),
         ): 1,
     }
 
@@ -342,9 +340,7 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
             *reversed(ops.adjoint(_add_k_fourier_loop)(k)),
         ),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
-        ops.prod(
-            *make_qscript(_add_k_fourier_loop)(k).operations, QFT(wires=x_wires), ops.X(aux_k)
-        ),
+        ops.prod(*ops.prod(_add_k_fourier_loop)(k), QFT(wires=x_wires), ops.X(aux_k)),
     )
 
 
