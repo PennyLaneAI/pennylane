@@ -895,7 +895,6 @@ class TestShotsIntegration:
         expected_g = 2 * np.cos(0.5) * np.sin(0.5)
         assert qml.math.allclose(g, expected_g, atol=1 / qml.math.sqrt(shots), rtol=0.03)
 
-    @pytest.mark.xfail(reason="Test under investigation (tracked in sc-101768)", strict=False)
     @pytest.mark.parametrize("shots", [10000, 10005])
     def test_finite_shot_multiple_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes."""
