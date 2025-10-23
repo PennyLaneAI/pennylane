@@ -20,7 +20,7 @@ from collections import defaultdict
 from itertools import combinations
 
 from pennylane import capture, math
-from pennylane.control_flow import for_loop
+from pennylane.control_flow import for_loop, while_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.math import is_abstract
 from pennylane.operation import Operation
@@ -294,7 +294,7 @@ def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
         wires, pattern, features = jnp.array(wires), jnp.array(pattern), jnp.array(features)
 
     if math.ndim(features) > 1:
-        features = math.T(features)  # TODO: need to explicitly use jnp?
+        features = math.T(features)
 
     @for_loop(n_repeats)
     def outer_loop(_):
@@ -308,8 +308,22 @@ def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
 
         @for_loop(len(pattern))
         def pattern_loop(j):
-            idx1, idx2 = wires.indices(pattern[j])  # TODO: this won't work
-            MultiRZ(features[idx1] * features[idx2], wires=pattern[j])
+            indices = []
+
+            @for_loop(len(pattern[j]))
+            def indices_loop(k):
+                search = pattern[j][k]
+
+                @while_loop(lambda curr: wires[curr] != search)
+                def search_loop(curr):
+                    curr += 1
+                    return curr
+
+                indices.append(search_loop(0))
+
+            indices_loop()  # pylint: disable=no-value-for-parameter
+
+            MultiRZ(features[indices[0]] * features[indices[1]], wires=pattern[j])
 
         pattern_loop()  # pylint: disable=no-value-for-parameter
 
