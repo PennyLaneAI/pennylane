@@ -102,14 +102,57 @@ def _add_make_eqn_helper():
 
     def make_eqn(
         self,
-        in_tracers,
-        out_avals,
+        in_tracers: list,
+        out_avals_or_tracers: list,
         primitive,
-        params,
-        effects,
+        params: dict,
+        effects: set,
         source_info=None,
         ctx=None,
     ):
+        """Create a tracing equation properly.
+
+        Args:
+            in_tracers: Input tracers
+            out_avals_or_tracers: Output abstract values OR output tracers (with vars already created)
+            primitive: The primitive operation
+            params: Parameters for the primitive
+            effects: Effects of the operation
+            source_info: Source information for debugging
+            ctx: JaxprEqnContext (created if not provided)
+
+        Returns:
+            (eqn, out_tracers): TracingEqn and output tracers
+        """
+        source_info = source_info or source_info_util.new_source_info()
+        ctx = ctx or JaxprEqnContext(
+            compute_on.current_compute_type(),
+            jax_config.threefry_partitionable.value,
+            xla_metadata_lib.current_xla_metadata(),
+        )
+
+        # Normalize out_avals to a list
+        if not isinstance(out_avals_or_tracers, (list, tuple)):
+            out_avals = [out_avals_or_tracers]
+        else:
+            out_avals = out_avals_or_tracers
+
+        outvars = [self.frame.newvar(aval) for aval in out_avals]
+
+        if jax_config.enable_checks.value:
+            assert all(isinstance(x, DynamicJaxprTracer) for x in in_tracers)
+            assert all(isinstance(v, Var) for v in outvars)
+
+        eqn = TracingEqn(list(in_tracers), outvars, primitive, params, effects, source_info, ctx)
+
+        # Create output tracers - manually create DynamicJaxprTracer objects
+        # We pass the equation as the parent parameter (4th argument to __init__)
+        out_tracers = [
+            DynamicJaxprTracer(self, aval, v, source_info, eqn)
+            for aval, v in zip(out_avals, outvars)
+        ]
+
+        return eqn, out_tracers
         """Create a TracingEqn with proper context.
 
         Args:
@@ -250,11 +293,6 @@ def _patch_pjit_staging_rule():
             # Use original for inline path
             return original_staging_rule(trace, source_info, *args, **params)
 
-        # Use original for DynamicJaxprTrace (eval_jaxpr path)
-        # DynamicJaxprTrace doesn't have 'counter' attribute
-        if not hasattr(trace, "counter"):
-            return original_staging_rule(trace, source_info, *args, **params)
-
         jaxpr = params["jaxpr"]
 
         # This is the dynamic shapes path that needs fixing
@@ -266,20 +304,32 @@ def _patch_pjit_staging_rule():
         # Fix 1: Use list instead of map to create outvars
         outvars = [trace.frame.newvar(aval) for aval in pjit._out_type(jaxpr)]
 
-        # Fix 2: Use pe.new_eqn_recipe and DynamicJaxprTracer
-        eqn = pe.new_eqn_recipe(
-            trace,
-            args,
-            [pe.DynamicJaxprTracer(trace, v.aval, v, source_info) for v in outvars],
-            pjit.jit_p,
-            params,
-            jaxpr.effects,
-            source_info,
-        )
+        # DynamicJaxprTrace (eval_jaxpr path) vs StagingJaxprTrace need different approaches
+        # DynamicJaxprTrace doesn't have 'counter' attribute
+        if not hasattr(trace, "counter"):
+            # For DynamicJaxprTrace: Use make_eqn helper (from _add_make_eqn_helper)
+            # Pass avals (not tracers) to make_eqn
+            in_tracers = [core.get_referent(arg) for arg in args]
+            out_avals = [v.aval for v in outvars]
+            eqn, out_tracers = trace.make_eqn(
+                in_tracers, out_avals, pjit.jit_p, params, jaxpr.effects, source_info
+            )
+            trace.frame.add_eqn(eqn)
+        else:
+            # For StagingJaxprTrace: Use new_eqn_recipe
+            eqn = pe.new_eqn_recipe(
+                trace,
+                args,
+                [pe.DynamicJaxprTracer(trace, v.aval, v, source_info) for v in outvars],
+                pjit.jit_p,
+                params,
+                jaxpr.effects,
+                source_info,
+            )
 
-        out_tracers = [pe.DynamicJaxprTracer(trace, v.aval, v, source_info) for v in outvars]
-        for t in out_tracers:
-            t.recipe = eqn
+            out_tracers = [pe.DynamicJaxprTracer(trace, v.aval, v, source_info) for v in outvars]
+            for t in out_tracers:
+                t.recipe = eqn
 
         # Handle forwarding
         out_tracers_ = iter(out_tracers)

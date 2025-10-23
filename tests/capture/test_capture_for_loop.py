@@ -241,7 +241,6 @@ class TestCaptureForLoop:
 class TestDynamicShapes:
 
     # pylint: disable=unused-argument
-    @pytest.mark.xfail(reason="For loop eval_jaxpr with dynamic shapes doesn't work in JAX 0.7.0")
     def test_dynamic_shape_input(self):
         """Test that the for loop can accept inputs with dynamic shapes."""
 
@@ -262,7 +261,6 @@ class TestDynamicShapes:
         assert qml.math.allclose(shape, 3)
 
     # pylint: disable=unused-argument
-    @pytest.mark.xfail(reason="For loop eval_jaxpr with dynamic shapes doesn't work in JAX 0.7.0")
     def test_dynamic_array_creation(self):
         """Test that for_loops can create dynamically shaped arrays."""
 
@@ -277,9 +275,6 @@ class TestDynamicShapes:
         [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
 
-    @pytest.mark.xfail(
-        reason="For loop error handling with dynamic shapes doesn't work in JAX 0.7.0"
-    )
     def test_error_if_resizing_when_forbidden(self):
         """Test that a useful error is raised if the shape pattern changes with
         allow_array_resizing=False"""

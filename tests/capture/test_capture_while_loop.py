@@ -315,7 +315,6 @@ def test_pytree_input_output():
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCaptureWhileLoopDynamicShapes:
 
-    @pytest.mark.xfail(reason="While loop eval_jaxpr with dynamic shapes doesn't work in JAX 0.7.0")
     def test_while_loop_dynamic_shape_array(self):
         """Test while loop can accept arrays with dynamic shapes."""
 
@@ -333,7 +332,6 @@ class TestCaptureWhileLoopDynamicShapes:
         assert qml.math.allclose(dynamic_shape, 3)
         assert jnp.allclose(output, expected)
 
-    @pytest.mark.xfail(reason="While loop eval_jaxpr with dynamic shapes doesn't work in JAX 0.7.0")
     def test_while_loop_dynamic_array_creation(self):
         """Test that while loop can handle creating dynamic arrays."""
 

@@ -331,7 +331,6 @@ class TestGrad:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_grad_dynamic_shape_inputs(self, same_dynamic_shape):
@@ -616,7 +615,6 @@ class TestJacobian:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
-    @pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_jacobian_dynamic_shape_inputs(self, same_dynamic_shape):
