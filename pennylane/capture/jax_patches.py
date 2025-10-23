@@ -70,12 +70,12 @@ Without these patches, any operation creating arrays with traced dimensions woul
 with AssertionError in trace.frame.add_eqn.
 """
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-arguments,redefined-outer-name
+# pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
 
 has_jax = True
 try:
     import jax
-    from jax.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -87,12 +87,10 @@ def _add_make_eqn_helper():
     This helper properly creates TracingEqn objects, which is needed for JAX 0.7.0
     compatibility. This is based on Catalyst's approach to the same issue.
     """
-    # pylint: disable=import-outside-toplevel, protected-access
     from jax._src import config as jax_config
     from jax._src import source_info_util
     from jax._src.core import JaxprEqnContext, Var
     from jax._src.interpreters import partial_eval as pe
-    from jax._src.interpreters import xla as xla_interp
     from jax._src.interpreters.partial_eval import (
         DynamicJaxprTracer,
         TracingEqn,
@@ -153,45 +151,6 @@ def _add_make_eqn_helper():
         ]
 
         return eqn, out_tracers
-        """Create a TracingEqn with proper context.
-
-        Args:
-            self: The DynamicJaxprTrace instance
-            in_tracers: Input tracers
-            out_avals: Output abstract values (can be single aval or list)
-            primitive: The primitive being traced
-            params: Parameters for the primitive
-            effects: Effects of the operation
-            source_info: Source information for debugging
-            ctx: JaxprEqnContext (created if not provided)
-
-        Returns:
-            (eqn, out_tracers): TracingEqn and output tracers
-        """
-        source_info = source_info or source_info_util.new_source_info()
-        ctx = ctx or JaxprEqnContext(
-            compute_on.current_compute_type(),
-            jax_config.threefry_partitionable.value,
-            xla_metadata_lib.current_xla_metadata(),
-        )
-
-        # Normalize out_avals to a list
-        if not isinstance(out_avals, (list, tuple)):
-            out_avals = [out_avals]
-
-        outvars = [self.frame.newvar(aval) for aval in out_avals]
-
-        if jax_config.enable_checks.value:
-            assert all(isinstance(x, DynamicJaxprTracer) for x in in_tracers)
-            assert all(isinstance(v, Var) for v in outvars)
-
-        eqn = TracingEqn(list(in_tracers), outvars, primitive, params, effects, source_info, ctx)
-        out_tracers = [
-            DynamicJaxprTracer(self, aval, v, source_info, eqn)
-            for aval, v in zip(out_avals, outvars)
-        ]
-
-        return eqn, out_tracers
 
     # Add the helper method to DynamicJaxprTrace
     pe.DynamicJaxprTrace.make_eqn = make_eqn
@@ -210,7 +169,6 @@ def _patch_dyn_shape_staging_rule():
 
     The fix uses the make_eqn helper to properly create TracingEqn objects.
     """
-    # pylint: disable=import-outside-toplevel, protected-access
     from jax._src import core
     from jax._src.interpreters import partial_eval as pe
     from jax._src.lax import lax
@@ -227,14 +185,14 @@ def _patch_dyn_shape_staging_rule():
             )
             out_tracer.recipe = eqn
             return out_tracer
-        else:
-            # DynamicJaxprTrace path - use make_eqn helper
-            eqn, out_tracers = trace.make_eqn(
-                args, out_aval, prim, params, core.no_effects, source_info
-            )
-            trace.frame.add_eqn(eqn)
-            # Return single tracer (not list) since out_aval is a single value
-            return out_tracers[0]
+
+        # DynamicJaxprTrace path - use make_eqn helper
+        eqn, out_tracers = trace.make_eqn(
+            args, out_aval, prim, params, core.no_effects, source_info
+        )
+        trace.frame.add_eqn(eqn)
+        # Return single tracer (not list) since out_aval is a single value
+        return out_tracers[0]
 
     # Apply the patch
     lax._dyn_shape_staging_rule = patched_dyn_shape_staging_rule
@@ -244,7 +202,7 @@ def _patch_dyn_shape_staging_rule():
         trace, source_info, *dyn_shape, dtype, shape, dimension, sharding
     ):
         """Patched version of _iota_staging_rule."""
-        params = dict(dtype=dtype, shape=shape, dimension=dimension, sharding=sharding)
+        params = {"dtype": dtype, "shape": shape, "dimension": dimension, "sharding": sharding}
         if not dyn_shape:
             return trace.default_process_primitive(lax.iota_p, (), params, source_info=source_info)
         aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn_shape), dtype, False)
@@ -268,8 +226,6 @@ def _patch_pjit_staging_rule():
 
     This causes an AssertionError when add_eqn expects a TracingEqn but gets a JaxprEqn.
     """
-    # pylint: disable=import-outside-toplevel, protected-access
-    from jax import tree_util
     from jax._src import config, core, pjit
     from jax._src.interpreters import partial_eval as pe
 
@@ -299,7 +255,12 @@ def _patch_pjit_staging_rule():
         jaxpr, in_fwd, out_shardings, out_layouts = pjit._pjit_forwarding(
             jaxpr, params["out_shardings"], params["out_layouts"]
         )
-        params = dict(params, jaxpr=jaxpr, out_shardings=out_shardings, out_layouts=out_layouts)
+        params = {
+            **params,
+            "jaxpr": jaxpr,
+            "out_shardings": out_shardings,
+            "out_layouts": out_layouts,
+        }
 
         # Fix 1: Use list instead of map to create outvars
         outvars = [trace.frame.newvar(aval) for aval in pjit._out_type(jaxpr)]
@@ -333,7 +294,7 @@ def _patch_pjit_staging_rule():
 
         # Handle forwarding
         out_tracers_ = iter(out_tracers)
-        out_tracers = [args[f] if type(f) is int else next(out_tracers_) for f in in_fwd]
+        out_tracers = [args[f] if isinstance(f, int) else next(out_tracers_) for f in in_fwd]
         assert next(out_tracers_, None) is None
 
         return out_tracers

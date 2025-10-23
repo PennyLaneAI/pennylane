@@ -404,7 +404,7 @@ def _get_plxpr_defer_measurements():
                 args_slice=args_slice,
             )
 
-        from pennylane.capture import _restore_slice
+        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
 
         conditions = get_mcm_predicates(conditions[:-1])
         args = invals[_restore_slice(args_slice)]

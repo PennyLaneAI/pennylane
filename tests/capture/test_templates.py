@@ -37,8 +37,8 @@ def normalize_for_comparison(obj):
     In JAX 0.7.0, _make_hashable converts lists to tuples for hashability.
     This function reverses that for test comparisons.
     """
-    # Don't normalize special objects like operators or functions
-    if hasattr(obj, "__class__") and ("Operator" in str(obj.__class__.__mro__) or callable(obj)):
+    # Don't normalize callables (functions, operators, etc.)
+    if callable(obj):
         return obj
 
     # Convert arrays (JAX and NumPy) to lists for comparison
@@ -47,13 +47,14 @@ def normalize_for_comparison(obj):
     if isinstance(obj, np.ndarray):
         return obj.tolist()
 
+    # Recursively normalize dictionaries
     if isinstance(obj, dict):
         return {k: normalize_for_comparison(v) for k, v in obj.items()}
-    if isinstance(obj, tuple):
-        # Convert tuple to list and normalize contents
+
+    # Convert tuples and lists to lists with normalized contents
+    if isinstance(obj, (tuple, list)):
         return [normalize_for_comparison(item) for item in obj]
-    if isinstance(obj, list):
-        return [normalize_for_comparison(item) for item in obj]
+
     return obj
 
 

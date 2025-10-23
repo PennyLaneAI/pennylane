@@ -228,7 +228,7 @@ def _get_plxpr_merge_amplitude_embedding():
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
-        from pennylane.capture import _restore_slice
+        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
 
         args = invals[_restore_slice(args_slice)]
 

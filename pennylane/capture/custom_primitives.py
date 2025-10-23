@@ -43,7 +43,8 @@ def _make_hashable(obj: Any) -> Any:
     Returns:
         Hashable version of the object
     """
-    # Import here to avoid circular dependency
+    # Import here to avoid circular dependency and only when needed
+    # pylint: disable=import-outside-toplevel,too-many-return-statements
     import jax
     import numpy as np
 

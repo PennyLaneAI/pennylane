@@ -77,7 +77,7 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
 @CollectResourceOps.register_primitive(cond_prim)
 def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
-    from pennylane.capture import _restore_slice
+    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
 
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]

@@ -215,6 +215,7 @@ def register_custom_staging_rule(
             out_tracers, returned_vars = (), ()
 
         # JAX 0.7.0: Create TracingEqn with proper context
+        # pylint: disable=import-outside-toplevel
         from jax._src import compute_on, config, xla_metadata_lib
         from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
 

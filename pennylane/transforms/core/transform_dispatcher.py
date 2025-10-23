@@ -46,7 +46,7 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
-        from pennylane.capture import _restore_slice
+        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
 
         args = all_args[_restore_slice(args_slice)]
         consts = all_args[_restore_slice(consts_slice)]
@@ -114,7 +114,10 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
     def _(
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=too-many-arguments
-        from pennylane.capture import _restore_hashable, _restore_slice
+        from pennylane.capture import (  # pylint: disable=import-outside-toplevel
+            _restore_hashable,
+            _restore_slice,
+        )
 
         args = invals[_restore_slice(args_slice)]
         consts = invals[_restore_slice(consts_slice)]

@@ -134,7 +134,7 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
 
 @CollectOpsandMeas.register_primitive(cond_prim)
 def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
-    from pennylane.capture import _restore_slice
+    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
 
     n_branches = len(jaxpr_branches)
     conditions = all_args[:n_branches]

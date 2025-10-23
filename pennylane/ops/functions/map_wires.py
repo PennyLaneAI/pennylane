@@ -102,7 +102,7 @@ def _get_plxpr_map_wires():
 
     def map_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``map_wires`` transform on plxpr."""
-        from pennylane.capture import _restore_hashable
+        from pennylane.capture import _restore_hashable  # pylint: disable=import-outside-toplevel
 
         # Restore tkwargs from hashable tuple to dict
         tkwargs = _restore_hashable(tkwargs)
