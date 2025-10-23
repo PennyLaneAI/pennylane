@@ -16,6 +16,8 @@ This module contains the functions needed for computing the molecular Hamiltonia
 """
 from functools import singledispatch
 
+from scipy.constants import angstrom, physical_constants
+
 import pennylane as qml
 
 from .basis_data import atomic_numbers
@@ -27,9 +29,7 @@ from .observable_hf import fermionic_observable, qubit_observable
 # pylint: disable=consider-using-generator, protected-access, too-many-positional-arguments
 # pylint: disable=possibly-used-before-assignment
 
-
-# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
-bohr_angs = 0.529177210903
+bohr_angs = physical_constants["Bohr radius"][0] / angstrom
 
 
 def electron_integrals(mol, core=None, active=None):
