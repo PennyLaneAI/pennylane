@@ -124,7 +124,10 @@ class TestCaptureTransforms:
         assert params["args_slice"] == (0, 1, None)
         assert params["consts_slice"] == (1, 1, None)
         assert params["targs_slice"] == (1, None, None)
-        assert params["tkwargs"] == tkwargs
+        # Dicts are also converted to tuples
+        from pennylane.capture.custom_primitives import _restore_hashable
+
+        assert _restore_hashable(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -152,7 +155,10 @@ class TestCaptureTransforms:
         assert params["args_slice"] == (0, 2, None)
         assert params["consts_slice"] == (2, 2, None)
         assert params["targs_slice"] == (2, None, None)
-        assert params["tkwargs"] == tkwargs
+        # Dicts are also converted to tuples
+        from pennylane.capture.custom_primitives import _restore_hashable
+
+        assert _restore_hashable(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -234,10 +240,13 @@ class TestCaptureTransforms:
 
         params1 = transform_eqn1.params
         # JAX 0.7.0 requires hashable params, so slices become tuples
+        from pennylane.capture.custom_primitives import _restore_hashable
+
         assert params1["args_slice"] == (0, 1, None)
         assert params1["consts_slice"] == (1, 1, None)
         assert params1["targs_slice"] == (1, None, None)
-        assert params1["tkwargs"] == tkwargs1
+        # Dicts are also converted to tuples
+        assert _restore_hashable(params1["tkwargs"]) == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
         assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == expval_z_obs_to_x_obs._primitive
@@ -247,7 +256,8 @@ class TestCaptureTransforms:
         assert params2["args_slice"] == (0, 1, None)
         assert params2["consts_slice"] == (1, 1, None)
         assert params2["targs_slice"] == (1, None, None)
-        assert params2["tkwargs"] == tkwargs2
+        # Dicts are also converted to tuples
+        assert _restore_hashable(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
