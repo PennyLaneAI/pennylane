@@ -14,7 +14,6 @@
 """
 Defines the MeasurementValue class
 """
-
 from collections.abc import Callable, Iterable
 
 from pennylane import math
