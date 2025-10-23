@@ -172,6 +172,12 @@
   and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
 
+* The decompositions for several templates have been updated to use 
+  :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
+  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`, 
+  :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
+  [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -188,6 +194,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Astral Cai,
 Marcus Edwards,
 Lillian Frederiksen,
