@@ -16,12 +16,22 @@ Contains the IQPEmbedding template.
 """
 # pylint: disable=too-many-arguments
 import copy
+from collections import defaultdict
 from itertools import combinations
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.math import is_abstract
 from pennylane.operation import Operation
 from pennylane.ops import RZ, H, MultiRZ
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class IQPEmbedding(Operation):
@@ -168,6 +178,8 @@ class IQPEmbedding(Operation):
 
     grad_method = None
 
+    resource_keys = {"pattern_size", "num_repeats", "num_wires"}
+
     def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
         shape = math.shape(features)
 
@@ -187,6 +199,14 @@ class IQPEmbedding(Operation):
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
         super().__init__(features, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "pattern_size": len(self.hyperparameters["pattern"]),
+            "num_repeats": self.hyperparameters["n_repeats"],
+            "num_wires": len(self.wires),
+        }
 
     def map_wires(self, wire_map):
         # pylint: disable=protected-access
@@ -257,3 +277,43 @@ class IQPEmbedding(Operation):
                 op_list.append(MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
 
         return op_list
+
+
+def _iqp_embedding_resources(pattern_size, num_repeats, num_wires):
+    return {
+        resource_rep(RZ): num_repeats * num_wires,
+        resource_rep(H): num_repeats * num_wires,
+        resource_rep(MultiRZ, num_wires=2): pattern_size * num_repeats,
+    }
+
+
+@register_resources(_iqp_embedding_resources)
+def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
+
+    if has_jax and capture.enabled():
+        wires, pattern, features = jnp.array(wires), jnp.array(pattern), jnp.array(features)
+
+    if math.ndim(features) > 1:
+        features = math.T(features)  # TODO: need to explicitly use jnp?
+
+    @for_loop(n_repeats)
+    def outer_loop(_):
+
+        @for_loop(len(wires))
+        def inner_loop(i):
+            H(wires=wires[i])
+            RZ(features[i], wires=wires[i])
+
+        inner_loop()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(pattern))
+        def pattern_loop(j):
+            idx1, idx2 = wires.indices(pattern[j])  # TODO: this won't work
+            MultiRZ(features[idx1] * features[idx2], wires=pattern[j])
+
+        pattern_loop()  # pylint: disable=no-value-for-parameter
+
+    outer_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(IQPEmbedding, _iqp_embedding_decomposition)
