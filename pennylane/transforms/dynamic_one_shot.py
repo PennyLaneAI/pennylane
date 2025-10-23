@@ -541,7 +541,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
         counts = qml.math.array(counts, like=interface)
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
-        mcm_samples = [{float(s): 1} for s in mcm_samples]
+        mcm_samples = [{float(s.item()): 1} for s in mcm_samples]
     results = gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
     if isinstance(measurement, SampleMP):
         results = qml.math.squeeze(results)
