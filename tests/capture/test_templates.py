@@ -216,21 +216,6 @@ unmodified_templates_cases = [
 def test_unmodified_templates(template, args, kwargs):
     """Test that templates with unmodified primitive binds are captured as expected."""
 
-    # Skip AllSinglesDoubles tests with array kwargs for JAX 0.7.0+
-    # These fail because JAX 0.7.0 requires hashable params, but arrays can't be made hashable
-    # without breaking the operator's internal logic that expects arrays
-    # See issue #5521 - these should be fixed to accept arrays as positional args
-    from packaging import version
-
-    if (
-        template == qml.AllSinglesDoubles
-        and any(isinstance(v, (jnp.ndarray, np.ndarray)) for v in kwargs.values())
-        and version.parse(jax.__version__) >= version.parse("0.7.0")
-    ):
-        pytest.skip(
-            "AllSinglesDoubles with array kwargs incompatible with JAX 0.7.0 hashability requirement"
-        )
-
     # Make sure the input data is valid
     template(*args, **kwargs)
 
