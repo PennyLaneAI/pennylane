@@ -17,31 +17,6 @@
 Known limitations
 -----------------
 
-    * Current pass returns multiple qreg in some tests is not expected. A simple example is:
-        ```python
-            dev = qml.device("null.qubit",wires=50)
-
-            @qml.qjit(
-                target="mlir",
-                pass_plugins=[getXDSLPluginAbsolutePath()],
-                autograph=True,
-                pipelines=mbqc_pipeline(),
-                keep_intermediate = True,)
-            @outline_state_evolution_pass
-            @qml.qnode(dev)
-            def circuit():
-                qml.X(0)
-                for i in range(50):
-                    qml.X(i)
-                    qml.Y(i)
-                    qml.Z(i)
-                return qml.expval(qml.X(0))
-
-            circuit()
-        ```
-        The main issue that it's not trivial to insert a terminal boundary operation (quantum operations) into IR and ensure the global qreg is
-        consistently updated. One way to solve this issue might be add a lineator before this transform.
-
     *   If the current pass is applied multiple times, the transform will fail as it would redefined the `state_evolution` func. This is
         caused by the way we define the terminal_boundary_op. Each time the pass is applied to the IR, it would insert a new
         terminal_boundary_op into the IR. TODOs: Instead of inserting a new `terminal_boundary_op` op to the IR when applying the pass, it
@@ -171,6 +146,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         if terminal_boundary_op is None:
             raise RuntimeError("A terminal_boundary_op op is not found in the circuit.")
         terminal_boundary_op.attributes["terminal_boundary"] = builtin.UnitAttr()
+        prev_qreg = terminal_boundary_op.in_qreg
 
         # extract ops
         insertion_point = InsertPoint.before(op)
@@ -184,7 +160,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             qubit_to_reg_idx[extract_op.qubit] = idx
             # pop out qb from the dict
             del qubit_to_reg_idx[qb]
-        return current_reg, terminal_boundary_op
+        return current_reg, prev_qreg, terminal_boundary_op
 
     # pylint: disable=cell-var-from-loop
     def _simplify_quantum_io(
@@ -200,6 +176,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # the IR and the last insert_op will be set as the `terminal_boundary_op`.`
         qubit_to_reg_idx = {}
         terminal_boundary_op = None
+        terminal_op_in_reg = None
 
         for op in func_op.body.ops:
             match op:
@@ -209,6 +186,14 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     # Update register mapping
                     extract_idx = self._get_qubit_idx(op)
                     qubit_to_reg_idx[op.qubit] = extract_idx
+                    # branch to update extract_op with new qreg
+                    if terminal_op_in_reg and op.qreg is terminal_op_in_reg:
+                        insertion_point = InsertPoint.before(op)
+                        extract_op = quantum.ExtractOp(current_reg, extract_idx)
+                        rewriter.insert_op(extract_op, insertion_point=insertion_point)
+                        rewriter.replace_all_uses_with(op.results[0], extract_op.results[0])
+                        rewriter.erase_op(op)
+
                 case quantum.MeasureOp():
                     # TODOs: what if the qubit that quantum.measure target at is reset?
                     # Not a concern by EOY 2025
@@ -220,11 +205,19 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                         qubit_to_reg_idx[op.results[i]] = qubit_to_reg_idx[qb]
                         del qubit_to_reg_idx[qb]
                 case quantum.InsertOp():
-                    if not terminal_boundary_op:
+                    if not terminal_op_in_reg:
                         if op.idx_attr and qubit_to_reg_idx[op.qubit] is not op.idx_attr:
                             raise ValueError("op.qubit should be op.idx_attr.")
                         del qubit_to_reg_idx[op.qubit]
                         current_reg = op.out_qreg
+                    # branch to update insert_op with new qreg
+                    if terminal_op_in_reg and op.in_qreg is terminal_op_in_reg:
+                        insertion_point = InsertPoint.before(op)
+                        index = op.idx if op.idx else op.idx_attr
+                        insert_op = quantum.InsertOp(current_reg, index, op.qubit)
+                        rewriter.insert_op(insert_op, insertion_point=insertion_point)
+                        rewriter.replace_all_uses_with(op.out_qreg, insert_op.out_qreg)
+                        rewriter.erase_op(op)
 
                 case _ if (
                     isinstance(
@@ -238,8 +231,10 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                     )
                     and not terminal_boundary_op
                 ):
-                    current_reg, terminal_boundary_op = self._set_up_terminal_boundary_op(
-                        current_reg, terminal_boundary_op, qubit_to_reg_idx, op, rewriter
+                    current_reg, terminal_op_in_reg, terminal_boundary_op = (
+                        self._set_up_terminal_boundary_op(
+                            current_reg, terminal_boundary_op, qubit_to_reg_idx, op, rewriter
+                        )
                     )
                 case _:
                     # Handle other operations that might has qreg result
