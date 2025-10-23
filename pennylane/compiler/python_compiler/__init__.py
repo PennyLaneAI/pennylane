@@ -13,8 +13,6 @@
 # limitations under the License.
 """Python Compiler API for integration of Catalyst with xDSL."""
 
-from xdsl.universe import Universe
-
 from .compiler import Compiler
 from .parser import QuantumParser
 from .pass_api import compiler_transform
