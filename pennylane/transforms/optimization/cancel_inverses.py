@@ -266,6 +266,15 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr = _get_plxpr_cancel_inverses()
 
 
+def _num_shared_wires(wires1, wires2):
+    if any(is_abstract(w) for w in [*wires1, *wires2]):
+        # Rely on `id`s to check object equality instead of value equality for abstract wires
+        wire_ids1 = {id(w) for w in wires1}
+        wire_ids2 = {id(w) for w in wires2}
+        return len(wire_ids1 & wire_ids2)
+    return len(Wires.shared_wires([wires1, wires2]))
+
+
 def _can_cancel(op1, op2):
     # Make sure that if one of the operators is an adjoint it is the latter
     if isinstance(op1, Adjoint):
@@ -277,7 +286,7 @@ def _can_cancel(op1, op2):
             return True
         # If wires are not exactly equal, they don't have full overlap, or differ by a permutation
         # 1. There is not full overlap in the wires; we cannot cancel
-        if len(Wires.shared_wires([op1.wires, op2.wires])) != len(op1.wires):
+        if _num_shared_wires(op1.wires, op2.wires) != len(op1.wires):
             return False
         # 2. There is full overlap, but the wires are in a different order.
         # If the wires are in a different order, gates that are "symmetric"
@@ -286,7 +295,7 @@ def _can_cancel(op1, op2):
             return True
         # For gates that are symmetric over controls and have a single target (e.g., Toffoli),
         # we can still cancel as long as the target wire is the same
-        if op1 in symmetric_over_control_wires and op1.wires[-1] == op2.wires[-1]:
+        if op1 in symmetric_over_control_wires and _check_equality(op1.wires[-1:], op2.wires[-1:]):
             return True
     return False
 
