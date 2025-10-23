@@ -49,6 +49,12 @@ def _make_hashable(obj: Any) -> Any:
 
     if isinstance(obj, slice):
         return (obj.start, obj.stop, obj.step)
+
+    # Check if obj is a JAX tracer - these are already hashable, don't convert
+    # Must check before Array check since tracers can also be Array instances
+    if isinstance(obj, jax.core.Tracer):
+        return obj
+
     # Convert arrays (JAX and NumPy) to nested tuples for hashability
     # Must check before list check since tolist() returns lists
     if hasattr(jax, "Array") and isinstance(obj, jax.Array):
