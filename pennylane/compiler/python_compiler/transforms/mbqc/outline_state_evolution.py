@@ -92,7 +92,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             pass
         if op is None:
             raise RuntimeError(
-                f"The given qnode func is not nested within a builtin.module. Please ensure the qnode func is defined in a builtin.module."
+                "The given qnode func is not nested within a builtin.module. Please ensure the qnode func is defined in a builtin.module."
             )
         return op
 
@@ -111,6 +111,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # State evolution function region
         self.state_evolution_func: func.FuncOp = None
 
+    # pylint: disable=too-many-arguments
     def match_and_rewrite(self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Transform a quantum function (qnode) to outline state evolution regions.
         This implementation assumes that there is only one `quantum.alloc` operation in
@@ -468,7 +469,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
                 "A quantum.alloc operation should come before the terminal_boundary_op."
             )
 
-        pre_ops = ops_list[:begin_idx]
         post_ops = ops_list[end_idx:]
 
         call_args = list(self.required_inputs)
