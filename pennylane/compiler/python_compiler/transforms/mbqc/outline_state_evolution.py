@@ -27,7 +27,7 @@ from pennylane.compiler.python_compiler.dialects import quantum
 
 """
 Known limitations:
-Current pass returns multiple qreg in some tests is not expected. A simple example is:
+1. Current pass returns multiple qreg in some tests is not expected. A simple example is:
     ```python
         dev = qml.device("null.qubit",wires=50)
 
@@ -51,6 +51,12 @@ Current pass returns multiple qreg in some tests is not expected. A simple examp
     ```
 The main issue that it's not trivial to insert a terminal boundary operation (quantum operations) into IR and ensure the global qreg is
 consistently updated. One way to solve this issue might be add a lineator before this transform.
+2. If the current pass is applied multiple times, the transform will fail as it would redefined the `state_evolution` func. This is
+caused by the way we define the terminal_boundary_op. Each time the pass is applied to the IR, it would insert a new
+terminal_boundary_op into the IR. 
+TODOs: Instead of inserting a new `terminal_boundary_op` op to the IR when applying the pass, it would be better to: 1. define a 
+quantum.terminator op before this pass and use it as a delineation of quantum gate operation; 2. move the `simply_io` to a separate
+pass.
 """
 
 
