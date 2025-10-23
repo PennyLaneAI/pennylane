@@ -36,22 +36,6 @@ from .quantum import (
 )
 
 
-def get_universe_passes():
-    """Get a mapping between all available pass names to pass classes. This is used
-    to initialize the PennyLane-xDSL universe, which is needed to make the passes
-    readily available to xDSL command-line tools."""
-    return {
-        "combine-global-phases": CombineGlobalPhasesPass,
-        "convert-to-mbqc-formalism": ConvertToMBQCFormalismPass,
-        "decompose-graph-state": DecomposeGraphStatePass,
-        "diagonalize-final-measurements": DiagonalizeFinalMeasurementsPass,
-        "xdsl-cancel-inverses": IterativeCancelInversesPass,
-        "measurements-from-samples": MeasurementsFromSamplesPass,
-        "xdsl-merge-rotations": MergeRotationsPass,
-        "null-decompose-graph-state": NullDecomposeGraphStatePass,
-    }
-
-
 __all__ = [
     # Quantum
     "combine_global_phases_pass",

@@ -22,20 +22,4 @@ from .stablehlo import StableHLO
 from .transform import Transform
 
 
-def get_universe_dialects():
-    """Get a mapping between all available dialect names to dialect classes. This
-    is used to initialize the PennyLane-xDSL universe, which is needed to make the
-    dialects readily available to xDSL command-line tools."""
-    return {
-        "catalyst": Catalyst,
-        "mbqc": MBQC,
-        "quantum": Quantum,
-        "qec": QEC,
-        # Dialects available in xDSL already cannot be added to the universe, since
-        # the "multiverse" cannot have duplicate dialects
-        # "stablehlo": StableHLO,
-        # "transform": Transform,
-    }
-
-
 __all__ = ["Catalyst", "MBQC", "Quantum", "QEC", "StableHLO", "Transform"]
