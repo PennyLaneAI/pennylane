@@ -651,7 +651,6 @@ class TestClassicalComponents:
         assert qml.math.allclose(res2, jnp.cos(y))  # false fn = y
 
 
-@pytest.mark.xfail(reason="JAX 0.7.0 does not support traced values in array creation")
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
     """Tests for creating arrays with a dynamic input."""
