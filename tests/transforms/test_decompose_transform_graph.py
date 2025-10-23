@@ -124,6 +124,14 @@ class TestDecomposeGraphEnabled:
         with pytest.raises(TypeError, match="Specifying gate_set as a function"):
             qml.transforms.decompose(tape, gate_set=lambda op: True)
 
+    @pytest.mark.unit
+    def test_none_gate_set_error(self):
+        """Tests that an error is raised when gate_set is not provided."""
+
+        tape = qml.tape.QuantumScript([])
+        with pytest.raises(TypeError, match="The gate_set argument is required."):
+            qml.transforms.decompose(tape, stopping_condition=lambda op: True)
+
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
         """Tests that the gate_set can be specified as both a type and a string."""
