@@ -43,6 +43,12 @@
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
 * Wires can be specified via `range` with program capture and autograph.
+  [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
+
+* The :func:`~pennylane.transforms.decompose` transform no longer raises an error if both `gate_set` and
+  `stopping_condition` are provided, or if `gate_set` is a dictionary, when the new graph-based decomposition
+  system is disabled.
+  [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
 
 <h3>Breaking changes 💔</h3>
 
