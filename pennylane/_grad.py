@@ -53,7 +53,7 @@ def _get_grad_prim():
     grad_prim.prim_type = "higher_order"
 
     @grad_prim.def_impl
-    def _(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' without QJIT.")
         if h != 1e-6:
@@ -71,7 +71,7 @@ def _get_grad_prim():
 
     # pylint: disable=unused-argument
     @grad_prim.def_abstract_eval
-    def _(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if scalar_out and (len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
         in_avals = tuple(args[i + n_consts] for i in argnums)
