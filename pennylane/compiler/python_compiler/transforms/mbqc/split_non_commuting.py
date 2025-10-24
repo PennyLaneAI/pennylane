@@ -209,15 +209,14 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
             observable = measurement_op.operands[0]
             op_to_acted_qubits[measurement_op].update(self.get_qubits_from_observable(observable))
 
-        for op, qubits in op_to_acted_qubits.items():
-            # TODO: handle multiple qubits
-            assert len(qubits) == 1, "operation should act on exactly one qubit"
-
         # Group measurements: operations on different qubits can be in the same group
         # Operations on the same qubit must be in different groups
         groups: list[dict[Operation, set[SSAValue]]] = []  # Each group stores op -> qubits mapping
 
         for measurement_op, qubits in op_to_acted_qubits.items():
+            if len(qubits) > 1:
+                raise NotImplementedError("operations acting on multiple qubits are not supported")
+
             # Find a group where no operation acts on any of the same qubits
             assigned_group_id = None
 
