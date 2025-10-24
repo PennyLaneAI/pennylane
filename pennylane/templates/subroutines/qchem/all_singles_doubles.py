@@ -175,9 +175,7 @@ class AllSinglesDoubles(Operation):
         wires = math.array(wires)
         hf_state = math.array(hf_state)
         weights = math.array(weights)
-        return cls._primitive.bind(
-            weights, wires, hf_state, singles, doubles, id=id
-        )
+        return cls._primitive.bind(weights, wires, hf_state, singles, doubles, id=id)
 
     @property
     def resource_params(self) -> dict:
@@ -275,14 +273,7 @@ if AllSinglesDoubles._primitive is not None:
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wires = tuple(w if math.is_abstract(w) else int(w) for w in args[1])
-        return type.__call__(
-            AllSinglesDoubles,
-            args[0],
-            wires,
-            args[2],
-            args[3],
-            args[4]
-        )
+        return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
 
 
 def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
