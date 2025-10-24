@@ -160,7 +160,7 @@ class AngleEmbedding(Operation):
 
 def _angle_embedding_resources(rotation, num_wires):
     return {
-        resource_rep(type(rotation), **rotation.resource_params): num_wires
+        resource_rep(rotation): num_wires
     }
 
 
@@ -170,7 +170,7 @@ def _angle_embedding_decomposition(features, wires, rotation):
     features = math.T(features) if batched else features
 
     if has_jax and capture.enabled():
-        features = jnp.array(features)
+        features, wires = jnp.array(features), jnp.array(wires)
 
     @for_loop(len(wires))
     def rotation_loop(i):
