@@ -61,11 +61,11 @@ def _create_mid_measure_primitive():
     mid_measure_p = QmlPrimitive("measure")
 
     @mid_measure_p.def_impl
-    def _(wires, reset=False, postselect=None):
+    def _impl(wires, reset=False, postselect=None):
         return _measure_impl(wires, reset=reset, postselect=postselect)
 
     @mid_measure_p.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         return jax.core.ShapedArray((), dtype)
 
