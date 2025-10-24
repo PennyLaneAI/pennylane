@@ -14,11 +14,9 @@
 r"""
 Contains the ``AngleEmbedding`` template.
 """
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
-
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
-
-from pennylane import math, capture
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ
 
@@ -84,7 +82,7 @@ class AngleEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = { "rotation", "num_wires" }
+    resource_keys = {"rotation", "num_wires"}
 
     def _flatten(self):
         hyperparameters = (("rotation", self._rotation),)
@@ -112,10 +110,7 @@ class AngleEmbedding(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "rotation": self.hyperparameters["rotation"],
-            "num_wires": len(self.wires)
-        }
+        return {"rotation": self.hyperparameters["rotation"], "num_wires": len(self.wires)}
 
     @property
     def num_params(self):
@@ -159,9 +154,7 @@ class AngleEmbedding(Operation):
 
 
 def _angle_embedding_resources(rotation, num_wires):
-    return {
-        resource_rep(rotation): num_wires
-    }
+    return {resource_rep(rotation): num_wires}
 
 
 @register_resources(_angle_embedding_resources)
