@@ -373,7 +373,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         self, ops: list[Operation], terminal_op: Operation
     ) -> list[SSAValue]:
         """Get required outputs for the state evolution funcOp with a given list of operations.
-        Noted: It only consdiders the values that are defined in the operations and required by
+        Note: It only considers the values that are defined in the operations and required by
         the operations after the terminal operation.
         """
         ops_walk = list(chain(*[op.walk() for op in ops]))
