@@ -180,6 +180,14 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
         # TODO: support more measurement operations
         if isinstance(op, quantum.ExpvalOp):
             return True
+        if (
+            isinstance(op, quantum.VarianceOp)
+            or isinstance(op, quantum.ProbsOp)
+            or isinstance(op, quantum.SampleOp)
+        ):
+            raise NotImplementedError(
+                f"measurement operations other than expval are not supported: {op}"
+            )
         return False
 
     def is_observable_op(self, op: Operation) -> bool:
