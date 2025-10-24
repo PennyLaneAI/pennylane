@@ -202,6 +202,9 @@
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
 
+* Fixes a bug where a `KeyError` is raised when querying the decomposition rule for an operator in the gate set from a :class:`~pennylane.decomposition.DecompGraphSolution`.
+  [(#8526)](https://github.com/PennyLaneAI/pennylane/pull/8526)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
