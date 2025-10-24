@@ -187,6 +187,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in ``clifford_t_decomposition`` with `gridsynth` method and qjit where using cached decomposition with the same parameter causes an error.
+  [(#8535)](https://github.com/PennyLaneAI/pennylane/pull/8535)
+
 * Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
   instance from being constructed.
   [(#8456)](https://github.com/PennyLaneAI/pennylane/pull/8456)

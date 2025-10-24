@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
+# pylint: disable=too-many-public-methods
+
 import math
 from functools import reduce
 
