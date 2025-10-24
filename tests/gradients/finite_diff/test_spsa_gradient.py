@@ -17,6 +17,7 @@ Tests for the gradients.spsa_gradient module.
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
+from scipy import stats
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -114,14 +115,15 @@ class TestRademacherSampler:
         #
         # For a one-sided lower bound test at 99.73% confidence (3-sigma equivalent, α = 0.0027):
         # We want P(S² < s_lower) = α, which translates to P(N·X̄² > N(1 - s_lower)) = α.
-        # Since N·X̄² ~ χ²(1), we need: N(1 - s_lower) = χ²_{0.9973}(1) ≈ 9.0
-        # Therefore: s_lower = 1 - 9.0/10000 ≈ 0.9991
-        #
-        # For N=10000: lower_bound = 1 - χ²_{0.9973}(1) / 10000 ≈ 0.9991
+        # Since N·X̄² ~ χ²(1), we need: N(1 - s_lower) = χ²_{0.9973}(1)
+        # Therefore: s_lower = 1 - χ²_{0.9973}(1) / N
+        alpha = 0.0027  # 99.73% confidence (3-sigma equivalent)
+        chi2_critical = stats.chi2.ppf(1 - alpha, df=1)
+        lower_bound = 1 - chi2_critical / N
         sample_vars = np.var(outputs, axis=0)[ids_mask]
-        assert np.all(sample_vars >= 0.9991), (
-            f"Sample variance {sample_vars} fell below lower bound 0.9991 "
-            f"at 99.73% confidence level (3-sigma equivalent)"
+        assert np.all(sample_vars >= lower_bound), (
+            f"Sample variance {sample_vars} fell below lower bound {lower_bound} "
+            f"at {100*(1-alpha):.2f}% confidence level (3-sigma equivalent)"
         )
 
         # Test that all the zero entries are exactly 0
