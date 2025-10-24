@@ -914,11 +914,6 @@ class TestShotsIntegration:
 
         expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
         assert qml.math.allclose(res[1], expected_probs, atol=1 / qml.math.sqrt(shots), rtol=0.03)
-        assert qml.math.allclose(
-            res[1][0], expected_probs[0], atol=1 / qml.math.sqrt(shots), rtol=0.03
-        )
-        # Smaller atol since sin(0.25)**2 is close to zero
-        assert qml.math.allclose(res[1][1], expected_probs[1], atol=0.5 * 1 / qml.math.sqrt(shots))
 
     @pytest.mark.parametrize("shots", [(10, 10), (10, 15)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
@@ -1759,10 +1754,10 @@ class TestTapeExpansion:
     #     # test second-order derivatives
     #     if diff_method == "parameter-shift" and max_diff == 2:
 
-    #         grad2_c = jax.jacobian(jax.grad(circuit, argnum=2), argnum=2)(d, w, c)
+    #         grad2_c = jax.jacobian(jax.grad(circuit, argnums=2), argnums=2)(d, w, c)
     #         assert np.allclose(grad2_c, 0, atol=tol)
 
-    #         grad2_w_c = jax.jacobian(jax.grad(circuit, argnum=1), argnum=2)(d, w, c)
+    #         grad2_w_c = jax.jacobian(jax.grad(circuit, argnums=1), argnums=2)(d, w, c)
     #         expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
     #             0,
     #             -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),

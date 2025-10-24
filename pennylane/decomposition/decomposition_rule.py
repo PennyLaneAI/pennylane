@@ -23,7 +23,6 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
 
-import pennylane as qml
 from pennylane.operation import Operator
 
 from .resources import Resources, auto_wrap
