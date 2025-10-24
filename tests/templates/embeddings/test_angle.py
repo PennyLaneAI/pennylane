@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -150,6 +151,19 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    DECOMP_PARAMS = [
+        ([1.2, 1.3, 0, 0, 1.4], range(5), "Z"),
+        ([1.1, 1.2, 0, 0], range(4), "X"),
+        ([1.5, 1.6, 0], range(3), "Y"),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("features", "wires", "rotation"), DECOMP_PARAMS)
+    def test_decomposition_new(self, features, wires, rotation):
+        op = qml.AngleEmbedding(features, wires, rotation=rotation)
+        for rule in qml.list_decomps(qml.AngleEmbedding):
+            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:
