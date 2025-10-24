@@ -20,6 +20,7 @@ Known Limitations
   * Only single-term observables with no coefficients are supported - there is no support for CompositeOp or SymbolicOp observables
   * Only the Expval measurement process is supported
   * There is no option to specify a grouping strategy (this will be more relevant once CompositeOp support is added)
+  * Hence, only the "wires" grouping strategy is implemented, Not taking into account other commuation logic yet.
   * There is no efficient handling of duplicate observables - a circuit that returns multiple measurements on the same observable will split into multiple executions (this will be more relevant once CompositeOp support is added)
 """
 
@@ -37,7 +38,11 @@ from pennylane.compiler.python_compiler.dialects import quantum
 
 @dataclass(frozen=True)
 class SplitNonCommutingPass(passes.ModulePass):
-    """Pass that splits non-commuting regions in a quantum function."""
+    """Pass that splits quantum functions measuring non-commuting observables.
+
+    This pass groups measurements using the "wires" grouping strategy and splits
+    the function into multiple executions, one per group of measurements.
+    """
 
     name = "split-non-commuting"
 
@@ -53,7 +58,11 @@ split_non_commuting_pass = compiler_transform(SplitNonCommutingPass)
 
 
 class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
-    """Split non-commuting region into multiple regions"""
+    """Pattern that splits a quantum function into multiple functions based on wire-based grouping.
+
+    Measurements acting on different wires are grouped together, while measurements
+    acting on the same wire are split into separate groups.
+    """
 
     def __init__(self):
         self.module: builtin.ModuleOp = None
@@ -206,11 +215,22 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
             return True
         return False
 
-    def calculate_num_commuting_region(self, func_op: func.FuncOp):
-        """calculate the number of commuting region
+    def calculate_num_groups(self, func_op: func.FuncOp) -> int:
+        """Calculate the number of groups using the "wires" grouping strategy.
 
-        Group measurements on DIFFERENT wires together (they commute).
-        Split measurements on SAME wire into different groups (they don't commute).
+        This function groups measurements based on wire overlaps only, disregarding
+        the actual commutation relations between observables. Measurements acting on
+        different wires are grouped together, while measurements acting on the same
+        wire are split into different groups.
+
+        The function also stores the group ID in the "group" attribute of each
+        measurement operation, which is later used to handle the splitting mechanics.
+
+        Args:
+            func_op: The function operation containing measurements to group.
+
+        Returns:
+            The number of groups created.
         """
         # Find all measurement operations in the current function
         measurement_ops = [op for op in func_op.body.ops if self.is_measurement_op(op)]
@@ -389,19 +409,29 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
         original_block.add_op(return_op)
 
     def match_and_rewrite(self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
-        """Split non-commuting region into multiple functions"""
+        """Split a quantum function into multiple functions using wire-based grouping.
+
+        Creates one duplicate function per group, where each duplicate function contains
+        only the measurements from that group. The original function is replaced with
+        calls to these duplicate functions, and the results are combined in the original
+        return order.
+
+        Args:
+            func_op: The function operation to split.
+            rewriter: The pattern rewriter for creating new operations.
+        """
         self.module = self.get_parent_of_type(func_op, builtin.ModuleOp)
         assert self.module is not None, "got orphaned qnode function"
 
-        # Calculate the number of commuting region
-        num_commuting_region = self.calculate_num_commuting_region(func_op)
+        # Calculate the number of groups using wires-based grouping strategy
+        num_groups = self.calculate_num_groups(func_op)
 
         # Analyze return value positions for each group
-        group_return_positions = self.analyze_group_return_positions(func_op, num_commuting_region)
+        group_return_positions = self.analyze_group_return_positions(func_op, num_groups)
 
-        # Create dup function for each commuting region
+        # Create dup function for each group
         dup_functions = []
-        for i in range(num_commuting_region):
+        for i in range(num_groups):
             dup_func = self.create_dup_function(func_op, i, rewriter)
             dup_functions.append(dup_func)
 
