@@ -72,6 +72,7 @@ with AssertionError in trace.frame.add_eqn.
 
 # pylint: disable=import-outside-toplevel,too-many-arguments,redefined-outer-name
 # pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
+# pylint: disable=protected-access
 
 has_jax = True
 try:
