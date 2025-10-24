@@ -148,7 +148,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* The `grad` and `jacobian` primitives now store the function under `fn`.
+* The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `grad_p`
+   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 
 * Reclassifies `registers` as a tertiary module for use with tach.
