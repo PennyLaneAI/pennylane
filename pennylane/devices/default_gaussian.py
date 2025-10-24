@@ -521,7 +521,7 @@ def homodyne(phi: float | None = None):
     """Function factory that returns the Homodyne expectation of a one mode state.
 
     Args:
-        phi (Optional(float)): the default phase space axis to perform the Homodyne measurement
+        phi (Optional[float]): the default phase space axis to perform the Homodyne measurement
 
     Returns:
         function: A function that accepts a single mode means vector, covariance matrix,
