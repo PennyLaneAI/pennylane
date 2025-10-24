@@ -153,6 +153,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* An xDSL `Universe` containing all custom dialects and passes has been registered as an entry point, allowing
+  usage of PennyLane's dialects and passes with xDSL's command-line tools
+  [(#8372)](https://github.com/PennyLaneAI/pennylane/pull/8372)
+
 * Fix all NumPy 1.X `DeprecationWarnings` in our source code.
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
   
