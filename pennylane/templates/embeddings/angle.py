@@ -14,9 +14,20 @@
 r"""
 Contains the ``AngleEmbedding`` template.
 """
-from pennylane import math
+from pennylane.control_flow import for_loop
+
+from pennylane.decomposition import resource_rep, register_resources, add_decomps
+
+from pennylane import math, capture
 from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
@@ -73,6 +84,8 @@ class AngleEmbedding(Operation):
 
     grad_method = None
 
+    resource_keys = { "rotation", "num_wires" }
+
     def _flatten(self):
         hyperparameters = (("rotation", self._rotation),)
         return self.data, (self.wires, hyperparameters)
@@ -96,6 +109,13 @@ class AngleEmbedding(Operation):
 
         wires = wires[:n_features]
         super().__init__(features, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "rotation": self.hyperparameters["rotation"],
+            "num_wires": len(self.wires)
+        }
 
     @property
     def num_params(self):
@@ -136,3 +156,27 @@ class AngleEmbedding(Operation):
         features = math.T(features) if batched else features
 
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
+
+
+def _angle_embedding_resources(rotation, num_wires):
+    return {
+        resource_rep(type(rotation), **rotation.resource_params): num_wires
+    }
+
+
+@register_resources(_angle_embedding_resources)
+def _angle_embedding_decomposition(features, wires, rotation):
+    batched = math.ndim(features) > 1
+    features = math.T(features) if batched else features
+
+    if has_jax and capture.enabled():
+        features = jnp.array(features)
+
+    @for_loop(len(wires))
+    def rotation_loop(i):
+        rotation(features[i], wires=wires[i])
+
+    rotation_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(AngleEmbedding, _angle_embedding_decomposition)
