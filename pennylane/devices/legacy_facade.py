@@ -28,8 +28,8 @@ from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.math import Interface, requires_grad
 from pennylane.measurements import ExpectationMP, Shots
-from pennylane.ops import MidMeasure
 from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
 from pennylane.transforms.core import TransformProgram, transform
