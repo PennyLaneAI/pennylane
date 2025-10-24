@@ -29,15 +29,12 @@ from .graph_state_utils import (
     generate_adj_matrix,
 )
 
-from .split_non_commuting import SplitNonCommutingPass, split_non_commuting_pass
-
 __all__ = [
     # Passes
     "ConvertToMBQCFormalismPass",
     "DecomposeGraphStatePass",
     "NullDecomposeGraphStatePass",
     "null_decompose_graph_state_pass",
-    "split_non_commuting_pass",
     # Utils
     "get_num_aux_wires",
     "decompose_graph_state_pass",
