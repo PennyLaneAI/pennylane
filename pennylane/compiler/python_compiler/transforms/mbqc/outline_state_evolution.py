@@ -471,7 +471,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # TODO: I just removed all ops and add them again to update with value_mapper.
         # It's not efficient, just because it's easy to implement. Should using replace use method
         # instead.
-        # Deattach all ops of the orginal function
+        # De-attach all ops of the original function
         call_result_mapper = {}
         for i, required_output in enumerate(self.required_outputs):
             call_result_mapper[required_output] = call_op.results[i]
