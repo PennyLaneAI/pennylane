@@ -19,21 +19,19 @@ executed by a device.
 
 import contextlib
 import copy
-import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
 from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires
 
 QS = TypeVar("QS", bound="QuantumScript")
 
@@ -1044,56 +1042,6 @@ class QuantumScript:
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
-        )
-
-    def to_openqasm(
-        self,
-        wires: WiresLike | None = None,
-        rotations: bool = True,
-        measure_all: bool = True,
-        precision: int | None = None,
-    ) -> str:
-        """Serialize the circuit as an OpenQASM 2.0 program.
-
-        Measurements are assumed to be performed on all qubits in the computational basis. An
-        optional ``rotations`` argument can be provided so that output of the OpenQASM circuit is
-        diagonal in the eigenbasis of the quantum script's observables. The measurement outputs can be
-        restricted to only those specified in the script by setting ``measure_all=False``.
-
-        .. note::
-
-            The serialized OpenQASM program assumes that gate definitions
-            in ``qelib1.inc`` are available.
-
-        .. warning::
-
-            The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in v0.44.
-            Instead, please use the :func:`~.to_openqasm` function.
-
-        Args:
-            wires (Wires or None): the wires to use when serializing the circuit
-            rotations (bool): in addition to serializing user-specified
-                operations, also include the gates that diagonalize the
-                measured wires such that they are in the eigenbasis of the circuit observables.
-            measure_all (bool): whether to perform a computational basis measurement on all qubits
-                or just those specified in the script
-            precision (int): decimal digits to display for parameters
-
-        Returns:
-            str: OpenQASM serialization of the circuit
-        """
-        warnings.warn(
-            "``QuantumScript.to_openqasm`` is deprecated and will be removed in v0.44. "
-            "Instead, please use ``qml.to_openqasm``.",
-            PennyLaneDeprecationWarning,
-        )
-
-        return qml.to_openqasm(
-            self,
-            wires=wires,
-            rotations=rotations,
-            measure_all=measure_all,
-            precision=precision,
         )
 
     @classmethod
