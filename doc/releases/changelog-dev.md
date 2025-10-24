@@ -6,6 +6,9 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
+* Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
+  [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+
 <h3>Improvements 🛠</h3>
 
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
@@ -146,6 +149,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
