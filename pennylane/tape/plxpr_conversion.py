@@ -97,7 +97,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy, n_consts):
+def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
     consts = invals[:n_consts]
@@ -113,7 +113,7 @@ def _(self, *invals, jaxpr, lazy, n_consts):
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, n_consts, **params):
+def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
@@ -132,7 +132,7 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
 
 
 @CollectOpsandMeas.register_primitive(cond_prim)
-def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
+def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
     conditions = all_args[:n_branches]
     args = all_args[args_slice]
@@ -167,20 +167,20 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
 
 
 @CollectOpsandMeas.register_primitive(measure_prim)
-def _(self, wires, reset, postselect):
+def _measure_primitive(self, wires, reset, postselect):
     m0 = measure(wires, reset=reset, postselect=postselect)
     self.state["ops"].extend(m0.measurements)
     return m0
 
 
 @CollectOpsandMeas.register_primitive(grad_prim)
-def _(self, *invals, jaxpr, n_consts, **params):
+def _grad_primitive(self, *invals, jaxpr, n_consts, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
 
 
 # pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(qnode_prim)
-def _(
+def _qnode_primitive(
     self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
 ):  # pylint: disable=too-many-arguments
     consts = invals[shots_len : shots_len + n_consts]
@@ -195,7 +195,7 @@ def _(
 
 
 @CollectOpsandMeas.register_primitive(allocate_prim)
-def _(self, *, num_wires, state, restored):
+def _allocate_primitive(self, *, num_wires, state, restored):
     wires = [DynamicWire() for _ in range(num_wires)]
     num_dynamic_wires = len(self.state["dynamic_wire_map"])
     int_wires = [np.iinfo(np.int32).max - i - num_dynamic_wires for i in range(num_wires)]
@@ -205,7 +205,7 @@ def _(self, *, num_wires, state, restored):
 
 
 @CollectOpsandMeas.register_primitive(deallocate_prim)
-def _(self, *wires):
+def _deallocate_primitive(self, *wires):
     self.state["ops"].append(Deallocate(wires))
     return []
 

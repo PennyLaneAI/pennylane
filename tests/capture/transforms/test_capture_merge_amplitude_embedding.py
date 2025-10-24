@@ -158,11 +158,11 @@ class TestRepeatedQubitTransformErrors:
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
 
             qml.X(collision_wire)  # Each branch of the cond will have a collision with this wire
@@ -185,11 +185,11 @@ class TestRepeatedQubitTransformErrors:
                 qml.Z(0)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(1)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.X(2)
 
             cond_f()  # Each branch of the cond will have a collision with this wire
@@ -212,11 +212,11 @@ class TestRepeatedQubitTransformErrors:
                 qml.Z(1)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(2)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.X(3)
 
             qml.X(0)
@@ -245,12 +245,12 @@ class TestRepeatedQubitTransformErrors:
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
@@ -684,14 +684,14 @@ class TestHigherOrderPrimitiveIntegration:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(1)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.X(2)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)

@@ -202,7 +202,7 @@ def _get_adjoint_qfunc_prim():
     adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
-    def _(*args, jaxpr, lazy, n_consts):
+    def _impl(*args, jaxpr, lazy, n_consts):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
@@ -214,7 +214,7 @@ def _get_adjoint_qfunc_prim():
         return []
 
     @adjoint_prim.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return []
 
     return adjoint_prim

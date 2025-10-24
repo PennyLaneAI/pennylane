@@ -1,5 +1,3 @@
-:orphan:
-
 # Release 0.44.0-dev (development release)
 
 <h3>New features since last release</h3>
@@ -151,6 +149,9 @@
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `grad_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
+
+* Update versions for `pylint`, `isort` and `black` in `format.yml`
+  [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
 * Reclassifies `registers` as a tertiary module for use with tach.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)

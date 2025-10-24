@@ -441,7 +441,7 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
-def _(self, *dyn_shape, dimension, dtype, shape, sharding):
+def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
     >>> import jax
@@ -634,7 +634,7 @@ else:  # pragma: no cover
 
 
 @FlattenedInterpreter.register_primitive(pjit_p)
-def _(self, *invals, jaxpr, **params):
+def _pjit_primitive(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
