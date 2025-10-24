@@ -42,6 +42,7 @@ class SplitNonCommutingPass(passes.ModulePass):
     name = "split-non-commuting"
 
     def apply(self, _ctx: context.Context, op: builtin.ModuleOp) -> None:
+        """Apply the split non-commuting pass to all QNode functions in the module."""
         self.apply_on_qnode(op, SplitNonCommutingPattern())
 
     def apply_on_qnode(self, module: builtin.ModuleOp, pattern: pattern_rewriter.RewritePattern):
@@ -189,11 +190,7 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
         # TODO: support more measurement operations
         if isinstance(op, quantum.ExpvalOp):
             return True
-        if (
-            isinstance(op, quantum.VarianceOp)
-            or isinstance(op, quantum.ProbsOp)
-            or isinstance(op, quantum.SampleOp)
-        ):
+        if isinstance(op, (quantum.VarianceOp, quantum.ProbsOp, quantum.SampleOp)):
             raise NotImplementedError(
                 f"measurement operations other than expval are not supported: {op}"
             )
@@ -201,11 +198,14 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
 
     def is_observable_op(self, op: Operation) -> bool:
         """Check if an operation is an observable operation."""
-        if (
-            isinstance(op, quantum.NamedObsOp)
-            or isinstance(op, quantum.ComputationalBasisOp)
-            or isinstance(op, quantum.HamiltonianOp)
-            or isinstance(op, quantum.TensorOp)
+        if isinstance(
+            op,
+            (
+                quantum.NamedObsOp,
+                quantum.ComputationalBasisOp,
+                quantum.HamiltonianOp,
+                quantum.TensorOp,
+            ),
         ):
             return True
         return False
