@@ -1,5 +1,3 @@
-:orphan:
-
 # Release 0.44.0-dev (development release)
 
 <h3>New features since last release</h3>
@@ -147,6 +145,9 @@
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
+
+* Update versions for `pylint`, `isort` and `black` in `format.yml`
+  [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
 * Reclassifies `registers` as a tertiary module for use with tach.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
