@@ -42,7 +42,6 @@ from pennylane.operation import Operation
     side_effect=lambda x: decompositions[_to_name(x)],
 )
 class TestDecompositionGraph:
-
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
@@ -229,6 +228,15 @@ class TestDecompositionGraph:
         # 5 edges from ops to decompositions, 1 edge from decompositions to ops, and 5
         # edges from the dummy starting node to the target gate set.
         assert len(graph._graph.edges()) == 11
+
+        solution = graph.solve()
+
+        # verify that is_solved_for returns False for gates in the gate set
+        assert not solution.is_solved_for(qml.RX(0.5, wires=0))
+
+        # verify that the correct error is raised
+        with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
+            solution.decomposition(qml.RX(0.5, wires=0))
 
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""

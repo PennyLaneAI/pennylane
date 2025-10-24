@@ -227,7 +227,7 @@ def _get_plxpr_merge_amplitude_embedding():
     # Overwrite the cond primitive so that visited wires can be correctly
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
-    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
+    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
         args = invals[args_slice]
 
         new_jaxprs = []
@@ -291,7 +291,7 @@ def _get_plxpr_merge_amplitude_embedding():
         )
 
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)
-    def _(self, *invals, **params):
+    def _measure_primitive(self, *invals, **params):
         # Make sure to record that we have visited the wires on this measurement
         # in order to be able to detect potential wire collisions with future AE gates
         self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))

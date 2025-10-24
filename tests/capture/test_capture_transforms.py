@@ -530,12 +530,12 @@ class TestTapeTransformFallback:
                 qml.X(0)
 
             @cond_fn.else_if(x > 2)
-            def _():
+            def _else_if():
                 qml.Z(0)
                 qml.Y(0)
 
             @cond_fn.otherwise
-            def _():
+            def _else_branch():
                 qml.Z(0)
                 qml.T(0)
 
