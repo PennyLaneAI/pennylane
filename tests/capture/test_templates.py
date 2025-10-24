@@ -668,7 +668,7 @@ class TestModifiedTemplates:
         qfunc(*params)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(*params)
+        jax.make_jaxpr(qfunc)(*params)
 
     def test_quantum_monte_carlo(self):
         """Test the primitive bind call of QuantumMonteCarlo."""
