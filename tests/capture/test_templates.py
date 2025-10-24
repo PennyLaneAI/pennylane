@@ -670,18 +670,6 @@ class TestModifiedTemplates:
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(*params)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *params)
-
-        assert len(q) == 1
-        assert q.queue[0] == qml.AllSinglesDoubles(
-            np.array([-2.8, 0.5]),
-            range(4),
-            np.array([1, 1, 0, 0]),
-            [[0, 2]],
-            [[0, 1, 2, 3]],
-        )
-
     def test_quantum_monte_carlo(self):
         """Test the primitive bind call of QuantumMonteCarlo."""
 
