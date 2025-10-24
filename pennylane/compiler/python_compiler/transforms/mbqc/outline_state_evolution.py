@@ -288,7 +288,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
         # TODOs: how to define the `value_mapper` arg is not stated in the xdl.core module [here](https://github.com/xdslproject/xdsl/blob/e1301e0204bcf6ea5ed433e7da00bee57d07e695/xdsl/ir/core.py#L1429)_.
         # It looks like storing ssa value to be cloned would maintain the dependency relationship required to build the new DAG for the new ops.
         block = state_evolution_func.regions[0].block
-        value_mapper = {}
+        value_mapper = {}  # only args ssavlue is required
         for input, block_arg in zip(ordered_inputs, block.args):
             value_mapper[input] = block_arg
 
