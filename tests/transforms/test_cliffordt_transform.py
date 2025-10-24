@@ -136,6 +136,14 @@ def circuit_9(num_repeat, rand_angles):
     return qml.expval(qml.Z(0))
 
 
+def circuit_10():
+    """Circuit 10 with two RZs with same parameter that are not merged"""
+    qml.RZ(0.5, 0)
+    qml.T(0)
+    qml.RZ(0.5, 0)
+    return qml.expval(qml.Z(0))
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -205,7 +213,7 @@ class TestCliffordCompile:
     @pytest.mark.catalyst
     @pytest.mark.jax
     @pytest.mark.external
-    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8])
+    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
 
