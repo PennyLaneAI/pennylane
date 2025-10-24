@@ -227,7 +227,7 @@ class TestOutlineStateEvolutionPass:
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_pass_with_convert_to_mbqc_formalism(self, run_filecheck_qjit):
-        """Test if the outline_state_evolution_pass works with the convert-to-mbqc-fromalism pass on lightning.qubit."""
+        """Test if the outline_state_evolution_pass works with the convert-to-mbqc-formalism pass on lightning.qubit."""
         dev = qml.device("lightning.qubit", wires=1000)
 
         @qml.qjit(
