@@ -14,6 +14,7 @@
 """
 Defines a function for converting plxpr to a tape.
 """
+
 from copy import copy
 
 import numpy as np
@@ -29,10 +30,18 @@ from pennylane.capture.primitives import (
     grad_prim,
     jacobian_prim,
     measure_prim,
+    pauli_measure_prim,
     qnode_prim,
 )
 from pennylane.operation import Operator
-from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, get_mcm_predicates, measure
+from pennylane.ops.mid_measure import (
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+    get_mcm_predicates,
+    measure,
+    pauli_measure,
+)
 from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
@@ -173,6 +182,13 @@ def _measure_primitive(self, wires, reset, postselect):
     return m0
 
 
+@CollectOpsandMeas.register_primitive(pauli_measure_prim)
+def _(self, *wires, pauli_word="", postselect=None):
+    m0 = pauli_measure(pauli_word, wires, postselect)
+    self.state["ops"].extend(m0.measurements)
+    return m0
+
+
 @CollectOpsandMeas.register_primitive(grad_prim)
 def _grad_primitive(self, *invals, jaxpr, n_consts, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
@@ -271,7 +287,7 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
 
 def _map_op_wires(op, wire_map, mcm_map):
     new_op = op.map_wires(wire_map)
-    if isinstance(op, MidMeasure):
+    if isinstance(op, (MidMeasure, PauliMeasure)):
         mcm_map[op] = new_op
     return new_op
 

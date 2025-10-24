@@ -17,3 +17,4 @@ This submodule contains the instructions for performing mid circuit measurements
 
 from .measurement_value import MeasurementValue
 from .mid_measure import measure, MidMeasure, get_mcm_predicates
+from .pauli_measure import pauli_measure, PauliMeasure
