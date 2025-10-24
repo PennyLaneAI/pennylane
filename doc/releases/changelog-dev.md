@@ -168,6 +168,10 @@
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
+* The various private functions of the :class:`~pennylane.estimator.FirstQuantization` class have 
+  been modified to avoid using `numpy.matrix` as this function is deprecated.
+  [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
+
 * The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc` 
   and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
@@ -177,6 +181,7 @@
   by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`, 
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
+
 
 <h3>Documentation 📝</h3>
 
