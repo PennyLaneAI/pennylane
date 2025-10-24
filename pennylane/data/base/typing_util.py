@@ -77,7 +77,10 @@ def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-ret
 
     Otherwise, returns the fully-qualified class name, including the module.
     """
-    if cls is None:
+    # pylint: disable=idiomatic-typecheck
+    # Keep this check as it ensures that get_type_str(type(None)) = 'None'
+    # rather than `NoneType`.
+    if cls is None or cls is type(None):
         return "None"
 
     if isinstance(cls, str):
