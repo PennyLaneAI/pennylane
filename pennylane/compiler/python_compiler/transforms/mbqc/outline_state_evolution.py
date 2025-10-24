@@ -159,7 +159,7 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             del qubit_to_reg_idx[qb]
         return current_reg, prev_qreg, terminal_boundary_op
 
-    # pylint: disable=cell-var-from-loop
+    # pylint: disable=cell-var-from-loop, too-many-branches
     def _simplify_quantum_io(
         self, func_op: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
     ) -> func.FuncOp:
