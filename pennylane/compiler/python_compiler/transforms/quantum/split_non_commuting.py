@@ -20,7 +20,7 @@ Known Limitations
   * Only single-term observables with no coefficients are supported - there is no support for CompositeOp or SymbolicOp observables
   * Only the Expval measurement process is supported
   * There is no option to specify a grouping strategy (this will be more relevant once CompositeOp support is added)
-  * Hence, only the "wires" grouping strategy is implemented, Not taking into account other commuation logic yet.
+  * Hence, only the "wires" grouping strategy is implemented, not taking into account observable-commutation logic yet.
   * There is no efficient handling of duplicate observables - a circuit that returns multiple measurements on the same observable will split into multiple executions (this will be more relevant once CompositeOp support is added)
 """
 
