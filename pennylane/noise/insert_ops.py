@@ -258,6 +258,9 @@ def insert(
 
         if req_ops:
             for operation in req_ops:
+                # Use `isinstance` rather than checking `operation == type(circuit_op)`
+                # circuit_op will always be an instance of an operation.
+                # operation is a type: Operator or subclass of Operator
                 if isinstance(circuit_op, operation):
                     for w in circuit_op.wires:
                         sub_tape = make_qscript(op)(*op_args, wires=w)
