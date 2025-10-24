@@ -233,7 +233,8 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
   
-**Decompositions:**
+Custom Device Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :func:`pennylane.devices.preprocess.decompose` transform is typically required as part of the transform program that
 decomposes unsupported operations to the device's native gate set. To define this transform a stopping condition needs
