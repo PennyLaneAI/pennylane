@@ -28,6 +28,7 @@ from pennylane.compiler.python_compiler.transforms import (
     split_non_commuting_pass,
 )
 
+
 class TestSplitNonCommutingPass:
     """Unit tests for SplitNonCommutingPass."""
 
