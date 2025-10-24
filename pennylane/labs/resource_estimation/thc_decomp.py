@@ -230,7 +230,7 @@ def _initialize_params(initial_guess, eri, Nthc, Norbs, include_bliss, num_ob_sy
 
     return params
 
-def _compute_penalty_param(eri, obt, ob_sym_list, Nthc, initial_guess, maxiter, improve_guess=False):
+def _compute_penalty_param(eri, obt, ob_sym_list, Nthc, initial_guess, maxiter, improve_guess=False, l2_tol=1e-6, default_reg=1e-4):
     """Compute penalty parameter by using un-regularized two-norm of difference
     Will do maxiter iterations of optax optimizer if improve_guess is set as True"""
     if improve_guess:
@@ -246,11 +246,15 @@ def _compute_penalty_param(eri, obt, ob_sym_list, Nthc, initial_guess, maxiter, 
     
     deri = eri - _unfold_thc(MPQ, etaPp)
     sum_square_loss = 0.5 * jnp.sum(deri**2)
+    if sum_square_loss < l2_tol:
+        print(f"CP3 initial guess got converged 2-norm, using default regularization of {default_reg}")
+        return default_reg, params
+    
     regularization_scale = jnp.sum(jnp.abs(MPQ))
     
     # Avoid division by zero
-    if regularization_scale < 1e-12:
-        return 1e-6
+    if regularization_scale < 1e-8:
+        return 1e-5
     
     return float(sum_square_loss / regularization_scale), params
 
@@ -303,8 +307,8 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
     else:
         rho = regularize
         regularize=True
-        if verbose:
-            print(f"Regularization found: setting rho={rho:.2e}")
+        # if verbose:
+        print(f"Regularization found: setting rho={rho:.2e}")
 
     def pack_dict(x_vec):
         eta_fin = Nthc*Norbs

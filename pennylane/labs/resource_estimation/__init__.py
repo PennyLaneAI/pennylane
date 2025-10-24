@@ -209,3 +209,4 @@ from .templates import (
 
 from .wrappers import qcow
 from .thc_decomp import *
+from .thc_sweeper import thc_for_eigenaccuracy
