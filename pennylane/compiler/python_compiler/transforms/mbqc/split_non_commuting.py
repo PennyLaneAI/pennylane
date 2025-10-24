@@ -58,6 +58,8 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
         """Walk up the parent tree until an op of the specified type is found."""
         while (op := op.parent_op()) and not isinstance(op, kind):
             pass
+        if not isinstance(op, kind):
+            raise ValueError(f"get_parent_of_type: expected {kind} but got {type(op)}, op: {op}")
         return op
 
     def clone_operations_to_block(self, ops_to_clone, target_block, value_mapper):
