@@ -152,9 +152,10 @@
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
 * A new `split_non_commuting_pass` compiler pass has been added to the xDSL transforms. This pass
-  splits quantum functions that measure non-commuting observables into multiple function executions,
-  where each execution measures a group of commuting observables. The original function is replaced
-  with calls to these generated functions, and the results are combined appropriately.
+  splits quantum functions that measure observables on the same wires into multiple function executions,
+  where each execution measures observables on different wires (using the "wires" grouping strategy).
+  The original function is replaced with calls to these generated functions, and the results are combined
+  appropriately.
   [(#8531)](https://github.com/PennyLaneAI/pennylane/pull/8531)
 
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
