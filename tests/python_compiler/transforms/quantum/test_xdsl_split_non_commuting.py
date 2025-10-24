@@ -20,7 +20,6 @@ xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
-from catalyst.ftqc import mbqc_pipeline
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
@@ -45,7 +44,7 @@ class TestSplitNonCommutingPass:
     """Unit tests for SplitNonCommutingPass."""
 
     def test_func_w_qnode_attr(self, run_filecheck):
-        """Test outline state evolution pass would be applied to a func with a qnode attribute."""
+        """Test split non-commuting pass would be applied to a func with a qnode attribute."""
         program = """
             module @module_circuit {
                 func.func public @circuit() -> tensor<f64> attributes {qnode} {
@@ -73,7 +72,7 @@ class TestSplitNonCommutingPass:
         run_filecheck(program, pipeline)
 
     def test_multiple_func_w_qnode_attr(self, run_filecheck):
-        """Test outline state evolution pass would be applied to a func with a qnode attribute."""
+        """Test split non-commuting pass would be applied to a func with a qnode attribute."""
         program = """
             module @module_circuit {
                 func.func public @circuit1() -> tensor<f64> attributes {qnode} {
@@ -233,8 +232,8 @@ class TestSplitNonCommutingPass:
         run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_outline_state_evolution_pass_only(self, run_filecheck_qjit):
-        """Test the outline_state_evolution_pass only."""
+    def test_split_non_commuting_pass_only(self, run_filecheck_qjit):
+        """Test the split non-commuting pass only."""
         dev = qml.device("lightning.qubit", wires=5)
 
         @qml.while_loop(lambda i: i < 5)
