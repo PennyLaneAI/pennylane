@@ -17,13 +17,13 @@
 import os
 
 import numpy as np
-from scipy.constants import angstrom, physical_constants
+import scipy as sp
 
 import pennylane as qml
 
 from .basis_data import atomic_numbers
 
-bohr_angs = physical_constants["Bohr radius"][0] / angstrom
+BOHR_TO_ANG = sp.constants.physical_constants["Bohr radius"][0] / sp.constants.angstrom
 
 
 def _import_of():
@@ -729,7 +729,7 @@ def meanfield(
     path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
-        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * BOHR_TO_ANG)]
         for i, symbol in enumerate(symbols)
     ]
 
@@ -816,7 +816,7 @@ def _pyscf_integrals(
     pyscf = _import_pyscf()
 
     geometry = [
-        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * BOHR_TO_ANG)]
         for i, symbol in enumerate(symbols)
     ]
 

@@ -22,7 +22,7 @@ import collections
 import itertools
 import warnings
 
-from scipy.constants import angstrom, physical_constants
+import scipy as sp
 
 import pennylane as qml
 
@@ -30,7 +30,7 @@ from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
 
-bohr_angs = physical_constants["Bohr radius"][0] / angstrom
+BOHR_TO_ANG = sp.constants.physical_constants["Bohr radius"][0] / sp.constants.angstrom
 
 
 class Molecule:
@@ -130,7 +130,7 @@ class Molecule:
             )
 
         if self.unit == "angstrom":
-            self.coordinates = self.coordinates / bohr_angs
+            self.coordinates = self.coordinates / BOHR_TO_ANG
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 

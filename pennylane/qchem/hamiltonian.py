@@ -16,7 +16,7 @@ This module contains the functions needed for computing the molecular Hamiltonia
 """
 from functools import singledispatch
 
-from scipy.constants import angstrom, physical_constants
+import scipy as sp
 
 import pennylane as qml
 
@@ -29,7 +29,7 @@ from .observable_hf import fermionic_observable, qubit_observable
 # pylint: disable=consider-using-generator, protected-access, too-many-positional-arguments
 # pylint: disable=possibly-used-before-assignment
 
-bohr_angs = physical_constants["Bohr radius"][0] / angstrom
+BOHR_TO_ANG = sp.constants.physical_constants["Bohr radius"][0] / sp.constants.angstrom
 
 
 def electron_integrals(mol, core=None, active=None):
@@ -519,7 +519,7 @@ def _(
         )
 
     if coord_unit == "angstrom":
-        coordinates = coordinates / bohr_angs
+        coordinates = coordinates / BOHR_TO_ANG
 
     return _molecular_hamiltonian(
         symbols,

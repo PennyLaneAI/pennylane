@@ -20,11 +20,11 @@ import re
 from shutil import copyfile
 
 import numpy as np
-from scipy.constants import angstrom, physical_constants
+import scipy as sp
 
 import pennylane as qml
 
-bohr_angs = physical_constants["Bohr radius"][0] / angstrom
+BOHR_TO_ANG = sp.constants.physical_constants["Bohr radius"][0] / sp.constants.angstrom
 
 
 def read_structure(filepath, outpath="."):
@@ -68,7 +68,7 @@ def read_structure(filepath, outpath="."):
             coordinates.append(float(y))
             coordinates.append(float(z))
 
-    return symbols, np.array(coordinates) / bohr_angs
+    return symbols, np.array(coordinates) / BOHR_TO_ANG
 
 
 def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbitals=None):
@@ -602,7 +602,7 @@ def mol_data(identifier, identifier_type="name"):
     symbols = [atom["element"] for atom in data_mol["atoms"]]
     geometry = (
         np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in data_mol["atoms"]])
-        / bohr_angs
+        / BOHR_TO_ANG
     )
 
     return symbols, geometry
