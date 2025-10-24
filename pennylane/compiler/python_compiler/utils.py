@@ -74,4 +74,39 @@ def get_constant_from_ssa(value: SSAValue) -> Number | None:
 
                 return val
 
-    return None
+    # If the value has a shape, we can assume that it is not scalar. We check
+    # this because constant-like operations can return container types. This includes
+    # arith.constant, which may return containers, and stablehlo.constant, which
+    # always returns a container.
+    if isinstance(value.type, ShapedType):
+        return None
+
+    owner = value.owner
+
+    if isinstance(owner, arithConstantOp):
+        const_attr = owner.value
+        return const_attr.value.data
+
+    # Constant-like operations can also create scalars by returning rank 0 tensors.
+    # In this case, the owner of a scalar value should be a tensor.extract, which
+    # uses the aforementioned rank 0 constant tensor as input.
+    if isinstance(owner, tensorExtractOp):
+        tensor_ = owner.tensor
+        if (
+            len(owner.indices) == 0
+            and len(tensor_.type.shape) == 0
+            and isinstance(tensor_.owner, (arithConstantOp, hloConstantOp))
+        ):
+            dense_attr = tensor_.owner.value
+            # We know that the tensor has shape (). Dense element attributes store
+            # their data as a sequence. For a scalar, this will be a sequence with
+            # a single element.
+            val = dense_attr.get_values()[0]
+            if isinstance(tensor_.type.element_type, ComplexType):
+                # If the dtype is complex, the value will be a 2-tuple containing
+                # the real and imaginary components of the number rather than a
+                # Python complex number
+                val = val[0] + 1j * val[1]
+
+            return val
+
