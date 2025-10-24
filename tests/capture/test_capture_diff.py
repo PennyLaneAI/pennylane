@@ -24,50 +24,55 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
     grad_prim,
-    jacobian_prim,
     qnode_prim,
 )
 
 jnp = jax.numpy
 
 
-class TestExceptions:
-    """Test that expected exceptions are correctly raised."""
-
-    @pytest.mark.parametrize("kwargs", [{"method": "fd"}, {"h": 0.3}, {"h": 0.2, "method": "fd"}])
-    @pytest.mark.parametrize("diff", [qml.grad, qml.jacobian])
-    def test_error_with_method_or_h(self, kwargs, diff):
-        """Test that an error is raised if kwargs for QJIT's grad are passed to PLxPRs grad."""
-
-        def func(x):
-            return diff(jnp.sin, **kwargs)(x)
-
-        method = kwargs.get("method", None)
-        h = kwargs.get("h", None)
-        jaxpr = jax.make_jaxpr(func)(0.6)
-        with pytest.raises(ValueError, match=f"'{method=}' and '{h=}' without QJIT"):
-            func(0.6)
-        with pytest.raises(ValueError, match=f"'{method=}' and '{h=}' without QJIT"):
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.6)
-
-    def test_error_with_non_scalar_function(self):
-        """Test that an error is raised if the differentiated function has non-scalar outputs."""
-        with pytest.raises(TypeError, match="Grad only applies to scalar-output functions."):
-            jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
+def test_error_with_non_scalar_function():
+    """Test that an error is raised if the differentiated function has non-scalar outputs."""
+    with pytest.raises(TypeError, match="Grad only applies to scalar-output functions."):
+        jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
-def diff_eqn_assertions(eqn, primitive, argnums=None, n_consts=0):
+def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
     argnums = [0] if argnums is None else argnums
-    assert eqn.primitive == primitive
-    assert set(eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
+    assert eqn.primitive == grad_prim
+    assert set(eqn.params.keys()) == {
+        "argnums",
+        "n_consts",
+        "jaxpr",
+        "method",
+        "h",
+        "fn",
+        "scalar_out",
+    }
     assert eqn.params["argnums"] == argnums
     assert eqn.params["n_consts"] == n_consts
-    assert eqn.params["method"] is None
-    assert eqn.params["h"] is None
+    assert eqn.params["method"] == "auto"
+    assert eqn.params["h"] == 1e-6
+    assert eqn.params["scalar_out"] == scalar_out
+    if fn:
+        assert eqn.params["fn"] == fn
 
 
 class TestGrad:
     """Tests for capturing `qml.grad`."""
+
+    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+    def test_error_on_bad_h(self, grad_fn):
+        """Test that an error is raised if h is not a Number."""
+
+        with pytest.raises(ValueError, match="Invalid h value"):
+            grad_fn(lambda x: x**2, h="something")(0.5)
+
+    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+    def test_error_on_bad_method(self, grad_fn):
+        """Test that an error is raised for an unsupported grad_fn."""
+
+        with pytest.raises(ValueError, match="Got unrecognized method"):
+            grad_fn(lambda x: x**2, method="param-shift")(0.5)
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1], 0, 1))
     def test_classical_grad(self, argnums):
@@ -95,7 +100,7 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), float, weak_type=True)] * len(argnums)
 
         grad_eqn = jaxpr.eqns[2]
-        diff_eqn_assertions(grad_eqn, grad_prim, argnums=argnums)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, argnums=argnums, fn=inner_func)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
@@ -129,7 +134,7 @@ class TestGrad:
 
         grad_eqn = jaxpr_1.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_1.out_avals
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=func)
         assert len(grad_eqn.params["jaxpr"].eqns) == 2
 
         manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
@@ -145,7 +150,7 @@ class TestGrad:
 
         grad_eqn = jaxpr_2.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_2.out_avals
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qml_func_1)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
         assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
 
@@ -159,7 +164,7 @@ class TestGrad:
 
         grad_eqn = jaxpr_3.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_3.out_avals
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qml_func_2)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
         assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
 
@@ -190,22 +195,23 @@ class TestGrad:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.grad
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1] ** 2, wires=0)
             return qml.expval(qml.Z(0))
 
+        g_circuit = qml.grad(circuit)
+
         x = jnp.array([0.5, 0.9])
-        res = circuit(x)
+        res = g_circuit(x)
         expected_res = (
             -jnp.sin(x[0]) * jnp.cos(x[1] ** 2),
             -2 * x[1] * jnp.sin(x[1] ** 2) * jnp.cos(x[0]),
         )
         assert qml.math.allclose(res, expected_res)
 
-        jaxpr = jax.make_jaxpr(circuit)(x)
+        jaxpr = jax.make_jaxpr(g_circuit)(x)
 
         assert len(jaxpr.eqns) == 1  # grad equation
         assert jaxpr.in_avals == [jax.core.ShapedArray((2,), fdtype)]
@@ -213,7 +219,7 @@ class TestGrad:
 
         grad_eqn = jaxpr.eqns[0]
         assert grad_eqn.invars[0].aval == jaxpr.in_avals[0]
-        diff_eqn_assertions(grad_eqn, grad_prim)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=circuit)
         grad_jaxpr = grad_eqn.params["jaxpr"]
         assert len(grad_jaxpr.eqns) == 1  # qnode equation
 
@@ -271,7 +277,7 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnums)
 
         grad_eqn = jaxpr.eqns[2]
-        diff_eqn_assertions(grad_eqn, grad_prim, argnums=argnums)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, argnums=argnums, fn=inner_func)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
@@ -318,7 +324,7 @@ class TestGrad:
         grad_eqn = jaxpr.eqns[0]
         assert all(invar.aval == in_aval for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals))
         flat_argnums = [0, 1] * (0 in argnums) + [2] * (1 in argnums) + [3, 4, 5] * (2 in argnums)
-        diff_eqn_assertions(grad_eqn, grad_prim, argnums=flat_argnums)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, argnums=flat_argnums, fn=circuit)
         grad_jaxpr = grad_eqn.params["jaxpr"]
         assert len(grad_jaxpr.eqns) == 1  # qnode equation
 
@@ -419,7 +425,7 @@ class TestJacobian:
         assert jaxpr.out_avals == exp_out_avals
 
         jac_eqn = jaxpr.eqns[0]
-        diff_eqn_assertions(jac_eqn, jacobian_prim, argnums=argnums)
+        diff_eqn_assertions(jac_eqn, scalar_out=False, argnums=argnums, fn=inner_func)
 
         manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y)
         # Evaluating jaxpr gives flat list results. Need to adapt the JAX output to that
@@ -458,7 +464,7 @@ class TestJacobian:
 
         jac_eqn = jaxpr_1.eqns[0]
         assert [var.aval for var in jac_eqn.outvars] == jaxpr_1.out_avals
-        diff_eqn_assertions(jac_eqn, jacobian_prim)
+        diff_eqn_assertions(jac_eqn, scalar_out=False, fn=func)
         assert len(jac_eqn.params["jaxpr"].eqns) == 5
 
         prod_sin = jnp.prod(x) * jnp.sin(x)
@@ -481,9 +487,9 @@ class TestJacobian:
 
         jac_eqn = jaxpr_2.eqns[0]
         assert [var.aval for var in jac_eqn.outvars] == jaxpr_2.out_avals
-        diff_eqn_assertions(jac_eqn, jacobian_prim)
+        diff_eqn_assertions(jac_eqn, scalar_out=False, fn=qml_func_1)
         assert len(jac_eqn.params["jaxpr"].eqns) == 1  # inner jacobian equation
-        assert jac_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
+        assert jac_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
 
         # broken by jax 0.5.3
         # hyperdiag = qml.numpy.zeros((4, 4, 4))
@@ -537,7 +543,10 @@ class TestJacobian:
 
         jac_eqn = jaxpr.eqns[0]
         assert jac_eqn.invars[0].aval == jaxpr.in_avals[0]
-        diff_eqn_assertions(jac_eqn, jacobian_prim)
+        diff_eqn_assertions(
+            jac_eqn,
+            scalar_out=False,
+        )
         jac_jaxpr = jac_eqn.params["jaxpr"]
         assert len(jac_jaxpr.eqns) == 1  # qnode equation
 
@@ -597,13 +606,15 @@ class TestJacobian:
         assert len(jaxpr.eqns) == 3
 
         argnums = [argnums] if isinstance(argnums, int) else argnums
-        # Compute the flat argnums in order to determine the expected number of out tracers
+        # Compute the flat argnum in order to determine the expected number of out tracers
         flat_argnums = [0] * (0 in argnums) + [1, 2] * (1 in argnums)
-        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype)] * (2 * len(flat_argnums))
+        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * (
+            2 * len(flat_argnums)
+        )
 
         jac_eqn = jaxpr.eqns[2]
 
-        diff_eqn_assertions(jac_eqn, jacobian_prim, argnums=flat_argnums)
+        diff_eqn_assertions(jac_eqn, scalar_out=False, argnums=flat_argnums, fn=inner_func)
         assert [var.aval for var in jac_eqn.outvars] == jaxpr.out_avals
 
         manual_out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
@@ -633,7 +644,7 @@ class TestJacobian:
 
         jaxpr = jax.make_jaxpr(w)(2)
         grad_eqn = jaxpr.eqns[2] if same_dynamic_shape else jaxpr.eqns[3]
-        assert grad_eqn.primitive == jacobian_prim
+        assert grad_eqn.primitive == grad_prim
 
         shift = 1 if same_dynamic_shape else 2
         assert grad_eqn.params["argnums"] == [shift, shift + 1]

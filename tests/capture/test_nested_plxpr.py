@@ -170,11 +170,19 @@ class TestAdjointQfunc:
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
         assert grad_eqn.params["argnums"] == [0]
         assert grad_eqn.params["n_consts"] == 0
-        assert grad_eqn.params["method"] is None
-        assert grad_eqn.params["h"] is None
+        assert grad_eqn.params["method"] == "auto"
+        assert grad_eqn.params["h"] == 1e-6
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
 
         qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]
@@ -431,11 +439,19 @@ class TestCtrlQfunc:
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
         assert grad_eqn.params["argnums"] == [0]
         assert grad_eqn.params["n_consts"] == 0
-        assert grad_eqn.params["method"] is None
-        assert grad_eqn.params["h"] is None
+        assert grad_eqn.params["method"] == "auto"
+        assert grad_eqn.params["h"] == 1e-6
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
 
         qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]

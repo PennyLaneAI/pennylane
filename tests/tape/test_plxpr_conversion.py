@@ -256,7 +256,7 @@ class TestCollectOpsandMeas:
         grad_fn = fn(g)
         with pytest.raises(
             NotImplementedError,
-            match=f"CollectOpsandMeas cannot handle the {fn.__name__} primitive",
+            match="CollectOpsandMeas cannot handle the grad primitive",
         ):
             collector(grad_fn)(0.5)
 
