@@ -14,7 +14,6 @@
 """Core API for registering xDSL transforms for use with PennyLane and Catalyst."""
 
 from collections.abc import Callable
-from warnings import warn
 
 from catalyst.from_plxpr import register_transform
 from xdsl.passes import ModulePass
@@ -53,23 +52,6 @@ class PassDispatcher(TransformDispatcher):
 def compiler_transform(module_pass: ModulePass) -> PassDispatcher:
     """Wrapper function to register xDSL passes to use with QJIT-ed workflows."""
     dispatcher = PassDispatcher(module_pass)
-
-    # Make pass visible to the xDSL universe. Passes that are created in the
-    # pennylane.compiler.python_compiler.transforms namespace should already
-    # be loaded, so we don't add them to the universe here. This is needed so
-    # that transforms that ship with PennyLane are loaded into the universe
-    # eagerly. Other passes will be loaded lazily.
-    if not module_pass.__module__.startswith("pennylane.compiler.python_compiler.transforms"):
-        # pylint: disable=import-outside-toplevel
-        from ..universe import XDSL_UNIVERSE
-
-        if module_pass.name in XDSL_UNIVERSE.all_passes:
-            warn(
-                f"The '{module_pass.name}' pass already exists, please change the pass name "
-                "to register as a compiler transform",
-                UserWarning,
-            )
-        XDSL_UNIVERSE.all_passes[module_pass.name] = module_pass
 
     # Registration to map from plxpr primitive to pass
     register_transform(dispatcher, module_pass.name, False)
