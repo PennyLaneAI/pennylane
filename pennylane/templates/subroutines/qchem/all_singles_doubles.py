@@ -143,8 +143,15 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
-        if hf_state[0].dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state[0].dtype}")
+        # Check if hf_state elements are integers
+        # hf_state might be an array or a tuple/list (e.g., when processed through JAX primitives)
+        if hasattr(hf_state[0], "dtype"):
+            if hf_state[0].dtype != np.dtype("int"):
+                raise ValueError(
+                    f"Elements of 'hf_state' must be integers; got {hf_state[0].dtype}"
+                )
+        elif not isinstance(hf_state[0], (int, np.integer)):
+            raise ValueError(f"Elements of 'hf_state' must be integers; got {type(hf_state[0])}")
 
         singles = tuple(tuple(s) for s in singles)
         doubles = tuple(tuple(d) for d in doubles)

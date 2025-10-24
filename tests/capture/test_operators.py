@@ -391,8 +391,9 @@ class TestOpmath:
         assert eqn.invars[2].val == 4
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        # JAX 0.7.0 requires hashable params, so lists become tuples
         assert eqn.params == {
-            "control_values": [0, 1],
+            "control_values": (0, 1),
             "work_wires": None,
             "work_wire_type": "borrowed",
         }

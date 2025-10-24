@@ -169,6 +169,10 @@ from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
 
+# Apply JAX patches for compatibility
+# This must be imported to apply runtime patches to JAX internals
+from . import jax_patches  # pylint: disable=unused-import
+
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
 # on use of from capture import AbstractOperator
@@ -179,6 +183,8 @@ PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
 QmlPrimitive: "Type[jax.extend.core.Primitive]"
+_restore_slice: Callable
+_restore_hashable: Callable
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
@@ -187,6 +193,16 @@ def __getattr__(key):
         from .custom_primitives import QmlPrimitive
 
         return QmlPrimitive
+
+    if key == "_restore_slice":
+        from .custom_primitives import _restore_slice
+
+        return _restore_slice
+
+    if key == "_restore_hashable":
+        from .custom_primitives import _restore_hashable
+
+        return _restore_hashable
 
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator
