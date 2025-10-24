@@ -378,8 +378,14 @@ class _CachedCallable:
                     partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
                 )
             case "gridsynth":
-                self.decompose_fn = lru_cache(maxsize=cache_size)(
-                    partial(rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs)
+                self.decompose_fn = (
+                    lru_cache(maxsize=cache_size)(
+                        partial(rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs)
+                    )
+                    if not is_qjit
+                    else partial(
+                        rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs
+                    )
                 )
             case _:
                 raise NotImplementedError(
@@ -391,7 +397,11 @@ class _CachedCallable:
         self.cache_size = cache_size
         self.is_qjit = is_qjit
         self.method_kwargs = method_kwargs
-        self.query = lru_cache(maxsize=cache_size)(self.cached_decompose)
+        self.query = (
+            lru_cache(maxsize=cache_size)(self.cached_decompose)
+            if not is_qjit
+            else self.cached_decompose
+        )
 
     # pylint: disable=too-many-arguments
     def compatible(self, method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs):
