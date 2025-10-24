@@ -176,7 +176,7 @@ class AllSinglesDoubles(Operation):
         hf_state = math.array(hf_state)
         weights = math.array(weights)
         return cls._primitive.bind(
-            weights, wires, hf_state, singles=singles, doubles=doubles, id=id
+            weights, wires, hf_state, singles, doubles, id=id
         )
 
     @property
@@ -280,8 +280,8 @@ if AllSinglesDoubles._primitive is not None:
             args[0],
             wires,
             args[2],
-            singles=kwargs["singles"],
-            doubles=kwargs["doubles"],
+            args[3],
+            args[4]
         )
 
 

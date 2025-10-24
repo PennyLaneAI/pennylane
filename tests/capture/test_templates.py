@@ -651,13 +651,13 @@ class TestModifiedTemplates:
 
     def test_all_singles_doubles(self):
         arguments = (
-            np.array([-2.8, 0.5]),
-            np.array([1, 2, 3, 4]),
-            np.array([1, 1, 0, 0]),
+            jnp.array([-2.8, 0.5]),
+            jnp.array([1, 2, 3, 4]),
+            jnp.array([1, 1, 0, 0]),
         )
         keyword_args = (
-            np.array([[0, 2]]),
-            np.array([[0, 1, 2, 3]]),
+            jnp.array([[0, 2]]),
+            jnp.array([[0, 1, 2, 3]]),
         )
         params = (*arguments, *keyword_args)
 
@@ -668,7 +668,13 @@ class TestModifiedTemplates:
         qfunc(*params)
 
         # Actually test primitive bind
-        jax.make_jaxpr(qfunc)(*params)
+        jaxpr = jax.make_jaxpr(qfunc)(*params)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *params)
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.AllSinglesDoubles(*params)
 
     def test_quantum_monte_carlo(self):
         """Test the primitive bind call of QuantumMonteCarlo."""
