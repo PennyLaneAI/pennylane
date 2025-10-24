@@ -92,6 +92,14 @@ Classes for representing product formulas.
     :toctree: api
 
     ~ProductFormula
+
+Config Classes
+~~~~~~~~~~~~~~
+
+..autosummary::
+    :toctree: api
+
+    ~ImportanceConfig
 """
 
 from .abstract import AbstractState, Fragment
@@ -103,6 +111,7 @@ from .fragments import (
     sparse_fragments,
 )
 from .product_formulas import (
+    ImportanceConfig,
     ProductFormula,
     bch_expansion,
     effective_hamiltonian,
