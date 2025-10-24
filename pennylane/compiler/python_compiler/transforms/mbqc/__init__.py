@@ -29,7 +29,6 @@ from .graph_state_utils import (
     generate_adj_matrix,
 )
 
-
 __all__ = [
     # Passes
     "ConvertToMBQCFormalismPass",
