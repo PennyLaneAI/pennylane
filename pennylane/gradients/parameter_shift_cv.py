@@ -465,7 +465,13 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
                 g = math.zeros_like(math.atleast_1d(results[0]), like=interface)
 
                 if grad_value:
-                    g = math.scatter_element_add(g, obs_ind, grad_value, like=interface)
+                    grad_value_isscalar = math.ndim(grad_value[0]) == 0
+                    g = math.scatter_element_add(
+                        g,
+                        obs_ind,
+                        grad_value[0] if grad_value_isscalar else grad_value,
+                        like=interface,
+                    )
 
                 grads.append(g[0] if isscalar else g)
                 continue
