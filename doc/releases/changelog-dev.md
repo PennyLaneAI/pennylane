@@ -1,5 +1,3 @@
-:orphan:
-
 # Release 0.44.0-dev (development release)
 
 <h3>New features since last release</h3>
@@ -7,6 +5,9 @@
 * Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
+
+* Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
+  [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
 
 <h3>Improvements 🛠</h3>
 
@@ -19,6 +20,10 @@
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
+
+* A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
+  working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
+  [(#8514)](https://github.com/PennyLaneAI/pennylane/pull/8514)
 
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
@@ -150,6 +155,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  
+* Update versions for `pylint`, `isort` and `black` in `format.yml`
+  [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
+
 * Reclassifies `registers` as a tertiary module for use with tach.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
@@ -197,6 +208,9 @@
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
 
+* Fixes a bug where a `KeyError` is raised when querying the decomposition rule for an operator in the gate set from a :class:`~pennylane.decomposition.DecompGraphSolution`.
+  [(#8526)](https://github.com/PennyLaneAI/pennylane/pull/8526)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -206,6 +220,7 @@ Astral Cai,
 Marcus Edwards,
 Lillian Frederiksen,
 Christina Lee,
+Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
