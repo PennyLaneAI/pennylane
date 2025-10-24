@@ -398,7 +398,7 @@ def test_gradient_expvalH():
 
         return circuit
 
-    grad_qml = qml.grad(energy(mol), argnum=0)(*args)
+    grad_qml = qml.grad(energy(mol), argnums=0)(*args)
 
     alpha_1 = pnp.array(
         [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],

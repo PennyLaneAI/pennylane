@@ -20,7 +20,6 @@ import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.functions import bind_new_parameters
 
 
@@ -90,21 +89,6 @@ def test_composite_ops(op, new_params, expected_op):
     qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert all(no is not o for no, o in zip(new_op.operands, op.operands))
-
-
-def test_num_steps_is_deprecated():
-    """Test that providing `num_steps` to `qml.evolve` and `qml.exp` raises a deprecation warning."""
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated",
-    ):
-        qml.evolve(qml.PauliX(0), 0.5, num_steps=15)
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated",
-    ):
-        qml.exp(qml.PauliX(0), 0.5, num_steps=15)
 
 
 @pytest.mark.parametrize(

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
+
 import warnings
 from functools import partial
 
@@ -35,7 +36,7 @@ from pennylane.devices.preprocess import (
     validate_multiprocessing_workers,
     validate_observables,
 )
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
@@ -638,6 +639,16 @@ class TestGraphModeExclusiveFeatures:
         assert all(op.name == "Hadamard" for op in out_tape.operations)
 
 
+@pytest.fixture()
+def check_deprecated():
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="The mid_circuit_measurements transform is deprecated",
+    ):
+        yield
+
+
+@pytest.mark.usefixtures("check_deprecated")
 class TestMidCircuitMeasurements:
     """Unit tests for the mid_circuit_measurements preprocessing transform"""
 
@@ -969,7 +980,6 @@ def test_validate_multiprocessing_workers_None():
 
 
 class TestDeviceResolveDynamicWires:
-
     def test_many_allocations_no_wires(self):
         """Test that min integer will keep incrementing to higher numbers."""
 
