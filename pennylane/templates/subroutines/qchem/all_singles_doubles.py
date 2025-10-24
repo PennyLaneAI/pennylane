@@ -169,18 +169,15 @@ class AllSinglesDoubles(Operation):
         super().__init__(weights, wires=wires, id=id)
 
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        all_wires = list(
-            set(
-                flatten(list(args[1]))[0]
-                + flatten(list(kwargs["singles"]))[0]
-                + flatten(list(kwargs["doubles"]))[0]
-            )
+    def _primitive_bind_call(cls, weights, wires, hf_state, singles=None, doubles=None, id=None):
+        singles = math.array(singles) if singles is not None else math.array(((),))
+        doubles = math.array(doubles) if doubles is not None else math.array(((),))
+        wires = math.array(wires)
+        hf_state = math.array(hf_state)
+        weights = math.array(weights)
+        return cls._primitive.bind(
+            weights, wires, hf_state, singles=singles, doubles=doubles, id=id
         )
-        if has_jax and capture.enabled():
-            all_wires = jnp.array(all_wires)
-
-        return super()._primitive_bind_call(args[0], args[2], wires=all_wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -277,12 +274,12 @@ if AllSinglesDoubles._primitive is not None:
         # need to convert array values into integers
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
-        wires = tuple(w if math.is_abstract(w) else int(w) for w in args[2:])
+        wires = tuple(w if math.is_abstract(w) else int(w) for w in args[1])
         return type.__call__(
             AllSinglesDoubles,
             args[0],
             wires,
-            args[1],
+            args[2],
             singles=kwargs["singles"],
             doubles=kwargs["doubles"],
         )

@@ -28,11 +28,11 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 def test_standard_validity():
     """Run standard tests of operation validity."""
     op = qml.AllSinglesDoubles(
-        [1.0, 2.0],
-        range(4),
+        np.array([1.0, 2.0]),
+        np.array(list(range(4))),
         np.array([1, 1, 0, 0]),
-        singles=[[0, 1]],
-        doubles=[[0, 1, 2, 3]],
+        singles=np.array([[0, 1]]),
+        doubles=np.array([[0, 1, 2, 3]]),
     )
     qml.ops.functions.assert_valid(op)
 
