@@ -117,14 +117,6 @@ class TestDecomposeGraphEnabled:
     """Tests the decompose transform with graph enabled."""
 
     @pytest.mark.unit
-    def test_callable_gate_set_not_available(self):
-        """Tests that a callable gate set is not available with graph enabled."""
-
-        tape = qml.tape.QuantumScript([])
-        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
-            qml.transforms.decompose(tape, gate_set=lambda op: True)
-
-    @pytest.mark.unit
     def test_none_gate_set_error(self):
         """Tests that an error is raised when gate_set is not provided."""
 
