@@ -25,6 +25,7 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
+from pennylane.pytrees import flatten
 
 has_jax = True
 try:
@@ -169,25 +170,11 @@ class AllSinglesDoubles(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        def flatten(lst):
-            flat = []
-            for sub in lst:
-                if (
-                    isinstance(sub, list)
-                    or isinstance(sub, np.ndarray)
-                    or (hasattr(sub, "shape") and len(sub.shape) > 0 and sub.shape[0] >= 2)
-                ):
-                    for wire in sub:
-                        flat.append(wire)
-                else:
-                    flat.append(sub)
-            return flat
-
         all_wires = list(
             set(
-                flatten(list(args[1]))
-                + flatten(list(kwargs["singles"]))
-                + flatten(list(kwargs["doubles"]))
+                flatten(list(args[1]))[0]
+                + flatten(list(kwargs["singles"]))[0]
+                + flatten(list(kwargs["doubles"]))[0]
             )
         )
         if has_jax and capture.enabled():
