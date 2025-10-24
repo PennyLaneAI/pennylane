@@ -46,7 +46,7 @@ def _rz_phase_gradient(
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = _binary_repr_int(-phi, precision)
+    binary_int = _binary_repr_int(phi, precision)
 
     compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
     target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
@@ -76,10 +76,10 @@ def rz_phase_gradient(
          phg_2:           ─────────╰SemiAdder─────────────────┤
 
     For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
-    state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
+    state :math:`|\nabla n\rangle = \frac{1}{\sqrt{N}} \sum_{m=0}^{N-1} e^{-2 \pi i \frac{m}{N}} |m\rangle`,
+    where :math:`n` is the number of qubits and :math:`N=2^n`.
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
     rather assumes it has been prepared on those wires at an earlier stage.
-
 
     Note that :class:`~.SemiAdder` requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
@@ -130,10 +130,9 @@ def rz_phase_gradient(
 
 
         def phase_gradient(wires):
-            # prepare phase gradient state
-            qml.X(wires[-1])
-            qml.QFT(wires)
-
+            for i, w in enumerate(wires):
+                qml.H(w)
+                qml.PhaseShift(-np.pi/2**i, w)
 
         @partial(
             rz_phase_gradient,
@@ -152,36 +151,44 @@ def rz_phase_gradient(
             return qml.probs(wire)
 
 
-    In this example we perform the rotation of an angle of :math:`\phi = (0.111)_2 2\pi`. Because phase shifts
-    are trivial on computational basis states, we transform the :math:`R_Z` rotation to :math:`R_X = H R_Z H` via two
-    :class:`~.Hadamard` gates.
+    In this example we perform the rotation of an angle of :math:`\phi = (0.111)_2 2\pi`.
+    Because phase shifts are trivial on computational basis states, we transform the :math:`R_Z`
+    rotation to :math:`R_X = H R_Z H` via two :class:`~.Hadamard` gates.
 
-    Note that for the transform to work, we need to also prepare a phase gradient state on the ``phase_grad_wires``.
+    Note that for the transform to work, we needed to also prepare a phase gradient state on
+    the ``phase_grad_wires`` via ``phase_gradient``.
 
     Overall, the full circuit looks like the following:
 
     >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H──────╭(|Ψ⟩)@SemiAdder@(|Ψ⟩)──H─╭GlobalPhase(2.75)─┤  Probs
-     ang_0: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_1: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_2: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_0: ────╭QFT─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_1: ────├QFT─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_2: ──X─╰QFT─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_0: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_1: ─────────╰(|Ψ⟩)@SemiAdder@(|Ψ⟩)────╰GlobalPhase(2.75)─┤
+      targ: ──H────────────╭(|Ψ⟩)@SemiAdder@(|Ψ⟩)──H─╭GlobalPhase(2.75)─┤  Probs
+     ang_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     ang_1: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     ang_2: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     phg_0: ──H──Rϕ(-3.14)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     phg_1: ──H──Rϕ(-1.57)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+     phg_2: ──H──Rϕ(-0.79)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+    work_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
+    work_1: ───────────────╰(|Ψ⟩)@SemiAdder@(|Ψ⟩)────╰GlobalPhase(2.75)─┤
 
     The additional work wires are required by the :class:`~.SemiAdder`.
-    Executing the circuit, we get the expected result:
+    Executing the circuit, we get the following result:
 
     >>> rz_circ(phi, wire)
+    array([0.85355339, 0.14644661])
+
+    This matches the expected result of just applying a simple ``RX`` gate:
+
+    >>> np.abs(qml.RX(phi, 0).matrix()[:, 0]) ** 2
     array([0.85355339, 0.14644661])
 
     """
 
     if len(phase_grad_wires) < len(angle_wires):
         raise ValueError(
-            f"phase_grad_wires needs to be at least as large as angle_wires. Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the {len(angle_wires)} angle wires."
+            "phase_grad_wires needs to be at least as large as angle_wires. "
+            f"Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the "
+            f"{len(angle_wires)} angle wires."
         )
 
     operations = []

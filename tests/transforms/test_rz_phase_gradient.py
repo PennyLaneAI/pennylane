@@ -22,6 +22,14 @@ import pennylane as qml
 from pennylane.transforms.rz_phase_gradient import _binary_repr_int, _rz_phase_gradient
 
 
+def prepare_phase_gradient(wires):
+    ops = []
+    for i, w in enumerate(wires):
+        ops.append(qml.H(w))
+        ops.append(qml.PhaseShift(-np.pi / 2**i, w))
+    return ops
+
+
 @pytest.mark.parametrize("string", list(product([0, 1], repeat=4)))
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_binary_repr_int(string, p):
@@ -42,7 +50,7 @@ def test_binary_repr_int(string, p):
 def test_units_rz_phase_gradient(p):
     """Test the outputs of _rz_phase_gradient"""
 
-    phi = -(1 / 2 + 1 / 4 + 1 / 8 + 1 / 16) * 2 * np.pi
+    phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16) * 2 * np.pi
 
     wire = "targ"
     angle_wires = qml.wires.Wires([f"aux_{i}" for i in range(p)])
@@ -139,11 +147,9 @@ def test_integration_rz_phase_gradient(phi):
     rz_circ = qml.tape.QuantumScript(
         [
             qml.Hadamard(wire),  # prepare |+>
-            qml.X(phase_grad_wires[-1]),  # prepare phase gradient state
-            qml.QFT(phase_grad_wires),  # prepare phase gradient state
+            *prepare_phase_gradient(phase_grad_wires),
             qml.RZ(phi, wire),
-            qml.adjoint(qml.QFT)(phase_grad_wires),  # unprepare phase gradient state
-            qml.X(phase_grad_wires[-1]),  # unprepare phase gradient state
+            *[qml.adjoint(op) for op in prepare_phase_gradient(phase_grad_wires)[::-1]],
             qml.Hadamard(wire),  # unprepare |+>
         ]
     )
