@@ -18,7 +18,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead.
+* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
+  functionality for converting a circuit to OpenQASM code.
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
