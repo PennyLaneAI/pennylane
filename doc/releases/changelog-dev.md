@@ -11,6 +11,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
+  working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
+  [(#8514)](https://github.com/PennyLaneAI/pennylane/pull/8514)
+
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
   more powerful, because it can cancel larger blocks of inverse gates without having to scan
@@ -218,6 +222,7 @@ Astral Cai,
 Marcus Edwards,
 Lillian Frederiksen,
 Christina Lee,
+Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
