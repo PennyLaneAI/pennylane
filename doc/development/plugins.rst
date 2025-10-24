@@ -235,7 +235,7 @@ or can include in-built transforms such as:
   
 **Decompositions:**
 
-The :func:`~pennylane.devices.preprocess.decompose` transform is typically required as part of the transform program that
+The :func:`pennylane.devices.preprocess.decompose` transform is typically required as part of the transform program that
 decomposes unsupported operations to the device's native gate set. To define this transform a stopping condition needs
 to be specified. This is a function mapping an operator to a boolean that determines whether the operator should be decomposed.
 
