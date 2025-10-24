@@ -76,9 +76,9 @@ class TestDecomposeInterpreter:
     def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""
         # pylint: disable=unnecessary-lambda-assignment
-        gate_set = lambda op: op.name == "RX"
-        interpreter = DecomposeInterpreter(gate_set=gate_set)
-        assert interpreter.stopping_condition(op) == gate_set(op)
+        stopping_condition = lambda op: op.name == "RX"
+        interpreter = DecomposeInterpreter(stopping_condition=stopping_condition)
+        assert interpreter.stopping_condition(op) == stopping_condition(op)
 
     def test_decompose_simple(self):
         """Test that a simple function can be decomposed correctly."""

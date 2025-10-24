@@ -186,10 +186,9 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
-    # functions in gate_set can only be used with graph decomposition system disabled
     qml.decomposition.disable_graph()
 
-    @partial(decompose, gate_set=lambda op: len(op.wires) <= 2) 
+    @partial(decompose, stopping_condition=lambda op: len(op.wires) <= 2) 
     @qml.qnode(dev)
     def circuit():
         qml.Toffoli(wires=[0,1,2])

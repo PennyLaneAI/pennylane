@@ -152,6 +152,11 @@
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary.
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
+* Passing a function to the ``gate_set`` argument in the :func:`~pennylane.transforms.decompose` transform
+  is deprecated. The ``gate_set`` argument expects a static iterable of operator type and/or operator names,
+  and the function should be passed to the ``stopping_condition`` argument instead.
+  [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
+
 <h3>Internal changes ⚙️</h3>
 
 * Reclassifies `registers` as a tertiary module for use with tach.

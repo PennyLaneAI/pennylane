@@ -27,7 +27,7 @@ from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.transforms.core import transform
@@ -959,6 +959,13 @@ def _resolve_gate_set(  # pylint: disable=too-many-branches
     # gate_set argument because only the stopping_condition is supposed to be a function.
     # The deprecation is proposed in sc-102183
     elif isinstance(gate_set, Callable):
+        warnings.warn(
+            "Passing a function to the gate_set argument is deprecated. The gate_set "
+            "expects a static iterable of operator types and/or operator names, and the "
+            "function should be passed to the stopping_condition argument instead.",
+            PennyLaneDeprecationWarning,
+        )
+
         gate_set_contains = gate_set
         gate_set = set()
 

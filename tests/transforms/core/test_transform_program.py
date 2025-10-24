@@ -883,7 +883,7 @@ class TestTransformProgramCall:
         program.add_transform(qml.transforms.defer_measurements, num_wires=3)
         program.add_transform(
             qml.transforms.decompose,
-            gate_set=lambda op: op.name != "IsingXX",
+            stopping_condition=lambda op: op.name != "IsingXX",
         )
 
         def f():
