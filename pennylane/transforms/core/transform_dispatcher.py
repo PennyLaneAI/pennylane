@@ -199,6 +199,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         final_transform=False,
         use_argnum_in_expand=False,
         plxpr_transform=None,
+        pass_name: None | str = None,
     ):
         self._transform = transform
         self._expand_transform = expand_transform
@@ -207,6 +208,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._custom_qnode_transform = None
+        self._pass_name = pass_name
 
         self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
@@ -218,6 +220,11 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
         self._primitive = _create_transform_primitive(self._transform.__name__)
         _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
+
+    @property
+    def pass_name(self) -> None | str:
+        """The name of the equivalent MLIR pass."""
+        return self._pass_name
 
     @property
     def register(self):

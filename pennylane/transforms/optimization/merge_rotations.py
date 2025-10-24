@@ -250,7 +250,7 @@ def _get_plxpr_merge_rotations():
 MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
 
 
-@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr)
+@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr, pass_name="merge-rotations")
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
