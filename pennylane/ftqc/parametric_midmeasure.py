@@ -55,7 +55,7 @@ def _create_parametrized_mid_measure_primitive():
     measure_in_basis_p = QmlPrimitive("measure_in_basis")
 
     @measure_in_basis_p.def_impl
-    def _(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
+    def _impl(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
         return _measure_impl(
             wires,
             measurement_class=ParametricMidMeasure,
@@ -66,7 +66,7 @@ def _create_parametrized_mid_measure_primitive():
         )
 
     @measure_in_basis_p.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return jax.core.ShapedArray((), jax.numpy.bool)
 
     return measure_in_basis_p
