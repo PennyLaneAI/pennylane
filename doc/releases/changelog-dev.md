@@ -149,6 +149,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
