@@ -14,9 +14,10 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
+import inspect
 import numbers
 import warnings
-from functools import lru_cache, partial, update_wrapper, wraps
+from functools import lru_cache, partial, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -169,6 +170,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     return new_func
 
 
+# pylint: disable=too-many-instance-attributes
 class grad:
     """Returns the gradient as a callable function of hybrid quantum-classical functions.
     :func:`~.qjit` and Autograd compatible.
@@ -241,9 +243,7 @@ class grad:
         self._h = h
         self._method = method
 
-        self._fun = func
-        n = getattr(self._fun, "__name__", repr(self._fun))
-        self.__name__ = f"<grad: {n}>"
+        self._func = func
         self._argnums = argnums if argnums is not None else argnum
         if argnum is not None:
             warnings.warn(
@@ -258,7 +258,13 @@ class grad:
             # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
-        update_wrapper(self, func)
+        # need to preserve input siganture for use in catalyst AOT compilation, but
+        # get rid of return annotation to placate autograd
+        self.__signature__ = inspect.signature(self._func).replace(
+            return_annotation=inspect.Signature.empty
+        )
+        n = getattr(self._func, "__name__", repr(self._func))
+        self.__name__ = f"<jacobian: {n}>"
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -290,19 +296,19 @@ class grad:
 
         # Known pylint issue with function signatures and decorators:
         # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
-        return self._grad_with_forward(self._fun, argnum=argnums), argnums
+        return self._grad_with_forward(self._func, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
             available_eps = compiler.AvailableCompilers.names_entrypoints
             ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.grad(
-                self._fun, method=self._method, h=self._h, argnums=self._argnums
+                self._func, method=self._method, h=self._h, argnums=self._argnums
             )(*args, **kwargs)
 
         if capture.enabled():
             return _capture_diff(
-                self._fun, argnums=self._argnums, scalar_out=True, method=self._method, h=self._h
+                self._func, argnums=self._argnums, scalar_out=True, method=self._method, h=self._h
             )(*args, **kwargs)
 
         if self._method:
@@ -323,7 +329,7 @@ class grad:
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnums' keyword."
             )
-            self._forward = self._fun(*args, **kwargs)
+            self._forward = self._func(*args, **kwargs)
             return ()
 
         grad_value, ans = grad_fn(*args, **kwargs)  # pylint: disable=not-callable
@@ -616,9 +622,14 @@ class jacobian:
         self._argnums = argnums if argnums is not None else argnum
         self._method = method
         self._h = h
+
+        # need to preserve input siganture for use in catalyst AOT compilation, but
+        # get rid of return annotation to placate autograd
+        self.__signature__ = inspect.signature(self._func).replace(
+            return_annotation=inspect.Signature.empty
+        )
         n = getattr(self._func, "__name__", repr(self._func))
         self.__name__ = f"<jacobian: {n}>"
-        update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
