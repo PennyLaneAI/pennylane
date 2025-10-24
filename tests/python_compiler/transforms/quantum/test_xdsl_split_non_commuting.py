@@ -27,18 +27,6 @@ from pennylane.compiler.python_compiler.transforms import (
     SplitNonCommutingPass,
     split_non_commuting_pass,
 )
-from pennylane.ftqc import RotXZX
-
-
-@qml.while_loop(lambda i: i < 5)
-def _while_for(i):
-    qml.H(i)
-    qml.S(i)
-    RotXZX(0.1, 0.2, 0.3, wires=[i])
-    qml.RZ(phi=0.1, wires=[i])
-    i = i + 1
-    return i
-
 
 class TestSplitNonCommutingPass:
     """Unit tests for SplitNonCommutingPass."""
