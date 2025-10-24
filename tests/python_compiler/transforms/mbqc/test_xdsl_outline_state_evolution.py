@@ -146,7 +146,7 @@ class TestOutlineStateEvolutionPass:
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_no_error(self):
-        """Test if outline_state_evolution_pass raises error when no terminal_boundary_op is found."""
+        """Test outline_state_evolution_pass does not raise error for circuit with classical operations only."""
 
         @qml.qjit(
             target="mlir",
@@ -160,7 +160,7 @@ class TestOutlineStateEvolutionPass:
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_outline_state_evolution_no_terminal_op_error(self):
-        """Test if outline_state_evolution_pass raises error when no terminal_boundary_op is found."""
+        """Test outline_state_evolution_pass raises error when no terminal_boundary_op is found in circuit with quantum operation."""
         # TODOs: we can resolve this issue if the boundary op is inserted when the program is captured.
         dev = qml.device("null.qubit", wires=10)
 
@@ -182,15 +182,6 @@ class TestOutlineStateEvolutionPass:
     def test_outline_state_evolution_pass_only(self, run_filecheck_qjit):
         """Test the outline_state_evolution_pass only."""
         dev = qml.device("lightning.qubit", wires=1000)
-
-        @qml.while_loop(lambda i: i < 1000)
-        def _while_for(i):
-            qml.H(i)
-            qml.S(i)
-            RotXZX(0.1, 0.2, 0.3, wires=[i])
-            qml.RZ(phi=0.1, wires=[i])
-            i = i + 1
-            return i
 
         @qml.qjit(
             target="mlir",
