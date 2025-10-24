@@ -50,13 +50,13 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
+    "split_non_commuting_pass",
+    "SplitNonCommutingPass",
     # MBQC
     "convert_to_mbqc_formalism_pass",
     "ConvertToMBQCFormalismPass",
     "decompose_graph_state_pass",
     "DecomposeGraphStatePass",
-    "split_non_commuting_pass",
-    "SplitNonCommutingPass",
     "null_decompose_graph_state_pass",
     "NullDecomposeGraphStatePass",
 ]
