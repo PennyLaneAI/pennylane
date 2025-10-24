@@ -24,7 +24,6 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
-from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
 has_jax = True
@@ -169,7 +168,7 @@ class AllSinglesDoubles(Operation):
         super().__init__(weights, wires=wires, id=id)
 
     @classmethod
-    def _primitive_bind_call(cls, weights, wires, hf_state, singles=None, doubles=None, id=None):
+    def _primitive_bind_call(cls, weights, wires, hf_state, singles=None, doubles=None, id=None):  # pylint: disable=arguments-differ
         singles = math.array(singles) if singles is not None else math.array(((),))
         doubles = math.array(doubles) if doubles is not None else math.array(((),))
         wires = math.array(wires)
@@ -268,7 +267,7 @@ class AllSinglesDoubles(Operation):
 if AllSinglesDoubles._primitive is not None:
 
     @AllSinglesDoubles._primitive.def_impl
-    def _(*args, **kwargs):
+    def _(*args, **kwargs):  # pylint: disable=unused-argument
         # need to convert array values into integers
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
