@@ -60,6 +60,20 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
 class TestGrad:
     """Tests for capturing `qml.grad`."""
 
+    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+    def test_error_on_bad_h(self, grad_fn):
+        """Test that an error is raised if h is not a Number."""
+
+        with pytest.raises(ValueError, match="Invalid h value"):
+            grad_fn(lambda x: x**2, h="something")(0.5)
+
+    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+    def test_error_on_bad_method(self, grad_fn):
+        """Test that an error is raised for an unsupported grad_fn."""
+
+        with pytest.raises(ValueError, match="Got unrecognized method"):
+            grad_fn(lambda x: x**2, method="param-shift")(0.5)
+
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1], 0, 1))
     def test_classical_grad(self, argnums):
         """Test that the qml.grad primitive can be captured with classical nodes."""

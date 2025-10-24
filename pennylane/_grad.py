@@ -56,8 +56,6 @@ def _get_grad_prim():
     def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' without QJIT.")
-        if h != 1e-6:
-            raise ValueError(f"Invalid h={h} without QJIT.")
         consts = args[:n_consts]
         args = args[n_consts:]
 
