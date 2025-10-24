@@ -6,6 +6,9 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
+* Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
+  [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+
 <h3>Improvements 🛠</h3>
 
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
@@ -150,6 +153,9 @@
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 
+* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
@@ -199,6 +205,9 @@
 * Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested,
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
+
+* Fixes a bug where a `KeyError` is raised when querying the decomposition rule for an operator in the gate set from a :class:`~pennylane.decomposition.DecompGraphSolution`.
+  [(#8526)](https://github.com/PennyLaneAI/pennylane/pull/8526)
 
 <h3>Contributors ✍️</h3>
 

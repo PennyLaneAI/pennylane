@@ -14,6 +14,7 @@
 """
 This module contains the qml.measure measurement.
 """
+
 import uuid
 from collections.abc import Hashable
 from functools import lru_cache
@@ -192,13 +193,7 @@ class MidMeasureMP(Operator):
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        fingerprint = (
-            self.__class__.__name__,
-            tuple(self.wires.tolist()),
-            self.id,
-        )
-
-        return hash(fingerprint)
+        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.id))
 
 
 def measure(
