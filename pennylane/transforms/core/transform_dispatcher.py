@@ -417,6 +417,10 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
     .. seealso:: :func:`~.pennylane.transform`
     """
 
+    def __hash__(self):
+        hashable_dict = tuple((key, value) for key, value in self.kwargs.items())
+        return hash((self.transform, self.args, hashable_dict))
+
     def __init__(
         self,
         transform: TransformDispatcher,
@@ -471,6 +475,11 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
     def transform(self) -> Callable:
         """The stored quantum transform."""
         return self._transform_dispatcher.transform
+
+    @property
+    def pass_name(self) -> None | str:
+        """Test catalyst pass name."""
+        return self._transform_dispatcher.pass_name
 
     @property
     def args(self) -> tuple:
