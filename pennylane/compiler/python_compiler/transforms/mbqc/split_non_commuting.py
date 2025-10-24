@@ -282,8 +282,7 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
 
         # For HamiltonianOp and TensorOp, we need to handle multiple qubits
         elif isinstance(obs_op, (quantum.HamiltonianOp, quantum.TensorOp)):
-            for operand in obs_op.operands:
-                acted_qubits.update(self.get_qubits_from_observable(operand))
+            raise NotImplementedError(f"unsupported observable operation: {obs_op}")
 
         return acted_qubits
 
@@ -324,7 +323,7 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
 
             op = val.owner
 
-            # If we found an expval, check its group
+            # If we found a measurement operation, check its group
             if self.is_measurement_op(op) and "group" in op.attributes:
                 group_attr = op.attributes["group"]
                 return group_attr.value.data
