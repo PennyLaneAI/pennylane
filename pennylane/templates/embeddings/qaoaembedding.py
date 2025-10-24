@@ -14,6 +14,9 @@
 r"""
 Contains the QAOAEmbedding template.
 """
+from collections import defaultdict
+
+from pennylane.decomposition import resource_rep
 
 # pylint: disable=too-many-arguments
 
@@ -302,6 +305,13 @@ class QAOAEmbedding(Operation):
 
         return op_list
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "repeats": math.shape(self.parameters[1])[-2],  # TODO: check this
+            "n_features": math.shape(self.parameters[0])[-1],
+        }
+
     @staticmethod
     def shape(n_layers, n_wires, n_broadcast=None):
         r"""Returns the shape of the weight tensor required for this template.
@@ -324,3 +334,21 @@ class QAOAEmbedding(Operation):
             return n_broadcast, n_layers, wire_dim
 
         return n_layers, wire_dim
+
+
+def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
+    resources = defaultdict(int)
+
+    resources.update({
+        resource_rep(RX): n_features * (repeat + 1),
+        resource_rep(H): num_wires - n_features * (repeat + 1)
+    })
+
+    resources[resource_rep(local_field)] += num_wires * repeat
+
+    if num_wires == 2:
+        resources[resource_rep(MultiRZ, num_wires=2)] = repeat
+    else:
+        resources[resource_rep(MultiRZ, num_wires=2)] = num_wires * repeat
+
+    return resources
