@@ -418,24 +418,6 @@ class OutlineStateEvolutionPattern(pattern_rewriter.RewritePattern):
             cloned_op = op.clone(value_mapper)
             target_block.add_op(cloned_op)
 
-            self._update_value_mapper_recursively(op, cloned_op, value_mapper)
-
-    # pylint: disable=too-many-branches
-    def _update_value_mapper_recursively(self, orig_op, cloned_op, value_mapper):
-        """recursively update value_mapper for all operations in operation"""
-        for orig_result, new_result in zip(orig_op.results, cloned_op.results):
-            value_mapper[orig_result] = new_result
-
-        for orig_region, cloned_region in zip(orig_op.regions, cloned_op.regions):
-            for orig_block, cloned_block in zip(orig_region.blocks, cloned_region.blocks):
-                for orig_arg, cloned_arg in zip(orig_block.args, cloned_block.args):
-                    value_mapper[orig_arg] = cloned_arg
-
-                for orig_nested_op, cloned_nested_op in zip(orig_block.ops, cloned_block.ops):
-                    self._update_value_mapper_recursively(
-                        orig_nested_op, cloned_nested_op, value_mapper
-                    )
-
     def _finalize_transformation(self):
         """Replace the original function with a call to the state evolution function."""
         original_block = self.original_func_op.body.block
