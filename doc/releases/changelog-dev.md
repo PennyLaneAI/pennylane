@@ -167,6 +167,10 @@
   circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
+* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+  quantum gate operations to a private callable.
+  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
+
 * The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
   [(#8460)](https://github.com/PennyLaneAI/pennylane/pull/8460)
 
@@ -222,3 +226,4 @@ Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
+Hongsheng Zheng
