@@ -197,6 +197,10 @@
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
 
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
+  constants.
+  [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
+
 
 <h3>Documentation 📝</h3>
 
