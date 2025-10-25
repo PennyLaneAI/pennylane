@@ -22,8 +22,8 @@ from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.devices import ExecutionConfig
-from pennylane.measurements import MidMeasureMP, Shots
-from pennylane.ops import adjoint, ctrl
+from pennylane.measurements import Shots
+from pennylane.ops import MidMeasure, adjoint, ctrl
 from pennylane.ops.qubit import Projector
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -220,7 +220,7 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
 
 @DefaultQubitInterpreter.register_primitive(measure_prim)
 def _(self, *invals, reset, postselect):
-    mp = MidMeasureMP(invals, reset=reset, postselect=postselect)
+    mp = MidMeasure(invals, reset=reset, postselect=postselect)
     self.key, new_key = jax.random.split(self.key, 2)
     mcms = {}
     self.state = apply_operation(mp, self.state, mid_measurements=mcms, prng_key=new_key)

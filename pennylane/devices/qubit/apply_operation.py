@@ -22,9 +22,8 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import math, ops
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -326,7 +325,7 @@ def apply_conditional(
 
 @apply_operation.register
 def apply_mid_measure(
-    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+    op: MidMeasure, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Applies a native mid-circuit measurement.
 
@@ -352,7 +351,7 @@ def apply_mid_measure(
     prng_key = execution_kwargs.get("prng_key", None)
 
     if is_state_batched:
-        raise ValueError("MidMeasureMP cannot be applied to batched states.")
+        raise ValueError("MidMeasure cannot be applied to batched states.")
     wire = op.wires
     interface = math.get_deep_interface(state)
 

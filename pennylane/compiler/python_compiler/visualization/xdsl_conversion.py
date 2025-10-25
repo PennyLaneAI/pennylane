@@ -28,9 +28,11 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
 )
-from pennylane.measurements import MidMeasureMP, expval, measure, probs, sample, state, var
+from pennylane.measurements import expval, probs, sample, state, var
 from pennylane.operation import Operator
+from pennylane.ops import MidMeasure
 from pennylane.ops import __all__ as ops_all
+from pennylane.ops import measure
 
 from ..dialects.quantum import ExtractOp as ExtractOpPL
 from ..dialects.quantum import (
@@ -305,7 +307,7 @@ def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operato
 
         case "quantum.measure":
             postselect = op.postselect.value.data if op.postselect is not None else None
-            return MidMeasureMP([resolve_constant_wire(op.in_qubit)], postselect=postselect)
+            return MidMeasure([resolve_constant_wire(op.in_qubit)], postselect=postselect)
 
         case "quantum.namedobs":
             return resolve_gate(op.type.data.value)(wires=ssa_to_qml_wires_named(op))

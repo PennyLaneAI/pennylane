@@ -33,14 +33,13 @@ from pennylane.measurements import (
     DensityMatrixMP,
     ExpectationMP,
     MeasurementProcess,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     StateMP,
     VarianceMP,
 )
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, Conditional, Controlled, GlobalPhase, Identity
+from pennylane.ops import Adjoint, Conditional, Controlled, GlobalPhase, Identity, MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.templates.subroutines import TemporaryAND
 
@@ -247,10 +246,10 @@ def _add_global_op(
 
 @_add_obj.register
 def _add_mid_measure_op(
-    op: MidMeasureMP, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+    op: MidMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.measurements.MidMeasureMP``."""
+    ``qml.ops.MidMeasure``."""
     layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
     label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
 

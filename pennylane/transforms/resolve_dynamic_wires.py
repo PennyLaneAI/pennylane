@@ -18,7 +18,7 @@ from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState
 from pennylane.exceptions import AllocationError
-from pennylane.measurements import measure
+from pennylane.ops import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 

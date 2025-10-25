@@ -25,7 +25,7 @@ from pennylane.drawer.drawable_layers import (
     _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
-from pennylane.measurements import MidMeasureMP
+from pennylane.ops import MidMeasure
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -183,10 +183,10 @@ class TestDrawableLayers:
 
     def test_mid_measure_custom_wires(self):
         """Test that custom wires do not break the drawing of mid-circuit measurements."""
-        mp0 = MidMeasureMP("A", id="foo")
-        mp1 = MidMeasureMP("a", id="bar")
-        m0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
-        m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
+        mp0 = MidMeasure("A", id="foo")
+        mp1 = MidMeasure("a", id="bar")
+        m0 = qml.ops.MeasurementValue([mp0], lambda v: v)
+        m1 = qml.ops.MeasurementValue([mp1], lambda v: v)
 
         def teleport(state):
             qml.StatePrep(state, wires=["A"])
@@ -202,7 +202,7 @@ class TestDrawableLayers:
         tape_custom = qml.tape.make_qscript(teleport)([0, 1])
         [tape_standard], _ = qml.map_wires(tape_custom, {"A": 0, "a": 1, "B": 2})
         ops = tape_standard.operations
-        bit_map = {MidMeasureMP(0, id="foo"): None, MidMeasureMP(1, id="bar"): None}
+        bit_map = {MidMeasure(0, id="foo"): None, MidMeasure(1, id="bar"): None}
         layers = drawable_layers(ops, bit_map=bit_map)
         assert layers == [ops[:2]] + [[op] for op in ops[2:]]
 
