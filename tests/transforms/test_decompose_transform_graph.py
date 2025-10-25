@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
+
 from collections import defaultdict
 from functools import partial
 
@@ -31,7 +32,7 @@ def test_weighted_graph_handles_negative_weight():
     tape = qml.tape.QuantumScript([])
 
     # edge case: negative gate weight
-    with pytest.raises(ValueError, match="Negative gate weights"):
+    with pytest.raises(ValueError, match="Negative weights"):
         qml.transforms.decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
 
 
@@ -122,6 +123,14 @@ class TestDecomposeGraphEnabled:
         tape = qml.tape.QuantumScript([])
         with pytest.raises(TypeError, match="Specifying gate_set as a function"):
             qml.transforms.decompose(tape, gate_set=lambda op: True)
+
+    @pytest.mark.unit
+    def test_none_gate_set_error(self):
+        """Tests that an error is raised when gate_set is not provided."""
+
+        tape = qml.tape.QuantumScript([])
+        with pytest.raises(TypeError, match="The gate_set argument is required."):
+            qml.transforms.decompose(tape, stopping_condition=lambda op: True)
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
@@ -355,7 +364,6 @@ class TestDecomposeGraphEnabled:
         """Tests decomposing an adjoint operation."""
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
             @property
@@ -511,7 +519,6 @@ def test_stopping_condition():
     U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
 
     def stopping_condition(op):
-
         if isinstance(op, qml.QubitUnitary):
             identity = qml.math.eye(2 ** len(op.wires))
             return qml.math.allclose(op.matrix(), identity)
